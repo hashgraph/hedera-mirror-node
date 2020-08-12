@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,12 +17,12 @@ const (
 )
 
 func LoadConfig() *types.Config {
-	var config types.Config
-	GetConfig(&config, defaultConfigFile)
-	GetConfig(&config, mainConfigFile)
-	config.Hedera.Mirror.Rosetta.Db.Host = os.Getenv("HEDERA_MIRROR_ROSETTA_DB_HOST")
+	var configuration types.Config
+	GetConfig(&configuration, defaultConfigFile)
+	GetConfig(&configuration, mainConfigFile)
+	configuration.Hedera.Mirror.Rosetta.Db.Host = os.Getenv(config.EnvHederaMirrorRosettaDBHost)
 
-	return &config
+	return &configuration
 }
 
 func GetConfig(config *types.Config, path string) {

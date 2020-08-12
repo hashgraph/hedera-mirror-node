@@ -16,7 +16,7 @@ type Operation struct {
 	Amount  int64
 }
 
-// FromRosettaOperation populates domain type Operartion from Rosetta type Operation
+// FromRosettaOperation populates domain type Operation from Rosetta type Operation
 func FromRosettaOperation(rOperation *rTypes.Operation) (*Operation, *rTypes.Error) {
 	acc, err := FromRosettaAccount(rOperation.Account)
 	if err != nil {

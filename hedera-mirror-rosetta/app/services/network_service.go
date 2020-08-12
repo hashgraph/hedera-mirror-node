@@ -17,7 +17,7 @@ type NetworkService struct {
 	version         *types.Version
 }
 
-func (n NetworkService) NetworkList(ctx context.Context, request *types.MetadataRequest) (*types.NetworkListResponse, *types.Error) {
+func (n *NetworkService) NetworkList(ctx context.Context, request *types.MetadataRequest) (*types.NetworkListResponse, *types.Error) {
 	return &types.NetworkListResponse{
 		NetworkIdentifiers: []*types.NetworkIdentifier{
 			n.network,
@@ -25,7 +25,7 @@ func (n NetworkService) NetworkList(ctx context.Context, request *types.Metadata
 	}, nil
 }
 
-func (n NetworkService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
+func (n *NetworkService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
 	// TODO: Remove after migration has been added
 	statuses := maphelper.GetStringValuesFromIntStringMap(n.transactionRepo.Statuses())
 	operationStatuses := make([]*types.OperationStatus, 0, len(statuses))
@@ -48,7 +48,7 @@ func (n NetworkService) NetworkOptions(ctx context.Context, request *types.Netwo
 	}, nil
 }
 
-func (n NetworkService) NetworkStatus(ctx context.Context, request *types.NetworkRequest) (*types.NetworkStatusResponse, *types.Error) {
+func (n *NetworkService) NetworkStatus(ctx context.Context, request *types.NetworkRequest) (*types.NetworkStatusResponse, *types.Error) {
 	genesisBlock, err := n.blockRepo.RetrieveGenesis()
 	if err != nil {
 		return nil, err
