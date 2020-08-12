@@ -1,0 +1,30 @@
+{
+  "description": "Stateproof api calls with valid transaction ID and success response",
+  "extendedDescription": [
+    "When querying stateproof for transaction 0.0.94139-1570800748-313194300, expect to find it in record file",
+    "2019-10-11T13_32_41.443132Z.rcd and all 4 signature files exist. For the sake of brevity, the base64 encoded",
+    "file content is replaced with its md5sum in responseJson"
+  ],
+  "setup": {
+    "sqlscripts": [
+      "data/db/stateproof/address_book.sql",
+      "data/db/stateproof/address_book_entry.sql",
+      "data/db/stateproof/record_file.sql",
+      "data/db/stateproof/transaction.sql"
+    ]
+  },
+  "url": "/api/v1/transactions/0.0.94139-1570800748-313194300/stateproof",
+  "responseStatus": 200,
+  "responseJson": {
+    "record_file": "d204eae8c41027b039dba4841f8ef22d",
+    "address_books": [
+      "8b9f6e7d1916344785d6d718ea3e884f"
+    ],
+    "signature_files": {
+      "0.0.3": "5e5bd7171318a2d5cc3596f24f30b053",
+      "0.0.4": "c523080e35a76792a18a9ea0f43737c0",
+      "0.0.5": "a6a851d4a205e47b52b35ada6dfce366",
+      "0.0.6": "bd566edbcb0fb29fc1a50befd7b3977b"
+    }
+  }
+}

@@ -20,11 +20,12 @@
 'use strict';
 
 const {GenericContainer} = require('testcontainers');
-const exec = require('child_process').exec;
+const {exec} = require('child_process');
 const path = require('path');
-const math = require('mathjs');
-const utils = require('../utils');
 const fs = require('fs');
+const SqlConnectionPool = require('pg').Pool;
+const utils = require('../utils');
+const {isDockerInstalled} = require('./integrationUtils');
 
 //
 // Docker & DB management
@@ -32,7 +33,6 @@ const fs = require('fs');
 
 let oldPool;
 let dockerDb;
-let SqlConnectionPool = require('pg').Pool;
 let sqlConnection;
 
 const defaultPostgresqlPort = 5432;
@@ -51,14 +51,6 @@ const NETWORK_FEE = 2;
 const SERVICE_FEE = 4;
 
 let accountEntityIds = {};
-
-const isDockerInstalled = function () {
-  return new Promise((resolve) => {
-    exec('docker --version', (err) => {
-      resolve(!err);
-    });
-  });
-};
 
 /**
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a

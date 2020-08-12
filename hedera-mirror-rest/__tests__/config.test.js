@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +17,14 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const yaml = require('js-yaml');
+const {cloudProviders, defaultBucketNames, networks} = require('../constants');
 
 let tempDir;
 const custom = {
@@ -137,10 +139,14 @@ describe('Load environment configuration:', () => {
 });
 
 describe('Custom CONFIG_NAME:', () => {
-  test('${CONFIG_PATH}/${CONFIG_NAME}.yml', () => {
+  const loadConfigFromCustomObject = (custom) => {
     fs.writeFileSync(path.join(tempDir, 'config.yml'), yaml.safeDump(custom));
     process.env = {CONFIG_NAME: 'config', CONFIG_PATH: tempDir};
-    const config = require('../config');
+    return require('../config');
+  };
+
+  test('${CONFIG_PATH}/${CONFIG_NAME}.yml', () => {
+    const config = loadConfigFromCustomObject(custom);
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
     expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
@@ -148,13 +154,134 @@ describe('Custom CONFIG_NAME:', () => {
   });
 });
 
-function cleanup() {
-  unlink(path.join('.', 'application.yml'));
-  unlink(path.join('.', 'application.yaml'));
-}
+describe('Override stateproof config', () => {
+  const loadConfigWithCustomStateproofConfig = (customStateproofConfig) => {
+    const customConfig = {
+      hedera: {
+        mirror: {
+          rest: {
+            stateproof: customStateproofConfig,
+          },
+        },
+      },
+    };
+    fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.safeDump(customConfig));
+    process.env = {CONFIG_PATH: tempDir};
+    return require('../config');
+  };
+
+  const getExpectedStreamsConfig = (override) => {
+    // the default without network
+    const streamsConfig = {
+      network: networks.DEMO,
+      cloudProvider: 'S3',
+      region: 'us-east-1',
+      accessKey: null,
+      endpointOverride: null,
+      gcpProjectId: null,
+      secretKey: null,
+    };
+    Object.assign(streamsConfig, override);
+    if (!streamsConfig.bucketName) {
+      streamsConfig.bucketName = defaultBucketNames[streamsConfig.network];
+    }
+    return streamsConfig;
+  };
+
+  const testSpecs = [
+    {
+      name: 'by default stateproof should be disabled',
+      enabled: false,
+    },
+    {
+      name: 'when stateproof enabled with no streams section the default should be populated',
+      enabled: true,
+      expectThrow: false,
+    },
+    ...[networks.DEMO, networks.MAINNET, networks.TESTNET].map((network) => {
+      return {
+        name: `when stateproof enabled with just streams network set to ${network} other fields should get default`,
+        enabled: true,
+        override: {network},
+        expectThrow: false,
+      };
+    }),
+    {
+      name: 'when override all allowed fields',
+      enabled: true,
+      override: {
+        network: networks.DEMO,
+        cloudProvider: cloudProviders.GCP,
+        endpointOverride: 'https://alternative.object.storage.service',
+        region: 'us-east-west-3',
+        gpProjectId: 'sampleProject',
+        accessKey: 'FJHGRY',
+        secretKey: 'IRPLKGJUIEOR=FweGR',
+        bucketName: 'override-alternative-streams',
+      },
+      expectThrow: false,
+    },
+    {
+      name: 'when network is OTHER and bucketName is set',
+      enabled: true,
+      override: {network: networks.OTHER, bucketName: 'other-streams'},
+      expectThrow: false,
+    },
+    {
+      name: 'with unsupported network',
+      enabled: true,
+      override: {network: 'unknown'},
+      expectThrow: true,
+    },
+    {
+      name: 'with invalid cloudProvider',
+      enabled: true,
+      override: {network: networks.OTHER, cloudProvider: 'invalid'},
+      expectThrow: true,
+    },
+    {
+      name: 'with OTHER network but bucketName set to null',
+      enabled: true,
+      override: {network: networks.OTHER, bucketName: null},
+      expectThrow: true,
+    },
+    {
+      name: 'with OTHER network but bucketName set to empty',
+      enabled: true,
+      override: {network: networks.OTHER, bucketName: ''},
+      expectThrow: true,
+    },
+  ];
+
+  testSpecs.forEach((testSpec) => {
+    test(testSpec.name, () => {
+      const customConfig = {enabled: testSpec.enabled};
+      customConfig.streams = testSpec.override ? testSpec.override : {};
+
+      if (!testSpec.expectThrow) {
+        const config = loadConfigWithCustomStateproofConfig(customConfig);
+        if (testSpec.enabled) {
+          expect(config.stateproof.enabled).toBeTruthy();
+          expect(config.stateproof.streams).toEqual(getExpectedStreamsConfig(testSpec.override));;
+        } else {
+          expect(config.stateproof.enabled).toBeFalsy();
+        }
+      } else {
+        expect(() => {
+          loadConfigWithCustomStateproofConfig(customConfig);
+        }).toThrow();
+      }
+    });
+  });
+});
 
 function unlink(file) {
   if (fs.existsSync(file)) {
     fs.unlinkSync(file);
   }
+}
+
+function cleanup() {
+  unlink(path.join('.', 'application.yml'));
+  unlink(path.join('.', 'application.yaml'));
 }
