@@ -8,5 +8,6 @@ require (
 	github.com/jinzhu/gorm v1.9.15
 	github.com/joho/godotenv v1.3.0
 	github.com/sqs/goreturns v0.0.0-20181028201513-538ac6014518 // indirect
+	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
 	gopkg.in/yaml.v2 v2.2.2
 )
