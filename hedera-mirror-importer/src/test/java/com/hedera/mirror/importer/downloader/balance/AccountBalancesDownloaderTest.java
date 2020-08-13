@@ -58,8 +58,10 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @BeforeEach
     void beforeEach() {
-        file1 = "2019-08-30T18_15_00.016002001Z_Balances.csv";
-        file2 = "2019-08-30T18_30_00.010147001Z_Balances.csv";
+        setTestFilesAndInstants(
+                "2019-08-30T18_15_00.016002001Z_Balances.csv",
+                "2019-08-30T18_30_00.010147001Z_Balances.csv"
+        );
     }
 
     @Test

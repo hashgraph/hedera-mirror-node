@@ -74,8 +74,10 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
 
     @BeforeEach
     void beforeEach() {
-        file1 = "2019-08-30T18_10_00.419072Z.rcd";
-        file2 = "2019-08-30T18_10_05.249678Z.rcd";
+        setTestFilesAndInstants(
+                "2019-08-30T18_10_00.419072Z.rcd",
+                "2019-08-30T18_10_05.249678Z.rcd"
+        );
     }
 
     @Test

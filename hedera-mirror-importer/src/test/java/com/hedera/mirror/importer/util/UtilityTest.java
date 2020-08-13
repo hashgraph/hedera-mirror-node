@@ -42,8 +42,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.importer.converter.InstantConverter;
+import com.hedera.mirror.importer.domain.StreamType;
 
 public class UtilityTest {
 
@@ -70,6 +72,20 @@ public class UtilityTest {
         assertThatThrownBy(() -> Utility.ensureDirectory(null)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @DisplayName("Get Instant from filename")
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+            ", 1970-01-01T00:00:00.0Z",
+            "1970-01-01T00_00_00.0Z.rcd, 1970-01-01T00:00:00.0Z",
+            "2020-06-03T16_45_00.000000001Z_Balances.csv_sig, 2020-06-03T16:45:00.000000001Z",
+            "2020-06-03T16_45_00.1Z_Balances.csv, 2020-06-03T16:45:00.1Z",
+            "2020-06-03T16:45:00.000000003Z_Balances.csv, 2020-06-03T16:45:00.000000003Z",
+            "2262-04-11T23:47:16.854775808Z.evts_sig, 2262-04-11T23:47:16.854775808Z",
+    })
+    void getInstantFromFilename(String filename, Instant instant) {
+        assertThat(Utility.getInstantFromFilename(filename)).isEqualTo(instant);
+    }
+
     @DisplayName("Get timestamp from filename")
     @ParameterizedTest(name = "{0}")
     @CsvSource({
@@ -82,6 +98,27 @@ public class UtilityTest {
     })
     void getTimestampFromFilename(String filename, long timestamp) {
         assertThat(Utility.getTimestampFromFilename(filename)).isEqualTo(timestamp);
+    }
+
+    @ParameterizedTest(name = "Get stream filename for instant, stream type {0}")
+    @EnumSource(StreamType.class)
+    void getStreamFilenameForInstant(StreamType streamType) {
+        final String timestamp = "2020-08-08T09:00:05.123456789Z";
+        final String timestampTransformed = "2020-08-08T09_00_05.123456789Z";
+        Instant instant = Instant.parse(timestamp);
+        String expectedFilename = null;
+        switch (streamType) {
+            case BALANCE:
+                expectedFilename = timestampTransformed + "_Balances.csv";
+                break;
+            case RECORD:
+                expectedFilename = timestampTransformed + ".rcd";
+                break;
+            case EVENT:
+                expectedFilename = timestampTransformed + ".evts";
+                break;
+        }
+        assertThat(Utility.getStreamFilenameForInstant(streamType, instant)).isEqualTo(expectedFilename);
     }
 
     @Test

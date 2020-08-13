@@ -403,9 +403,9 @@ public class Utility {
         }
     }
 
-    public static final long getTimestampFromFilename(String filename) {
+    public static final Instant getInstantFromFilename(String filename) {
         if (StringUtils.isBlank(filename)) {
-            return 0L;
+            return Instant.EPOCH;
         }
 
         StreamType streamType = StreamType.fromFilename(filename);
@@ -416,8 +416,17 @@ public class Utility {
         }
 
         date = date.replace('_', ':');
-        Instant instant = Instant.parse(date);
+        return Instant.parse(date);
+    }
+
+    public static final long getTimestampFromFilename(String filename) {
+        Instant instant = getInstantFromFilename(filename);
         return Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
+    }
+
+    public static final String getStreamFilenameForInstant(StreamType streamType, Instant instant) {
+        String timestamp = instant.toString().replace(':', '_');
+        return timestamp + streamType.getSuffix() + "." + streamType.getExtension();
     }
 
     /**

@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -63,6 +64,7 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -85,6 +87,8 @@ public abstract class Downloader {
     private final Timer.Builder streamVerificationMetric;
     protected final Timer downloadLatencyMetric;
     protected final Timer streamCloseMetric;
+
+    private boolean dataStartDateUpdated;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
@@ -122,14 +126,17 @@ public abstract class Downloader {
     }
 
     protected void downloadNextBatch() {
-        try {
-            if (!downloaderProperties.isEnabled()) {
-                return;
-            }
-            if (ShutdownHelper.isStopping()) {
-                return;
-            }
+        if (!downloaderProperties.isEnabled()) {
+            return;
+        }
 
+        if (ShutdownHelper.isStopping()) {
+            return;
+        }
+
+        updateDataStartDate();
+
+        try {
             var sigFilesMap = downloadSigFiles();
 
             // Following is a cost optimization to not unnecessarily list the public demo bucket once complete
@@ -144,6 +151,12 @@ public abstract class Downloader {
             log.warn(e.getMessage());
         } catch (Exception e) {
             log.error("Error downloading files", e);
+        } finally {
+            if (isEndDateReached()) {
+                downloaderProperties.setEnabled(false);
+                log.warn("Disabled polling {} because the last valid downloaded file >= endDate ({})",
+                        downloaderProperties.getStreamType().getPath(), mirrorProperties.getEndDate());
+            }
         }
     }
 
@@ -418,6 +431,60 @@ public abstract class Downloader {
             log.warn("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId, ex);
         }
         return null;
+    }
+
+    /**
+     * Sets the start date of the data based on property startDate and current application status if it's not
+     * updated yet.
+     * <ul>
+     *  <li>If the property startDate is set and application status is empty or less than startDate, set application
+     *  status and verifyHashAfter to startDate.</li>
+     *  <li>If the property startDate is not set and application status is empty, set application status and
+     *  verifyHashAfter to now.</li>
+     *  </ul>
+     */
+    private void updateDataStartDate() {
+        if (dataStartDateUpdated) {
+            return;
+        }
+
+        boolean shouldUpdate = false;
+        Instant startDate = mirrorProperties.getStartDate();
+        String lastValidFilename = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
+        if (startDate != null) {
+            Instant lastValidFileInstant = Utility.getInstantFromFilename(lastValidFilename);
+            if (StringUtils.isBlank(lastValidFilename) || lastValidFileInstant.isBefore(startDate)) {
+                shouldUpdate = true;
+            }
+        } else if (StringUtils.isBlank(lastValidFilename)) {
+            startDate = MirrorProperties.getStartDateNow();
+            shouldUpdate = true;
+        }
+
+        if (shouldUpdate) {
+            StreamType streamType = downloaderProperties.getStreamType();
+            applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileKey(),
+                    Utility.getStreamFilenameForInstant(streamType, startDate));
+            mirrorProperties.setVerifyHashAfter(startDate);
+            log.info("Set downloader to start polling from {} for {}", startDate, streamType.getPath());
+        }
+
+        dataStartDateUpdated = true;
+    }
+
+    private boolean isEndDateReached() {
+        Instant endDate = mirrorProperties.getEndDate();
+        if (endDate != null) {
+            try {
+                String filename = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
+                if (!StringUtils.isBlank(filename)) {
+                    return !Utility.getInstantFromFilename(filename).isBefore(endDate);
+                }
+            } catch(Exception ex) {
+                log.error("Failed to get last valid downloaded file from repository", ex);
+            }
+        }
+        return false;
     }
 
     protected abstract ApplicationStatusCode getLastValidDownloadedFileKey();

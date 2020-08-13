@@ -69,7 +69,9 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
 
     @BeforeEach
     void beforeEach() {
-        file1 = "2020-04-11T00_12_00.025035Z.evts";
-        file2 = "2020-04-11T00_12_05.059945Z.evts";
+        setTestFilesAndInstants(
+                "2020-04-11T00_12_00.025035Z.evts",
+                "2020-04-11T00_12_05.059945Z.evts"
+        );
     }
 }
