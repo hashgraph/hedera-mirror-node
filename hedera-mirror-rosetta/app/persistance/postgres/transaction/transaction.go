@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/types"
 	"math/big"
 	"strings"
 
@@ -34,12 +35,6 @@ type transaction struct {
 	TransactionBytes     []byte `gorm:"type:bytea"`
 }
 
-type cryptoTransfer struct {
-	EntityID           int64 `gorm:"type:bigint"`
-	ConsensusTimestamp int64 `gorm:"type:bigint"`
-	Amount             int64 `gorm:"type:bigint"`
-}
-
 type transactionType struct {
 	ProtoID int    `gorm:"type:integer;primary_key"`
 	Name    string `gorm:"size:30"`
@@ -53,11 +48,6 @@ type transactionStatus struct {
 // TableName - Set table name of the Transactions to be `record_file`
 func (transaction) TableName() string {
 	return "transaction"
-}
-
-// TableName - Set table name of the CryptoTransfers to be `crypto_transfer`
-func (cryptoTransfer) TableName() string {
-	return "crypto_transfer"
 }
 
 // TableName - Set table name of the Transaction Types to be `t_transaction_types`
@@ -193,9 +183,9 @@ func (tr *TransactionRepository) FindByIdentifierInBlock(identifier string, cons
 	return tr.constructTransaction(t), nil
 }
 
-func (tr *TransactionRepository) findCryptoTransfers(timestamp int64) []cryptoTransfer {
-	ctArray := []cryptoTransfer{}
-	tr.dbClient.Where(&cryptoTransfer{ConsensusTimestamp: timestamp}).Find(&ctArray)
+func (tr *TransactionRepository) findCryptoTransfers(timestamp int64) []dbTypes.CryptoTransfer {
+	var ctArray []dbTypes.CryptoTransfer
+	tr.dbClient.Where(&dbTypes.CryptoTransfer{ConsensusTimestamp: timestamp}).Find(&ctArray)
 	return ctArray
 }
 
@@ -221,11 +211,11 @@ func (tr *TransactionRepository) constructTransaction(t transaction) *types.Tran
 	return tResult
 }
 
-func (tr *TransactionRepository) constructOperations(ctArray []cryptoTransfer, transactionType string, transactionStatus string) []*types.Operation {
+func (tr *TransactionRepository) constructOperations(ctArray []dbTypes.CryptoTransfer, transactionType string, transactionStatus string) []*types.Operation {
 	oArray := make([]*types.Operation, len(ctArray))
 	for i, ct := range ctArray {
 		a := constructAccount(ct.EntityID)
-		oArray[i] = &types.Operation{Index: int64(i), Type: transactionType, Status: transactionStatus, Account: a, Amount: ct.Amount}
+		oArray[i] = &types.Operation{Index: int64(i), Type: transactionType, Status: transactionStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
 	}
 	return oArray
 }

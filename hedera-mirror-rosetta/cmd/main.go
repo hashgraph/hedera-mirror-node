@@ -5,6 +5,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/account"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/block"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/transaction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services"
@@ -20,11 +21,14 @@ import (
 func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.Asserter, version *types.Version, dbClient *gorm.DB) http.Handler {
 	blockRepo := block.NewBlockRepository(dbClient)
 	transactionRepo := transaction.NewTransactionRepository(dbClient)
+	accountRepo := account.NewAccountRepository(dbClient)
 
-	networkAPIService := services.NewNetworkAPIService(network, version, blockRepo, transactionRepo)
+	commons := services.NewCommons(blockRepo, transactionRepo)
+
+	networkAPIService := services.NewNetworkAPIService(commons, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockAPIService := services.NewBlockAPIService(network, blockRepo, transactionRepo)
+	blockAPIService := services.NewBlockAPIService(commons)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
 	mempoolAPIService := services.NewMempoolAPIService()
@@ -33,7 +37,10 @@ func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.As
 	constructionAPIService := services.NewConstructionAPIService()
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 
-	return server.NewRouter(networkAPIController, blockAPIController, mempoolAPIController, constructionAPIController)
+	accountAPIService := services.NewAccountAPIService(commons, accountRepo)
+	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
+
+	return server.NewRouter(networkAPIController, blockAPIController, mempoolAPIController, constructionAPIController, accountAPIController)
 }
 
 func main() {
@@ -58,7 +65,7 @@ func main() {
 
 	asserter, err := asserter.NewServer(
 		[]string{config.OperationTypeCreateAccount, config.OperationTypeCryptoTransfer},
-		false,
+		true,
 		[]*types.NetworkIdentifier{network},
 	)
 	if err != nil {

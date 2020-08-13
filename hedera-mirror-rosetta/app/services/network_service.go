@@ -4,17 +4,15 @@ import (
 	"context"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 )
 
 type NetworkService struct {
-	network         *types.NetworkIdentifier
-	blockRepo       repositories.BlockRepository
-	transactionRepo repositories.TransactionRepository
-	version         *types.Version
+	Commons
+	network *types.NetworkIdentifier
+	version *types.Version
 }
 
 func (n *NetworkService) NetworkList(ctx context.Context, request *types.MetadataRequest) (*types.NetworkListResponse, *types.Error) {
@@ -74,11 +72,10 @@ func (n *NetworkService) NetworkStatus(ctx context.Context, request *types.Netwo
 	}, nil
 }
 
-func NewNetworkAPIService(network *types.NetworkIdentifier, version *types.Version, blockRepo repositories.BlockRepository, transactionRepo repositories.TransactionRepository) server.NetworkAPIServicer {
+func NewNetworkAPIService(commons Commons, network *types.NetworkIdentifier, version *types.Version) server.NetworkAPIServicer {
 	return &NetworkService{
-		network:         network,
-		version:         version,
-		blockRepo:       blockRepo,
-		transactionRepo: transactionRepo,
+		Commons: commons,
+		network: network,
+		version: version,
 	}
 }

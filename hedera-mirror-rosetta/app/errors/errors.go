@@ -9,6 +9,7 @@ import (
 // Errors - map of all Errors that this API can return
 var Errors = map[string]*types.Error{
 	BlockNotFound:                  New(BlockNotFound, http.StatusNotFound, true),
+	AccountNotFound:                New(AccountNotFound, http.StatusNotFound, true),
 	TransactionBuildFailed:         New(TransactionBuildFailed, http.StatusBadRequest, false),
 	TransactionDecodeFailed:        New(TransactionDecodeFailed, http.StatusBadRequest, false),
 	TransactionMarshallingFailed:   New(TransactionMarshallingFailed, http.StatusBadRequest, false),
@@ -26,6 +27,7 @@ var Errors = map[string]*types.Error{
 
 const (
 	BlockNotFound                  string = "Block not found"
+	AccountNotFound                string = "Account not found"
 	TransactionBuildFailed         string = "Transaction build failed"
 	TransactionDecodeFailed        string = "Transaction Decode failed"
 	TransactionMarshallingFailed   string = "Transaction marshalling failed"

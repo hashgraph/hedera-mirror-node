@@ -1,10 +1,7 @@
 package types
 
 import (
-	"strconv"
-
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 )
 
 // Operation is domain level struct used to represent Operation within Transaction
@@ -13,7 +10,7 @@ type Operation struct {
 	Type    string
 	Status  string
 	Account *Account
-	Amount  int64
+	Amount  *Amount
 }
 
 // FromRosettaOperation populates domain type Operation from Rosetta type Operation
@@ -22,17 +19,16 @@ func FromRosettaOperation(rOperation *rTypes.Operation) (*Operation, *rTypes.Err
 	if err != nil {
 		return nil, err
 	}
-	amount, err1 := strconv.Atoi(rOperation.Amount.Value)
-	if err1 != nil {
-		return nil, errors.Errors[errors.InvalidAmount]
+	amount, err := FromRosettaAmount(rOperation.Amount)
+	if err != nil {
+		return nil, err
 	}
-
 	return &Operation{
 		Index:   rOperation.OperationIdentifier.Index,
 		Type:    rOperation.Type,
 		Status:  rOperation.Status,
 		Account: acc,
-		Amount:  int64(amount),
+		Amount:  amount,
 	}, nil
 }
 
@@ -46,16 +42,7 @@ func (t *Operation) ToRosettaOperation() *rTypes.Operation {
 		Type:              t.Type,
 		Status:            t.Status,
 		Account:           t.Account.ToRosettaAccount(),
-		Amount: &rTypes.Amount{
-			Value: strconv.FormatInt(t.Amount, 10),
-			Currency: &rTypes.Currency{
-				Symbol:   "HBAR",
-				Decimals: 8,
-				Metadata: map[string]interface{}{
-					"issuer": "Hedera",
-				},
-			},
-		},
+		Amount:            t.Amount.ToRosettaAmount(),
 	}
 	return &rOperation
 }
