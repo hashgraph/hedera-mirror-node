@@ -133,6 +133,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             cleanup();
             connection = dataSource.getConnection();
+            connection.setAutoCommit(false);
             connection.setClientInfo("ApplicationName", getClass().getSimpleName());
 
             sqlInsertEntityId = connection.prepareStatement("INSERT INTO t_entities " +
@@ -149,15 +150,27 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-
-        recordFileRepository.save(recordFile);
-        closeConnectionAndStatements();
+        try {
+            connection.commit();
+            recordFileRepository.save(recordFile);
+            closeConnectionAndStatements();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override
     public void onError() {
-        closeConnectionAndStatements();
-        cleanup();
+        try {
+            if (connection != null) {
+                connection.rollback();
+                closeConnectionAndStatements();
+            }
+        } catch (SQLException e) {
+            log.error("Exception while rolling transaction back", e);
+        } finally {
+            cleanup();
+        }
     }
 
     private void cleanup() {

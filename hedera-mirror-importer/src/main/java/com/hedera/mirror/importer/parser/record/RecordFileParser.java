@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -129,7 +128,6 @@ public class RecordFileParser implements FileParser {
      * @param streamFileData containing information about file to be processed
      */
     @Override
-    @Transactional
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
@@ -159,7 +157,7 @@ public class RecordFileParser implements FileParser {
         } catch (DuplicateFileException ex) {
             log.warn("Skipping file {}", ex);
         } catch (Exception ex) {
-            recordStreamFileListener.onError();
+            recordStreamFileListener.onError(); // rollback
             throw ex;
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
