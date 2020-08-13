@@ -57,6 +57,8 @@ spring:
     hikari:
       data-source-properties:
         reWriteBatchedInserts: true
+      # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
+      maximumPoolSize: 14
   flyway:
     connectRetries: 20
     baselineOnMigrate: true

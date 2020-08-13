@@ -197,7 +197,7 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void verifyRollbackOnApplicationStatusRepositoryError() throws ParserSQLException {
+    void verifyRecoveryOnApplicationStatusRepositoryError() throws ParserSQLException {
         // given
         doThrow(ParserSQLException.class).doNothing().when(applicationStatusRepository).updateStatusValue(any(), any());
         // when
@@ -213,7 +213,7 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void verifyRollbackOnRecordFileRepositoryError() throws ParserSQLException {
+    void verifyRecoveryOnRecordFileRepositoryError() throws ParserSQLException {
         // given
         doThrow(ParserSQLException.class).doReturn(null).when(recordFileRepository).save(any());
         // when
