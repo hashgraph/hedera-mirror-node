@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -39,6 +40,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -49,14 +51,19 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -67,8 +74,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
 
     private final DataSource dataSource;
+    private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordFileRepository recordFileRepository;
+    private final TransactionRepository transactionRepository;
     private final SqlProperties sqlProperties;
+    private final RecordParserProperties parserProperties;
 
     // init connections, schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
@@ -95,13 +105,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
     private long batchCount;
+    private RecordFile partialRecordFile;
 
     public SqlEntityListener(SqlProperties properties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
-                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager) {
+                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
+                             ApplicationStatusRepository applicationStatusRepository,
+                             TransactionRepository transactionRepository,
+                             RecordParserProperties parserProps) {
         this.dataSource = dataSource;
+        this.applicationStatusRepository = applicationStatusRepository;
         this.recordFileRepository = recordFileRepository;
+        this.transactionRepository = transactionRepository;
         sqlProperties = properties;
+        parserProperties = parserProps;
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, properties);
@@ -120,14 +137,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashes = new ArrayList<>();
         entityIds = new HashSet<>();
         topicMessages = new ArrayList<>();
+        partialRecordFile = null;
     }
 
     @Override
     public void onStart(StreamFileData streamFileData) {
         String fileName = FilenameUtils.getName(streamFileData.getFilename());
 
-        if (recordFileRepository.findByName(fileName).size() > 0) {
-            throw new DuplicateFileException("File already exists in the database: " + fileName);
+        List<RecordFile> matchingRecords = recordFileRepository.findByName(fileName);
+        partialRecordFile = null;
+        if (matchingRecords.size() > 0) {
+            partialRecordFile = matchingRecords.get(0); // cache to avoid jpa exception
+            handleDuplicateOrPartiallyProcessedRecordFile(partialRecordFile);
         }
 
         try {
@@ -151,8 +172,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         executeBatches();
         try {
+            recordFileRepository.save(partialRecordFile == null ? recordFile : partialRecordFile);
+            applicationStatusRepository.updateStatusValue(
+                    ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
+
             connection.commit();
-            recordFileRepository.save(recordFile);
             closeConnectionAndStatements();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
@@ -313,6 +337,65 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void notifyTopicMessages() {
         executeBatch(sqlNotifyTopicMessage, "topic notifications");
+    }
+
+    /**
+     * Handle purely duplicate file in addition to faulty transaction management between spring repositories and manual
+     * java sql operations. Check whether the given file was partially processed and matches the last record file
+     * processed where the record_file table was updated but application_status table LAST_PROCESSED_RECORD_HASH was not
+     * updated. If so update application_status table LAST_PROCESSED_RECORD_HASH appropriately with correct hash. Also
+     * handle case where transaction data was rolled bach but not record_file entry
+     *
+     * @param recordFile record file object that was partially processed file
+     */
+    private void handleDuplicateOrPartiallyProcessedRecordFile(RecordFile recordFile) {
+        // handle faulty transaction management between spring repositories and manual java sql operations
+        DuplicateFileException duplicateFileException = new DuplicateFileException("File already exists in the " +
+                "database: " + recordFile.getName());
+        RecordFile latestRecordFile = recordFileRepository.findTopByOrderByConsensusEndDesc().get();
+        String lastRecordFileHash =
+                applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+
+        // check if latest record file is a match processed file by comparing name and hash
+        if (latestRecordFile.getName().equalsIgnoreCase(recordFile.getName()) &&
+                !Utility.verifyHashChain(
+                        latestRecordFile.getFileHash(),
+                        lastRecordFileHash,
+                        parserProperties.getMirrorProperties().getVerifyHashAfter(),
+                        recordFile.getName())) {
+
+            // check if this file is next in line of hash chain
+            // Assumes application status updates after record_file update which is current process
+            if (Utility.verifyHashChain(
+                    latestRecordFile.getPreviousHash(),
+                    lastRecordFileHash,
+                    parserProperties.getMirrorProperties().getVerifyHashAfter(),
+                    recordFile.getName())) {
+                // application_status outdated
+                log.debug("Duplicate file failed to update applicationStatus on previous processing, updating now!");
+                applicationStatusRepository.updateStatusValue(
+                        ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, latestRecordFile.getFileHash());
+                throw duplicateFileException;
+            } else {
+                // very unlikely edge case
+                log.warn("Latest file already exists but has mismatched hash for expectedPrevFileHash: ", recordFile
+                        .getName());
+                throw new HashMismatchException(recordFile.getName(), lastRecordFileHash, latestRecordFile
+                        .getFileHash());
+            }
+        } else {
+            // check if transactions are already present
+            if (transactionRepository.existsById(recordFile.getConsensusStart()) &&
+                    transactionRepository.existsById(recordFile.getConsensusEnd())) {
+                throw duplicateFileException;
+            }
+        }
+
+        // allow file processing but update to previous hash
+        applicationStatusRepository.updateStatusValue(
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, latestRecordFile.getPreviousHash());
+        log.debug("Transactions from partially processed record file {} were not persisted! Reprocessing...",
+                recordFile.getName());
     }
 
     enum F_ENTITY_ID {

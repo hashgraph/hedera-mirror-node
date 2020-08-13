@@ -163,7 +163,8 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         doReturn(entityCache).when(cacheManagerNeverExpireLarge).getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
 
         recordStreamFileListener = new SqlEntityListener(sqlProperties, dataSource, recordFileRepository,
-                new SimpleMeterRegistry(), cacheManagerNeverExpireLarge);
+                new SimpleMeterRegistry(), cacheManagerNeverExpireLarge, applicationStatusRepository,
+                transactionRepository, parserProperties);
 
         recordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
                 addressBookService, entityRepository, nonFeeTransfersExtractor,
@@ -193,6 +194,38 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         });
         // then
         verifyFinalDatabaseState(0, 0, 0);
+    }
+
+    @Test
+    void verifyRollbackOnApplicationStatusRepositoryError() throws ParserSQLException {
+        // given
+        doThrow(ParserSQLException.class).doNothing().when(applicationStatusRepository).updateStatusValue(any(), any());
+        // when
+        Assertions.assertThrows(ParserSQLException.class, () -> {
+            recordFileParser.parse(streamFileData);
+        });
+        // then
+        verifyFinalDatabaseState(0, 0, 0);
+
+        // verify recovery
+        recordFileParser.parse(streamFileData);
+        verifyFinalDatabaseState(NUM_CRYPTO_FILE, NUM_TXNS_FILE, NUM_ENTITIES_FILE);
+    }
+
+    @Test
+    void verifyRollbackOnRecordFileRepositoryError() throws ParserSQLException {
+        // given
+        doThrow(ParserSQLException.class).doReturn(null).when(recordFileRepository).save(any());
+        // when
+        Assertions.assertThrows(ParserSQLException.class, () -> {
+            recordFileParser.parse(streamFileData);
+        });
+        // then
+        verifyFinalDatabaseState(0, 0, 0);
+
+        // verify recovery
+        recordFileParser.parse(streamFileData);
+        verifyFinalDatabaseState(NUM_CRYPTO_FILE, NUM_TXNS_FILE, NUM_ENTITIES_FILE);
     }
 
     void verifyFinalDatabaseState(int cryptoTransferCount, int transactionCount, int entityCount) {

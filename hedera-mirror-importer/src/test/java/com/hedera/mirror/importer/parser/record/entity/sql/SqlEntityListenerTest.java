@@ -24,6 +24,7 @@ import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
@@ -37,6 +38,7 @@ import org.postgresql.jdbc.PgConnection;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -49,7 +51,10 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -90,6 +95,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
     protected RecordFileRepository recordFileRepository;
 
     @Resource
+    protected ApplicationStatusRepository applicationStatusRepository;
+
+    @Resource
     protected SqlEntityListener sqlEntityListener;
 
     @Resource
@@ -98,16 +106,22 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Resource
     private DataSource dataSource;
 
-    private String fileName;
+    @Resource
+    private RecordParserProperties parserProperties;
+
+    private String fileName = "2019-08-30T18_10_00.419072Z.rcd";
+
+    private final String initialFileHash = "fileHash0";
 
     @BeforeEach
     final void beforeEach() {
-        fileName = UUID.randomUUID().toString();
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
 
-    void completeFileAndCommit() {
-        sqlEntityListener.onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0));
+    String completeFileAndCommit() {
+        String newFileHash = UUID.randomUUID().toString();
+        sqlEntityListener.onEnd(new RecordFile(1L, 2L, null, fileName, 0L, 0L, newFileHash, initialFileHash, 0));
+        return newFileHash;
     }
 
     @Test
@@ -308,12 +322,85 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onDuplicateFileReturnEmpty() {
+    void onDuplicateFileWithStoredTransactionsReturnEmpty() {
+        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-06-01T00:00:00.000000Z"));
         // given: file processed once
+        Transaction transaction1 = makeTransaction();
+        transaction1.setConsensusNs(1L);
+        sqlEntityListener.onTransaction(transaction1);
+        Transaction transaction2 = makeTransaction();
+        transaction2.setConsensusNs(2L);
+        sqlEntityListener.onTransaction(transaction2);
         completeFileAndCommit();
 
         // when, then
         assertThrows(DuplicateFileException.class, () -> {
+            sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        });
+    }
+
+    @Test
+    void onDuplicateFileWithNoStoredTransactionsProcessFile() throws Exception {
+        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-06-01T00:00:00.000000Z"));
+        // given: file processed once
+        completeFileAndCommit();
+
+        // when, then
+        sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        Transaction expectedTransaction = makeTransaction();
+        sqlEntityListener.onTransaction(expectedTransaction);
+        completeFileAndCommit();
+
+        // then
+        assertEquals(1, transactionRepository.count());
+        assertExistsAndEquals(transactionRepository, expectedTransaction, 101L);
+    }
+
+    @Test
+    void onDuplicateFileWithNoStoredTransactionsAndPreviousHashUpdateStatus() throws Exception {
+        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-06-01T00:00:00.000000Z"));
+        Transaction transaction1 = makeTransaction();
+        transaction1.setConsensusNs(1L);
+        sqlEntityListener.onTransaction(transaction1);
+        Transaction transaction2 = makeTransaction();
+        transaction2.setConsensusNs(2L);
+        sqlEntityListener.onTransaction(transaction2);
+        // given: file processed once
+        completeFileAndCommit();
+
+        // model failure to set status to previous hash
+        applicationStatusRepository.updateStatusValue(
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, initialFileHash);
+
+        // when, then
+        assertThrows(DuplicateFileException.class, () -> {
+            sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        });
+
+        // then
+        assertEquals(2, transactionRepository.count());
+        assertExistsAndEquals(transactionRepository, transaction1, 1L);
+        assertExistsAndEquals(transactionRepository, transaction2, 2L);
+    }
+
+    @Test
+    void onDuplicateFileWithNoStoredTransactionsAndMismatchedHashUpdateStatus() throws Exception {
+        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-06-01T00:00:00.000000Z"));
+        Transaction transaction1 = makeTransaction();
+        transaction1.setConsensusNs(1L);
+        sqlEntityListener.onTransaction(transaction1);
+        Transaction transaction2 = makeTransaction();
+        transaction2.setConsensusNs(2L);
+        sqlEntityListener.onTransaction(transaction2);
+        // given: file processed once
+        completeFileAndCommit();
+
+        // model unlikely event of unexpected hash
+        applicationStatusRepository.updateStatusValue(
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "randomHash");
+
+        // when, then
+        assertThrows(HashMismatchException.class, () -> {
             sqlEntityListener.onStart(new StreamFileData(fileName, null));
         });
     }

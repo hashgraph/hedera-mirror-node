@@ -131,12 +131,12 @@ public class RecordFileParser implements FileParser {
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
-        recordStreamFileListener.onStart(streamFileData);
         String expectedPrevFileHash =
                 applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
         try {
+            recordStreamFileListener.onStart(streamFileData);
             Stopwatch stopwatch = Stopwatch.createStarted();
             RecordFile recordFile = Utility.parseRecordFile(
                     streamFileData.getFilename(), expectedPrevFileHash,
@@ -149,13 +149,11 @@ public class RecordFileParser implements FileParser {
             recordFile.setLoadStart(startTime.getEpochSecond());
             recordFile.setLoadEnd(Instant.now().getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
-            applicationStatusRepository.updateStatusValue(
-                    ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
 
             recordParserLatencyMetric(recordFile);
             success = true;
         } catch (DuplicateFileException ex) {
-            log.warn("Skipping file {}", ex);
+            log.warn(String.format("Skipping file %s", streamFileData.getFilename()), ex);
         } catch (Exception ex) {
             recordStreamFileListener.onError(); // rollback
             throw ex;

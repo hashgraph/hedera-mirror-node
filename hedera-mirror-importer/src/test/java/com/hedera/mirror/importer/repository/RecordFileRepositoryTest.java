@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +34,20 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
         RecordFile recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", 0);
         recordFile = recordFileRepository.save(recordFile);
         Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
+                .isNotNull()
+                .isEqualTo(recordFile);
+    }
+
+    @Test
+    void findTopRecordFile() {
+        List<RecordFile> recordFileList = new ArrayList<>();
+        recordFileList.add(new RecordFile(0L, 1L, null, "fileName1", 20L, 30L, "fileHash1", "previousHash1", 0));
+        recordFileList.add(new RecordFile(2L, 3L, null, "fileName2", 40L, 50L, "fileHash2", "fileHash1", 0));
+        RecordFile recordFile = new RecordFile(4L, 5L, null, "fileName3", 60L, 70L, "fileHash3", "fileHash2", 0);
+        recordFileList.add(recordFile);
+
+        recordFileRepository.saveAll(recordFileList);
+        Assertions.assertThat(recordFileRepository.findTopByOrderByConsensusEndDesc().get())
                 .isNotNull()
                 .isEqualTo(recordFile);
     }

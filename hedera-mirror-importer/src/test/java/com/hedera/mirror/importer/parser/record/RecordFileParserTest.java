@@ -199,9 +199,8 @@ public class RecordFileParserTest {
 
         // when: load same file again
         // then: throws exception
-        Assertions.assertThrows(DuplicateFileException.class, () -> {
-            recordFileParser.parse(streamFileData1);
-        });
+        recordFileParser.parse(streamFileData1);
+
         verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
         verify(recordStreamFileListener, times(2)).onStart(any());
         verify(recordStreamFileListener, times(1)).onEnd(any());
