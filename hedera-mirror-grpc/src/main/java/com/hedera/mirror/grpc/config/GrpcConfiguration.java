@@ -72,7 +72,6 @@ public class GrpcConfiguration {
 
         return serverBuilder -> ((NettyServerBuilder) serverBuilder)
                 .executor(executor)
-                .flowControlWindow(nettyProperties.getFlowControlWindow())
                 .maxConcurrentCallsPerConnection(nettyProperties.getMaxConcurrentCallsPerConnection())
                 .maxInboundMessageSize(nettyProperties.getMaxInboundMessageSize())
                 .maxInboundMetadataSize(nettyProperties.getMaxInboundMetadataSize());
