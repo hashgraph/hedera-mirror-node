@@ -11,3 +11,5 @@ require (
 	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
 	gopkg.in/yaml.v2 v2.2.2
 )
+
+replace github.com/hashgraph/hedera-sdk-go v0.9.1 => github.com/limechain/hedera-sdk-go v0.9.2-0.20200813152811-0a57de9e27e1
