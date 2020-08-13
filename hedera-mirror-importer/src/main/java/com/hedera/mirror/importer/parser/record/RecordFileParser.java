@@ -153,7 +153,7 @@ public class RecordFileParser implements FileParser {
             recordParserLatencyMetric(recordFile);
             success = true;
         } catch (DuplicateFileException ex) {
-            log.warn("Skipping file {}", ex);
+            log.warn(String.format("Skipping file %s", streamFileData.getFilename()), ex);
         } catch (Exception ex) {
             recordStreamFileListener.onError(); // rollback
             throw ex;

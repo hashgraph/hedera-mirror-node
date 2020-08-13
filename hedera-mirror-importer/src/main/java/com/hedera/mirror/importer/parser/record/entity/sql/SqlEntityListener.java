@@ -53,12 +53,15 @@ import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -72,7 +75,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final ApplicationStatusRepository applicationStatusRepository;
     private final EntityRepository entityRepository;
     private final RecordFileRepository recordFileRepository;
+    private final TransactionRepository transactionRepository;
     private final SqlProperties sqlProperties;
+    private final RecordParserProperties parserProperties;
 
     // init connections, schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
@@ -98,6 +103,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
     private long batchCount;
+    private RecordFile partialRecordFile;
 
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
@@ -127,6 +133,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashes = new ArrayList<>();
         entityIds = new ArrayList<>();
         topicMessages = new ArrayList<>();
+        partialRecordFile = null;
     }
 
     @Override
