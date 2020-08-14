@@ -26,12 +26,12 @@ func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockReques
 		return nil, err
 	}
 
-	tArray, err := s.transactionRepo.FindBetween(block.ConsensusStart, block.ConsensusEnd)
+	transactions, err := s.transactionRepo.FindBetween(block.ConsensusStart, block.ConsensusEnd)
 	if err != nil {
 		return nil, err
 	}
 
-	block.Transactions = tArray
+	block.Transactions = transactions
 	rBlock := block.ToRosettaBlock()
 	return &rTypes.BlockResponse{
 		Block: rBlock,
@@ -49,11 +49,10 @@ func (s *BlockAPIService) BlockTransaction(
 		return nil, err
 	}
 
-	transaction, err := s.transactionRepo.FindByIdentifierInBlock(request.TransactionIdentifier.Hash, block.ConsensusStart, block.ConsensusEnd)
+	transaction, err := s.transactionRepo.FindByHashInBlock(request.TransactionIdentifier.Hash, block.ConsensusStart, block.ConsensusEnd)
 	if err != nil {
 		return nil, err
 	}
-
 	rTransaction := transaction.ToRosettaTransaction()
 	return &rTypes.BlockTransactionResponse{
 		Transaction: rTransaction,

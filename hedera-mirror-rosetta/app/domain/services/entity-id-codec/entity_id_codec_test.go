@@ -1,4 +1,4 @@
-package services
+package entity_id_codec
 
 import (
 	"fmt"

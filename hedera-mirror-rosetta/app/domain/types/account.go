@@ -2,11 +2,11 @@ package types
 
 import (
 	"fmt"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/entity-id-codec"
 	"strconv"
 	"strings"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 )
 
@@ -19,7 +19,7 @@ type Account struct {
 
 // NewAccountFromEncodedID - creates new instance of Account struct
 func NewAccountFromEncodedID(encodedID int64) (*Account, error) {
-	d, err := services.Decode(encodedID)
+	d, err := entity_id_codec.Decode(encodedID)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func NewAccountFromEncodedID(encodedID int64) (*Account, error) {
 
 // ComputeEncodedID - returns the encoded ID from the Shard, Realm and Number
 func (a *Account) ComputeEncodedID() (int64, error) {
-	return services.Encode(a.Shard, a.Realm, a.Number)
+	return entity_id_codec.Encode(a.Shard, a.Realm, a.Number)
 }
 
 // FormatToString - returns the string representation of the account

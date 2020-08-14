@@ -6,7 +6,7 @@ import (
 
 // Transaction is domain level struct used to represent Transaction conceptual mapping in Hedera
 type Transaction struct {
-	ID         string
+	Hash       string
 	Operations []*Operation
 }
 
@@ -22,7 +22,7 @@ func FromRosettaTransaction(rTransaction *rTypes.Transaction) (*Transaction, *rT
 	}
 
 	return &Transaction{
-		ID:         rTransaction.TransactionIdentifier.Hash, // TODO this must be fixed. The ID must not be the Hash but a more complex construction specified in the TransactionRepository
+		Hash:       rTransaction.TransactionIdentifier.Hash, // TODO this must be fixed. The Hash must not be the Hash but a more complex construction specified in the TransactionRepository
 		Operations: operations,
 	}, nil
 }
@@ -35,7 +35,7 @@ func (t *Transaction) ToRosettaTransaction() *rTypes.Transaction {
 	}
 
 	rTransaction := &rTypes.Transaction{
-		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: t.ID},
+		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: t.Hash},
 		Operations:            operations,
 	}
 	return rTransaction

@@ -1,9 +1,11 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"fmt"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/types"
-	"math/big"
+	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"strconv"
 	"strings"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -15,7 +17,8 @@ import (
 )
 
 const (
-	whereClauseBetweenConsensus string = "consensus_ns >= ? AND consensus_ns <= ?"
+	whereClauseBetweenConsensus         string = "consensus_ns >= ? AND consensus_ns <= ?"
+	whereTimestampsInConsensusTimestamp string = "consensus_timestamp IN (%s)"
 )
 
 type transaction struct {
@@ -60,50 +63,8 @@ func (transactionStatus) TableName() string {
 	return "t_transaction_results"
 }
 
-// The current format used is {payer-ID}-{valid_start_seconds}-{valid_start_nanos}-{node-ID}
-func (t *transaction) constructIdentifier() string {
-	payerID := constructAccount(t.PayerAccountID)
-	nodeID := constructAccount(t.NodeAccountID)
-
-	validStartBn, tenToNinthBn := new(big.Float).SetInt(big.NewInt(t.ValidStartNS)), big.NewFloat(1e9)
-	formattedTime := validStartBn.Quo(validStartBn, tenToNinthBn)
-	return fmt.Sprintf("%s-%.9f-%s", payerID.FormatToString(), formattedTime, nodeID.FormatToString())
-}
-
-// Populates transaction struct from a given Identifier
-func newTransactionFromIdentifier(identifier string) (*transaction, *rTypes.Error) {
-	inputs := strings.Split(identifier, "-")
-	if len(inputs) != 3 {
-		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
-	}
-
-	payerID, err := types.AccountFromString(inputs[0])
-	if err != nil {
-		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
-	}
-	nodeID, err := types.AccountFromString(inputs[2])
-	if err != nil {
-		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
-	}
-
-	var err1 error
-	t := transaction{}
-	t.PayerAccountID, err1 = payerID.ComputeEncodedID()
-	if err1 != nil {
-		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
-	}
-	t.NodeAccountID, err1 = nodeID.ComputeEncodedID()
-	if err1 != nil {
-		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
-	}
-
-	validStart, _, err1 := new(big.Float).Parse(inputs[1], 10)
-	if err1 != nil {
-		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
-	}
-
-	t.ValidStartNS, _ = validStart.Mul(validStart, big.NewFloat(1e9)).Int64()
-	return &t, nil
+func (t *transaction) getHashString() string {
+	return hexUtils.SafeAddHexPrefix(hex.EncodeToString(t.TransactionHash))
 }
 
 // TransactionRepository struct that has connection to the Database
@@ -152,7 +113,7 @@ func (tr *TransactionRepository) TypesAsArray() []string {
 func (tr *TransactionRepository) FindByTimestamp(timestamp int64) *types.Transaction {
 	t := transaction{}
 	tr.dbClient.Find(&t, timestamp)
-	return tr.constructTransaction(t)
+	return tr.constructTransaction([]transaction{t})
 }
 
 // FindBetween retrieves all Transactions between the provided start and end timestamp
@@ -160,33 +121,41 @@ func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.T
 	if start > end {
 		return nil, errors.Errors[errors.StartMustBeBeforeEnd]
 	}
-	tArray := []transaction{}
-	tr.dbClient.Where(whereClauseBetweenConsensus, start, end).Find(&tArray)
+	var transactions []transaction
+	tr.dbClient.Where(whereClauseBetweenConsensus, start, end).Find(&transactions)
 
-	res := make([]*types.Transaction, len(tArray))
-	for i, t := range tArray {
-		res[i] = tr.constructTransaction(t)
+	sameHashMap := make(map[string][]transaction)
+	for _, t := range transactions {
+		h := t.getHashString()
+		sameHashMap[h] = append(sameHashMap[h], t)
+	}
+	res := make([]*types.Transaction, 0, len(sameHashMap))
+	for _, sameHashTransactions := range sameHashMap {
+		res = append(res, tr.constructTransaction(sameHashTransactions))
 	}
 	return res, nil
 }
 
-// FindByIdentifier retrieves a transaction by Identifier
-func (tr *TransactionRepository) FindByIdentifierInBlock(identifier string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error) {
-	t := transaction{}
-	queryT, err := newTransactionFromIdentifier(identifier)
+// FindByHashInBlock retrieves a transaction by Hash
+func (tr *TransactionRepository) FindByHashInBlock(hashStr string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error) {
+	var transactions []transaction
+	transactionHash, err := hex.DecodeString(hexUtils.SafeRemoveHexPrefix(hashStr))
 	if err != nil {
-		return nil, err
+		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
 	}
-	if tr.dbClient.Where(whereClauseBetweenConsensus, consensusStart, consensusEnd).Where(queryT).Find(&t).RecordNotFound() {
+	tr.dbClient.Where(whereClauseBetweenConsensus, consensusStart, consensusEnd).Where(&transaction{TransactionHash: transactionHash}).Find(&transactions)
+	if len(transactions) == 0 {
 		return nil, errors.Errors[errors.TransactionNotFound]
 	}
-	return tr.constructTransaction(t), nil
+
+	return tr.constructTransaction(transactions), nil
 }
 
-func (tr *TransactionRepository) findCryptoTransfers(timestamp int64) []dbTypes.CryptoTransfer {
-	var ctArray []dbTypes.CryptoTransfer
-	tr.dbClient.Where(&dbTypes.CryptoTransfer{ConsensusTimestamp: timestamp}).Find(&ctArray)
-	return ctArray
+func (tr *TransactionRepository) findCryptoTransfers(timestamps []int64) []dbTypes.CryptoTransfer {
+	var cryptoTransfers []dbTypes.CryptoTransfer
+	timestampsStr := intsToString(timestamps)
+	tr.dbClient.Where(fmt.Sprintf(whereTimestampsInConsensusTimestamp, timestampsStr)).Find(&cryptoTransfers)
+	return cryptoTransfers
 }
 
 func (tr *TransactionRepository) retrieveTransactionTypes() []transactionType {
@@ -201,21 +170,29 @@ func (tr *TransactionRepository) retrieveTransactionStatuses() []transactionStat
 	return statuses
 }
 
-func (tr *TransactionRepository) constructTransaction(t transaction) *types.Transaction {
-	tResult := &types.Transaction{ID: t.constructIdentifier()}
+func (tr *TransactionRepository) constructTransaction(sameHashTransactions []transaction) *types.Transaction {
+	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
 
-	ctArray := tr.findCryptoTransfers(t.ConsensusNS)
-	oArray := tr.constructOperations(ctArray, tr.types[t.Type], tr.statuses[t.Result])
-	tResult.Operations = oArray
+	transactionsMap := make(map[int64]transaction)
+	timestamps := make([]int64, len(sameHashTransactions))
+	for i, t := range sameHashTransactions {
+		transactionsMap[t.ConsensusNS] = t
+		timestamps[i] = t.ConsensusNS
+	}
+	cryptoTransfers := tr.findCryptoTransfers(timestamps)
+	operations := tr.constructOperations(cryptoTransfers, transactionsMap)
+	tResult.Operations = operations
 
 	return tResult
 }
 
-func (tr *TransactionRepository) constructOperations(ctArray []dbTypes.CryptoTransfer, transactionType string, transactionStatus string) []*types.Operation {
-	oArray := make([]*types.Operation, len(ctArray))
-	for i, ct := range ctArray {
+func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.CryptoTransfer, transactionsMap map[int64]transaction) []*types.Operation {
+	oArray := make([]*types.Operation, len(cryptoTransfers))
+	for i, ct := range cryptoTransfers {
 		a := constructAccount(ct.EntityID)
-		oArray[i] = &types.Operation{Index: int64(i), Type: transactionType, Status: transactionStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
+		operationType := tr.types[transactionsMap[ct.ConsensusTimestamp].Type]
+		operationStatus := tr.statuses[transactionsMap[ct.ConsensusTimestamp].Result]
+		oArray[i] = &types.Operation{Index: int64(i), Type: operationType, Status: operationStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
 	}
 	return oArray
 }
@@ -226,4 +203,12 @@ func constructAccount(encodedID int64) *types.Account {
 		panic(fmt.Sprintf("Cannot create Account ID from encoded DB ID: %d", encodedID))
 	}
 	return acc
+}
+
+func intsToString(ints []int64) string {
+	r := make([]string, len(ints))
+	for i, v := range ints {
+		r[i] = strconv.FormatInt(v, 10)
+	}
+	return strings.Join(r, ",")
 }
