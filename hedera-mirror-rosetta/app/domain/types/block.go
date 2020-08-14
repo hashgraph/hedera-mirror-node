@@ -3,16 +3,17 @@ package types
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"time"
 )
 
 // Block is domain level struct used to represent Block conceptual mapping in Hedera
 type Block struct {
-	Hash           string
-	ConsensusStart int64
-	ConsensusEnd   int64
-	ParentIndex    int64
-	ParentHash     string
-	Transactions   []*Transaction
+	Hash                string
+	ConsensusStartNanos int64
+	ConsensusEndNanos   int64
+	ParentIndex         int64
+	ParentHash          string
+	Transactions        []*Transaction
 }
 
 // FromRosettaBlock populates domain type Block from Rosetta type Block
@@ -27,12 +28,12 @@ func FromRosettaBlock(rBlock *rTypes.Block) (*Block, *rTypes.Error) {
 	}
 
 	return &Block{
-		Hash:           hex.SafeRemoveHexPrefix(rBlock.BlockIdentifier.Hash),
-		ConsensusStart: rBlock.BlockIdentifier.Index,
-		ConsensusEnd:   rBlock.Timestamp,
-		ParentIndex:    rBlock.ParentBlockIdentifier.Index,
-		ParentHash:     hex.SafeRemoveHexPrefix(rBlock.ParentBlockIdentifier.Hash),
-		Transactions:   transactions,
+		Hash:                hex.SafeRemoveHexPrefix(rBlock.BlockIdentifier.Hash),
+		ConsensusStartNanos: rBlock.BlockIdentifier.Index,
+		ConsensusEndNanos:   rBlock.Timestamp,
+		ParentIndex:         rBlock.ParentBlockIdentifier.Index,
+		ParentHash:          hex.SafeRemoveHexPrefix(rBlock.ParentBlockIdentifier.Hash),
+		Transactions:        transactions,
 	}, nil
 }
 
@@ -45,14 +46,19 @@ func (b *Block) ToRosettaBlock() *rTypes.Block {
 
 	return &rTypes.Block{
 		BlockIdentifier: &rTypes.BlockIdentifier{
-			Index: b.ConsensusStart,
+			Index: b.ConsensusStartNanos,
 			Hash:  hex.SafeAddHexPrefix(b.Hash),
 		},
 		ParentBlockIdentifier: &rTypes.BlockIdentifier{
 			Index: b.ParentIndex,
 			Hash:  hex.SafeAddHexPrefix(b.ParentHash),
 		},
-		Timestamp:    b.ConsensusEnd,
+		Timestamp:    b.GetTimestampMillis(),
 		Transactions: transactions,
 	}
+}
+
+// GetTimestampMillis returns the block timestamp in milliseconds
+func (b *Block) GetTimestampMillis() int64 {
+	return b.ConsensusStartNanos / int64(time.Millisecond)
 }

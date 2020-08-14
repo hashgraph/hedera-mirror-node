@@ -51,7 +51,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 	if err != nil {
 		return nil, err
 	}
-	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStartNanos: rf.ConsensusStart, ConsensusEndNanos: rf.ConsensusEnd}, nil
 }
 
 // FindByHash retrieves a block by a given Hash
@@ -65,7 +65,7 @@ func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error)
 		return nil, err
 	}
 
-	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStartNanos: rf.ConsensusStart, ConsensusEndNanos: rf.ConsensusEnd}, nil
 }
 
 // FindByIdentifier retrieves a block by Index && Hash
@@ -79,7 +79,7 @@ func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 		return nil, err
 	}
 
-	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStartNanos: rf.ConsensusStart, ConsensusEndNanos: rf.ConsensusEnd}, nil
 }
 
 // RetrieveGenesis retrieves the genesis block
@@ -90,9 +90,9 @@ func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 	}
 
 	return &types.Block{
-		Hash:           rf.FileHash,
-		ConsensusStart: rf.ConsensusStart,
-		ConsensusEnd:   rf.ConsensusEnd,
+		Hash:                rf.FileHash,
+		ConsensusStartNanos: rf.ConsensusStart,
+		ConsensusEndNanos:   rf.ConsensusEnd,
 	}, nil
 }
 
@@ -111,7 +111,7 @@ func (br *BlockRepository) retrieveByWhereClause(whereClause string) (*types.Blo
 	if err != nil {
 		return nil, err
 	}
-	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStartNanos: rf.ConsensusStart, ConsensusEndNanos: rf.ConsensusEnd}, nil
 }
 
 func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTypes.Error) {

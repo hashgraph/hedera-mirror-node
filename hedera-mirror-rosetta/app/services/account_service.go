@@ -35,14 +35,14 @@ func (a *AccountAPIService) AccountBalance(ctx context.Context, request *rTypes.
 		return nil, err
 	}
 
-	balance, err := a.accountRepo.RetrieveBalanceAtBlock(request.AccountIdentifier.Address, block.ConsensusEnd)
+	balance, err := a.accountRepo.RetrieveBalanceAtBlock(request.AccountIdentifier.Address, block.ConsensusEndNanos)
 	if err != nil {
 		return nil, err
 	}
 
 	return &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
-			Index: block.ConsensusStart,
+			Index: block.ConsensusStartNanos,
 			Hash:  block.Hash,
 		},
 		Balances: []*rTypes.Amount{balance.ToRosettaAmount()},
