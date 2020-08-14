@@ -213,7 +213,7 @@ func (c *ConstructionService) handleCryptoTransferPayload(operations []*rTypes.O
 			sender = account
 			builderTransaction.AddSender(
 				sender,
-				hedera.HbarFromTinybar(int64(amount)))
+				hedera.HbarFromTinybar(int64(-amount)))
 		} else {
 			builderTransaction.AddRecipient(account,
 				hedera.HbarFromTinybar(int64(amount)))
