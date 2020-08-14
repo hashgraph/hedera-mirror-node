@@ -184,7 +184,7 @@ func (c *ConstructionService) handleCryptoCreateAccountPayload(operations []*rTy
 		UnsignedTransaction: hexutils.SafeAddHexPrefix(hex.EncodeToString(bytesTransaction)),
 		Payloads: []*rTypes.SigningPayload{{
 			Address: sender.String(),
-			Bytes:   bytesTransaction,
+			Bytes:   transaction.BodyBytes(),
 		}},
 	}, nil
 }
@@ -234,7 +234,7 @@ func (c *ConstructionService) handleCryptoTransferPayload(operations []*rTypes.O
 		UnsignedTransaction: hexutils.SafeAddHexPrefix(hex.EncodeToString(bytesTransaction)),
 		Payloads: []*rTypes.SigningPayload{{
 			Address: sender.String(),
-			Bytes:   bytesTransaction,
+			Bytes:   transaction.BodyBytes(),
 		}},
 	}, nil
 }
