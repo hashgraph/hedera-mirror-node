@@ -31,7 +31,7 @@ const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
 class mirrorStateProofResponseHandler {
   constructor(recordFileData, addressBooksData, signatureFilesData, transactionId) {
     this.transactionId = transactionId;
-    this.storeDir = makeStateProofDir(transactionId);
+    // this.storeDir = makeStateProofDir(transactionId);
     this.addressBooks = this.parseAddressBooks(addressBooksData);
     this.recordFile = this.parseRecordFile(recordFileData);
     this.signatureFiles = this.parseSignatureFiles(signatureFilesData);
@@ -42,7 +42,7 @@ class mirrorStateProofResponseHandler {
     let addBooks = [];
     _.forEach(addressBooksString, (book, index) => {
       let tmpAddrBook = base64StringToBuffer(book);
-      storeFile(tmpAddrBook, `${this.storeDir}/addressBook-${index + 1}`, 'txt');
+      // storeFile(tmpAddrBook, `${this.storeDir}/addressBook-${index + 1}`, 'txt');
       addBooks.push(new addressBook(tmpAddrBook));
     });
 
@@ -53,7 +53,7 @@ class mirrorStateProofResponseHandler {
   parseRecordFile(recordFileString) {
     console.log(`Parsing record file`);
     const tmpRcdFile = base64StringToBuffer(recordFileString);
-    storeFile(tmpRcdFile, `${this.storeDir}/recordFile.rcd`, 'rcd');
+    // storeFile(tmpRcdFile, `${this.storeDir}/recordFile.rcd`, 'rcd');
 
     const rcdFile = new recordFile(tmpRcdFile);
 
@@ -64,14 +64,20 @@ class mirrorStateProofResponseHandler {
   parseSignatureFiles(signatureFilesString) {
     console.log(`Parsing signature files`);
     let sigFiles = [];
-    _.forEach(signatureFilesString, (sigFilesString, index) => {
+    _.forEach(signatureFilesString, (sigFilesString, nodeId) => {
       let tmpSigFile = base64StringToBuffer(sigFilesString);
-      storeFile(tmpSigFile, `${this.storeDir}/signatureFile-${index + 1}`, 'rcd_sig');
-      sigFiles.push(new signatureFile(tmpSigFile));
+      // storeFile(tmpSigFile, `${this.storeDir}/signatureFile-${nodeId}`, 'rcd_sig');
+      sigFiles.push(new signatureFile(tmpSigFile, nodeId));
     });
 
     console.log(`Parsed ${sigFiles.length} signature files`);
     return sigFiles;
+  }
+
+  getNodeSignatureMap() {
+    return _.map(this.signatureFiles, (signatureFile) => {
+      return {nodeId: signatureFile.nodeId, signature: signatureFile.signature, hash: signatureFile.hash};
+    });
   }
 }
 
