@@ -27,12 +27,34 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
+
+    private static final int topicNum = 1001;
+
+    private static final String jsonTemplate = "{" +
+            "\"chunk_num\":1," +
+            "\"chunk_total\":2," +
+            "\"consensus_timestamp\":1594401417000000000," +
+            "\"message\":\"AQID\"," +
+            "\"payer_account_id\":4294968296," +
+            "\"realm_num\":0," +
+            "\"running_hash\":\"BAUG\"," +
+            "\"running_hash_version\":2," +
+            "\"sequence_number\":%d," +
+            "\"topic_num\":" + topicNum + "," +
+            "\"valid_start_timestamp\":1594401416000000000" +
+            "}";
+
+    private static final TopicMessageFilter filter = TopicMessageFilter.builder()
+            .startTime(Instant.EPOCH)
+            .topicNum(topicNum)
+            .build();
 
     @Resource
     private NotifyingTopicListener topicListener;
@@ -64,21 +86,53 @@ public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
     @Test
     void json() {
-        String json = "{" +
-                "\"chunk_num\":1," +
-                "\"chunk_total\":2," +
-                "\"consensus_timestamp\":1594401417000000000," +
-                "\"message\":\"AQID\"," +
-                "\"payer_account_id\":4294968296," +
-                "\"realm_num\":0," +
-                "\"running_hash\":\"BAUG\"," +
-                "\"running_hash_version\":2," +
-                "\"sequence_number\":1," +
-                "\"topic_num\":1001," +
-                "\"valid_start_timestamp\":1594401416000000000" +
-                "}";
+        final String jsonMessage = String.format(jsonTemplate, 1);
+        topicListener.listen(filter)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> jdbcTemplate.execute("NOTIFY topic_message, '" + jsonMessage + "'"))
+                .expectNext(makeExpectedTopicMessage(1))
+                .thenCancel()
+                .verify(Duration.ofMillis(500L));
+    }
 
-        TopicMessage topicMessage = TopicMessage.builder().chunkNum(1)
+    @Test
+    void jsonError() {
+        // Parsing errors will be logged and ignored and the message will be lost
+        topicListener.listen(filter)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> jdbcTemplate.execute("NOTIFY topic_message, 'invalid'"))
+                .expectNoEvent(Duration.ofMillis(500L))
+                .thenCancel()
+                .verify(Duration.ofMillis(500L));
+    }
+
+    @Test
+    void slowSubscriberOverflowException() {
+        final int maxBufferSize = listenerProperties.getMaxBufferSize();
+        topicListener.listen(filter)
+                .as(p -> StepVerifier.create(p, 1)) // initial request amount - 1
+                .thenRequest(1) // trigger subscription
+                .thenAwait(Duration.ofMillis(10L))
+                .then(() -> {
+                    // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
+                    // overflow error
+                    for (int i = 0; i < maxBufferSize + 3; i++) {
+                        final String jsonMessage = String.format(jsonTemplate, i + 1);
+                        jdbcTemplate.execute("NOTIFY topic_message, '" + jsonMessage + "'");
+                    }
+                })
+                .expectNext(makeExpectedTopicMessage(1), makeExpectedTopicMessage(2))
+                .thenAwait(Duration.ofMillis(500L))
+                .thenRequest(Long.MAX_VALUE)
+                .expectNextCount(maxBufferSize)
+                .expectErrorMatches(Exceptions::isOverflow)
+                .verify(Duration.ofMillis(600L));
+    }
+
+    private TopicMessage makeExpectedTopicMessage(long sequenceNumber) {
+        return TopicMessage.builder().chunkNum(1)
                 .chunkTotal(2)
                 .consensusTimestamp(Instant.ofEpochSecond(1594401417))
                 .message(new byte[] {1, 2, 3})
@@ -86,32 +140,8 @@ public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
                 .realmNum(0)
                 .runningHash(new byte[] {4, 5, 6})
                 .runningHashVersion(2)
-                .sequenceNumber(1L)
-                .topicNum(1001)
+                .sequenceNumber(sequenceNumber)
+                .topicNum(topicNum)
                 .validStartTimestamp(Instant.ofEpochSecond(1594401416)).build();
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .build();
-
-        topicListener.listen(filter)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
-                .then(() -> jdbcTemplate.execute("NOTIFY topic_message, '" + json + "'"))
-                .expectNext(topicMessage);
-    }
-
-    @Test
-    void jsonError() {
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .build();
-
-        // Parsing errors will be logged and ignored and the message will be lost
-        topicListener.listen(filter)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
-                .then(() -> jdbcTemplate.execute("NOTIFY topic_message, 'invalid'"))
-                .expectNoEvent(Duration.ofMillis(500L));
     }
 }
