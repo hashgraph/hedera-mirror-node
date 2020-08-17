@@ -30,7 +30,6 @@ const NodeRSA = require('node-rsa');
 
 class addressBook {
   constructor(buffer) {
-    console.log(`Parsing address book`);
     let addressBook = NodeAddressBook.deserializeBinary(buffer);
     console.log(`${addressBook.getNodeaddressList().length} node(s) found in address book`);
     this.nodeList = addressBook.getNodeaddressList();

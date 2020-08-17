@@ -33,24 +33,25 @@ const NodeRSA = require('node-rsa');
  * if match return true otherwise false for stateProof
  */
 
-const performStateProof = (nodePublicKeyMap, signatureFilesMap, signedDataFile) => {
+const performStateProof = (nodePublicKeyMap, signatureFilesMap, signedDataFile, transactionId) => {
   let validated = false;
-  const validatedSignatureFilesMap = verifySignatures(nodePublicKeyMap, signatureFilesMap);
-  if (_.isNull(validatedSignatureFilesMap)) {
-    console.error(`Signature files signature were not valid`);
+  const consensusValidatedHash = verifySignatures(nodePublicKeyMap, signatureFilesMap);
+  if (_.isNull(consensusValidatedHash)) {
+    console.error(`Unable to validate files signatures!`);
     return validated;
   }
 
-  return true;
+  return validateRecordFileHash(signedDataFile, consensusValidatedHash, transactionId);
 };
 
 // given map of addressBook node -> public Key & map of signatureFiles node -> Signature can do verifySignature()
 // for every signature from a file verify the signature against the appropriate public key form address book
 // ensure # of validations match node count or at least is consensus by 1/3
 const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
-  // console.log(`verifySignatures, nodePublicKeyMap: ${JSON.stringify(nodePublicKeyMap)}, signatureFilesMap: ${JSON.stringify(signatureFilesMap)}`);
   let validatedSignatureFilesMap = {};
-
+  let consensusHashMap = {hash: null, count: 0};
+  let maxHash = null;
+  let maxHashCount = 0;
   // create a map of hash -> nodeId to show alignment
   let failCount = 1;
   _.forEach(signatureFilesMap, (sigMapItem) => {
@@ -63,6 +64,14 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
         validatedSignatureFilesMap[sigMapItem.hash.toString('hex')] = [sigMapItem.nodeId];
       } else {
         validatedSignatureFilesMap[sigMapItem.hash.toString('hex')].push(sigMapItem.nodeId);
+        let nodeCount = validatedSignatureFilesMap[sigMapItem.hash.toString('hex')].length;
+
+        // determine max. Sufficient to do here as you'd never want the max to occur in the if where the count would be 1
+        if (nodeCount > maxHashCount) {
+          maxHashCount = nodeCount;
+          consensusHashMap.hash = sigMapItem.hash.toString('hex');
+          consensusHashMap.count = maxHashCount;
+        }
       }
 
       console.info(
@@ -80,18 +89,14 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
       validatedSignatureFilesMap
     )}. isEmpty -> ${_.isEmpty(validatedSignatureFilesMap)}`
   );
-  return validatedSignatureFilesMap;
-};
 
-const getConsensusSignatureFileHash = (signatureFileHashes, nodeCount) => {
-  let consensusHash = null;
-
-  return consensusHash;
+  // return hash if it was observed by a super majority
+  return maxHashCount >= Math.ceil(signatureFilesMap.length / 3.0) ? consensusHashMap.hash : null;
 };
 
 //compare the hash of data file with Hash which has been agreed on by valid signatures
-const validateRecordFileHash = (signedDataFile, signatureHash) => {
-  let valid = true;
+const validateRecordFileHash = (signedDataFile, signatureHash, transactionId) => {
+  let valid = false;
 
   return valid;
 };
@@ -110,7 +115,6 @@ const verifySignature = (hexEncodedPublicKey, hash, signature) => {
 };
 
 module.exports = {
-  getConsensusSignatureFileHash,
   performStateProof,
   verifySignatures,
   validateRecordFileHash,

@@ -27,18 +27,32 @@ const {addressBook} = require('./addressBook');
 const {recordFile} = require('./recordFile');
 const {signatureFile} = require('./signatureFile');
 const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
+const {performStateProof} = require('./transactionValidator');
+const {getAPIResponse, readJSONFile} = require('./utils');
 
-class mirrorStateProofResponseHandler {
-  constructor(recordFileData, addressBooksData, signatureFilesData, transactionId) {
+class stateProofHandler {
+  constructor(transactionId, url, sample) {
     this.transactionId = transactionId;
-    // this.storeDir = makeStateProofDir(transactionId);
-    this.addressBooks = this.parseAddressBooks(addressBooksData);
-    this.recordFile = this.parseRecordFile(recordFileData);
-    this.signatureFiles = this.parseSignatureFiles(signatureFilesData);
+    this.getStateProofComponents(transactionId, url, sample);
+  }
+
+  getStateProofComponents(transactionId, url, sample) {
+    const stateProofJson = sample ? readJSONFile('stateProofSample.json') : getAPIResponse(url);
+    console.log(
+      `Retrieved state proof files. Checking for emptiness - address_books: ${
+        stateProofJson.address_books !== undefined
+      }, record_file: ${stateProofJson.record_file !== undefined}, signature_files: ${
+        stateProofJson.signature_files !== undefined
+      }`
+    );
+
+    this.addressBooks = this.parseAddressBooks(stateProofJson.address_books);
+    this.recordFile = this.parseRecordFile(stateProofJson.record_file);
+    this.signatureFiles = this.parseSignatureFiles(stateProofJson.signature_files);
   }
 
   parseAddressBooks(addressBooksString) {
-    console.log(`Parsing address books`);
+    console.log(`Parsing address books...`);
     let addBooks = [];
     _.forEach(addressBooksString, (book, index) => {
       let tmpAddrBook = base64StringToBuffer(book);
@@ -51,7 +65,7 @@ class mirrorStateProofResponseHandler {
   }
 
   parseRecordFile(recordFileString) {
-    console.log(`Parsing record file`);
+    console.log(`Parsing record file...`);
     const tmpRcdFile = base64StringToBuffer(recordFileString);
     // storeFile(tmpRcdFile, `${this.storeDir}/recordFile.rcd`, 'rcd');
 
@@ -62,7 +76,7 @@ class mirrorStateProofResponseHandler {
   }
 
   parseSignatureFiles(signatureFilesString) {
-    console.log(`Parsing signature files`);
+    console.log(`Parsing signature files...`);
     let sigFiles = [];
     _.forEach(signatureFilesString, (sigFilesString, nodeId) => {
       let tmpSigFile = base64StringToBuffer(sigFilesString);
@@ -79,32 +93,23 @@ class mirrorStateProofResponseHandler {
       return {nodeId: signatureFile.nodeId, signature: signatureFile.signature, hash: signatureFile.hash};
     });
   }
+
+  runStateProof() {
+    const nodeIdPublicKeyPairs = _.last(this.addressBooks).nodeIdPublicKeyPairs;
+
+    // verify transactionId is in recordFile
+    const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId);
+    if (!transactionInRecordFile) {
+      console.error(`transactionId not present in recordFile`);
+      return false;
+    }
+
+    const validatedTransaction = performStateProof(nodeIdPublicKeyPairs, this.getNodeSignatureMap(), this.recordFile);
+
+    return validatedTransaction;
+  }
 }
 
-// store files, allow for future checks without callingAPI
-// const storeStateProofFiles = (recordFile, addressBooks, signatureFiles, transId) => {
-//   // store record
-//   const rcdFile = base64StringToBuffer(recordFile);
-//   storeFile(recordFile, `${transId}-recordFile.rcd`);
-//
-//   // store addressBooks
-//   let addBooks = [];
-//   _.forEach(addressBooks, (addressBook, index) => {
-//     let tmpAddrBook = base64StringToBuffer(addressBook);
-//     storeFile(addressBook, `${transId}-addressBook-${index + 1}.rcd`);
-//     addBooks.push(tmpAddrBook);
-//   });
-//
-//   // store signatureFiles
-//   let sigFiles = [];
-//   _.forEach(signatureFiles, (signatureFile, index) => {
-//     let tmpSigFile = base64StringToBuffer(signatureFile);
-//     storeFile(tmpSigFile, `${transId}-signatureFile-${index + 1}.rcd`);
-//   });
-//
-//   return [rcdFile, addBooks, sigFiles];
-// };
-
 module.exports = {
-  mirrorStateProofResponseHandler,
+  stateProofHandler,
 };

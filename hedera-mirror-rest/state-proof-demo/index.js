@@ -26,48 +26,28 @@
 // external libraries
 const {welcomeScreen} = require('./startUp');
 const _ = require('lodash');
-const {mirrorStateProofResponseHandler} = require('./mirrorStateProofResponseHandler');
-const {getAPIResponse, readJSONFile} = require('./utils');
-const {performStateProof} = require('./transactionValidator');
+const {stateProofHandler} = require('./stateProofHandler');
 
-// step 2: make stateproof call
+// get user input
 const {transactionId, url, sample} = welcomeScreen();
 
-const stateProofJson = sample ? readJSONFile('stateProofSample.json') : getAPIResponse(url);
-console.log(
-  `Retrieved state proof files. Checking for emptiness - address_books: ${
-    stateProofJson.address_books !== undefined
-  }, record_file: ${stateProofJson.record_file !== undefined}, signature_files: ${
-    stateProofJson.signature_files !== undefined
-  }`
-);
+// instantiate stateProofHandler
+const stateProofManager = new stateProofHandler(transactionId, url, sample);
+
+// kick off stateProof flow
+const validatedTransaction = stateProofManager.runStateProof();
+
+console.log(`StateProof validation for ${transactionId} returned ${validatedTransaction}`);
 
 // step 3 : store files locally and verify at least 1 addressBook, 3 signatures, 1 rcd file
-const stateProofResponseHandler = new mirrorStateProofResponseHandler(
-  stateProofJson.record_file,
-  stateProofJson.address_books,
-  stateProofJson.signature_files,
-  transactionId
-);
-
-console.log(
-  `Parsed state proof files. ${stateProofResponseHandler.addressBooks.length} address_books, record_file '${stateProofResponseHandler.recordFile.consensusStart}', ${stateProofResponseHandler.signatureFiles.length} signature_files`
-);
 
 // step 4: AddressBook
 // q: what to do here? - what's the value of getting the addressBook chain here? What do we do with it?
 // parse to AddressBook proto and pull out details of Nodes -> Id, publicKey
 // For each node expect a matching entry in the signature_files
 
-const nodeIdPublicKeyPairs = _.last(stateProofResponseHandler.addressBooks).nodeIdPublicKeyPairs;
-
 // step 5
 // verify signature file using address book public key. -> See NodeSignatureVerifier.verifySignature()
-const validatedTransaction = performStateProof(
-  nodeIdPublicKeyPairs,
-  stateProofResponseHandler.getNodeSignatureMap(),
-  stateProofResponseHandler.recordFile
-);
 
 // step 6 verify consensus on signature files
 // for valid signature files verify that at least 1/3 of them have the matching hash.
@@ -83,4 +63,3 @@ const validatedTransaction = performStateProof(
 // step 9
 // confirm all verifications pass. At earliest fail report invalidTransaction
 // Q: what's the output here?
-console.log(`StateProof validation for ${transactionId} returned ${validatedTransaction}`);
