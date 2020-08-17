@@ -1,7 +1,13 @@
 package com.hedera.mirror.grpc.listener;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Vector;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
@@ -12,12 +18,22 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListenerTest {
 
     @Test
+    @DisplayName("slow subscriber receives overflow exception and normal subscriber is not affected")
     void slowSubscriberOverflowException() {
         int maxBufferSize = 16;
         listenerProperties.setMaxBufferSize(16);
+
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
+
+        // create a normal subscriber to keep the shared flux open
+        Vector<Long> sequenceNumbers = new Vector<>();
+        var subscription = getTopicListener().listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .subscribe(sequenceNumbers::add);
+
+        // the slow subscriber
         getTopicListener().listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(p -> StepVerifier.create(p, 1)) // initial request amount - 1
@@ -29,10 +45,14 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                     domainBuilder.topicMessages(maxBufferSize + 3, future).blockLast();
                 })
                 .expectNext(1L, 2L)
-                .thenAwait(Duration.ofMillis(500L))
+                .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
                 .thenRequest(Long.MAX_VALUE)
-                .expectNextCount(maxBufferSize)
+                .expectNextSequence(LongStream.range(3, maxBufferSize + 3).boxed().collect(Collectors.toList()))
                 .expectErrorMatches(Exceptions::isOverflow)
                 .verify(Duration.ofMillis(600L));
+
+        assertThat(subscription.isDisposed()).isFalse();
+        subscription.dispose();
+        assertThat(sequenceNumbers).isEqualTo(LongStream.range(1, maxBufferSize + 4).boxed().collect(Collectors.toList()));
     }
 }
