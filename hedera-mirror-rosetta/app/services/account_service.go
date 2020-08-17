@@ -5,6 +5,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
 
 // AccountAPIService implements the server.AccountAPIServicer interface.
@@ -42,8 +43,8 @@ func (a *AccountAPIService) AccountBalance(ctx context.Context, request *rTypes.
 
 	return &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
-			Index: block.ConsensusStartNanos,
-			Hash:  block.Hash,
+			Index: block.Index,
+			Hash:  hexUtils.SafeAddHexPrefix(block.Hash),
 		},
 		Balances: []*rTypes.Amount{balance.ToRosettaAmount()},
 	}, nil

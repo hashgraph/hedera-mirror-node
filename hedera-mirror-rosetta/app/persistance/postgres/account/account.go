@@ -65,9 +65,6 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensus
 	r := &balanceChange{}
 	// gets the balance change from the Balance snapshot until the target block
 	ar.dbClient.Raw(fmt.Sprintf(balanceChangeBetween, ct.TableName(), ab.ConsensusTimestamp, consensusEnd, entityID)).Scan(r)
-	if ab.Balance == 0 && r.NumberOfTransfers == 0 {
-		return nil, errors.Errors[errors.AccountNotFound]
-	}
 
 	return &types.Amount{
 		Value: ab.Balance + r.Value,
