@@ -47,7 +47,7 @@ public class NotifyingTopicListener implements TopicListener {
     private final ObjectMapper objectMapper;
     private final Flux<TopicMessage> topicMessages;
     private final PgChannel channel;
-    private final int maxBufferSize;
+    private final ListenerProperties listenerProperties;
 
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
         this.objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
@@ -58,6 +58,7 @@ public class NotifyingTopicListener implements TopicListener {
                 .setPort(dbProperties.getPort())
                 .setUser(dbProperties.getUsername());
 
+        this.listenerProperties = listenerProperties;
         Duration frequency = listenerProperties.getFrequency();
         Vertx vertx = Vertx.vertx();
         PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
@@ -77,6 +78,7 @@ public class NotifyingTopicListener implements TopicListener {
         channel = subscriber.channel("topic_message");
 
         topicMessages = Flux.defer(() -> listen())
+                .publishOn(Schedulers.boundedElastic())
                 .map(this::toTopicMessage)
                 .filter(Objects::nonNull)
                 .name("notify")
@@ -84,15 +86,13 @@ public class NotifyingTopicListener implements TopicListener {
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
                 .share();
-        maxBufferSize = listenerProperties.getMaxBufferSize();
     }
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         return topicMessages.filter(t -> filterMessage(t, filter))
                 .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
-                .onBackpressureBuffer(maxBufferSize)
-                .publishOn(Schedulers.boundedElastic());
+                .onBackpressureBuffer(listenerProperties.getMaxBufferSize());
     }
 
     private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {

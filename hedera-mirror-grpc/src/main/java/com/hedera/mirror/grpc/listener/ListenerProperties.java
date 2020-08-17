@@ -38,9 +38,9 @@ public class ListenerProperties {
     @Min(32)
     private int maxPageSize = 5000;
 
-    @Min(32)
-    @Max(256)
-    private int maxBufferSize = 32;
+    @Min(1024)
+    @Max(8192)
+    private int maxBufferSize = 2048;
 
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
