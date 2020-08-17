@@ -8,6 +8,7 @@ import (
 
 // Block is domain level struct used to represent Block conceptual mapping in Hedera
 type Block struct {
+	Index               int64
 	Hash                string
 	ConsensusStartNanos int64
 	ConsensusEndNanos   int64
@@ -28,6 +29,7 @@ func FromRosettaBlock(rBlock *rTypes.Block) (*Block, *rTypes.Error) {
 	}
 
 	return &Block{
+		Index:               rBlock.BlockIdentifier.Index,
 		Hash:                hex.SafeRemoveHexPrefix(rBlock.BlockIdentifier.Hash),
 		ConsensusStartNanos: rBlock.BlockIdentifier.Index,
 		ConsensusEndNanos:   rBlock.Timestamp,
@@ -46,7 +48,7 @@ func (b *Block) ToRosettaBlock() *rTypes.Block {
 
 	return &rTypes.Block{
 		BlockIdentifier: &rTypes.BlockIdentifier{
-			Index: b.ConsensusStartNanos,
+			Index: b.Index,
 			Hash:  hex.SafeAddHexPrefix(b.Hash),
 		},
 		ParentBlockIdentifier: &rTypes.BlockIdentifier{
