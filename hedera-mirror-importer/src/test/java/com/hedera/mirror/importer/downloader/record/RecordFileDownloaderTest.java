@@ -44,7 +44,7 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
-import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.downloader.AbstractDownloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -57,7 +57,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     }
 
     @Override
-    protected Downloader getDownloader() {
+    protected AbstractDownloader getDownloader() {
         return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry);
     }

@@ -187,7 +187,10 @@ public class Utility {
                             RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
 
                             if (recordItemConsumer != null) {
-                                recordItemConsumer.accept(recordItem);
+                                try {
+                                    recordItemConsumer.accept(recordItem);
+                                } catch(Exception ex) {
+                                }
                             }
 
                             if (isFirstTransaction) {
@@ -424,7 +427,7 @@ public class Utility {
         return Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
     }
 
-    public static final String getStreamFilenameForInstant(StreamType streamType, Instant instant) {
+    public static final String getStreamFilenameFromInstant(StreamType streamType, Instant instant) {
         String timestamp = instant.toString().replace(':', '_');
         return timestamp + streamType.getSuffix() + "." + streamType.getExtension();
     }

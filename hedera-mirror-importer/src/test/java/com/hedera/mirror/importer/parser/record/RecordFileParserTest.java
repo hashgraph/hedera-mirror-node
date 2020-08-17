@@ -59,7 +59,6 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,7 +69,7 @@ public class RecordFileParserTest {
     @Mock
     private ApplicationStatusRepository applicationStatusRepository;
     @Mock
-    private AddressBookRepository addressBookRepository;
+    private MirrorProperties mirrorProperties;
     @Mock
     private RecordItemListener recordItemListener;
     @Mock
@@ -94,7 +93,7 @@ public class RecordFileParserTest {
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
         parserProperties.init();
-        recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties,
+        recordFileParser = new RecordFileParser(applicationStatusRepository, mirrorProperties, parserProperties,
                 new SimpleMeterRegistry(), recordItemListener, recordStreamFileListener);
         StreamType streamType = StreamType.RECORD;
         fileCopier = FileCopier

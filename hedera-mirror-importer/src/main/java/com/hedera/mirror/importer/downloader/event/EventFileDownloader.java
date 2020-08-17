@@ -33,7 +33,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EventFile;
-import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.downloader.AbstractDownloader;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
@@ -41,7 +41,7 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @Log4j2
 @Named
-public class EventFileDownloader extends Downloader {
+public class EventFileDownloader extends AbstractDownloader {
 
     private final EventFileReader eventFileReader;
 
@@ -54,19 +54,16 @@ public class EventFileDownloader extends Downloader {
     }
 
     @Leader
-    @Override
     @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:5000}")
     public void download() {
         downloadNextBatch();
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
+    public ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
+    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH;
     }
 

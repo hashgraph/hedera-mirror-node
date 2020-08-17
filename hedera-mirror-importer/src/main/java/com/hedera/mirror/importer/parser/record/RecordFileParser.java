@@ -22,6 +22,11 @@ package com.hedera.mirror.importer.parser.record;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+
+import com.hedera.mirror.importer.MirrorProperties;
+
+import com.hedera.mirror.importer.exception.ParserException;
+
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -64,6 +69,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
+    private final MirrorProperties mirrorProperties;
     private final RecordParserProperties parserProperties;
     private final MeterRegistry meterRegistry;
     private final RecordItemListener recordItemListener;
@@ -77,11 +83,12 @@ public class RecordFileParser implements FileParser {
     private final DistributionSummary unknownSizeMetric;
     private final Timer parseLatencyMetric;
 
-    public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
+    public RecordFileParser(ApplicationStatusRepository applicationStatusRepository, MirrorProperties mirrorProperties,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
                             RecordItemListener recordItemListener,
                             RecordStreamFileListener recordStreamFileListener) {
         this.applicationStatusRepository = applicationStatusRepository;
+        this.mirrorProperties = mirrorProperties;
         this.parserProperties = parserProperties;
         this.meterRegistry = meterRegistry;
         this.recordItemListener = recordItemListener;
@@ -153,8 +160,8 @@ public class RecordFileParser implements FileParser {
                     streamFileData.getFilename(), expectedPrevFileHash,
                     parserProperties.getMirrorProperties().getVerifyHashAfter(),
                     recordItem -> {
-                        counter.incrementAndGet();
                         processRecordItem(recordItem);
+                        counter.incrementAndGet();
                     });
             log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             recordFile.setLoadStart(startTime.getEpochSecond());
@@ -182,6 +189,12 @@ public class RecordFileParser implements FileParser {
         } else if (log.isDebugEnabled()) {
             log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
         }
+
+        Instant endDate = mirrorProperties.getEndDate();
+        if (endDate != null && Utility.convertToNanosMax(endDate.getEpochSecond(), endDate.getNano()) < recordItem.getConsensusTimestamp()) {
+            throw new ParserException("Skip processing record after endDate");
+        }
+
         recordItemListener.onItem(recordItem);
 
         sizeMetrics.getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.downloader;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,11 +20,11 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
+public class InvalidConfigurationException extends ImporterException {
 
-public interface Downloader {
-    void download();
-    DownloaderProperties getDownloaderProperties();
-    ApplicationStatusCode getLastValidDownloadedFileKey();
-    ApplicationStatusCode getLastValidDownloadedFileHashKey();
+    private static final long serialVersionUID = -2996303169427541497L;
+
+    public InvalidConfigurationException(String message) {
+        super(message);
+    }
 }

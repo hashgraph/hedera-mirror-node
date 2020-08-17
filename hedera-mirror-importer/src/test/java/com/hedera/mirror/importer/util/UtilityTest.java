@@ -100,9 +100,9 @@ public class UtilityTest {
         assertThat(Utility.getTimestampFromFilename(filename)).isEqualTo(timestamp);
     }
 
-    @ParameterizedTest(name = "Get stream filename for instant, stream type {0}")
+    @ParameterizedTest(name = "Get stream filename from instant, stream type {0}")
     @EnumSource(StreamType.class)
-    void getStreamFilenameForInstant(StreamType streamType) {
+    void getStreamFilenameFromInstant(StreamType streamType) {
         final String timestamp = "2020-08-08T09:00:05.123456789Z";
         final String timestampTransformed = "2020-08-08T09_00_05.123456789Z";
         Instant instant = Instant.parse(timestamp);
@@ -118,7 +118,7 @@ public class UtilityTest {
                 expectedFilename = timestampTransformed + ".evts";
                 break;
         }
-        assertThat(Utility.getStreamFilenameForInstant(streamType, instant)).isEqualTo(expectedFilename);
+        assertThat(Utility.getStreamFilenameFromInstant(streamType, instant)).isEqualTo(expectedFilename);
     }
 
     @Test

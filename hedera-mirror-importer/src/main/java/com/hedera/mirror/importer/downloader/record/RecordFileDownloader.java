@@ -34,7 +34,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.downloader.AbstractDownloader;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -42,7 +42,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class RecordFileDownloader extends Downloader {
+public class RecordFileDownloader extends AbstractDownloader {
 
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
@@ -52,19 +52,17 @@ public class RecordFileDownloader extends Downloader {
     }
 
     @Leader
-    @Override
     @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.record.frequency:500}")
     public void download() {
         downloadNextBatch();
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
+
+    public ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
+    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH;
     }
 

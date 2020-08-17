@@ -29,7 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
-import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.downloader.AbstractDownloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +41,7 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     }
 
     @Override
-    protected Downloader getDownloader() {
+    protected AbstractDownloader getDownloader() {
         return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (BalanceDownloaderProperties) downloaderProperties, meterRegistry);
     }

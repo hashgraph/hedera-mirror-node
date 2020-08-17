@@ -25,19 +25,20 @@ import java.io.File;
 import java.util.Arrays;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
-import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.downloader.AbstractDownloader;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class AccountBalancesDownloader extends Downloader {
+public class AccountBalancesDownloader extends AbstractDownloader {
 
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
@@ -47,7 +48,6 @@ public class AccountBalancesDownloader extends Downloader {
     }
 
     @Leader
-    @Override
     @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.balance.frequency:30000}")
     public void download() {
         downloadNextBatch();
@@ -58,13 +58,11 @@ public class AccountBalancesDownloader extends Downloader {
         return Arrays.equals(verifiedHash, Utility.getBalanceFileHash(file.getPath()));
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
+    public ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
+    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
         return null;
     }
 }
