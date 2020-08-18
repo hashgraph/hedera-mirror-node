@@ -21,7 +21,7 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
     @DisplayName("slow subscriber receives overflow exception and normal subscriber is not affected")
     void slowSubscriberOverflowException() {
         int maxBufferSize = 16;
-        listenerProperties.setMaxBufferSize(16);
+        listenerProperties.setMaxBufferSize(maxBufferSize);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
