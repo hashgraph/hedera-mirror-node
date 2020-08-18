@@ -20,7 +20,6 @@
 'uses strict';
 
 // external libraries
-const _ = require('lodash');
 const fs = require('fs');
 const fetch = require('node-fetch');
 const AbortController = require('abort-controller');

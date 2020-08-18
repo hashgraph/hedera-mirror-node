@@ -24,6 +24,7 @@
 // external libraries
 const _ = require('lodash');
 const NodeRSA = require('node-rsa');
+const crypto = require('crypto');
 
 /**
  * For signature files with the same file name:
@@ -33,7 +34,7 @@ const NodeRSA = require('node-rsa');
  * if match return true otherwise false for stateProof
  */
 
-const performStateProof = (nodePublicKeyMap, signatureFilesMap, signedDataFile, recordFileHash) => {
+const performStateProof = (nodePublicKeyMap, signatureFilesMap, recordFileHash) => {
   let validated = false;
   const consensusValidatedHash = verifySignatures(nodePublicKeyMap, signatureFilesMap);
   if (_.isNull(consensusValidatedHash)) {
@@ -41,11 +42,7 @@ const performStateProof = (nodePublicKeyMap, signatureFilesMap, signedDataFile, 
     return validated;
   }
 
-  if (recordFileHash !== consensusValidatedHash) {
-    console.error(`Hash mismatch between recordFileHash and consensus validated signature files hash!`);
-  }
-
-  return validateRecordFileHash(signedDataFile, consensusValidatedHash);
+  return validateRecordFileHash(recordFileHash, consensusValidatedHash);
 };
 
 // given map of addressBook node -> public Key & map of signatureFiles node -> Signature can do verifySignature()
@@ -58,25 +55,25 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
 
   // create a map of hash -> nodeId to show alignment
   _.forEach(signatureFilesMap, (sigMapItem) => {
+    console.info(`Verify signatures passed for node ${sigMapItem.nodeId}`);
     const publicKeyBuffer = nodePublicKeyMap[sigMapItem.nodeId].publicKey;
+    const sigMapItemHashHex = sigMapItem.hash.toString('hex');
     if (verifySignature(publicKeyBuffer, sigMapItem.hash, sigMapItem.signature)) {
-      if (_.isEmpty(validatedSignatureFilesMap[sigMapItem.hash.toString('hex')])) {
-        validatedSignatureFilesMap[sigMapItem.hash.toString('hex')] = [sigMapItem.nodeId];
+      if (_.isEmpty(validatedSignatureFilesMap[sigMapItemHashHex])) {
+        validatedSignatureFilesMap[sigMapItemHashHex] = [sigMapItem.nodeId];
       } else {
-        validatedSignatureFilesMap[sigMapItem.hash.toString('hex')].push(sigMapItem.nodeId);
-        let nodeCount = validatedSignatureFilesMap[sigMapItem.hash.toString('hex')].length;
+        validatedSignatureFilesMap[sigMapItemHashHex].push(sigMapItem.nodeId);
+        let nodeCount = validatedSignatureFilesMap[sigMapItemHashHex].length;
 
         // determine max. Sufficient to do here as you'd never want the max to occur in the if where the count would be 1
         if (nodeCount > maxHashCount) {
           maxHashCount = nodeCount;
-          consensusHashMap.hash = sigMapItem.hash.toString('hex');
+          consensusHashMap.hash = sigMapItemHashHex;
           consensusHashMap.count = maxHashCount;
         }
       }
-
-      console.info(
-        `** verifySignatures passed for node ${sigMapItem.nodeId}, publicKey: ${publicKeyBuffer}, hash: ${sigMapItem.hash}, signature ${sigMapItem.signature}`
-      );
+    } else {
+      console.error(`Failed to verify signatures for node ${sigMapItem.nodeId}!`);
     }
   });
 
@@ -85,13 +82,20 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
 };
 
 //compare the hash of data file with Hash which has been agreed on by valid signatures
-const validateRecordFileHash = (signedDataFile, signatureHash, transactionId) => {
-  let valid = false;
+const validateRecordFileHash = (recordFileHash, consensusValidatedHash) => {
+  let valid = true;
+
+  if (recordFileHash !== consensusValidatedHash) {
+    valid = false;
+    console.error(
+      `Hash mismatch between recordFileHash: ${recordFileHash} and consensus validated signature files hash: ${consensusValidatedHash}!`
+    );
+  }
 
   return valid;
 };
 
-const verifySignature = (hexEncodedPublicKey, hash, signature) => {
+const verifyRSASignature = (hexEncodedPublicKey, hash, signature) => {
   let key = new NodeRSA();
   key.importKey(
     {
@@ -102,6 +106,18 @@ const verifySignature = (hexEncodedPublicKey, hash, signature) => {
   );
 
   return key.verify(hash, signature, 'buffer', 'buffer');
+};
+
+const verifySignature = (publicKeyHex, hash, signature) => {
+  const verify = crypto.createVerify('RSA-SHA384');
+  verify.update(hash);
+
+  const publicKey =
+    '-----BEGIN PUBLIC KEY-----\n' +
+    Buffer.from(publicKeyHex, 'hex').toString('base64') +
+    '\n' +
+    '-----END PUBLIC KEY-----';
+  return verify.verify(publicKey, signature);
 };
 
 module.exports = {

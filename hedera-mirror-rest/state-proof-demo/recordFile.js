@@ -40,15 +40,12 @@ class recordFile {
     let recordFileContentsHash = crypto.createHash('sha384');
 
     // read record file format version
-    // const recordFormatVersion = recordFileBuffer.readInt32BE();
     const recordFormatVersion = this.readIntFromBufferAndUpdateHash(recordFileBuffer, 0, recordFileHash);
     if (recordFormatVersion < 0 || recordFormatVersion > 3) {
       throw new Error(`Unexpected record file format version '${recordFormatVersion}'`);
     }
-    recordFileHash.update(Buffer.from([recordFormatVersion]));
 
     // version
-    // recordFileHash.update(recordFileBuffer.readInt32BE(4));
     this.readIntFromBufferAndUpdateHash(recordFileBuffer, 4, recordFileHash);
 
     const fileHashSize = 48; // number of bytes
@@ -61,8 +58,7 @@ class recordFile {
         break;
       }
 
-      const typeDelimiter = recordFileBuffer[index];
-      index++;
+      const typeDelimiter = recordFileBuffer[index++];
 
       switch (typeDelimiter) {
         case 1:
@@ -84,7 +80,6 @@ class recordFile {
           let buf = recordFileBuffer.subarray(index, index + 4);
           recordFileContentsHash.update(buf);
           const transactionRawBytesLength = buf.readInt32BE(0);
-          // const transactionRawBytesLength = this.readIntFromBufferAndUpdateHash(recordFileBuffer, index, index + 4, recordFileContentsHash);
           index = index + 4;
 
           const transactionRawBuffer = this.readBytesFromBufferAndUpdateHash(
@@ -99,7 +94,6 @@ class recordFile {
           buf = recordFileBuffer.subarray(index, index + 4);
           recordFileContentsHash.update(buf);
           const recordRawBytesLength = buf.readInt32BE(0);
-          // const recordRawBytesLength = this.readIntFromBufferAndUpdateHash(recordFileBuffer, index, index + 4, recordFileContentsHash);
           index = index + 4;
 
           // recordRawBuffer

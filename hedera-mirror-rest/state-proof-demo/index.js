@@ -25,7 +25,6 @@
 
 // external libraries
 const {welcomeScreen} = require('./startUp');
-const _ = require('lodash');
 const {stateProofHandler} = require('./stateProofHandler');
 const {getAPIResponse, readJSONFile} = require('./utils');
 
