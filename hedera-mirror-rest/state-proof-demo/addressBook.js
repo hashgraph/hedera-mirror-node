@@ -38,13 +38,6 @@ class addressBook {
     this.setNodeIdPublicKeyPairs();
   }
 
-  getNodeIdPublicKeyPairs() {
-    return _.map(this.nodeList, (nodeAddress) => {
-      // console.log(`Public key of node ${nodeAddress.getNodeid()} retrieved: RSAPubKey: ${nodeAddress.getRsaPubkey()}`);
-      return {nodeId: nodeAddress.getNodeid(), publicKey: this.getNodeRSAPublicKey(nodeAddress.getRsaPubkey())};
-    });
-  }
-
   setNodeIdPublicKeyPairs() {
     let nodeCount = 3; // hack remove
     _.forEach(this.nodeList, (nodeAddress) => {
@@ -54,10 +47,8 @@ class addressBook {
       } else {
         node = nodeAddress.getNodeid();
       }
-      // const node = `0.0.${nodeCount++}`;
+
       this.nodeIdPublicKeyPairs[node] = {publicKey: nodeAddress.getRsaPubkey()};
-      // this.nodeIdPublicKeyPairs[node] = {publicKey: nodeAddress.getRsaPubkey()};
-      // console.log(`** setNodeIdPublicKeyPairs, nodeIdPublicKeyPairs[${node}]: ${JSON.stringify(this.nodeIdPublicKeyPairs[node])}`);
     });
   }
 

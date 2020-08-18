@@ -47,8 +47,7 @@ const options = yargs
   .option('e', {alias: 'env', describe: 'Your environment e.g. test / main', type: 'string', demandOption: true}).argv;
 
 const welcomeScreen = () => {
-  // const welcome = `Welcome to your on demand Hedera Transaction State Proof CLI!!!, ${options.transactionId} on ${options.env}!`;
-  const greeting = chalk.bold(`Welcome to your on demand Hedera Transaction State Proof CLI!!!, ${options.name}!`);
+  const greeting = chalk.bold(`Hedera Transaction State Proof CLI!`);
 
   const msgBox = boxen(greeting, boxenOptions);
   console.log(msgBox);
@@ -56,10 +55,10 @@ const welcomeScreen = () => {
   let host;
   switch (options.env) {
     case 'test':
-      host = 'testnet';
+      host = 'https://testnet.mirrornode.hedera.com';
       break;
     case 'main':
-      host = 'mainnet';
+      host = 'https://mainnet.mirrornode.hedera.com';
       break;
     default:
       host = 'localhost:5551';
@@ -69,7 +68,9 @@ const welcomeScreen = () => {
   const sample = options.sample === true;
   const transactionId = options.transactionId;
   const url = `${host}/api/v1/transactions/${transactionId}/stateproof`;
-  console.log(`Env: ${host}, transactionId: ${transactionId} url: ${url}, sample: ${sample}`);
+  console.log(
+    `Initializing state proof for transactionId: ${transactionId} in Env: ${host} w url: ${url}, sample: ${sample}`
+  );
 
   return {transactionId, url, sample};
 };

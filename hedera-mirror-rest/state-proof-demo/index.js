@@ -27,39 +27,22 @@
 const {welcomeScreen} = require('./startUp');
 const _ = require('lodash');
 const {stateProofHandler} = require('./stateProofHandler');
+const {getAPIResponse, readJSONFile} = require('./utils');
 
 // get user input
 const {transactionId, url, sample} = welcomeScreen();
 
-// instantiate stateProofHandler
-const stateProofManager = new stateProofHandler(transactionId, url, sample);
+const getStateProofJson = async (url, test) => {
+  console.log(`Use sample data : ${test}`);
+  return test ? readJSONFile('stateProofSample.json') : getAPIResponse(url);
+};
 
-// kick off stateProof flow
-const validatedTransaction = stateProofManager.runStateProof();
+getStateProofJson(url, sample).then((stateProofJson) => {
+  // instantiate stateProofHandler which will parse files and extract needed data
+  const stateProofManager = new stateProofHandler(transactionId, stateProofJson);
 
-console.log(`StateProof validation for ${transactionId} returned ${validatedTransaction}`);
+  // kick off stateProof flow
+  const validatedTransaction = stateProofManager.runStateProof();
 
-// step 3 : store files locally and verify at least 1 addressBook, 3 signatures, 1 rcd file
-
-// step 4: AddressBook
-// q: what to do here? - what's the value of getting the addressBook chain here? What do we do with it?
-// parse to AddressBook proto and pull out details of Nodes -> Id, publicKey
-// For each node expect a matching entry in the signature_files
-
-// step 5
-// verify signature file using address book public key. -> See NodeSignatureVerifier.verifySignature()
-
-// step 6 verify consensus on signature files
-// for valid signature files verify that at least 1/3 of them have the matching hash.
-
-// step 7
-// verify rcd has matching hash of consensus signature files - See RecordFileDownloader.verifyDataFile()
-// that hash of data file matches the verified hash and that data file is next in line based on previous file
-// For now assume rcd file is 0.0.3
-
-// step 8
-// parse rcd file looking for transaction with matching consensus time stamp from transaction id
-
-// step 9
-// confirm all verifications pass. At earliest fail report invalidTransaction
-// Q: what's the output here?
+  console.log(`StateProof validation for ${transactionId} returned ${validatedTransaction}`);
+});

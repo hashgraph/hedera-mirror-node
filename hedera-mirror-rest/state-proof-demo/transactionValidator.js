@@ -33,15 +33,19 @@ const NodeRSA = require('node-rsa');
  * if match return true otherwise false for stateProof
  */
 
-const performStateProof = (nodePublicKeyMap, signatureFilesMap, signedDataFile, transactionId) => {
+const performStateProof = (nodePublicKeyMap, signatureFilesMap, signedDataFile, recordFileHash) => {
   let validated = false;
   const consensusValidatedHash = verifySignatures(nodePublicKeyMap, signatureFilesMap);
   if (_.isNull(consensusValidatedHash)) {
-    console.error(`Unable to validate files signatures!`);
+    console.error(`Unable to validate signature files!`);
     return validated;
   }
 
-  return validateRecordFileHash(signedDataFile, consensusValidatedHash, transactionId);
+  if (recordFileHash !== consensusValidatedHash) {
+    console.error(`Hash mismatch between recordFileHash and consensus validated signature files hash!`);
+  }
+
+  return validateRecordFileHash(signedDataFile, consensusValidatedHash);
 };
 
 // given map of addressBook node -> public Key & map of signatureFiles node -> Signature can do verifySignature()
@@ -50,15 +54,11 @@ const performStateProof = (nodePublicKeyMap, signatureFilesMap, signedDataFile, 
 const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
   let validatedSignatureFilesMap = {};
   let consensusHashMap = {hash: null, count: 0};
-  let maxHash = null;
   let maxHashCount = 0;
+
   // create a map of hash -> nodeId to show alignment
-  let failCount = 1;
   _.forEach(signatureFilesMap, (sigMapItem) => {
-    // _.forEach(nodePublicKeyMap, (mapItem, key) => {
-    //   const publicKeyBuffer = mapItem.publicKey;
     const publicKeyBuffer = nodePublicKeyMap[sigMapItem.nodeId].publicKey;
-    // console.log(`** publicKeyBuffer for ${sigMapItem.nodeId} isUndefined ${_.isUndefined(publicKeyBuffer)} -> ${JSON.stringify(publicKeyBuffer)}`)
     if (verifySignature(publicKeyBuffer, sigMapItem.hash, sigMapItem.signature)) {
       if (_.isEmpty(validatedSignatureFilesMap[sigMapItem.hash.toString('hex')])) {
         validatedSignatureFilesMap[sigMapItem.hash.toString('hex')] = [sigMapItem.nodeId];
@@ -77,18 +77,8 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
       console.info(
         `** verifySignatures passed for node ${sigMapItem.nodeId}, publicKey: ${publicKeyBuffer}, hash: ${sigMapItem.hash}, signature ${sigMapItem.signature}`
       );
-    } else {
-      // console.error(`** verifySignatures failed for node ${sigMapItem.nodeId}, publicKey: ${publicKeyBuffer}, hash: ${sigMapItem.hash}, signature ${sigMapItem.signature}`)
-      // console.info(`** ${failCount++} verifySignatures failed for node ${sigMapItem.nodeId} and addressBookNode: ${key}, publicKey: ${publicKeyBuffer}, hash: ${sigMapItem.hash}, signature ${sigMapItem.signature}`)
     }
-    // });
   });
-
-  console.log(
-    `** verifySignatures validatedSignatureFilesMap -> ${JSON.stringify(
-      validatedSignatureFilesMap
-    )}. isEmpty -> ${_.isEmpty(validatedSignatureFilesMap)}`
-  );
 
   // return hash if it was observed by a super majority
   return maxHashCount >= Math.ceil(signatureFilesMap.length / 3.0) ? consensusHashMap.hash : null;

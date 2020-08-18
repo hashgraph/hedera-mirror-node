@@ -22,18 +22,19 @@
 // external libraries
 const _ = require('lodash');
 const fs = require('fs');
+const fetch = require('node-fetch');
+const AbortController = require('abort-controller');
 
 const base64StringToBuffer = (base64String) => {
   return Buffer.from(base64String, 'base64');
 };
 
-const replaceFullStopsWithUnderScrores = (stringToFormat) => {
-  return stringToFormat.replace(/\./g, '_');
+const replaceSpecialCharsWithUnderScores = (stringToFormat) => {
+  return stringToFormat.replace(/\./g, '_').replace(/\@/g, '_').replace(/\-/g, '_');
 };
 
 const makeStateProofDir = (transactionId) => {
-  let dirPath = replaceFullStopsWithUnderScrores(transactionId);
-  fs.mkdir(dirPath, {recursive: true}, (err, path) => {
+  fs.mkdir(transactionId, {recursive: true}, (err, path) => {
     if (err) {
       console.error(`Error encountered creating directory ${path}: ${err}`);
       throw err;
@@ -41,18 +42,16 @@ const makeStateProofDir = (transactionId) => {
   });
 
   fs.writeFile(
-    `${dirPath}/notes.txt`,
+    `${transactionId}/notes.txt`,
     `Supporting files for the state proof of '${transactionId}' can be found in this directory`,
     (err) => {
       if (err) throw err;
     }
   );
-
-  return dirPath;
 };
 
 const storeFile = (data, file, ext) => {
-  const newFilePath = `${replaceFullStopsWithUnderScrores(file)}.${ext}`;
+  const newFilePath = `${replaceSpecialCharsWithUnderScores(file)}.${ext}`;
   console.log(`Storing contents at ${newFilePath}`);
   fs.writeFile(`${newFilePath}`, data, (err) => {
     if (err) throw err;
@@ -60,13 +59,7 @@ const storeFile = (data, file, ext) => {
   });
 };
 
-const getAPIResponse = (url) => {
-  if (url.indexOf('/') === 0) {
-    // if url is path get full url including host
-    url = getUrl(url);
-  }
-
-  console.log(`Requesting stateproof files from ${url} for ${transactionId}`);
+const getAPIResponse = async (url) => {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => {
@@ -75,14 +68,13 @@ const getAPIResponse = (url) => {
     60 * 1000 // in ms
   );
 
-  return fetch(url, {signal: controller.signal})
-    .then((response) => {
+  console.log(`Requesting stateproof files from ${url}...`);
+  return await fetch(url, {signal: controller.signal})
+    .then(async (response) => {
       if (!response.ok) {
-        console.log(`Non success response for call to '${url}'`);
         throw Error(response.statusText);
       }
-
-      return response.json();
+      return await response.json();
     })
     .catch((error) => {
       var message = `Fetch error, url : ${url}, error : ${error}`;
@@ -105,4 +97,5 @@ module.exports = {
   makeStateProofDir,
   readJSONFile,
   storeFile,
+  replaceSpecialCharsWithUnderScores,
 };

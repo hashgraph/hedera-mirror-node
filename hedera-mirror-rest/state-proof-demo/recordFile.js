@@ -27,14 +27,11 @@
 // external libraries
 const _ = require('lodash');
 var crypto = require('crypto');
-const {TransactionRecord} = require('@hashgraph/sdk');
 const {Transaction} = require('@hashgraph/sdk/lib/Transaction');
+const {replaceSpecialCharsWithUnderScores} = require('./utils');
 
 class recordFile {
   constructor(recordFileBuffer, transactionId) {
-    this.hash = 'hash';
-    this.consensusStart = 'consensus_start';
-    this.consensusEnd = 'consensus_end';
     this.readRecordFile(recordFileBuffer, transactionId);
   }
 
@@ -117,7 +114,7 @@ class recordFile {
           const transaction = Transaction.fromBytes(transactionRawBuffer);
           const transactionIdBody = transaction.id;
 
-          this.transactionIdMap[transactionIdBody.toString()] = transactionIdBody;
+          this.transactionIdMap[replaceSpecialCharsWithUnderScores(transactionIdBody.toString())] = transactionIdBody;
 
           break;
         default:
@@ -131,11 +128,11 @@ class recordFile {
 
     // set recordFile hash
     // recordFileHash.digest("hex")
-    this.hash = recordFileHash.digest();
+    this.hash = recordFileHash.digest('hex');
   }
 
   containsTransaction(transactionId) {
-    return _.isUndefined(this.transactionIdMap[transactionId]);
+    return !_.isUndefined(this.transactionIdMap[transactionId]);
   }
 
   readIntFromBufferAndUpdateHash(buffer, start, cryptoHash) {

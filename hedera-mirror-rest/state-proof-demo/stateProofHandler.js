@@ -19,8 +19,6 @@
  */
 'uses strict';
 
-// responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
-
 // external libraries
 const _ = require('lodash');
 const {addressBook} = require('./addressBook');
@@ -28,24 +26,17 @@ const {recordFile} = require('./recordFile');
 const {signatureFile} = require('./signatureFile');
 const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
 const {performStateProof} = require('./transactionValidator');
-const {getAPIResponse, readJSONFile} = require('./utils');
+const {replaceSpecialCharsWithUnderScores} = require('./utils');
 
+// responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
 class stateProofHandler {
-  constructor(transactionId, url, sample) {
-    this.transactionId = transactionId;
-    this.getStateProofComponents(transactionId, url, sample);
+  constructor(transactionId, stateProofJson) {
+    this.transactionId = replaceSpecialCharsWithUnderScores(transactionId);
+    this.setStateProofComponents(stateProofJson);
   }
 
-  getStateProofComponents(transactionId, url, sample) {
-    const stateProofJson = sample ? readJSONFile('stateProofSample.json') : getAPIResponse(url);
-    console.log(
-      `Retrieved state proof files. Checking for emptiness - address_books: ${
-        stateProofJson.address_books !== undefined
-      }, record_file: ${stateProofJson.record_file !== undefined}, signature_files: ${
-        stateProofJson.signature_files !== undefined
-      }`
-    );
-
+  setStateProofComponents(stateProofJson) {
+    makeStateProofDir(this.transactionId);
     this.addressBooks = this.parseAddressBooks(stateProofJson.address_books);
     this.recordFile = this.parseRecordFile(stateProofJson.record_file);
     this.signatureFiles = this.parseSignatureFiles(stateProofJson.signature_files);
@@ -56,22 +47,22 @@ class stateProofHandler {
     let addBooks = [];
     _.forEach(addressBooksString, (book, index) => {
       let tmpAddrBook = base64StringToBuffer(book);
-      // storeFile(tmpAddrBook, `${this.storeDir}/addressBook-${index + 1}`, 'txt');
+      storeFile(tmpAddrBook, `${this.transactionId}/addressBook-${index + 1}`, 'txt');
       addBooks.push(new addressBook(tmpAddrBook));
     });
 
-    console.log(`Parsed ${addBooks.length} address books`);
+    console.debug(`Parsed ${addBooks.length} address books`);
     return addBooks;
   }
 
   parseRecordFile(recordFileString) {
     console.log(`Parsing record file...`);
     const tmpRcdFile = base64StringToBuffer(recordFileString);
-    // storeFile(tmpRcdFile, `${this.storeDir}/recordFile.rcd`, 'rcd');
+    storeFile(tmpRcdFile, `${this.transactionId}/recordFile`, 'rcd');
 
     const rcdFile = new recordFile(tmpRcdFile);
 
-    console.log(`Parsed record file ${rcdFile.consensusStart}`);
+    console.debug(`Parsed record file ${rcdFile.hash}`);
     return rcdFile;
   }
 
@@ -80,11 +71,11 @@ class stateProofHandler {
     let sigFiles = [];
     _.forEach(signatureFilesString, (sigFilesString, nodeId) => {
       let tmpSigFile = base64StringToBuffer(sigFilesString);
-      // storeFile(tmpSigFile, `${this.storeDir}/signatureFile-${nodeId}`, 'rcd_sig');
+      storeFile(tmpSigFile, `${this.transactionId}/signatureFile-${nodeId}`, 'rcd_sig');
       sigFiles.push(new signatureFile(tmpSigFile, nodeId));
     });
 
-    console.log(`Parsed ${sigFiles.length} signature files`);
+    console.debug(`Parsed ${sigFiles.length} signature files`);
     return sigFiles;
   }
 
@@ -104,7 +95,11 @@ class stateProofHandler {
       return false;
     }
 
-    const validatedTransaction = performStateProof(nodeIdPublicKeyPairs, this.getNodeSignatureMap(), this.recordFile);
+    const validatedTransaction = performStateProof(
+      nodeIdPublicKeyPairs,
+      this.getNodeSignatureMap(),
+      this.recordFile.hash
+    );
 
     return validatedTransaction;
   }
