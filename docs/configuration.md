@@ -120,7 +120,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL or SHARED_POLL  |
 | `hedera.mirror.grpc.netty.executorCoreThreadCount`          | 10               | The number of core threads                                                                     |
 | `hedera.mirror.grpc.netty.executorMaxThreadCount`           | 1000             | The maximum allowed number of threads                                                          |
-| `hedera.mirror.grpc.netty.flowControlWindow`                | 64 \* 1024       | The HTTP/2 flow control window                                                                 |
 | `hedera.mirror.grpc.netty.keepAliveTime`                    | 60               | The seconds limit for which threads may remain idle before being terminated                    |
 | `hedera.mirror.grpc.netty.maxConcurrentCallsPerConnection`  | 5                | The maximum number of concurrent calls permitted for each incoming connection                  |
 | `hedera.mirror.grpc.netty.maxInboundMessageSize`            | 6 \* 1024        | The maximum message size allowed to be received on the server                                  |
@@ -149,24 +148,33 @@ merged into) the current configuration:
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-| Name                                                 | Default                 | Description                                                                                    |
-| ---------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `hedera.mirror.rest.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
-| `hedera.mirror.rest.db.name`                         | mirror_node             | The name of the database                                                                       |
-| `hedera.mirror.rest.db.password`                     | mirror_api_pass         | The database password the processor uses to connect. **Should be changed from default**        |
-| `hedera.mirror.rest.db.port`                         | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.rest.db.username`                     | mirror_api              | The username the processor uses to connect to the database                                     |
-| `hedera.mirror.rest.includeHostInLink`               | false                   | Whether to include the hostname and port in the next link in the response                      |
-| `hedera.mirror.rest.maxLimit`                        | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
-| `hedera.mirror.rest.log.level`                       | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
-| `hedera.mirror.rest.port`                            | 5551                    | The REST API port                                                                              |
-| `hedera.mirror.rest.includeHostInLink`               | false                   | Whether to include the host:port in the next links returned by the REST API                    |
-| `hedera.mirror.rest.metrics.enabled`                 | true                    | Whether metrics are enabled for the REST API                                                   |
-| `hedera.mirror.rest.metrics.config.authentication`   | true                    | Whether access to metrics for the REST API is authenticated                                    |
-| `hedera.mirror.rest.metrics.config.username`         | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
-| `hedera.mirror.rest.metrics.config.password`         | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
-| `hedera.mirror.rest.metrics.config.uriPath`          | '/swagger'              | The REST API metrics uri path                                                                  |
-| `hedera.mirror.rest.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |
+| Name                                                     | Default                 | Description                                                                                    |
+| -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `hedera.mirror.rest.db.host`                             | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
+| `hedera.mirror.rest.db.name`                             | mirror_node             | The name of the database                                                                       |
+| `hedera.mirror.rest.db.password`                         | mirror_api_pass         | The database password the processor uses to connect. **Should be changed from default**        |
+| `hedera.mirror.rest.db.port`                             | 5432                    | The port used to connect to the database                                                       |
+| `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rest.includeHostInLink`                   | false                   | Whether to include the hostname and port in the next link in the response                      |
+| `hedera.mirror.rest.maxLimit`                            | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
+| `hedera.mirror.rest.log.level`                           | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
+| `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
+| `hedera.mirror.rest.includeHostInLink`                   | false                   | Whether to include the host:port in the next links returned by the REST API                    |
+| `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
+| `hedera.mirror.rest.metrics.config.authentication`       | true                    | Whether access to metrics for the REST API is authenticated                                    |
+| `hedera.mirror.rest.metrics.config.username`             | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
+| `hedera.mirror.rest.metrics.config.password`             | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
+| `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
+| `hedera.mirror.rest.shard`                               | 0                       | The default shard number that this mirror node participates in                                 |
+| `hedera.mirror.rest.stateproof.enabled`                  | false                   | Whether to enable stateproof REST API or not                                                   |
+| `hedera.mirror.rest.stateproof.streams.accessKey`        | ""                      | The cloud storage access key                                                                   |
+| `hedera.mirror.rest.stateproof.streams.bucketName`       |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.rest.stateproof.streams.network` |
+| `hedera.mirror.rest.stateproof.streams.cloudProvider`    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
+| `hedera.mirror.rest.stateproof.streams.endpointOverride` |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
+| `hedera.mirror.rest.stateproof.streams.gcpProjectId` |                             | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
+| `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
+| `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
+| `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
 
 
 ## Rosetta API

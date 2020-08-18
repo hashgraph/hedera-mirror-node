@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,17 +18,21 @@
  * ‍
  */
 
+'use strict';
+
 const extend = require('extend');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
+const {InvalidConfigError} = require('./errors/invalidConfigError');
+const {cloudProviders, networks, defaultBucketNames} = require('./constants');
 
 let configName = 'application';
 if (process.env.CONFIG_NAME) {
   configName = process.env.CONFIG_NAME;
 }
 
-let config = {};
+const config = {};
 let loaded = false;
 
 function load(configPath) {
@@ -36,7 +40,7 @@ function load(configPath) {
     return;
   }
 
-  let configFile = path.join(configPath, configName + '.yml');
+  let configFile = path.join(configPath, `${configName}.yml`);
   if (fs.existsSync(configFile)) {
     loadYaml(configFile);
   }
@@ -49,7 +53,7 @@ function load(configPath) {
 
 function loadYaml(configFile) {
   try {
-    let doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
+    const doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
     console.log(`Loaded configuration source: ${configFile}`);
     extend(true, config, doc);
   } catch (err) {
@@ -113,12 +117,42 @@ function convertType(value) {
   return parsedValue;
 }
 
+function getConfig() {
+  return config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
+}
+
+function parseStateProofStreamsConfig() {
+  const {stateproof} = getConfig();
+  if (!stateproof || !stateproof.enabled) {
+    return;
+  }
+
+  const {streams: streamsConfig} = stateproof;
+  if (!Object.values(networks).includes(streamsConfig.network)) {
+    throw new InvalidConfigError(`unknown network ${streamsConfig.network}`);
+  }
+
+  if (!streamsConfig.bucketName) {
+    streamsConfig.bucketName = defaultBucketNames[streamsConfig.network];
+  }
+
+  if (!streamsConfig.bucketName) {
+    // the default for network 'OTHER' is null, throw err if it's not configured
+    throw new InvalidConfigError('stateproof.streams.bucketName must be set');
+  }
+
+  if (!Object.values(cloudProviders).includes(streamsConfig.cloudProvider)) {
+    throw new InvalidConfigError(`unsupported object storage service provider ${streamsConfig.cloudProvider}`);
+  }
+}
+
 if (!loaded) {
   load(path.join(__dirname, 'config'));
   load(__dirname);
   load(process.env.CONFIG_PATH);
   loadEnvironment();
+  parseStateProofStreamsConfig();
   loaded = true;
 }
 
-module.exports = config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
+module.exports = getConfig();

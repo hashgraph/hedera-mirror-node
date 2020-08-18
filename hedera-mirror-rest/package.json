@@ -1,26 +1,33 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.16.0-rc1",
+  "version": "0.17.0-rc1",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "private": true,
+  "engines": {
+    "node": ">=12.6.0"
+  },
   "scripts": {
     "test": "jest --testPathPattern='__tests__/*'",
     "perftest": "__performancetests__/perfTest.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "lint": "eslint \"**/*.js\""
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.6.1",
     "asn1js": "^2.0.26",
+    "aws-sdk": "^2.734.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "extend": "^3.0.2",
     "js-yaml": "^3.14.0",
-    "log4js": "^4.3.1",
+    "lodash": "^4.17.20",
+    "log4js": "^6.3.0",
+    "long": "^4.0.0",
     "mathjs": "^7.1.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.0",
@@ -30,13 +37,16 @@
   "bundledDependencies": [
     "asn1js",
     "@awaitjs/express",
+    "aws-sdk",
     "body-parser",
     "compression",
     "cors",
     "express",
     "extend",
     "js-yaml",
+    "lodash",
     "log4js",
+    "long",
     "mathjs",
     "node-cache",
     "node-fetch",
@@ -44,16 +54,28 @@
     "swagger-stats"
   ],
   "devDependencies": {
+    "aws-sdk-mock": "^5.1.0",
+    "axios": "^0.19.2",
     "codecov": "^3.7.2",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-jest": "^23.19.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "eslint-plugin-security": "^1.4.0",
     "husky": "^4.2.5",
-    "jest": "^26.2.2",
+    "jest": "^26.4.0",
     "jest-junit": "^11.1.0",
+    "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.3",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
     "pretty-quick": "^2.0.1",
+    "rewire": "^5.0.0",
+    "sinon": "^9.0.3",
     "supertest": "^4.0.2",
-    "testcontainers": "^3.2.0"
+    "testcontainers": "^3.4.0"
   },
   "husky": {
     "hooks": {
@@ -66,6 +88,8 @@
     "coveragePathIgnorePatterns": [
       "<rootDir>/__tests__/integrationDbOps.js",
       "<rootDir>/__tests__/integrationDomainOps.js",
+      "<rootDir>/__tests__/integrationS3Ops.js",
+      "<rootDir>/__tests__/integrationUtils.js",
       "<rootDir>/__tests__/mockpool.js",
       "<rootDir>/__tests__/testutils.js"
     ],
@@ -77,7 +101,9 @@
       "__tests__/testutils.js",
       "__tests__/mockpool.js",
       "__tests__/integrationDbOps.js",
-      "__tests__/integrationDomainOps.js"
+      "__tests__/integrationDomainOps.js",
+      "__tests__/integrationS3Ops.js",
+      "__tests__/integrationUtils.js"
     ],
     "verbose": true
   },

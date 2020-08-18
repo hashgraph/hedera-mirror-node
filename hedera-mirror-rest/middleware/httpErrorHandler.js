@@ -20,7 +20,9 @@
 'use strict';
 
 const {DbError} = require('../errors/dbError');
+const {FileDownloadError} = require('../errors/fileDownloadError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {InvalidConfigError} = require('../errors/invalidConfigError');
 const {NotFoundError} = require('../errors/notFoundError');
 
 const httpStatusCodes = {
@@ -58,6 +60,12 @@ const handleError = async (err, req, res, next) => {
     case NotFoundError:
       res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
       return;
+    case FileDownloadError:
+      res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
+      return;
+    case InvalidConfigError:
+      res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
+      return;
     default:
       logger.trace(`Unhandled error encountered: ${err.message}`);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
@@ -68,7 +76,7 @@ const handleError = async (err, req, res, next) => {
 
 /**
  * Application error message format
- * @param array of messages
+ * @param errorMessages array of messages
  * @returns {{_status: {messages: *}}}
  */
 const errorMessageFormat = (errorMessages) => {

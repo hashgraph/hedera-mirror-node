@@ -52,7 +52,7 @@ persistence:
   annotations: {}
   enabled: true
   size: 10Gi
-  storageClass: standard
+  storageClass: ""
 
 podDisruptionBudget:
   enabled: false

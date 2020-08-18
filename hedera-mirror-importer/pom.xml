@@ -13,11 +13,11 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.16.0-rc1</version>
+        <version>0.17.0-rc1</version>
     </parent>
 
     <properties>
-        <commons-io.version>2.6</commons-io.version>
+        <commons-io.version>2.7</commons-io.version>
         <guava.version>29.0-jre</guava.version>
         <s3mock.version>0.2.6</s3mock.version>
         <testcontainers.version>1.14.3</testcontainers.version>

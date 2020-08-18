@@ -34,7 +34,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid Transaction id. Please use \"shard.realm.num-ssssssssss-nnnnnnnnn\" format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds"
+          "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
         }
       ]
     }
