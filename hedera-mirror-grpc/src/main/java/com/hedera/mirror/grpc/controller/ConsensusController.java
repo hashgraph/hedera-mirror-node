@@ -72,7 +72,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
                 .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.RESOURCE_EXHAUSTED, OVERFLOW_ERROR))
+                .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
                 .onErrorMap(t -> unknownError(t));
     }
 
