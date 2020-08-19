@@ -26,7 +26,6 @@ const yargs = require('yargs'); //  simplify user input
 const chalk = require('chalk'); //  pretty up request info
 const boxen = require('boxen'); //  emphasize request info
 
-// const greeting = chalk.white.bold("Welcome to your on demand Hedera Transaction State Proof CLI!!!");
 const boxenOptions = {
   padding: 1,
   margin: 1,
@@ -39,14 +38,14 @@ const options = yargs
   .usage('Usage: -t <transactionId> -e <env>')
   .option('t', {
     alias: 'transactionId',
-    describe: 'Your Hedera Network Transaction Id e.g. 0.0.94139-11965562-313194',
+    describe: 'Your Hedera Network Transaction Id e.g. 0.0.94139-1570800748_313194300',
     type: 'string',
     demandOption: true,
   })
   .option('s', {alias: 'sample', describe: 'Use sample data', type: 'boolean', demandOption: false})
   .option('e', {alias: 'env', describe: 'Your environment e.g. test / main', type: 'string', demandOption: true}).argv;
 
-const welcomeScreen = () => {
+const startUpScreen = () => {
   const greeting = chalk.bold(`Hedera Transaction State Proof CLI!`);
 
   const msgBox = boxen(greeting, boxenOptions);
@@ -54,10 +53,10 @@ const welcomeScreen = () => {
 
   let host;
   switch (options.env) {
-    case 'test':
+    case 'testnet':
       host = 'https://testnet.mirrornode.hedera.com';
       break;
-    case 'main':
+    case 'mainnet':
       host = 'https://mainnet.mirrornode.hedera.com';
       break;
     default:
@@ -66,7 +65,7 @@ const welcomeScreen = () => {
 
   // to:do sanitize transaction and env values
   const sample = options.sample === true;
-  const transactionId = options.transactionId;
+  const {transactionId} = options;
   const url = `${host}/api/v1/transactions/${transactionId}/stateproof`;
   console.log(
     `Initializing state proof for transactionId: ${transactionId} in Env: ${host} w url: ${url}, sample: ${sample}`
@@ -75,5 +74,5 @@ const welcomeScreen = () => {
   return {transactionId, url, sample};
 };
 module.exports = {
-  welcomeScreen,
+  startUpScreen,
 };

@@ -38,23 +38,19 @@ const makeStateProofDir = (transactionId) => {
       console.error(`Error encountered creating directory ${path}: ${err}`);
       throw err;
     }
+
+    console.log(`Supporting files for the state proof stored in the directory ${transactionId}`);
   });
 
-  fs.writeFile(
-    `${transactionId}/notes.txt`,
-    `Supporting files for the state proof of '${transactionId}' can be found in this directory`,
-    (err) => {
-      if (err) throw err;
-    }
-  );
+  fs.writeFile(`${transactionId}/notes.txt`, `Supporting files for the state proof of '${transactionId}'`, (err) => {
+    if (err) throw err;
+  });
 };
 
 const storeFile = (data, file, ext) => {
   const newFilePath = `${replaceSpecialCharsWithUnderScores(file)}.${ext}`;
-  console.log(`Storing contents at ${newFilePath}`);
   fs.writeFile(`${newFilePath}`, data, (err) => {
     if (err) throw err;
-    console.log(`File ${newFilePath} has been saved!`);
   });
 };
 
@@ -86,7 +82,7 @@ const getAPIResponse = async (url) => {
 };
 
 const readJSONFile = (filePath) => {
-  let rawData = fs.readFileSync(filePath);
+  const rawData = fs.readFileSync(filePath);
   return JSON.parse(rawData);
 };
 

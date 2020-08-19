@@ -21,15 +21,13 @@
 
 'uses strict';
 
-// responsible for 1. Getting input, 2. Calling API, passing response to validator
-
 // external libraries
-const {welcomeScreen} = require('./startUp');
-const {stateProofHandler} = require('./stateProofHandler');
+const {startUpScreen} = require('./startUp');
+const {StateProofHandler} = require('./stateProofHandler');
 const {getAPIResponse, readJSONFile} = require('./utils');
 
 // get user input
-const {transactionId, url, sample} = welcomeScreen();
+const {transactionId, url, sample} = startUpScreen();
 
 const getStateProofJson = async (url, test) => {
   console.log(`Use sample data : ${test}`);
@@ -37,11 +35,28 @@ const getStateProofJson = async (url, test) => {
 };
 
 getStateProofJson(url, sample).then((stateProofJson) => {
+  const missingFilesPrefix = 'Mirror node StateProof API returned insufficient number of addressBooks.';
+  if (stateProofJson.address_books.length < 1) {
+    console.error(`${missingFilesPrefix} At least 1 is expected`);
+    return false;
+  }
+
+  if (stateProofJson.record_file.length < 1) {
+    console.error(`${missingFilesPrefix} 1 is expected`);
+    return false;
+  }
+
+  if (stateProofJson.signature_files.length < 1) {
+    console.error(`${missingFilesPrefix} At least 3 are expected`);
+    return false;
+  }
+
   // instantiate stateProofHandler which will parse files and extract needed data
-  const stateProofManager = new stateProofHandler(transactionId, stateProofJson);
+  const stateProofHandler = new StateProofHandler(transactionId, stateProofJson);
 
   // kick off stateProof flow
-  const validatedTransaction = stateProofManager.runStateProof();
+  const validatedTransaction = stateProofHandler.runStateProof();
 
   console.log(`StateProof validation for ${transactionId} returned ${validatedTransaction}`);
+  return validatedTransaction;
 });

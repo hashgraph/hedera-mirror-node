@@ -19,39 +19,34 @@
  */
 'uses strict';
 
-// parse signature file, retrieve hash and node id
-
-// external libraries
-class signatureFile {
-  constructor(signatureFileString, nodeid) {
-    this.setHashAndSignature(signatureFileString);
+class SignatureFile {
+  /**
+   * parse signature file buffer, retrieve hash and node id
+   */
+  constructor(signatureFile, nodeid) {
+    this.parseSignatureFileBuffer(signatureFile);
     this.nodeId = nodeid;
   }
 
   // Extract the Hash and signature from the file.
-  setHashAndSignature(signatureFileBuffer) {
+  parseSignatureFileBuffer(signatureFileBuffer) {
     const fileHashSize = 48; // number of bytes
     let index = 0;
-    while (index < signatureFileBuffer.length - 1) {
-      if (index < 0) {
-        // reached end
-        break;
-      }
-
+    while (index < signatureFileBuffer.length) {
       const typeDelimiter = signatureFileBuffer[index++];
 
       switch (typeDelimiter) {
         case 4:
           // hash
           this.hash = signatureFileBuffer.subarray(index, index + fileHashSize);
-          index = index + fileHashSize;
+          index += fileHashSize;
           break;
         case 3:
           // signature
           const signatureLength = signatureFileBuffer.readInt32BE(index);
-          index = index + 4;
+          index += 4;
           this.signature = signatureFileBuffer.subarray(index, index + signatureLength);
-          index = index + signatureLength;
+          index += signatureLength;
           break;
         default:
           throw new Error(`Unexpected type delimiter '${typeDelimiter}' in signature file at index '${index - 1}'`);
@@ -61,5 +56,5 @@ class signatureFile {
 }
 
 module.exports = {
-  signatureFile,
+  SignatureFile,
 };

@@ -20,24 +20,23 @@
 
 'uses strict';
 
-// recordFile object. Read buffer, parse file, potentially stores all transactionConsensusNs as keys, hash
-// file_hash, consensus_start, consensus_end
-// parse rcd file looking for transaction with matching consensus time stamp from transaction id
-
 // external libraries
 const _ = require('lodash');
-var crypto = require('crypto');
-const {Transaction} = require('@hashgraph/sdk/lib/Transaction');
-const {replaceSpecialCharsWithUnderScores} = require('./utils');
+const crypto = require('crypto');
+const {Transaction} = require('@hashgraph/sdk/lib/generated/Transaction_pb');
+const {TransactionBody} = require('@hashgraph/sdk/lib/generated/TransactionBody_pb');
 
-class recordFile {
-  constructor(recordFileBuffer, transactionId) {
-    this.readRecordFile(recordFileBuffer, transactionId);
+class RecordFile {
+  /**
+   * Parses rcd file storing hash and transactionId map for future verification
+   */
+  constructor(recordFileBuffer) {
+    this.parseRecordFileBuffer(recordFileBuffer);
   }
 
-  readRecordFile(recordFileBuffer) {
-    let recordFileHash = crypto.createHash('sha384');
-    let recordFileContentsHash = crypto.createHash('sha384');
+  parseRecordFileBuffer(recordFileBuffer) {
+    const recordFileHash = crypto.createHash('sha384');
+    const recordFileContentsHash = crypto.createHash('sha384');
 
     // read record file format version
     const recordFormatVersion = this.readIntFromBufferAndUpdateHash(recordFileBuffer, 0, recordFileHash);
@@ -52,12 +51,7 @@ class recordFile {
     let index = 8;
 
     this.transactionIdMap = {};
-    while (index < recordFileBuffer.length - 1) {
-      if (index < 0) {
-        // reached end
-        break;
-      }
-
+    while (index < recordFileBuffer.length) {
       const typeDelimiter = recordFileBuffer[index++];
 
       switch (typeDelimiter) {
@@ -70,17 +64,19 @@ class recordFile {
             index + fileHashSize,
             recordFileHash
           );
-          index = index + fileHashSize;
+          index += fileHashSize;
           break;
         case 2:
           // RECORD_TYPE_RECORD
           recordFileContentsHash.update(Buffer.from([typeDelimiter]));
 
           // transaction raw bytes
-          let buf = recordFileBuffer.subarray(index, index + 4);
-          recordFileContentsHash.update(buf);
-          const transactionRawBytesLength = buf.readInt32BE(0);
-          index = index + 4;
+          const transactionRawBytesLength = this.readIntFromBufferAndUpdateHash(
+            recordFileBuffer,
+            index,
+            recordFileContentsHash
+          );
+          index += 4;
 
           const transactionRawBuffer = this.readBytesFromBufferAndUpdateHash(
             recordFileBuffer,
@@ -88,13 +84,15 @@ class recordFile {
             index + transactionRawBytesLength,
             recordFileContentsHash
           );
-          index = index + transactionRawBytesLength;
+          index += transactionRawBytesLength;
 
           // record raw bytes
-          buf = recordFileBuffer.subarray(index, index + 4);
-          recordFileContentsHash.update(buf);
-          const recordRawBytesLength = buf.readInt32BE(0);
-          index = index + 4;
+          const recordRawBytesLength = this.readIntFromBufferAndUpdateHash(
+            recordFileBuffer,
+            index,
+            recordFileContentsHash
+          );
+          index += 4;
 
           // recordRawBuffer
           this.readBytesFromBufferAndUpdateHash(
@@ -103,12 +101,9 @@ class recordFile {
             index + recordRawBytesLength,
             recordFileContentsHash
           );
-          index = index + recordRawBytesLength;
+          index += recordRawBytesLength;
 
-          const transaction = Transaction.fromBytes(transactionRawBuffer);
-          const transactionIdBody = transaction.id;
-
-          this.transactionIdMap[replaceSpecialCharsWithUnderScores(transactionIdBody.toString())] = transactionIdBody;
+          this.updateTransactionIdMap(transactionRawBuffer);
 
           break;
         default:
@@ -121,7 +116,6 @@ class recordFile {
     }
 
     // set recordFile hash
-    // recordFileHash.digest("hex")
     this.hash = recordFileHash.digest('hex');
   }
 
@@ -146,8 +140,22 @@ class recordFile {
     cryptoHash.update(buf);
     return buf;
   }
+
+  updateTransactionIdMap(transactionRawBuffer) {
+    // retrieve successful transactions and store transactionId in map for future use
+    const deserializedTransaction = Transaction.deserializeBinary(transactionRawBuffer);
+    const transactionBody = TransactionBody.deserializeBinary(deserializedTransaction.getBodybytes_asU8());
+    const transactionIdFromBody = transactionBody.getTransactionid();
+    const accountId = transactionIdFromBody.getAccountid();
+    const timestamp = transactionIdFromBody.getTransactionvalidstart();
+
+    const parsedTransactionIdString = `${accountId.getShardnum()}_${accountId.getRealmnum()}_${accountId.getAccountnum()}_${timestamp.getSeconds()}_${timestamp.getNanos()}`;
+
+    // to:do add logic to pull success status from TransactionRecord as there may be duplicate transactionId's
+    this.transactionIdMap[parsedTransactionIdString] = transactionIdFromBody;
+  }
 }
 
 module.exports = {
-  recordFile,
+  RecordFile,
 };

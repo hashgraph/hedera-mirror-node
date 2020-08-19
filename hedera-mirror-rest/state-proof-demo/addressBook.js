@@ -26,19 +26,27 @@
 const _ = require('lodash');
 const {NodeAddressBook} = require('@hashgraph/sdk/lib/generated/BasicTypes_pb');
 
-class addressBook {
-  constructor(buffer) {
-    let addressBook = NodeAddressBook.deserializeBinary(buffer);
-    console.log(`${addressBook.getNodeaddressList().length} node(s) found in address book`);
-    this.nodeList = addressBook.getNodeaddressList();
-    this.nodeIdPublicKeyPairs = {};
+class AddressBook {
+  /**
+   * Parses address book file storing map of nodeid -> rsa public key
+   */
+  constructor(addressBook) {
+    this.parseAddressBookBuffer(addressBook);
     this.setNodeIdPublicKeyPairs();
   }
 
+  parseAddressBookBuffer(addressBookBuffer) {
+    const addressBookObject = NodeAddressBook.deserializeBinary(addressBookBuffer);
+    console.log(`${addressBookObject.getNodeaddressList().length} node(s) found in address book`);
+    this.nodeList = addressBookObject.getNodeaddressList();
+  }
+
   setNodeIdPublicKeyPairs() {
+    this.nodeIdPublicKeyPairs = {};
     _.forEach(this.nodeList, (nodeAddress) => {
       let node;
-      if (_.isUndefined(nodeAddress.getNodeid()) || nodeAddress.getNodeid() == 0) {
+      // For some address books node id does nt contain node id. In those cases retrieve id from memo field
+      if (_.isUndefined(nodeAddress.getNodeid()) || nodeAddress.getNodeid().indexOf('.') < 1) {
         node = Buffer.from(nodeAddress.getMemo()).toString('utf-8');
       } else {
         node = nodeAddress.getNodeid();
@@ -50,5 +58,5 @@ class addressBook {
 }
 
 module.exports = {
-  addressBook,
+  AddressBook,
 };

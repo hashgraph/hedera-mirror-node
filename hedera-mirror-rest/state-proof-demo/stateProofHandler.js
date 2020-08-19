@@ -21,15 +21,15 @@
 
 // external libraries
 const _ = require('lodash');
-const {addressBook} = require('./addressBook');
-const {recordFile} = require('./recordFile');
-const {signatureFile} = require('./signatureFile');
+const {AddressBook} = require('./addressBook');
+const {RecordFile} = require('./recordFile');
+const {SignatureFile} = require('./signatureFile');
 const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
 const {performStateProof} = require('./transactionValidator');
 const {replaceSpecialCharsWithUnderScores} = require('./utils');
 
 // responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
-class stateProofHandler {
+class StateProofHandler {
   constructor(transactionId, stateProofJson) {
     this.transactionId = replaceSpecialCharsWithUnderScores(transactionId);
     this.setStateProofComponents(stateProofJson);
@@ -44,15 +44,15 @@ class stateProofHandler {
 
   parseAddressBooks(addressBooksString) {
     console.log(`Parsing address books...`);
-    let addBooks = [];
+    const addressBooks = [];
     _.forEach(addressBooksString, (book, index) => {
-      let tmpAddrBook = base64StringToBuffer(book);
+      const tmpAddrBook = base64StringToBuffer(book);
       storeFile(tmpAddrBook, `${this.transactionId}/addressBook-${index + 1}`, 'txt');
-      addBooks.push(new addressBook(tmpAddrBook));
+      addressBooks.push(new AddressBook(tmpAddrBook));
     });
 
-    console.debug(`Parsed ${addBooks.length} address books`);
-    return addBooks;
+    console.debug(`Parsed ${addressBooks.length} address books`);
+    return addressBooks;
   }
 
   parseRecordFile(recordFileString) {
@@ -60,19 +60,19 @@ class stateProofHandler {
     const tmpRcdFile = base64StringToBuffer(recordFileString);
     storeFile(tmpRcdFile, `${this.transactionId}/recordFile`, 'rcd');
 
-    const rcdFile = new recordFile(tmpRcdFile);
+    const rcdFile = new RecordFile(tmpRcdFile);
 
-    console.debug(`Parsed record file ${rcdFile.hash}`);
+    console.debug(`Parsed record, found ${Object.keys(rcdFile.transactionIdMap).length} transactions`);
     return rcdFile;
   }
 
   parseSignatureFiles(signatureFilesString) {
     console.log(`Parsing signature files...`);
-    let sigFiles = [];
+    const sigFiles = [];
     _.forEach(signatureFilesString, (sigFilesString, nodeId) => {
-      let tmpSigFile = base64StringToBuffer(sigFilesString);
+      const tmpSigFile = base64StringToBuffer(sigFilesString);
       storeFile(tmpSigFile, `${this.transactionId}/signatureFile-${nodeId}`, 'rcd_sig');
-      sigFiles.push(new signatureFile(tmpSigFile, nodeId));
+      sigFiles.push(new SignatureFile(tmpSigFile, nodeId));
     });
 
     console.debug(`Parsed ${sigFiles.length} signature files`);
@@ -80,22 +80,29 @@ class stateProofHandler {
   }
 
   getNodeSignatureMap() {
-    return _.map(this.signatureFiles, (signatureFile) => {
-      return {nodeId: signatureFile.nodeId, signature: signatureFile.signature, hash: signatureFile.hash};
+    return _.map(this.signatureFiles, (signatureFileObject) => {
+      return {
+        nodeId: signatureFileObject.nodeId,
+        signature: signatureFileObject.signature,
+        hash: signatureFileObject.hash,
+      };
     });
   }
 
   runStateProof() {
-    const nodeIdPublicKeyPairs = _.last(this.addressBooks).nodeIdPublicKeyPairs;
+    const {nodeIdPublicKeyPairs} = _.last(this.addressBooks);
 
     // verify transactionId is in recordFile
     const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId);
     if (!transactionInRecordFile) {
       console.error(
-        `transactionId not present in recordFile. Transaction map is ${Object.keys(this.recordFile.transactionIdMap)}`
+        `transactionId ${this.transactionId} not present in recordFile. Transaction map is ${Object.keys(
+          this.recordFile.transactionIdMap
+        )}`
       );
       return false;
     }
+    console.log(`Matching transaction was found in record file`);
 
     const validatedTransaction = performStateProof(
       nodeIdPublicKeyPairs,
@@ -108,5 +115,5 @@ class stateProofHandler {
 }
 
 module.exports = {
-  stateProofHandler,
+  StateProofHandler,
 };
