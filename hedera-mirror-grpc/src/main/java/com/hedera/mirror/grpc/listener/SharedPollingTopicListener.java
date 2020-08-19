@@ -81,7 +81,8 @@ public class SharedPollingTopicListener implements TopicListener {
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         return poller.filter(t -> filterMessage(t, filter))
-                .doOnSubscribe(s -> log.info("Subscribing: {}", filter));
+                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
+                .onBackpressureBuffer(listenerProperties.getMaxBufferSize());
     }
 
     private Flux<TopicMessage> poll(PollingContext context) {
