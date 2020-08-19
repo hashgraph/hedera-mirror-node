@@ -74,7 +74,7 @@ public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest 
                 "\"running_hash\":\"BAUG\"," +
                 "\"running_hash_version\":2," +
                 "\"sequence_number\":1," +
-                "\"topic_num\":0," +
+                "\"topic_num\":1001," +
                 "\"valid_start_timestamp\":1594401416000000000" +
                 "}";
 
@@ -87,11 +87,12 @@ public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest 
                 .runningHash(new byte[] {4, 5, 6})
                 .runningHashVersion(2)
                 .sequenceNumber(1L)
-                .topicNum(0)
+                .topicNum(1001)
                 .validStartTimestamp(Instant.ofEpochSecond(1594401416)).build();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicNum(1001)
                 .build();
 
         topicListener.listen(filter)
