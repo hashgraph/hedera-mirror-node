@@ -32,6 +32,7 @@ const (
 	AppendSignatureFailed          string = "Combine unsigned transaction with signature failed"
 	AccountNotFound                string = "Account not found"
 	BlockNotFound                  string = "Block not found"
+	CreateAccountDbIdFailed        string = "Cannot create Account ID from encoded DB ID: %x"
 	InvalidAccount                 string = "Invalid Account provided"
 	InvalidAmount                  string = "Invalid Amount provided"
 	InvalidOperationsAmount        string = "Invalid Operations amount provided"

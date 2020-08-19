@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories/addressbook/entry"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
@@ -11,8 +12,9 @@ import (
 
 type NetworkService struct {
 	Commons
-	network *types.NetworkIdentifier
-	version *types.Version
+	addressBookEntryRepo repositories.AddressBookEntryRepository
+	network              *types.NetworkIdentifier
+	version              *types.Version
 }
 
 func (n *NetworkService) NetworkList(ctx context.Context, request *types.MetadataRequest) (*types.NetworkListResponse, *types.Error) {
@@ -57,6 +59,11 @@ func (n *NetworkService) NetworkStatus(ctx context.Context, request *types.Netwo
 		return nil, err
 	}
 
+	peers, err := n.addressBookEntryRepo.Entries()
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.NetworkStatusResponse{
 		CurrentBlockIdentifier: &types.BlockIdentifier{
 			Index: latestBlock.Index,
@@ -67,15 +74,17 @@ func (n *NetworkService) NetworkStatus(ctx context.Context, request *types.Netwo
 			Index: genesisBlock.Index,
 			Hash:  hex.SafeAddHexPrefix(genesisBlock.Hash),
 		},
-		// TODO: Add after migration has been added
-		Peers: nil,
+		Peers: peers.ToRosettaPeers(),
 	}, nil
 }
 
-func NewNetworkAPIService(commons Commons, network *types.NetworkIdentifier, version *types.Version) server.NetworkAPIServicer {
+func NewNetworkAPIService(commons Commons,
+	addressBookEntryRepo repositories.AddressBookEntryRepository,
+	network *types.NetworkIdentifier, version *types.Version) server.NetworkAPIServicer {
 	return &NetworkService{
-		Commons: commons,
-		network: network,
-		version: version,
+		Commons:              commons,
+		addressBookEntryRepo: addressBookEntryRepo,
+		network:              network,
+		version:              version,
 	}
 }

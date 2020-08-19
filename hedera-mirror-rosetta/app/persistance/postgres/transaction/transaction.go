@@ -200,7 +200,7 @@ func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.C
 func constructAccount(encodedID int64) *types.Account {
 	acc, err := types.NewAccountFromEncodedID(encodedID)
 	if err != nil {
-		panic(fmt.Sprintf("Cannot create Account ID from encoded DB ID: %d", encodedID))
+		panic(fmt.Sprintf(errors.CreateAccountDbIdFailed, encodedID))
 	}
 	return acc
 }
