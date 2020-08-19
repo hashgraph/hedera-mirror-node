@@ -96,9 +96,9 @@ class StateProofHandler {
     const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId);
     if (!transactionInRecordFile) {
       console.error(
-        `transactionId ${this.transactionId} not present in recordFile. Transaction map is ${Object.keys(
+        `transactionId ${this.transactionId} not present in recordFile. Transaction map is {${Object.keys(
           this.recordFile.transactionIdMap
-        )}`
+        )}}`
       );
       return false;
     }

@@ -23,8 +23,7 @@
 // external libraries
 const _ = require('lodash');
 const crypto = require('crypto');
-const {Transaction} = require('@hashgraph/sdk/lib/generated/Transaction_pb');
-const {TransactionBody} = require('@hashgraph/sdk/lib/generated/TransactionBody_pb');
+const {TransactionRecord} = require('@hashgraph/sdk/lib/generated/TransactionRecord_pb');
 
 class RecordFile {
   /**
@@ -78,7 +77,7 @@ class RecordFile {
           );
           index += 4;
 
-          const transactionRawBuffer = this.readBytesFromBufferAndUpdateHash(
+          this.readBytesFromBufferAndUpdateHash(
             recordFileBuffer,
             index,
             index + transactionRawBytesLength,
@@ -95,7 +94,7 @@ class RecordFile {
           index += 4;
 
           // recordRawBuffer
-          this.readBytesFromBufferAndUpdateHash(
+          const transactionRecordRawBuffer = this.readBytesFromBufferAndUpdateHash(
             recordFileBuffer,
             index,
             index + recordRawBytesLength,
@@ -103,7 +102,7 @@ class RecordFile {
           );
           index += recordRawBytesLength;
 
-          this.updateTransactionIdMap(transactionRawBuffer);
+          this.mapSuccessfulTransactions(transactionRecordRawBuffer);
 
           break;
         default:
@@ -141,18 +140,19 @@ class RecordFile {
     return buf;
   }
 
-  updateTransactionIdMap(transactionRawBuffer) {
-    // retrieve successful transactions and store transactionId in map for future use
-    const deserializedTransaction = Transaction.deserializeBinary(transactionRawBuffer);
-    const transactionBody = TransactionBody.deserializeBinary(deserializedTransaction.getBodybytes_asU8());
-    const transactionIdFromBody = transactionBody.getTransactionid();
-    const accountId = transactionIdFromBody.getAccountid();
-    const timestamp = transactionIdFromBody.getTransactionvalidstart();
+  mapSuccessfulTransactions(transactionRecordRawBuffer) {
+    const deserializedTransactionRecord = TransactionRecord.deserializeBinary(transactionRecordRawBuffer);
+    const transactionReceipt = deserializedTransactionRecord.getReceipt();
+    const status = transactionReceipt.getStatus();
 
-    const parsedTransactionIdString = `${accountId.getShardnum()}_${accountId.getRealmnum()}_${accountId.getAccountnum()}_${timestamp.getSeconds()}_${timestamp.getNanos()}`;
-
-    // to:do add logic to pull success status from TransactionRecord as there may be duplicate transactionId's
-    this.transactionIdMap[parsedTransactionIdString] = transactionIdFromBody;
+    // check if status was SUCCESS, if so add to map
+    if (status === 22) {
+      const transactionIdFromBody = deserializedTransactionRecord.getTransactionid();
+      const accountId = transactionIdFromBody.getAccountid();
+      const timestamp = transactionIdFromBody.getTransactionvalidstart();
+      const parsedTransactionIdString = `${accountId.getShardnum()}_${accountId.getRealmnum()}_${accountId.getAccountnum()}_${timestamp.getSeconds()}_${timestamp.getNanos()}`;
+      this.transactionIdMap[parsedTransactionIdString] = transactionIdFromBody;
+    }
   }
 }
 

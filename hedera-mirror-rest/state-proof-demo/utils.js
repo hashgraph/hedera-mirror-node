@@ -29,7 +29,7 @@ const base64StringToBuffer = (base64String) => {
 };
 
 const replaceSpecialCharsWithUnderScores = (stringToFormat) => {
-  return stringToFormat.replace(/\./g, '_').replace(/\@/g, '_').replace(/\-/g, '_');
+  return stringToFormat.replace(/[.@\-]/g, '_');
 };
 
 const makeStateProofDir = (transactionId) => {

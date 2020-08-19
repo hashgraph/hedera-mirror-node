@@ -19,12 +19,12 @@
  */
 'use strict';
 
-const {stateProofHandler} = require('../stateProofHandler');
+const {StateProofHandler} = require('../stateProofHandler');
 const {readJSONFile} = require('../utils');
 
 const stateProofJson = readJSONFile('stateProofSample.json');
 
 test('stateProof sample test 0.0.94139-1570800748-313194300', () => {
-  const stateProofManager = new stateProofHandler('0.0.94139-1570800748-313194300', stateProofJson, true);
+  const stateProofManager = new StateProofHandler('0.0.94139-1570800748-313194300', stateProofJson, true);
   expect(stateProofManager.runStateProof()).toBe(true);
 });

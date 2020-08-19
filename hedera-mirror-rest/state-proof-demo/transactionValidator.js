@@ -90,17 +90,15 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
  * @returns {boolean}
  */
 const validateRecordFileHash = (recordFileHash, consensusValidatedHash) => {
-  let valid = true;
-
   if (recordFileHash !== consensusValidatedHash) {
-    valid = false;
     console.error(
       `Hash mismatch between recordFileHash: ${recordFileHash} and consensus validated signature files hash: ${consensusValidatedHash}!`
     );
+    return false;
   }
   console.info(`Record file hash was successfully matched with signature files`);
 
-  return valid;
+  return true;
 };
 
 /**
