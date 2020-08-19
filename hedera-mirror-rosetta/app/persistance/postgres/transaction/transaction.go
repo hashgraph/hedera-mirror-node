@@ -70,43 +70,37 @@ func (t *transaction) getHashString() string {
 // TransactionRepository struct that has connection to the Database
 type TransactionRepository struct {
 	dbClient *gorm.DB
-	types    map[int]string
-	statuses map[int]string
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct. Populates the transaction types and statuses on init
 func NewTransactionRepository(dbClient *gorm.DB) *TransactionRepository {
-	tr := &TransactionRepository{dbClient: dbClient}
+	return &TransactionRepository{dbClient: dbClient}
+}
 
+// Types returns map of all Transaction Types
+// TODO implement cache instead of retrieving this everytime form DB
+func (tr *TransactionRepository) Types() map[int]string {
 	typesArray := tr.retrieveTransactionTypes()
 	tMap := make(map[int]string)
 	for _, t := range typesArray {
 		tMap[t.ProtoID] = t.Name
 	}
+	return tMap
+}
 
+// Statuses returns map of all Transaction Statuses
+// TODO implement cache instead of retrieving this everytime form DB
+func (tr *TransactionRepository) Statuses() map[int]string {
 	statusesArray := tr.retrieveTransactionStatuses()
 	sMap := make(map[int]string)
 	for _, s := range statusesArray {
 		sMap[s.ProtoID] = s.Result
 	}
-
-	tr.types = tMap
-	tr.statuses = sMap
-	return tr
-}
-
-// Types returns map of all Transaction Types
-func (tr *TransactionRepository) Types() map[int]string {
-	return tr.types
-}
-
-// Statuses returns map of all Transaction Statuses
-func (tr *TransactionRepository) Statuses() map[int]string {
-	return tr.statuses
+	return sMap
 }
 
 func (tr *TransactionRepository) TypesAsArray() []string {
-	return maphelper.GetStringValuesFromIntStringMap(tr.types)
+	return maphelper.GetStringValuesFromIntStringMap(tr.Types())
 }
 
 // FindByTimestamp retrieves Transaction by given timestamp
@@ -187,14 +181,17 @@ func (tr *TransactionRepository) constructTransaction(sameHashTransactions []tra
 }
 
 func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.CryptoTransfer, transactionsMap map[int64]transaction) []*types.Operation {
-	oArray := make([]*types.Operation, len(cryptoTransfers))
+	transactionTypes := tr.Types()
+	transactionStatuses := tr.Statuses()
+
+	operations := make([]*types.Operation, len(cryptoTransfers))
 	for i, ct := range cryptoTransfers {
 		a := constructAccount(ct.EntityID)
-		operationType := tr.types[transactionsMap[ct.ConsensusTimestamp].Type]
-		operationStatus := tr.statuses[transactionsMap[ct.ConsensusTimestamp].Result]
-		oArray[i] = &types.Operation{Index: int64(i), Type: operationType, Status: operationStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
+		operationType := transactionTypes[transactionsMap[ct.ConsensusTimestamp].Type]
+		operationStatus := transactionStatuses[transactionsMap[ct.ConsensusTimestamp].Result]
+		operations[i] = &types.Operation{Index: int64(i), Type: operationType, Status: operationStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
 	}
-	return oArray
+	return operations
 }
 
 func constructAccount(encodedID int64) *types.Account {

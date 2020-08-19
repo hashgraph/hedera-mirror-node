@@ -1,0 +1,19 @@
+name: Rosetta Validation
+
+on: [push]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Run Rosetta Mirror Node
+      run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:$PWD" -w="$PWD" docker/compose:1.24.0 up -d
+
+    - name: Wait for Mirror Node to start
+      run: bash ./.github/workflows/wait-for-mirror-node.sh
+
+    - name: Run CLI Validation
+      run: bash ./hedera-mirror-rosetta/run-validation.sh
