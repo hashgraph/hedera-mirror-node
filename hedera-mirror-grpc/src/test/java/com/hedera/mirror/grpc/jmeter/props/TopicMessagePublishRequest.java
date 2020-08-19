@@ -37,7 +37,7 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 @Builder
 @Log4j2
 public class TopicMessagePublishRequest {
-    private ConsensusTopicId consensusTopicId;
+    private final ConsensusTopicId consensusTopicId;
     private final int messagesPerBatchCount;
     private final int messageByteSize;
     private final long publishInterval;
