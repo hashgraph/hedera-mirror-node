@@ -37,6 +37,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.bucketName`                       |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.importer.network` value.|
 | `hedera.mirror.importer.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
 | `hedera.mirror.importer.downloader.endpointOverride`                 |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
+| `hedera.mirror.importer.downloader.roleArn`                          |                         | The ARN for the role that needs to be assumed to connect to S3.  Only required if wishing to use temporary security credentials |
+| `hedera.mirror.importer.downloader.externalId`                       |                         | The external id required to assume the role to connect to S3, if one was set                   |
+| `hedera.mirror.importer.downloader.roleSessionName`                  | hedera-mirror-node      | A session name for assuming the role to access S3.                                             |
 | `hedera.mirror.importer.downloader.event.batchSize`                  | 100                     | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.event.enabled`                    | false                   | Whether to enable event file downloads                                                         |
 | `hedera.mirror.importer.downloader.event.frequency`                  | 5s                      | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
