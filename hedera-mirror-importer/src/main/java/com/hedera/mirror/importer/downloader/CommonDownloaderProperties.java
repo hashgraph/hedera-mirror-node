@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,15 @@ public class CommonDownloaderProperties {
     private String secretKey;
 
     private String gcpProjectId;
+
+    private String roleArn;
+
+    private String externalId;
+
+    private String roleSessionName = "hedera-mirror-node";
+
+//    private AssumeRoleProperties assumeRoleProperties;
+
 
     @Getter
     @RequiredArgsConstructor

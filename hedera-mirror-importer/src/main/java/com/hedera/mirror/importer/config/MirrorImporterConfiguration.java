@@ -52,6 +52,10 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
+
 @Configuration
 @EnableAsync
 @Log4j2
@@ -75,6 +79,8 @@ public class MirrorImporterConfiguration {
         log.info("Configured to download from GCP with bucket name '{}'", downloaderProperties.getBucketName());
         // Any valid region for aws client. Ignored by GCP.
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
+                .credentialsProvider(awsCredentialsProvider(downloaderProperties.getAccessKey(),
+                        downloaderProperties.getSecretKey()))
                 .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
         String projectId = downloaderProperties.getGcpProjectId();
         if (StringUtils.isNotBlank(projectId)) {
@@ -96,11 +102,21 @@ public class MirrorImporterConfiguration {
     public S3AsyncClient s3CloudStorageClient() {
         log.info("Configured to download from S3 in region {} with bucket name '{}'",
                 downloaderProperties.getRegion(), downloaderProperties.getBucketName());
-        S3AsyncClientBuilder clientBuilder = asyncClientBuilder(downloaderProperties.getRegion());
+        S3AsyncClientBuilder clientBuilder = asyncClientBuilder(
+                downloaderProperties.getRegion());
         String endpointOverride = downloaderProperties.getEndpointOverride();
         if (endpointOverride != null) {
             log.info("Overriding s3 client endpoint to {}", endpointOverride);
             clientBuilder.endpointOverride(URI.create(endpointOverride));
+        }
+        if(StringUtils.isNotBlank(downloaderProperties.getRoleArn())) {
+            clientBuilder.credentialsProvider(
+                    awsAssumeRoleCredentialsProvider(downloaderProperties.getAccessKey(),
+                            downloaderProperties.getSecretKey(), downloaderProperties.getRegion()));
+        }
+        else {
+            clientBuilder.credentialsProvider(awsCredentialsProvider(downloaderProperties.getAccessKey(),
+                    downloaderProperties.getSecretKey()));
         }
         return clientBuilder.build();
     }
@@ -113,8 +129,6 @@ public class MirrorImporterConfiguration {
 
         return S3AsyncClient.builder()
                 .region(Region.of(region))
-                .credentialsProvider(awsCredentialsProvider(
-                        downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey()))
                 .httpClient(httpClient)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
     }
@@ -127,6 +141,25 @@ public class MirrorImporterConfiguration {
             log.info("Setting up S3 async client using anonymous credentials");
             return AnonymousCredentialsProvider.create();
         }
+    }
+
+    private AwsCredentialsProvider awsAssumeRoleCredentialsProvider(String accessKey, String secretKey, String region) {
+        StsClient stsClient = StsClient.builder()
+                .credentialsProvider(awsCredentialsProvider(accessKey, secretKey))
+                .region(Region.of(region))
+                .build();
+
+        AssumeRoleRequest.Builder assumeRoleRequestBuilder = AssumeRoleRequest.builder()
+                .roleArn(downloaderProperties.getRoleArn())
+                .roleSessionName(downloaderProperties.getRoleSessionName());
+
+        if(StringUtils.isNotBlank(downloaderProperties.getExternalId())) {
+            assumeRoleRequestBuilder.externalId(downloaderProperties.getExternalId());
+        }
+
+        return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient)
+                .refreshRequest(assumeRoleRequestBuilder.build())
+                .build();
     }
 
     @Bean
