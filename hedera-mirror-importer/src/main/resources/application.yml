@@ -56,9 +56,9 @@ spring:
     username: ${hedera.mirror.importer.db.username}
     hikari:
       data-source-properties:
+        loggerLevel: OFF
         reWriteBatchedInserts: true
-      # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
-      maximumPoolSize: 14
+      maximumPoolSize: 14 # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
   flyway:
     connectRetries: 20
     baselineOnMigrate: true
