@@ -46,12 +46,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.context.event.EventListener;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -62,6 +62,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessedEvent;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
@@ -88,7 +89,8 @@ public abstract class AbstractDownloader implements Downloader {
     protected final Timer downloadLatencyMetric;
     protected final Timer streamCloseMetric;
 
-    private final AtomicReference<String> lastSigFileToVerify = new AtomicReference<>();
+    private boolean mirrorDateRagePropertiesProcessed = false;
+    private String lastSigFileToVerify = null;
 
 
     public AbstractDownloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
@@ -127,6 +129,10 @@ public abstract class AbstractDownloader implements Downloader {
     }
 
     protected void downloadNextBatch() {
+        if (!mirrorDateRagePropertiesProcessed) {
+            return;
+        }
+
         if (!downloaderProperties.isEnabled()) {
             return;
         }
@@ -150,10 +156,9 @@ public abstract class AbstractDownloader implements Downloader {
         } catch (Exception e) {
             log.error("Error downloading files", e);
         } finally {
-            String expectedLastSigFileToVerify = lastSigFileToVerify.get();
-            if (!StringUtils.isEmpty(expectedLastSigFileToVerify)) {
+            if (!StringUtils.isEmpty(lastSigFileToVerify)) {
                 String lastValidDownloadedFile = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
-                if (expectedLastSigFileToVerify.equals(lastValidDownloadedFile + "_sig")) {
+                if (lastSigFileToVerify.equals(lastValidDownloadedFile + "_sig")) {
                     downloaderProperties.setEnabled(false);
                     log.warn("Disabled polling {} after downloading all files <= endDate ({})",
                             downloaderProperties.getStreamType(),
@@ -216,7 +221,7 @@ public abstract class AbstractDownloader implements Downloader {
                         if (s3ObjectKey.endsWith("_sig")) {
                             String fileName = s3ObjectKey.substring(s3ObjectKey.lastIndexOf("/") + 1);
                             if (isFileAfterEndDate(fileName)) {
-                                lastSigFileToVerify.set(lastSigFilename);
+                                lastSigFileToVerify = lastSigFilename;
                                 break;
                             }
 
@@ -446,6 +451,11 @@ public abstract class AbstractDownloader implements Downloader {
     private boolean isFileAfterEndDate(String filename) {
         Instant endDate = mirrorProperties.getEndDate();
         return endDate != null && Utility.getInstantFromFilename(filename).isAfter(endDate);
+    }
+
+    @EventListener(MirrorDateRangePropertiesProcessedEvent.class)
+    public void onMirrorDateRangePropertiesProcessedEvent() {
+        mirrorDateRagePropertiesProcessed = true;
     }
 
     protected abstract boolean verifyDataFile(File file, byte[] signedHash);

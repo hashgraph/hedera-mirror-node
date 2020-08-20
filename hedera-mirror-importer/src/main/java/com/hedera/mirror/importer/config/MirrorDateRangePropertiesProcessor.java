@@ -22,20 +22,29 @@ package com.hedera.mirror.importer.config;
 
 import java.time.Instant;
 import java.util.List;
-import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@Log4j2
 @Named
 @RequiredArgsConstructor
 public class MirrorDateRangePropertiesProcessor {
+
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private final MirrorProperties mirrorProperties;
 
@@ -43,17 +52,26 @@ public class MirrorDateRangePropertiesProcessor {
 
     private final List<Downloader> downloaders;
 
-    @PostConstruct
-    private void init() {
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
+    public void init() {
         for (Downloader downloader : downloaders) {
             validateDateRange(downloader);
         }
 
         for (Downloader downloader : downloaders) {
-            updateStartDate(downloader);
+            updateApplicationStatus(downloader);
         }
+
+        applicationEventPublisher.publishEvent(new MirrorDateRangePropertiesProcessedEvent(this));
+        log.info("Mirror date range properties processed successfully, MirrorDateRangePropertiesProcessedEvent fired");
     }
 
+    /**
+     * Validates the configured (startDate, endDate] range for downloader.
+     * @param downloader The downloader to validate the (startDate, endDate] range for
+     * @throws InvalidConfigurationException if the constraint effective startDate < endDate is violated
+     */
     private void validateDateRange(Downloader downloader) {
         Instant effectiveStartDate = getEffectiveStartDate(downloader);
         Instant endDate = mirrorProperties.getEndDate();
@@ -64,20 +82,36 @@ public class MirrorDateRangePropertiesProcessor {
         }
     }
 
-    private void updateStartDate(Downloader downloader) {
+    /**
+     * Updates the application status for downloader based on the validated (startDate, endDate] range.
+     * If effective startDate is not null, the application status is set so the downloader will pull data from files
+     * after the effective startDate. In addition, verifyHashAfter is set to effective startDate if not set or before
+     * effective startDate.
+     * @param downloader The downloader to update application status for
+     */
+    private void updateApplicationStatus(Downloader downloader) {
         Instant effectiveStartDate = getEffectiveStartDate(downloader);
         if (effectiveStartDate != null) {
-            applicationStatusRepository.updateStatusValue(downloader.getLastValidDownloadedFileKey(),
-                    Utility.getStreamFilenameFromInstant(downloader.getDownloaderProperties().getStreamType(), effectiveStartDate));
-        }
+            StreamType streamType = downloader.getDownloaderProperties().getStreamType();
+            String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
+            applicationStatusRepository.updateStatusValue(downloader.getLastValidDownloadedFileKey(), filename);
+            log.debug("Set last valid downloaded file to {} for {} downloader", filename, streamType);
 
-        Instant startDate = mirrorProperties.getStartDate();
-        Instant verifyHashAfter = mirrorProperties.getVerifyHashAfter();
-        if (startDate != null && (verifyHashAfter == null || verifyHashAfter.isBefore(startDate))) {
-            mirrorProperties.setVerifyHashAfter(startDate);
+            Instant verifyHashAfter = mirrorProperties.getVerifyHashAfter();
+            if (verifyHashAfter == null || verifyHashAfter.isBefore(effectiveStartDate)) {
+                mirrorProperties.setVerifyHashAfter(effectiveStartDate);
+                log.debug("Set verifyHashAfter to {}", effectiveStartDate);
+            }
         }
     }
 
+    /**
+     * Gets the effective startDate for downloader based on startDate in MirrorProperties and application status.
+     * @param downloader The downloader
+     * @return The effective startDate: null if downloader is disabled; the configured startDate if the last valid
+     * downloaded file in application status repository is empty or the timestamp if before startDate; now if startDate
+     * is not set and application status is empty; null for all other cases
+     */
     private Instant getEffectiveStartDate(Downloader downloader) {
         DownloaderProperties downloaderProperties = downloader.getDownloaderProperties();
         if (!downloaderProperties.isEnabled()) {
@@ -88,9 +122,9 @@ public class MirrorDateRangePropertiesProcessor {
         String filename = applicationStatusRepository.findByStatusCode(downloader.getLastValidDownloadedFileKey());
         Instant timestamp = Utility.getInstantFromFilename(filename);
         if (startDate != null) {
-            return timestamp.isBefore(startDate) ? startDate : timestamp;
+            return timestamp.isBefore(startDate) ? startDate : null;
         } else {
-            return timestamp.equals(Instant.EPOCH) ? MirrorProperties.getStartDateNow() : timestamp;
+            return StringUtils.isBlank(filename) ? MirrorProperties.getStartDateNow() : null;
         }
     }
 }
