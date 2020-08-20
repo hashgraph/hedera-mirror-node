@@ -1,8 +1,8 @@
 # ------------------------------  Rosetta  ------------------------------- #
 FROM golang:1.13 as rosetta-builder
-WORKDIR /tmp/src/hedera-mirror-rosetta
-# TODO Use Git Clone instead
-COPY ./hedera-mirror-rosetta . 
+WORKDIR /tmp
+RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+WORKDIR /tmp/hedera-mirror-node/hedera-mirror-rosetta
 RUN go build -o rosetta-executable ./cmd
 
 # ---------------------------- Importer/GRPC ----------------------------- #
@@ -18,7 +18,7 @@ RUN cd hedera-mirror-node && ./mvnw clean package -DskipTests
 
 FROM ubuntu:18.04 as runner
 
-# ----------------------------- PostgreSQL ----------------------------- #
+# ---------------------- Install Deps & PosgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
 RUN apt-get update && apt-get install -y gnupg
@@ -30,8 +30,10 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" > /etc
 
 # Install PostgreSQL 9.6, supervisor, git and openjdk-11 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6 supervisor git openjdk-11-jdk-headless
-# RUN add-apt-repository ppa:openjdk-r/ppa && apt-get update && apt install -y openjdk-11-jdk-headless
+RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6 supervisor git openjdk-11-jdk-headless curl
+# Install Nodejs
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
+RUN apt-get install -y nodejs
 
 USER postgres
 
@@ -54,10 +56,18 @@ USER root
 
 # ---------------------------  Supervisord  --------------------------- #
 
+# Clone the Repo
+RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+
+# Copy & npm install the REST API
+WORKDIR /var/rest
+RUN cp -r /hedera-mirror-node/hedera-mirror-rest .
+RUN cd hedera-mirror-rest && npm install
+
 # Copy the Rosetta Executable from the Rosetta Builder stage
 WORKDIR /var/rosetta
-COPY --from=rosetta-builder /tmp/src/hedera-mirror-rosetta/rosetta-executable .
-COPY --from=rosetta-builder /tmp/src/hedera-mirror-rosetta/config/application.yml ./config/application.yml
+COPY --from=rosetta-builder /tmp/hedera-mirror-node/hedera-mirror-rosetta/rosetta-executable .
+COPY --from=rosetta-builder /tmp/hedera-mirror-node/hedera-mirror-rosetta/config/application.yml ./config/application.yml
 
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer
@@ -69,12 +79,9 @@ WORKDIR /var/grpc
 COPY --from=java-builder /hedera-mirror-node/hedera-mirror-grpc/target/hedera-mirror-grpc-0.17.0-rc1-exec.jar ./hedera-mirror-grpc.jar
 COPY --from=java-builder /hedera-mirror-node/hedera-mirror-grpc/src/main/resources/application.yml .
 
-WORKDIR /
-
-# TODO Use Git Clone instead
-COPY supervisord.conf supervisord.conf 
+WORKDIR /hedera-mirror-node
 
 # Expose the ports
-EXPOSE 5432 5700
-
+# (DB)(Rosetta)(Rest)(GRPC)
+EXPOSE 5432 5700 5551 5600
 ENTRYPOINT [ "supervisord" ]
