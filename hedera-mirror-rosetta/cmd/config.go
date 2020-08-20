@@ -20,8 +20,11 @@ func LoadConfig() *types.Config {
 	var configuration types.Config
 	GetConfig(&configuration, defaultConfigFile)
 	GetConfig(&configuration, mainConfigFile)
-	configuration.Hedera.Mirror.Rosetta.Db.Host = os.Getenv(config.EnvHederaMirrorRosettaDBHost)
-
+	value, isPresent := os.LookupEnv(config.EnvHederaMirrorRosettaDBHost)
+	if isPresent {
+		log.Println("Config: Database host is set as ENV variable. Will be using that instead of the host specified in application.yml")
+		configuration.Hedera.Mirror.Rosetta.Db.Host = value
+	}
 	return &configuration
 }
 
