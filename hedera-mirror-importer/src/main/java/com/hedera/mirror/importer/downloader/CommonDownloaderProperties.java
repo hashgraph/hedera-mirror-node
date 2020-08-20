@@ -67,9 +67,6 @@ public class CommonDownloaderProperties {
 
     private String roleSessionName = "hedera-mirror-node";
 
-//    private AssumeRoleProperties assumeRoleProperties;
-
-
     @Getter
     @RequiredArgsConstructor
     public enum CloudProvider {
