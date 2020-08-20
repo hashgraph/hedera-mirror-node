@@ -2,7 +2,7 @@
   "network": {
     "blockchain": "Hedera",
     "network": "demo",
-    "sub_network_identifier" : {
+    "sub_network_identifier": {
       "network": "shard 0 realm 0"
     }
   },

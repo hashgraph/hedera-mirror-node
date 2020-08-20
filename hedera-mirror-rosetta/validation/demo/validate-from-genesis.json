@@ -1,0 +1,27 @@
+{
+  "network": {
+    "blockchain": "Hedera",
+    "network": "demo",
+    "sub_network_identifier": {
+      "network": "shard 0 realm 0"
+    }
+  },
+  "retry_elapsed_time": 5,
+  "online_url": "http://localhost:5700",
+  "data_directory": "",
+  "http_timeout": 10,
+  "sync_concurrency": 8,
+  "transaction_concurrency": 8,
+  "tip_delay": 300,
+  "data": {
+    "historical_balance_disabled": false,
+    "reconciliation_disabled": false,
+    "inactive_discrepency_search_disabled": false,
+    "balance_tracking_disabled": false,
+    "bootstrap_balances": "./../validation/demo/data_genesis_balances.json",
+    "ignore_reconciliation_error": true,
+    "end_conditions": {
+      "index": 1029
+    }
+  }
+}
