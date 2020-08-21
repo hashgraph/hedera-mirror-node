@@ -95,7 +95,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
-    private final CacheManager cacheManager;
 
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
@@ -111,7 +110,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-        this.cacheManager = cacheManager;
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
