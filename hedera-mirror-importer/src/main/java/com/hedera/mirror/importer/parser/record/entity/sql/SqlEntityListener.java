@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -94,6 +95,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
+    private final CacheManager cacheManager;
 
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
@@ -109,6 +111,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
+        this.cacheManager = cacheManager;
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
@@ -125,7 +128,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         contractResults = new ArrayList<>();
         liveHashes = new ArrayList<>();
-        entityIds = new ArrayList<>();
+        entityIds = new HashSet<>();
         topicMessages = new ArrayList<>();
     }
 

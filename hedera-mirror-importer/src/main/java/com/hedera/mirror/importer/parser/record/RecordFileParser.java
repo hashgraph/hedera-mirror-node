@@ -37,7 +37,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
@@ -154,8 +153,6 @@ public class RecordFileParser implements FileParser {
 
             recordParserLatencyMetric(recordFile);
             success = true;
-        } catch (DuplicateFileException ex) {
-            log.warn(String.format("Skipping file %s", streamFileData.getFilename()), ex);
         } catch (Exception ex) {
             recordStreamFileListener.onError(); // rollback
             throw ex;
