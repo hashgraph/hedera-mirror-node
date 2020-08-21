@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -50,9 +51,10 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @Log4j2
 public class RecordFileParserIntegrationTest extends IntegrationTest {
 
-    private static final int NUM_CRYPTO_FILE = 93;
-    private static final int NUM_TXNS_FILE = 19;
-    private static final int NUM_ENTITIES_FILE = 8;
+    private static final int NUM_CRYPTOS = 93;
+    private static final int NUM_TXNS = 19;
+    private static final int NUM_ENTITIES = 8;
+    private static final int NUM_RECORD_FILES = 1;
 
     @TempDir
     static Path dataPath;
@@ -109,36 +111,12 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         recordFileParser.parse(streamFileData);
 
         // then
-        verifyFinalDatabaseState(NUM_CRYPTO_FILE, NUM_TXNS_FILE, NUM_ENTITIES_FILE);
+        verifyFinalDatabaseState(NUM_CRYPTOS, NUM_TXNS, NUM_ENTITIES, NUM_RECORD_FILES);
     }
 
     @Test
-    void verifyRollbackOnEntityCachePutError() throws ParserSQLException {
-        // when
-        Assertions.assertThrows(ParserSQLException.class, () -> {
-            recordFileParser.parse(streamFileData);
-        });
-
-        // then
-        verifyFinalDatabaseState(0, 0, 0);
-    }
-
-    @Test
-    void verifyRecoveryOnApplicationStatusRepositoryError() throws ParserSQLException {
-        // when
-        Assertions.assertThrows(ParserSQLException.class, () -> {
-            recordFileParser.parse(streamFileData);
-        });
-        // then
-        verifyFinalDatabaseState(0, 0, 0);
-
-        // verify recovery
-        recordFileParser.parse(streamFileData);
-        verifyFinalDatabaseState(NUM_CRYPTO_FILE, NUM_TXNS_FILE, NUM_ENTITIES_FILE);
-    }
-
-    @Test
-    void verifyRecoveryOnRecordFileRepositoryError() throws ParserSQLException {
+    void verifyRollbackAndPostFunctionalityOnRecordFileRepositoryError() throws ParserSQLException,
+            FileNotFoundException {
         // given
         RecordFile recordFile = new RecordFile();
         recordFile.setName("2019-08-30T18_10_00.419072Z.rcd");
@@ -147,22 +125,24 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         recordFileRepository.save(recordFile);
 
         // when
-        Assertions.assertThrows(ParserSQLException.class, () -> {
+        Assertions.assertThrows(DataIntegrityViolationException.class, () -> {
             recordFileParser.parse(streamFileData);
         });
 
         // then
-        verifyFinalDatabaseState(0, 0, 0);
+        recordFileRepository.delete(recordFile);
+        verifyFinalDatabaseState(0, 0, 0, 0);
 
-        // verify recovery
+        // verify continue functionality
         recordFileRepository.delete(recordFile);
         recordFileParser.parse(streamFileData);
-        verifyFinalDatabaseState(NUM_CRYPTO_FILE, NUM_TXNS_FILE, NUM_ENTITIES_FILE);
+        verifyFinalDatabaseState(NUM_CRYPTOS, NUM_TXNS, NUM_ENTITIES, NUM_RECORD_FILES);
     }
 
-    void verifyFinalDatabaseState(int cryptoTransferCount, int transactionCount, int entityCount) {
+    void verifyFinalDatabaseState(int cryptoTransferCount, int transactionCount, int entityCount, int recordFileCount) {
         assertEquals(transactionCount, transactionRepository.count()); // pg copy populated
         assertEquals(cryptoTransferCount, cryptoTransferRepository.count()); // pg copy populated
         assertEquals(entityCount, entityRepository.count());
+        assertEquals(recordFileCount, recordFileRepository.count());
     }
 }

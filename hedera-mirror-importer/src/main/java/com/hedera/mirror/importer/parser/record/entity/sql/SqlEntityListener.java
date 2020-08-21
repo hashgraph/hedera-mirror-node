@@ -30,7 +30,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -58,6 +57,7 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
@@ -70,6 +70,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private final DataSource dataSource;
     private final ApplicationStatusRepository applicationStatusRepository;
+    private final EntityRepository entityRepository;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
 
@@ -94,7 +95,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
 
-    private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
     private long batchCount;
@@ -102,9 +102,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
-                             ApplicationStatusRepository applicationStatusRepository) {
+                             ApplicationStatusRepository applicationStatusRepository,
+                             EntityRepository entityRepository) {
         this.dataSource = dataSource;
         this.applicationStatusRepository = applicationStatusRepository;
+        this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
@@ -123,20 +125,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         contractResults = new ArrayList<>();
         liveHashes = new ArrayList<>();
-        entityIds = new HashSet<>();
+        entityIds = new ArrayList<>();
         topicMessages = new ArrayList<>();
     }
 
     @Override
     public void onStart(StreamFileData streamFileData) {
         try {
-            cleanup();
+            cleanup(false, true);
             connection = DataSourceUtils.getConnection(dataSource);
-
-            sqlInsertEntityId = connection.prepareStatement("INSERT INTO t_entities " +
-                    "(id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
-                    "VALUES (?, ?, ?, ?, ?) " +
-                    "ON CONFLICT DO NOTHING");
 
             sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
         } catch (SQLException e) {
@@ -148,34 +145,43 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         executeBatches();
 
+        boolean releaseConnection = false;
         try {
             recordFileRepository.save(recordFile);
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
+            releaseConnection = true;
         } finally {
-            cleanup();
+            cleanup(false, releaseConnection);
         }
     }
 
     @Override
     public void onError() {
-        cleanup();
+        cleanup(true, true);
     }
 
-    private void cleanup() {
-        closeQuietly(sqlInsertEntityId);
+    private void cleanup(boolean isRollBackCleanup, boolean releaseConnection) {
+        if (isRollBackCleanup) {
+            // evict entities from cache from this round of batches as they were rolled back
+            entityIds.forEach(entityId -> entityCache.evict(entityId.getId()));
+        }
+
         closeQuietly(sqlNotifyTopicMessage);
-        sqlInsertEntityId = null;
         sqlNotifyTopicMessage = null;
         batchCount = 0;
         contractResults.clear();
         cryptoTransfers.clear();
-        entityIds.clear();
         fileData.clear();
         liveHashes.clear();
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
+
+        if (releaseConnection) {
+            entityIds.clear();
+            DataSourceUtils.releaseConnection(connection, dataSource);
+        }
     }
 
     private void executeBatch(PreparedStatement ps, String entity) {
@@ -216,7 +222,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } catch (Exception e) {
             throw new ParserException(e);
         } finally {
-            cleanup();
+            cleanup(false, false);
         }
     }
 
@@ -233,22 +239,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
-        // add entities not found in cache to list of entities to be persisted
-        if (entityCache.get(entityId.getId()) != null) {
-            return;
-        }
-
-        try {
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ID.ordinal(), entityId.getId());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_SHARD.ordinal(), entityId.getShardNum());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_REALM.ordinal(), entityId.getRealmNum());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_NUM.ordinal(), entityId.getEntityNum());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.TYPE.ordinal(), entityId.getType());
-            sqlInsertEntityId.addBatch();
-            entityIds.add(entityId);
-        } catch (SQLException e) {
-            throw new ParserSQLException(e);
-        }
+        entityIds.add(entityId);
     }
 
     @Override
@@ -298,16 +289,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void persistEntities() {
-        executeBatch(sqlInsertEntityId, "entities");
-        entityIds.forEach(entityId -> entityCache.put(entityId.getId(), null));
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        entityIds.forEach(entityId -> entityRepository.insertEntityId(entityId));
+        log.info("Inserted {} entities in {}", entityIds.size(), stopwatch);
+        entityIds.forEach(entityId -> entityCache.put(entityId, null));
     }
 
     private void notifyTopicMessages() {
         executeBatch(sqlNotifyTopicMessage, "topic notifications");
-    }
-
-    enum F_ENTITY_ID {
-        ZERO, // column indices start at 1, this creates the necessary offset
-        ID, ENTITY_SHARD, ENTITY_REALM, ENTITY_NUM, TYPE
     }
 }

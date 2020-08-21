@@ -50,7 +50,6 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -189,21 +188,6 @@ public class RecordFileParserTest {
         verify(recordStreamFileListener).onStart(streamFileData1);
         verify(recordStreamFileListener, never()).onEnd(recordFile1);
         verify(recordStreamFileListener).onError();
-    }
-
-    @Test
-    void skipFileOnDuplicateFileException() {
-        // given
-        recordFileParser.parse(streamFileData1);
-        doThrow(DuplicateFileException.class).when(recordStreamFileListener).onStart(any());
-
-        // when: load same file again
-        // then: throws exception
-        recordFileParser.parse(streamFileData1);
-
-        verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
-        verify(recordStreamFileListener, times(2)).onStart(any());
-        verify(recordStreamFileListener, times(1)).onEnd(any());
     }
 
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
