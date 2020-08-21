@@ -94,7 +94,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
 
-        getDownloader().download();
+        prepareDownloader().download();
 
         verify(applicationStatusRepository).updateStatusValue(
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:13:00.317763Z.rcd");

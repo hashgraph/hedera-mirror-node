@@ -187,10 +187,7 @@ public class Utility {
                             RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
 
                             if (recordItemConsumer != null) {
-                                try {
-                                    recordItemConsumer.accept(recordItem);
-                                } catch(Exception ex) {
-                                }
+                                recordItemConsumer.accept(recordItem);
                             }
 
                             if (isFirstTransaction) {

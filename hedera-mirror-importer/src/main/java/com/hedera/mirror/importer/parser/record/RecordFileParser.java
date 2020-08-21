@@ -160,8 +160,9 @@ public class RecordFileParser implements FileParser {
                     streamFileData.getFilename(), expectedPrevFileHash,
                     parserProperties.getMirrorProperties().getVerifyHashAfter(),
                     recordItem -> {
-                        processRecordItem(recordItem);
-                        counter.incrementAndGet();
+                        if (processRecordItem(recordItem)) {
+                            counter.incrementAndGet();
+                        }
                     });
             log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             recordFile.setLoadStart(startTime.getEpochSecond());
@@ -181,7 +182,7 @@ public class RecordFileParser implements FileParser {
         }
     }
 
-    private void processRecordItem(RecordItem recordItem) {
+    private boolean processRecordItem(RecordItem recordItem) {
         if (log.isTraceEnabled()) {
             log.trace("Transaction = {}, Record = {}",
                     Utility.printProtoMessage(recordItem.getTransaction()),
@@ -192,7 +193,7 @@ public class RecordFileParser implements FileParser {
 
         Instant endDate = mirrorProperties.getEndDate();
         if (endDate != null && Utility.convertToNanosMax(endDate.getEpochSecond(), endDate.getNano()) < recordItem.getConsensusTimestamp()) {
-            throw new ParserException("Skip processing record after endDate");
+            return false;
         }
 
         recordItemListener.onItem(recordItem);
@@ -203,6 +204,7 @@ public class RecordFileParser implements FileParser {
         Instant consensusTimestamp = Utility.convertToInstant(recordItem.getRecord().getConsensusTimestamp());
         latencyMetrics.getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
+        return true;
     }
 
     /**
