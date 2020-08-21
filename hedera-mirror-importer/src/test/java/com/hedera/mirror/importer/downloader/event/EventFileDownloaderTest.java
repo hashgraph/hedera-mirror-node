@@ -60,6 +60,12 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
         return Duration.ofSeconds(5L);
     }
 
+    @Override
+    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
+        EventDownloaderProperties properties = (EventDownloaderProperties) downloaderProperties;
+        properties.setBatchSize(batchSize);
+    }
+
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {

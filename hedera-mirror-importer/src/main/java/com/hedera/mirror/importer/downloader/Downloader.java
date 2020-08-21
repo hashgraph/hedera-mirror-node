@@ -66,12 +66,15 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class Downloader {
+
+    private static final String DEFAULT_FILE_BASENAME = "DEFAULT_FILE";
 
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
@@ -93,7 +96,8 @@ public abstract class Downloader {
     protected final Timer streamCloseMetric;
 
     private boolean mirrorDateRagePropertiesProcessed = false;
-    private String lastSigFileToVerify = null;
+    private final String defaultSigFilename;
+    private String lastSigFilenameToVerify = null;
 
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
@@ -112,25 +116,28 @@ public abstract class Downloader {
         lastValidDownloadedFileKey = downloaderProperties.getLastValidDownloadedFileKey();
         lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
 
+        StreamType streamType = downloaderProperties.getStreamType();
+        defaultSigFilename = DEFAULT_FILE_BASENAME + streamType.getSuffix() + "." + streamType.getSignatureExtension();
+
         // Metrics
         signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
-                .tag("type", downloaderProperties.getStreamType().toString());
+                .tag("type", streamType.toString());
 
         streamVerificationMetric = Timer.builder("hedera.mirror.download.stream.verification")
                 .description("The duration in seconds it took to verify consensus and hash chain of a stream file")
-                .tag("type", downloaderProperties.getStreamType().toString());
+                .tag("type", streamType.toString());
 
         downloadLatencyMetric = Timer.builder("hedera.mirror.download.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file " +
                         "and the time at which the file was downloaded and verified")
-                .tag("type", downloaderProperties.getStreamType().toString())
+                .tag("type", streamType.toString())
                 .register(meterRegistry);
 
         streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
                 .description("The difference between the consensus time of the last and first transaction in the " +
                         "stream file")
-                .tag("type", downloaderProperties.getStreamType().toString())
+                .tag("type", streamType.toString())
                 .register(meterRegistry);
     }
 
@@ -168,9 +175,10 @@ public abstract class Downloader {
         } catch (Exception e) {
             log.error("Error downloading files", e);
         } finally {
-            if (!StringUtils.isEmpty(lastSigFileToVerify)) {
+            if (!StringUtils.isEmpty(lastSigFilenameToVerify)) {
                 String lastValidDownloadedFile = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileKey);
-                if (lastSigFileToVerify.equals(lastValidDownloadedFile + "_sig")) {
+                if (lastSigFilenameToVerify.equals(lastValidDownloadedFile + "_sig")
+                        || lastSigFilenameToVerify.equals(defaultSigFilename)) {
                     downloaderProperties.setEnabled(false);
                     log.warn("Disabled polling {} after downloading all files <= endDate ({})",
                             downloaderProperties.getStreamType(),
@@ -228,12 +236,13 @@ public abstract class Downloader {
 
                     // Loop through the list of remote files beginning a download for each relevant sig file
                     String lastSigFilename = lastValidSigFileName;
-                    for (S3Object content : response.get().contents()) {
+                    List<S3Object> contents = response.get().contents();
+                    for (S3Object content : contents) {
                         String s3ObjectKey = content.key();
                         if (s3ObjectKey.endsWith("_sig")) {
                             String fileName = s3ObjectKey.substring(s3ObjectKey.lastIndexOf("/") + 1);
                             if (isFileAfterEndDate(fileName)) {
-                                lastSigFileToVerify = lastSigFilename;
+                                lastSigFilenameToVerify = lastSigFilename;
                                 break;
                             }
 
@@ -242,6 +251,12 @@ public abstract class Downloader {
                             totalDownloads.incrementAndGet();
                             lastSigFilename = fileName;
                         }
+                    }
+
+                    if (!contents.isEmpty() && lastSigFilenameToVerify != null && lastSigFilenameToVerify.isEmpty()) {
+                        // when all files in the bucket are after endDate and there is no last downloaded file in db,
+                        // use defaultSigFilename as sentinel to disable the downloader
+                        lastSigFilenameToVerify = defaultSigFilename;
                     }
 
                     /*

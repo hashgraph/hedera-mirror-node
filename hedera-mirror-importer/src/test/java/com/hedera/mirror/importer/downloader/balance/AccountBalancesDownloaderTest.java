@@ -56,6 +56,12 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         return Duration.ofMinutes(15L);
     }
 
+    @Override
+    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
+        BalanceDownloaderProperties properties = (BalanceDownloaderProperties) downloaderProperties;
+        properties.setBatchSize(batchSize);
+    }
+
     @BeforeEach
     void beforeEach() {
         setTestFilesAndInstants(

@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.downloader;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -45,6 +46,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import lombok.Data;
 import org.apache.commons.io.FileUtils;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -56,6 +59,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.util.ResourceUtils;
@@ -68,6 +73,7 @@ import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
@@ -77,7 +83,7 @@ import com.hedera.mirror.importer.util.Utility;
 public abstract class AbstractDownloaderTest {
     private static final int S3_PROXY_PORT = 8001;
 
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
+    @Mock(answer = Answers.RETURNS_SMART_NULLS, lenient = true)
     protected ApplicationStatusRepository applicationStatusRepository;
     @Mock(lenient = true)
     protected AddressBookService addressBookService;
@@ -148,6 +154,8 @@ public abstract class AbstractDownloaderTest {
     boolean isSigFile(Path path) {
         return path.toString().endsWith("_sig");
     }
+
+    protected abstract void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize);
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) throws Exception {
@@ -420,6 +428,63 @@ public abstract class AbstractDownloaderTest {
         assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
     }
 
+    @Test
+    @DisplayName("startDate not set, default to now")
+    void startDateDefaultNow() throws Exception {
+        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), MirrorProperties.getStartDateNow()))
+                .when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        fileCopier.copy();
+        downloader.download();
+        verifyForSuccess(List.of());
+    }
+
+    @ParameterizedTest(name = "startDate set to {0}s after {1}")
+    @CsvSource({
+            "-1,file1",
+             "0,file1",
+             "1,file1",
+             "0,file2",
+             "1,file2"
+    })
+    void startDate(long seconds, String fileChoice) throws Exception {
+        final Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
+        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), startDate))
+                .when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        List<String> expectedFiles = List.of(file1, file2)
+                .stream()
+                .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
+                .collect(Collectors.toList());
+
+        fileCopier.copy();
+        downloader.download();
+        verifyForSuccess(expectedFiles);
+    }
+
+    @ParameterizedTest(name = "endDate set to {0}s after {1}")
+    @CsvSource({
+            "-1, file1",
+            "0, file1",
+            "1, file1",
+            "0, file2",
+            "1, file2",
+    })
+    void endDate(long seconds, String fileChoice) throws Exception {
+        mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
+        setDownloaderBatchSize(downloaderProperties, 1);
+        configStatefulApplicationStatusRepositoryMock(downloaderProperties.getLastValidDownloadedFileKey(), downloaderProperties.getLastValidDownloadedFileHashKey());
+        List<String> expectedFiles = List.of(file1, file2)
+                .stream()
+                .filter(name -> !Utility.getInstantFromFilename(name).isAfter(mirrorProperties.getEndDate()))
+                .collect(Collectors.toList());
+
+        fileCopier.copy();
+
+        downloader.download();
+        downloader.download();
+
+        verifyForSuccess(expectedFiles, expectedFiles.size() == 2);
+    }
+
     private void differentFilenames(Duration offset) throws Exception {
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
         StreamType type = downloaderProperties.getStreamType();
@@ -447,13 +512,29 @@ public abstract class AbstractDownloaderTest {
     }
 
     private void verifyForSuccess() throws Exception {
-        verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), file1);
-        verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), file2);
-        if (downloaderProperties.getLastValidDownloadedFileHashKey() != null) {
-            verify(applicationStatusRepository, times(2))
-                    .updateStatusValue(eq(downloaderProperties.getLastValidDownloadedFileHashKey()), any());
+        verifyForSuccess(List.of(file1, file2));
+    }
+
+    private void verifyForSuccess(List<String> files) throws Exception {
+        verifyForSuccess(files, true);
+    }
+
+    private void verifyForSuccess(List<String> files, boolean expectEnabled) throws Exception {
+        ApplicationStatusCode lastValidDownloadedFileKey = downloaderProperties.getLastValidDownloadedFileKey();
+        ApplicationStatusCode lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
+
+        verify(applicationStatusRepository, times(files.size())).updateStatusValue(eq(lastValidDownloadedFileKey), any(String.class));
+        for (String filename : files) {
+            verify(applicationStatusRepository).updateStatusValue(lastValidDownloadedFileKey, filename);
         }
-        assertValidFiles(List.of(file2, file1));
+
+        if (lastValidDownloadedFileHashKey != null) {
+            verify(applicationStatusRepository, times(files.size()))
+                    .updateStatusValue(eq(lastValidDownloadedFileHashKey), any());
+        }
+
+        assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
+        assertValidFiles(files);
     }
 
     protected AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
@@ -485,11 +566,45 @@ public abstract class AbstractDownloaderTest {
         return addressBookBuilder.build();
     }
 
+    private Instant chooseFileInstant(String choice) {
+        switch (choice) {
+            case "file1":
+                return file1Instant;
+            case "file2":
+                return file2Instant;
+            default:
+                throw new RuntimeException("Invalid choice " + choice);
+        }
+    }
+
     protected void setTestFilesAndInstants(String file1, String file2) {
         this.file1 = file1;
         this.file2 = file2;
 
         file1Instant = Utility.getInstantFromFilename(file1);
         file2Instant = Utility.getInstantFromFilename(file2);
+    }
+
+    private void configStatefulApplicationStatusRepositoryMock(ApplicationStatusCode... statusCodes) {
+        for (var statusCode : statusCodes) {
+            if (statusCode == null) {
+                continue;
+            }
+
+            ApplicationStatus applicationStatus = new ApplicationStatus();
+            doAnswer(invocation -> {
+                        String value = invocation.getArgument(1);
+                        applicationStatus.setStatus(value);
+                        return null;
+                    }
+            ).when(applicationStatusRepository).updateStatusValue(eq(statusCode), any());
+            doAnswer(invocation -> applicationStatus.getStatus()).when(applicationStatusRepository)
+                    .findByStatusCode(statusCode);
+        }
+    }
+
+    @Data
+    private static class ApplicationStatus {
+        String status = "";
     }
 }

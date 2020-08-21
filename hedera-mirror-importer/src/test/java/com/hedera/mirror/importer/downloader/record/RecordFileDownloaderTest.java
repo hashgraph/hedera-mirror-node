@@ -72,6 +72,12 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
         return Duration.ofSeconds(5L);
     }
 
+    @Override
+    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
+        RecordDownloaderProperties properties = (RecordDownloaderProperties) downloaderProperties;
+        properties.setBatchSize(batchSize);
+    }
+
     @BeforeEach
     void beforeEach() {
         setTestFilesAndInstants(
