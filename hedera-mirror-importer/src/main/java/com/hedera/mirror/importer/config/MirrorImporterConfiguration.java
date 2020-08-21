@@ -22,6 +22,9 @@ package com.hedera.mirror.importer.config;
 
 import java.net.URI;
 import java.time.Duration;
+
+import com.hedera.mirror.importer.exception.MissingCredentialsException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -109,10 +112,9 @@ public class MirrorImporterConfiguration {
             log.info("Overriding s3 client endpoint to {}", endpointOverride);
             clientBuilder.endpointOverride(URI.create(endpointOverride));
         }
-        if(StringUtils.isNotBlank(downloaderProperties.getRoleArn())) {
+        if(StringUtils.isNotBlank(downloaderProperties.getS3().getRoleArn())) {
             clientBuilder.credentialsProvider(
-                    awsAssumeRoleCredentialsProvider(downloaderProperties.getAccessKey(),
-                            downloaderProperties.getSecretKey(), downloaderProperties.getRegion()));
+                    awsAssumeRoleCredentialsProvider());
         }
         else {
             clientBuilder.credentialsProvider(awsCredentialsProvider(downloaderProperties.getAccessKey(),
@@ -143,18 +145,24 @@ public class MirrorImporterConfiguration {
         }
     }
 
-    private AwsCredentialsProvider awsAssumeRoleCredentialsProvider(String accessKey, String secretKey, String region) {
+    private AwsCredentialsProvider awsAssumeRoleCredentialsProvider() {
+        if (StringUtils.isBlank(downloaderProperties.getAccessKey())
+                || StringUtils.isBlank(downloaderProperties.getSecretKey())) {
+            throw new MissingCredentialsException("Cannot connect to S3 using AssumeRole without user keys");
+        }
+
         StsClient stsClient = StsClient.builder()
-                .credentialsProvider(awsCredentialsProvider(accessKey, secretKey))
-                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
+                        downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey())))
+                .region(Region.of(downloaderProperties.getRegion()))
                 .build();
 
         AssumeRoleRequest.Builder assumeRoleRequestBuilder = AssumeRoleRequest.builder()
-                .roleArn(downloaderProperties.getRoleArn())
-                .roleSessionName(downloaderProperties.getRoleSessionName());
+                .roleArn(downloaderProperties.getS3().getRoleArn())
+                .roleSessionName(downloaderProperties.getS3().getRoleSessionName());
 
-        if(StringUtils.isNotBlank(downloaderProperties.getExternalId())) {
-            assumeRoleRequestBuilder.externalId(downloaderProperties.getExternalId());
+        if(StringUtils.isNotBlank(downloaderProperties.getS3().getExternalId())) {
+            assumeRoleRequestBuilder.externalId(downloaderProperties.getS3().getExternalId());
         }
 
         return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient)
