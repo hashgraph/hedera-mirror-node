@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.config;
+package com.hedera.mirror.importer.config.event;
 
 /*-
  * ‌

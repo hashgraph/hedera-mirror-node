@@ -61,7 +61,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessedEvent;
+import com.hedera.mirror.importer.config.event.MirrorDateRangePropertiesProcessedEvent;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;

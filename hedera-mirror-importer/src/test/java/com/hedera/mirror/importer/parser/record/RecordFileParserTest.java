@@ -45,6 +45,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -69,11 +71,11 @@ public class RecordFileParserTest {
     @Mock
     private ApplicationStatusRepository applicationStatusRepository;
     @Mock
-    private MirrorProperties mirrorProperties;
-    @Mock
     private RecordItemListener recordItemListener;
     @Mock
     private RecordStreamFileListener recordStreamFileListener;
+
+    private MirrorProperties mirrorProperties;
     private FileCopier fileCopier;
     private RecordFileParser recordFileParser;
     private RecordParserProperties parserProperties;
@@ -81,6 +83,7 @@ public class RecordFileParserTest {
     private File file1;
     private File file2;
     private static final long FILE1_CONSENSUS_START = 1567188600419072000L;
+    private static final Instant THIRD_LAST_TXN_FILE2_CONSENSUS_INSTANT = Instant.ofEpochSecond(0, 1567188608972069001L);
     private static final int NUM_TXNS_FILE_1 = 19;
     private static final int NUM_TXNS_FILE_2 = 15;
     private static RecordFile recordFile1;
@@ -88,7 +91,7 @@ public class RecordFileParserTest {
 
     @BeforeEach
     void before() {
-        var mirrorProperties = new MirrorProperties();
+        mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
@@ -228,6 +231,22 @@ public class RecordFileParserTest {
         verify(recordStreamFileListener, times(1)).onEnd(any());
     }
 
+    @ParameterizedTest(name = "parse with endDate set to {0}ns after the third last transaction in file2")
+    @ValueSource(longs = {-1, 0, 1})
+    void parseWithEndDate(long nanos) throws Exception {
+        // given
+        mirrorProperties.setEndDate(THIRD_LAST_TXN_FILE2_CONSENSUS_INSTANT.plusNanos(nanos));
+        fileCopier.copy();
+
+        // when
+        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
+                .thenReturn(recordFile1.getFileHash());
+        recordFileParser.parse();
+
+        // then
+        assertAllProcessed();
+    }
+
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
     private void assertOnStart(String... fileNames) {
         ArgumentCaptor<StreamFileData> captor = ArgumentCaptor.forClass(StreamFileData.class);
@@ -280,7 +299,17 @@ public class RecordFileParserTest {
         }
 
         // assert mock interactions
-        verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
+        int expectedProcessedNumTxnsFile2 = NUM_TXNS_FILE_2;
+        Instant endDate = mirrorProperties.getEndDate();
+        if (endDate != null) {
+            // endDate will be neither < forth last txn in file2 nor >= second last txn in file2
+            expectedProcessedNumTxnsFile2 -= 2;
+            if (endDate.isBefore(THIRD_LAST_TXN_FILE2_CONSENSUS_INSTANT)) {
+                expectedProcessedNumTxnsFile2 -= 1;
+            }
+        }
+
+        verify(recordItemListener, times(NUM_TXNS_FILE_1 + expectedProcessedNumTxnsFile2)).onItem(any());
         assertOnStart(file1.getPath(), file2.getPath());
         assertOnEnd(recordFile1, recordFile2);
     }

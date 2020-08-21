@@ -25,13 +25,13 @@ import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.event.MirrorDateRangePropertiesProcessedEvent;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
@@ -44,16 +44,13 @@ import com.hedera.mirror.importer.util.Utility;
 public class MirrorDateRangePropertiesProcessor {
 
     private final ApplicationEventPublisher applicationEventPublisher;
-
     private final MirrorProperties mirrorProperties;
-
     private final ApplicationStatusRepository applicationStatusRepository;
-
     private final List<DownloaderProperties> downloaderPropertiesList;
 
     @Async
     @EventListener(ApplicationReadyEvent.class)
-    public void init() {
+    public void process() {
         for (DownloaderProperties downloaderProperties : downloaderPropertiesList) {
             validateDateRange(downloaderProperties);
         }
@@ -90,7 +87,8 @@ public class MirrorDateRangePropertiesProcessor {
      */
     private void updateApplicationStatus(DownloaderProperties downloaderProperties) {
         Instant effectiveStartDate = getEffectiveStartDate(downloaderProperties);
-        if (effectiveStartDate != null) {
+        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
+        if (effectiveStartDate != null && !effectiveStartDate.equals(lastFileInstant)) {
             StreamType streamType = downloaderProperties.getStreamType();
             String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
             applicationStatusRepository.updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), filename);
@@ -108,7 +106,7 @@ public class MirrorDateRangePropertiesProcessor {
      * Gets the effective startDate for downloader based on startDate in MirrorProperties and application status.
      * @param downloaderProperties The downloader's properties
      * @return The effective startDate: null if downloader is disabled; the configured startDate if the last valid
-     * downloaded file in application status repository is empty or the timestamp if before startDate; now if startDate
+     * downloaded file in application status repository is empty or the timestamp is not before startDate; now if startDate
      * is not set and application status is empty; null for all other cases
      */
     private Instant getEffectiveStartDate(DownloaderProperties downloaderProperties) {
@@ -117,12 +115,16 @@ public class MirrorDateRangePropertiesProcessor {
         }
 
         Instant startDate = mirrorProperties.getStartDate();
-        String filename = applicationStatusRepository.findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
-        Instant timestamp = Utility.getInstantFromFilename(filename);
+        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
         if (startDate != null) {
-            return timestamp.isBefore(startDate) ? startDate : null;
+            return lastFileInstant.isBefore(startDate) ? startDate : lastFileInstant;
         } else {
-            return StringUtils.isBlank(filename) ? MirrorProperties.getStartDateNow() : null;
+            return lastFileInstant.equals(Instant.EPOCH) ? MirrorProperties.getStartDateNow() : null;
         }
+    }
+
+    private Instant getLastValidDownloadedFileInstant(DownloaderProperties downloaderProperties) {
+        String filename = applicationStatusRepository.findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        return Utility.getInstantFromFilename(filename);
     }
 }
