@@ -128,6 +128,18 @@ properties:
     type: string
     description: The Google Cloud secret key used to pay for downloaded streamed files
     title: Importer GCP secret key
+  importer.config.hedera.mirror.importer.downloader.roleArn:
+    type: string
+    description: The Amazone Web Services Amazon Resource Name for the role to assume.  This is only needed in order to use temporary security credentials.
+    title: Importer AWS role ARN
+  importer.config.hedera.mirror.importer.downloader.externalId:
+    type: string
+    description: The Amazone Web Services external id for the role to assume, if one is needed.
+    title: Importer AWS external ID
+  importer.config.hedera.mirror.importer.downloader.roleSessionName:
+    type: string
+    description: The name for the session when assuming a role in AWS.
+    title: Importer AWS role session name
   importer.config.hedera.mirror.importer.network:
     default: MAINNET
     type: string
