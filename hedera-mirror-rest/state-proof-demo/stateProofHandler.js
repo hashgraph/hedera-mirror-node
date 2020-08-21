@@ -26,17 +26,15 @@ const {RecordFile} = require('./recordFile');
 const {SignatureFile} = require('./signatureFile');
 const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
 const {performStateProof} = require('./transactionValidator');
-const {replaceSpecialCharsWithUnderScores} = require('./utils');
 
 // responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
 class StateProofHandler {
   constructor(transactionId, stateProofJson) {
-    this.transactionId = replaceSpecialCharsWithUnderScores(transactionId);
+    this.transactionId = makeStateProofDir(transactionId);
     this.setStateProofComponents(stateProofJson);
   }
 
   setStateProofComponents(stateProofJson) {
-    makeStateProofDir(this.transactionId);
     this.addressBooks = this.parseAddressBooks(stateProofJson.address_books);
     this.recordFile = this.parseRecordFile(stateProofJson.record_file);
     this.signatureFiles = this.parseSignatureFiles(stateProofJson.signature_files);

@@ -35,12 +35,12 @@ class RecordFile {
 
   parseRecordFileBuffer(recordFileBuffer) {
     const recordFileHash = crypto.createHash('sha384');
-    const recordFileContentsHash = crypto.createHash('sha384');
+    let recordFileContentsHash = recordFileHash;
 
     // read record file format version
     const recordFormatVersion = this.readIntFromBufferAndUpdateHash(recordFileBuffer, 0, recordFileHash);
-    if (recordFormatVersion < 0 || recordFormatVersion > 3) {
-      throw new Error(`Unexpected record file format version '${recordFormatVersion}'`);
+    if (recordFormatVersion >= 2) {
+      recordFileContentsHash = crypto.createHash('sha384');
     }
 
     // version

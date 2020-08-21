@@ -33,18 +33,21 @@ const replaceSpecialCharsWithUnderScores = (stringToFormat) => {
 };
 
 const makeStateProofDir = (transactionId) => {
-  fs.mkdir(transactionId, {recursive: true}, (err, path) => {
+  const newDirPath = replaceSpecialCharsWithUnderScores(transactionId);
+  fs.mkdir(newDirPath, {recursive: true}, (err, path) => {
     if (err) {
       console.error(`Error encountered creating directory ${path}: ${err}`);
       throw err;
     }
 
-    console.log(`Supporting files for the state proof stored in the directory ${transactionId}`);
+    console.log(`Supporting files for the state proof stored in the directory ${newDirPath}`);
   });
 
-  fs.writeFile(`${transactionId}/notes.txt`, `Supporting files for the state proof of '${transactionId}'`, (err) => {
+  fs.writeFile(`${newDirPath}/notes.txt`, `Supporting files for the state proof of '${transactionId}'`, (err) => {
     if (err) throw err;
   });
+
+  return newDirPath;
 };
 
 const storeFile = (data, file, ext) => {

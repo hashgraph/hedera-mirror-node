@@ -38,7 +38,7 @@ const options = yargs
   .usage('Usage: -t <transactionId> -e <env>')
   .option('t', {
     alias: 'transactionId',
-    describe: 'Your Hedera Network Transaction Id e.g. 0.0.94139-1570800748_313194300',
+    describe: 'Your Hedera Network Transaction Id e.g. 0.0.94139-1570800748-313194300',
     type: 'string',
     demandOption: true,
   })
