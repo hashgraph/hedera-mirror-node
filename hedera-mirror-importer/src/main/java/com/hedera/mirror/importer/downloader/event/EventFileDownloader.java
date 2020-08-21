@@ -31,9 +31,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EventFile;
-import com.hedera.mirror.importer.downloader.AbstractDownloader;
+import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
@@ -41,7 +40,7 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @Log4j2
 @Named
-public class EventFileDownloader extends AbstractDownloader {
+public class EventFileDownloader extends Downloader {
 
     private final EventFileReader eventFileReader;
 
@@ -59,21 +58,13 @@ public class EventFileDownloader extends AbstractDownloader {
         downloadNextBatch();
     }
 
-    public ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
-    }
-
-    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH;
-    }
-
     /**
      * Checks that hash of data file matches the verified hash and that data file is next in line based on previous file
      * hash. Returns false if any condition is false.
      */
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
+        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
         String fileName = file.getName();
 
         try {

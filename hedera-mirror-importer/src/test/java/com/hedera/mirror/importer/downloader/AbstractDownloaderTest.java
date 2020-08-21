@@ -92,7 +92,7 @@ public abstract class AbstractDownloaderTest {
     protected MirrorProperties mirrorProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
-    protected AbstractDownloader downloader;
+    protected Downloader downloader;
     protected Path validPath;
     protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
     protected String file1;
@@ -136,7 +136,7 @@ public abstract class AbstractDownloaderTest {
 
     // Implementations can assume that s3AsyncClient, applicationStatusRepository, addressBookService and
     // downloaderProperties have been initialized.
-    protected abstract AbstractDownloader getDownloader();
+    protected abstract Downloader getDownloader();
 
     protected abstract Path getTestDataDir();
 
@@ -340,7 +340,7 @@ public abstract class AbstractDownloaderTest {
         Files.walk(downloaderProperties.getSignaturesPath())
                 .filter(this::isSigFile)
                 .forEach(AbstractDownloaderTest::corruptFile);
-        doReturn("").when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        doReturn("").when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         downloader.download();
         verifyForSuccess(null);
     }
@@ -386,7 +386,7 @@ public abstract class AbstractDownloaderTest {
         String lastFileName = Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), lastFileInstant);
 
         doReturn(lastFileName).when(applicationStatusRepository)
-                .findByStatusCode(downloader.getLastValidDownloadedFileKey());
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
 
         fileCopier.copy();
         downloader.download();
@@ -401,7 +401,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("startDate not set, default to now")
     void startDateDefaultNow() throws Exception {
         mirrorProperties.setStartDate(null);
-        configStatefulApplicationStatusRepositoryMock(downloader.getLastValidDownloadedFileKey());
+        configStatefulApplicationStatusRepositoryMock(downloaderProperties.getLastValidDownloadedFileKey());
         fileCopier.copy();
         downloader.download();
         verifyForSuccess(List.of(), mirrorProperties.getStartDateNow());
@@ -418,7 +418,7 @@ public abstract class AbstractDownloaderTest {
     void startDate(long nanos, String fileChoice) throws Exception {
         final Instant startDate = chooseFileInstant(fileChoice).plusNanos(nanos);
         mirrorProperties.setStartDate(startDate);
-        configStatefulApplicationStatusRepositoryMock(downloader.getLastValidDownloadedFileKey());
+        configStatefulApplicationStatusRepositoryMock(downloaderProperties.getLastValidDownloadedFileKey());
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
@@ -437,7 +437,7 @@ public abstract class AbstractDownloaderTest {
     })
     void endDate(long nanos, String fileChoice) throws Exception {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusNanos(nanos));
-        configStatefulApplicationStatusRepositoryMock(downloader.getLastValidDownloadedFileKey());
+        configStatefulApplicationStatusRepositoryMock(downloaderProperties.getLastValidDownloadedFileKey());
         fileCopier.copy();
         downloader.download();
         verifyForSuccess();
@@ -460,12 +460,12 @@ public abstract class AbstractDownloaderTest {
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
-        doReturn(file1).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        doReturn(file1).when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
 
         downloader.download();
 
         // The file with the different timestamp than all other nodes should not be processed
-        verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), file2);
+        verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), file2);
         assertValidFiles(List.of(file2));
     }
 
@@ -482,22 +482,22 @@ public abstract class AbstractDownloaderTest {
         Instant lastDownloadedFileInstant = null;
         for (String filename : files) {
             if (Utility.getInstantFromFilename(filename).equals(startDate)) {
-                verify(applicationStatusRepository, times(2)).updateStatusValue(downloader.getLastValidDownloadedFileKey(), filename);
+                verify(applicationStatusRepository, times(2)).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), filename);
                 startDateFilenameVerified = true;
             } else {
-                verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), filename);
+                verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), filename);
             }
             lastDownloadedFileInstant = Utility.getInstantFromFilename(filename);
         }
 
         if (startDate != null && !startDateFilenameVerified) {
             verify(applicationStatusRepository)
-                    .updateStatusValue(downloader.getLastValidDownloadedFileKey(), Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), startDate));
+                    .updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), startDate));
         }
 
-        if (downloader.getLastValidDownloadedFileHashKey() != null) {
+        if (downloaderProperties.getLastValidDownloadedFileHashKey() != null) {
             verify(applicationStatusRepository, times(files.size()))
-                    .updateStatusValue(eq(downloader.getLastValidDownloadedFileHashKey()), any());
+                    .updateStatusValue(eq(downloaderProperties.getLastValidDownloadedFileHashKey()), any());
         }
 
         if (startDate != null) {

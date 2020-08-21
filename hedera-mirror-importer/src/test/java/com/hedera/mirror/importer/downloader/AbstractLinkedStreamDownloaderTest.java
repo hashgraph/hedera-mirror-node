@@ -38,9 +38,9 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     void hashMismatchWithPrevious() throws Exception {
         doReturn("2019-01-01T01_00_00.000000Z." + downloaderProperties.getStreamType().getExtension())
                 .when(applicationStatusRepository)
-                .findByStatusCode(downloader.getLastValidDownloadedFileKey());
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         doReturn("123").when(applicationStatusRepository)
-                .findByStatusCode(downloader.getLastValidDownloadedFileHashKey());
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileHashKey());
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertNoFilesinValidPath();
@@ -51,9 +51,9 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     void hashMismatchWithBypass() throws Exception {
         doReturn("2019-01-01T14_12_00.000000Z." + downloaderProperties.getStreamType().getExtension())
                 .when(applicationStatusRepository)
-                .findByStatusCode(downloader.getLastValidDownloadedFileKey());
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         doReturn("123").when(applicationStatusRepository)
-                .findByStatusCode(downloader.getLastValidDownloadedFileHashKey());
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileHashKey());
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();

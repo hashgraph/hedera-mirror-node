@@ -27,10 +27,10 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -68,5 +68,15 @@ public class RecordDownloaderProperties implements DownloaderProperties {
     @Override
     public StreamType getStreamType() {
         return StreamType.RECORD;
+    }
+
+    @Override
+    public ApplicationStatusCode getLastValidDownloadedFileKey() {
+        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
+    }
+
+    @Override
+    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
+        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH;
     }
 }

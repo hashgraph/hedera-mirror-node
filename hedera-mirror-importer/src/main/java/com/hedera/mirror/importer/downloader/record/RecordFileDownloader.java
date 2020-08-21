@@ -32,9 +32,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.downloader.AbstractDownloader;
+import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -42,7 +41,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class RecordFileDownloader extends AbstractDownloader {
+public class RecordFileDownloader extends Downloader {
 
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
@@ -57,22 +56,13 @@ public class RecordFileDownloader extends AbstractDownloader {
         downloadNextBatch();
     }
 
-
-    public ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
-    }
-
-    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH;
-    }
-
     /**
      * Checks that hash of data file matches the verified hash and that data file is next in line based on previous file
      * hash. Returns false if any condition is false.
      */
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
+        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
         try {
             RecordFile recordFile = Utility.parseRecordFile(file.getPath(), expectedPrevFileHash,
                     downloaderProperties.getMirrorProperties().getVerifyHashAfter(), null);

@@ -25,20 +25,18 @@ import java.io.File;
 import java.util.Arrays;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
-import com.hedera.mirror.importer.downloader.AbstractDownloader;
+import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class AccountBalancesDownloader extends AbstractDownloader {
+public class AccountBalancesDownloader extends Downloader {
 
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
@@ -56,13 +54,5 @@ public class AccountBalancesDownloader extends AbstractDownloader {
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
         return Arrays.equals(verifiedHash, Utility.getBalanceFileHash(file.getPath()));
-    }
-
-    public ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
-    }
-
-    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return null;
     }
 }

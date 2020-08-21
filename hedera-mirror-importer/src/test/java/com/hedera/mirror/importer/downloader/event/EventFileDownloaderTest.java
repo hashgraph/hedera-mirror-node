@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
-import com.hedera.mirror.importer.downloader.AbstractDownloader;
+import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 
@@ -45,7 +45,7 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     }
 
     @Override
-    protected AbstractDownloader getDownloader() {
+    protected Downloader getDownloader() {
         return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (EventDownloaderProperties) downloaderProperties, meterRegistry, new EventFileReaderImpl());
     }
