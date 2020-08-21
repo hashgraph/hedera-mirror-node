@@ -19,7 +19,7 @@
     <properties>
         <commons-io.version>2.7</commons-io.version>
         <guava.version>29.0-jre</guava.version>
-        <s3mock.version>0.2.6</s3mock.version>
+        <s3proxy.version>1.7.1</s3proxy.version>
         <testcontainers.version>1.14.3</testcontainers.version>
     </properties>
 
@@ -186,9 +186,9 @@
         </dependency>
         <!-- Test -->
         <dependency>
-            <groupId>io.findify</groupId>
-            <artifactId>s3mock_2.12</artifactId>
-            <version>${s3mock.version}</version>
+            <groupId>org.gaul</groupId>
+            <artifactId>s3proxy</artifactId>
+            <version>${s3proxy.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

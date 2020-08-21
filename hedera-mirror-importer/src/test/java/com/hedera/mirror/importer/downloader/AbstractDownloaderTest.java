@@ -31,12 +31,11 @@ import static org.mockito.Mockito.verify;
 import com.google.common.primitives.Bytes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,7 +44,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import org.apache.commons.io.FileUtils;
+import org.gaul.s3proxy.S3Proxy;
+import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.jclouds.ContextBuilder;
+import org.jclouds.blobstore.BlobStoreContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,7 +75,7 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractDownloaderTest {
-    private static final int S3_MOCK_PORT = 8001;
+    private static final int S3_PROXY_PORT = 8001;
 
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
@@ -79,7 +83,7 @@ public abstract class AbstractDownloaderTest {
     protected AddressBookService addressBookService;
     @TempDir
     protected Path s3Path;
-    protected S3Mock s3;
+    protected S3Proxy s3Proxy;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
     protected MirrorProperties mirrorProperties;
@@ -146,7 +150,7 @@ public abstract class AbstractDownloaderTest {
     }
 
     @BeforeEach
-    void beforeEach(TestInfo testInfo) throws IOException {
+    void beforeEach(TestInfo testInfo) throws Exception {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
@@ -161,8 +165,7 @@ public abstract class AbstractDownloaderTest {
 
         validPath = downloaderProperties.getValidPath();
 
-        s3 = S3Mock.create(S3_MOCK_PORT, s3Path.toString());
-        s3.start();
+        startS3Proxy();
 
         MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
         Path addressBookPath = ResourceUtils.getFile(String
@@ -174,8 +177,8 @@ public abstract class AbstractDownloaderTest {
     }
 
     @AfterEach
-    void after() {
-        s3.shutdown();
+    void after() throws Exception {
+        s3Proxy.stop();
     }
 
     private void initProperties() {
@@ -184,12 +187,38 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
 
         commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
-        commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_MOCK_PORT);
-        commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
-        commonDownloaderProperties.setSecretKey("x");
+        commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);
 
         downloaderProperties = getDownloaderProperties();
         downloaderProperties.init();
+    }
+
+
+    private void startS3Proxy() throws Exception {
+        Properties properties = new Properties();
+        properties.setProperty("jclouds.filesystem.basedir", s3Path.toAbsolutePath().toString());
+
+        BlobStoreContext context = ContextBuilder
+                .newBuilder("filesystem")
+                .overrides(properties)
+                .build(BlobStoreContext.class);
+
+        s3Proxy = S3Proxy.builder()
+                .blobStore(context.getBlobStore())
+                .endpoint(URI.create("http://localhost:" + S3_PROXY_PORT))
+                .ignoreUnknownHeaders(true)
+                .build();
+        s3Proxy.start();
+
+        for (int i = 0; i < 500; i++) {
+            if (s3Proxy.getState().equals(AbstractLifeCycle.STARTED)) {
+                return;
+            }
+
+            Thread.sleep(1);
+        }
+
+        throw new RuntimeException("Timeout starting S3Proxy, state " + s3Proxy.getState());
     }
 
     protected void assertNoFilesinValidPath() throws Exception {
