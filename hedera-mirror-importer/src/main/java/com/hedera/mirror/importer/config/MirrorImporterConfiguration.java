@@ -146,7 +146,7 @@ public class MirrorImporterConfiguration {
     }
 
     private AwsCredentialsProvider awsAssumeRoleCredentialsProvider() {
-        log.info("Setting up S3 async client using temporary credentials (AssumeRole)");
+        log.info("Setting up S3 async client using temporary credentials (AWS AssumeRole)");
         if (StringUtils.isBlank(downloaderProperties.getAccessKey())
                 || StringUtils.isBlank(downloaderProperties.getSecretKey())) {
             throw new MissingCredentialsException("Cannot connect to S3 using AssumeRole without user keys");

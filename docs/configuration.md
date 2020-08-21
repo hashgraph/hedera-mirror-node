@@ -102,10 +102,12 @@ for more info about `spring.cloud.gcp.*` properties.
 
 #### Connect to S3 with AssumeRole
 
-Importer can be configured to connect to S3 using temporary security credentials via AssumeRole.  With this, a user
-that does not have permission to access an AWS resource can request a temporary role that will grant them that
-permission.  This is useful when dealing with multiple accounts where a user in one account needs access to a resource
-in another account, and is generally considered more secure than using long-term credentials.
+Importer can be configured to connect to S3 using temporary security credentials via AssumeRole.  This is only available
+when using AWS S3 as the cloud provider.  With this, a user that does not have permission to access an AWS resource can
+request a temporary role that will grant them that permission.  This is useful when dealing with multiple accounts
+where a user in one account needs access to a resource in another account, and is generally considered more secure than
+using long-term credentials.
+
 The following properties are used to enable this:
 
 -   `hedera.mirror.importer.downloader.accessKey` (The access key of the user requesting access)
