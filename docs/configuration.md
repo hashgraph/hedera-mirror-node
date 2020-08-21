@@ -121,9 +121,10 @@ hedera:
       downloader:
         accessKey: access_key
         secretKey: secret_key
-        externalId: external_id
-        roleArn: arn:aws:iam::123123123123:role/testrole
-        roleSessionName: test_session
+        s3:
+          externalId: external_id
+          roleArn: arn:aws:iam::123123123123:role/testrole
+          roleSessionName: test_session
 ```
 
 See [AssumeRole Documentation](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) for more

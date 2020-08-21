@@ -62,7 +62,7 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
-    private final S3 s3;
+    private final S3 s3 = new S3();
 
     @Getter
     @RequiredArgsConstructor
