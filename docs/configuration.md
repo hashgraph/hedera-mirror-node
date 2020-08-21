@@ -53,7 +53,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.record.threads`                   | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
-| `hedera.mirror.importer.endDate`                                     |                         | The end date of the data to import                                                             |
+| `hedera.mirror.importer.endDate`                                     |                         | The end date (inclusive) of the data to import. Transactions after this date will be ignored. The format is the same as `verifyHashAfter` |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
@@ -83,7 +83,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
-| `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or no file is downloaded; 2) if it's not set and no file is downloaded, it defaults to now |
+| `hedera.mirror.importer.startDate`                                   |                         | The start date (exclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or no file is downloaded; 2) if it's not set and no file is downloaded, it defaults to now. The format is the same as `verifyHashAfter` |
 | `hedera.mirror.importer.verifyHashAfter`                             | 1970-01-01T00:00:00Z  | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 
 #### Export transactions to PubSub
