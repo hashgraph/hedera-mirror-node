@@ -6,12 +6,11 @@ drop schema if exists public cascade;
 
 -- recreate schema used by init.sql
 create schema public;
+grant usage on schema public to public;
 
 -- drop api user created in v1 flyway migration
 drop user if exists mirror_api;
 
--- grant grpc stream user permissions
-grant usage on schema public to public;
--- grant usage on schema public to mirror_grpc;
+-- re-grant grpc stream user access
 alter default privileges in schema public grant select on tables to mirror_grpc;
 grant select on all tables in schema public to mirror_grpc;
