@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -86,7 +87,51 @@ func (c *ConstructionService) ConstructionMetadata(ctx context.Context, request 
 }
 
 func (c *ConstructionService) ConstructionParse(ctx context.Context, request *rTypes.ConstructionParseRequest) (*rTypes.ConstructionParseResponse, *rTypes.Error) {
-	panic("implement me")
+	request.Transaction = hexutils.SafeRemoveHexPrefix(request.Transaction)
+	bytesTransaction, err := hex.DecodeString(request.Transaction)
+	if err != nil {
+		return nil, errors.Errors[errors.TransactionDecodeFailed]
+	}
+
+	var transaction hedera.Transaction
+
+	err = transaction.UnmarshalBinary(bytesTransaction)
+	if err != nil {
+		return nil, errors.Errors[errors.TransactionUnmarshallingFailed]
+	}
+
+	transfers := transaction.Body().GetCryptoTransfer().Transfers
+	var operations []*rTypes.Operation
+
+	for i, tx := range transfers.AccountAmounts {
+		operations = append(operations, &rTypes.Operation{
+			OperationIdentifier: &rTypes.OperationIdentifier{
+				Index: int64(i),
+			},
+			Type: config.OperationTypeCryptoTransfer,
+			Account: &rTypes.AccountIdentifier{
+				Address: fmt.Sprintf("%d.%d.%d", tx.AccountID.ShardNum, tx.AccountID.RealmNum, tx.AccountID.AccountNum),
+			},
+			Amount: &rTypes.Amount{
+				Value:    strconv.FormatInt(tx.Amount, 10),
+				Currency: config.CurrencyHbar,
+			},
+		})
+	}
+
+	var signers []string
+
+	if request.Signed {
+		signaturePairs := transaction.SignaturePairs()
+		for _, signaturePair := range signaturePairs {
+			signers = append(signers, hex.EncodeToString(signaturePair.PubKeyPrefix))
+		}
+	}
+
+	return &rTypes.ConstructionParseResponse{
+		Operations: operations,
+		Signers:    signers,
+	}, nil
 }
 
 func (c *ConstructionService) ConstructionPayloads(ctx context.Context, request *rTypes.ConstructionPayloadsRequest) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {

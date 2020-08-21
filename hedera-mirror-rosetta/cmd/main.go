@@ -50,7 +50,7 @@ func main() {
 	configuration := LoadConfig()
 
 	network := &types.NetworkIdentifier{
-		Blockchain: "Hedera",
+		Blockchain: config.Blockchain,
 		Network:    strings.ToLower(configuration.Hedera.Mirror.Rosetta.Network),
 		SubNetworkIdentifier: &types.SubNetworkIdentifier{
 			Network: fmt.Sprintf("shard %s realm %s", configuration.Hedera.Mirror.Rosetta.Shard, configuration.Hedera.Mirror.Rosetta.Realm),

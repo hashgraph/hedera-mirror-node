@@ -1,5 +1,7 @@
 package config
 
+import "github.com/coinbase/rosetta-sdk-go/types"
+
 const (
 	EnvHederaMirrorRosettaDBHost = "HEDERA_MIRROR_ROSETTA_DB_HOST"
 )
@@ -7,4 +9,20 @@ const (
 const (
 	OperationTypeCreateAccount  = "CRYPTOCREATEACCOUNT"
 	OperationTypeCryptoTransfer = "CRYPTOTRANSFER"
+)
+
+const (
+	Blockchain       = "Hedera"
+	CurrencySymbol   = "HBAR"
+	CurrencyDecimals = 8
+)
+
+var (
+	CurrencyHbar = &types.Currency{
+		Symbol:   CurrencySymbol,
+		Decimals: CurrencyDecimals,
+		Metadata: map[string]interface{}{
+			"issuer": Blockchain,
+		},
+	}
 )

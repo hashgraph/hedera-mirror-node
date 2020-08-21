@@ -3,6 +3,7 @@ package types
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"strconv"
 )
 
@@ -25,13 +26,7 @@ func FromRosettaAmount(rAmount *rTypes.Amount) (*Amount, *rTypes.Error) {
 // ToRosettaAmount returns Rosetta type Amount from the current domain type Amount
 func (b *Amount) ToRosettaAmount() *rTypes.Amount {
 	return &rTypes.Amount{
-		Value: strconv.FormatInt(b.Value, 10),
-		Currency: &rTypes.Currency{
-			Symbol:   "HBAR",
-			Decimals: 8,
-			Metadata: map[string]interface{}{
-				"issuer": "Hedera",
-			},
-		},
+		Value:    strconv.FormatInt(b.Value, 10),
+		Currency: config.CurrencyHbar,
 	}
 }

@@ -8,8 +8,7 @@ require (
 	github.com/jinzhu/gorm v1.9.15
 	github.com/joho/godotenv v1.3.0
 	github.com/sqs/goreturns v0.0.0-20181028201513-538ac6014518 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gopkg.in/yaml.v2 v2.2.2
 )
 
-replace github.com/hashgraph/hedera-sdk-go v0.9.1 => github.com/limechain/hedera-sdk-go v0.9.2-0.20200813152811-0a57de9e27e1
+replace github.com/hashgraph/hedera-sdk-go v0.9.1 => github.com/limechain/hedera-sdk-go v0.9.2-0.20200821113130-740c7f6d9a65
