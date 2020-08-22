@@ -36,12 +36,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
@@ -76,15 +72,11 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
-    // used to optimize inserts into t_entities table so node, so duplicate entities are not tried for every transaction
-    private final Cache entityCache;
-
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService, EntityRepository entityRepository,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
-                                    TransactionHandlerFactory transactionHandlerFactory,
-                                    @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager) {
+                                    TransactionHandlerFactory transactionHandlerFactory) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
         this.entityRepository = entityRepository;
@@ -92,8 +84,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
         transactionFilter = commonParserProperties.getFilter();
-
-        entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
     }
 
     public static boolean isSuccessful(TransactionRecord transactionRecord) {
@@ -135,7 +125,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             tx.setEntityId(entityId);
             // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since
             // it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks).
-            insertEntityId(entityId);
+            entityListener.onEntityId(entityId);
 
             if (isSuccessful && transactionHandler.updatesEntity()) {
                 updateEntity(recordItem, transactionHandler, entityId);
@@ -203,10 +193,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         // transactions in stream always have valid node account id and payer account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
         tx.setNodeAccountId(nodeAccount);
-        insertEntityId(nodeAccount);
+        entityListener.onEntityId(nodeAccount);
         var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
         tx.setPayerAccountId(payerAccount);
-        insertEntityId(payerAccount);
+        entityListener.onEntityId(payerAccount);
         tx.setInitialBalance(0L);
         return tx;
     }
@@ -324,7 +314,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            insertEntityId(account);
+            entityListener.onEntityId(account);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
         }
     }
@@ -347,7 +337,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            insertEntityId(account);
+            entityListener.onEntityId(account);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
 
             if (addInitialBalance && (initialBalance == aa.getAmount())
@@ -359,8 +349,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (addInitialBalance) {
             var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
             var createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
-            insertEntityId(payerAccount);
-            insertEntityId(createdAccount);
+            entityListener.onEntityId(payerAccount);
+            entityListener.onEntityId(createdAccount);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
@@ -370,15 +360,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) {
         entityListener.onContractResult(
                 new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
-    }
-
-    private void insertEntityId(EntityId entityId) {
-        // only insert entities not found in cache
-        if (entityCache.get(entityId.getId()) != null) {
-            return;
-        }
-
-        entityListener.onEntityId(entityId);
     }
 
     /**
@@ -393,18 +374,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateEntity(entity, recordItem);
         EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
         if (autoRenewAccount != null) {
-            insertEntityId(autoRenewAccount);
+            entityListener.onEntityId(autoRenewAccount);
             entity.setAutoRenewAccountId(autoRenewAccount);
         }
         // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
         // so no need to persist it to repo.
         EntityId proxyAccount = transactionHandler.getProxyAccount(recordItem);
         if (proxyAccount != null) {
-            insertEntityId(proxyAccount);
+            entityListener.onEntityId(proxyAccount);
             entity.setProxyAccountId(proxyAccount);
         }
 
         entityRepository.save(entity);
-        entityCache.put(entity.getId(), null);
     }
 }

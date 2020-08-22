@@ -37,6 +37,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
@@ -110,7 +111,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-        entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
+        entityCache = new TransactionAwareCacheDecorator(cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE));
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
@@ -133,7 +134,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onStart(StreamFileData streamFileData) {
         try {
-            cleanup(false, true);
+            cleanup();
             connection = DataSourceUtils.getConnection(dataSource);
 
             sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
@@ -146,43 +147,34 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         executeBatches();
 
-        boolean releaseConnection = false;
         try {
             recordFileRepository.save(recordFile);
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
-            releaseConnection = true;
         } finally {
-            cleanup(false, releaseConnection);
+            cleanup();
         }
     }
 
     @Override
     public void onError() {
-        cleanup(true, true);
+        cleanup();
     }
 
-    private void cleanup(boolean isRollBackCleanup, boolean releaseConnection) {
-        if (isRollBackCleanup) {
-            // evict entities from cache from this round of batches as they were rolled back
-            entityIds.forEach(entityId -> entityCache.evict(entityId.getId()));
-        }
-
+    private void cleanup() {
         closeQuietly(sqlNotifyTopicMessage);
         sqlNotifyTopicMessage = null;
         batchCount = 0;
         contractResults.clear();
         cryptoTransfers.clear();
+        entityIds.clear();
         fileData.clear();
         liveHashes.clear();
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
 
-        if (releaseConnection) {
-            entityIds.clear();
-            DataSourceUtils.releaseConnection(connection, dataSource);
-        }
+        DataSourceUtils.releaseConnection(connection, dataSource);
     }
 
     private void executeBatch(PreparedStatement ps, String entity) {
@@ -223,7 +215,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } catch (Exception e) {
             throw new ParserException(e);
         } finally {
-            cleanup(false, false);
+            cleanup();
         }
     }
 
@@ -240,6 +232,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
+        // only insert entities not found in cache
+        if (entityCache.get(entityId.getId()) != null) {
+            return;
+        }
+
         entityIds.add(entityId);
     }
 
@@ -291,9 +288,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void persistEntities() {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        entityIds.forEach(entityId -> entityRepository.insertEntityId(entityId));
+        entityIds.forEach(entityId -> {
+            entityRepository.insertEntityId(entityId);
+            entityCache.put(entityId, null);
+        });
         log.info("Inserted {} entities in {}", entityIds.size(), stopwatch);
-        entityIds.forEach(entityId -> entityCache.put(entityId, null));
     }
 
     private void notifyTopicMessages() {
