@@ -384,7 +384,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onEntityId(proxyAccount);
             entity.setProxyAccountId(proxyAccount);
         }
-
         entityRepository.save(entity);
     }
 }
