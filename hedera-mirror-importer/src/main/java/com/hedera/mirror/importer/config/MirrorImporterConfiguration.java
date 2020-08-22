@@ -23,8 +23,6 @@ package com.hedera.mirror.importer.config;
 import java.net.URI;
 import java.time.Duration;
 
-import com.hedera.mirror.importer.exception.MissingCredentialsException;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -37,10 +35,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
@@ -55,10 +50,6 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 
-import software.amazon.awssdk.services.sts.StsClient;
-import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
-import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
-
 @Configuration
 @EnableAsync
 @Log4j2
@@ -69,6 +60,7 @@ public class MirrorImporterConfiguration {
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties downloaderProperties;
     private final MetricsExecutionInterceptor metricsExecutionInterceptor;
+    private final AwsCredentialsProvider awsCredentialsProvider;
 
     @Bean
     @Profile("kubernetes")
@@ -82,8 +74,6 @@ public class MirrorImporterConfiguration {
         log.info("Configured to download from GCP with bucket name '{}'", downloaderProperties.getBucketName());
         // Any valid region for aws client. Ignored by GCP.
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
-                .credentialsProvider(awsCredentialsProvider(downloaderProperties.getAccessKey(),
-                        downloaderProperties.getSecretKey()))
                 .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
         String projectId = downloaderProperties.getGcpProjectId();
         if (StringUtils.isNotBlank(projectId)) {
@@ -112,14 +102,6 @@ public class MirrorImporterConfiguration {
             log.info("Overriding s3 client endpoint to {}", endpointOverride);
             clientBuilder.endpointOverride(URI.create(endpointOverride));
         }
-        if(StringUtils.isNotBlank(downloaderProperties.getS3().getRoleArn())) {
-            clientBuilder.credentialsProvider(
-                    awsAssumeRoleCredentialsProvider());
-        }
-        else {
-            clientBuilder.credentialsProvider(awsCredentialsProvider(downloaderProperties.getAccessKey(),
-                    downloaderProperties.getSecretKey()));
-        }
         return clientBuilder.build();
     }
 
@@ -130,45 +112,10 @@ public class MirrorImporterConfiguration {
                 .build();
 
         return S3AsyncClient.builder()
+                .credentialsProvider(awsCredentialsProvider)
                 .region(Region.of(region))
                 .httpClient(httpClient)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
-    }
-
-    private AwsCredentialsProvider awsCredentialsProvider(String accessKey, String secretKey) {
-        if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
-            log.info("Setting up S3 async client using provided access/secret key");
-            return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
-        } else {
-            log.info("Setting up S3 async client using anonymous credentials");
-            return AnonymousCredentialsProvider.create();
-        }
-    }
-
-    private AwsCredentialsProvider awsAssumeRoleCredentialsProvider() {
-        log.info("Setting up S3 async client using temporary credentials (AWS AssumeRole)");
-        if (StringUtils.isBlank(downloaderProperties.getAccessKey())
-                || StringUtils.isBlank(downloaderProperties.getSecretKey())) {
-            throw new MissingCredentialsException("Cannot connect to S3 using AssumeRole without user keys");
-        }
-
-        StsClient stsClient = StsClient.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                        downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey())))
-                .region(Region.of(downloaderProperties.getRegion()))
-                .build();
-
-        AssumeRoleRequest.Builder assumeRoleRequestBuilder = AssumeRoleRequest.builder()
-                .roleArn(downloaderProperties.getS3().getRoleArn())
-                .roleSessionName(downloaderProperties.getS3().getRoleSessionName());
-
-        if(StringUtils.isNotBlank(downloaderProperties.getS3().getExternalId())) {
-            assumeRoleRequestBuilder.externalId(downloaderProperties.getS3().getExternalId());
-        }
-
-        return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient)
-                .refreshRequest(assumeRoleRequestBuilder.build())
-                .build();
     }
 
     @Bean
