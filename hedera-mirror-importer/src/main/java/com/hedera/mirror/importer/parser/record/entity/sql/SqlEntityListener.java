@@ -37,7 +37,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
@@ -111,7 +110,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-        entityCache = new TransactionAwareCacheDecorator(cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE));
+        entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
