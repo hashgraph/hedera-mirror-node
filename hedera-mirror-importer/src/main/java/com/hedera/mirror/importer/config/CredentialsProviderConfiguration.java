@@ -20,11 +20,6 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import com.hedera.mirror.importer.config.condition.AwsAssumeRoleCondition;
-import com.hedera.mirror.importer.config.condition.StaticCredentialsCondition;
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.importer.exception.MissingCredentialsException;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +36,11 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
+
+import com.hedera.mirror.importer.config.condition.AwsAssumeRoleCondition;
+import com.hedera.mirror.importer.config.condition.StaticCredentialsCondition;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.exception.MissingCredentialsException;
 
 @Configuration
 @EnableAsync
@@ -77,7 +77,7 @@ public class CredentialsProviderConfiguration {
                 .roleArn(downloaderProperties.getS3().getRoleArn())
                 .roleSessionName(downloaderProperties.getS3().getRoleSessionName());
 
-        if(StringUtils.isNotBlank(downloaderProperties.getS3().getExternalId())) {
+        if (StringUtils.isNotBlank(downloaderProperties.getS3().getExternalId())) {
             assumeRoleRequestBuilder.externalId(downloaderProperties.getS3().getExternalId());
         }
 

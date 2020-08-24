@@ -20,12 +20,12 @@ package com.hedera.mirror.importer.config.condition;
  * ‍
  */
 
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 
 public class AwsAssumeRoleCondition implements Condition {
 
@@ -34,7 +34,7 @@ public class AwsAssumeRoleCondition implements Condition {
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         String roleArn = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.s3.roleArn");
         String cloudProvider = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.cloudProvider");
-        if(cloudProvider == null) {
+        if (cloudProvider == null) {
             cloudProvider = CommonDownloaderProperties.CloudProvider.S3.name();
         }
         return StringUtils.isNotBlank(roleArn) && StringUtils.equals(CommonDownloaderProperties.CloudProvider.S3.name(),
