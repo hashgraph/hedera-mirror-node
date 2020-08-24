@@ -31,7 +31,7 @@
     "mathjs": "^7.1.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.0",
-    "pg": "~8.3.0",
+    "pg": "~8.3.2",
     "swagger-stats": "^0.95.17"
   },
   "bundledDependencies": [
