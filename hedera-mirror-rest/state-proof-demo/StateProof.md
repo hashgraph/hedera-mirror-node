@@ -38,7 +38,7 @@ From command line run
 ### Sample Case
 To verify the sample case run teh following command
 
-`state-proof -t 0.0.94139-11965562-313194 -e dev -sample true`
+`state-proof -t 0.0.94139-1570800748-313194300 -e dev -sample true`
 
 ### Testnet Case
 
