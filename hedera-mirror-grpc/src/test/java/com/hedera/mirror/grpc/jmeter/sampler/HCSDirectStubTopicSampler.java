@@ -119,7 +119,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
             scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(() -> {
                 result.printProgress();
-            }, 0, 1, TimeUnit.MINUTES);
+            }, 0, messageListener.getStatusPrintIntervalMinutes(), TimeUnit.MINUTES);
 
             // await some new messages
             if (!historicMessagesLatch.await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {

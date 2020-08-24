@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.listener;
+package com.hedera.mirror.grpc.jmeter.props;
 
 /*-
  * ‌
@@ -20,15 +20,24 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-import javax.annotation.Resource;
+import lombok.Value;
 
-public class SharedPollingTopicListenerTest extends AbstractSharedTopicListenerTest {
+import com.hedera.hashgraph.sdk.account.AccountId;
 
-    @Resource
-    private SharedPollingTopicListener topicListener;
+@Value
+public class NodeInfo {
+    private final AccountId nodeId;
+    private final String nodeHost;
+    private final String nodePort;
 
-    @Override
-    protected TopicListener getTopicListener() {
-        return topicListener;
+    public NodeInfo(String nodeInfo) {
+        String[] nodeParts = nodeInfo.split(":");
+        nodeHost = nodeParts[0];
+        nodeId = AccountId.fromString(nodeParts[1]);
+        nodePort = nodeParts[2];
+    }
+
+    public String getNodeAddress() {
+        return nodeHost + ":" + nodePort;
     }
 }
