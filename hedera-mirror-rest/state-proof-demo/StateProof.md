@@ -7,7 +7,7 @@ Step 1: Obtains user input of transactionId and other params
 
 Step 2: Makes a REST API call to the mirror node to retrieve stateproof supporting files - addressBook(s), signature files and a record file.
 
-Step 3 : Store files locally and verifies at least 1 addressBook, 3 signatures, 1 rcd file were retrieved.
+Step 3 : Store files locally and verifies at least 1 addressBook, 2 signatures, 1 rcd file were retrieved.
 
 Step 4: Parses AddressBook(s) pulling out and creating a map of nodeIds to public keys
 

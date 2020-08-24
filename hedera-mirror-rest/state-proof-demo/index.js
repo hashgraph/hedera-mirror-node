@@ -35,19 +35,19 @@ const getStateProofJson = async (url, test) => {
 };
 
 getStateProofJson(url, sample).then((stateProofJson) => {
-  const missingFilesPrefix = 'Mirror node StateProof API returned insufficient number of addressBooks.';
+  const missingFilesPrefix = 'Mirror node StateProof API returned insufficient number of files.';
   if (stateProofJson.address_books.length < 1) {
-    console.error(`${missingFilesPrefix} At least 1 is expected`);
+    console.error(`${missingFilesPrefix} At least 1 addressBook is expected`);
     return false;
   }
 
   if (stateProofJson.record_file.length < 1) {
-    console.error(`${missingFilesPrefix} 1 is expected`);
+    console.error(`${missingFilesPrefix} At least 1 record file is expected`);
     return false;
   }
 
-  if (stateProofJson.signature_files.length < 1) {
-    console.error(`${missingFilesPrefix} At least 3 are expected`);
+  if (stateProofJson.signature_files.length < 2) {
+    console.error(`${missingFilesPrefix} At least 2 signature files are expected`);
     return false;
   }
 
