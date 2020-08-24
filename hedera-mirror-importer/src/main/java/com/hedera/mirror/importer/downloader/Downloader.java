@@ -235,28 +235,14 @@ public abstract class Downloader {
                     Collection<PendingDownload> pendingDownloads = new ArrayList<>(downloaderProperties.getBatchSize());
 
                     // Loop through the list of remote files beginning a download for each relevant sig file
-                    String lastSigFilename = lastValidSigFileName;
-                    List<S3Object> contents = response.get().contents();
-                    for (S3Object content : contents) {
+                    for (S3Object content : response.get().contents()) {
                         String s3ObjectKey = content.key();
                         if (s3ObjectKey.endsWith("_sig")) {
                             String fileName = s3ObjectKey.substring(s3ObjectKey.lastIndexOf("/") + 1);
-                            if (isFileAfterEndDate(fileName)) {
-                                lastSigFilenameToVerify = lastSigFilename;
-                                break;
-                            }
-
                             Path saveTarget = sigFilesDir.resolve(fileName);
                             pendingDownloads.add(saveToLocalAsync(s3ObjectKey, saveTarget));
                             totalDownloads.incrementAndGet();
-                            lastSigFilename = fileName;
                         }
-                    }
-
-                    if (!contents.isEmpty() && lastSigFilenameToVerify != null && lastSigFilenameToVerify.isEmpty()) {
-                        // when all files in the bucket are after endDate and there is no last downloaded file in db,
-                        // use defaultSigFilename as sentinel to disable the downloader
-                        lastSigFilenameToVerify = defaultSigFilename;
                     }
 
                     /*
@@ -373,21 +359,22 @@ public abstract class Downloader {
     private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         Path validPath = downloaderProperties.getValidPath();
+        String lastValidSigFilename = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileKey) + "_sig";
 
-        for (var groupIdIterator = sigFilesMap.keySet().iterator(); groupIdIterator.hasNext(); ) {
+        for (var sigFilenameIter = sigFilesMap.keySet().iterator(); sigFilenameIter.hasNext(); ) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
 
             Instant startTime = Instant.now();
-            String groupId = groupIdIterator.next();
-            Collection<FileStreamSignature> signatures = sigFilesMap.get(groupId);
+            String sigFilename = sigFilenameIter.next();
+            Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFilename);
             boolean valid = false;
 
             try {
                 nodeSignatureVerifier.verify(signatures);
             } catch (SignatureVerificationException ex) {
-                if (groupIdIterator.hasNext()) {
+                if (sigFilenameIter.hasNext()) {
                     log.warn("Signature verification failed but still have files in the batch, try to process the " +
                             "next group", ex);
                     continue;
@@ -405,6 +392,7 @@ public abstract class Downloader {
                 }
             }
 
+            boolean isEndDateReached = false;
             for (FileStreamSignature signature : signatures) {
                 if (ShutdownHelper.isStopping()) {
                     return;
@@ -420,7 +408,14 @@ public abstract class Downloader {
                     if (signedDataFile == null) {
                         continue;
                     }
+
                     if (verifyDataFile(signedDataFile, signature.getHash())) {
+                        if (isFileAfterEndDate(sigFilename)) {
+                            isEndDateReached = true;
+                            break;
+                        }
+
+                        lastValidSigFilename = sigFilename;
                         // move the file to the valid directory
                         File destination = validPath.resolve(signedDataFile.getName()).toFile();
                         if (moveFile(signedDataFile, destination)) {
@@ -444,13 +439,23 @@ public abstract class Downloader {
                 }
             }
 
-            if (!valid) {
-                log.error("None of the data files could be verified, signatures: {}", signatures);
-            }
-
             streamVerificationMetric.tag("success", String.valueOf(valid))
                     .register(meterRegistry)
                     .record(Duration.between(startTime, Instant.now()));
+
+            if (isEndDateReached) {
+                // stop processing here since the file is after the configured endDate
+                lastSigFilenameToVerify = lastValidSigFilename;
+                break;
+            } else if (!valid) {
+                log.error("None of the data files could be verified, signatures: {}", signatures);
+            }
+        }
+
+        if (!sigFilesMap.isEmpty() && lastSigFilenameToVerify != null && lastSigFilenameToVerify.isEmpty()) {
+            // when all files in the bucket are after endDate and there is no last downloaded file in db,
+            // use defaultSigFilename as sentinel to disable the downloader
+            lastSigFilenameToVerify = defaultSigFilename;
         }
     }
 

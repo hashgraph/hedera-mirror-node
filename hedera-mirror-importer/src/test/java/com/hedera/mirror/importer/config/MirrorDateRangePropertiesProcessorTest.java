@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 
 import java.time.Instant;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,10 +57,6 @@ public class MirrorDateRangePropertiesProcessorTest {
         balanceDownloaderProperties.setEnabled(true);
         eventDownloaderProperties.setEnabled(true);
         recordDownloaderProperties.setEnabled(true);
-    }
-
-    @AfterEach
-    void tearDown() {
     }
 
     @Test
@@ -135,8 +130,10 @@ public class MirrorDateRangePropertiesProcessorTest {
     @CsvSource(value = {
             "2020-08-18T09:00:05.123Z, 2020-08-18T09:00:05.123Z,",
             "2020-08-18T09:00:06.123Z, 2020-08-18T09:00:05.123Z,",
-            "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z,2020-08-18T09:00:05.123Z",
-            "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z,2020-08-18T09:00:06.123Z",
+            "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:05.123Z", //
+            "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:06.123Z",
+            ", 2020-08-18T09:00:05.123Z, 2020-08-19T09:00:05.111Z",
+            ", 2020-08-18T09:00:05.123Z,"
     })
     void startDateNotBeforeEndDate(Instant startDate, Instant endDate, Instant applicationStatusDate) {
         mirrorProperties.setStartDate(startDate);

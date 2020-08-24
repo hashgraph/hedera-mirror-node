@@ -5,11 +5,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import javax.annotation.Resource;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,7 +19,6 @@ import com.hedera.mirror.importer.downloader.balance.AccountBalancesDownloader;
 import com.hedera.mirror.importer.downloader.event.EventFileDownloader;
 import com.hedera.mirror.importer.downloader.record.RecordFileDownloader;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MirrorDateRangePropertiesProcessorIntegrationTest extends IntegrationTest {
 
     @Resource
@@ -37,11 +33,6 @@ public class MirrorDateRangePropertiesProcessorIntegrationTest extends Integrati
     @MockBean
     private EventFileDownloader eventFileDownloader;
 
-    @BeforeAll
-    void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
-
     @Test
     void eventFiredAndListenerCalled() {
         verify(applicationEventPublisher, timeout(500).times(1)).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
@@ -55,9 +46,9 @@ public class MirrorDateRangePropertiesProcessorIntegrationTest extends Integrati
 
         @Bean
         @Primary
-        public ApplicationEventPublisher applicationEventPublisher(ApplicationEventPublisher app) {
+        public ApplicationEventPublisher applicationEventPublisher(ApplicationEventPublisher publisher) {
             // ApplicationEventPublisher can't be mocked / spied with annotation
-            return Mockito.spy(app);
+            return Mockito.spy(publisher);
         }
     }
 }

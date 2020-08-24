@@ -103,11 +103,11 @@ public class MirrorDateRangePropertiesProcessor {
     }
 
     /**
-     * Gets the effective startDate for downloader based on startDate in MirrorProperties and application status.
+     * Gets the effective startDate for downloader based on startDate in MirrorProperties and last valid downloaded file.
      * @param downloaderProperties The downloader's properties
-     * @return The effective startDate: null if downloader is disabled; the configured startDate if the last valid
-     * downloaded file in application status repository is empty or the timestamp is not before startDate; now if startDate
-     * is not set and application status is empty; null for all other cases
+     * @return The effective startDate: null if downloader is disabled; if startDate is set, the effective startDate is
+     * startDate if the database is empty or max(startDate, timestamp of last valid downloaded file); if startDate is
+     * not set, the effective startDate is now if the database is empty, or the timestamp of last valid downloaded file
      */
     private Instant getEffectiveStartDate(DownloaderProperties downloaderProperties) {
         if (!downloaderProperties.isEnabled()) {
@@ -117,9 +117,9 @@ public class MirrorDateRangePropertiesProcessor {
         Instant startDate = mirrorProperties.getStartDate();
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
         if (startDate != null) {
-            return lastFileInstant.isBefore(startDate) ? startDate : lastFileInstant;
+            return startDate.isAfter(lastFileInstant) ? startDate : lastFileInstant;
         } else {
-            return lastFileInstant.equals(Instant.EPOCH) ? MirrorProperties.getStartDateNow() : null;
+            return lastFileInstant.equals(Instant.EPOCH) ? MirrorProperties.getStartDateNow() : lastFileInstant;
         }
     }
 

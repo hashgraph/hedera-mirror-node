@@ -83,7 +83,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
-| `hedera.mirror.importer.startDate`                                   |                         | The start date (exclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or no file is downloaded; 2) if it's not set and no file is downloaded, it defaults to now. The format is the same as `verifyHashAfter` |
+| `hedera.mirror.importer.startDate`                                   |                         | The start date (exclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. The format is the same as `verifyHashAfter` |
 | `hedera.mirror.importer.verifyHashAfter`                             | 1970-01-01T00:00:00Z  | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 
 #### Export transactions to PubSub
