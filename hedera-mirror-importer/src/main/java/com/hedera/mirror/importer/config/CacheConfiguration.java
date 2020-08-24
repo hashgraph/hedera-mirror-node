@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.transaction.TransactionAwareCacheManagerProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -49,14 +50,14 @@ public class CacheConfiguration {
     CacheManager cacheManager5m() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100,expireAfterWrite=5m");
-        return caffeineCacheManager;
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 
     @Bean(EXPIRE_AFTER_30M)
     CacheManager cacheManager30m() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=10000,expireAfterWrite=30m");
-        return caffeineCacheManager;
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 
     // Cache for small sets of DB "constants" that don't change and are looked up once.
@@ -64,13 +65,13 @@ public class CacheConfiguration {
     CacheManager tinyLruCache() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100");
-        return caffeineCacheManager;
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 
     @Bean(NEVER_EXPIRE_LARGE)
     CacheManager cacheManagerNeverExpireLarge() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=2000000"); // 2 million 120MB
-        return caffeineCacheManager;
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 }

@@ -48,7 +48,7 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
     Path testPath;
 
     @Resource
-    private RecordFileParser recordFileParser;
+    private RecordFilePoller recordFilePoller;
 
     @Resource
     private RecordParserProperties parserProperties;
@@ -71,7 +71,7 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
 
     @Timeout(30)
     @Test
-    void parseAndIngestMultipleFiles60000Transactions() throws Exception {
+    void parseAndIngestMultipleFiles60000Transactions() {
         parse("*.rcd");
     }
 
@@ -82,6 +82,6 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
                 .to(streamType.getPath(), streamType.getValid());
         fileCopier.copy();
 
-        recordFileParser.parse();
+        recordFilePoller.poll();
     }
 }
