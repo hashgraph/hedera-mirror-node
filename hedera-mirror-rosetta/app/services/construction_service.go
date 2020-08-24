@@ -15,14 +15,17 @@ import (
 	"strconv"
 )
 
-type ConstructionService struct {
+// ConstructionAPIService implements the server.ConstructionAPIServicer interface.
+type ConstructionAPIService struct {
 	hederaClient *hedera.Client
 }
 
-func (c *ConstructionService) ConstructionCombine(ctx context.Context, request *rTypes.ConstructionCombineRequest) (*rTypes.ConstructionCombineResponse, *rTypes.Error) {
+// ConstructionCombine implements the /construction/combine endpoint.
+func (c *ConstructionAPIService) ConstructionCombine(ctx context.Context, request *rTypes.ConstructionCombineRequest) (*rTypes.ConstructionCombineResponse, *rTypes.Error) {
 	if len(request.Signatures) != 1 {
 		return nil, errors.Errors[errors.MultipleSignaturesPresent]
 	}
+
 	request.UnsignedTransaction = hexutils.SafeRemoveHexPrefix(request.UnsignedTransaction)
 	bytesTransaction, err := hex.DecodeString(request.UnsignedTransaction)
 	if err != nil {
@@ -37,8 +40,8 @@ func (c *ConstructionService) ConstructionCombine(ctx context.Context, request *
 	}
 
 	signature := request.Signatures[0]
-	pubKey, err := hedera.Ed25519PublicKeyFromBytes(signature.PublicKey.Bytes)
 
+	pubKey, err := hedera.Ed25519PublicKeyFromBytes(signature.PublicKey.Bytes)
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidPublicKey]
 	}
@@ -58,11 +61,13 @@ func (c *ConstructionService) ConstructionCombine(ctx context.Context, request *
 	}, nil
 }
 
-func (c *ConstructionService) ConstructionDerive(ctx context.Context, request *rTypes.ConstructionDeriveRequest) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
+// ConstructionDerive implements the /construction/derive endpoint.
+func (c *ConstructionAPIService) ConstructionDerive(ctx context.Context, request *rTypes.ConstructionDeriveRequest) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
 	return nil, errors.Errors[errors.NotImplemented]
 }
 
-func (c *ConstructionService) ConstructionHash(ctx context.Context, request *rTypes.ConstructionHashRequest) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
+// ConstructionHash implements the /construction/hash endpoint.
+func (c *ConstructionAPIService) ConstructionHash(ctx context.Context, request *rTypes.ConstructionHashRequest) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
 	request.SignedTransaction = hexutils.SafeRemoveHexPrefix(request.SignedTransaction)
 
 	bytesTransaction, err := hex.DecodeString(request.SignedTransaction)
@@ -80,13 +85,15 @@ func (c *ConstructionService) ConstructionHash(ctx context.Context, request *rTy
 	}, nil
 }
 
-func (c *ConstructionService) ConstructionMetadata(ctx context.Context, request *rTypes.ConstructionMetadataRequest) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
+// ConstructionMetadata implements the /construction/metadata endpoint.
+func (c *ConstructionAPIService) ConstructionMetadata(ctx context.Context, request *rTypes.ConstructionMetadataRequest) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
 	return &rTypes.ConstructionMetadataResponse{
 		Metadata: make(map[string]interface{}),
 	}, nil
 }
 
-func (c *ConstructionService) ConstructionParse(ctx context.Context, request *rTypes.ConstructionParseRequest) (*rTypes.ConstructionParseResponse, *rTypes.Error) {
+// ConstructionParse implements the /construction/parse endpoint.
+func (c *ConstructionAPIService) ConstructionParse(ctx context.Context, request *rTypes.ConstructionParseRequest) (*rTypes.ConstructionParseResponse, *rTypes.Error) {
 	request.Transaction = hexutils.SafeRemoveHexPrefix(request.Transaction)
 	bytesTransaction, err := hex.DecodeString(request.Transaction)
 	if err != nil {
@@ -134,34 +141,18 @@ func (c *ConstructionService) ConstructionParse(ctx context.Context, request *rT
 	}, nil
 }
 
-func (c *ConstructionService) ConstructionPayloads(ctx context.Context, request *rTypes.ConstructionPayloadsRequest) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
-	operationType, err := validator.ValidateOperationsTypes(request.Operations)
-	if err != nil {
-		return nil, err
-	}
-
-	switch *operationType {
-	case config.OperationTypeCryptoTransfer:
-		return c.handleCryptoTransferPayload(request.Operations)
-	default:
-		return c.handleCryptoCreateAccountPayload(request.Operations)
-	}
-}
-func (c *ConstructionService) ConstructionPreprocess(ctx context.Context, request *rTypes.ConstructionPreprocessRequest) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
-	operationType, err := validator.ValidateOperationsTypes(request.Operations)
-	if err != nil {
-		return nil, err
-	}
-
-	switch *operationType {
-	case config.OperationTypeCryptoTransfer:
-		return c.handleCryptoTransferPreProcess(request.Operations)
-	default:
-		return c.handleCryptoCreateAccountPreProcess(request.Operations)
-	}
+// ConstructionPayloads implements the /construction/payloads endpoint.
+func (c *ConstructionAPIService) ConstructionPayloads(ctx context.Context, request *rTypes.ConstructionPayloadsRequest) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
+	return c.handleCryptoTransferPayload(request.Operations)
 }
 
-func (c *ConstructionService) ConstructionSubmit(ctx context.Context, request *rTypes.ConstructionSubmitRequest) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
+// ConstructionPreprocess implements the /construction/preprocess endpoint.
+func (c *ConstructionAPIService) ConstructionPreprocess(ctx context.Context, request *rTypes.ConstructionPreprocessRequest) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
+	return c.handleCryptoTransferPreProcess(request.Operations)
+}
+
+// ConstructionSubmit implements the /construction/submit endpoint.
+func (c *ConstructionAPIService) ConstructionSubmit(ctx context.Context, request *rTypes.ConstructionSubmitRequest) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
 	request.SignedTransaction = hexutils.SafeRemoveHexPrefix(request.SignedTransaction)
 	bytesTransaction, err := hex.DecodeString(request.SignedTransaction)
 	if err != nil {
@@ -190,48 +181,8 @@ func (c *ConstructionService) ConstructionSubmit(ctx context.Context, request *r
 	}, nil
 }
 
-func (c *ConstructionService) handleCryptoCreateAccountPayload(operations []*rTypes.Operation) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
-	operationsLength := len(operations)
-	if operationsLength != 1 {
-		return nil, errors.Errors[errors.InvalidOperationsAmount]
-	}
-
-	operation := operations[0]
-	sender, err := hedera.AccountIDFromString(operation.Account.Address)
-	if err != nil {
-		return nil, errors.Errors[errors.InvalidAccount]
-	}
-
-	amount, err := strconv.Atoi(operation.Amount.Value)
-	if err != nil {
-		return nil, errors.Errors[errors.InvalidAmount]
-	}
-
-	transaction, err := hedera.
-		NewAccountCreateTransaction().
-		SetInitialBalance(hedera.HbarFromTinybar(int64(amount))).
-		SetTransactionID(hedera.NewTransactionID(sender)).
-		Build(c.hederaClient)
-
-	if err != nil {
-		return nil, errors.Errors[errors.TransactionBuildFailed]
-	}
-
-	bytesTransaction, err := transaction.MarshalBinary()
-	if err != nil {
-		return nil, errors.Errors[errors.TransactionMarshallingFailed]
-	}
-
-	return &rTypes.ConstructionPayloadsResponse{
-		UnsignedTransaction: hexutils.SafeAddHexPrefix(hex.EncodeToString(bytesTransaction)),
-		Payloads: []*rTypes.SigningPayload{{
-			Address: sender.String(),
-			Bytes:   transaction.BodyBytes(),
-		}},
-	}, nil
-}
-
-func (c *ConstructionService) handleCryptoTransferPayload(operations []*rTypes.Operation) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
+// handleCryptoTransferPayload handles the parse of all Rosetta Operations to a hedera.Transaction.
+func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rTypes.Operation) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
 	err1 := validator.ValidateOperationsSum(operations)
 	if err1 != nil {
 		return nil, err1
@@ -281,10 +232,11 @@ func (c *ConstructionService) handleCryptoTransferPayload(operations []*rTypes.O
 	}, nil
 }
 
-func (c *ConstructionService) handleCryptoCreateAccountPreProcess(operations []*rTypes.Operation) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
-	operationsLength := len(operations)
-	if operationsLength != 1 {
-		return nil, errors.Errors[errors.InvalidOperationsAmount]
+// handleCryptoTransferPreProcess validates all Rosetta Operations.
+func (c *ConstructionAPIService) handleCryptoTransferPreProcess(operations []*rTypes.Operation) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
+	err := validator.ValidateOperationsSum(operations)
+	if err != nil {
+		return nil, err
 	}
 
 	return &rTypes.ConstructionPreprocessResponse{
@@ -292,19 +244,9 @@ func (c *ConstructionService) handleCryptoCreateAccountPreProcess(operations []*
 	}, nil
 }
 
-func (c *ConstructionService) handleCryptoTransferPreProcess(operations []*rTypes.Operation) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
-	err1 := validator.ValidateOperationsSum(operations)
-	if err1 != nil {
-		return nil, err1
-	}
-
-	return &rTypes.ConstructionPreprocessResponse{
-		Options: make(map[string]interface{}),
-	}, nil
-}
-
+// NewConstructionAPIService creates a new instance of a ConstructionAPIService.
 func NewConstructionAPIService() server.ConstructionAPIServicer {
-	return &ConstructionService{
+	return &ConstructionAPIService{
 		hederaClient: hedera.ClientForTestnet(),
 	}
 }

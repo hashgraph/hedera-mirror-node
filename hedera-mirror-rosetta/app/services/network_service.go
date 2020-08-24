@@ -10,14 +10,16 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 )
 
-type NetworkService struct {
+// NetworkAPIService implements the server.NetworkAPIServicer interface.
+type NetworkAPIService struct {
 	Commons
 	addressBookEntryRepo repositories.AddressBookEntryRepository
 	network              *types.NetworkIdentifier
 	version              *types.Version
 }
 
-func (n *NetworkService) NetworkList(ctx context.Context, request *types.MetadataRequest) (*types.NetworkListResponse, *types.Error) {
+// NetworkList implements the /network/list endpoint.
+func (n *NetworkAPIService) NetworkList(ctx context.Context, request *types.MetadataRequest) (*types.NetworkListResponse, *types.Error) {
 	return &types.NetworkListResponse{
 		NetworkIdentifiers: []*types.NetworkIdentifier{
 			n.network,
@@ -25,7 +27,8 @@ func (n *NetworkService) NetworkList(ctx context.Context, request *types.Metadat
 	}, nil
 }
 
-func (n *NetworkService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
+// NetworkOptions implements the /network/options endpoint.
+func (n *NetworkAPIService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
 	// TODO: Remove after migration has been added
 	statuses := maphelper.GetStringValuesFromIntStringMap(n.transactionRepo.Statuses())
 	operationStatuses := make([]*types.OperationStatus, 0, len(statuses))
@@ -48,7 +51,8 @@ func (n *NetworkService) NetworkOptions(ctx context.Context, request *types.Netw
 	}, nil
 }
 
-func (n *NetworkService) NetworkStatus(ctx context.Context, request *types.NetworkRequest) (*types.NetworkStatusResponse, *types.Error) {
+// NetworkStatus implements the /network/status endpoint.
+func (n *NetworkAPIService) NetworkStatus(ctx context.Context, request *types.NetworkRequest) (*types.NetworkStatusResponse, *types.Error) {
 	genesisBlock, err := n.blockRepo.RetrieveGenesis()
 	if err != nil {
 		return nil, err
@@ -78,10 +82,11 @@ func (n *NetworkService) NetworkStatus(ctx context.Context, request *types.Netwo
 	}, nil
 }
 
+// NewNetworkAPIService creates a new instance of a NetworkAPIService.
 func NewNetworkAPIService(commons Commons,
 	addressBookEntryRepo repositories.AddressBookEntryRepository,
 	network *types.NetworkIdentifier, version *types.Version) server.NetworkAPIServicer {
-	return &NetworkService{
+	return &NetworkAPIService{
 		Commons:              commons,
 		addressBookEntryRepo: addressBookEntryRepo,
 		network:              network,

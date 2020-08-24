@@ -6,19 +6,6 @@ import (
 	"strconv"
 )
 
-func ValidateOperationsTypes(operations []*types.Operation) (*string, *types.Error) {
-	typeOperation := operations[0].Type
-	length := len(operations)
-
-	for i := 1; i < length; i++ {
-		if operations[i].Type != typeOperation {
-			return nil, errors.Errors[errors.MultipleOperationTypesPresent]
-		}
-	}
-
-	return &typeOperation, nil
-}
-
 func ValidateOperationsSum(operations []*types.Operation) *types.Error {
 	sum := 0
 	for _, operation := range operations {

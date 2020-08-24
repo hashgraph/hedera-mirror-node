@@ -67,7 +67,7 @@ func main() {
 	defer dbClient.Close()
 
 	asserter, err := asserter.NewServer(
-		[]string{config.OperationTypeCreateAccount, config.OperationTypeCryptoTransfer},
+		[]string{config.OperationTypeCryptoTransfer},
 		true,
 		[]*types.NetworkIdentifier{network},
 	)

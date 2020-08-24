@@ -7,7 +7,6 @@ const (
 )
 
 const (
-	OperationTypeCreateAccount  = "CRYPTOCREATEACCOUNT"
 	OperationTypeCryptoTransfer = "CRYPTOTRANSFER"
 )
 
