@@ -55,7 +55,7 @@
   ],
   "devDependencies": {
     "aws-sdk-mock": "^5.1.0",
-    "axios": "^0.19.2",
+    "axios": "^0.20.0",
     "codecov": "^3.7.2",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-config-prettier": "^6.11.0",
