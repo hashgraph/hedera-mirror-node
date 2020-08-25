@@ -37,6 +37,8 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -58,8 +60,10 @@ import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -81,10 +85,12 @@ class PubSubRecordItemListenerTest {
     private static final NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy =
             new NonFeeTransferExtractionStrategyImpl();
 
+    private static final NodeAddressBook UPDATED = addressBook(3);
+
     @Mock
     private MessageChannel messageChannel;
-    @Mock
-    private NetworkAddressBook networkAddressBook;
+    @Mock(lenient = true)
+    private AddressBookService addressBookService;
     @Mock
     private TransactionHandler transactionHandler;
     private PubSubProperties pubSubProperties;
@@ -95,7 +101,8 @@ class PubSubRecordItemListenerTest {
         TransactionHandlerFactory transactionHandlerFactory = mock(TransactionHandlerFactory.class);
         pubSubProperties = new PubSubProperties();
         when(transactionHandlerFactory.create(any())).thenReturn(transactionHandler);
-        pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, networkAddressBook,
+        doReturn(true).when(addressBookService).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
+        pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, addressBookService,
                 nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
 
@@ -198,17 +205,20 @@ class PubSubRecordItemListenerTest {
         });
 
         // when
+        EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()));
+        FileData fileData = new FileData(100L, fileContents, entityId, TransactionTypeEnum.FILEAPPEND
+                .getProtoId());
+        verify(addressBookService).update(fileData);
     }
 
     @Test
     void testNetworkAddressBookUpdate() throws Exception {
         // given
-        byte[] fileContents = new byte[] {0b0, 0b1, 0b10};
+        byte[] fileContents = UPDATED.toByteArray();
         var fileUpdate = FileUpdateTransactionBody.newBuilder()
                 .setFileID(ADDRESS_BOOK_FILE_ID)
                 .setContents(ByteString.copyFrom(fileContents))
@@ -216,11 +226,15 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setFileUpdate(fileUpdate));
 
         // when
+        EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()));
+        FileData fileData = new FileData(100L, fileContents, EntityId
+                .of(ADDRESS_BOOK_FILE_ID), TransactionTypeEnum.FILEUPDATE
+                .getProtoId());
+        verify(addressBookService).update(fileData);
     }
 
     private PubSubMessage assertPubSubMessage(Transaction expectedTransaction, int numSendTries) throws Exception {
@@ -252,5 +266,13 @@ class PubSubRecordItemListenerTest {
         return Transaction.newBuilder()
                 .setBodyBytes(transactionBodyBuilder.build().toByteString())
                 .build();
+    }
+
+    private static NodeAddressBook addressBook(int size) {
+        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+        for (int i = 0; i < size; ++i) {
+            builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
+        }
+        return builder.build();
     }
 }

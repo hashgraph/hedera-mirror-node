@@ -354,7 +354,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void incomingMessagesWithEndTimeBefore() {
-        Instant endTime = now.plusMillis(250);
+        Instant endTime = Instant.now().plusMillis(500);
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, endTime.minusNanos(2));
 
         TopicMessageFilter filter = TopicMessageFilter.builder()

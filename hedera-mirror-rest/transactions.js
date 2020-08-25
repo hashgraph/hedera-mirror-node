@@ -18,12 +18,12 @@
  * ‍
  */
 'use strict';
-const utils = require('./utils.js');
-const config = require('./config.js');
-const constants = require('./constants.js');
+
+const utils = require('./utils');
+const constants = require('./constants');
 const EntityId = require('./entityId');
+const TransactionId = require('./transactionId');
 const {DbError} = require('./errors/dbError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 const selectClause = `SELECT
@@ -218,20 +218,8 @@ const getTransactions = async (req, res) => {
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
-  // The transaction id is in the format of 'shard.realm.num-ssssssssss-nnnnnnnnn'
-  // convert it in shard, realm, num and nanoseconds parameters
-  let txIdMatches = req.params.id.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);
-  if (txIdMatches === null || txIdMatches.length != 6) {
-    logger.debug(`getOneTransaction: Invalid transaction id ${req.params.id}`);
-    let message =
-      'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
-      'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
-    throw new InvalidArgumentError(message);
-  }
-  const sqlParams = [
-    EntityId.fromString(`${txIdMatches[0]}.${txIdMatches[1]}.${txIdMatches[2]}`).getEncodedId(),
-    txIdMatches[4] + '' + txIdMatches[5],
-  ];
+  const transactionId = TransactionId.fromString(req.params.id);
+  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
 
   let sqlQuery =
     selectClause +

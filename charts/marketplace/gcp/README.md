@@ -147,6 +147,12 @@ You can use [Google Cloud Shell](https://cloud.google.com/shell/) or a local wor
 
 ### Configure
 
+Add the Hedera Mirror Node Helm chart repository:
+
+```shell
+helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
+```
+
 Optional: Use a function to generate the password for the components:
 
 ```shell
@@ -201,7 +207,7 @@ for additional configuration options. You can pass any application configuration
 Use `helm upgrade` to install and upgrade the application:
 
 ```shell
-helm upgrade "${APP_NAME}" charts/hedera-mirror \
+helm upgrade "${APP_NAME}" hedera/hedera-mirror \
   --namespace "${NAMESPACE}" \
   --install \
   -f charts/marketplace/gcp/values.yaml \

@@ -29,16 +29,20 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
@@ -50,13 +54,22 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import org.springframework.util.ResourceUtils;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
+import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -66,13 +79,14 @@ public abstract class AbstractDownloaderTest {
 
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
+    @Mock(lenient = true)
+    protected AddressBookService addressBookService;
     @TempDir
     protected Path s3Path;
     protected S3Mock s3;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
     protected MirrorProperties mirrorProperties;
-    protected NetworkAddressBook networkAddressBook;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
@@ -115,7 +129,7 @@ public abstract class AbstractDownloaderTest {
     // Implementation can assume that mirrorProperties and commonDownloaderProperties have been initialized.
     protected abstract DownloaderProperties getDownloaderProperties();
 
-    // Implementations can assume that s3AsyncClient, applicationStatusRepository, networkAddressBook and
+    // Implementations can assume that s3AsyncClient, applicationStatusRepository, addressBookService and
     // downloaderProperties have been initialized.
     protected abstract Downloader getDownloader();
 
@@ -128,14 +142,14 @@ public abstract class AbstractDownloaderTest {
     }
 
     @BeforeEach
-    void beforeEach(TestInfo testInfo) {
+    void beforeEach(TestInfo testInfo) throws IOException {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
-                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
+                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
+                initCredentialsProvider())
                 .s3CloudStorageClient();
-        networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -146,6 +160,14 @@ public abstract class AbstractDownloaderTest {
 
         s3 = S3Mock.create(S3_MOCK_PORT, s3Path.toString());
         s3.start();
+
+        MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+        Path addressBookPath = ResourceUtils.getFile(String
+                .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
+        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        long now = Instant.now().getEpochSecond();
+        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
     }
 
     @AfterEach
@@ -165,6 +187,11 @@ public abstract class AbstractDownloaderTest {
 
         downloaderProperties = getDownloaderProperties();
         downloaderProperties.init();
+    }
+
+    private AwsCredentialsProvider initCredentialsProvider() {
+        return StaticCredentialsProvider.create(AwsBasicCredentials.create(commonDownloaderProperties.getAccessKey(),
+                commonDownloaderProperties.getSecretKey()));
     }
 
     protected void assertNoFilesinValidPath() throws Exception {
@@ -210,14 +237,18 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Exactly 1/3 consensus")
     void oneThirdConsensus() throws Exception {
-        // Remove last node from current 4 node address book
-        byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
-        int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
-        addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        networkAddressBook.update(addressBook);
+        MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+        Path addressBookPath = ResourceUtils.getFile(String
+                .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
+        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
+        int index = Bytes.lastIndexOf(addressBookBytes, (byte) '\n');
+        addressBookBytes = Arrays.copyOfRange(addressBookBytes, 0, index);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        long now = Instant.now().getEpochSecond();
+        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
 
         fileCopier.filterDirectories("*0.0.3").copy();
-        downloader.download();
+        getDownloader().download();
 
         verifyForSuccess();
     }
@@ -357,7 +388,8 @@ public abstract class AbstractDownloaderTest {
         String basename = lastFileInstant.toString().replace(':', '_');
         String lastFileName = basename + streamType.getSuffix() + "." + streamType.getExtension();
 
-        doReturn(lastFileName).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        doReturn(lastFileName).when(applicationStatusRepository)
+                .findByStatusCode(downloader.getLastValidDownloadedFileKey());
 
         fileCopier.copy();
         downloader.download();
@@ -400,5 +432,34 @@ public abstract class AbstractDownloaderTest {
                     .updateStatusValue(eq(downloader.getLastValidDownloadedFileHashKey()), any());
         }
         assertValidFiles(List.of(file2, file1));
+    }
+
+    protected AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
+        AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
+                .fileData(contents)
+                .startConsensusTimestamp(consensusTimestamp + 1)
+                .fileId(entityId);
+
+        NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(contents);
+        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
+        addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
+        for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
+                .getNodeAddressList()) {
+            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
+                    .consensusTimestamp(consensusTimestamp)
+                    .memo(nodeAddressProto.getMemo().toStringUtf8())
+                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                    .port(nodeAddressProto.getPortno())
+                    .publicKey(nodeAddressProto.getRSAPubKey())
+                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                    .nodeId(nodeAddressProto.getNodeId())
+                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
+                    .build();
+            addressBookEntries.add(addressBookEntry);
+        }
+
+        addressBookBuilder.entries(addressBookEntries);
+
+        return addressBookBuilder.build();
     }
 }

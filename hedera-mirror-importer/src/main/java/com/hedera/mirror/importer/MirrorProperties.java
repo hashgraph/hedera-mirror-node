@@ -38,8 +38,6 @@ import com.hedera.mirror.importer.util.Utility;
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
 
-    private static final String ADDRESS_BOOK_FILE = "addressbook.bin";
-
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 
@@ -55,10 +53,6 @@ public class MirrorProperties {
     private long shard = 0L;
 
     private Long topicRunningHashV2AddedTimestamp;
-
-    public Path getAddressBookPath() {
-        return dataPath.resolve(ADDRESS_BOOK_FILE);
-    }
 
     public void setDataPath(Path dataPath) {
         Utility.ensureDirectory(dataPath);

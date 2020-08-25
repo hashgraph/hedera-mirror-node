@@ -22,10 +22,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
@@ -39,6 +38,7 @@ import org.postgresql.jdbc.PgConnection;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -49,9 +49,10 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
-import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -92,6 +93,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
     protected RecordFileRepository recordFileRepository;
 
     @Resource
+    protected ApplicationStatusRepository applicationStatusRepository;
+
+    @Resource
     protected SqlEntityListener sqlEntityListener;
 
     @Resource
@@ -100,16 +104,22 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Resource
     private DataSource dataSource;
 
-    private String fileName;
+    @Resource
+    private RecordParserProperties parserProperties;
+
+    private String fileName = "2019-08-30T18_10_00.419072Z.rcd";
+
+    private final String initialFileHash = "fileHash0";
 
     @BeforeEach
     final void beforeEach() {
-        fileName = UUID.randomUUID().toString();
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
 
-    void completeFileAndCommit() {
-        sqlEntityListener.onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0));
+    String completeFileAndCommit() {
+        String newFileHash = UUID.randomUUID().toString();
+        sqlEntityListener.onEnd(new RecordFile(1L, 2L, null, fileName, 0L, 0L, newFileHash, initialFileHash, 0));
+        return newFileHash;
     }
 
     @Test
@@ -219,39 +229,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void verifyRollback() {
-        sqlProperties.setMaxJsonPayloadSize(Integer.MAX_VALUE);
-        // given
-        TopicMessage topicMessage = getTopicMessage();
-
-        TopicMessage topicMessage2 = getTopicMessage();
-        topicMessage2.setMessage(RandomUtils.nextBytes(10000)); // Just exceeds 8000B
-
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
-
-        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
-
-        // when
-        sqlEntityListener.onTopicMessage(topicMessage);
-        sqlEntityListener.onTopicMessage(topicMessage2); // error causing submission
-        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
-        sqlEntityListener.onEntityId(entityId);
-
-        assertThatThrownBy(() -> completeFileAndCommit())
-                .isInstanceOf(ParserException.class)
-                .extracting(Throwable::getCause)
-                .isInstanceOf(SQLException.class);
-        sqlEntityListener.onError();
-
-        assertEquals(0, topicMessageRepository.count());
-        assertEquals(0, cryptoTransferRepository.count());
-        assertEquals(0, entityRepository.count());
-    }
-
-    @Test
     void onFileData() throws Exception {
         // given
-        FileData expectedFileData = new FileData(11L, "file data".getBytes());
+        FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
+                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
 
         // when
         sqlEntityListener.onFileData(expectedFileData);
@@ -336,17 +317,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
-    }
-
-    @Test
-    void onDuplicateFileReturnEmpty() {
-        // given: file processed once
-        completeFileAndCommit();
-
-        // when, then
-        assertThrows(DuplicateFileException.class, () -> {
-            sqlEntityListener.onStart(new StreamFileData(fileName, null));
-        });
     }
 
     @Test

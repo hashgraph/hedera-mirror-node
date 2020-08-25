@@ -46,7 +46,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,12 +58,11 @@ import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.NodeAddress;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -74,7 +72,7 @@ public abstract class Downloader {
 
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
-    private final NetworkAddressBook networkAddressBook;
+    private final AddressBookService addressBookService;
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     protected final ApplicationStatusRepository applicationStatusRepository;
     protected final DownloaderProperties downloaderProperties;
@@ -89,11 +87,11 @@ public abstract class Downloader {
     protected final Timer streamCloseMetric;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-                      NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties,
+                      AddressBookService addressBookService, DownloaderProperties downloaderProperties,
                       MeterRegistry meterRegistry) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
-        this.networkAddressBook = networkAddressBook;
+        this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
         this.meterRegistry = meterRegistry;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
@@ -162,10 +160,8 @@ public abstract class Downloader {
         String lastValidSigFileName = lastValidFileName.isEmpty() ? "" : lastValidFileName + "_sig";
         Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
-        Set<String> nodeAccountIds = networkAddressBook.getAddresses()
-                .stream()
-                .map(NodeAddress::getId)
-                .collect(Collectors.toSet());
+
+        Set<String> nodeAccountIds = addressBookService.getCurrent().getNodeSet();
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
         log.info("Downloading signature files created after file: {}", lastValidSigFileName);
@@ -320,7 +316,7 @@ public abstract class Downloader {
      * hash until we find a match.
      */
     private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
-        NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
+        NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         Path validPath = downloaderProperties.getValidPath();
 
         for (var groupIdIterator = sigFilesMap.keySet().iterator(); groupIdIterator.hasNext(); ) {
@@ -337,7 +333,8 @@ public abstract class Downloader {
                 nodeSignatureVerifier.verify(signatures);
             } catch (SignatureVerificationException ex) {
                 if (groupIdIterator.hasNext()) {
-                    log.warn("Signature verification failed but still have files in the batch, try to process the next group", ex);
+                    log.warn("Signature verification failed but still have files in the batch, try to process the " +
+                            "next group", ex);
                     continue;
                 }
                 throw ex;

@@ -179,17 +179,10 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
-      - helm:
-          filters: # required since `release_artifacts` has tag filters AND requires `this`
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
       - release_artifacts:
           requires:
             - build_maven
             - build_rest
-            - helm
           filters:
             branches:
               ignore: /.*/
@@ -199,11 +192,9 @@ workflows:
           requires:
             - build_maven
             - build_rest
-            - helm
           filters:
             branches:
-              only:
-                - master
+              ignore: /.*/
             tags:
               only: /^.*/
       - perf_maven:
@@ -213,12 +204,11 @@ workflows:
             tags:
               only: /.*/
       - cleanup_images:
-          requires:
-            - publish_images
           filters:
             branches:
-              only:
-                - master
+              ignore: /.*/
+            tags:
+              only: /^.*/
 
 jobs:
   build_maven:
@@ -286,6 +276,9 @@ jobs:
           POSTGRES_DB: mirror_node_integration
           POSTGRES_USER: mirror_node
           POSTGRES_PASSWORD: mirror_node_pass
+      - image: localstack/localstack:0.11.3
+        environment:
+          SERVICES: s3
     steps:
       - checkout
       - restore_cache:
@@ -310,6 +303,7 @@ jobs:
           environment:
             TEST_DB_HOST: "127.0.0.1"
             TEST_DB_NAME: "mirror_node_integration"
+            TEST_S3_HOST: "127.0.0.1"
       - store_artifacts:
           path: hedera-mirror-rest/target/jest-junit
           destination: /rest-jest
@@ -330,33 +324,6 @@ jobs:
             mkdir -p ${WORKSPACE}/artifacts
             mv hedera-mirror-rest*.tgz ${WORKSPACE}/artifacts/${NAME}.tgz
       - persist_artifacts_to_workspace
-
-  helm:
-    docker:
-      - image: alpine/helm:3.2.0
-    steps:
-      - checkout
-      - run:
-          name: build dependencies
-          command: |
-            helm dependency update charts/hedera-mirror
-            helm dependency update charts/hedera-mirror-common
-      - run:
-          name: lint
-          command: |
-            helm lint charts/hedera-mirror
-            helm lint charts/hedera-mirror-common
-            helm lint charts/hedera-mirror-grpc
-            helm lint charts/hedera-mirror-importer
-            helm lint charts/hedera-mirror-rest
-      - run:
-          name: template
-          command: |
-            helm template charts/hedera-mirror
-            helm template charts/hedera-mirror-common
-            helm template charts/hedera-mirror-grpc
-            helm template charts/hedera-mirror-importer
-            helm template charts/hedera-mirror-rest
 
   release_artifacts:
     docker:
@@ -389,19 +356,7 @@ jobs:
       - restore_maven_cache
       - run:
           name: Running maven deploy
-          command: |
-            set -ex
-            if [ "$CIRCLE_BRANCH" = "master" ]; then
-                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tags.0=master -Djib.to.tags=master"
-            fi
-            if [ -n "$CIRCLE_TAG" ]; then
-                IFS=. read major minor build \<<< ${CIRCLE_TAG}
-                if [[ $major == v* ]]; then
-                  major=${major:1}
-                fi
-                DOCKER_TAG_OVERRIDE="-Ddocker.tags.0=${major}.${minor} -Djib.to.tags=${major}.${minor}"
-            fi
-            ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
+          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests
 
   cleanup_images:
     <<: *machine_ubuntu

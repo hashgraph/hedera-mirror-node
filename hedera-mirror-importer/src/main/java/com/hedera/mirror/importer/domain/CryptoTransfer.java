@@ -28,7 +28,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
@@ -41,7 +41,7 @@ public class CryptoTransfer {
 
     private Long amount;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 }

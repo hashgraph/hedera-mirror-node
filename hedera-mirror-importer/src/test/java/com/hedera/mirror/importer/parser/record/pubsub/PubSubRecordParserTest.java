@@ -37,7 +37,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordFileParser;
+import com.hedera.mirror.importer.parser.record.RecordFilePoller;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 public class PubSubRecordParserTest extends PubSubIntegrationTest {
@@ -50,7 +50,7 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
     @Resource
     private RecordParserProperties parserProperties;
     @Resource
-    private RecordFileParser recordFileParser;
+    private RecordFilePoller recordFilePoller;
     private FileCopier fileCopier;
 
     @BeforeEach
@@ -71,7 +71,7 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
         fileCopier.copy();
 
         // when
-        recordFileParser.parse();
+        recordFilePoller.poll();
 
         // then
         List<String> expectedMessages =

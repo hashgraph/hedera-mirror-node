@@ -53,6 +53,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.record.threads`                   | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
+| `hedera.mirror.importer.downloader.s3.externalId`                    |                         | The external id required to assume the role to connect to S3, if one was set                   |
+| `hedera.mirror.importer.downloader.s3.roleArn`                       |                         | The ARN for the role that needs to be assumed to connect to S3.  Only required if wishing to use temporary security credentials |
+| `hedera.mirror.importer.downloader.s3.roleSessionName`               | hedera-mirror-node      | A session name for assuming the role to access S3.  2-62 characters, can be alphanumeric, underscore, or any of =,.@- |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
@@ -76,7 +79,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 20_000                  | When inserting transactions into db, executeBatches() is called every these many transactions  |
-| `hedera.mirror.importer.parser.record.entity.sql.bufferSize`                | 65536                   | The size of the byte buffer to allocate for each batch                                         |
+| `hedera.mirror.importer.parser.record.entity.sql.bufferSize`                | 11441                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.record.entity.sql.maxJsonPayloadSize`        | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
@@ -97,6 +100,39 @@ Importer can be configured to publish transactions (in json format) to a Pubsub 
 See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
 for more info about `spring.cloud.gcp.*` properties.
 
+#### Connect to S3 with AssumeRole
+
+Importer can be configured to connect to S3 using temporary security credentials via AssumeRole.  This is only available
+when using AWS S3 as the cloud provider.  With this, a user that does not have permission to access an AWS resource can
+request a temporary role that will grant them that permission.  This is useful when dealing with multiple accounts
+where a user in one account needs access to a resource in another account, and is generally considered more secure than
+using long-term credentials.
+
+The following properties are used to enable this:
+
+-   `hedera.mirror.importer.downloader.accessKey` (The access key of the user requesting access)
+-   `hedera.mirror.importer.downloader.secretKey` (The secret key of the user requesting access)
+-   `hedera.mirror.importer.downloader.s3.externalId` (An external ID is an optional property attached to the role in AWS to make it more secure)
+-   `hedera.mirror.importer.downloader.s3.roleArn` (Amazon Resource Name)
+-   `hedera.mirror.importer.downloader.s3.roleSessionName` (A name to give to the session.  Defaults to "hedera-mirror-node")
+
+```yaml
+hedera:
+  mirror:
+    importer:
+      downloader:
+        accessKey: access_key
+        secretKey: secret_key
+        s3:
+          externalId: external_id
+          roleArn: arn:aws:iam::123123123123:role/testrole
+          roleSessionName: test_session
+```
+
+See [AssumeRole Documentation](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) for more
+information on how AssumeRole works.  For details on how to set up a role in AWS to allow for this, see
+[how to create a role and grant permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html).
+
 ## GRPC API
 
 Similar to the [Importer](#importer), the gRPC API uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
@@ -115,12 +151,12 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.entityCacheSize`                        | 50000            | The maximum size of the cache to store entities used for existence check                       |
 | `hedera.mirror.grpc.listener.enabled`                       | true             | Whether to listen for incoming massages or not                                                 |
+| `hedera.mirror.grpc.listener.maxBufferSize`                 | 2048             | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
 | `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
 | `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL or SHARED_POLL  |
 | `hedera.mirror.grpc.netty.executorCoreThreadCount`          | 10               | The number of core threads                                                                     |
 | `hedera.mirror.grpc.netty.executorMaxThreadCount`           | 1000             | The maximum allowed number of threads                                                          |
-| `hedera.mirror.grpc.netty.flowControlWindow`                | 64 \* 1024       | The HTTP/2 flow control window                                                                 |
 | `hedera.mirror.grpc.netty.keepAliveTime`                    | 60               | The seconds limit for which threads may remain idle before being terminated                    |
 | `hedera.mirror.grpc.netty.maxConcurrentCallsPerConnection`  | 5                | The maximum number of concurrent calls permitted for each incoming connection                  |
 | `hedera.mirror.grpc.netty.maxInboundMessageSize`            | 6 \* 1024        | The maximum message size allowed to be received on the server                                  |
@@ -149,21 +185,30 @@ merged into) the current configuration:
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-| Name                                                 | Default                 | Description                                                                                    |
-| ---------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `hedera.mirror.rest.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
-| `hedera.mirror.rest.db.name`                         | mirror_node             | The name of the database                                                                       |
-| `hedera.mirror.rest.db.password`                     | mirror_api_pass         | The database password the processor uses to connect. **Should be changed from default**        |
-| `hedera.mirror.rest.db.port`                         | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.rest.db.username`                     | mirror_api              | The username the processor uses to connect to the database                                     |
-| `hedera.mirror.rest.includeHostInLink`               | false                   | Whether to include the hostname and port in the next link in the response                      |
-| `hedera.mirror.rest.maxLimit`                        | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
-| `hedera.mirror.rest.log.level`                       | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
-| `hedera.mirror.rest.port`                            | 5551                    | The REST API port                                                                              |
-| `hedera.mirror.rest.includeHostInLink`               | false                   | Whether to include the host:port in the next links returned by the REST API                    |
-| `hedera.mirror.rest.metrics.enabled`                 | true                    | Whether metrics are enabled for the REST API                                                   |
-| `hedera.mirror.rest.metrics.config.authentication`   | true                    | Whether access to metrics for the REST API is authenticated                                    |
-| `hedera.mirror.rest.metrics.config.username`         | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
-| `hedera.mirror.rest.metrics.config.password`         | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
-| `hedera.mirror.rest.metrics.config.uriPath`          | '/swagger'              | The REST API metrics uri path                                                                  |
-| `hedera.mirror.rest.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |
+| Name                                                     | Default                 | Description                                                                                    |
+| -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `hedera.mirror.rest.db.host`                             | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
+| `hedera.mirror.rest.db.name`                             | mirror_node             | The name of the database                                                                       |
+| `hedera.mirror.rest.db.password`                         | mirror_api_pass         | The database password the processor uses to connect. **Should be changed from default**        |
+| `hedera.mirror.rest.db.port`                             | 5432                    | The port used to connect to the database                                                       |
+| `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rest.includeHostInLink`                   | false                   | Whether to include the hostname and port in the next link in the response                      |
+| `hedera.mirror.rest.maxLimit`                            | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
+| `hedera.mirror.rest.log.level`                           | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
+| `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
+| `hedera.mirror.rest.includeHostInLink`                   | false                   | Whether to include the host:port in the next links returned by the REST API                    |
+| `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
+| `hedera.mirror.rest.metrics.config.authentication`       | true                    | Whether access to metrics for the REST API is authenticated                                    |
+| `hedera.mirror.rest.metrics.config.username`             | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
+| `hedera.mirror.rest.metrics.config.password`             | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
+| `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
+| `hedera.mirror.rest.shard`                               | 0                       | The default shard number that this mirror node participates in                                 |
+| `hedera.mirror.rest.stateproof.enabled`                  | false                   | Whether to enable stateproof REST API or not                                                   |
+| `hedera.mirror.rest.stateproof.streams.accessKey`        | ""                      | The cloud storage access key                                                                   |
+| `hedera.mirror.rest.stateproof.streams.bucketName`       |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.rest.stateproof.streams.network` |
+| `hedera.mirror.rest.stateproof.streams.cloudProvider`    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
+| `hedera.mirror.rest.stateproof.streams.endpointOverride` |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
+| `hedera.mirror.rest.stateproof.streams.gcpProjectId` |                             | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
+| `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
+| `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
+| `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |

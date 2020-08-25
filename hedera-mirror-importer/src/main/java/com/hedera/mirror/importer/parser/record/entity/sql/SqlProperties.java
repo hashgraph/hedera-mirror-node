@@ -35,7 +35,7 @@ public class SqlProperties {
     private int batchSize = 20_000;
 
     @Min(1)
-    private int bufferSize = 65536;
+    private int bufferSize = 11441; // tested max byte size of buffer used by postgres CopyManger.copyIn()
 
     private int maxJsonPayloadSize = 8000;
 
