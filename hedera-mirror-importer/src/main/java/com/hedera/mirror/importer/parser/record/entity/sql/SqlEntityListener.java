@@ -27,18 +27,20 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -48,7 +50,6 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
@@ -56,6 +57,8 @@ import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
@@ -67,6 +70,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
 
     private final DataSource dataSource;
+    private final ApplicationStatusRepository applicationStatusRepository;
+    private final EntityRepository entityRepository;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
 
@@ -91,26 +96,29 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
 
-    private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
     private long batchCount;
 
-    public SqlEntityListener(SqlProperties properties, DataSource dataSource,
+    public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
-                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager) {
+                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
+                             ApplicationStatusRepository applicationStatusRepository,
+                             EntityRepository entityRepository) {
         this.dataSource = dataSource;
+        this.applicationStatusRepository = applicationStatusRepository;
+        this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
-        sqlProperties = properties;
+        this.sqlProperties = sqlProperties;
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
 
-        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, properties);
-        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, properties);
-        nonFeeTransferPgCopy = new PgCopy<>(NonFeeTransfer.class, meterRegistry, properties);
-        fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, properties);
-        contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, properties);
-        liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, properties);
-        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, properties);
+        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
+        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
+        nonFeeTransferPgCopy = new PgCopy<>(NonFeeTransfer.class, meterRegistry, sqlProperties);
+        fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, sqlProperties);
+        contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, sqlProperties);
+        liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, sqlProperties);
+        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
 
         transactions = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -124,22 +132,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onStart(StreamFileData streamFileData) {
-        String fileName = FilenameUtils.getName(streamFileData.getFilename());
-
-        if (recordFileRepository.findByName(fileName).size() > 0) {
-            throw new DuplicateFileException("File already exists in the database: " + fileName);
-        }
-
         try {
             cleanup();
-            connection = dataSource.getConnection();
-            connection.setAutoCommit(false);
-            connection.setClientInfo("ApplicationName", getClass().getSimpleName());
-
-            sqlInsertEntityId = connection.prepareStatement("INSERT INTO t_entities " +
-                    "(id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
-                    "VALUES (?, ?, ?, ?, ?) " +
-                    "ON CONFLICT DO NOTHING");
+            connection = DataSourceUtils.getConnection(dataSource);
 
             sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
         } catch (SQLException e) {
@@ -152,29 +147,22 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executeBatches();
 
         try {
-            connection.commit();
             recordFileRepository.save(recordFile);
-            closeConnectionAndStatements();
-        } catch (SQLException e) {
-            throw new ParserSQLException(e);
-        }
-    }
-
-    @Override
-    public void onError() {
-        try {
-            if (connection != null) {
-                connection.rollback();
-                closeConnectionAndStatements();
-            }
-        } catch (SQLException e) {
-            log.error("Exception while rolling transaction back", e);
+            applicationStatusRepository.updateStatusValue(
+                    ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
         } finally {
             cleanup();
         }
     }
 
+    @Override
+    public void onError() {
+        cleanup();
+    }
+
     private void cleanup() {
+        closeQuietly(sqlNotifyTopicMessage);
+        sqlNotifyTopicMessage = null;
         batchCount = 0;
         contractResults.clear();
         cryptoTransfers.clear();
@@ -184,6 +172,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
+
+        DataSourceUtils.releaseConnection(connection, dataSource);
     }
 
     private void executeBatch(PreparedStatement ps, String entity) {
@@ -196,13 +186,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
-    private void closeConnectionAndStatements() {
+    private void closeQuietly(Statement statement) {
         try {
-            sqlInsertEntityId.close();
-            sqlNotifyTopicMessage.close();
-            connection.close();
-        } catch (SQLException e) {
-            throw new ParserSQLException("Error closing connection", e);
+            if (statement != null) {
+                statement.close();
+            }
+        } catch (Exception e) {
+            log.warn("Error closing statement", e);
         }
     }
 
@@ -241,22 +231,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
-        // add entities not found in cache to list of entities to be persisted
+        // only insert entities not found in cache
         if (entityCache.get(entityId.getId()) != null) {
             return;
         }
 
-        try {
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ID.ordinal(), entityId.getId());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_SHARD.ordinal(), entityId.getShardNum());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_REALM.ordinal(), entityId.getRealmNum());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_NUM.ordinal(), entityId.getEntityNum());
-            sqlInsertEntityId.setLong(F_ENTITY_ID.TYPE.ordinal(), entityId.getType());
-            sqlInsertEntityId.addBatch();
-            entityIds.add(entityId);
-        } catch (SQLException e) {
-            throw new ParserSQLException(e);
-        }
+        entityIds.add(entityId);
     }
 
     @Override
@@ -306,16 +286,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void persistEntities() {
-        executeBatch(sqlInsertEntityId, "entities");
-        entityIds.forEach(entityId -> entityCache.put(entityId.getId(), null));
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        entityIds.forEach(entityId -> {
+            entityRepository.insertEntityId(entityId);
+            entityCache.put(entityId, null);
+        });
+        log.info("Inserted {} entities in {}", entityIds.size(), stopwatch);
     }
 
     private void notifyTopicMessages() {
         executeBatch(sqlNotifyTopicMessage, "topic notifications");
-    }
-
-    enum F_ENTITY_ID {
-        ZERO, // column indices start at 1, this creates the necessary offset
-        ID, ENTITY_SHARD, ENTITY_REALM, ENTITY_NUM, TYPE
     }
 }

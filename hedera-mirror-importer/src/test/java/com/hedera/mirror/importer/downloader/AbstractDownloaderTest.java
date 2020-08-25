@@ -64,6 +64,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.util.ResourceUtils;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -163,7 +164,8 @@ public abstract class AbstractDownloaderTest {
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
-                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
+                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
+                AnonymousCredentialsProvider.create())
                 .s3CloudStorageClient();
         downloader = prepareDownloader();
 
@@ -200,7 +202,6 @@ public abstract class AbstractDownloaderTest {
         downloaderProperties = getDownloaderProperties();
         downloaderProperties.init();
     }
-
 
     private void startS3Proxy() throws Exception {
         Properties properties = new Properties();

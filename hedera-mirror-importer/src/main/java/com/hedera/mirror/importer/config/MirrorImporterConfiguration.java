@@ -34,10 +34,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
@@ -62,6 +59,7 @@ public class MirrorImporterConfiguration {
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties downloaderProperties;
     private final MetricsExecutionInterceptor metricsExecutionInterceptor;
+    private final AwsCredentialsProvider awsCredentialsProvider;
 
     @Bean
     @Profile("kubernetes")
@@ -96,7 +94,8 @@ public class MirrorImporterConfiguration {
     public S3AsyncClient s3CloudStorageClient() {
         log.info("Configured to download from S3 in region {} with bucket name '{}'",
                 downloaderProperties.getRegion(), downloaderProperties.getBucketName());
-        S3AsyncClientBuilder clientBuilder = asyncClientBuilder(downloaderProperties.getRegion());
+        S3AsyncClientBuilder clientBuilder = asyncClientBuilder(
+                downloaderProperties.getRegion());
         String endpointOverride = downloaderProperties.getEndpointOverride();
         if (endpointOverride != null) {
             log.info("Overriding s3 client endpoint to {}", endpointOverride);
@@ -112,21 +111,10 @@ public class MirrorImporterConfiguration {
                 .build();
 
         return S3AsyncClient.builder()
+                .credentialsProvider(awsCredentialsProvider)
                 .region(Region.of(region))
-                .credentialsProvider(awsCredentialsProvider(
-                        downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey()))
                 .httpClient(httpClient)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
-    }
-
-    private AwsCredentialsProvider awsCredentialsProvider(String accessKey, String secretKey) {
-        if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
-            log.info("Setting up S3 async client using provided access/secret key");
-            return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
-        } else {
-            log.info("Setting up S3 async client using anonymous credentials");
-            return AnonymousCredentialsProvider.create();
-        }
     }
 
     @Bean

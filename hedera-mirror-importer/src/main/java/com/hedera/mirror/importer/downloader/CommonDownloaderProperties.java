@@ -60,6 +60,8 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
+    private final S3 s3 = new S3();
+
     @Getter
     @RequiredArgsConstructor
     public enum CloudProvider {
@@ -67,5 +69,17 @@ public class CommonDownloaderProperties {
         GCP("https://storage.googleapis.com");
 
         private final String endpoint;
+    }
+
+    @Data
+    @Validated
+    public static class S3 {
+
+        private String externalId;
+
+        private String roleArn;
+
+        private String roleSessionName = "hedera-mirror-node";
+
     }
 }
