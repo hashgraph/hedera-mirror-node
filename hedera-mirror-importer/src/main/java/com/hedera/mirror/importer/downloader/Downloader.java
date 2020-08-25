@@ -74,8 +74,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 public abstract class Downloader {
 
-    private static final String DEFAULT_FILE_BASENAME = "DEFAULT_FILE";
-
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
     private final AddressBookService addressBookService;
@@ -95,10 +93,7 @@ public abstract class Downloader {
     protected final Timer downloadLatencyMetric;
     protected final Timer streamCloseMetric;
 
-    private boolean mirrorDateRagePropertiesProcessed = false;
-    private final String defaultSigFilename;
-    private String lastSigFilenameToVerify = null;
-
+    private boolean mirrorDateRangePropertiesProcessed = false;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
@@ -117,7 +112,6 @@ public abstract class Downloader {
         lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
 
         StreamType streamType = downloaderProperties.getStreamType();
-        defaultSigFilename = DEFAULT_FILE_BASENAME + streamType.getSuffix() + "." + streamType.getSignatureExtension();
 
         // Metrics
         signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
@@ -144,11 +138,11 @@ public abstract class Downloader {
 
     @EventListener(MirrorDateRangePropertiesProcessedEvent.class)
     public void onMirrorDateRangePropertiesProcessedEvent() {
-        mirrorDateRagePropertiesProcessed = true;
+        mirrorDateRangePropertiesProcessed = true;
     }
 
     protected void downloadNextBatch() {
-        if (!mirrorDateRagePropertiesProcessed) {
+        if (!mirrorDateRangePropertiesProcessed) {
             return;
         }
 
@@ -174,17 +168,6 @@ public abstract class Downloader {
             log.warn(e.getMessage());
         } catch (Exception e) {
             log.error("Error downloading files", e);
-        } finally {
-            if (!StringUtils.isEmpty(lastSigFilenameToVerify)) {
-                String lastValidDownloadedFile = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileKey);
-                if (lastSigFilenameToVerify.equals(lastValidDownloadedFile + "_sig")
-                        || lastSigFilenameToVerify.equals(defaultSigFilename)) {
-                    downloaderProperties.setEnabled(false);
-                    log.warn("Disabled polling {} after downloading all files <= endDate ({})",
-                            downloaderProperties.getStreamType(),
-                            mirrorProperties.getEndDate());
-                }
-            }
         }
     }
 
@@ -359,7 +342,6 @@ public abstract class Downloader {
     private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         Path validPath = downloaderProperties.getValidPath();
-        String lastValidSigFilename = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileKey) + "_sig";
 
         for (var sigFilenameIter = sigFilesMap.keySet().iterator(); sigFilenameIter.hasNext(); ) {
             if (ShutdownHelper.isStopping()) {
@@ -392,7 +374,6 @@ public abstract class Downloader {
                 }
             }
 
-            boolean isEndDateReached = false;
             for (FileStreamSignature signature : signatures) {
                 if (ShutdownHelper.isStopping()) {
                     return;
@@ -411,11 +392,13 @@ public abstract class Downloader {
 
                     if (verifyDataFile(signedDataFile, signature.getHash())) {
                         if (isFileAfterEndDate(sigFilename)) {
-                            isEndDateReached = true;
-                            break;
+                            downloaderProperties.setEnabled(false);
+                            log.warn("Disabled polling {} after downloading all files <= endDate ({})",
+                                    downloaderProperties.getStreamType(),
+                                    mirrorProperties.getEndDate());
+                            return;
                         }
 
-                        lastValidSigFilename = sigFilename;
                         // move the file to the valid directory
                         File destination = validPath.resolve(signedDataFile.getName()).toFile();
                         if (moveFile(signedDataFile, destination)) {
@@ -439,23 +422,13 @@ public abstract class Downloader {
                 }
             }
 
+            if (!valid) {
+                log.error("None of the data files could be verified, signatures: {}", signatures);
+            }
+
             streamVerificationMetric.tag("success", String.valueOf(valid))
                     .register(meterRegistry)
                     .record(Duration.between(startTime, Instant.now()));
-
-            if (isEndDateReached) {
-                // stop processing here since the file is after the configured endDate
-                lastSigFilenameToVerify = lastValidSigFilename;
-                break;
-            } else if (!valid) {
-                log.error("None of the data files could be verified, signatures: {}", signatures);
-            }
-        }
-
-        if (!sigFilesMap.isEmpty() && lastSigFilenameToVerify != null && lastSigFilenameToVerify.isEmpty()) {
-            // when all files in the bucket are after endDate and there is no last downloaded file in db,
-            // use defaultSigFilename as sentinel to disable the downloader
-            lastSigFilenameToVerify = defaultSigFilename;
         }
     }
 

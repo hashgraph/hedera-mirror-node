@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+
 import com.google.common.base.Stopwatch;
 import java.io.File;
 import java.util.Arrays;
@@ -28,6 +30,7 @@ import java.util.Objects;
 import javax.inject.Named;
 import org.apache.commons.io.FileUtils;
 
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.parser.FileWatcher;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
@@ -36,10 +39,14 @@ import com.hedera.mirror.importer.util.Utility;
 public class BalanceFileParser extends FileWatcher {
 
     private final AccountBalancesFileLoader accountBalancesFileLoader;
+    private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
-    public BalanceFileParser(BalanceParserProperties parserProperties, AccountBalancesFileLoader accountBalancesFileLoader) {
+    public BalanceFileParser(BalanceParserProperties parserProperties,
+            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            AccountBalancesFileLoader accountBalancesFileLoader) {
         super(parserProperties);
         this.accountBalancesFileLoader = accountBalancesFileLoader;
+        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
     }
 
     /**
@@ -49,6 +56,7 @@ public class BalanceFileParser extends FileWatcher {
     @Override
     public void parse() {
         Stopwatch stopwatch = Stopwatch.createStarted();
+        DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType());
 
         try {
             File balanceFilePath = parserProperties.getValidPath().toFile();
@@ -59,7 +67,7 @@ public class BalanceFileParser extends FileWatcher {
                 if (ShutdownHelper.isStopping()) {
                     throw new RuntimeException("Process is shutting down");
                 }
-                parseBalanceFile(balanceFile);
+                parseBalanceFile(balanceFile, dateRangeFilter);
             }
 
             log.info("Completed processing {} balance files in {}", balanceFiles.length, stopwatch);
@@ -68,8 +76,8 @@ public class BalanceFileParser extends FileWatcher {
         }
     }
 
-    private void parseBalanceFile(File balanceFile) {
-        if (accountBalancesFileLoader.loadAccountBalances(balanceFile)) {
+    private void parseBalanceFile(File balanceFile, DateRangeFilter dateRangeFilter) {
+        if (accountBalancesFileLoader.loadAccountBalances(balanceFile, dateRangeFilter)) {
             if (parserProperties.isKeepFiles()) {
                 Utility.archiveFile(balanceFile, parserProperties.getParsedPath());
             } else {

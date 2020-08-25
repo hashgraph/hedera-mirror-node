@@ -20,9 +20,11 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -35,6 +37,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
@@ -43,13 +46,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.ParserSQLException;
@@ -67,6 +71,8 @@ public class RecordFileParserTest {
     private RecordItemListener recordItemListener;
     @Mock
     private RecordStreamFileListener recordStreamFileListener;
+    @Mock
+    private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     private MirrorProperties mirrorProperties;
     private FileCopier fileCopier;
@@ -75,10 +81,44 @@ public class RecordFileParserTest {
 
     private File file1;
     private File file2;
-    private static final long FILE1_CONSENSUS_START = 1567188600419072000L;
-    private static final Instant THIRD_LAST_TXN_FILE2_CONSENSUS_INSTANT = Instant.ofEpochSecond(0, 1567188608972069001L);
     private static final int NUM_TXNS_FILE_1 = 19;
-    private static final int NUM_TXNS_FILE_2 = 15;
+    private static final long[] FILE_CONSENSUS_TIMESTAMPS = {
+            1567188600419072000L,
+            1567188600762801000L,
+            1567188600883799000L,
+            1567188600963103000L,
+            1567188601371995000L,
+            1567188601739500000L,
+            1567188602108299000L,
+            1567188602118673001L,
+            1567188602450554001L,
+            1567188602838615000L,
+            1567188603175332000L,
+            1567188603277507000L,
+            1567188603609988000L,
+            1567188603706753001L,
+            1567188604084005000L,
+            1567188604429968000L,
+            1567188604524835000L,
+            1567188604856082001L,
+            1567188604906443001L,
+            1567188605249678000L,
+            1567188605824917000L,
+            1567188606171654000L,
+            1567188606181740000L,
+            1567188606499404000L,
+            1567188606576024000L,
+            1567188606932283000L,
+            1567188607246509000L,
+            1567188608065015001L,
+            1567188608413240000L,
+            1567188608566437000L,
+            1567188608878373000L,
+            1567188608972069001L,
+            1567188609337810002L,
+            1567188609705382001L
+    };
+
     private static RecordFile recordFile1;
     private static RecordFile recordFile2;
     private static StreamFileData streamFileData1;
@@ -91,8 +131,8 @@ public class RecordFileParserTest {
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
         parserProperties.init();
-        recordFileParser = new RecordFileParser(applicationStatusRepository, mirrorProperties, parserProperties,
-                new SimpleMeterRegistry(), recordItemListener, recordStreamFileListener);
+        recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties, new SimpleMeterRegistry(),
+                recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
         StreamType streamType = StreamType.RECORD;
         fileCopier = FileCopier
                 .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
@@ -195,21 +235,58 @@ public class RecordFileParserTest {
         verify(recordStreamFileListener).onError();
     }
 
-    @ParameterizedTest(name = "parse with endDate set to {0}ns after the third last transaction in file2")
-    @ValueSource(longs = {-1, 0, 1})
-    void parseWithEndDate(long nanos) throws Exception {
+    @ParameterizedTest(name = "parse with endDate set to {0}ns after the {1}th transaction")
+    @CsvSource(value = {
+            "-1, 0",
+            " 0, 0",
+            " 1, 0",
+            "-1, 19",
+            " 0, 19",
+            " 1, 19"
+    })
+    void parseWithEndDate(long nanos, int index) throws Exception {
         // given
-        mirrorProperties.setEndDate(THIRD_LAST_TXN_FILE2_CONSENSUS_INSTANT.plusNanos(nanos));
+        long end = FILE_CONSENSUS_TIMESTAMPS[index] + nanos;
+        DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
+        doReturn(filter)
+                .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
         fileCopier.copy();
-
-        // when
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
                 .thenReturn(recordFile1.getFileHash());
+
+        // when
         recordFileParser.parse(streamFileData1);
         recordFileParser.parse(streamFileData2);
 
         // then
-        assertAllProcessed();
+        assertAllProcessed(filter);
+    }
+
+    @ParameterizedTest(name = "parse with startDate set to {0}ns after the {1}th transaction")
+    @CsvSource(value = {
+            "-1, 0",
+            " 0, 0",
+            " 1, 0",
+            "-1, 19",
+            " 0, 19",
+            " 1, 19"
+    })
+    void parseWithStartDate(long nanos, int index) throws Exception {
+        // given
+        long start = FILE_CONSENSUS_TIMESTAMPS[index] + nanos;
+        DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
+        doReturn(filter)
+                .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
+        fileCopier.copy();
+        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
+                .thenReturn(recordFile1.getFileHash());
+
+        // when
+        recordFileParser.parse(streamFileData1);
+        recordFileParser.parse(streamFileData2);
+
+        // then
+        assertAllProcessed(filter);
     }
 
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
@@ -243,18 +320,15 @@ public class RecordFileParserTest {
     }
 
     private void assertAllProcessed() throws Exception {
-        // assert mock interactions
-        int expectedProcessedNumTxnsFile2 = NUM_TXNS_FILE_2;
-        Instant endDate = mirrorProperties.getEndDate();
-        if (endDate != null) {
-            // endDate will be neither < forth last txn in file2 nor >= second last txn in file2
-            expectedProcessedNumTxnsFile2 -= 2;
-            if (endDate.isBefore(THIRD_LAST_TXN_FILE2_CONSENSUS_INSTANT)) {
-                expectedProcessedNumTxnsFile2 -= 1;
-            }
-        }
+        assertAllProcessed(null);
+    }
 
-        verify(recordItemListener, times(NUM_TXNS_FILE_1 + expectedProcessedNumTxnsFile2)).onItem(any());
+    private void assertAllProcessed(DateRangeFilter dateRangeFilter) throws Exception {
+        // assert mock interactions
+        int expectedNumTxns = (int)Arrays.stream(FILE_CONSENSUS_TIMESTAMPS)
+                .filter(ts -> dateRangeFilter == null || dateRangeFilter.filter(ts)).count();
+
+        verify(recordItemListener, times(expectedNumTxns)).onItem(any());
         assertOnStart(streamFileData1.getFilename(), streamFileData2.getFilename());
         assertOnEnd(recordFile1, recordFile2);
     }

@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.DistributionSummary;
@@ -34,7 +36,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
@@ -53,11 +55,11 @@ import com.hedera.mirror.importer.util.Utility;
 public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
-    private final MirrorProperties mirrorProperties;
     private final RecordParserProperties parserProperties;
     private final MeterRegistry meterRegistry;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
+    private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     // Metrics
     private final Map<Boolean, Timer> parseDurationMetrics;
@@ -67,16 +69,17 @@ public class RecordFileParser implements FileParser {
     private final DistributionSummary unknownSizeMetric;
     private final Timer parseLatencyMetric;
 
-    public RecordFileParser(ApplicationStatusRepository applicationStatusRepository, MirrorProperties mirrorProperties,
+    public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
                             RecordItemListener recordItemListener,
-                            RecordStreamFileListener recordStreamFileListener) {
+                            RecordStreamFileListener recordStreamFileListener,
+                            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.applicationStatusRepository = applicationStatusRepository;
-        this.mirrorProperties = mirrorProperties;
         this.parserProperties = parserProperties;
         this.meterRegistry = meterRegistry;
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
+        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
 
         // build parse metrics
         ImmutableMap.Builder<Boolean, Timer> parseDurationMetricsBuilder = ImmutableMap.builder();
@@ -137,6 +140,7 @@ public class RecordFileParser implements FileParser {
 
         String expectedPrevFileHash =
                 applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+        DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType());
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
         try {
@@ -146,7 +150,7 @@ public class RecordFileParser implements FileParser {
                     streamFileData.getFilename(), expectedPrevFileHash,
                     parserProperties.getMirrorProperties().getVerifyHashAfter(),
                     recordItem -> {
-                        if (processRecordItem(recordItem)) {
+                        if (processRecordItem(recordItem, dateRangeFilter)) {
                             counter.incrementAndGet();
                         }
                     });
@@ -169,7 +173,7 @@ public class RecordFileParser implements FileParser {
         }
     }
 
-    private boolean processRecordItem(RecordItem recordItem) {
+    private boolean processRecordItem(RecordItem recordItem, DateRangeFilter dateRangeFilter) {
         if (log.isTraceEnabled()) {
             log.trace("Transaction = {}, Record = {}",
                     Utility.printProtoMessage(recordItem.getTransaction()),
@@ -178,8 +182,7 @@ public class RecordFileParser implements FileParser {
             log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
         }
 
-        Instant endDate = mirrorProperties.getEndDate();
-        if (endDate != null && Utility.convertToNanosMax(endDate.getEpochSecond(), endDate.getNano()) < recordItem.getConsensusTimestamp()) {
+        if (dateRangeFilter != null && !dateRangeFilter.filter(recordItem.getConsensusTimestamp())) {
             return false;
         }
 
