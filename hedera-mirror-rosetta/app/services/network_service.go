@@ -29,7 +29,6 @@ func (n *NetworkAPIService) NetworkList(ctx context.Context, request *types.Meta
 
 // NetworkOptions implements the /network/options endpoint.
 func (n *NetworkAPIService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
-	// TODO: Remove after migration has been added
 	statuses := maphelper.GetStringValuesFromIntStringMap(n.transactionRepo.Statuses())
 	operationStatuses := make([]*types.OperationStatus, 0, len(statuses))
 
@@ -46,7 +45,7 @@ func (n *NetworkAPIService) NetworkOptions(ctx context.Context, request *types.N
 			OperationStatuses:       operationStatuses,
 			OperationTypes:          n.transactionRepo.TypesAsArray(),
 			Errors:                  maphelper.GetErrorValuesFromStringErrorMap(errors.Errors),
-			HistoricalBalanceLookup: false,
+			HistoricalBalanceLookup: true,
 		},
 	}, nil
 }
