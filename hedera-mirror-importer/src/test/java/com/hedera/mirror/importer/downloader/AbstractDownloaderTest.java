@@ -55,6 +55,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.util.ResourceUtils;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -143,7 +147,8 @@ public abstract class AbstractDownloaderTest {
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
-                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
+                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
+                initCredentialsProvider())
                 .s3CloudStorageClient();
         downloader = getDownloader();
 
@@ -182,6 +187,11 @@ public abstract class AbstractDownloaderTest {
 
         downloaderProperties = getDownloaderProperties();
         downloaderProperties.init();
+    }
+
+    private AwsCredentialsProvider initCredentialsProvider() {
+        return StaticCredentialsProvider.create(AwsBasicCredentials.create(commonDownloaderProperties.getAccessKey(),
+                commonDownloaderProperties.getSecretKey()));
     }
 
     protected void assertNoFilesinValidPath() throws Exception {
