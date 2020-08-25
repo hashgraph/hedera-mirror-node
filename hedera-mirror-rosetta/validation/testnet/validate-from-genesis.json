@@ -9,7 +9,7 @@
   "retry_elapsed_time": 5,
   "online_url": "http://localhost:5700",
   "data_directory": "",
-  "http_timeout": 10,
+  "http_timeout": 20,
   "sync_concurrency": 8,
   "transaction_concurrency": 16,
   "tip_delay": 300,
