@@ -334,7 +334,7 @@ public abstract class Downloader {
             } catch (SignatureVerificationException ex) {
                 if (groupIdIterator.hasNext()) {
                     log.warn("Signature verification failed but still have files in the batch, try to process the " +
-                            "next group", ex);
+                            "next group: {}", ex.getMessage());
                     continue;
                 }
                 throw ex;
