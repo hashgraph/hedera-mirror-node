@@ -39,6 +39,7 @@ import com.hedera.mirror.importer.parser.record.entity.sql.SqlProperties;
 @RequiredArgsConstructor
 public class NotifyingEntityListener implements EntityListener {
 
+    private static final String SQL = "select pg_notify('topic_message', ?)";
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().setPropertyNamingStrategy(SNAKE_CASE);
 
     private final SqlProperties sqlProperties;
@@ -55,7 +56,7 @@ public class NotifyingEntityListener implements EntityListener {
                     return;
                 }
 
-                jdbcTemplate.update("select pg_notify('topic_message', ?)", json);
+                jdbcTemplate.update(SQL, json);
             }
         } catch (Exception e) {
             throw new ParserException(e);

@@ -46,12 +46,11 @@ public class ListenerProperties {
     private Duration frequency = Duration.ofMillis(500L);
 
     @NotNull
-    private ListenerType type = ListenerType.REDIS;
+    private ListenerType type = ListenerType.NOTIFY;
 
     public enum ListenerType {
         NOTIFY,
         POLL,
-        REDIS,
         SHARED_POLL
     }
 }

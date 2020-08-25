@@ -48,7 +48,7 @@ public class EntityProperties {
         private boolean systemFiles = true;
 
         /**
-         * If configured the mirror node will store the raw transaction bytes on the t_transaction table
+         * If configured the mirror node will store the raw transaction bytes on the transaction table
          */
         private boolean transactionBytes = false;
     }
