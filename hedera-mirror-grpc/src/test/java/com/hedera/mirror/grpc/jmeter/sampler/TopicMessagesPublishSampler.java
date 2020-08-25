@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.jmeter.sampler;
 
 import com.google.common.base.Stopwatch;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,11 +65,11 @@ public class TopicMessagesPublishSampler {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
-                TransactionId transactionId = sdkClient.submitTopicMessage(
+                List<TransactionId> transactionIdList = sdkClient.submitTopicMessage(
                         topicMessagePublishRequest.getConsensusTopicId(),
                         topicMessagePublishRequest.getMessage());
                 publishToConsensusLatencyStats.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
-                result.onNext(transactionId);
+                transactionIdList.forEach((transactionId -> result.onNext(transactionId)));
             } catch (HederaPrecheckStatusException preEx) {
                 hederaResponseCodeEx.compute(preEx.status, (key, val) -> (val == null) ? 1 : val + 1);
             } catch (HederaNetworkException preEx) {
