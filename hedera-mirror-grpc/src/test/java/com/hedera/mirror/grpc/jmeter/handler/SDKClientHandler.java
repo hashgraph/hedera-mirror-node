@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.jmeter.handler;
  * ‍
  */
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +34,8 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.Status;
-import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionList;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
@@ -100,7 +99,7 @@ public class SDKClientHandler {
         return topicId;
     }
 
-    public TransactionId submitTopicMessage(ConsensusTopicId topicId, String message) throws HederaStatusException {
+    public List<TransactionId> submitTopicMessage(ConsensusTopicId topicId, String message) throws HederaStatusException {
         ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction = new ConsensusMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message);
@@ -108,10 +107,10 @@ public class SDKClientHandler {
         return submitTopicMessage(consensusMessageSubmitTransaction);
     }
 
-    public TransactionId submitTopicMessage(ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction) throws HederaStatusException {
-        Transaction transaction = consensusMessageSubmitTransaction.build(client);
+    public List<TransactionId> submitTopicMessage(ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction) throws HederaStatusException {
+        TransactionList transactionList = consensusMessageSubmitTransaction.build(client);
 
-        return transaction.execute(client, Duration.ofSeconds(2));
+        return transactionList.execute(client);
     }
 
     public TransactionId submitCryptoTransfer(AccountId operatorId, AccountId recipientId, int amount) throws HederaStatusException {
