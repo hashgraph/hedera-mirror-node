@@ -245,6 +245,8 @@ github.com/limechain/hedera-sdk-go v0.9.2-0.20200813152811-0a57de9e27e1 h1:x8dqE
 github.com/limechain/hedera-sdk-go v0.9.2-0.20200813152811-0a57de9e27e1/go.mod h1:WDnvypmYDObjpW43f/Ohe0LJ+vAjavI9+FWRb0bo9NY=
 github.com/limechain/hedera-sdk-go v0.9.2-0.20200821113130-740c7f6d9a65 h1:IA7OCz09tjM1S+i10ENzyeWT5yYw/lAXG+fgc/hVXqs=
 github.com/limechain/hedera-sdk-go v0.9.2-0.20200821113130-740c7f6d9a65/go.mod h1:WDnvypmYDObjpW43f/Ohe0LJ+vAjavI9+FWRb0bo9NY=
+github.com/limechain/hedera-sdk-go v0.9.2-0.20200825132925-ccbc4019e257 h1:Qfjv7CNXiRKFIxsH2FgibkmPAubtvjOARHAEIM+xLcc=
+github.com/limechain/hedera-sdk-go v0.9.2-0.20200825132925-ccbc4019e257/go.mod h1:WDnvypmYDObjpW43f/Ohe0LJ+vAjavI9+FWRb0bo9NY=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/markbates/oncer v0.0.0-20181203154359-bf2de49a0be2/go.mod h1:Ld9puTsIW75CHf65OeIOkyKbteujpZVXDpWK6YGZbxE=
 github.com/markbates/safe v1.0.1/go.mod h1:nAqgmRi7cY2nqMc92/bSEeQA+R4OheNU2T1kNSCBdG0=

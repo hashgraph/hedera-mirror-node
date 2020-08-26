@@ -6,14 +6,14 @@ import (
 
 // Errors - map of all Errors that this API can return
 var Errors = map[string]*types.Error{
-	AppendSignatureFailed:          New(AppendSignatureFailed, 100, false),
-	AccountNotFound:                New(AccountNotFound, 101, true),
-	BlockNotFound:                  New(BlockNotFound, 102, true),
-	InvalidAccount:                 New(InvalidAccount, 103, false),
-	InvalidAmount:                  New(InvalidAmount, 104, false),
-	InvalidOperationsAmount:        New(InvalidOperationsAmount, 105, false),
-	InvalidOperationsTotalAmount:   New(InvalidOperationsTotalAmount, 106, false),
-	InvalidPublicKey:               New(InvalidPublicKey, 107, false),
+	AccountNotFound:                New(AccountNotFound, 100, true),
+	BlockNotFound:                  New(BlockNotFound, 101, true),
+	InvalidAccount:                 New(InvalidAccount, 102, false),
+	InvalidAmount:                  New(InvalidAmount, 103, false),
+	InvalidOperationsAmount:        New(InvalidOperationsAmount, 104, false),
+	InvalidOperationsTotalAmount:   New(InvalidOperationsTotalAmount, 105, false),
+	InvalidPublicKey:               New(InvalidPublicKey, 106, false),
+	InvalidSignatureVerification:   New(InvalidSignatureVerification, 107, false),
 	InvalidTransactionIdentifier:   New(InvalidTransactionIdentifier, 108, false),
 	MultipleOperationTypesPresent:  New(MultipleOperationTypesPresent, 109, false),
 	MultipleSignaturesPresent:      New(MultipleSignaturesPresent, 110, false),
@@ -29,7 +29,6 @@ var Errors = map[string]*types.Error{
 }
 
 const (
-	AppendSignatureFailed          string = "Combine unsigned transaction with signature failed"
 	AccountNotFound                string = "Account not found"
 	BlockNotFound                  string = "Block not found"
 	CreateAccountDbIdFailed        string = "Cannot create Account ID from encoded DB ID: %x"
@@ -38,6 +37,7 @@ const (
 	InvalidOperationsAmount        string = "Invalid Operations amount provided"
 	InvalidOperationsTotalAmount   string = "Operations total amount must be 0"
 	InvalidPublicKey               string = "Invalid Public Key provided"
+	InvalidSignatureVerification   string = "Invalid signature verification"
 	InvalidTransactionIdentifier   string = "Invalid Transaction Identifier provided"
 	MultipleOperationTypesPresent  string = "Only one Operation Type must be present"
 	MultipleSignaturesPresent      string = "Only one signature must be present"

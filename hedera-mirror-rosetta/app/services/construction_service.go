@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/ed25519"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
@@ -46,10 +47,14 @@ func (c *ConstructionAPIService) ConstructionCombine(ctx context.Context, reques
 		return nil, errors.Errors[errors.InvalidPublicKey]
 	}
 
-	resultTransaction, err := transaction.AppendSignature(pubKey, signature.SigningPayload.Bytes)
-	if err != nil {
-		return nil, errors.Errors[errors.AppendSignatureFailed]
+	verifiedSignature := ed25519.Verify(pubKey.Bytes(), transaction.BodyBytes(), signature.SigningPayload.Bytes)
+	if verifiedSignature != true {
+		return nil, errors.Errors[errors.InvalidSignatureVerification]
 	}
+
+	resultTransaction := transaction.SignWith(pubKey, func(bodyBytes []byte) []byte {
+		return signature.SigningPayload.Bytes
+	})
 
 	bytesTransaction, err = resultTransaction.MarshalBinary()
 	if err != nil {
