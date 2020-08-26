@@ -35,10 +35,11 @@ import com.hedera.mirror.importer.domain.Entities;
 @CacheConfig(cacheNames = "entities", cacheManager = CacheConfiguration.EXPIRE_AFTER_30M)
 public interface EntityRepository extends PagingAndSortingRepository<Entities, Long>, EntityRepositoryCustom {
 
+    @Override
     @Cacheable(key = "{#p0}", sync = true)
-    Optional<Entities> findById(long id);
+    Optional<Entities> findById(Long id);
 
-    @CachePut(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}")
+    @CachePut(key = "{#p0.id}")
     @Override
     <S extends Entities> S save(S entity);
 
