@@ -58,7 +58,8 @@ public class MirrorProperties {
 
     private Instant startDate;
 
-    private Instant endDate;
+    @NotNull
+    private Instant endDate = Instant.MAX;
 
     public void setDataPath(Path dataPath) {
         Utility.ensureDirectory(dataPath);

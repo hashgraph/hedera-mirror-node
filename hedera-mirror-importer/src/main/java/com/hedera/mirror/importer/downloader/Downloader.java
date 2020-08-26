@@ -341,6 +341,7 @@ public abstract class Downloader {
     private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         Path validPath = downloaderProperties.getValidPath();
+        Instant endDate = mirrorProperties.getEndDate();
 
         for (var sigFilenameIter = sigFilesMap.keySet().iterator(); sigFilenameIter.hasNext(); ) {
             if (ShutdownHelper.isStopping()) {
@@ -390,11 +391,9 @@ public abstract class Downloader {
                     }
 
                     if (verifyDataFile(signedDataFile, signature.getHash())) {
-                        if (Utility.isStreamFileAfterInstant(sigFilename, mirrorProperties.getEndDate())) {
+                        if (Utility.isStreamFileAfterInstant(sigFilename, endDate)) {
                             downloaderProperties.setEnabled(false);
-                            log.warn("Disabled polling {} after downloading all files <= endDate ({})",
-                                    downloaderProperties.getStreamType(),
-                                    mirrorProperties.getEndDate());
+                            log.warn("Disabled polling after downloading all files <= endDate ({})", endDate);
                             return;
                         }
 

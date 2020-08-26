@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
 import javax.transaction.Transactional;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -63,7 +63,7 @@ public class MirrorDateRangePropertiesProcessor {
     public void process() {
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
-        if (startDate != null && endDate != null && startDate.compareTo(endDate) > 0) {
+        if (startDate != null && startDate.compareTo(endDate) > 0) {
             throw new InvalidConfigurationException(String.format("Date range constraint violation: " +
                     "startDate (%s) > endDate (%s)", startDate, endDate));
         }
@@ -73,7 +73,7 @@ public class MirrorDateRangePropertiesProcessor {
         }
 
         applicationEventPublisher.publishEvent(new MirrorDateRangePropertiesProcessedEvent(this));
-        log.info("Mirror date range properties processed successfully, MirrorDateRangePropertiesProcessedEvent fired");
+        log.debug("Mirror date range properties processed successfully, MirrorDateRangePropertiesProcessedEvent fired");
     }
 
     /**
@@ -88,22 +88,79 @@ public class MirrorDateRangePropertiesProcessor {
     /**
      * Validates the configured [startDate, endDate] range for downloader and updates its application status if needed.
      * @param downloaderProperties the properties of the downloader to validate the [startDate, endDate] range for
-     * @throws InvalidConfigurationException if the constraint effective startDate < endDate is violated
+     * @throws InvalidConfigurationException if the constraint effective startDate <= endDate is violated
      */
     private void processDateRange(DownloaderProperties downloaderProperties) {
-        // validate date range
+        StreamType streamType = downloaderProperties.getStreamType();
+        if (!downloaderProperties.isEnabled()) {
+            filters.put(streamType, DateRangeFilter.empty());
+            return;
+        }
+
+        Instant effectiveStartDate = validateDateRange(downloaderProperties);
+        setDateRangeFilter(downloaderProperties);
+        updateApplicationStatus(downloaderProperties, effectiveStartDate);
+    }
+
+    /**
+     * Validates that effective startDate <= endDate for the downloader.
+     * @param downloaderProperties the properties of the downloader
+     * @return effective startDate
+     * @throws InvalidConfigurationException if effective startDate > endDate
+     */
+    private Instant validateDateRange(DownloaderProperties downloaderProperties) {
         Instant effectiveStartDate = getEffectiveStartDate(downloaderProperties);
         Instant endDate = mirrorProperties.getEndDate();
-        if (effectiveStartDate != null && endDate != null && effectiveStartDate.compareTo(endDate) > 0) {
+        if (effectiveStartDate.compareTo(endDate) > 0) {
             throw new InvalidConfigurationException(String.format("Date range constraint violation for %s downloader: " +
                             "effective startDate (%s) > endDate (%s)", downloaderProperties.getStreamType(),
                     effectiveStartDate, endDate));
         }
 
+        return effectiveStartDate;
+    }
+
+    /**
+     * Sets DateRangeFilter for downloader
+     * @param downloaderProperties the properties of the downloader
+     */
+    private void setDateRangeFilter(DownloaderProperties downloaderProperties) {
+        Instant startDate = mirrorProperties.getStartDate();
+        Instant endDate = mirrorProperties.getEndDate();
+        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
+
+        Instant filterStartDate = null;
+        if (startDate != null) {
+            if (startDate.isAfter(lastFileInstant)) {
+                filterStartDate = startDate;
+            } else if (!endDate.equals(Instant.MAX)) {
+                filterStartDate = lastFileInstant;
+            }
+        } else {
+            if (lastFileInstant.equals(Instant.EPOCH)) {
+                filterStartDate = MirrorProperties.getStartUpInstant();;
+            } else if (!endDate.equals(Instant.MAX)) {
+                filterStartDate = lastFileInstant;
+            }
+        }
+
+        if (filterStartDate != null) {
+            filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(filterStartDate, endDate));
+        }
+    }
+
+    /**
+     * Updates application status for the downloader. The last valid downloaded file in application status is set to
+     * the file at effectiveStartDate of the downloader's format if effectiveStartDate is different than the timestamp
+     * of the file in application status.
+     * @param downloaderProperties the properties of the downloader
+     * @param effectiveStartDate the effective startDate
+     */
+    private void updateApplicationStatus(DownloaderProperties downloaderProperties, Instant effectiveStartDate) {
         // update application status
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
-        if (effectiveStartDate != null && !effectiveStartDate.equals(lastFileInstant)) {
-            StreamType streamType = downloaderProperties.getStreamType();
+        StreamType streamType = downloaderProperties.getStreamType();
+        if (!effectiveStartDate.equals(lastFileInstant)) {
             String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
             applicationStatusRepository.updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), filename);
             log.debug("Set last valid downloaded file to {} for {} downloader", filename, streamType);
@@ -113,43 +170,34 @@ public class MirrorDateRangePropertiesProcessor {
                 mirrorProperties.setVerifyHashAfter(effectiveStartDate);
                 log.debug("Set verifyHashAfter to {}", effectiveStartDate);
             }
+
+            if (log.isInfoEnabled()) {
+                DateRangeFilter filter = filters.get(streamType);
+                log.info("{}: downloader will download files in time range ({}, {}], parser will parse items " +
+                                "in time range [{}, {}]", streamType, effectiveStartDate, mirrorProperties.getEndDate(),
+                        filter.getStartAsInstant(), filter.getEndAsInstant());
+            }
         }
     }
 
     /**
      * Gets the effective startDate for downloader based on startDate in MirrorProperties, the startDateAdjustment
-     * and last valid downloaded file. Also sets the effective inclusive start date of the items to accept.
+     * and last valid downloaded file.
      * @param downloaderProperties The downloader's properties
      * @return The effective startDate: null if downloader is disabled; if startDate is set, the effective startDate is
      * startDate if the database is empty or max(startDate, timestamp of last valid downloaded file); if startDate is
      * not set, the effective startDate is now if the database is empty, or the timestamp of last valid downloaded file
      */
     private Instant getEffectiveStartDate(DownloaderProperties downloaderProperties) {
-        if (!downloaderProperties.isEnabled()) {
-            filters.put(downloaderProperties.getStreamType(), DateRangeFilter.empty());
-            return null;
-        }
-
         Instant startDate = mirrorProperties.getStartDate();
         Instant startUpInstant = MirrorProperties.getStartUpInstant();
-        Instant endDate = mirrorProperties.getEndDate();
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
         Duration adjustment = downloaderProperties.getStartDateAdjustment();
+
         if (startDate != null) {
-            if (startDate.isAfter(lastFileInstant) || endDate != null) {
-                filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(startDate, endDate));
-            }
             return max(startDate.minus(adjustment), lastFileInstant);
         } else {
-            if (lastFileInstant.equals(Instant.EPOCH)) {
-                filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(startUpInstant, endDate));
-                return startUpInstant.minus(adjustment);
-            } else {
-                if (endDate != null) {
-                    filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(lastFileInstant, endDate));
-                }
-                return lastFileInstant;
-            }
+            return lastFileInstant.equals(Instant.EPOCH) ? startUpInstant.minus(adjustment) : lastFileInstant;
         }
     }
 
@@ -158,10 +206,10 @@ public class MirrorDateRangePropertiesProcessor {
         return Utility.getInstantFromFilename(filename);
     }
 
-    @Data
+    @Value
     public static class DateRangeFilter {
-        private final long start;
-        private final long end;
+        long start;
+        long end;
 
         public DateRangeFilter(Instant startDate, Instant endDate) {
             if (startDate == null) {
@@ -178,6 +226,18 @@ public class MirrorDateRangePropertiesProcessor {
 
         public boolean filter(long timestamp) {
             return timestamp >= start && timestamp <= end;
+        }
+
+        public Instant getStartAsInstant() {
+            return Instant.ofEpochSecond(0, start);
+        }
+
+        public Instant getEndAsInstant() {
+            return Instant.ofEpochSecond(0, end);
+        }
+
+        public String toString() {
+            return String.format("DateRangeFilter([%s, %s])", getStartAsInstant(), getEndAsInstant());
         }
 
         public static DateRangeFilter empty() {

@@ -1,9 +1,11 @@
 package com.hedera.mirror.importer.config;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import static org.apache.commons.lang3.ObjectUtils.max;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -101,7 +103,7 @@ public class MirrorDateRangePropertiesProcessorTest {
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
 
-    @ParameterizedTest(name = "startDate {0}ns before application status")
+    @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
     @ValueSource(longs = {0, 1})
     void startDateNotAfterApplicationStatus(long nanos) {
         Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100);
@@ -122,15 +124,16 @@ public class MirrorDateRangePropertiesProcessorTest {
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
 
-    @Test
-    void startDateAfterApplicationStatus() {
-        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100 + maxAdjustment.toSeconds());
+    @ParameterizedTest(name = "startDate is {0}ns after application status")
+    @ValueSource(longs = {1, 2_000_000_000L, 200_000_000_000L})
+    void startDateAfterApplicationStatus(long diffNanos) {
+        Instant lastFileInstant = Instant.now().minusSeconds(200);
         for (var downloaderProperties : downloaderPropertiesList) {
-            doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
+            doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), lastFileInstant))
                     .when(applicationStatusRepository)
                     .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         }
-        Instant startDate = past.plusSeconds(maxAdjustment.toSeconds()).plusNanos(1);
+        Instant startDate = lastFileInstant.plusNanos(diffNanos);
         mirrorProperties.setStartDate(startDate);
 
         mirrorDateRangePropertiesProcessor.process();
@@ -138,11 +141,25 @@ public class MirrorDateRangePropertiesProcessorTest {
         verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
         DateRangeFilter expectedFilter = new DateRangeFilter(startDate, null);
         for (var downloaderProperties : downloaderPropertiesList) {
-            String expectedFilename = Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), adjustStartDate(startDate, downloaderProperties));
-            verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), expectedFilename);
+            Instant effectiveStartDate = max(adjustStartDate(startDate, downloaderProperties), lastFileInstant);
+            if (effectiveStartDate.equals(lastFileInstant)) {
+                verify(applicationStatusRepository, never())
+                        .updateStatusValue(eq(downloaderProperties.getLastValidDownloadedFileKey()), any(String.class));
+            } else {
+                String expectedFilename = Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), effectiveStartDate);
+                verify(applicationStatusRepository)
+                        .updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), expectedFilename);
+            }
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(startDate, minAdjustment));
+
+        Instant expectedVerifyHashAfter;
+        if (diffNanos > maxAdjustment.toNanos()) {
+            expectedVerifyHashAfter = adjustStartDate(startDate, minAdjustment);
+        } else {
+            expectedVerifyHashAfter = mirrorProperties.getVerifyHashAfter();
+        }
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(expectedVerifyHashAfter);
     }
 
     @ParameterizedTest(name = "startDate {0} endDate {1} application status {2} violates (effective) start date <= end date constraint")
