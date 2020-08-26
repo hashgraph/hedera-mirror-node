@@ -49,17 +49,26 @@ RUN    /etc/init.d/postgresql start &&\
 
 # And add ``listen_addresses`` to ``/etc/postgresql/9.6/main/postgresql.conf``
 RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
-# Configure the Postgres Database files to be located at `/data`
-RUN sed -i 's|/var/lib/postgresql/9.6/main|/data|g' /etc/postgresql/9.6/main/postgresql.conf
 # Allow PG Admin access
 RUN echo "host    all             all             172.17.0.1/16           trust" >> /etc/postgresql/9.6/main/pg_hba.conf
 
 USER root
 
+# Create Volume PostgreSQL directory and Change default PostgreSQL directory
+RUN mkdir -p /data/db
+RUN chown postgres /data/db
+RUN chmod 700 /data/db
+RUN mv /var/lib/postgresql/9.6/main /data/db/main
+RUN ln -s /data/db/main /var/lib/postgresql/9.6/main
+
 # ---------------------------  Supervisord  --------------------------- #
 
 # Clone the Repo
 RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+
+# Create Volume importer directory
+RUN mkdir -p /data/data
+RUN ln -s /data/data /hedera-mirror-node
 
 # Copy & npm install the REST API
 WORKDIR /var/rest

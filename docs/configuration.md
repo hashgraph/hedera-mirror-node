@@ -188,7 +188,7 @@ merged into) the current configuration:
 1. `./config/application.yml`
 2. `./application.yml`
 
-The following table lists the available properties along with thteir default values.
+The following table lists the available properties along with their default values.
 | Name                                                    | Default                 | Description                                                                                    |
 | ------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
 | `hedera.mirror.rosetta.apiVersion`                      | 1.4.2                     | The version of the Rosetta interface the implementation adheres to                           |
