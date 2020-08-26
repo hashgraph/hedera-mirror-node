@@ -131,7 +131,7 @@ public class MirrorDateRangePropertiesProcessor {
         }
 
         Instant startDate = mirrorProperties.getStartDate();
-        Instant startDateNow = MirrorProperties.getStartDateNow();
+        Instant startUpInstant = MirrorProperties.getStartUpInstant();
         Instant endDate = mirrorProperties.getEndDate();
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
         Duration adjustment = downloaderProperties.getStartDateAdjustment();
@@ -142,8 +142,8 @@ public class MirrorDateRangePropertiesProcessor {
             return max(startDate.minus(adjustment), lastFileInstant);
         } else {
             if (lastFileInstant.equals(Instant.EPOCH)) {
-                filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(startDateNow, endDate));
-                return startDateNow.minus(adjustment);
+                filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(startUpInstant, endDate));
+                return startUpInstant.minus(adjustment);
             } else {
                 if (endDate != null) {
                     filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(lastFileInstant, endDate));

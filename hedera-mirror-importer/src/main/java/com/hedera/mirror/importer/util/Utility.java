@@ -429,6 +429,10 @@ public class Utility {
         return timestamp + streamType.getSuffix() + "." + streamType.getExtension();
     }
 
+    public static final boolean isStreamFileAfterInstant(String filename, Instant instant) {
+        return instant != null && getInstantFromFilename(filename).isAfter(instant);
+    }
+
     /**
      * If the protobuf encoding of a Key is a single ED25519 key, return the key as a String with lowercase hex
      * encoding.

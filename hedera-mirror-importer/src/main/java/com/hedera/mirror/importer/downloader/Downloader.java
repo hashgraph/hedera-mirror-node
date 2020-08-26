@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.event.EventListener;
@@ -391,7 +390,7 @@ public abstract class Downloader {
                     }
 
                     if (verifyDataFile(signedDataFile, signature.getHash())) {
-                        if (isFileAfterEndDate(sigFilename)) {
+                        if (Utility.isStreamFileAfterInstant(sigFilename, mirrorProperties.getEndDate())) {
                             downloaderProperties.setEnabled(false);
                             log.warn("Disabled polling {} after downloading all files <= endDate ({})",
                                     downloaderProperties.getStreamType(),
@@ -451,11 +450,6 @@ public abstract class Downloader {
             log.warn("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId, ex);
         }
         return null;
-    }
-
-    private boolean isFileAfterEndDate(String filename) {
-        Instant endDate = mirrorProperties.getEndDate();
-        return endDate != null && Utility.getInstantFromFilename(filename).isAfter(endDate);
     }
 
     protected abstract boolean verifyDataFile(File file, byte[] signedHash);

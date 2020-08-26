@@ -71,20 +71,20 @@ public class MirrorDateRangePropertiesProcessorTest {
         mirrorDateRangePropertiesProcessor.process();
 
         verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
-        Instant startDateNow = MirrorProperties.getStartDateNow();
-        DateRangeFilter expectedFilter = new DateRangeFilter(startDateNow, null);
+        Instant startUpInstant = MirrorProperties.getStartUpInstant();
+        DateRangeFilter expectedFilter = new DateRangeFilter(startUpInstant, null);
         for (var downloaderProperties : downloaderPropertiesList) {
             String expectedFilename = Utility.getStreamFilenameFromInstant(
-                    downloaderProperties.getStreamType(), adjustStartDate(startDateNow, downloaderProperties));
+                    downloaderProperties.getStreamType(), adjustStartDate(startUpInstant, downloaderProperties));
             verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), expectedFilename);
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(MirrorProperties.getStartDateNow(), minAdjustment));
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(MirrorProperties.getStartUpInstant(), minAdjustment));
     }
 
     @Test
     void notSetAndApplicationStatusNotEmpty() {
-        Instant past = MirrorProperties.getStartDateNow().minusSeconds(100);
+        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100);
         for (var downloaderProperties : downloaderPropertiesList) {
             doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
                     .when(applicationStatusRepository)
@@ -104,7 +104,7 @@ public class MirrorDateRangePropertiesProcessorTest {
     @ParameterizedTest(name = "startDate {0}ns before application status")
     @ValueSource(longs = {0, 1})
     void startDateNotAfterApplicationStatus(long nanos) {
-        Instant past = MirrorProperties.getStartDateNow().minusSeconds(100);
+        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100);
         for (var downloaderProperties : downloaderPropertiesList) {
             doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
                     .when(applicationStatusRepository)
@@ -124,7 +124,7 @@ public class MirrorDateRangePropertiesProcessorTest {
 
     @Test
     void startDateAfterApplicationStatus() {
-        Instant past = MirrorProperties.getStartDateNow().minusSeconds(100 + maxAdjustment.toSeconds());
+        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100 + maxAdjustment.toSeconds());
         for (var downloaderProperties : downloaderPropertiesList) {
             doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
                     .when(applicationStatusRepository)

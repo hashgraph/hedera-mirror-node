@@ -38,7 +38,7 @@ import com.hedera.mirror.importer.util.Utility;
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
 
-    private static final Instant startDateNow = Instant.now();
+    private static final Instant startUpInstant = Instant.now();
 
     @NotNull
     private Path dataPath = Paths.get(".", "data");
@@ -65,8 +65,8 @@ public class MirrorProperties {
         this.dataPath = dataPath;
     }
 
-    public static Instant getStartDateNow() {
-        return startDateNow;
+    public static Instant getStartUpInstant() {
+        return startUpInstant;
     }
 
     @Getter

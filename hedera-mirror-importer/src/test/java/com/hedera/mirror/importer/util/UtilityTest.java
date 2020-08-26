@@ -121,6 +121,18 @@ public class UtilityTest {
         assertThat(Utility.getStreamFilenameFromInstant(streamType, instant)).isEqualTo(expectedFilename);
     }
 
+    @ParameterizedTest(name = "StreamFile instant {0} > instant {1} ? {2}")
+    @CsvSource(value = {
+            "2020-08-08T09:00:05.123456780Z, 2020-08-08T09:00:05.123456790Z, false",
+            "2020-08-08T09:00:05.123456790Z, 2020-08-08T09:00:05.123456790Z, false",
+            "2020-08-08T09:00:05.123456790Z, 2020-08-08T09:00:05.123456789Z, true",
+            "2020-08-08T09:00:05.123456790Z, , false",
+    })
+    void isStreamFileAfterInstant(Instant fileInstant, Instant instant, boolean expected) {
+        String filename = Utility.getStreamFilenameFromInstant(StreamType.RECORD, fileInstant);
+        assertThat(Utility.isStreamFileAfterInstant(filename, instant)).isEqualTo(expected);
+    }
+
     @Test
     @DisplayName("Loads resource from classpath")
     void getResource() {

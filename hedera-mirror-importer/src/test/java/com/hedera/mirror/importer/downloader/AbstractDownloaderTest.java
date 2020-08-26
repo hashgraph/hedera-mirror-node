@@ -430,9 +430,9 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("startDate not set, default to now")
+    @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), MirrorProperties.getStartDateNow()))
+        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), MirrorProperties.getStartUpInstant()))
                 .when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         fileCopier.copy();
         downloader.download();
