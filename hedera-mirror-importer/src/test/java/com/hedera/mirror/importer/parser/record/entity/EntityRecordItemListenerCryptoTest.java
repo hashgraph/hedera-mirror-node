@@ -101,10 +101,9 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Optional<CryptoTransfer> initialBalanceTransfer =
-                cryptoTransferRepository.findByConsensusTimestampAndEntityIdAndAmount(
-                        Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId),
-                        INITIAL_BALANCE);
+        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
+                Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId)));
+
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(5, entityRepository.count()),
@@ -115,7 +114,10 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 () -> assertCryptoTransaction(transactionBody, record, false),
                 () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), INITIAL_BALANCE),
-                () -> assertTrue(initialBalanceTransfer.isPresent())
+                () -> assertThat(initialBalanceTransfer)
+                        .get()
+                        .extracting(CryptoTransfer::getAmount)
+                        .isEqualTo(INITIAL_BALANCE)
         );
     }
 
@@ -531,7 +533,6 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        var transferList = cryptoTransferRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(2, entityRepository.count()),
@@ -539,8 +540,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(0, liveHashRepository.count()),
                 () -> assertEquals(0, fileDataRepository.count()),
-                () -> assertTransactionAndRecord(transactionBody, record),
-                () -> assertFalse(transferList.isPresent())
+                () -> assertTransactionAndRecord(transactionBody, record)
         );
     }
 

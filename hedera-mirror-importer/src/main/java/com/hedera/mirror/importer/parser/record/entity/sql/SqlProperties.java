@@ -37,8 +37,5 @@ public class SqlProperties {
     @Min(1)
     private int bufferSize = 11441; // tested max byte size of buffer used by postgres CopyManger.copyIn()
 
-    private int maxJsonPayloadSize = 8000;
-
-    // Not documenting this for now since it may be temporary pending further refactorings
-    private boolean notifyTopicMessage = true;
+    private boolean enabled = true;
 }

@@ -46,6 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -173,12 +174,14 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         if (entityProperties.getPersist().isCryptoTransferAmounts()) {
             TransferList transferList = record.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
-                assertThat(cryptoTransferRepository.findByConsensusTimestampAndEntityIdAndAmount(
-                        consensusTimestamp, EntityId.of(accountAmount.getAccountID()), accountAmount.getAmount()))
-                        .isPresent();
+                assertThat(cryptoTransferRepository
+                        .findById(new CryptoTransfer.Id(consensusTimestamp, EntityId.of(accountAmount.getAccountID()))))
+                        .get()
+                        .extracting(CryptoTransfer::getAmount)
+                        .isEqualTo(accountAmount.getAmount());
             }
         } else {
-            assertTrue(cryptoTransferRepository.findById(consensusTimestamp).isEmpty());
+            assertThat(cryptoTransferRepository.count()).isEqualTo(0L);
         }
     }
 

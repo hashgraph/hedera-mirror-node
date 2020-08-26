@@ -20,20 +20,23 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.Data;
 import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
+@JsonIgnoreProperties({"id", "new"})
 @ToString(exclude = {"message", "runningHash"})
-public class TopicMessage {
+public class TopicMessage implements Persistable<Long> {
 
     private Integer chunkNum;
 
@@ -59,4 +62,14 @@ public class TopicMessage {
     private int topicNum;
 
     private Long validStartTimestamp;
+
+    @Override
+    public Long getId() {
+        return consensusTimestamp;
+    }
+
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
 }

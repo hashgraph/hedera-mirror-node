@@ -20,27 +20,18 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -68,9 +59,6 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @ConditionOnEntityRecordParser
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
-    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
-
     private final DataSource dataSource;
     private final ApplicationStatusRepository applicationStatusRepository;
     private final EntityRepository entityRepository;
@@ -95,16 +83,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TopicMessage> topicMessages;
     private final Collection<EntityId> entityIds;
 
-    // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
-    private final Cache entityCache;
-
-    private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
     private long batchCount;
 
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
-                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
                              ApplicationStatusRepository applicationStatusRepository,
                              EntityRepository entityRepository) {
         this.dataSource = dataSource;
@@ -112,7 +95,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-        entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
@@ -133,13 +115,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public boolean isEnabled() {
+        return sqlProperties.isEnabled();
+    }
+
+    @Override
     public void onStart(StreamFileData streamFileData) {
         try {
             cleanup();
             connection = DataSourceUtils.getConnection(dataSource);
-
-            sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new ParserSQLException("Error setting up connection to database", e);
         }
     }
@@ -154,17 +139,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
         } finally {
             cleanup();
+            DataSourceUtils.releaseConnection(connection, dataSource);
         }
     }
 
     @Override
     public void onError() {
         cleanup();
+        DataSourceUtils.releaseConnection(connection, dataSource);
     }
 
     private void cleanup() {
-        closeQuietly(sqlNotifyTopicMessage);
-        sqlNotifyTopicMessage = null;
         batchCount = 0;
         contractResults.clear();
         cryptoTransfers.clear();
@@ -174,28 +159,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
-
-        DataSourceUtils.releaseConnection(connection, dataSource);
-    }
-
-    private void executeBatch(PreparedStatement ps, String entity) {
-        try {
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            var executeResult = ps.executeBatch();
-            log.info("Inserted {} {} in {}", executeResult.length, entity, stopwatch);
-        } catch (SQLException e) {
-            throw new ParserException(e);
-        }
-    }
-
-    private void closeQuietly(Statement statement) {
-        try {
-            if (statement != null) {
-                statement.close();
-            }
-        } catch (Exception e) {
-            log.warn("Error closing statement", e);
-        }
     }
 
     private void executeBatches() {
@@ -208,7 +171,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractResultPgCopy.copy(contractResults, connection);
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
-            persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -232,12 +194,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
-        // only insert entities not found in cache
-        if (entityCache.get(entityId.getId()) != null) {
-            return;
-        }
-
-        entityIds.add(entityId);
+        entityRepository.insertEntityId(entityId);
     }
 
     @Override
@@ -268,18 +225,5 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
-    }
-
-    private void persistEntities() {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        entityIds.forEach(entityId -> {
-            entityRepository.insertEntityId(entityId);
-            entityCache.put(entityId, null);
-        });
-        log.info("Inserted {} entities in {}", entityIds.size(), stopwatch);
-    }
-
-    private void notifyTopicMessages() {
-        executeBatch(sqlNotifyTopicMessage, "topic notifications");
     }
 }

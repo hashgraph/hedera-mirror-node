@@ -30,15 +30,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import com.hedera.mirror.importer.parser.CommonParserProperties;
-
 @Configuration
 @ConditionalOnProperty(prefix = "spring.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCaching
 @RequiredArgsConstructor
 public class CacheConfiguration {
-
-    private final CommonParserProperties commonParserProperties;
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
     public static final String EXPIRE_AFTER_30M = "cacheManagerExpireAfter30m";

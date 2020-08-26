@@ -35,6 +35,10 @@ import com.hedera.mirror.importer.exception.ImporterException;
  */
 public interface EntityListener {
 
+    default boolean isEnabled() {
+        return true;
+    }
+
     default void onContractResult(ContractResult contractResult) throws ImporterException {
     }
 

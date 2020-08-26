@@ -214,7 +214,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 entityListener.onNonFeeTransfer(
-                        new NonFeeTransfer(consensusTimestamp, aa.getAmount(), EntityId.of(aa.getAccountID())));
+                        new NonFeeTransfer(aa.getAmount(), new NonFeeTransfer.Id(consensusTimestamp, EntityId
+                                .of(aa.getAccountID()))));
             }
         }
     }
@@ -315,7 +316,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             entityListener.onEntityId(account);
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
+            entityListener.onCryptoTransfer(new CryptoTransfer(new CryptoTransfer.Id(consensusTimestamp, account),
+                    aa.getAmount()));
         }
     }
 
@@ -333,12 +335,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             initialBalance = body.getCryptoCreateAccount().getInitialBalance();
             createdAccountNum = txRecord.getReceipt().getAccountID().getAccountNum();
         }
+
         TransferList transferList = txRecord.getTransferList();
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             entityListener.onEntityId(account);
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
+            entityListener.onCryptoTransfer(new CryptoTransfer(new CryptoTransfer.Id(consensusTimestamp, account),
+                    aa.getAmount()));
 
             if (addInitialBalance && (initialBalance == aa.getAmount())
                     && (account.getEntityNum() == createdAccountNum)) {
@@ -351,8 +355,12 @@ public class EntityRecordItemListener implements RecordItemListener {
             var createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
             entityListener.onEntityId(payerAccount);
             entityListener.onEntityId(createdAccount);
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
+            entityListener.onCryptoTransfer(new CryptoTransfer(
+                    new CryptoTransfer.Id(consensusTimestamp, payerAccount), -initialBalance)
+            );
+            entityListener.onCryptoTransfer(new CryptoTransfer(
+                    new CryptoTransfer.Id(consensusTimestamp, createdAccount), initialBalance)
+            );
         }
     }
 

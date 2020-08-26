@@ -20,13 +20,18 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serializable;
 import javax.persistence.Convert;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
@@ -35,13 +40,32 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class CryptoTransfer {
-    @Id
-    private Long consensusTimestamp;
+public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
+
+    @EmbeddedId
+    @JsonUnwrapped
+    private Id id;
 
     private Long amount;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
-    private EntityId entityId;
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
+
+    @Data
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id implements Serializable {
+
+        private static final long serialVersionUID = 6187276796581956587L;
+
+        private long consensusTimestamp;
+
+        @Convert(converter = AccountIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId entityId;
+    }
 }

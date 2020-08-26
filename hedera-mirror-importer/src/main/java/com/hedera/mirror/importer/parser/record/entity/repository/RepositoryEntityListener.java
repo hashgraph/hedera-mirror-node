@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity;
+package com.hedera.mirror.importer.parser.record.entity.repository;
 
 /*-
  * ‌
@@ -20,12 +20,10 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import java.util.List;
-import java.util.function.BiConsumer;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -36,58 +34,74 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.ContractResultRepository;
+import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.TopicMessageRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
 @Named
-@Primary
+@Order(1)
 @RequiredArgsConstructor
-public class CompositeEntityListener implements EntityListener {
+public class RepositoryEntityListener implements EntityListener {
 
-    private final List<EntityListener> entityListeners;
+    private final RepositoryProperties repositoryProperties;
+    private final ContractResultRepository contractResultRepository;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final EntityRepository entityRepository;
+    private final FileDataRepository fileDataRepository;
+    private final LiveHashRepository liveHashRepository;
+    private final NonFeeTransferRepository nonFeeTransferRepository;
+    private final TopicMessageRepository topicMessageRepository;
+    private final TransactionRepository transactionRepository;
 
-    private <T> void onEach(BiConsumer<EntityListener, T> consumer, T t) {
-        entityListeners.stream()
-                .filter(EntityListener::isEnabled)
-                .forEach(e -> consumer.accept(e, t));
+    @Override
+    public boolean isEnabled() {
+        return repositoryProperties.isEnabled();
     }
 
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
-        onEach(EntityListener::onContractResult, contractResult);
+        contractResultRepository.save(contractResult);
     }
 
     @Override
     public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
-        onEach(EntityListener::onCryptoTransfer, cryptoTransfer);
+        cryptoTransferRepository.save(cryptoTransfer);
     }
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
-        onEach(EntityListener::onEntityId, entityId);
+        entityRepository.insertEntityId(entityId);
     }
 
     @Override
     public void onFileData(FileData fileData) throws ImporterException {
-        onEach(EntityListener::onFileData, fileData);
+        fileDataRepository.save(fileData);
     }
 
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
-        onEach(EntityListener::onLiveHash, liveHash);
+        liveHashRepository.save(liveHash);
     }
 
     @Override
     public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
-        onEach(EntityListener::onNonFeeTransfer, nonFeeTransfer);
+        nonFeeTransferRepository.save(nonFeeTransfer);
     }
 
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        onEach(EntityListener::onTopicMessage, topicMessage);
+        topicMessageRepository.save(topicMessage);
     }
 
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
-        onEach(EntityListener::onTransaction, transaction);
+        transactionRepository.save(transaction);
     }
 }

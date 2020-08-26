@@ -118,6 +118,6 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
 
     private CryptoTransfer createCryptoTransfer(long consensusNs, EntityId account, long value) {
         entityManager.addBalance(account, value);
-        return new CryptoTransfer(consensusNs, value, account);
+        return new CryptoTransfer(new CryptoTransfer.Id(consensusNs, account), value);
     }
 }

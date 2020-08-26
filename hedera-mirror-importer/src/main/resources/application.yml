@@ -14,7 +14,6 @@ logging:
     root: warn
     com.hedera.mirror.importer: info
     org.flywaydb.core.internal.command.DbMigrate: info
-    #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
   endpoints:
@@ -73,6 +72,11 @@ spring:
     properties:
       hibernate:
         generate_statistics: true
+        jdbc:
+          batch_size: 250
+        order_inserts: true
+        order_updates: true
+    show-sql: false
   task:
     scheduling:
       pool:

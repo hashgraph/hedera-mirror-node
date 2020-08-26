@@ -84,8 +84,9 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
         assertThat(loader.loadAccountBalances(testFile)).isTrue();
 
-        Map<AccountBalance.AccountBalanceId, AccountBalance> accountBalanceMap = new HashMap<>();
-        accountBalanceRepository.findAll().forEach(accountBalance -> accountBalanceMap.put(accountBalance.getId(), accountBalance));
+        Map<AccountBalance.Id, AccountBalance> accountBalanceMap = new HashMap<>();
+        accountBalanceRepository.findAll()
+                .forEach(accountBalance -> accountBalanceMap.put(accountBalance.getId(), accountBalance));
         assertThat(accountBalanceMap.size()).isEqualTo(balanceFile.getCount());
         try (var stream = balanceFileReader.read(testFile)) {
             var accountBalanceIter = stream.iterator();

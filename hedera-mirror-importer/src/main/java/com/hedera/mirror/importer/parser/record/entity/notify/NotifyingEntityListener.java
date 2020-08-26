@@ -31,9 +31,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.sql.SqlProperties;
 
+@ConditionOnEntityRecordParser
 @Log4j2
 @Named
 @RequiredArgsConstructor
@@ -42,22 +43,25 @@ public class NotifyingEntityListener implements EntityListener {
     private static final String SQL = "select pg_notify('topic_message', ?)";
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().setPropertyNamingStrategy(SNAKE_CASE);
 
-    private final SqlProperties sqlProperties;
+    private final NotifyProperties notifyProperties;
     private final JdbcTemplate jdbcTemplate;
+
+    @Override
+    public boolean isEnabled() {
+        return notifyProperties.isEnabled();
+    }
 
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
         try {
-            if (sqlProperties.isNotifyTopicMessage()) {
-                String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
+            String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
 
-                if (json.length() >= sqlProperties.getMaxJsonPayloadSize()) {
-                    log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
-                    return;
-                }
-
-                jdbcTemplate.update(SQL, json);
+            if (json.length() >= notifyProperties.getMaxJsonPayloadSize()) {
+                log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
+                return;
             }
+
+            jdbcTemplate.queryForMap(SQL, json);
         } catch (Exception e) {
             throw new ParserException(e);
         }
