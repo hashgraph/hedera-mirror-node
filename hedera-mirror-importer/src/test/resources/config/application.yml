@@ -19,6 +19,7 @@ hedera:
           pubsub:
             topicName: testTopic
       network: TESTNET
+      startDate: 1970-01-01T00:00:00Z
 
 spring:
   task:

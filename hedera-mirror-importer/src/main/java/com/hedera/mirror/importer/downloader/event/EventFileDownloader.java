@@ -31,7 +31,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -54,20 +53,9 @@ public class EventFileDownloader extends Downloader {
     }
 
     @Leader
-    @Override
     @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:5000}")
     public void download() {
         downloadNextBatch();
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH;
     }
 
     /**
@@ -76,7 +64,7 @@ public class EventFileDownloader extends Downloader {
      */
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
+        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
         String fileName = file.getName();
 
         try {

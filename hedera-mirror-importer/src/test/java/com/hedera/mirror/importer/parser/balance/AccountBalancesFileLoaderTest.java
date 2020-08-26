@@ -20,17 +20,21 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
 
@@ -78,34 +82,48 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
         testFile = fileCopier.getTo().resolve(balanceFile.getFilename()).toFile();
     }
 
-    @Test
-    void loadValidFile() {
+    @ParameterizedTest(name = "load balance file with range [{0}, {1}], expect data persisted? {2}")
+    @CsvSource(value = {
+            "2019-08-30T18:15:00.016002001Z, 2019-08-30T18:15:00.016002001Z, true",
+            ",,true",
+            "2019-08-30T18:15:00.016002002Z, 2019-08-30T18:15:00.016002008Z, false"
+    })
+    void loadValidFile(Instant start, Instant end, boolean persisted) {
         fileCopier.copy();
-
-        assertThat(loader.loadAccountBalances(testFile)).isTrue();
+        DateRangeFilter filter = null;
+        if (start != null || end != null) {
+            filter = new DateRangeFilter(start, end);
+        }
+        assertThat(loader.loadAccountBalances(testFile, filter)).isTrue();
 
         Map<AccountBalance.AccountBalanceId, AccountBalance> accountBalanceMap = new HashMap<>();
         accountBalanceRepository.findAll().forEach(accountBalance -> accountBalanceMap.put(accountBalance.getId(), accountBalance));
-        assertThat(accountBalanceMap.size()).isEqualTo(balanceFile.getCount());
-        try (var stream = balanceFileReader.read(testFile)) {
-            var accountBalanceIter = stream.iterator();
-            while (accountBalanceIter.hasNext()) {
-                AccountBalance expected = accountBalanceIter.next();
-                assertThat(accountBalanceMap.get(expected.getId())).isEqualTo(expected);
-            }
-        }
 
-        assertThat(accountBalanceSetRepository.count()).isEqualTo(1);
-        assertThat(accountBalanceSetRepository.findById(balanceFile.getConsensusTimestamp()).get())
-                .matches(abs -> abs.isComplete())
-                .matches(abs -> abs.getProcessingStartTimestamp() != null)
-                .matches(abs -> abs.getProcessingEndTimestamp() != null);
+        if (persisted) {
+            assertThat(accountBalanceMap.size()).isEqualTo(balanceFile.getCount());
+            try (var stream = balanceFileReader.read(testFile)) {
+                var accountBalanceIter = stream.iterator();
+                while (accountBalanceIter.hasNext()) {
+                    AccountBalance expected = accountBalanceIter.next();
+                    assertThat(accountBalanceMap.get(expected.getId())).isEqualTo(expected);
+                }
+            }
+
+            assertThat(accountBalanceSetRepository.count()).isEqualTo(1);
+            assertThat(accountBalanceSetRepository.findById(balanceFile.getConsensusTimestamp()).get())
+                    .matches(abs -> abs.isComplete())
+                    .matches(abs -> abs.getProcessingStartTimestamp() != null)
+                    .matches(abs -> abs.getProcessingEndTimestamp() != null);
+        } else {
+            assertThat(accountBalanceMap).isEmpty();
+            assertThat(accountBalanceSetRepository.count()).isZero();
+        }
     }
 
     @Test
     void loadEmptyFile() throws IOException {
         FileUtils.write(testFile, "", "utf-8");
-        assertThat(loader.loadAccountBalances(testFile)).isFalse();
+        assertThat(loader.loadAccountBalances(testFile, null)).isFalse();
         assertThat(accountBalanceRepository.count()).isZero();
         assertThat(accountBalanceSetRepository.count()).isZero();
     }

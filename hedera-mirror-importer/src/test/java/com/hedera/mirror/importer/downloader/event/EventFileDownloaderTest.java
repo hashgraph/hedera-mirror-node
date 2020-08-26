@@ -60,6 +60,12 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
         return Duration.ofSeconds(5L);
     }
 
+    @Override
+    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
+        EventDownloaderProperties properties = (EventDownloaderProperties) downloaderProperties;
+        properties.setBatchSize(batchSize);
+    }
+
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
@@ -69,7 +75,9 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
 
     @BeforeEach
     void beforeEach() {
-        file1 = "2020-04-11T00_12_00.025035Z.evts";
-        file2 = "2020-04-11T00_12_05.059945Z.evts";
+        setTestFilesAndInstants(
+                "2020-04-11T00_12_00.025035Z.evts",
+                "2020-04-11T00_12_05.059945Z.evts"
+        );
     }
 }

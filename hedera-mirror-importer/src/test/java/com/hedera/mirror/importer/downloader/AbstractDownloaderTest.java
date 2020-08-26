@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.downloader;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -31,12 +32,11 @@ import static org.mockito.Mockito.verify;
 import com.google.common.primitives.Bytes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,20 +45,26 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import lombok.Data;
 import org.apache.commons.io.FileUtils;
+import org.gaul.s3proxy.S3Proxy;
+import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.jclouds.ContextBuilder;
+import org.jclouds.blobstore.BlobStoreContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -68,6 +74,7 @@ import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
@@ -75,15 +82,15 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractDownloaderTest {
-    private static final int S3_MOCK_PORT = 8001;
+    private static final int S3_PROXY_PORT = 8001;
 
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
+    @Mock(answer = Answers.RETURNS_SMART_NULLS, lenient = true)
     protected ApplicationStatusRepository applicationStatusRepository;
     @Mock(lenient = true)
     protected AddressBookService addressBookService;
     @TempDir
     protected Path s3Path;
-    protected S3Mock s3;
+    protected S3Proxy s3Proxy;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
     protected MirrorProperties mirrorProperties;
@@ -94,6 +101,8 @@ public abstract class AbstractDownloaderTest {
     protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
     protected String file1;
     protected String file2;
+    protected Instant file1Instant;
+    protected Instant file2Instant;
 
     @TempDir
     Path dataPath;
@@ -126,6 +135,12 @@ public abstract class AbstractDownloaderTest {
         }
     }
 
+    protected Downloader prepareDownloader() {
+        var downloader = getDownloader();
+        downloader.onMirrorDateRangePropertiesProcessedEvent();
+        return downloader;
+    }
+
     // Implementation can assume that mirrorProperties and commonDownloaderProperties have been initialized.
     protected abstract DownloaderProperties getDownloaderProperties();
 
@@ -141,16 +156,18 @@ public abstract class AbstractDownloaderTest {
         return path.toString().endsWith("_sig");
     }
 
+    protected abstract void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize);
+
     @BeforeEach
-    void beforeEach(TestInfo testInfo) throws IOException {
+    void beforeEach(TestInfo testInfo) throws Exception {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
-                initCredentialsProvider())
+                AnonymousCredentialsProvider.create())
                 .s3CloudStorageClient();
-        downloader = getDownloader();
+        downloader = prepareDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
@@ -158,8 +175,7 @@ public abstract class AbstractDownloaderTest {
 
         validPath = downloaderProperties.getValidPath();
 
-        s3 = S3Mock.create(S3_MOCK_PORT, s3Path.toString());
-        s3.start();
+        startS3Proxy();
 
         MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
         Path addressBookPath = ResourceUtils.getFile(String
@@ -171,8 +187,8 @@ public abstract class AbstractDownloaderTest {
     }
 
     @AfterEach
-    void after() {
-        s3.shutdown();
+    void after() throws Exception {
+        s3Proxy.stop();
     }
 
     private void initProperties() {
@@ -181,17 +197,37 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
 
         commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
-        commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_MOCK_PORT);
-        commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
-        commonDownloaderProperties.setSecretKey("x");
+        commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);
 
         downloaderProperties = getDownloaderProperties();
         downloaderProperties.init();
     }
 
-    private AwsCredentialsProvider initCredentialsProvider() {
-        return StaticCredentialsProvider.create(AwsBasicCredentials.create(commonDownloaderProperties.getAccessKey(),
-                commonDownloaderProperties.getSecretKey()));
+    private void startS3Proxy() throws Exception {
+        Properties properties = new Properties();
+        properties.setProperty("jclouds.filesystem.basedir", s3Path.toAbsolutePath().toString());
+
+        BlobStoreContext context = ContextBuilder
+                .newBuilder("filesystem")
+                .overrides(properties)
+                .build(BlobStoreContext.class);
+
+        s3Proxy = S3Proxy.builder()
+                .blobStore(context.getBlobStore())
+                .endpoint(URI.create("http://localhost:" + S3_PROXY_PORT))
+                .ignoreUnknownHeaders(true)
+                .build();
+        s3Proxy.start();
+
+        for (int i = 0; i < 500; i++) {
+            if (s3Proxy.getState().equals(AbstractLifeCycle.STARTED)) {
+                return;
+            }
+
+            Thread.sleep(1);
+        }
+
+        throw new RuntimeException("Timeout starting S3Proxy, state " + s3Proxy.getState());
     }
 
     protected void assertNoFilesinValidPath() throws Exception {
@@ -248,7 +284,7 @@ public abstract class AbstractDownloaderTest {
         doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
 
         fileCopier.filterDirectories("*0.0.3").copy();
-        getDownloader().download();
+        prepareDownloader().download();
 
         verifyForSuccess();
     }
@@ -338,7 +374,7 @@ public abstract class AbstractDownloaderTest {
         Files.walk(downloaderProperties.getSignaturesPath())
                 .filter(this::isSigFile)
                 .forEach(AbstractDownloaderTest::corruptFile);
-        doReturn("").when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        doReturn("").when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         downloader.download();
         verifyForSuccess();
     }
@@ -380,22 +416,74 @@ public abstract class AbstractDownloaderTest {
         // will be in the bucket [lastTimestamp + I/2, lastTimestamp + 3*I/2). Note the interval I is set to twice of
         // the difference between file1 and file2.
         Duration interval = getCloseInterval().multipliedBy(2);
-        long file1Timestamp = Utility.getTimestampFromFilename(file1);
-        Instant file1Instant = Instant.ofEpochSecond(file1Timestamp / 1_000_000_000L,
-                file1Timestamp % 1_000_000_000L);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
-        StreamType streamType = StreamType.fromFilename(file1);
-        String basename = lastFileInstant.toString().replace(':', '_');
-        String lastFileName = basename + streamType.getSuffix() + "." + streamType.getExtension();
+        String lastFileName = Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), lastFileInstant);
 
         doReturn(lastFileName).when(applicationStatusRepository)
-                .findByStatusCode(downloader.getLastValidDownloadedFileKey());
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
 
         fileCopier.copy();
         downloader.download();
 
         verifyForSuccess();
         assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+    }
+
+    @Test
+    @DisplayName("startDate not set, default to now, no files should be downloaded")
+    void startDateDefaultNow() throws Exception {
+        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), MirrorProperties.getStartUpInstant()))
+                .when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        fileCopier.copy();
+        downloader.download();
+        verifyForSuccess(List.of());
+    }
+
+    @ParameterizedTest(name = "startDate set to {0}s after {1}")
+    @CsvSource({
+            "-1,file1",
+             "0,file1",
+             "1,file1",
+             "0,file2",
+             "1,file2"
+    })
+    void startDate(long seconds, String fileChoice) throws Exception {
+        final Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
+        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), startDate))
+                .when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        List<String> expectedFiles = List.of(file1, file2)
+                .stream()
+                .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
+                .collect(Collectors.toList());
+
+        fileCopier.copy();
+        downloader.download();
+        verifyForSuccess(expectedFiles);
+    }
+
+    @ParameterizedTest(name = "endDate set to {0}s after {1}")
+    @CsvSource({
+            "-1, file1",
+            "0, file1",
+            "1, file1",
+            "0, file2",
+            "1, file2",
+    })
+    void endDate(long seconds, String fileChoice) throws Exception {
+        mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
+        setDownloaderBatchSize(downloaderProperties, 1);
+        configStatefulApplicationStatusRepositoryMock(downloaderProperties.getLastValidDownloadedFileKey(), downloaderProperties.getLastValidDownloadedFileHashKey());
+        List<String> expectedFiles = List.of(file1, file2)
+                .stream()
+                .filter(name -> !Utility.getInstantFromFilename(name).isAfter(mirrorProperties.getEndDate()))
+                .collect(Collectors.toList());
+
+        fileCopier.copy();
+
+        downloader.download();
+        downloader.download();
+
+        verifyForSuccess(expectedFiles, expectedFiles.size() == 2);
     }
 
     private void differentFilenames(Duration offset) throws Exception {
@@ -415,23 +503,39 @@ public abstract class AbstractDownloaderTest {
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
-        doReturn(file1).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        doReturn(file1).when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
 
         downloader.download();
 
         // The file with the different timestamp than all other nodes should not be processed
-        verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), file2);
+        verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), file2);
         assertValidFiles(List.of(file2));
     }
 
     private void verifyForSuccess() throws Exception {
-        verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), file1);
-        verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), file2);
-        if (downloader.getLastValidDownloadedFileHashKey() != null) {
-            verify(applicationStatusRepository, times(2))
-                    .updateStatusValue(eq(downloader.getLastValidDownloadedFileHashKey()), any());
+        verifyForSuccess(List.of(file1, file2));
+    }
+
+    private void verifyForSuccess(List<String> files) throws Exception {
+        verifyForSuccess(files, true);
+    }
+
+    private void verifyForSuccess(List<String> files, boolean expectEnabled) throws Exception {
+        ApplicationStatusCode lastValidDownloadedFileKey = downloaderProperties.getLastValidDownloadedFileKey();
+        ApplicationStatusCode lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
+
+        verify(applicationStatusRepository, times(files.size())).updateStatusValue(eq(lastValidDownloadedFileKey), any(String.class));
+        for (String filename : files) {
+            verify(applicationStatusRepository).updateStatusValue(lastValidDownloadedFileKey, filename);
         }
-        assertValidFiles(List.of(file2, file1));
+
+        if (lastValidDownloadedFileHashKey != null) {
+            verify(applicationStatusRepository, times(files.size()))
+                    .updateStatusValue(eq(lastValidDownloadedFileHashKey), any());
+        }
+
+        assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
+        assertValidFiles(files);
     }
 
     protected AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
@@ -461,5 +565,47 @@ public abstract class AbstractDownloaderTest {
         addressBookBuilder.entries(addressBookEntries);
 
         return addressBookBuilder.build();
+    }
+
+    private Instant chooseFileInstant(String choice) {
+        switch (choice) {
+            case "file1":
+                return file1Instant;
+            case "file2":
+                return file2Instant;
+            default:
+                throw new RuntimeException("Invalid choice " + choice);
+        }
+    }
+
+    protected void setTestFilesAndInstants(String file1, String file2) {
+        this.file1 = file1;
+        this.file2 = file2;
+
+        file1Instant = Utility.getInstantFromFilename(file1);
+        file2Instant = Utility.getInstantFromFilename(file2);
+    }
+
+    private void configStatefulApplicationStatusRepositoryMock(ApplicationStatusCode... statusCodes) {
+        for (var statusCode : statusCodes) {
+            if (statusCode == null) {
+                continue;
+            }
+
+            ApplicationStatus applicationStatus = new ApplicationStatus();
+            doAnswer(invocation -> {
+                        String value = invocation.getArgument(1);
+                        applicationStatus.setStatus(value);
+                        return null;
+                    }
+            ).when(applicationStatusRepository).updateStatusValue(eq(statusCode), any());
+            doAnswer(invocation -> applicationStatus.getStatus()).when(applicationStatusRepository)
+                    .findByStatusCode(statusCode);
+        }
+    }
+
+    @Data
+    private static class ApplicationStatus {
+        String status = "";
     }
 }

@@ -22,12 +22,10 @@ package com.hedera.mirror.importer.downloader;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
