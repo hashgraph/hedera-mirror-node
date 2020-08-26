@@ -31,16 +31,18 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.StsClientBuilder;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
 import com.hedera.mirror.importer.config.condition.AwsAssumeRoleCondition;
+import com.hedera.mirror.importer.config.condition.AwsDefaultCredentialsCondition;
 import com.hedera.mirror.importer.config.condition.StaticCredentialsCondition;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.importer.exception.MissingCredentialsException;
 
 @Configuration
 @EnableAsync
@@ -62,16 +64,17 @@ public class CredentialsProviderConfiguration {
     @Conditional(AwsAssumeRoleCondition.class)
     public AwsCredentialsProvider stsAssumeRoleCredentialsProvider() {
         log.info("Setting up S3 async client using temporary credentials (AWS AssumeRole)");
-        if (StringUtils.isBlank(downloaderProperties.getAccessKey())
-                || StringUtils.isBlank(downloaderProperties.getSecretKey())) {
-            throw new MissingCredentialsException("Cannot connect to S3 using AssumeRole without user keys");
-        }
 
-        StsClient stsClient = StsClient.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                        downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey())))
-                .region(Region.of(downloaderProperties.getRegion()))
-                .build();
+        StsClientBuilder stsClientBuilder = StsClient.builder();
+
+        if (downloaderProperties.getAccessKey() != null && downloaderProperties.getSecretKey() != null) {
+            stsClientBuilder.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
+                    downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey()
+            )));
+        }
+        if (downloaderProperties.getRegion() != null) {
+            stsClientBuilder.region(Region.of(downloaderProperties.getRegion()));
+        }
 
         AssumeRoleRequest.Builder assumeRoleRequestBuilder = AssumeRoleRequest.builder()
                 .roleArn(downloaderProperties.getS3().getRoleArn())
@@ -81,12 +84,18 @@ public class CredentialsProviderConfiguration {
             assumeRoleRequestBuilder.externalId(downloaderProperties.getS3().getExternalId());
         }
 
-        return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient)
+        return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClientBuilder.build())
                 .refreshRequest(assumeRoleRequestBuilder.build())
                 .build();
     }
 
-    //This should only be created when none of the conditions to create an AwsCredentialsProvider are met.
+    @Bean
+    @Conditional(AwsDefaultCredentialsCondition.class)
+    public AwsCredentialsProvider defaultProvider() {
+        return DefaultCredentialsProvider.create();
+    }
+
+    //TODO Discuss how we want to configure for anonymous, right now this only works for GCP
     @Bean
     @ConditionalOnMissingBean
     public AwsCredentialsProvider anonymousCredentialsProvider() {

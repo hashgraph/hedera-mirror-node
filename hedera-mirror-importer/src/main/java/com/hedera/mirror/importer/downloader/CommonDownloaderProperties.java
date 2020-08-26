@@ -22,12 +22,10 @@ package com.hedera.mirror.importer.downloader;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -56,7 +54,7 @@ public class CommonDownloaderProperties {
     @Min(0)
     private int maxConcurrency = 1000; // aws sdk default = 50
 
-    private String region = "us-east-1";
+    private String region;
 
     private String secretKey;
 
@@ -82,6 +80,5 @@ public class CommonDownloaderProperties {
         private String roleArn;
 
         private String roleSessionName = "hedera-mirror-node";
-
     }
 }

@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.config;
 
 import java.net.URI;
 import java.time.Duration;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -73,8 +72,9 @@ public class MirrorImporterConfiguration {
     public S3AsyncClient gcpCloudStorageClient() {
         log.info("Configured to download from GCP with bucket name '{}'", downloaderProperties.getBucketName());
         // Any valid region for aws client. Ignored by GCP.
-        S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
-                .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
+        S3AsyncClientBuilder clientBuilder = asyncClientBuilder()
+                .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()))
+                .region(Region.US_EAST_1);
         String projectId = downloaderProperties.getGcpProjectId();
         if (StringUtils.isNotBlank(projectId)) {
             clientBuilder.overrideConfiguration(builder -> builder.addExecutionInterceptor(new ExecutionInterceptor() {
@@ -95,8 +95,10 @@ public class MirrorImporterConfiguration {
     public S3AsyncClient s3CloudStorageClient() {
         log.info("Configured to download from S3 in region {} with bucket name '{}'",
                 downloaderProperties.getRegion(), downloaderProperties.getBucketName());
-        S3AsyncClientBuilder clientBuilder = asyncClientBuilder(
-                downloaderProperties.getRegion());
+        S3AsyncClientBuilder clientBuilder = asyncClientBuilder();
+        if (downloaderProperties.getRegion() != null) {
+            clientBuilder.region(Region.of(downloaderProperties.getRegion()));
+        }
         String endpointOverride = downloaderProperties.getEndpointOverride();
         if (endpointOverride != null) {
             log.info("Overriding s3 client endpoint to {}", endpointOverride);
@@ -105,17 +107,18 @@ public class MirrorImporterConfiguration {
         return clientBuilder.build();
     }
 
-    private S3AsyncClientBuilder asyncClientBuilder(String region) {
+    private S3AsyncClientBuilder asyncClientBuilder() {
         SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder()
                 .maxConcurrency(downloaderProperties.getMaxConcurrency())
                 .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
-        return S3AsyncClient.builder()
-                .credentialsProvider(awsCredentialsProvider)
-                .region(Region.of(region))
+        S3AsyncClientBuilder s3AsyncClientBuilder = S3AsyncClient.builder()
                 .httpClient(httpClient)
+                .credentialsProvider(awsCredentialsProvider)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
+
+        return s3AsyncClientBuilder;
     }
 
     @Bean
