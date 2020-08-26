@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.context.event.EventListener;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -59,10 +60,12 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.config.event.MirrorDateRangePropertiesProcessedEvent;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -76,8 +79,11 @@ public abstract class Downloader {
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     protected final ApplicationStatusRepository applicationStatusRepository;
     protected final DownloaderProperties downloaderProperties;
-    private final CommonDownloaderProperties commonDownloaderProperties;
     private final MirrorProperties mirrorProperties;
+    private final CommonDownloaderProperties commonDownloaderProperties;
+
+    protected final ApplicationStatusCode lastValidDownloadedFileKey;
+    protected final ApplicationStatusCode lastValidDownloadedFileHashKey;
 
     // Metrics
     private final MeterRegistry meterRegistry;
@@ -85,6 +91,8 @@ public abstract class Downloader {
     private final Timer.Builder streamVerificationMetric;
     protected final Timer downloadLatencyMetric;
     protected final Timer streamCloseMetric;
+
+    private boolean mirrorDateRangePropertiesProcessed = false;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
@@ -96,40 +104,55 @@ public abstract class Downloader {
         this.meterRegistry = meterRegistry;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
-        commonDownloaderProperties = downloaderProperties.getCommon();
         mirrorProperties = downloaderProperties.getMirrorProperties();
+        commonDownloaderProperties = downloaderProperties.getCommon();
+
+        lastValidDownloadedFileKey = downloaderProperties.getLastValidDownloadedFileKey();
+        lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
+
+        StreamType streamType = downloaderProperties.getStreamType();
 
         // Metrics
         signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
-                .tag("type", downloaderProperties.getStreamType().toString());
+                .tag("type", streamType.toString());
 
         streamVerificationMetric = Timer.builder("hedera.mirror.download.stream.verification")
                 .description("The duration in seconds it took to verify consensus and hash chain of a stream file")
-                .tag("type", downloaderProperties.getStreamType().toString());
+                .tag("type", streamType.toString());
 
         downloadLatencyMetric = Timer.builder("hedera.mirror.download.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file " +
                         "and the time at which the file was downloaded and verified")
-                .tag("type", downloaderProperties.getStreamType().toString())
+                .tag("type", streamType.toString())
                 .register(meterRegistry);
 
         streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
                 .description("The difference between the consensus time of the last and first transaction in the " +
                         "stream file")
-                .tag("type", downloaderProperties.getStreamType().toString())
+                .tag("type", streamType.toString())
                 .register(meterRegistry);
     }
 
-    protected void downloadNextBatch() {
-        try {
-            if (!downloaderProperties.isEnabled()) {
-                return;
-            }
-            if (ShutdownHelper.isStopping()) {
-                return;
-            }
 
+    @EventListener(MirrorDateRangePropertiesProcessedEvent.class)
+    public void onMirrorDateRangePropertiesProcessedEvent() {
+        mirrorDateRangePropertiesProcessed = true;
+    }
+
+    protected void downloadNextBatch() {
+        if (!mirrorDateRangePropertiesProcessed) {
+            return;
+        }
+
+        if (!downloaderProperties.isEnabled()) {
+            return;
+        }
+        if (ShutdownHelper.isStopping()) {
+            return;
+        }
+
+        try {
             var sigFilesMap = downloadSigFiles();
 
             // Following is a cost optimization to not unnecessarily list the public demo bucket once complete
@@ -154,7 +177,7 @@ public abstract class Downloader {
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
     private Multimap<String, FileStreamSignature> downloadSigFiles() throws InterruptedException {
-        String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
+        String lastValidFileName = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileKey);
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
         String lastValidSigFileName = lastValidFileName.isEmpty() ? "" : lastValidFileName + "_sig";
@@ -318,21 +341,22 @@ public abstract class Downloader {
     private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         Path validPath = downloaderProperties.getValidPath();
+        Instant endDate = mirrorProperties.getEndDate();
 
-        for (var groupIdIterator = sigFilesMap.keySet().iterator(); groupIdIterator.hasNext(); ) {
+        for (var sigFilenameIter = sigFilesMap.keySet().iterator(); sigFilenameIter.hasNext(); ) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
 
             Instant startTime = Instant.now();
-            String groupId = groupIdIterator.next();
-            Collection<FileStreamSignature> signatures = sigFilesMap.get(groupId);
+            String sigFilename = sigFilenameIter.next();
+            Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFilename);
             boolean valid = false;
 
             try {
                 nodeSignatureVerifier.verify(signatures);
             } catch (SignatureVerificationException ex) {
-                if (groupIdIterator.hasNext()) {
+                if (sigFilenameIter.hasNext()) {
                     log.warn("Signature verification failed but still have files in the batch, try to process the " +
                             "next group: {}", ex.getMessage());
                     continue;
@@ -365,16 +389,23 @@ public abstract class Downloader {
                     if (signedDataFile == null) {
                         continue;
                     }
+
                     if (verifyDataFile(signedDataFile, signature.getHash())) {
+                        if (Utility.isStreamFileAfterInstant(sigFilename, endDate)) {
+                            downloaderProperties.setEnabled(false);
+                            log.warn("Disabled polling after downloading all files <= endDate ({})", endDate);
+                            return;
+                        }
+
                         // move the file to the valid directory
                         File destination = validPath.resolve(signedDataFile.getName()).toFile();
                         if (moveFile(signedDataFile, destination)) {
-                            if (getLastValidDownloadedFileHashKey() != null) {
-                                applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(),
+                            if (lastValidDownloadedFileHashKey != null) {
+                                applicationStatusRepository.updateStatusValue(lastValidDownloadedFileHashKey,
                                         signature.getHashAsHex());
                             }
                             applicationStatusRepository
-                                    .updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
+                                    .updateStatusValue(lastValidDownloadedFileKey, destination.getName());
                             valid = true;
                             signatures.forEach(this::moveSignatureFile);
                             break;
@@ -419,10 +450,6 @@ public abstract class Downloader {
         }
         return null;
     }
-
-    protected abstract ApplicationStatusCode getLastValidDownloadedFileKey();
-
-    protected abstract ApplicationStatusCode getLastValidDownloadedFileHashKey();
 
     protected abstract boolean verifyDataFile(File file, byte[] signedHash);
 

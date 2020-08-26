@@ -32,7 +32,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.exception.HashMismatchException;
@@ -52,20 +51,9 @@ public class RecordFileDownloader extends Downloader {
     }
 
     @Leader
-    @Override
     @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.record.frequency:500}")
     public void download() {
         downloadNextBatch();
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH;
     }
 
     /**
@@ -74,7 +62,7 @@ public class RecordFileDownloader extends Downloader {
      */
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
+        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
         try {
             RecordFile recordFile = Utility.parseRecordFile(file.getPath(), expectedPrevFileHash,
                     downloaderProperties.getMirrorProperties().getVerifyHashAfter(), null);

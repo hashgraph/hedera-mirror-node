@@ -29,7 +29,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -47,7 +46,6 @@ public class AccountBalancesDownloader extends Downloader {
     }
 
     @Leader
-    @Override
     @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.balance.frequency:30000}")
     public void download() {
         downloadNextBatch();
@@ -56,15 +54,5 @@ public class AccountBalancesDownloader extends Downloader {
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
         return Arrays.equals(verifiedHash, Utility.getBalanceFileHash(file.getPath()));
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return null;
     }
 }

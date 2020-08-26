@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+
 import com.google.common.base.Stopwatch;
 import java.io.File;
 import java.sql.Connection;
@@ -84,7 +86,7 @@ public final class AccountBalancesFileLoader {
      *
      * @return true on success (if the file was completely and fully processed).
      */
-    public boolean loadAccountBalances(@NonNull File balanceFile) {
+    public boolean loadAccountBalances(@NonNull File balanceFile, DateRangeFilter dateRangeFilter) {
         log.info("Starting processing account balances file {}", balanceFile.getPath());
         String fileName = balanceFile.getName();
         long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
@@ -116,6 +118,13 @@ public final class AccountBalancesFileLoader {
                                         " be " +
                                         "investigated! Dataset {} internal timestamp {} filename timestamp {}.",
                                 fileName, consensusTimestamp, timestampFromFileName);
+                    }
+
+                    if (dateRangeFilter != null && !dateRangeFilter.filter(consensusTimestamp)) {
+                        log.warn("Account balances file {} not in configured date range {}, skip it",
+                                fileName, dateRangeFilter);
+                        complete = true;
+                        break;
                     }
 
                     insertAccountBalanceSet(insertSetStatement, consensusTimestamp);

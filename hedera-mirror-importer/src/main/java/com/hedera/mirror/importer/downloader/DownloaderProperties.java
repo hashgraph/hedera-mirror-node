@@ -25,6 +25,7 @@ import java.time.Duration;
 import javax.annotation.PostConstruct;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -67,6 +68,12 @@ public interface DownloaderProperties {
     boolean isKeepSignatures();
 
     void setKeepSignatures(boolean keepSignatures);
+
+    ApplicationStatusCode getLastValidDownloadedFileKey();
+
+    ApplicationStatusCode getLastValidDownloadedFileHashKey();
+
+    Duration getStartDateAdjustment();
 
     @PostConstruct
     default void init() {

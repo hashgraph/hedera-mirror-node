@@ -38,6 +38,8 @@ import com.hedera.mirror.importer.util.Utility;
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
 
+    private static final Instant startUpInstant = Instant.now();
+
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 
@@ -54,9 +56,18 @@ public class MirrorProperties {
 
     private Long topicRunningHashV2AddedTimestamp;
 
+    private Instant startDate;
+
+    @NotNull
+    private Instant endDate = Instant.MAX;
+
     public void setDataPath(Path dataPath) {
         Utility.ensureDirectory(dataPath);
         this.dataPath = dataPath;
+    }
+
+    public static Instant getStartUpInstant() {
+        return startUpInstant;
     }
 
     @Getter

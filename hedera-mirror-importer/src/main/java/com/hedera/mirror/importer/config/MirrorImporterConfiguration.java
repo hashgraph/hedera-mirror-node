@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.config;
 
 import java.net.URI;
 import java.time.Duration;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;

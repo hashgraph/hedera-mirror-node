@@ -56,6 +56,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.s3.externalId`                    |                         | The external id required to assume the role to connect to S3, if one was set                   |
 | `hedera.mirror.importer.downloader.s3.roleArn`                       |                         | The ARN for the role that needs to be assumed to connect to S3.  Only required if wishing to use temporary security credentials |
 | `hedera.mirror.importer.downloader.s3.roleSessionName`               | hedera-mirror-node      | A session name for assuming the role to access S3.  2-62 characters, can be alphanumeric, underscore, or any of =,.@- |
+| `hedera.mirror.importer.endDate`                                     | `Instant.MAX`           | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
@@ -88,6 +89,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
+| `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 | `hedera.mirror.importer.verifyHashAfter`                             | 1970-01-01T00:00:00Z  | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 
 #### Export transactions to PubSub
