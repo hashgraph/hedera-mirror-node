@@ -20,11 +20,11 @@ create user if not exists :grpc_user with login password :'grpc_password';
 create user if not exists :rest_user with login password :'rest_password';
 
 -- is it necessary to explicitly grant the following?
---grant usage on SCHEMA :schema_name to :db_user;
+--grant usage on schema :schema_name to :db_user;
 --grant connect on database :db_name to :db_user;
 grant all privileges on database :db_name to :db_user;
 grant all privileges on all tables in schema :schema_name to :db_user;
---grant all ON t_record_files to db_user;
+--grant all on t_record_files to db_user;
 
 -- grant connect access to api users
 grant connect on database :db_name to :grpc_user;
@@ -35,6 +35,11 @@ grant connect on database :db_name to :rest_user;
 -- schema
 create schema if not exists :schema_name;
 grant usage on schema :schema_name to public;
+
+-- alter search path for given schema
+alter user :db_user set search_path = :schema_name, public;
+alter user :grpc_user set search_path = :schema_name, public;
+alter user :rest_user set search_path = :schema_name, public;
 
 -- grant select privileges on past and future tables to api users
 alter default privileges in schema :schema_name grant select on tables to :grpc_user;

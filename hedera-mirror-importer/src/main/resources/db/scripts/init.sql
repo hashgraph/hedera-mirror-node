@@ -17,6 +17,6 @@ grant connect on database :db_name to :grpc_user;
 
 \c :db_name
 
-alter default privileges in schema public grant select on tables to :grpc_user;
+alter default privileges in schema mirror_node grant select on tables to mirror_grpc;
 
-grant select on all tables in schema public to :grpc_user;
+grant select on all tables in schema mirror_node to mirror_grpc;
