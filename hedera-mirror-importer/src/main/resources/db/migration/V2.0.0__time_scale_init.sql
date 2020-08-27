@@ -1,6 +1,8 @@
 -------------------
 -- Init mirror node db, defining table schema and creating hyper tables
 -- Supports mirror nodes migrated from v1.0
+-- Use default of 604800000000000 ns (7 days) as chunk time interval
+-- add TIMESTAMPTZ data type column to tables where no monotonically increasing id exists
 -------------------
 
 -- Extend the database with TimescaleDB
@@ -12,7 +14,7 @@ create extension if not exists timescaledb cascade;
 
 -- account_balance
 create table if not exists account_balances (
-    consensus_timestamp nanos_timestamp not null,
+    consensus_timestamp bigint not null,
     account_id entity_id not null,
     balance hbar_tinybars not null,
     constraint pk__account_balances primary key (consensus_timestamp, account_id)
@@ -20,7 +22,7 @@ create table if not exists account_balances (
 comment on table account_balances is 'account balances (historical) in tinybars at different consensus timestamps';
 create index if not exists idx__account_balances__account_then_timestamp
     on account_balances (account_id, consensus_timestamp desc);
-select create_hypertable('account_balance', 'consensus_timestamp', if_not_exists => TRUE);
+select create_hypertable('account_balance', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
 
 -- account_balance_sets
 
