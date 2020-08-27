@@ -186,8 +186,11 @@ sudo mv accountBalances eventsStreams recordstreams backup20191114/
 ```console
 scp hedera-mirror-importer/src/main/resources/db/scripts/cleanup.sql user@server:~
 ssh user@server
-psql -h dbhost -d mirror_node -U mirror_node -f cleanup.sql
+psql -h dbhost -d mirror_node -U mirror_node -f drop.sql
 ```
+> **_NOTE:_** The `cleanup.sql` script was previously used to wipe the database as it truncates the tables and resets identities.
+> However, it was not designed to account for bootstrap data such as address books which are persisted during flyway migrations.
+> Hence, `drop.sql` is favored over `cleanup.sql` as it clears the schema and allows migrations to be re-run accordingly.
 
 5 ) Start Mirror Node Importer
 
