@@ -3,10 +3,6 @@ package config
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
-	EnvHederaMirrorRosettaDBHost = "HEDERA_MIRROR_ROSETTA_DB_HOST"
-)
-
-const (
 	OperationTypeCryptoTransfer = "CRYPTOTRANSFER"
 )
 

@@ -187,6 +187,7 @@ merged into) the current configuration:
 
 1. `./config/application.yml`
 2. `./application.yml`
+3. Environment variables that start with `HEDERA_MIRROR_ROSETTA_` (e.g. `HEDERA_MIRROR_ROSETTA_API_VERSION=1.4.2`)
 
 The following table lists the available properties along with their default values.
 | Name                                                    | Default                 | Description                                                                                    |
@@ -198,6 +199,7 @@ The following table lists the available properties along with their default valu
 | `hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.rosetta.db.username`                     | mirror_api              | The username the processor uses to connect to the database                                     |
 | `hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime                                              |
+| `hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface                                               |
 | `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port                                                                              |
 | `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |

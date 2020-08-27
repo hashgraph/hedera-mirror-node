@@ -9,6 +9,7 @@ hedera:
         password: mirror_node_pass
         port: 5432
         username: mirror_node
+      online: true
       network: DEMO
       nodeVersion: 0
       port: 5700
