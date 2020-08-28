@@ -201,14 +201,6 @@
                                 </log4j.configurationFile>
                             </systemPropertyVariables>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <phase>integration-test</phase>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
