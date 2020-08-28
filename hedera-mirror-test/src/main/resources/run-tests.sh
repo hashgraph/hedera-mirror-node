@@ -17,13 +17,11 @@ handle_mode() {
         echo "Setting acceptance tests configs"
         set_acceptance_configs
         testProfile=acceptance-tests
-        mavenPhase=test
         ;;
     performance)
         echo "Setting performance tests configs"
         set_perf_configs
         testProfile=performance-tests
-        mavenPhase=integration-test
         ;;
     *)
         echo "Test profile was '$testProfile', value must be either 'acceptance' or 'performance'"
@@ -33,7 +31,7 @@ handle_mode() {
 
 run_test() {
     handle_mode
-    ./mvnw clean $mavenPhase -pl hedera-mirror-test -P=$testProfile $testoptions -e
+    ./mvnw clean integration-test -pl hedera-mirror-test -P=$testProfile $testoptions -e
 }
 
 run_test

@@ -25,7 +25,7 @@ Further details may be explored at https://cucumber.io/. Additionally, cucumbers
 
 Tests can be compiled and run by running the following command from the root folder
 
-    `./mvnw clean test --projects hedera-mirror-test/ -P=acceptance-tests`
+    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests`
 
 ### Test Configuration
 
@@ -43,24 +43,24 @@ Tests can be compiled and run by running the following command from the root fol
     -   subscribeRetryOffPeriod - number of milliseconds client should wait before retrying on a retryable failure
 
 (Recommended) Options can be set by creating your own configuration file with the above properties. This allows for multiple files per env. The following command will help to point out which file to use
-`./mvnw test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance" -Dspring.config.name=application-testnet`
+`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance" -Dspring.config.name=application-testnet`
 
 Options can also be set through the command line as follows
 
-    `./mvnw test --projects hedera-mirror-test/ -P=acceptance-tests -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
+    `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
 
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   Acceptance test cases
 
-*                                   `./mvnw clean test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
     -   All cases
-*                                   `./mvnw clean test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*                                   `./mvnw clean test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*                                   `./mvnw clean test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
-*                                     `./mvnw test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
+*                                     `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
     -   Account check case
 
 ### Test Layout
