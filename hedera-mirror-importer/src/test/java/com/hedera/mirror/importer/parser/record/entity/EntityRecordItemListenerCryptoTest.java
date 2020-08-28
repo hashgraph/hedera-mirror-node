@@ -59,8 +59,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
             .build();
-    private static final long[] additionalTransfers = {5000, 6000, PAYER.getAccountNum()};
-    private static final long[] additionalTransferAmounts = {1000, 1000, -2000};
+    private static final long[] additionalTransfers = {5000, 6000};
+    private static final long[] additionalTransferAmounts = {1001, 1002};
 
     @BeforeEach
     void before() {
@@ -102,7 +102,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId)));
+                INITIAL_BALANCE, Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId)));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -114,10 +114,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 () -> assertCryptoTransaction(transactionBody, record, false),
                 () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), INITIAL_BALANCE),
-                () -> assertThat(initialBalanceTransfer)
-                        .get()
-                        .extracting(CryptoTransfer::getAmount)
-                        .isEqualTo(INITIAL_BALANCE)
+                () -> assertThat(initialBalanceTransfer).isPresent()
         );
     }
 
@@ -504,6 +501,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
     @Test
     void cryptoTransferWithPersistence() throws Exception {
+        cryptoTransferRepository.findAll().forEach(c -> System.out.println(c.toString()));
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
@@ -511,11 +509,12 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
+        cryptoTransferRepository.findAll().forEach(c -> System.out.println(c.toString()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(5, entityRepository.count())
-                , () -> assertEquals(6, cryptoTransferRepository.count())
+                , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(0, fileDataRepository.count())

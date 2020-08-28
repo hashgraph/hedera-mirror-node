@@ -25,9 +25,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 
-@Data
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.repository")
+@Data
 public class RepositoryProperties {
 
     private boolean enabled = false;

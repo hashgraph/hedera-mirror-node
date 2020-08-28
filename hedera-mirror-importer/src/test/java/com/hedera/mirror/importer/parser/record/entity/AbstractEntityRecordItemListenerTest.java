@@ -174,11 +174,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         if (entityProperties.getPersist().isCryptoTransferAmounts()) {
             TransferList transferList = record.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
+                EntityId account = EntityId.of(accountAmount.getAccountID());
                 assertThat(cryptoTransferRepository
-                        .findById(new CryptoTransfer.Id(consensusTimestamp, EntityId.of(accountAmount.getAccountID()))))
-                        .get()
-                        .extracting(CryptoTransfer::getAmount)
-                        .isEqualTo(accountAmount.getAmount());
+                        .findById(new CryptoTransfer.Id(accountAmount.getAmount(), consensusTimestamp, account)))
+                        .isPresent();
             }
         } else {
             assertThat(cryptoTransferRepository.count()).isEqualTo(0L);

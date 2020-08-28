@@ -37,14 +37,12 @@ public class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
         long consensusNs = transaction.getConsensusNs();
         EntityId entity = EntityId.of(0L, 1L, 2L, ACCOUNT);
         long amount = 40L;
-        CryptoTransfer cryptoTransfer = new CryptoTransfer();
-        cryptoTransfer.setId(new CryptoTransfer.Id(consensusNs, entity));
-        cryptoTransfer.setAmount(amount);
+        CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusNs, amount, entity);
 
         cryptoTransferRepository.save(cryptoTransfer);
 
-        assertThat(cryptoTransferRepository.findById(new CryptoTransfer.Id(consensusNs, entity)))
-                .isPresent()
+        assertThat(cryptoTransferRepository.findById(cryptoTransfer.getId()))
+                .get()
                 .isEqualTo(cryptoTransfer);
     }
 }

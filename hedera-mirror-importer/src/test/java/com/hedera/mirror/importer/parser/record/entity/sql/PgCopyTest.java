@@ -148,8 +148,7 @@ class PgCopyTest extends IntegrationTest {
     }
 
     private CryptoTransfer cryptoTransfer(long consensusTimestamp) {
-        return new CryptoTransfer(new CryptoTransfer.Id(consensusTimestamp, EntityId
-                .of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT)), 1L);
+        return new CryptoTransfer(consensusTimestamp, 1L, EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT));
     }
 
     private Transaction transaction(long consensusNs) {

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.importer.domain.TopicMessage;
@@ -37,6 +38,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 @ConditionOnEntityRecordParser
 @Log4j2
 @Named
+@Order(3)
 @RequiredArgsConstructor
 public class NotifyingEntityListener implements EntityListener {
 

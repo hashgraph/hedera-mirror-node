@@ -109,10 +109,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onCryptoTransferList() throws Exception {
         // given
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(new CryptoTransfer.Id(1L, EntityId
-                .of(0L, 0L, 1L, ACCOUNT)), 1L);
-        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(new CryptoTransfer.Id(2L, EntityId
-                .of(0L, 0L, 2L, ACCOUNT)), -2L);
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
 
         // when
         sqlEntityListener.onCryptoTransfer(cryptoTransfer1);

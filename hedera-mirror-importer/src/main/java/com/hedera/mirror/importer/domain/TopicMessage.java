@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -34,7 +34,6 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
-@JsonIgnoreProperties({"id", "new"})
 @ToString(exclude = {"message", "runningHash"})
 public class TopicMessage implements Persistable<Long> {
 
@@ -63,11 +62,13 @@ public class TopicMessage implements Persistable<Long> {
 
     private Long validStartTimestamp;
 
+    @JsonIgnore
     @Override
     public Long getId() {
         return consensusTimestamp;
     }
 
+    @JsonIgnore
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert

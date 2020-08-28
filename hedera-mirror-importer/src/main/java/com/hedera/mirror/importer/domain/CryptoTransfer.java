@@ -39,14 +39,21 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 @Data
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
 public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
 
+    public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId) {
+        this.id = new CryptoTransfer.Id(amount, consensusTimestamp, entityId);
+    }
+
+    /*
+     * It used to be that crypto transfers could have multiple amounts for the same account, so all fields were used for
+     * uniqueness. Later a change was made to aggregate amounts by account making the unique key
+     * (consensusTimestamp, entityId). Since we didn't migrate the old data to aggregate we have to treat all fields as
+     * the key still.
+     */
     @EmbeddedId
     @JsonUnwrapped
     private Id id;
-
-    private Long amount;
 
     @JsonIgnore
     @Override
@@ -61,6 +68,8 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
     public static class Id implements Serializable {
 
         private static final long serialVersionUID = 6187276796581956587L;
+
+        private long amount;
 
         private long consensusTimestamp;
 
