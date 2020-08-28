@@ -21,16 +21,10 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.EntityType;
 
 public interface EntityTypeRepository extends CrudRepository<EntityType, Integer> {
 
-    @Cacheable(cacheManager = CacheConfiguration.TINY_LRU_CACHE, cacheNames = "entity_type")
-    Optional<EntityType> findByName(String name);
 }

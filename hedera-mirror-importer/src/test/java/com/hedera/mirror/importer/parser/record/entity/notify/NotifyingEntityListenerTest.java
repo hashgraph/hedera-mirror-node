@@ -23,28 +23,25 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import javax.annotation.Resource;
 import javax.sql.DataSource;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGNotification;
 import org.postgresql.jdbc.PgConnection;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class NotifyingEntityListenerTest extends IntegrationTest {
 
-    @Resource
-    private NotifyingEntityListener entityListener;
-
-    @Resource
-    private NotifyProperties notifyProperties;
-
-    @Resource
-    private DataSource dataSource;
+    private final NotifyingEntityListener entityListener;
+    private final NotifyProperties notifyProperties;
+    private final DataSource dataSource;
 
     @Test
     void isEnabled() {

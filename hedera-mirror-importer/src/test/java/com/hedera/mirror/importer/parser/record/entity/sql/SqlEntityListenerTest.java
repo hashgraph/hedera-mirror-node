@@ -26,10 +26,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Optional;
 import java.util.UUID;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -55,40 +56,20 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class SqlEntityListenerTest extends IntegrationTest {
 
-    @Resource
-    private TransactionRepository transactionRepository;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
-
-    @Resource
-    private NonFeeTransferRepository nonFeeTransferRepository;
-
-    @Resource
-    private ContractResultRepository contractResultRepository;
-
-    @Resource
-    private LiveHashRepository liveHashRepository;
-
-    @Resource
-    private FileDataRepository fileDataRepository;
-
-    @Resource
-    private TopicMessageRepository topicMessageRepository;
-
-    @Resource
-    private RecordFileRepository recordFileRepository;
-
-    @Resource
-    private SqlEntityListener sqlEntityListener;
-
-    @Resource
-    private SqlProperties sqlProperties;
+    private final TransactionRepository transactionRepository;
+    private final EntityRepository entityRepository;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final NonFeeTransferRepository nonFeeTransferRepository;
+    private final ContractResultRepository contractResultRepository;
+    private final LiveHashRepository liveHashRepository;
+    private final FileDataRepository fileDataRepository;
+    private final TopicMessageRepository topicMessageRepository;
+    private final RecordFileRepository recordFileRepository;
+    private final SqlEntityListener sqlEntityListener;
+    private final SqlProperties sqlProperties;
 
     private String fileName = "2019-08-30T18_10_00.419072Z.rcd";
 

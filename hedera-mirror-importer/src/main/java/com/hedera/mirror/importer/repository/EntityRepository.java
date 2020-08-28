@@ -45,15 +45,15 @@ public interface EntityRepository extends PagingAndSortingRepository<Entities, L
     @Override
     <S extends Entities> S save(S entity);
 
-    @Cacheable(cacheNames = "entityIds", cacheManager = NEVER_EXPIRE_LARGE, key = "{#p0}")
     @Modifying
     @Query(value = "insert into t_entities (id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
             "values (?1, ?2, ?3, ?4, ?5) on conflict do nothing", nativeQuery = true)
     void insertEntityId(long id, long shard, long realm, long num, long type);
 
     @Cacheable(cacheNames = "entityIds", cacheManager = NEVER_EXPIRE_LARGE, key = "{#p0.id}")
-    default void insertEntityId(EntityId entityId) {
+    default boolean insertEntityId(EntityId entityId) {
         insertEntityId(entityId.getId(), entityId.getShardNum(), entityId.getRealmNum(),
                 entityId.getEntityNum(), entityId.getType());
+        return true; // @Cacheable requires non-void return type
     }
 }

@@ -501,7 +501,6 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
     @Test
     void cryptoTransferWithPersistence() throws Exception {
-        cryptoTransferRepository.findAll().forEach(c -> System.out.println(c.toString()));
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
@@ -509,7 +508,6 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
-        cryptoTransferRepository.findAll().forEach(c -> System.out.println(c.toString()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
