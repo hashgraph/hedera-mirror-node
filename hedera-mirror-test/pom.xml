@@ -187,6 +187,16 @@
             <id>acceptance-tests</id>
             <build>
                 <plugins>
+                    <!-- This disables the package/jar phase, while still preserving the rest of the lifecycle -->
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-jar</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
@@ -203,6 +213,8 @@
                         </configuration>
                         <executions>
                             <execution>
+                                <!-- Overriding the default-test execution to run during integration-test phase-->
+                                <id>default-test</id>
                                 <phase>integration-test</phase>
                                 <goals>
                                     <goal>test</goal>
