@@ -35,22 +35,12 @@ RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 po
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y nodejs
 
-USER postgres
-
-# TODO use the init db script and not hardcoded values!
-RUN    /etc/init.d/postgresql start &&\
-    psql --command "create user mirror_grpc WITH password 'mirror_grpc_pass';" &&\
-    psql --command "create user mirror_node with SUPERUSER password 'mirror_node_pass'" &&\
-    createdb -O mirror_grpc mirror_node &&\
-    psql --command "grant connect on database mirror_node to mirror_grpc;" &&\
-    psql --command "alter default privileges in schema public grant select on tables to mirror_grpc;" &&\
-    psql --command "grant select on all tables in schema public to mirror_grpc;"
-
-
-# And add ``listen_addresses`` to ``/etc/postgresql/9.6/main/postgresql.conf``
-RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
-# Allow PG Admin access
-RUN echo "host    all             all             172.17.0.1/16           trust" >> /etc/postgresql/9.6/main/pg_hba.conf
+# ---------------------------- Install yq ----------------------------- #
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository ppa:rmescandon/yq
+RUN apt update
+RUN apt install yq -y
 
 USER root
 
@@ -65,6 +55,21 @@ RUN ln -s /data/db/main /var/lib/postgresql/9.6/main
 
 # Clone the Repo
 RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+
+USER postgres
+
+# Init db script
+RUN /etc/init.d/postgresql start &&\
+    createdb mirror_node &&\
+    psql --command "create user mirror_node with SUPERUSER password 'mirror_node_pass'"&&\
+    POSTGRES_DB=mirror_node /hedera-mirror-node/hedera-mirror-grpc/scripts/db/init.sh
+
+# And add ``listen_addresses`` to ``/etc/postgresql/9.6/main/postgresql.conf``
+RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
+# Allow PG Admin access
+RUN echo "host    all             all             172.17.0.1/16           trust" >> /etc/postgresql/9.6/main/pg_hba.conf
+
+USER root
 
 # Create Volume importer directory
 RUN mkdir -p /data/data
@@ -95,4 +100,4 @@ WORKDIR /hedera-mirror-node
 # Expose the ports
 # (DB)(Rosetta)(Rest)(GRPC)
 EXPOSE 5432 5700 5551 5600
-ENTRYPOINT [ "supervisord" ]
+ENTRYPOINT [ "./run_supervisord.sh" ]
