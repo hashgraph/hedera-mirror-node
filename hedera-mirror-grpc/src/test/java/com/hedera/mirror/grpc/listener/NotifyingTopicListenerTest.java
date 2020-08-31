@@ -32,7 +32,7 @@ import reactor.test.StepVerifier;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
+public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Resource
     private NotifyingTopicListener topicListener;
@@ -92,13 +92,16 @@ public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicNum(1001)
                 .build();
 
         topicListener.listen(filter)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> jdbcTemplate.execute("NOTIFY topic_message, '" + json + "'"))
-                .expectNext(topicMessage);
+                .expectNext(topicMessage)
+                .thenCancel()
+                .verify(Duration.ofMillis(500L));
     }
 
     @Test
@@ -112,6 +115,8 @@ public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> jdbcTemplate.execute("NOTIFY topic_message, 'invalid'"))
-                .expectNoEvent(Duration.ofMillis(500L));
+                .expectNoEvent(Duration.ofMillis(500L))
+                .thenCancel()
+                .verify(Duration.ofMillis(600L));
     }
 }
