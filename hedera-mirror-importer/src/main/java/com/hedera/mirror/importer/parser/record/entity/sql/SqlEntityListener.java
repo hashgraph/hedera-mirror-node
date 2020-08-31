@@ -84,7 +84,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<EntityId> entityIds;
 
     private Connection connection;
-    private long batchCount;
 
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
@@ -139,18 +138,21 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
         } finally {
             cleanup();
-            DataSourceUtils.releaseConnection(connection, dataSource);
         }
     }
 
     @Override
     public void onError() {
         cleanup();
-        DataSourceUtils.releaseConnection(connection, dataSource);
     }
 
     private void cleanup() {
-        batchCount = 0;
+        cleanupBatch();
+        DataSourceUtils.releaseConnection(connection, dataSource);
+        connection = null;
+    }
+
+    private void cleanupBatch() {
         contractResults.clear();
         cryptoTransfers.clear();
         entityIds.clear();
@@ -177,18 +179,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } catch (Exception e) {
             throw new ParserException(e);
         } finally {
-            cleanup();
+            cleanupBatch();
         }
     }
 
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
-        if (batchCount == sqlProperties.getBatchSize() - 1) {
+        if (transactions.size() == sqlProperties.getBatchSize()) {
             // execute any remaining batches
             executeBatches();
-        } else {
-            batchCount += 1;
         }
     }
 

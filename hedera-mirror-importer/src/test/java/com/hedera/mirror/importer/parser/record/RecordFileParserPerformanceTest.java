@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
@@ -57,27 +58,29 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
     private FileCopier fileCopier;
 
     @BeforeAll
-    void warmUp() {
+    void warmUp() throws Exception {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
-        parse(WARMUP_FILE);
+        parse(WARMUP_FILE, true);
     }
 
     @Timeout(30)
     @Test
-    void parseAndIngestMultipleFiles60000Transactions() {
-        parse("*.rcd");
+    void parseAndIngestMultipleFiles60000Transactions() throws Exception {
+        parse("*.rcd", false);
     }
 
-    private void parse(String filePath) {
+    private void parse(String filePath, boolean warmup) throws Exception {
         StreamType streamType = parserProperties.getStreamType();
         fileCopier = FileCopier.create(testPath, dataPath)
                 .from(streamType.getPath(), "performance")
                 .filterFiles(filePath)
                 .to(streamType.getPath(), streamType.getValid());
         fileCopier.copy();
-        fileCopier.getTo().resolve(WARMUP_FILE).toFile().delete();
-
+        if (!warmup) {
+            Files.deleteIfExists(fileCopier.getTo().resolve(WARMUP_FILE));
+        }
         recordFilePoller.poll();
+        Files.deleteIfExists(fileCopier.getTo().resolve(WARMUP_FILE));
     }
 }
