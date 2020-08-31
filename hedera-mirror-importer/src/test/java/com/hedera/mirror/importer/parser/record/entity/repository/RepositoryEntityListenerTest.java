@@ -68,6 +68,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
 
         repositoryProperties.setEnabled(true);
         assertThat(repositoryEntityListener.isEnabled()).isTrue();
+        repositoryProperties.setEnabled(false);
     }
 
     @Test
