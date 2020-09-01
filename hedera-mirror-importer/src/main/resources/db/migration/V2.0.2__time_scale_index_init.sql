@@ -6,6 +6,8 @@
 -------------------
 
 -- account_balance
+alter table account_balance
+    add constraint pk__account_balance primary key (consensus_timestamp, account_realm_num, account_num);
 create index if not exists balances__account_then_timestamp
     on account_balance (account_realm_num desc, account_num desc, consensus_timestamp desc);
 
@@ -56,6 +58,10 @@ create index if not exists record_file__prev_hash on record_file (prev_hash);
 
 
 -- t_entities
+-- Enforce lowercase hex representation by constraint rather than making indexes on lower(ed25519).
+alter table t_entities
+    add constraint c__t_entities__lower_ed25519
+    check (ed25519_public_key_hex = lower(ed25519_public_key_hex));
 create index if not exists entities__ed25519_public_key_hex_natural_id
     on t_entities (ed25519_public_key_hex, fk_entity_type_id, entity_shard, entity_realm, entity_num);
 create unique index if not exists entities_unq on t_entities (entity_shard, entity_realm, entity_num, id); -- have to add id due to partitioning
@@ -76,8 +82,6 @@ create unique index if not exists topic_message__topic_num_realm_num_seqnum
     on topic_message (realm_num, topic_num, sequence_number, consensus_timestamp); -- have to add consensus_timestamp due to partitioning
 
 -- transaction
-
-select create_hypertable('transaction', 'consensus_ns', chunk_time_interval => 604800000000000, if_not_exists => true);
 create index transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index transaction__payer_account_id

@@ -13,23 +13,26 @@ create domain hbar_tinybars as bigint;
 create domain entity_num as integer;
 create domain entity_realm_num as smallint;
 create domain entity_type_id as character(1);
-create domain hbar_tinybars as bigint;
---create domain nanos_timestamp as bigint; // drop this domain as it's needed as a bigint for hyper table partitioning
+create domain entity_id as bigint;
+create domain nanos_timestamp as bigint; -- drop this domain as it's needed as a bigint for hyper table partitioning
 
 -- sequences
 --create sequence if not exists s_record_files_seq;
 
 -- account_balance
-create table if not exists account_balances (
+create table  if not exists account_balance (
+    consensus_timestamp     bigint              not null,
+    balance                 hbar_tinybars       not null,
+    account_realm_num       entity_realm_num    not null,
+    account_num             entity_num          not null
+);
+create table if not exists account_balance (
     consensus_timestamp bigint not null,
     account_id entity_id not null,
     balance hbar_tinybars not null,
-    constraint pk__account_balances primary key (consensus_timestamp, account_id)
+    constraint pk__account_balance primary key (consensus_timestamp, account_id)
 );
-comment on table account_balances is 'account balances (historical) in tinybars at different consensus timestamps';
-select create_hypertable('account_balance', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists balances__account_then_timestamp
---    on mirror_node.account_balances (account_realm_num desc, account_num desc, consensus_timestamp desc);
+comment on table account_balance is 'account balances (historical) in tinybars at different consensus timestamps';
 
 -- account_balance_sets
 create table if not exists account_balance_sets (
@@ -40,20 +43,16 @@ create table if not exists account_balance_sets (
     constraint pk__account_balance_sets primary key (consensus_timestamp)
 );
 comment on table account_balance_sets is 'processing state of snapshots of the entire set of account balances at different consensus timestamps';
-select create_hypertable('account_balance_sets', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists balance_sets__completed
---    on account_balance_sets (is_complete, consensus_timestamp desc);
 
 -- address_book
 create table if not exists address_book
 (
-    start_consensus_timestamp   nanos_timestamp primary key,
-    end_consensus_timestamp     nanos_timestamp null,
+    start_consensus_timestamp   bigint primary key,
+    end_consensus_timestamp     bigint null,
     file_id                     entity_id       not null,
     node_count                  int             null,
     file_data                   bytea           not null
 );
-select create_hypertable('address_book', 'start_consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
 
 
 -- address_book_entry
@@ -69,9 +68,8 @@ create table if not exists address_book_entry
     node_account_id         entity_id       null,
     node_cert_hash          bytea           null
 );
-select create_hypertable('address_book_entry', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists address_book_entry__timestamp
---    on address_book_entry (consensus_timestamp);
+-- foreign keys to hypertables are not supported
+-- select create_hypertable('address_book_entry', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
 
 -- contract_result
 create table if not exists contract_result
@@ -82,9 +80,6 @@ create table if not exists contract_result
     gas_used                bigint  null,
     consensus_timestamp     bigint  not null
 );
-select create_hypertable('contract_result', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists contract_result__consensus
---    on t_contract_result (consensus_timestamp desc);
 
 -- crypto_transfer
 create table if not exists crypto_transfer
@@ -94,58 +89,226 @@ create table if not exists crypto_transfer
     amount                  hbar_tinybars   not null
 );
 
-select create_hypertable('crypto_transfer', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
-
---create index if not exists crypto_transfer__consensus_timestamp
---    on crypto_transfer (consensus_timestamp);
---create index if not exists crypto_transfer__entity_id_consensus_timestamp
---    on crypto_transfer (entity_id, consensus_timestamp)
---    where entity_id != 98; -- id corresponding to treasury address 0.0.98
-
 -- file_data
-select create_hypertable('file_data', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists file_data__consensus
---    on t_file_data (consensus_timestamp desc);
-
--- flyway_schema_history
-
+create table if not exists file_data (
+    file_data           bytea null,
+    consensus_timestamp bigint not null,
+    entity_id           entity_id not null,
+    transaction_type    smallint not null
+);
 
 -- live_hash
-select create_hypertable('live_hash', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists livehashes__consensus
---    on t_livehashes (consensus_timestamp desc);
+create table if not exists live_hash (
+    livehash            bytea,
+    consensus_timestamp bigint not null
+);
 
 -- non_fee_transfer
-select create_hypertable('non_fee_transfer', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists non_fee_transfer__consensus_timestamp
---    on non_fee_transfer (consensus_timestamp);
+create table if not exists non_fee_transfer (
+    entity_id           entity_id       not null,
+    consensus_timestamp bigint not null,
+    amount              hbar_tinybars   not null
+);
 
 -- record_file
 -- id seq from v1.0 no longer explicitly created as s_record_files_seq
-select create_hypertable('record_file', 'id', chunk_time_interval => 1000, if_not_exists => true);
---create unique index if not exists record_file_name ON t_record_files (name);
---create unique index if not exists record_file_hash ON t_record_files (file_hash);
---create index if not exists record_file__consensus_end on record_file (consensus_end);
---create index if not exists record_file__prev_hash on record_file (prev_hash);
+create table if not exists record_file (
+    id              serial                  primary key,
+    name            character varying(250)  not null,
+    load_start      bigint,
+    load_end        bigint,
+    file_hash       character varying(96),
+    prev_hash       character varying(96),
+    consensus_start bigint default 0        not null,
+    consensus_end   bigint default 0        not null
+);
 
 -- t_application_status
-
+create table if not exists t_application_status (
+    status_name     character varying(40),
+    status_code     character varying(40),
+    status_value    character varying(100)
+);
 
 -- t_entities
-
-select create_hypertable('t_entities', 'id', chunk_time_interval => 1000000, if_not_exists => true);
---create index if not exists entities__ed25519_public_key_hex_natural_id
---    on t_entities (ed25519_public_key_hex, fk_entity_type_id, entity_shard, entity_realm, entity_num);
---create unique index if not exists t_entities_unq on t_entities (entity_shard, entity_realm, entity_num);
+create table if not exists t_entities (
+    entity_num              bigint                  NOT NULL,
+    entity_realm            bigint                  NOT NULL,
+    entity_shard            bigint                  NOT NULL,
+    fk_entity_type_id       integer                 NOT NULL,
+    auto_renew_period       bigint,
+    key                     bytea,
+    deleted                 boolean DEFAULT false,
+    exp_time_ns             bigint,
+    ed25519_public_key_hex  character varying,
+    submit_key              bytea,
+    memo                    text,
+    auto_renew_account_id   bigint,
+    id                      bigint               NOT NULL,
+    proxy_account_id        entity_id
+);
 
 -- t_entity_types
-
+create table if not exists t_entity_types (
+    id      integer     NOT NULL,
+    name    character   varying(8)
+);
+insert into t_entity_types (id, name) values (1, 'account');
+insert into t_entity_types (id, name) values (2, 'contract');
+insert into t_entity_types (id, name) values (3, 'file');
+insert into t_entity_types (id, name) values (4, 'topic');
 
 -- t_transaction_results
-
+create table if not exists t_transaction_results (
+    proto_id    integer     NOT NULL,
+    result      character   varying(100)
+);
+insert into t_transaction_results (result, proto_id) values ('OK', 0);
+insert into t_transaction_results (result, proto_id) values ('INVALID_TRANSACTION',1);
+insert into t_transaction_results (result, proto_id) values ('PAYER_ACCOUNT_NOT_FOUND',2);
+insert into t_transaction_results (result, proto_id) values ('INVALID_NODE_ACCOUNT',3);
+insert into t_transaction_results (result, proto_id) values ('TRANSACTION_EXPIRED',4);
+insert into t_transaction_results (result, proto_id) values ('INVALID_TRANSACTION_START',5);
+insert into t_transaction_results (result, proto_id) values ('INVALID_TRANSACTION_DURATION',6);
+insert into t_transaction_results (result, proto_id) values ('INVALID_SIGNATURE',7);
+insert into t_transaction_results (result, proto_id) values ('MEMO_TOO_LONG',8);
+insert into t_transaction_results (result, proto_id) values ('INSUFFICIENT_TX_FEE',9);
+insert into t_transaction_results (result, proto_id) values ('INSUFFICIENT_PAYER_BALANCE',10);
+insert into t_transaction_results (result, proto_id) values ('DUPLICATE_TRANSACTION',11);
+insert into t_transaction_results (result, proto_id) values ('BUSY',12);
+insert into t_transaction_results (result, proto_id) values ('NOT_SUPPORTED',13);
+insert into t_transaction_results (result, proto_id) values ('INVALID_FILE_ID',14);
+insert into t_transaction_results (result, proto_id) values ('INVALID_ACCOUNT_ID',15);
+insert into t_transaction_results (result, proto_id) values ('INVALID_CONTRACT_ID',16);
+insert into t_transaction_results (result, proto_id) values ('INVALID_TRANSACTION_ID',17);
+insert into t_transaction_results (result, proto_id) values ('RECEIPT_NOT_FOUND',18);
+insert into t_transaction_results (result, proto_id) values ('RECORD_NOT_FOUND',19);
+insert into t_transaction_results (result, proto_id) values ('INVALID_SOLIDITY_ID',20);
+insert into t_transaction_results (result, proto_id) values ('UNKNOWN',21);
+insert into t_transaction_results (result, proto_id) values ('SUCCESS',22);
+insert into t_transaction_results (result, proto_id) values ('FAIL_INVALID',23);
+insert into t_transaction_results (result, proto_id) values ('FAIL_FEE',24);
+insert into t_transaction_results (result, proto_id) values ('FAIL_BALANCE',25);
+insert into t_transaction_results (result, proto_id) values ('KEY_REQUIRED',26);
+insert into t_transaction_results (result, proto_id) values ('BAD_ENCODING',27);
+insert into t_transaction_results (result, proto_id) values ('INSUFFICIENT_ACCOUNT_BALANCE',28);
+insert into t_transaction_results (result, proto_id) values ('INVALID_SOLIDITY_ADDRESS',29);
+insert into t_transaction_results (result, proto_id) values ('INSUFFICIENT_GAS',30);
+insert into t_transaction_results (result, proto_id) values ('CONTRACT_SIZE_LIMIT_EXCEEDED',31);
+insert into t_transaction_results (result, proto_id) values ('LOCAL_CALL_MODIFICATION_EXCEPTION',32);
+insert into t_transaction_results (result, proto_id) values ('CONTRACT_REVERT_EXECUTED',33);
+insert into t_transaction_results (result, proto_id) values ('CONTRACT_EXECUTION_EXCEPTION',34);
+insert into t_transaction_results (result, proto_id) values ('INVALID_RECEIVING_NODE_ACCOUNT',35);
+insert into t_transaction_results (result, proto_id) values ('MISSING_QUERY_HEADER',36);
+insert into t_transaction_results (result, proto_id) values ('ACCOUNT_UPDATE_FAILED',37);
+insert into t_transaction_results (result, proto_id) values ('INVALID_KEY_ENCODING',38);
+insert into t_transaction_results (result, proto_id) values ('NULL_SOLIDITY_ADDRESS',39);
+insert into t_transaction_results (result, proto_id) values ('CONTRACT_UPDATE_FAILED',40);
+insert into t_transaction_results (result, proto_id) values ('INVALID_QUERY_HEADER',41);
+insert into t_transaction_results (result, proto_id) values ('INVALID_FEE_SUBMITTED',42);
+insert into t_transaction_results (result, proto_id) values ('INVALID_PAYER_SIGNATURE',43);
+insert into t_transaction_results (result, proto_id) values ('KEY_NOT_PROVIDED',44);
+insert into t_transaction_results (result, proto_id) values ('INVALID_EXPIRATION_TIME',45);
+insert into t_transaction_results (result, proto_id) values ('NO_WACL_KEY',46);
+insert into t_transaction_results (result, proto_id) values ('FILE_CONTENT_EMPTY',47);
+insert into t_transaction_results (result, proto_id) values ('INVALID_ACCOUNT_AMOUNTS',48);
+insert into t_transaction_results (result, proto_id) values ('EMPTY_TRANSACTION_BODY',49);
+insert into t_transaction_results (result, proto_id) values ('INVALID_TRANSACTION_BODY',50);
+insert into t_transaction_results (result, proto_id) values ('INVALID_SIGNATURE_TYPE_MISMATCHING_KEY',51);
+insert into t_transaction_results (result, proto_id) values ('INVALID_SIGNATURE_COUNT_MISMATCHING_KEY',52);
+insert into t_transaction_results (result, proto_id) values ('EMPTY_CLAIM_BODY',53);
+insert into t_transaction_results (result, proto_id) values ('EMPTY_CLAIM_HASH',54);
+insert into t_transaction_results (result, proto_id) values ('EMPTY_CLAIM_KEYS',55);
+insert into t_transaction_results (result, proto_id) values ('INVALID_CLAIM_HASH_SIZE',56);
+insert into t_transaction_results (result, proto_id) values ('EMPTY_QUERY_BODY',57);
+insert into t_transaction_results (result, proto_id) values ('EMPTY_CLAIM_QUERY',58);
+insert into t_transaction_results (result, proto_id) values ('CLAIM_NOT_FOUND',59);
+insert into t_transaction_results (result, proto_id) values ('ACCOUNT_ID_DOES_NOT_EXIST',60);
+insert into t_transaction_results (result, proto_id) values ('CLAIM_ALREADY_EXISTS',61);
+insert into t_transaction_results (result, proto_id) values ('INVALID_FILE_WACL',62);
+insert into t_transaction_results (result, proto_id) values ('SERIALIZATION_FAILED',63);
+insert into t_transaction_results (result, proto_id) values ('TRANSACTION_OVERSIZE',64);
+insert into t_transaction_results (result, proto_id) values ('TRANSACTION_TOO_MANY_LAYERS',65);
+insert into t_transaction_results (result, proto_id) values ('CONTRACT_DELETED',66);
+insert into t_transaction_results (result, proto_id) values ('PLATFORM_NOT_ACTIVE',67);
+insert into t_transaction_results (result, proto_id) values ('KEY_PREFIX_MISMATCH',68);
+insert into t_transaction_results (result, proto_id) values ('PLATFORM_TRANSACTION_NOT_CREATED',69);
+insert into t_transaction_results (result, proto_id) values ('INVALID_RENEWAL_PERIOD',70);
+insert into t_transaction_results (result, proto_id) values ('INVALID_PAYER_ACCOUNT_ID',71);
+insert into t_transaction_results (result, proto_id) values ('ACCOUNT_DELETED',72);
+insert into t_transaction_results (result, proto_id) values ('FILE_DELETED',73);
+insert into t_transaction_results (result, proto_id) values ('ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS',74);
+insert into t_transaction_results (result, proto_id) values ('SETTING_NEGATIVE_ACCOUNT_BALANCE',75);
+insert into t_transaction_results (result, proto_id) values ('OBTAINER_REQUIRED',76);
+insert into t_transaction_results (result, proto_id) values ('OBTAINER_SAME_CONTRACT_ID',77);
+insert into t_transaction_results (result, proto_id) values ('OBTAINER_DOES_NOT_EXIST',78);
+insert into t_transaction_results (result, proto_id) values ('MODIFYING_IMMUTABLE_CONTRACT',79);
+insert into t_transaction_results (result, proto_id) values ('FILE_SYSTEM_EXCEPTION',80);
+insert into t_transaction_results (result, proto_id) values ('AUTORENEW_DURATION_NOT_IN_RANGE',81);
+insert into t_transaction_results (result, proto_id) values ('ERROR_DECODING_BYTESTRING',82);
+insert into t_transaction_results (result, proto_id) values ('CONTRACT_FILE_EMPTY',83);
+insert into t_transaction_results (result, proto_id) values ('CONTRACT_BYTECODE_EMPTY',84);
+insert into t_transaction_results (result, proto_id) values ('INVALID_INITIAL_BALANCE',85);
+insert into t_transaction_results (result, proto_id) values ('INVALID_RECEIVE_RECORD_THRESHOLD',86);
+insert into t_transaction_results (result, proto_id) values ('INVALID_SEND_RECORD_THRESHOLD',87);
+insert into t_transaction_results (result, proto_id) values ('ACCOUNT_IS_NOT_GENESIS_ACCOUNT',88);
+insert into t_transaction_results (proto_id, result) values (89,'PAYER_ACCOUNT_UNAUTHORIZED');
+insert into t_transaction_results (proto_id, result) values (90,'INVALID_FREEZE_TRANSACTION_BODY');
+insert into t_transaction_results (proto_id, result) values (91,'FREEZE_TRANSACTION_BODY_NOT_FOUND');
+insert into t_transaction_results (proto_id, result) values (92,'TRANSFER_LIST_SIZE_LIMIT_EXCEEDED');
+insert into t_transaction_results (proto_id, result) values (93,'RESULT_SIZE_LIMIT_EXCEEDED');
+insert into t_transaction_results (proto_id, result) values (94,'NOT_SPECIAL_ACCOUNT');
+insert into t_transaction_results (proto_id, result) values (95,'CONTRACT_NEGATIVE_GAS');
+insert into t_transaction_results (proto_id, result) values (96,'CONTRACT_NEGATIVE_VALUE');
+insert into t_transaction_results (proto_id, result) values (97,'INVALID_FEE_FILE');
+insert into t_transaction_results (proto_id, result) values (98,'INVALID_EXCHANGE_RATE_FILE');
+insert into t_transaction_results (proto_id, result) values (99,'INSUFFICIENT_LOCAL_CALL_GAS');
+insert into t_transaction_results (proto_id, result) values (100,'ENTITY_NOT_ALLOWED_TO_DELETE');
+insert into t_transaction_results (proto_id, result) values (101,'AUTHORIZATION_FAILED');
+insert into t_transaction_results (proto_id, result) values (102,'FILE_UPLOADED_PROTO_INVALID');
+insert into t_transaction_results (proto_id, result) values (103,'FILE_UPLOADED_PROTO_NOT_SAVED_TO_DISK');
+insert into t_transaction_results (proto_id, result) values (104,'FEE_SCHEDULE_FILE_PART_UPLOADED');
+insert into t_transaction_results (proto_id, result) values (105,'EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED');
+insert into t_transaction_results (proto_id, result) values (106,'MAX_CONTRACT_STORAGE_EXCEEDED');
+insert into t_transaction_results (proto_id, result) values (111,'MAX_GAS_LIMIT_EXCEEDED');
+insert into t_transaction_results (proto_id, result) values (112,'MAX_FILE_SIZE_EXCEEDED');
+insert into t_transaction_results (proto_id, result) values (150, 'INVALID_TOPIC_ID');
+insert into t_transaction_results (proto_id, result) values (155, 'INVALID_ADMIN_KEY'); -- 151-154 were deleted in proto
+insert into t_transaction_results (proto_id, result) values (156, 'INVALID_SUBMIT_KEY');
+insert into t_transaction_results (proto_id, result) values (157, 'UNAUTHORIZED');
+insert into t_transaction_results (proto_id, result) values (158, 'INVALID_TOPIC_MESSAGE');
+insert into t_transaction_results (proto_id, result) values (159, 'INVALID_AUTORENEW_ACCOUNT');
+insert into t_transaction_results (proto_id, result) values (160, 'AUTORENEW_ACCOUNT_NOT_ALLOWED');
+insert into t_transaction_results (proto_id, result) values (162, 'TOPIC_EXPIRED');
+insert into t_transaction_results (proto_id, result) values (163,'INVALID_CHUNK_NUMBER');
+insert into t_transaction_results (proto_id, result) values (164,'INVALID_CHUNK_TRANSACTION_ID');
 
 -- t_transaction_types
-
+create table if not exists t_transaction_types (
+    proto_id    integer     NOT NULL,
+    name        character   varying(30)
+);
+insert into t_transaction_types (proto_id, name) values (7,'CONTRACTCALL');
+insert into t_transaction_types (proto_id, name) values (8,'CONTRACTCREATEINSTANCE');
+insert into t_transaction_types (proto_id, name) values (9,'CONTRACTUPDATEINSTANCE');
+insert into t_transaction_types (proto_id, name) values (10,'CRYPTOADDLIVEHASH');
+insert into t_transaction_types (proto_id, name) values (11,'CRYPTOCREATEACCOUNT');
+insert into t_transaction_types (proto_id, name) values (12,'CRYPTODELETE');
+insert into t_transaction_types (proto_id, name) values (13,'CRYPTODELETELIVEHASH');
+insert into t_transaction_types (proto_id, name) values (14,'CRYPTOTRANSFER');
+insert into t_transaction_types (proto_id, name) values (15,'CRYPTOUPDATEACCOUNT');
+insert into t_transaction_types (proto_id, name) values (16,'FILEAPPEND');
+insert into t_transaction_types (proto_id, name) values (17,'FILECREATE');
+insert into t_transaction_types (proto_id, name) values (18,'FILEDELETE');
+insert into t_transaction_types (proto_id, name) values (19,'FILEUPDATE');
+insert into t_transaction_types (proto_id, name) values (20,'SYSTEMDELETE');
+insert into t_transaction_types (proto_id, name) values (21,'SYSTEMUNDELETE');
+insert into t_transaction_types (proto_id, name) values (22,'CONTRACTDELETEINSTANCE');
+insert into t_transaction_types (proto_id, name) values (23,'FREEZE');
+insert into t_transaction_types (proto_id, name) values (24,'CONSENSUSCREATETOPIC');
+insert into t_transaction_types (proto_id, name) values (25,'CONSENSUSUPDATETOPIC');
+insert into t_transaction_types (proto_id, name) values (26,'CONSENSUSDELETETOPIC');
+insert into t_transaction_types (proto_id, name) values (27,'CONSENSUSSUBMITMESSAGE');
 
 -- topic_message
 create table if not exists topic_message
@@ -158,19 +321,23 @@ create table if not exists topic_message
     sequence_number     bigint              not null
 );
 
-select create_hypertable('topic_message', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index if not exists topic_message__realm_num_timestamp
---    on topic_message (realm_num, topic_num, consensus_timestamp);
---create unique index if not exists topic_message__topic_num_realm_num_seqnum
---    on topic_message (realm_num, topic_num, sequence_number);
-
 -- transaction
-
-select create_hypertable('transaction', 'consensus_ns', chunk_time_interval => 604800000000000, if_not_exists => true);
---create index transaction__transaction_id
---    on transaction (valid_start_ns, payer_account_id);
---create index transaction__payer_account_id
---    on transaction (payer_account_id);
+create table if not exists transaction (
+    consensus_ns            bigint              not null,
+    type                    smallint            not null,
+    result                  smallint            not null,
+    payer_account_id        entity_id           not null,
+    valid_start_ns          bigint              not null,
+    valid_duration_seconds  bigint,
+    node_account_id         entity_id           not null,
+    entity_id               entity_id,
+    initial_balance         bigint DEFAULT 0,
+    max_fee                 hbar_tinybars,
+    charged_tx_fee          bigint,
+    memo                    bytea,
+    transaction_hash        bytea,
+    transaction_bytes       bytea
+);
 
 -- is it necessary to explicitly grant the following?
 --grant usage on SCHEMA :schema_name to :db_user;

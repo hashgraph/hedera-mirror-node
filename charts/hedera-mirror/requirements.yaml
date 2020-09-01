@@ -29,3 +29,8 @@ dependencies:
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
     version: ">=0.9.0-0"
+  - alias: timescaledb
+    condition: timescaledb-single.enabled
+    name: timescaledb-single
+    repository: https://charts.timescale.com
+    version: ^0.7.0

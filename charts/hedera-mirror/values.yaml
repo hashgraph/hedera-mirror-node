@@ -6,7 +6,7 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts
+    host: RELEASE-NAME-timescaledb  # RELEASE-NAME will be replaced with actual release by children charts
   namespaceOverride: ""
   redis:
     host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
@@ -35,10 +35,17 @@ importer:
             name: mirror_node
             password: mirror_node_pass
             username: mirror_node
+    spring:
+      debug: true
+      flyway:
+        baselineVersion: 1.99.0
   enabled: true
   redis:
     sentinel:
       masterSet: mirror
+  image:
+    pullPolicy: Always
+    tag: 0.18.0-tdb
 
 labels: {}
 
@@ -169,3 +176,46 @@ redis:
 
 rest:
   enabled: true
+
+# https://github.com/timescale/timescaledb-kubernetes/tree/master/charts/timescaledb-single
+# configuration options (administration guide) at https://github.com/timescale/timescaledb-kubernetes/blob/master/charts/timescaledb-single/admin-guide.md
+timescaledb:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/component: timescaledb
+  #  bootstrapFromBackup:
+  #    enabled: true
+  #    secretName: pgbackrest-bootstrap
+  callbacks:
+    configMap: timescaledb-init-callback
+  clusterName: mirror-timescaledb
+  enabled: true
+  # relies only on ClusterIP service creation
+  loadBalancer:
+    enabled: false
+  #  patroni:
+  #    bootstrap:
+  #      restore_or_initdb:
+  #        command: >
+  #          /etc/timescaledb/scripts/restore_or_initdb.sh
+  #          --encoding=UTF8
+  #          --locale=C.UTF-8
+  #      post_init: /etc/timescaledb/scripts/post_init.sh
+  persistentVolumes:
+    data:
+      size: 500Gi
+    wal:
+      size: 20Gi
+  # number of pods, disables ha when set to 1
+  #  replicaCount: 1
+  secretNames:
+    certificate: mirror-timescaledb-certificate
+    credentials: mirror-timescaledb-credentials
+    pgbackrest: mirror-timescaledb-pgbackrest
+
