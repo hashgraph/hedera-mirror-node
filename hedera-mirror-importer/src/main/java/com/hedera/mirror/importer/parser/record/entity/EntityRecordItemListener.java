@@ -269,6 +269,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         FileData fileData = new FileData(consensusTimestamp, contents, entityId, transactionTypeEnum);
         boolean addressBook = addressBookService.isAddressBook(entityId);
 
+        // We always store file data for address books since they're used by the address book service
         if (addressBook || entityProperties.getPersist().isFiles() ||
                 (entityProperties.getPersist().isSystemFiles() && entityId.getEntityNum() < 1000)) {
             entityListener.onFileData(fileData);
