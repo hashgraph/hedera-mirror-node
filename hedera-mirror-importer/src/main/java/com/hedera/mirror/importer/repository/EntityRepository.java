@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.repository;
  */
 
 import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_30M;
-import static com.hedera.mirror.importer.config.CacheConfiguration.NEVER_EXPIRE_LARGE;
 
 import java.util.Optional;
 import org.springframework.cache.annotation.CachePut;
@@ -50,10 +49,8 @@ public interface EntityRepository extends PagingAndSortingRepository<Entities, L
             "values (?1, ?2, ?3, ?4, ?5) on conflict do nothing", nativeQuery = true)
     void insertEntityId(long id, long shard, long realm, long num, long type);
 
-    @Cacheable(cacheNames = "entityIds", cacheManager = NEVER_EXPIRE_LARGE, key = "{#p0.id}")
-    default boolean insertEntityId(EntityId entityId) {
+    default void insertEntityId(EntityId entityId) {
         insertEntityId(entityId.getId(), entityId.getShardNum(), entityId.getRealmNum(),
                 entityId.getEntityNum(), entityId.getType());
-        return true; // @Cacheable requires non-void return type
     }
 }

@@ -35,8 +35,9 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchEvent;
 
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class NotifyingEntityListenerTest extends IntegrationTest {
 
     private final NotifyingEntityListener entityListener;
@@ -63,6 +64,7 @@ public class NotifyingEntityListenerTest extends IntegrationTest {
 
             // when
             entityListener.onTopicMessage(topicMessage);
+            entityListener.onBatch(new EntityBatchEvent(this));
             PGNotification[] notifications = connection.getNotifications(500);
 
             // then
@@ -85,6 +87,7 @@ public class NotifyingEntityListenerTest extends IntegrationTest {
 
             // when
             entityListener.onTopicMessage(topicMessage);
+            entityListener.onBatch(new EntityBatchEvent(this));
             PGNotification[] notifications = connection.getNotifications(500);
 
             // then

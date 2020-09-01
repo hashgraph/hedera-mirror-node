@@ -29,9 +29,14 @@ import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -44,10 +49,10 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -64,8 +69,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityRepository entityRepository;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
+    private final ApplicationEventPublisher eventPublisher;
 
-    // init connections, schemas, writers, etc once per process
+    // init schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
     private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
     private final PgCopy<NonFeeTransfer> nonFeeTransferPgCopy;
@@ -73,6 +79,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<ContractResult> contractResultPgCopy;
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
+
+    // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
+    private final Cache entityCache;
 
     private final Collection<Transaction> transactions;
     private final Collection<CryptoTransfer> cryptoTransfers;
@@ -83,17 +92,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TopicMessage> topicMessages;
     private final Collection<EntityId> entityIds;
 
-    private Connection connection;
-
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
+                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
                              ApplicationStatusRepository applicationStatusRepository,
-                             EntityRepository entityRepository) {
+                             EntityRepository entityRepository, ApplicationEventPublisher eventPublisher) {
         this.dataSource = dataSource;
         this.applicationStatusRepository = applicationStatusRepository;
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
+        entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
+        this.eventPublisher = eventPublisher;
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
@@ -120,25 +130,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onStart(StreamFileData streamFileData) {
-        try {
-            cleanup();
-            connection = DataSourceUtils.getConnection(dataSource);
-        } catch (Exception e) {
-            throw new ParserSQLException("Error setting up connection to database", e);
-        }
+        cleanup();
     }
 
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-
-        try {
-            recordFileRepository.save(recordFile);
-            applicationStatusRepository.updateStatusValue(
-                    ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
-        } finally {
-            cleanup();
-        }
+        recordFileRepository.save(recordFile);
+        applicationStatusRepository.updateStatusValue(
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
     }
 
     @Override
@@ -147,12 +147,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void cleanup() {
-        cleanupBatch();
-        DataSourceUtils.releaseConnection(connection, dataSource);
-        connection = null;
-    }
-
-    private void cleanupBatch() {
         contractResults.clear();
         cryptoTransfers.clear();
         entityIds.clear();
@@ -164,7 +158,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void executeBatches() {
+        Connection connection = null;
+
         try {
+            connection = DataSourceUtils.getConnection(dataSource);
             Stopwatch stopwatch = Stopwatch.createStarted();
             transactionPgCopy.copy(transactions, connection);
             cryptoTransferPgCopy.copy(cryptoTransfers, connection);
@@ -173,13 +170,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractResultPgCopy.copy(contractResults, connection);
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
+            persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
+            eventPublisher.publishEvent(new EntityBatchEvent(this));
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
             throw new ParserException(e);
         } finally {
-            cleanupBatch();
+            cleanup();
+            DataSourceUtils.releaseConnection(connection, dataSource);
         }
     }
 
@@ -187,14 +187,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
         if (transactions.size() == sqlProperties.getBatchSize()) {
-            // execute any remaining batches
             executeBatches();
         }
     }
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
-        entityRepository.insertEntityId(entityId);
+        // only insert entities not found in cache
+        if (entityCache.get(entityId.getId()) != null) {
+            return;
+        }
+
+        entityIds.add(entityId);
     }
 
     @Override
@@ -225,5 +229,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
+    }
+
+    private void persistEntities() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        entityIds.forEach(entityId -> {
+            entityRepository.insertEntityId(entityId);
+            entityCache.put(entityId, null);
+        });
+        log.info("Inserted {} entities in {}", entityIds.size(), stopwatch);
     }
 }
