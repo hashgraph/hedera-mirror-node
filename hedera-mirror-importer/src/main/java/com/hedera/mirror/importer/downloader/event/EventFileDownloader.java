@@ -24,16 +24,17 @@ import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.time.Instant;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -59,34 +60,33 @@ public class EventFileDownloader extends Downloader {
     }
 
     /**
-     * Checks that hash of data file matches the verified hash and that data file is next in line based on previous file
-     * hash. Returns false if any condition is false.
+     * Reads the event file and checks that the file hash matches the verified hash and that data file is next in
+     * line based on previous file hash.
+     * @param file event file object
+     * @param verifiedHash the verified hash in hex
+     * @return StreamFile object
      */
     @Override
-    protected boolean verifyDataFile(File file, byte[] verifiedHash) {
+    protected StreamFile readAndVerifyDataFile(File file, String verifiedHash) {
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
         String fileName = file.getName();
+        Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
 
-        try {
-            EventFile eventFile = eventFileReader.read(file);
+        EventFile eventFile = eventFileReader.read(file);
 
-            if (!verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash,
-                    downloaderProperties.getMirrorProperties().getVerifyHashAfter(), fileName)) {
-                log.error("PreviousHash mismatch for file {}. Expected = {}, Actual = {}", fileName,
-                        expectedPrevFileHash, eventFile.getPreviousHash());
-                return false;
-            }
-
-            String expectedFileHash = Hex.encodeHexString(verifiedHash);
-            if (!eventFile.getFileHash().contentEquals(expectedFileHash)) {
-                log.error("File {}'s hash mismatch. Expected = {}, Actual = {}", fileName, expectedFileHash,
-                        eventFile.getFileHash());
-                return false;
-            }
-        } catch (ImporterException e) {
-            log.error(e);
-            return false;
+        if (!verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash, verifyHashAfter, fileName)) {
+            throw new HashMismatchException(fileName, expectedPrevFileHash, eventFile.getPreviousHash());
         }
-        return true;
+
+        if (!eventFile.getFileHash().contentEquals(verifiedHash)) {
+            throw new HashMismatchException(fileName, expectedPrevFileHash, eventFile.getPreviousHash());
+        }
+
+        return eventFile;
+    }
+
+    @Override
+    protected void saveStreamFileRecord(StreamFile streamFile) {
+        // no-op, save the EventFile record to db when event parser is implemented
     }
 }

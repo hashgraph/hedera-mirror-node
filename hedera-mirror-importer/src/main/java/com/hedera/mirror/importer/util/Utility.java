@@ -114,13 +114,13 @@ public class Utility {
      * Calculate SHA384 hash of a balance file
      *
      * @param fileName file name
-     * @return byte array of hash value of null if calculating has failed
+     * @return hash in hex or null if calculating has failed
      */
-    public static byte[] getBalanceFileHash(String fileName) {
+    public static String getBalanceFileHash(String fileName) {
         try {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
             byte[] array = Files.readAllBytes(Paths.get(fileName));
-            return md.digest(array);
+            return Utility.bytesToHex(md.digest(array));
         } catch (NoSuchAlgorithmException | IOException e) {
             log.error(e);
             return null;

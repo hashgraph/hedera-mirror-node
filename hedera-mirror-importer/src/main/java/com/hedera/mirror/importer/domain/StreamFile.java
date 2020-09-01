@@ -20,23 +20,13 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
-@Data
-@NoArgsConstructor
-public class EventFile implements StreamFile {
-    private String name;
+public interface StreamFile {
 
-    private Long loadStart;
+    String getName();
 
-    private Long loadEnd;
+    String getFileHash();
 
-    private String fileHash;
-
-    private String previousHash;
-
-    private int fileVersion;
-
-    private EntityId nodeAccountId;
+    void setNodeAccountId(@NonNull EntityId nodeAccountId);
 }

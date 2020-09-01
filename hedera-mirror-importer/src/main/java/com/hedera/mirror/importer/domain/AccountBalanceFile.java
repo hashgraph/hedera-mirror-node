@@ -20,13 +20,9 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -37,17 +33,12 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-public class RecordFile implements StreamFile {
-
-    private Long consensusStart;
-
-    private Long consensusEnd;
+public class AccountBalanceFile implements StreamFile {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     private String name;
+
+    private Long consensusTimestamp;
 
     private Long loadStart;
 
@@ -55,12 +46,6 @@ public class RecordFile implements StreamFile {
 
     private String fileHash;
 
-    @Column(name = "prev_hash")
-    private String previousHash;
-
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
-
-    @Transient
-    private int recordFormatVersion;
 }

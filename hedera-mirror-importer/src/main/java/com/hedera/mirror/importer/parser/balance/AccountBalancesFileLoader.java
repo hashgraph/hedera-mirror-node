@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -52,6 +53,12 @@ public final class AccountBalancesFileLoader {
             "(consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do nothing;";
     private static final String UPDATE_SET_STATEMENT = "update account_balance_sets set is_complete = ?, " +
             "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = false;";
+    private static final String UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT = "update account_balance_file " +
+            "set " +
+            "   consensus_timestamp = ?," +
+            "   load_start = ?," +
+            "   load_end = ?" +
+            "where name = ?;";
 
     enum F_INSERT_SET {
         ZERO,
@@ -66,6 +73,11 @@ public final class AccountBalancesFileLoader {
     enum F_UPDATE_SET {
         ZERO,
         IS_COMPLETE, CONSENSUS_TIMESTAMP
+    }
+
+    enum F_UPDATE_ACCOUNT_BALANCE_FILE {
+        ZERO,
+        CONSENSUS_TIMESTAMP, LOAD_START, LOAD_END, NAME
     }
 
     private final int insertBatchSize;
@@ -92,14 +104,18 @@ public final class AccountBalancesFileLoader {
         int insertedCount = 0;
         boolean complete = false;
         Stopwatch stopwatch = Stopwatch.createStarted();
+        Instant startTime = Instant.now();
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
              PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
              PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
+             PreparedStatement updateAccountBalanceFileStatement = connection.prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT);
              Stream<AccountBalance> stream = balanceFileReader.read(balanceFile)) {
             long consensusTimestamp = -1;
             List<AccountBalance> accountBalanceList = new ArrayList<>();
+
+            connection.setAutoCommit(false);
 
             var iter = stream.iterator();
             while (iter.hasNext()) {
@@ -118,7 +134,6 @@ public final class AccountBalancesFileLoader {
                     if (dateRangeFilter != null && !dateRangeFilter.filter(consensusTimestamp)) {
                         log.warn("Account balances file {} not in configured date range {}, skip it",
                                 fileName, dateRangeFilter);
-                        complete = true;
                         break;
                     }
 
@@ -133,6 +148,10 @@ public final class AccountBalancesFileLoader {
             insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
             complete = (insertedCount == validCount);
             updateAccountBalanceSet(updateSetStatement, complete, consensusTimestamp);
+            updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, startTime.getEpochSecond(),
+                    Instant.now().getEpochSecond(), fileName);
+
+            connection.commit();
         } catch (InvalidDatasetException | SQLException ex) {
             log.error("Failed to load account balances file " + fileName, ex);
         }
@@ -192,9 +211,17 @@ public final class AccountBalancesFileLoader {
         return insertedCount;
     }
 
-    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete, long consensusTimestamp)  throws SQLException {
+    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete, long consensusTimestamp) throws SQLException {
         updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), complete);
         updateSetStatement.setLong(F_UPDATE_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
         updateSetStatement.execute();
+    }
+
+    private void updateAccountBalanceFile(PreparedStatement updateAccountBalanceFileStatement, long consensusTimestamp, long loadStart, long loadEnd, String filename) throws SQLException {
+        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_START.ordinal(), loadStart);
+        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_END.ordinal(), loadEnd);
+        updateAccountBalanceFileStatement.setString(F_UPDATE_ACCOUNT_BALANCE_FILE.NAME.ordinal(), filename);
+        updateAccountBalanceFileStatement.execute();
     }
 }

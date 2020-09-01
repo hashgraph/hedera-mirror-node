@@ -118,7 +118,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     String completeFileAndCommit() {
         String newFileHash = UUID.randomUUID().toString();
-        sqlEntityListener.onEnd(new RecordFile(1L, 2L, null, fileName, 0L, 0L, newFileHash, initialFileHash, 0));
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        RecordFile recordFile = new RecordFile(1L, 2L, null, fileName, 0L, 0L, newFileHash, initialFileHash, nodeAccountId, 0);
+        recordFileRepository.save(recordFile);
+        sqlEntityListener.onEnd(recordFile);
         return newFileHash;
     }
 

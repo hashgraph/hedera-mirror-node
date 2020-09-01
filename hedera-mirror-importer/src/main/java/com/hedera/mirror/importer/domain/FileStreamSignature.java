@@ -32,7 +32,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
     private File file;
     private byte[] hash;
-    private String node;
+    private EntityId nodeAccountId;
     private byte[] signature;
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
 
@@ -43,6 +43,10 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
     public String getHashAsHex() {
         return Utility.bytesToHex(hash);
+    }
+
+    public String getNodeAccountIdString() {
+        return nodeAccountId.entityIdToString();
     }
 
     public enum SignatureStatus {

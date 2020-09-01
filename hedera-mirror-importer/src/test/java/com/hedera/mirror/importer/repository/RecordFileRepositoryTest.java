@@ -21,17 +21,38 @@ package com.hedera.mirror.importer.repository;
  */
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 
 public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
+    private RecordFile recordFile;
+
+    @BeforeEach
+    void setUp() {
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", nodeAccountId, 0);
+    }
+
     @Test
     void insert() {
-        RecordFile recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", 0);
         recordFile = recordFileRepository.save(recordFile);
         Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
+                .isNotNull()
+                .isEqualTo(recordFile);
+    }
+
+    @Test
+    void updateLoadStats() {
+        RecordFile saved = recordFileRepository.save(recordFile);
+        recordFile.setLoadStart(40L);
+        recordFile.setLoadEnd(60L);
+        recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
+        Assertions.assertThat(recordFileRepository.findById(saved.getId()).get())
                 .isNotNull()
                 .isEqualTo(recordFile);
     }

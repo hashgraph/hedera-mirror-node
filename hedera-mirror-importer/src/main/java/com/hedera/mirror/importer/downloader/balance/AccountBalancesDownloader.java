@@ -22,15 +22,18 @@ package com.hedera.mirror.importer.downloader.balance;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.util.Arrays;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -38,21 +41,44 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class AccountBalancesDownloader extends Downloader {
 
+    private AccountBalanceFileRepository accountBalanceFileRepository;
+
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, BalanceDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry, AccountBalanceFileRepository accountBalanceFileRepository) {
         super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
+    }
+
+    /**
+     * Reads the account balance file and checks that the file hash matches the verified hash.
+     * @param file account balance file object
+     * @param verifiedHash the verified hash in hex
+     * @return StreamFile object
+     */
+    @Override
+    protected StreamFile readAndVerifyDataFile(File file, String verifiedHash) {
+        String fileHash = Utility.getBalanceFileHash(file.getPath());
+        if (!verifiedHash.contentEquals(fileHash)) {
+            throw new HashMismatchException(file.getName(), verifiedHash, fileHash);
+        }
+
+        AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
+        accountBalanceFile.setName(file.getName());
+        accountBalanceFile.setConsensusTimestamp(Utility.getTimestampFromFilename(file.getName()));
+        accountBalanceFile.setFileHash(fileHash);
+        return accountBalanceFile;
+    }
+
+    @Override
+    protected void saveStreamFileRecord(StreamFile streamFile) {
+        accountBalanceFileRepository.save((AccountBalanceFile)streamFile);
     }
 
     @Leader
     @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.balance.frequency:30000}")
     public void download() {
         downloadNextBatch();
-    }
-
-    @Override
-    protected boolean verifyDataFile(File file, byte[] verifiedHash) {
-        return Arrays.equals(verifiedHash, Utility.getBalanceFileHash(file.getPath()));
     }
 }

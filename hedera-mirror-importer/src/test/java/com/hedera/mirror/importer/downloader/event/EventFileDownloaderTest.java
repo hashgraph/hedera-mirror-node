@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.downloader.event;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,16 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
         EventDownloaderProperties properties = (EventDownloaderProperties) downloaderProperties;
         properties.setBatchSize(batchSize);
+    }
+
+    @Override
+    protected void resetStreamFileRepositoryMock() {
+        // no-op, add the logic when event file is saved into db
+    }
+
+    @Override
+    protected void verifyStreamFileRecord(List<String> files) {
+        // no-op, add the logic when event file is saved into db
     }
 
     @Test
