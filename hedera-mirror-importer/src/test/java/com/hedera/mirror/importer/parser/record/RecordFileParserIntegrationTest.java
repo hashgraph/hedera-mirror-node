@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,6 +43,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -84,6 +86,7 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
     private File file;
     private FileCopier fileCopier;
     private StreamFileData streamFileData;
+    private RecordFile recordFile;
 
     @BeforeEach
     void before() throws FileNotFoundException {
@@ -106,7 +109,7 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         streamFileData = new StreamFileData(file.toString(), new FileInputStream(file));
 
         EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-        RecordFile recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null, recordFilename, 0L, 0L,
+        recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null, recordFilename, 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
                 "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", nodeAccountId, 2);
         recordFileRepository.save(recordFile);
@@ -121,31 +124,24 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         verifyFinalDatabaseState(NUM_CRYPTOS, NUM_TXNS, NUM_ENTITIES, NUM_RECORD_FILES);
     }
 
-//    @Test
-//    void verifyRollbackAndPostFunctionalityOnRecordFileRepositoryError() throws ParserSQLException,
-//            FileNotFoundException {
-//        // given
-//        RecordFile recordFile = new RecordFile();
-//        recordFile.setName("2019-08-30T18_10_00.419072Z.rcd");
-//        recordFile.setConsensusEnd(0L);
-//        recordFile.setConsensusStart(0L);
-//        recordFile.setNodeId(0L);
-//        recordFileRepository.save(recordFile);
-//
-//        // when
-//        Assertions.assertThrows(DataIntegrityViolationException.class, () -> {
-//            recordFileParser.parse(streamFileData);
-//        });
-//
-//        // then
-//        recordFileRepository.delete(recordFile);
-//        verifyFinalDatabaseState(0, 0, 0, 0);
-//
-//        // verify continue functionality
-//        recordFileRepository.delete(recordFile);
-//        recordFileParser.parse(streamFileData);
-//        verifyFinalDatabaseState(NUM_CRYPTOS, NUM_TXNS, NUM_ENTITIES, NUM_RECORD_FILES);
-//    }
+    @Test
+    void verifyRollbackAndPostFunctionalityOnRecordFileRepositoryError() {
+        // given
+        recordFileRepository.deleteAll();
+
+        // when
+        Assertions.assertThrows(MissingFileException.class, () -> {
+            recordFileParser.parse(streamFileData);
+        });
+
+        // then
+        verifyFinalDatabaseState(0, 0, 0, 0);
+
+        // verify continue functionality
+        recordFileRepository.save(recordFile);
+        recordFileParser.parse(streamFileData);
+        verifyFinalDatabaseState(NUM_CRYPTOS, NUM_TXNS, NUM_ENTITIES, NUM_RECORD_FILES);
+    }
 
     void verifyFinalDatabaseState(int cryptoTransferCount, int transactionCount, int entityCount, int recordFileCount) {
         assertEquals(transactionCount, transactionRepository.count()); // pg copy populated
