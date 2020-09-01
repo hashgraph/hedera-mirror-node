@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  */
 
 import javax.inject.Named;
+
+import com.hedera.mirror.importer.exception.MissingFileException;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 
@@ -43,14 +46,18 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     @Override
     public void onStart(StreamFileData streamFileData) throws ImporterException {
         String fileName = FilenameUtils.getName(streamFileData.getFilename());
-        if (recordFileRepository.findByName(fileName).size() > 0) {
-            throw new DuplicateFileException("File already exists in the database: " + fileName);
+        if (recordFileRepository.findByName(fileName).size() != 1) {
+            throw new MissingFileException("File not found in the database: " + fileName);
         }
     }
 
     @Override
     public void onEnd(RecordFile recordFile) throws ImporterException {
-        recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
+        int count = recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
+        if (count != 1) {
+            throw new MissingFileException("File " + recordFile.getName() + " not in the database, thus not updated");
+        }
+
         applicationStatusRepository.updateStatusValue(
                 ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
     }

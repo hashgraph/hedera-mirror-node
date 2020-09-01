@@ -23,6 +23,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.importer.exception.MissingFileException;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,6 +37,7 @@ import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -132,6 +136,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onStart(StreamFileData streamFileData) {
+        String fileName = FilenameUtils.getName(streamFileData.getFilename());
+        if (recordFileRepository.findByName(fileName).size() != 1) {
+            throw new MissingFileException("File not found in the database: " + fileName);
+        }
+
         try {
             cleanup();
             connection = DataSourceUtils.getConnection(dataSource);
@@ -147,7 +156,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executeBatches();
 
         try {
-            recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
+            int count = recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
+            if (count != 1) {
+                throw new MissingFileException("File " + recordFile.getName() + " not in the database, thus not updated");
+            }
+
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
         } finally {

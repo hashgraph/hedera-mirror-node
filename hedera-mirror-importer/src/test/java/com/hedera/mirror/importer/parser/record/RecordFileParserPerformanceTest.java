@@ -20,9 +20,10 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Resource;
-import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -31,12 +32,17 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
+import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RecordFileParserPerformanceTest extends IntegrationTest {
@@ -53,6 +59,9 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
     @Resource
     private RecordParserProperties parserProperties;
 
+    @Resource
+    private RecordFileRepository recordFileRepository;
+
     private FileCopier fileCopier;
 
     private StreamType streamType;
@@ -64,9 +73,18 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
     }
 
     @BeforeEach
-    void before() {
+    void before() throws IOException {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
+
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        Files.walk(Path.of(testPath.toString(), streamType.getPath(), "performance"))
+                .filter(p -> p.toString().endsWith(".rcd"))
+                .forEach(p -> {
+                    String filename = FilenameUtils.getName(p.toString());
+                    RecordFile rf = new RecordFile(Utility.getTimestampFromFilename(filename), 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 2);
+                    recordFileRepository.save(rf);
+                });
     }
 
     @Timeout(30)

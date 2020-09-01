@@ -30,10 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.domain.RecordFile;
 
 public interface RecordFileRepository extends CrudRepository<RecordFile, Long> {
+
     List<RecordFile> findByName(String name);
 
     @Transactional
     @Modifying
     @Query("UPDATE RecordFile SET loadStart = :loadStart, loadEnd = :loadEnd WHERE name = :name")
-    void updateLoadStats(@Param("name") String name, @Param("loadStart") Long loadStart, @Param("loadEnd") Long loadEnd);
+    int updateLoadStats(@Param("name") String name, @Param("loadStart") Long loadStart, @Param("loadEnd") Long loadEnd);
 }

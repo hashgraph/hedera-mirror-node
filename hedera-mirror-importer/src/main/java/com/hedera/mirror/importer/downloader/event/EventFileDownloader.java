@@ -28,6 +28,7 @@ import java.time.Instant;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.PlatformTransactionManager;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
@@ -48,8 +49,8 @@ public class EventFileDownloader extends Downloader {
     public EventFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry, EventFileReader eventFileReader) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
+            PlatformTransactionManager platformTransactionManager, MeterRegistry meterRegistry, EventFileReader eventFileReader) {
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, platformTransactionManager, meterRegistry);
         this.eventFileReader = eventFileReader;
     }
 

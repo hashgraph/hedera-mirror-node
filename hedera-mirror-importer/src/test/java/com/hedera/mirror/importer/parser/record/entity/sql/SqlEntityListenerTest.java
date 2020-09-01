@@ -24,7 +24,6 @@ import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
@@ -38,7 +37,6 @@ import org.postgresql.jdbc.PgConnection;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -51,8 +49,6 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -93,9 +89,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
     protected RecordFileRepository recordFileRepository;
 
     @Resource
-    protected ApplicationStatusRepository applicationStatusRepository;
-
-    @Resource
     protected SqlEntityListener sqlEntityListener;
 
     @Resource
@@ -104,25 +97,23 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Resource
     private DataSource dataSource;
 
-    @Resource
-    private RecordParserProperties parserProperties;
-
-    private String fileName = "2019-08-30T18_10_00.419072Z.rcd";
+    private final String fileName = "2019-08-30T18_10_00.419072Z.rcd";
 
     private final String initialFileHash = "fileHash0";
 
+    private RecordFile recordFile;
+
     @BeforeEach
     final void beforeEach() {
+        String newFileHash = UUID.randomUUID().toString();
+        recordFile = insertAccountBalanceFile(fileName, newFileHash, initialFileHash);
+
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
 
     String completeFileAndCommit() {
-        String newFileHash = UUID.randomUUID().toString();
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-        RecordFile recordFile = new RecordFile(1L, 2L, null, fileName, 0L, 0L, newFileHash, initialFileHash, nodeAccountId, 0);
-        recordFileRepository.save(recordFile);
         sqlEntityListener.onEnd(recordFile);
-        return newFileHash;
+        return recordFile.getFileHash();
     }
 
     @Test
@@ -312,7 +303,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId);
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
-        fileName = UUID.randomUUID().toString();
+
+        recordFile = insertAccountBalanceFile(UUID.randomUUID().toString(), null, null);
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
         sqlEntityListener.onEntityId(entityId); // duplicate across files
         completeFileAndCommit();
@@ -336,6 +328,20 @@ public class SqlEntityListenerTest extends IntegrationTest {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
         assertEquals(expected, actual.get());
+    }
+
+    private RecordFile insertAccountBalanceFile(String filename, String fileHash, String prevHash) {
+        if (fileHash == null) {
+            fileHash = UUID.randomUUID().toString();
+        }
+        if (prevHash == null) {
+            prevHash = UUID.randomUUID().toString();
+        }
+
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        RecordFile rf = new RecordFile(1L, 2L, null, filename, 0L, 0L, fileHash, prevHash, nodeAccountId, 0);
+        recordFileRepository.save(rf);
+        return rf;
     }
 
     private Transaction makeTransaction() {

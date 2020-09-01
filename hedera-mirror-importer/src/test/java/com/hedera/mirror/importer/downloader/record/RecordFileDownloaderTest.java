@@ -71,7 +71,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     @Override
     protected Downloader getDownloader() {
         return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (RecordDownloaderProperties) downloaderProperties, meterRegistry, recordFileRepository);
+                (RecordDownloaderProperties) downloaderProperties, platformTransactionManager, meterRegistry, recordFileRepository);
     }
 
     @Override

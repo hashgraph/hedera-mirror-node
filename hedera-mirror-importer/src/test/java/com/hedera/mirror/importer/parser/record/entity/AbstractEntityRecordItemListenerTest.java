@@ -61,6 +61,7 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -100,6 +101,9 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
+
+    @Resource
+    protected RecordFileRepository recordFileRepository;
 
     protected static SignatureMap getSigMap() {
         String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
@@ -161,12 +165,13 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
         String fileName = UUID.randomUUID().toString();
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        RecordFile recordFile = new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", nodeAccountId, 0);
+        recordFileRepository.save(recordFile);
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         entityRecordItemListener.onItem(recordItem);
         // commit, close connection
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-        recordStreamFileListener
-                .onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", nodeAccountId, 0));
+        recordStreamFileListener.onEnd(recordFile);
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {

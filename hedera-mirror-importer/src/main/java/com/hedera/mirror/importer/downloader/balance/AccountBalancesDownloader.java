@@ -25,6 +25,7 @@ import java.io.File;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.PlatformTransactionManager;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
@@ -46,8 +47,8 @@ public class AccountBalancesDownloader extends Downloader {
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, BalanceDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry, AccountBalanceFileRepository accountBalanceFileRepository) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
+            PlatformTransactionManager platformTransactionManager, MeterRegistry meterRegistry, AccountBalanceFileRepository accountBalanceFileRepository) {
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, platformTransactionManager, meterRegistry);
         this.accountBalanceFileRepository = accountBalanceFileRepository;
     }
 

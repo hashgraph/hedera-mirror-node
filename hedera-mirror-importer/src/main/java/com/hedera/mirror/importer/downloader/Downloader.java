@@ -46,11 +46,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.transaction.Transactional;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.event.EventListener;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -84,6 +86,7 @@ public abstract class Downloader {
     protected final DownloaderProperties downloaderProperties;
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties commonDownloaderProperties;
+    private final PlatformTransactionManager platformTransactionManager;
 
     protected final ApplicationStatusCode lastValidDownloadedFileKey;
     protected final ApplicationStatusCode lastValidDownloadedFileHashKey;
@@ -99,11 +102,12 @@ public abstract class Downloader {
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-                      MeterRegistry meterRegistry) {
+                      PlatformTransactionManager platformTransactionManager, MeterRegistry meterRegistry) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
+        this.platformTransactionManager = platformTransactionManager;
         this.meterRegistry = meterRegistry;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
@@ -312,18 +316,11 @@ public abstract class Downloader {
      *
      * @param sourceFile
      * @param destinationFile
-     * @return whether the file was moved successfully
+     * @throws IOException
      */
-    private boolean moveFile(File sourceFile, File destinationFile) {
-        try {
-            Files.move(sourceFile.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
-            log.trace("Moved {} to {}", sourceFile, destinationFile);
-            return true;
-        } catch (IOException e) {
-            log.error("File move from {} to {} failed", sourceFile.getAbsolutePath(), destinationFile
-                    .getAbsolutePath(), e);
-            return false;
-        }
+    private void moveFile(File sourceFile, File destinationFile) throws IOException {
+        Files.move(sourceFile.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
+        log.trace("Moved {} to {}", sourceFile, destinationFile);
     }
 
     private void moveSignatureFile(FileStreamSignature signature) {
@@ -408,13 +405,12 @@ public abstract class Downloader {
 
                     // move the file to the valid directory
                     File destination = validPath.resolve(signedDataFile.getName()).toFile();
-                    if (moveFile(signedDataFile, destination)) {
-                        updateApplicationStatus(streamFile);
+                    moveFile(signedDataFile, destination);
+                    signatures.forEach(this::moveSignatureFile);
 
-                        valid = true;
-                        signatures.forEach(this::moveSignatureFile);
-                        break;
-                    }
+                    updateApplicationStatus(streamFile);
+                    valid = true;
+                    break;
                 } catch (HashMismatchException e) {
                     log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
                             signature.getNodeAccountId(), signature.getFile().getName(), e);
@@ -460,14 +456,18 @@ public abstract class Downloader {
      * the stream file to its corresponding database table.
      * @param streamFile the verified stream file
      */
-    @Transactional
-    protected void updateApplicationStatus(StreamFile streamFile) {
+    private void updateApplicationStatus(StreamFile streamFile) {
+        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+        TransactionStatus transactionStatus = platformTransactionManager.getTransaction(def);
+
         if (lastValidDownloadedFileHashKey != null) {
             applicationStatusRepository.updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
         }
         applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
 
         saveStreamFileRecord(streamFile);
+
+        platformTransactionManager.commit(transactionStatus);
     }
 
     protected abstract StreamFile readAndVerifyDataFile(File file, String verifiedHash);

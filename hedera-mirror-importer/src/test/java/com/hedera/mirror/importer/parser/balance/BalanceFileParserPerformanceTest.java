@@ -1,5 +1,7 @@
 package com.hedera.mirror.importer.parser.balance;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,13 +10,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
+import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Tag("performance")
 public class BalanceFileParserPerformanceTest extends IntegrationTest {
+
+    private static final String DATA_SOURCE_FOLDER = "performance";
 
     @TempDir
     static Path dataPath;
@@ -28,15 +38,28 @@ public class BalanceFileParserPerformanceTest extends IntegrationTest {
     @Resource
     private BalanceParserProperties parserProperties;
 
+    @Resource
+    private AccountBalanceFileRepository accountBalanceFileRepository;
+
     private FileCopier fileCopier;
 
     private StreamType streamType;
 
     @BeforeEach
-    void before() {
+    void before() throws IOException {
         streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
+
+        final EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        Files.walk(Path.of(testPath.toString(), streamType.getPath(), DATA_SOURCE_FOLDER))
+                .filter(p -> p.toString().endsWith(".csv"))
+                .forEach(p -> {
+                    String filename = FilenameUtils.getName(p.toString());
+                    AccountBalanceFile abf = new AccountBalanceFile(filename, Utility.getTimestampFromFilename(filename),
+                            0L, 0L, "", nodeAccountId);
+                    accountBalanceFileRepository.save(abf);
+                });
     }
 
     @Timeout(15)
@@ -47,7 +70,7 @@ public class BalanceFileParserPerformanceTest extends IntegrationTest {
 
     private void parse(String filePath) {
         fileCopier = FileCopier.create(testPath, dataPath)
-                .from(streamType.getPath(), "performance")
+                .from(streamType.getPath(), DATA_SOURCE_FOLDER)
                 .filterFiles(filePath)
                 .to(streamType.getPath(), streamType.getValid());
         fileCopier.copy();

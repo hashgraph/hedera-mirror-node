@@ -38,7 +38,8 @@ import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
@@ -152,7 +153,7 @@ public final class AccountBalancesFileLoader {
                     Instant.now().getEpochSecond(), fileName);
 
             connection.commit();
-        } catch (InvalidDatasetException | SQLException ex) {
+        } catch (ImporterException | SQLException  ex) {
             log.error("Failed to load account balances file " + fileName, ex);
         }
 
@@ -222,6 +223,9 @@ public final class AccountBalancesFileLoader {
         updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_START.ordinal(), loadStart);
         updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_END.ordinal(), loadEnd);
         updateAccountBalanceFileStatement.setString(F_UPDATE_ACCOUNT_BALANCE_FILE.NAME.ordinal(), filename);
-        updateAccountBalanceFileStatement.execute();
+
+        if (updateAccountBalanceFileStatement.executeUpdate() != 1) {
+            throw new MissingFileException("File " + filename + " not in the databse, thus not updated");
+        }
     }
 }
