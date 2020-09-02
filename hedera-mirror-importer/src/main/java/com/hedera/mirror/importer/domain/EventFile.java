@@ -39,4 +39,6 @@ public class EventFile implements StreamFile {
     private int fileVersion;
 
     private EntityId nodeAccountId;
+
+    private Long count;
 }

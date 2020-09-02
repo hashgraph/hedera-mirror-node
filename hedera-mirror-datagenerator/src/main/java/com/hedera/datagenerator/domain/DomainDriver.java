@@ -24,9 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -39,6 +36,7 @@ import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
@@ -108,7 +106,7 @@ public class DomainDriver implements ApplicationRunner {
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
         log.info("Writing data to db");
-        sqlEntityListener.onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", nodeAccountId, 0)); // writes data to db
+        sqlEntityListener.onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", nodeAccountId, 0L, 0)); // writes data to db
         domainWriter.flush(); // writes data to db
         log.info("Total time taken: {}", stopwatch);
     }

@@ -57,6 +57,7 @@ public final class AccountBalancesFileLoader {
     private static final String UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT = "update account_balance_file " +
             "set " +
             "   consensus_timestamp = ?," +
+            "   count = ?," +
             "   load_start = ?," +
             "   load_end = ?" +
             "where name = ?;";
@@ -78,7 +79,7 @@ public final class AccountBalancesFileLoader {
 
     enum F_UPDATE_ACCOUNT_BALANCE_FILE {
         ZERO,
-        CONSENSUS_TIMESTAMP, LOAD_START, LOAD_END, NAME
+        CONSENSUS_TIMESTAMP, COUNT, LOAD_START, LOAD_END, NAME
     }
 
     private final int insertBatchSize;
@@ -115,6 +116,7 @@ public final class AccountBalancesFileLoader {
              Stream<AccountBalance> stream = balanceFileReader.read(balanceFile)) {
             long consensusTimestamp = -1;
             List<AccountBalance> accountBalanceList = new ArrayList<>();
+            boolean skip = false;
 
             connection.setAutoCommit(false);
 
@@ -135,21 +137,30 @@ public final class AccountBalancesFileLoader {
                     if (dateRangeFilter != null && !dateRangeFilter.filter(consensusTimestamp)) {
                         log.warn("Account balances file {} not in configured date range {}, skip it",
                                 fileName, dateRangeFilter);
-                        break;
+                        skip = true;
+                    } else {
+                        insertAccountBalanceSet(insertSetStatement, consensusTimestamp);
                     }
-
-                    insertAccountBalanceSet(insertSetStatement, consensusTimestamp);
                 }
 
                 validCount++;
-                accountBalanceList.add(accountBalance);
-                insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
+
+                if (!skip) {
+                    accountBalanceList.add(accountBalance);
+                    insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList,
+                            insertBatchSize);
+                }
             }
 
-            insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
-            complete = (insertedCount == validCount);
+            if (!skip) {
+                insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
+                complete = (insertedCount == validCount);
+            } else {
+                complete = true;
+            }
+
             updateAccountBalanceSet(updateSetStatement, complete, consensusTimestamp);
-            updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, startTime.getEpochSecond(),
+            updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, validCount, startTime.getEpochSecond(),
                     Instant.now().getEpochSecond(), fileName);
 
             connection.commit();
@@ -218,14 +229,15 @@ public final class AccountBalancesFileLoader {
         updateSetStatement.execute();
     }
 
-    private void updateAccountBalanceFile(PreparedStatement updateAccountBalanceFileStatement, long consensusTimestamp, long loadStart, long loadEnd, String filename) throws SQLException {
+    private void updateAccountBalanceFile(PreparedStatement updateAccountBalanceFileStatement, long consensusTimestamp, long count, long loadStart, long loadEnd, String filename) throws SQLException {
         updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.COUNT.ordinal(), count);
         updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_START.ordinal(), loadStart);
         updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_END.ordinal(), loadEnd);
         updateAccountBalanceFileStatement.setString(F_UPDATE_ACCOUNT_BALANCE_FILE.NAME.ordinal(), filename);
 
         if (updateAccountBalanceFileStatement.executeUpdate() != 1) {
-            throw new MissingFileException("File " + filename + " not in the databse, thus not updated");
+            throw new MissingFileException("File " + filename + " not in the database, thus not updated");
         }
     }
 }

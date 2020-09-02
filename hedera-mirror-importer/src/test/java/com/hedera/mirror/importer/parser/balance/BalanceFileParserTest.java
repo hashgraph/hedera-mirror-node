@@ -29,12 +29,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +38,12 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.AccountBalanceSet;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
 
@@ -194,10 +192,9 @@ public class BalanceFileParserTest extends IntegrationTest {
     }
 
     void insertAccountBalanceFiles(BalanceFile... balanceFiles) {
-        final EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-
+        final EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         for (BalanceFile bf : balanceFiles) {
-            AccountBalanceFile abf = new AccountBalanceFile(bf.getFilename(), bf.getConsensusTimestamp() - 1, 0L, 0L, "", nodeAccountId);
+            AccountBalanceFile abf = new AccountBalanceFile(bf.getFilename(), bf.getConsensusTimestamp() - 1, 0L, 0L, "", nodeAccountId, 0L);
             accountBalanceFileRepository.save(abf);
         }
     }

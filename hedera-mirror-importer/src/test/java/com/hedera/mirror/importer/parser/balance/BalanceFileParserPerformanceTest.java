@@ -14,9 +14,9 @@ import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -51,13 +51,13 @@ public class BalanceFileParserPerformanceTest extends IntegrationTest {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
 
-        final EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        final EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         Files.walk(Path.of(testPath.toString(), streamType.getPath(), DATA_SOURCE_FOLDER))
                 .filter(p -> p.toString().endsWith(".csv"))
                 .forEach(p -> {
                     String filename = FilenameUtils.getName(p.toString());
                     AccountBalanceFile abf = new AccountBalanceFile(filename, Utility.getTimestampFromFilename(filename),
-                            0L, 0L, "", nodeAccountId);
+                            0L, 0L, "", nodeAccountId, 0L);
                     accountBalanceFileRepository.save(abf);
                 });
     }

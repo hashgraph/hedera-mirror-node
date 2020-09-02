@@ -95,10 +95,8 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         List<AccountBalanceFile> captured = valueCaptor.getAllValues();
         assertThat(captured).allSatisfy(actual -> {
             AccountBalanceFile expected = accountBalanceFileMap.get(actual.getName());
-            assertThat(expected).isNotNull();
 
-            assertThat(actual).matches(abf -> abf.getConsensusTimestamp().equals(expected.getConsensusTimestamp()), "consensusTimestamp")
-                    .matches(abf -> abf.getFileHash().equals(expected.getFileHash()), "fileHash");
+            assertThat(actual).isEqualToComparingOnlyGivenFields(expected, "name", "consensusTimestamp", "fileHash");
             assertThat(actual.getNodeAccountId()).isIn(allNodeAccountIds).isNotEqualTo(corruptedNodeAccountId);
         });
     }
@@ -111,10 +109,10 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         );
 
         long timestamp = Utility.convertToNanosMax(file1Instant.getEpochSecond(), file1Instant.getNano());
-        accountBalanceFileMap.put(file1, new AccountBalanceFile(file1, timestamp, 0L, 0L, "c1a6ffb5df216a1e8331f949f45cb9400fc474150d57d977c77f21318687eb18d407c780147d0435791a02743a0f7bfc", null));
+        accountBalanceFileMap.put(file1, new AccountBalanceFile(file1, timestamp, 0L, 0L, "c1a6ffb5df216a1e8331f949f45cb9400fc474150d57d977c77f21318687eb18d407c780147d0435791a02743a0f7bfc", null, 0L));
 
         timestamp = Utility.convertToNanosMax(file2Instant.getEpochSecond(), file2Instant.getNano());
-        accountBalanceFileMap.put(file2, new AccountBalanceFile(file2, timestamp, 0L, 0L, "c197898e485e92a85752d475b536e6dc09879a18d358b1e72a9a1160bb24c8bb7a4c58610383ac80fd1c7659214eccd4", null));
+        accountBalanceFileMap.put(file2, new AccountBalanceFile(file2, timestamp, 0L, 0L, "c197898e485e92a85752d475b536e6dc09879a18d358b1e72a9a1160bb24c8bb7a4c58610383ac80fd1c7659214eccd4", null, 0L));
     }
 
     @Test

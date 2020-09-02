@@ -38,8 +38,8 @@ import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.record.RecordFilePoller;
@@ -73,12 +73,12 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
                 .filterFiles("*.rcd")
                 .to(streamType.getPath(), streamType.getValid());
 
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         Files.walk(Path.of(testResourcesPath.toString(), streamType.getPath(), "v2", "record0.0.3"))
                 .filter(p -> p.toString().endsWith(".rcd"))
                 .forEach(p -> {
                     String filename = FilenameUtils.getName(p.toString());
-                    RecordFile rf = new RecordFile(Utility.getTimestampFromFilename(filename), 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 2);
+                    RecordFile rf = new RecordFile(Utility.getTimestampFromFilename(filename), 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 0L, 2);
                     recordFileRepository.save(rf);
                 });
     }

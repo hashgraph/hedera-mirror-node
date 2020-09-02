@@ -158,6 +158,7 @@ public class Utility {
 
             log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, fileName);
 
+            long count = 0;
             while (dis.available() != 0) {
                 byte typeDelimiter = dis.readByte();
                 switch (typeDelimiter) {
@@ -198,6 +199,7 @@ public class Utility {
                                 recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
                             }
                         }
+                        count++;
                         break;
                     default:
                         throw new IllegalArgumentException(String.format(
@@ -212,6 +214,8 @@ public class Utility {
             }
             recordFile.setFileHash(Hex.encodeHexString(md.digest()));
             log.trace("Calculated file hash for the record file {}", recordFile.getFileHash());
+            recordFile.setCount(count);
+
             return recordFile;
         } catch (Exception e) {
             throw new IllegalArgumentException("Error parsing bad record file " + fileName, e);

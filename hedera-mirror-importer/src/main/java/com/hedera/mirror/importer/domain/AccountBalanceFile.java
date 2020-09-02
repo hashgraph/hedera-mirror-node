@@ -48,4 +48,6 @@ public class AccountBalanceFile implements StreamFile {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
+
+    private Long count;
 }

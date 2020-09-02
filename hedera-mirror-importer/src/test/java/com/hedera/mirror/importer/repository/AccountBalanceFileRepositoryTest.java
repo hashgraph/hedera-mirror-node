@@ -22,19 +22,18 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.importer.domain.EntityId;
 
 class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile("2019-08-30T18_15_00.016002001Z_Balances.csv", 1598810507023456789L, 10L, 40L, "", nodeAccountId);
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        AccountBalanceFile accountBalanceFile = new AccountBalanceFile("2019-08-30T18_15_00.016002001Z_Balances.csv", 1598810507023456789L, 10L, 40L, "", nodeAccountId, 0L);
         accountBalanceFile = accountBalanceFileRepository.save(accountBalanceFile);
         assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getName()).get())
                 .isNotNull()

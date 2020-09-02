@@ -69,6 +69,7 @@ public class AccountBalancesDownloader extends Downloader {
         accountBalanceFile.setName(file.getName());
         accountBalanceFile.setConsensusTimestamp(Utility.getTimestampFromFilename(file.getName()));
         accountBalanceFile.setFileHash(fileHash);
+        accountBalanceFile.setCount(0L);
         return accountBalanceFile;
     }
 

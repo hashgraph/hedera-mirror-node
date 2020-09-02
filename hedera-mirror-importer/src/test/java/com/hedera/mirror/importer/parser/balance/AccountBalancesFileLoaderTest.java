@@ -40,10 +40,10 @@ import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -88,8 +88,8 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
                 .to(streamType.getPath(), streamType.getValid());
         testFile = fileCopier.getTo().resolve(balanceFile.getFilename()).toFile();
 
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile(balanceFile.getFilename(), balanceFile.getConsensusTimestamp(), 0L, 0L, "", nodeAccountId);
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        AccountBalanceFile accountBalanceFile = new AccountBalanceFile(balanceFile.getFilename(), balanceFile.getConsensusTimestamp(), 0L, 0L, "", nodeAccountId, 0L);
         accountBalanceFileRepository.save(accountBalanceFile);
     }
 

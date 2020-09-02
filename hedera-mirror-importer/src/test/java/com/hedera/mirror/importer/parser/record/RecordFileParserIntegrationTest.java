@@ -39,8 +39,8 @@ import org.springframework.beans.factory.annotation.Value;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.MissingFileException;
@@ -108,10 +108,10 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
 
         streamFileData = new StreamFileData(file.toString(), new FileInputStream(file));
 
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null, recordFilename, 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", nodeAccountId, 2);
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", nodeAccountId, 0L, 2);
         recordFileRepository.save(recordFile);
     }
 

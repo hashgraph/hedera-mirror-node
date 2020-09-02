@@ -37,6 +37,7 @@ import org.postgresql.jdbc.PgConnection;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -338,8 +339,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
             prevHash = UUID.randomUUID().toString();
         }
 
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-        RecordFile rf = new RecordFile(1L, 2L, null, filename, 0L, 0L, fileHash, prevHash, nodeAccountId, 0);
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        RecordFile rf = new RecordFile(1L, 2L, null, filename, 0L, 0L, fileHash, prevHash, nodeAccountId, 0L, 0);
         recordFileRepository.save(rf);
         return rf;
     }

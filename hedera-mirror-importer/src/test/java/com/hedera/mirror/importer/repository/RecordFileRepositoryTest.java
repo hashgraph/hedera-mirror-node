@@ -24,8 +24,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 
 public class RecordFileRepositoryTest extends AbstractRepositoryTest {
@@ -34,8 +34,8 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
-        recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", nodeAccountId, 0);
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", nodeAccountId, 0L, 0);
     }
 
     @Test
