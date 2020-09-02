@@ -7,7 +7,7 @@ spec:
   chart:
     git: https://github.com/hashgraph/hedera-mirror-node.git
     path: charts/hedera-mirror
-    ref: 9c13a19e8f4506ecdb2519a1e45a45f61dc34f56
+    ref: 1bd9a62b23579d36602c9da2897e100fdc6fac96
   rollback:
     enable: true
     force: true
@@ -18,7 +18,7 @@ spec:
   values:
     grpc:
       image:
-        tag: master-9c13a19e8f4506ecdb2519a1e45a45f61dc34f56
+        tag: master-1bd9a62b23579d36602c9da2897e100fdc6fac96
     importer:
       config:
         hedera:
@@ -28,12 +28,12 @@ spec:
                 cloudProvider: GCP
               network: TESTNET
       image:
-        tag: master-9c13a19e8f4506ecdb2519a1e45a45f61dc34f56
+        tag: master-1bd9a62b23579d36602c9da2897e100fdc6fac96
     postgresql:
       enabled: false
     rest:
       image:
-        tag: master-9c13a19e8f4506ecdb2519a1e45a45f61dc34f56
+        tag: master-1bd9a62b23579d36602c9da2897e100fdc6fac96
   valuesFrom:
     - chartFileRef:
         path: values-prod.yaml
