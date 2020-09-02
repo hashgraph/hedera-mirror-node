@@ -20,20 +20,34 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class LiveHash {
+public class LiveHash implements Persistable<Long> {
 
     @Id
     private Long consensusTimestamp;
 
     private byte[] livehash;
+
+    @JsonIgnore
+    @Override
+    public Long getId() {
+        return consensusTimestamp;
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
 }

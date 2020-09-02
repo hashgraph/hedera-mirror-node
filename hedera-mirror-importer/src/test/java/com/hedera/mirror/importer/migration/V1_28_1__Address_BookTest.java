@@ -104,7 +104,7 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(12, fileDataRepository.count());
+        assertEquals(11, fileDataRepository.count());
         assertEquals(6, addressBookRepository.count());
         assertEquals(37, addressBookEntryRepository.count());
     }
@@ -143,7 +143,7 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(7, fileDataRepository.count());
+        assertEquals(6, fileDataRepository.count());
         // only bootstrap address book
         assertEquals(1, addressBookRepository.count());
         assertEquals(4, addressBookEntryRepository.count());

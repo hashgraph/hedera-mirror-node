@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Set;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
@@ -49,6 +50,9 @@ public class RecordItem implements StreamItem {
     private final int transactionType;
     private final byte[] transactionBytes;
     private final byte[] recordBytes;
+
+    @Getter(lazy = true)
+    private long consensusTimestamp = Utility.timestampInNanosMax(record.getConsensusTimestamp());
 
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
@@ -129,9 +133,5 @@ public class RecordItem implements StreamItem {
             return transactionType;
         }
         return dataCase.getNumber();
-    }
-
-    public Long getConsensusTimestamp() {
-        return Utility.timestampInNanosMax(record.getConsensusTimestamp());
     }
 }

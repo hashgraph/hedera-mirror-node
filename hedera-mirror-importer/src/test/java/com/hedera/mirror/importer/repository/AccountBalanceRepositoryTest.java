@@ -43,7 +43,7 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
     }
 
     private AccountBalance create(long consensusTimestamp, int accountNum, long balance) {
-        AccountBalance.AccountBalanceId id = new AccountBalance.AccountBalanceId();
+        AccountBalance.Id id = new AccountBalance.Id();
         id.setConsensusTimestamp(consensusTimestamp);
         id.setAccountNum(accountNum);
         id.setAccountRealmNum(0);

@@ -51,9 +51,11 @@ public final class AccountBalancesFileLoader {
     private static final String INSERT_SET_STATEMENT = "insert into account_balance_sets (consensus_timestamp) " +
             "values (?) on conflict do nothing;";
     private static final String INSERT_BALANCE_STATEMENT = "insert into account_balance " +
-            "(consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do nothing;";
+            "(consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do " +
+            "nothing;";
     private static final String UPDATE_SET_STATEMENT = "update account_balance_sets set is_complete = ?, " +
-            "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = false;";
+            "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = " +
+            "false;";
     private static final String UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT = "update account_balance_file " +
             "set " +
             "   consensus_timestamp = ?," +
@@ -61,6 +63,7 @@ public final class AccountBalancesFileLoader {
             "   load_start = ?," +
             "   load_end = ?" +
             "where name = ?;";
+
 
     enum F_INSERT_SET {
         ZERO,
@@ -87,7 +90,7 @@ public final class AccountBalancesFileLoader {
     private final BalanceFileReader balanceFileReader;
 
     public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
-            BalanceFileReader balanceFileReader) {
+                                     BalanceFileReader balanceFileReader) {
         this.insertBatchSize = balanceParserProperties.getBatchSize();
         this.dataSource = dataSource;
         this.balanceFileReader = balanceFileReader;
@@ -100,7 +103,7 @@ public final class AccountBalancesFileLoader {
      */
     public boolean loadAccountBalances(@NonNull File balanceFile, DateRangeFilter dateRangeFilter) {
         log.info("Starting processing account balances file {}", balanceFile.getPath());
-        final String fileName = balanceFile.getName();
+        String fileName = balanceFile.getName();
         long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
         int validCount = 0;
         int insertedCount = 0;
@@ -126,11 +129,11 @@ public final class AccountBalancesFileLoader {
                 if (consensusTimestamp == -1) {
                     consensusTimestamp = accountBalance.getId().getConsensusTimestamp();
                     if (timestampFromFileName != consensusTimestamp) {
-                        // The assumption is that the dataset has been validated via signatures and running hashes, so it is
-                        // the "next" dataset, and the consensus timestamp in it is correct.
-                        // The fact that the filename timestamp and timestamp in the file differ should still be investigated.
-                        log.error("Account balance dataset timestamp mismatch! Processing can continue, but this must be " +
-                                        "investigated! Dataset {} internal timestamp {} filename timestamp {}.",
+                        // The assumption is that the dataset has been validated via signatures and running hashes,
+                        // so it is the "next" dataset, and the consensus timestamp in it is correct. The fact that
+                        // the filename timestamp and timestamp in the file differ should still be investigated.
+                        log.error("Account balance dataset timestamp mismatch! Processing can continue, but this " +
+                                        "must be investigated! Dataset {} internal timestamp {} filename timestamp {}.",
                                 fileName, consensusTimestamp, timestampFromFileName);
                     }
 
@@ -184,22 +187,25 @@ public final class AccountBalancesFileLoader {
         insertSetStatement.execute();
     }
 
-    private int tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement, List<AccountBalance> accountBalanceList, int threshold) {
+    private int tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
+                                             List<AccountBalance> accountBalanceList, int threshold) {
         if (accountBalanceList.size() < threshold) {
             return 0;
         }
 
         int batchSize = 0;
         for (var accountBalance : accountBalanceList) {
-            AccountBalance.AccountBalanceId id = accountBalance.getId();
+            AccountBalance.Id id = accountBalance.getId();
             try {
-                insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
-                insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short)id.getAccountRealmNum());
+                insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(),
+                        id.getConsensusTimestamp());
+                insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(),
+                        (short) id.getAccountRealmNum());
                 insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), id.getAccountNum());
                 insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
                 insertBalanceStatement.addBatch();
                 batchSize++;
-            } catch(SQLException ex) {
+            } catch (SQLException ex) {
                 log.error("Failed to add account balance to the batch", ex);
             }
         }
@@ -217,26 +223,28 @@ public final class AccountBalancesFileLoader {
                     insertedCount++;
                 }
             }
-        } catch(SQLException ex) {
+        } catch (SQLException ex) {
             log.error("Failed to batch insert account balances", ex);
         }
         return insertedCount;
     }
 
-    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete, long consensusTimestamp) throws SQLException {
+    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete,
+                                         long consensusTimestamp) throws SQLException {
         updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), complete);
         updateSetStatement.setLong(F_UPDATE_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
         updateSetStatement.execute();
     }
 
-    private void updateAccountBalanceFile(PreparedStatement updateAccountBalanceFileStatement, long consensusTimestamp, long count, long loadStart, long loadEnd, String filename) throws SQLException {
-        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.COUNT.ordinal(), count);
-        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_START.ordinal(), loadStart);
-        updateAccountBalanceFileStatement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_END.ordinal(), loadEnd);
-        updateAccountBalanceFileStatement.setString(F_UPDATE_ACCOUNT_BALANCE_FILE.NAME.ordinal(), filename);
+    private void updateAccountBalanceFile(PreparedStatement statement, long consensusTimestamp, long count,
+            long loadStart, long loadEnd, String filename) throws SQLException {
+        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.COUNT.ordinal(), count);
+        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_START.ordinal(), loadStart);
+        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_END.ordinal(), loadEnd);
+        statement.setString(F_UPDATE_ACCOUNT_BALANCE_FILE.NAME.ordinal(), filename);
 
-        if (updateAccountBalanceFileStatement.executeUpdate() != 1) {
+        if (statement.executeUpdate() != 1) {
             throw new MissingFileException("File " + filename + " not in the database, thus not updated");
         }
     }

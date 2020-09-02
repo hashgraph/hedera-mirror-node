@@ -25,7 +25,7 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 
-public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.AccountBalanceId> {
+public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.Id> {
 
     List<AccountBalance> findByIdConsensusTimestamp(long consensusTimestamp);
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.parser.record.entity.repository;
 
 /*-
  * ‌
@@ -20,19 +20,15 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 
-public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
-    @Autowired
-    @Lazy
-    EntityRepository entityRepository;
+@ConditionOnEntityRecordParser
+@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.repository")
+@Data
+public class RepositoryProperties {
 
-    @Override
-    public void insertEntityId(EntityId entityId) {
-        entityRepository.insertEntityId(entityId.getId(), entityId.getShardNum(),
-                entityId.getRealmNum(), entityId.getEntityNum(), entityId.getType());
-    }
+    private boolean enabled = false;
 }

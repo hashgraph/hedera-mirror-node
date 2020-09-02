@@ -24,5 +24,5 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 
-public interface NonFeeTransferRepository extends CrudRepository<NonFeeTransfer, Long> {
+public interface NonFeeTransferRepository extends CrudRepository<NonFeeTransfer, NonFeeTransfer.Id> {
 }

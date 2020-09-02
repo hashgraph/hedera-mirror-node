@@ -43,6 +43,7 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -54,6 +55,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
     private final PubSubProperties pubSubProperties;
     private final MessageChannel pubsubOutputChannel;
     private final AddressBookService addressBookService;
+    private final FileDataRepository fileDataRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
@@ -93,6 +95,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
             FileData fileData = new FileData(consensusTimestamp, fileBytes, EntityId.of(fileID), recordItem
                     .getTransactionType());
+            fileDataRepository.save(fileData);
             addressBookService.update(fileData);
         }
     }

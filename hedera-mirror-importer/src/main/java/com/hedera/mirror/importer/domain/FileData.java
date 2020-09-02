@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -27,6 +28,8 @@ import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.FileIdConverter;
@@ -35,7 +38,8 @@ import com.hedera.mirror.importer.converter.FileIdConverter;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileData {
+@ToString(exclude = "fileData")
+public class FileData implements Persistable<Long> {
 
     @Id
     private Long consensusTimestamp;
@@ -50,5 +54,17 @@ public class FileData {
 
     public boolean transactionTypeIsAppend() {
         return transactionType == TransactionTypeEnum.FILEAPPEND.getProtoId();
+    }
+
+    @JsonIgnore
+    @Override
+    public Long getId() {
+        return consensusTimestamp;
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 }

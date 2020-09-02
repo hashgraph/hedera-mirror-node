@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.Serializable;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
@@ -33,17 +34,13 @@ import org.springframework.data.domain.Persistable;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class AccountBalance implements Persistable<AccountBalance.AccountBalanceId> {
+public class AccountBalance implements Persistable<AccountBalance.Id> {
 
     private long balance;
 
     @EmbeddedId
-    private AccountBalanceId id;
-
-    @Override
-    public AccountBalanceId getId() {
-        return id;
-    }
+    @JsonUnwrapped
+    private Id id;
 
     @Override
     public boolean isNew() {
@@ -54,9 +51,9 @@ public class AccountBalance implements Persistable<AccountBalance.AccountBalance
     @AllArgsConstructor
     @NoArgsConstructor
     @Embeddable
-    public static class AccountBalanceId implements Serializable {
+    public static class Id implements Serializable {
 
-        private static final long serialVersionUID = 471939491840098746L;
+        private static final long serialVersionUID = -2399552489266593375L;
 
         private long consensusTimestamp;
 
