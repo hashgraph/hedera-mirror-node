@@ -21,11 +21,14 @@ package com.hedera.mirror.importer.addressbook;
  */
 
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
@@ -50,6 +53,8 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+
+    private static final List<FieldDescriptor> nodeAddressFieldDescriptors = NodeAddress.getDescriptor().getFields();
 
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
@@ -220,26 +225,52 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) {
-        ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
-
-        if (nodeAddressBook != null) {
-            for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
-                    .getNodeAddressList()) {
-                AddressBookEntry addressBookEntry = AddressBookEntry.builder()
-                        .consensusTimestamp(consensusTimestamp)
-                        .memo(nodeAddressProto.getMemo().toStringUtf8())
-                        .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                        .port(nodeAddressProto.getPortno())
-                        .publicKey(nodeAddressProto.getRSAPubKey())
-                        .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                        .nodeId(nodeAddressProto.getNodeId())
-                        .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
-                        .build();
-                builder.add(addressBookEntry);
-            }
+        if (nodeAddressBook == null) {
+            return Collections.emptyList();
         }
 
-        return builder.build();
+        ImmutableList.Builder<AddressBookEntry> listBuilder = ImmutableList.builder();
+
+        for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
+            AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
+                    .consensusTimestamp(consensusTimestamp);
+
+            nodeAddressFieldDescriptors.stream()
+                    .filter(nodeAddressProto::hasField)
+                    .map(FieldDescriptor::getNumber)
+                    .forEach(fieldNumber -> {
+                        switch (fieldNumber) {
+                            case NodeAddress.IPADDRESS_FIELD_NUMBER:
+                                builder.ip(nodeAddressProto.getIpAddress().toStringUtf8());
+                                break;
+                            case NodeAddress.PORTNO_FIELD_NUMBER:
+                                builder.port(nodeAddressProto.getPortno());
+                                break;
+                            case NodeAddress.MEMO_FIELD_NUMBER:
+                                builder.memo(nodeAddressProto.getMemo().toStringUtf8());
+                                break;
+                            case NodeAddress.RSA_PUBKEY_FIELD_NUMBER:
+                                builder.publicKey(nodeAddressProto.getRSAPubKey());
+                                break;
+                            case NodeAddress.NODEID_FIELD_NUMBER:
+                                builder.nodeId(nodeAddressProto.getNodeId());
+                                break;
+                            case NodeAddress.NODEACCOUNTID_FIELD_NUMBER:
+                                builder.nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()));
+                                break;
+                            case NodeAddress.NODECERTHASH_FIELD_NUMBER:
+                                builder.nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray());
+                                break;
+                            default:
+                                log.warn("Unhandled field of NodeAddress protobuf - {}", fieldNumber);
+                                break;
+                        }
+                    });
+
+            listBuilder.add(builder.build());
+        }
+
+        return listBuilder.build();
     }
 
     /**
