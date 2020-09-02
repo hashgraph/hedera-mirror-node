@@ -61,6 +61,8 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @UtilityClass
 public class Utility {
 
+    public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
+
     private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
 

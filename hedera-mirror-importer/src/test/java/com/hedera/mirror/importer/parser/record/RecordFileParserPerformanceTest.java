@@ -75,7 +75,8 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
                 .filter(p -> p.toString().endsWith(".rcd"))
                 .forEach(p -> {
                     String filename = FilenameUtils.getName(p.toString());
-                    RecordFile rf = new RecordFile(Utility.getTimestampFromFilename(filename), 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 0L, 2);
+                    long timestamp = Utility.getTimestampFromFilename(filename);
+                    RecordFile rf = new RecordFile(timestamp, 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 0L, 2);
                     recordFileRepository.save(rf);
                 });
 
