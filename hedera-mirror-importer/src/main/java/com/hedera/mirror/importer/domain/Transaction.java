@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -28,6 +29,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
@@ -37,7 +39,7 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
-public class Transaction {
+public class Transaction implements Persistable<Long> {
 
     @Id
     private Long consensusNs;
@@ -73,4 +75,16 @@ public class Transaction {
     private byte[] transactionHash;
 
     private byte[] transactionBytes;
+
+    @JsonIgnore
+    @Override
+    public Long getId() {
+        return consensusNs;
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
 }

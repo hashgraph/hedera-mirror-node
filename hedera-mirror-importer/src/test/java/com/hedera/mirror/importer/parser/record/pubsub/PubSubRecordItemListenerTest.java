@@ -71,6 +71,7 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategyImpl;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,21 +90,27 @@ class PubSubRecordItemListenerTest {
 
     @Mock
     private MessageChannel messageChannel;
+
     @Mock(lenient = true)
     private AddressBookService addressBookService;
+
+    @Mock
+    private FileDataRepository fileDataRepository;
+
     @Mock
     private TransactionHandler transactionHandler;
+
     private PubSubProperties pubSubProperties;
     private PubSubRecordItemListener pubSubRecordItemListener;
 
     @BeforeEach
-    private void beforeEach() {
+    void beforeEach() {
         TransactionHandlerFactory transactionHandlerFactory = mock(TransactionHandlerFactory.class);
         pubSubProperties = new PubSubProperties();
         when(transactionHandlerFactory.create(any())).thenReturn(transactionHandler);
         doReturn(true).when(addressBookService).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
         pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, addressBookService,
-                nonFeeTransferExtractionStrategy, transactionHandlerFactory);
+                fileDataRepository, nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
 
     @Test

@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 @AllArgsConstructor
 public class AddressBookServiceImpl implements AddressBookService {
+
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
 
@@ -104,9 +105,8 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     /**
-     * Parses provided fileData object into an AddressBook object if valid and stores into db. Saves fileData into db
-     * regardless for reference. Also updates previous address book endConsensusTimestamp based on new address books
-     * startConsensusTimestamp
+     * Parses provided fileData object into an AddressBook object if valid and stores into db. Also updates previous
+     * address book endConsensusTimestamp based on new address book's startConsensusTimestamp.
      *
      * @param fileData file data with timestamp, contents, entityId and transaction type for parsing
      */
@@ -118,9 +118,6 @@ public class AddressBookServiceImpl implements AddressBookService {
         } else {
             addressBookBytes = fileData.getFileData();
         }
-
-        // store fileData information
-        fileData = fileDataRepository.save(fileData);
 
         AddressBook addressBook = buildAddressBook(addressBookBytes, fileData.getConsensusTimestamp(), fileData
                 .getEntityId());
@@ -142,36 +139,37 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     private byte[] combinePreviousFileDataContents(FileData fileData) {
         Optional<FileData> optionalFileData = fileDataRepository.findLatestMatchingFile(
-                fileData.getConsensusTimestamp(), fileData.getEntityId().getId(),
-                List.of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        byte[] combinedBytes = null;
-        if (optionalFileData.isPresent()) {
-            FileData firstPartialAddressBook = optionalFileData.get();
-            long consensusTimeStamp = firstPartialAddressBook.getConsensusTimestamp();
-            List<FileData> appendFileDataEntries = fileDataRepository
-                    .findFilesInRange(
-                            consensusTimeStamp + 1, fileData.getConsensusTimestamp() - 1, firstPartialAddressBook
-                                    .getEntityId().getId(),
-                            TransactionTypeEnum.FILEAPPEND.getProtoId());
+                fileData.getConsensusTimestamp(),
+                fileData.getEntityId().getId(),
+                List.of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId())
+        );
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length);
-            try {
-                bos.write(firstPartialAddressBook.getFileData());
-                for (int i = 0; i < appendFileDataEntries.size(); i++) {
-                    bos.write(appendFileDataEntries.get(i).getFileData());
-                }
-
-                bos.write(fileData.getFileData());
-                combinedBytes = bos.toByteArray();
-            } catch (IOException ex) {
-                throw new InvalidDatasetException("Error concatenating partial address book fileData entries", ex);
-            }
-        } else {
+        if (!optionalFileData.isPresent()) {
             throw new IllegalStateException("Missing FileData entry. FileAppend expects a corresponding " +
                     "FileCreate/FileUpdate entry");
         }
 
-        return combinedBytes;
+        FileData firstPartialAddressBook = optionalFileData.get();
+        long consensusTimeStamp = firstPartialAddressBook.getConsensusTimestamp();
+
+        List<FileData> appendFileDataEntries = fileDataRepository.findFilesInRange(
+                consensusTimeStamp + 1,
+                fileData.getConsensusTimestamp() - 1,
+                firstPartialAddressBook.getEntityId().getId(),
+                TransactionTypeEnum.FILEAPPEND.getProtoId()
+        );
+
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length)) {
+            bos.write(firstPartialAddressBook.getFileData());
+            for (int i = 0; i < appendFileDataEntries.size(); i++) {
+                bos.write(appendFileDataEntries.get(i).getFileData());
+            }
+
+            bos.write(fileData.getFileData());
+            return bos.toByteArray();
+        } catch (IOException ex) {
+            throw new InvalidDatasetException("Error concatenating partial address book fileData entries", ex);
+        }
     }
 
     /**

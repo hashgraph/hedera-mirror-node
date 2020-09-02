@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.parser.record.entity.notify;
 
 /*-
  * ‌
@@ -20,8 +20,17 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.EntityId;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-public interface EntityRepositoryCustom {
-    void insertEntityId(EntityId entityId);
+import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
+
+@Data
+@ConditionOnEntityRecordParser
+@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
+public class NotifyProperties {
+
+    private boolean enabled = true;
+
+    private int maxJsonPayloadSize = 8000;
 }

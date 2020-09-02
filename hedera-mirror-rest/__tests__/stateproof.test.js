@@ -137,8 +137,14 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
   const nodeAccountId4 = EntityId.fromString('0.0.4');
   const nodeAccountId5 = EntityId.fromString('0.0.5');
   const nodeAccountIds = [nodeAccountId3, nodeAccountId4, nodeAccountId5];
-  const validNodeAccountIds = _.join(_.map(nodeAccountIds, (id) => id.getEncodedId()), ',');
-  const validMemos = _.join(_.map(nodeAccountIds, (id) => id.toString()), ',');
+  const validNodeAccountIds = _.join(
+    _.map(nodeAccountIds, (id) => id.getEncodedId()),
+    ','
+  );
+  const validMemos = _.join(
+    _.map(nodeAccountIds, (id) => id.toString()),
+    ','
+  );
   const transactionConsensusNs = '1234567899000000021';
 
   let queryResultWithNodeAccountIds;
@@ -189,8 +195,9 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
 
     if (expectPass) {
       const result = await stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);
-      expect(result.addressBooks).toEqual(_.map(queryResult.rows,
-        (row) => Buffer.from(row.file_data).toString('base64')));
+      expect(result.addressBooks).toEqual(
+        _.map(queryResult.rows, (row) => Buffer.from(row.file_data).toString('base64'))
+      );
 
       let expectedNodeAccountIds;
       const lastRow = _.last(queryResult.rows);
@@ -307,7 +314,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
         const stream = new Readable({
           objectMode: true,
         });
-        stream._read = function(size) {
+        stream._read = function (size) {
           this.push(params.Key);
           this.push(null);
         };
@@ -325,7 +332,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
       createReadStream: () => {
         let handler;
         const stream = new Readable();
-        stream._read = function(size) {
+        stream._read = function (size) {
           if (!handler) {
             handler = setTimeout(() => {
               this.emit('error', new Error('oops'));
@@ -351,7 +358,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
       createReadStream: () => {
         let handler;
         const stream = new Readable();
-        stream._read = function(size) {
+        stream._read = function (size) {
           if (params.Key.search('0.0.3') !== -1) {
             if (!handler) {
               handler = setTimeout(() => {

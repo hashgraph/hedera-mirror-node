@@ -56,7 +56,6 @@ public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordParserProperties parserProperties;
-    private final MeterRegistry meterRegistry;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -76,7 +75,6 @@ public class RecordFileParser implements FileParser {
                             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
-        this.meterRegistry = meterRegistry;
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;

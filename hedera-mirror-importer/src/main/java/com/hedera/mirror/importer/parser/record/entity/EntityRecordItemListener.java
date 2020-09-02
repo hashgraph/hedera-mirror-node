@@ -214,7 +214,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 entityListener.onNonFeeTransfer(
-                        new NonFeeTransfer(consensusTimestamp, aa.getAmount(), EntityId.of(aa.getAccountID())));
+                        new NonFeeTransfer(aa.getAmount(), new NonFeeTransfer.Id(consensusTimestamp, EntityId
+                                .of(aa.getAccountID()))));
             }
         }
     }
@@ -266,15 +267,16 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeEnum) {
         EntityId entityId = EntityId.of(fileID);
         FileData fileData = new FileData(consensusTimestamp, contents, entityId, transactionTypeEnum);
+        boolean addressBook = addressBookService.isAddressBook(entityId);
 
-        if (addressBookService.isAddressBook(entityId)) {
-            // if address book allow immediate persistence instead of waiting for batch
+        // We always store file data for address books since they're used by the address book service
+        if (addressBook || entityProperties.getPersist().isFiles() ||
+                (entityProperties.getPersist().isSystemFiles() && entityId.getEntityNum() < 1000)) {
+            entityListener.onFileData(fileData);
+        }
+
+        if (addressBook) {
             addressBookService.update(fileData);
-        } else {
-            if (entityProperties.getPersist().isFiles() ||
-                    (entityProperties.getPersist().isSystemFiles() && entityId.getEntityNum() < 1000)) {
-                entityListener.onFileData(fileData);
-            }
         }
     }
 
@@ -322,33 +324,25 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertCryptoCreateTransferList(
             long consensusTimestamp, TransactionRecord txRecord, TransactionBody body) {
 
-        long initialBalance = 0;
-        long createdAccountNum = 0;
-
-        // no need to add missing initial balance to transfer list if this is realm and shard <> 0
-        boolean addInitialBalance = (txRecord.getReceipt().getAccountID().getShardNum() == 0) && (txRecord.getReceipt()
-                .getAccountID().getRealmNum() == 0);
-
-        if (addInitialBalance) {
-            initialBalance = body.getCryptoCreateAccount().getInitialBalance();
-            createdAccountNum = txRecord.getReceipt().getAccountID().getAccountNum();
-        }
+        long initialBalance = body.getCryptoCreateAccount().getInitialBalance();
+        EntityId createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
+        boolean addInitialBalance = true;
         TransferList transferList = txRecord.getTransferList();
+
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             entityListener.onEntityId(account);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
 
-            if (addInitialBalance && (initialBalance == aa.getAmount())
-                    && (account.getEntityNum() == createdAccountNum)) {
+            // Don't manually add an initial balance transfer if the transfer list contains it already
+            if (initialBalance == aa.getAmount() && createdAccount.equals(account)) {
                 addInitialBalance = false;
             }
         }
 
         if (addInitialBalance) {
             var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
-            var createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
             entityListener.onEntityId(payerAccount);
             entityListener.onEntityId(createdAccount);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));

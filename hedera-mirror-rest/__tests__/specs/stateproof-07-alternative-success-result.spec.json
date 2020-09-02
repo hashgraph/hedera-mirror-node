@@ -17,9 +17,7 @@
   "responseStatus": 200,
   "responseJson": {
     "record_file": "96f00839bbf8984ec0a5b077a62236e9",
-    "address_books": [
-      "8b9f6e7d1916344785d6d718ea3e884f"
-    ],
+    "address_books": ["8b9f6e7d1916344785d6d718ea3e884f"],
     "signature_files": {
       "0.0.3": "4e4001551046b361908dcb60ea7c7030",
       "0.0.4": "8c8190946b950a79ddb60f86636ce8bf",

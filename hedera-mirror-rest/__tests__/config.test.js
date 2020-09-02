@@ -262,7 +262,7 @@ describe('Override stateproof config', () => {
         const config = loadConfigWithCustomStateproofConfig(customConfig);
         if (testSpec.enabled) {
           expect(config.stateproof.enabled).toBeTruthy();
-          expect(config.stateproof.streams).toEqual(getExpectedStreamsConfig(testSpec.override));;
+          expect(config.stateproof.streams).toEqual(getExpectedStreamsConfig(testSpec.override));
         } else {
           expect(config.stateproof.enabled).toBeFalsy();
         }

@@ -96,7 +96,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
         }
         assertThat(loader.loadAccountBalances(testFile, filter)).isTrue();
 
-        Map<AccountBalance.AccountBalanceId, AccountBalance> accountBalanceMap = new HashMap<>();
+        Map<AccountBalance.Id, AccountBalance> accountBalanceMap = new HashMap<>();
         accountBalanceRepository.findAll().forEach(accountBalance -> accountBalanceMap.put(accountBalance.getId(), accountBalance));
 
         if (persisted) {

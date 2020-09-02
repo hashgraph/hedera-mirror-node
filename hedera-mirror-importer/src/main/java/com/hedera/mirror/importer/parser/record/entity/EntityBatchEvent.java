@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -20,20 +20,18 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.context.ApplicationEvent;
 
-import org.junit.jupiter.api.Test;
+public class EntityBatchEvent extends ApplicationEvent {
+    private static final long serialVersionUID = -5121039174183266247L;
 
-import com.hedera.mirror.importer.domain.EntityType;
-
-public class EntityTypeRepositoryTest extends AbstractRepositoryTest {
-
-    @Test
-    void findByName() {
-        assertThat(entityTypeRepository.findByName("account"))
-                .isPresent()
-                .get()
-                .extracting(EntityType::getId)
-                .isNotEqualTo(0L);
+    /**
+     * Create a new {@code ApplicationEvent}.
+     *
+     * @param source the object on which the event initially occurred or with which the event is associated (never
+     *               {@code null})
+     */
+    public EntityBatchEvent(Object source) {
+        super(source);
     }
 }
