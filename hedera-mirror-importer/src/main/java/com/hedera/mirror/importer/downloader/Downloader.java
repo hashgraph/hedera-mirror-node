@@ -460,12 +460,17 @@ public abstract class Downloader {
         DefaultTransactionDefinition def = new DefaultTransactionDefinition();
         TransactionStatus transactionStatus = platformTransactionManager.getTransaction(def);
 
-        if (lastValidDownloadedFileHashKey != null) {
-            applicationStatusRepository.updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
-        }
-        applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
+        try {
+            if (lastValidDownloadedFileHashKey != null) {
+                applicationStatusRepository.updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
+            }
+            applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
 
-        saveStreamFileRecord(streamFile);
+            saveStreamFileRecord(streamFile);
+        } catch (Exception ex) {
+            platformTransactionManager.rollback(transactionStatus);
+            throw ex;
+        }
 
         platformTransactionManager.commit(transactionStatus);
     }
