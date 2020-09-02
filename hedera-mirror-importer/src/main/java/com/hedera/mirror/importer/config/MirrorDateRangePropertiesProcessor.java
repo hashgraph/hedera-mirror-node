@@ -133,13 +133,13 @@ public class MirrorDateRangePropertiesProcessor {
         if (startDate != null) {
             if (startDate.isAfter(lastFileInstant)) {
                 filterStartDate = startDate;
-            } else if (!endDate.equals(Instant.MAX)) {
+            } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
                 filterStartDate = lastFileInstant;
             }
         } else {
             if (lastFileInstant.equals(Instant.EPOCH)) {
                 filterStartDate = MirrorProperties.getStartUpInstant();;
-            } else if (!endDate.equals(Instant.MAX)) {
+            } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
                 filterStartDate = lastFileInstant;
             }
         }
