@@ -1,8 +1,6 @@
 -------------------
--- Init mirror node db, defining table schema and creating hyper tables
+-- Init mirror node db, defining table schema
 -- Supports mirror nodes migrated from v1.0
--- Use default of 604800000000000 ns (7 days) as chunk time interval
--- add TIMESTAMPTZ data type column to tables where no monotonically increasing id exists
 -------------------
 
 -- domains
@@ -11,10 +9,7 @@ create domain entity_num as integer;
 create domain entity_realm_num as smallint;
 create domain entity_type_id as character(1);
 create domain entity_id as bigint;
-create domain nanos_timestamp as bigint; -- drop this domain as it's needed as a bigint for hyper table partitioning
-
--- sequences
---create sequence if not exists s_record_files_seq;
+create domain nanos_timestamp as bigint; -- dropped using this domain in some tables as it's needed as a bigint for hyper table partitioning
 
 -- account_balance
 create table  if not exists account_balance (
@@ -65,8 +60,6 @@ create table if not exists address_book_entry
     node_account_id         entity_id       null,
     node_cert_hash          bytea           null
 );
--- foreign keys to hypertables are not supported
--- select create_hypertable('address_book_entry', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
 
 -- contract_result
 create table if not exists contract_result
@@ -157,7 +150,7 @@ create table if not exists t_entities (
 
 -- t_entity_types
 create table if not exists t_entity_types (
-    id      integer     NOT NULL,
+    id      integer     not null,
     name    character   varying(8)
 );
 insert into t_entity_types (id, name) values (1, 'account');
@@ -167,7 +160,7 @@ insert into t_entity_types (id, name) values (4, 'topic');
 
 -- t_transaction_results
 create table if not exists t_transaction_results (
-    proto_id    integer     NOT NULL,
+    proto_id    integer     not null,
     result      character   varying(100)
 );
 insert into t_transaction_results (result, proto_id) values ('OK', 0);
@@ -292,7 +285,7 @@ insert into t_transaction_results (proto_id, result) values (164,'INVALID_CHUNK_
 
 -- t_transaction_types
 create table if not exists t_transaction_types (
-    proto_id    integer     NOT NULL,
+    proto_id    integer     not null,
     name        character   varying(30)
 );
 insert into t_transaction_types (proto_id, name) values (7,'CONTRACTCALL');

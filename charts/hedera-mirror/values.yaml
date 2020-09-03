@@ -38,9 +38,7 @@ importer:
             password: mirror_node_pass
             username: mirror_node
           initialAddressBook: "/usr/etc/hedera-mirror-importer/addressbook.bin"
-          startDate: 2020-09-01T20:00:00.000000000Z
           network: "OTHER"
-          verifyHashAfter: "2020-09-01T21:34:55Z"
     spring:
       flyway:
         baselineVersion: "1.99.0"
@@ -206,30 +204,34 @@ timescaledb:
     enabled: false
   patroni:
     postgresql:
+      # optimized for testing, should be customized based on deployment or better yet network policies used
       pg_hba:
         - local     all             postgres                              peer
-        - local     all             all                                   md5
-        - host      mirror_node     mirror_api                            password
-        - host      mirror_node     mirror_grpc                           password
-        - host      all             all                127.0.0.1/32       password
-        - hostssl   all             all                ::1/128            md5
-        - hostssl   replication     standby            all                md5
-        - hostssl   all             all                all                md5
+        - host      all             all                all                trust
+        - hostssl   all             all                all                trust
+        - hostnossl all             all                all                trust
+        - host      all             all                127.0.0.1/32       trust
+        - hostssl   all             all                127.0.0.1/32       trust
+        - hostnossl all             all                127.0.0.1/32       trust
+        - host      mirror_node     mirror_node        127.0.0.1/32       trust
+        - hostssl   mirror_node     mirror_node        127.0.0.1/32       trust
+        - hostnossl mirror_node     mirror_node        127.0.0.1/32       trust
+  #  potential to use this to create initial users
   #    bootstrap:
   #      restore_or_initdb:
   #        command: >
   #          /etc/timescaledb/scripts/restore_or_initdb.sh
   #          --encoding=UTF8
   #          --locale=C.UTF-8
-  #      post_init: /etc/timescaledb/scripts/post_init.sh
   persistentVolumes:
     data:
       size: 500Gi
     wal:
-      size: 20Gi
+      size: 40Gi
   # number of pods, disables ha when set to 1
   #  replicaCount: 1
   secretNames:
+    # created by kustomization script from timescaledb-single chart
     certificate: mirror-timescaledb-certificate
     credentials: mirror-timescaledb-credentials
     pgbackrest: mirror-timescaledb-pgbackrest

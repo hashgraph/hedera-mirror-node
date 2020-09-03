@@ -1,8 +1,5 @@
 -------------------
--- Init mirror node db, defining table schema and creating hyper tables
--- Supports mirror nodes migrated from v1.0
--- Use default of 604800000000000 ns (7 days) as chunk time interval
--- add TIMESTAMPTZ data type column to tables where no monotonically increasing id exists
+-- Add constraints and indexes to tables
 -------------------
 
 -- account_balance
@@ -14,9 +11,6 @@ create index if not exists balances__account_then_timestamp
 -- account_balance_sets
 create index if not exists balance_sets__completed
     on account_balance_sets (is_complete, consensus_timestamp desc);
-
--- address_book
-
 
 -- address_book_entry
 create index if not exists address_book_entry__timestamp
@@ -37,9 +31,6 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
 create index if not exists file_data__consensus
     on file_data (consensus_timestamp desc);
 
--- flyway_schema_history
-
-
 -- live_hash
 create index if not exists livehashes__consensus
     on live_hash (consensus_timestamp desc);
@@ -54,9 +45,6 @@ create unique index if not exists record_file_hash ON record_file (file_hash, id
 create index if not exists record_file__consensus_end on record_file (consensus_end);
 create index if not exists record_file__prev_hash on record_file (prev_hash);
 
--- application_status
-
-
 -- t_entities
 -- Enforce lowercase hex representation by constraint rather than making indexes on lower(ed25519).
 alter table t_entities
@@ -65,15 +53,6 @@ alter table t_entities
 create index if not exists entities__ed25519_public_key_hex_natural_id
     on t_entities (ed25519_public_key_hex, fk_entity_type_id, entity_shard, entity_realm, entity_num);
 create unique index if not exists entities_unq on t_entities (entity_shard, entity_realm, entity_num, id); -- have to add id due to partitioning
-
--- entity_types
-
-
--- transaction_results
-
-
--- transaction_types
-
 
 -- topic_message
 create index if not exists topic_message__realm_num_timestamp
@@ -86,10 +65,3 @@ create index transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index transaction__payer_account_id
     on transaction (payer_account_id);
-
--- is it necessary to explicitly grant the following?
---grant usage on SCHEMA :schema_name to :db_user;
---grant connect on database :db_name to :db_user;
---grant all privileges on database :db_name to db_user;
---grant all privileges on all tables in :schema_name public to db_user;
---grant all ON record_file to db_user;
