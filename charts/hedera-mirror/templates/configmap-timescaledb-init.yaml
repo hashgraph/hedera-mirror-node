@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    app: mirror-timescaledb
+    cluster-name: mirror-timescaledb
+  name: timescaledb-init-callback
+data:
+  on_start: |
+    #!/bin/bash
+
+    # This script should only run on the master instance, Patroni
+    # passes on the role in the second parameter
+    [ "$2" != "master" ] && exit 0
+
+    psql --set ON_ERROR_STOP=1 \
+          --set hostname=$(hostname) \
+          --set event=$1 <<__SQL__
+      -- After a promote it may take a short while before our transaction actually
+      -- allows us to write therefore we sleep a short while if we're still in recovery
+      SELECT pg_sleep(3)
+      WHERE  pg_is_in_recovery();
+
+      CREATE TABLE IF NOT EXISTS :"events_table"(
+        happened timestamptz,
+        event text,
+        pod text
+      );
+
+      INSERT INTO :"events_table" VALUES (now(), :'pre-mirror-init', :'hostname');
+
+      {{- $dbname := .Values.importer.config.hedera.mirror.importer.db.name }}
+      {{- $password := .Values.importer.config.hedera.mirror.importer.db.password }}
+      {{- $username := .Values.importer.config.hedera.mirror.importer.db.username }}
+      {{- $apiPassword := .Values.global.rest.password }}
+      {{- $apiUsername := .Values.global.rest.username }}
+      {{- $grpcPassword := .Values.grpc.config.hedera.mirror.grpc.db.password }}
+      {{- $grpcUsername := .Values.grpc.config.hedera.mirror.grpc.db.username }}
+      create user {{ $username }} with createrole password '{{ $password }}';
+      create database {{ $dbname }} with owner {{ $username }};
+      \c {{ $dbname }};
+      create role viewer;
+      grant connect on database {{ $dbname }} to viewer;
+      grant select on all tables in schema public to viewer;
+      alter default privileges for role {{ $username }} in schema public grant select on tables to viewer;
+      create user {{ $apiUsername }} password '{{ $apiPassword }}' in role viewer;
+      alter default privileges for role {{ $apiUsername }} in schema public grant select on tables to viewer;
+      create user {{ $grpcUsername }} password '{{ $grpcPassword }}' in role viewer;
+      alter default privileges for role {{ $grpcUsername }} in schema public grant select on tables to viewer;
+      create extension pg_stat_statements;
+
+      INSERT INTO :"events_table" VALUES (now(), :'post-mirror-init', :'hostname');
+    __SQL__

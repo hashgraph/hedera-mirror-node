@@ -33,4 +33,4 @@ dependencies:
     condition: timescaledb-single.enabled
     name: timescaledb-single
     repository: https://charts.timescale.com
-    version: ^0.7.0
+    version: ^0.7.1

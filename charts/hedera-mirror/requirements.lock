@@ -19,6 +19,6 @@ dependencies:
   version: 0.10.0-rc1
 - name: timescaledb-single
   repository: https://charts.timescale.com
-  version: 0.7.0
+  version: 0.7.1
 digest: sha256:3b1ca22526b0dfe896133974ae59678dd74873069b5a9eb20fd58d646aed4f09
 generated: "2020-11-17T17:29:17.431819-06:00"
