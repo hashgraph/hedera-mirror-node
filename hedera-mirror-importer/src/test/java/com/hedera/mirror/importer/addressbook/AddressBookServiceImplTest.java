@@ -407,8 +407,8 @@ class AddressBookServiceImplTest {
                     .setNodeId(nodeId)
                     .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
                     .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId).build())
-                    .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
-                    .setRSAPubKey("rsa+public/key");
+                    .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash" + nodeId))
+                    .setRSAPubKey("rsa+public/key" + nodeId);
             nodeId++;
 
             switch (fieldNumber) {
