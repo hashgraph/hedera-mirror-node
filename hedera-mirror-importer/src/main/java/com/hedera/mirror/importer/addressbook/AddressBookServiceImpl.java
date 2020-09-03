@@ -225,10 +225,6 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) {
-        if (nodeAddressBook == null) {
-            return Collections.emptyList();
-        }
-
         ImmutableList.Builder<AddressBookEntry> listBuilder = ImmutableList.builder();
 
         for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
