@@ -22,6 +22,7 @@
 'uses strict';
 
 // external libraries
+const _ = require('lodash');
 const yargs = require('yargs'); //  simplify user input
 const chalk = require('chalk'); //  pretty up request info
 const boxen = require('boxen'); //  emphasize request info
@@ -42,36 +43,59 @@ const options = yargs
     type: 'string',
     demandOption: true,
   })
-  .option('s', {alias: 'sample', describe: 'Use sample data', type: 'boolean', demandOption: false})
-  .option('e', {alias: 'env', describe: 'Your environment e.g. test / main', type: 'string', demandOption: true}).argv;
+  .option('f', {
+    alias: 'file',
+    describe: 'Absolute file path containing State Proof REST API response json',
+    type: 'string',
+    demandOption: false,
+  })
+  .option('h', {
+    alias: 'host',
+    describe: 'REST API host. Default is testnet',
+    type: 'string',
+    demandOption: false,
+  })
+  .option('e', {
+    alias: 'env',
+    describe: 'Your environment e.g. previewnet/testnet/mainnet',
+    type: 'string',
+    demandOption: false,
+  }).argv;
 
 const startUpScreen = () => {
-  const greeting = chalk.bold(`Hedera Transaction State Proof CLI!`);
+  const greeting = chalk.bold(`Hedera Transaction State Proof Checker CLI!`);
 
   const msgBox = boxen(greeting, boxenOptions);
   console.log(msgBox);
 
   let host;
-  switch (options.env) {
-    case 'testnet':
-      host = 'https://testnet.mirrornode.hedera.com';
-      break;
-    case 'mainnet':
-      host = 'https://mainnet.mirrornode.hedera.com';
-      break;
-    default:
-      host = 'localhost:5551';
+  // if host parameter was not passed then set host according to env.
+  if (_.isUndefined(options.host)) {
+    switch (options.env) {
+      case 'previewnet':
+        host = 'https://previewnet.mirrornode.hedera.com';
+        break;
+      case 'mainnet':
+        host = 'https://mainnet.mirrornode.hedera.com';
+        break;
+      case 'testnet':
+        host = 'https://testnet.mirrornode.hedera.com';
+        break;
+      default:
+        host = 'http://localhost:5551';
+    }
+  } else {
+    host = options.host;
   }
 
   // to:do sanitize transaction and env values
-  const sample = options.sample === true;
   const {transactionId} = options;
   const url = `${host}/api/v1/transactions/${transactionId}/stateproof`;
-  console.log(
-    `Initializing state proof for transactionId: ${transactionId} in Env: ${host} w url: ${url}, sample: ${sample}`
-  );
+  const storedFile = options.file;
+  const source = _.isUndefined(storedFile) ? url : storedFile;
+  console.log(`Initializing state proof for transactionId: ${transactionId} from source: ${source}`);
 
-  return {transactionId, url, sample};
+  return {transactionId, url, storedFile};
 };
 module.exports = {
   startUpScreen,

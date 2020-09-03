@@ -32,7 +32,7 @@ const replaceSpecialCharsWithUnderScores = (stringToFormat) => {
   return stringToFormat.replace(/[.@\-]/g, '_');
 };
 
-const makeStateProofDir = (transactionId) => {
+const makeStateProofDir = (transactionId, stateProofJson) => {
   const newDirPath = replaceSpecialCharsWithUnderScores(transactionId);
   fs.mkdir(newDirPath, {recursive: true}, (err, path) => {
     if (err) {
@@ -40,10 +40,10 @@ const makeStateProofDir = (transactionId) => {
       throw err;
     }
 
-    console.log(`Supporting files for the state proof stored in the directory ${newDirPath}`);
+    console.log(`Supporting files and api json response for the state proof stored in the directory ${newDirPath}`);
   });
 
-  fs.writeFile(`${newDirPath}/notes.txt`, `Supporting files for the state proof of '${transactionId}'`, (err) => {
+  fs.writeFile(`${newDirPath}/apiResponse.json`, JSON.stringify(stateProofJson), (err) => {
     if (err) throw err;
   });
 

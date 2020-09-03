@@ -150,7 +150,10 @@ class RecordFile {
       const transactionIdFromBody = deserializedTransactionRecord.getTransactionid();
       const accountId = transactionIdFromBody.getAccountid();
       const timestamp = transactionIdFromBody.getTransactionvalidstart();
-      const parsedTransactionIdString = `${accountId.getShardnum()}_${accountId.getRealmnum()}_${accountId.getAccountnum()}_${timestamp.getSeconds()}_${timestamp.getNanos()}`;
+
+      // pad nanos if less than 9 digits
+      const nanos = `000000000${timestamp.getNanos()}`.slice(-9);
+      const parsedTransactionIdString = `${accountId.getShardnum()}_${accountId.getRealmnum()}_${accountId.getAccountnum()}_${timestamp.getSeconds()}_${nanos}`;
       this.transactionIdMap[parsedTransactionIdString] = transactionIdFromBody;
     }
   }
