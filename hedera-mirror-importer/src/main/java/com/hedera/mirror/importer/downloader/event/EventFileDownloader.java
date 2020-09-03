@@ -80,7 +80,7 @@ public class EventFileDownloader extends Downloader {
         }
 
         if (!eventFile.getFileHash().contentEquals(verifiedHash)) {
-            throw new HashMismatchException(fileName, expectedPrevFileHash, eventFile.getPreviousHash());
+            throw new HashMismatchException(fileName, verifiedHash, eventFile.getFileHash());
         }
 
         return eventFile;

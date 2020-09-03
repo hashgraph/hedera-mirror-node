@@ -413,10 +413,10 @@ public abstract class Downloader {
                     break;
                 } catch (HashMismatchException e) {
                     log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
-                            signature.getNodeAccountId(), signature.getFile().getName(), e);
+                            signature.getNodeAccountIdString(), signature.getFile().getName(), e);
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
-                            signature.getNodeAccountId(), signature.getFile().getName(), e);
+                            signature.getNodeAccountIdString(), signature.getFile().getName(), e);
                 }
             }
 

@@ -20,8 +20,11 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import javax.persistence.Convert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 
 @Data
 @NoArgsConstructor
@@ -38,6 +41,7 @@ public class EventFile implements StreamFile {
 
     private int fileVersion;
 
+    @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
 
     private Long count;
