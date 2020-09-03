@@ -74,6 +74,15 @@ public class V2_0_3__Address_Book extends BaseJavaMigration {
         AtomicLong fileDataEntries = new AtomicLong(0);
         byte[] addressBookBytes;
 
+        // if address book table is not empty skip migration
+        try {
+            // addressBookService throws when No valid address book found in DB
+            addressBookService.getCurrent();
+            log.warn("Address books exist in address_book table. Skipping migration");
+            return;
+        } catch (IllegalStateException ex) {
+        }
+
         // retrieve bootstrap address book from filesystem or classpath
         try {
             Path initialAddressBook = mirrorProperties.getInitialAddressBook();

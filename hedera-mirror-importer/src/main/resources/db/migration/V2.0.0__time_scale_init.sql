@@ -5,9 +5,6 @@
 -- add TIMESTAMPTZ data type column to tables where no monotonically increasing id exists
 -------------------
 
--- Extend the database with TimescaleDB
-create extension if not exists timescaledb cascade;
-
 -- domains
 create domain hbar_tinybars as bigint;
 create domain entity_num as integer;
@@ -130,12 +127,22 @@ create table if not exists t_application_status (
     status_value    character varying(100)
 );
 
+insert into t_application_status (status_name, status_code) values ('Last valid downloaded record file name', 'LAST_VALID_DOWNLOADED_RECORD_FILE');
+insert into t_application_status (status_name, status_code) values ('Last valid downloaded record file hash', 'LAST_VALID_DOWNLOADED_RECORD_FILE_HASH');
+insert into t_application_status (status_name, status_code) values ('Last valid downloaded balance file name', 'LAST_VALID_DOWNLOADED_BALANCE_FILE');
+insert into t_application_status (status_name, status_code) values ('Last valid downloaded event file name', 'LAST_VALID_DOWNLOADED_EVENT_FILE');
+insert into t_application_status (status_name, status_code) values ('Last valid downloaded event file hash', 'LAST_VALID_DOWNLOADED_EVENT_FILE_HASH');
+insert into t_application_status (status_name, status_code) values ('Event hash mismatch bypass until after', 'EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER');
+insert into t_application_status (status_name, status_code) values ('Record hash mismatch bypass until after', 'RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER');
+insert into t_application_status (status_name, status_code) values ('Last processed record hash', 'LAST_PROCESSED_RECORD_HASH');
+insert into t_application_status (status_name, status_code) values ('Last processed event hash', 'LAST_PROCESSED_EVENT_HASH');
+
 -- t_entities
 create table if not exists t_entities (
-    entity_num              bigint                  NOT NULL,
-    entity_realm            bigint                  NOT NULL,
-    entity_shard            bigint                  NOT NULL,
-    fk_entity_type_id       integer                 NOT NULL,
+    entity_num              bigint                  not null,
+    entity_realm            bigint                  not null,
+    entity_shard            bigint                  not null,
+    fk_entity_type_id       integer                 not null,
     auto_renew_period       bigint,
     key                     bytea,
     deleted                 boolean DEFAULT false,
@@ -144,7 +151,7 @@ create table if not exists t_entities (
     submit_key              bytea,
     memo                    text,
     auto_renew_account_id   bigint,
-    id                      bigint               NOT NULL,
+    id                      bigint                  not null,
     proxy_account_id        entity_id
 );
 
@@ -313,12 +320,17 @@ insert into t_transaction_types (proto_id, name) values (27,'CONSENSUSSUBMITMESS
 -- topic_message
 create table if not exists topic_message
 (
-    consensus_timestamp bigint              primary key not null,
-    realm_num           entity_realm_num    not null,
-    topic_num           entity_num          not null,
-    message             bytea               not null,
-    running_hash        bytea               not null,
-    sequence_number     bigint              not null
+    consensus_timestamp     bigint              primary key not null,
+    realm_num               entity_realm_num    not null,
+    topic_num               entity_num          not null,
+    message                 bytea               not null,
+    running_hash            bytea               not null,
+    sequence_number         bigint              not null,
+    running_hash_version    smallint            not null,
+    chunk_num               integer,
+    chunk_total             integer,
+    payer_account_id        entity_id,
+    valid_start_timestamp   nanos_timestamp
 );
 
 -- transaction

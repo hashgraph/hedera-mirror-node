@@ -79,13 +79,19 @@ spec:
         {{- toYaml .Values.tolerations | nindent 8 }}
       volumes:
         - name: config
-          secret:
+          projected:
             defaultMode: 420
-            secretName: {{ include "hedera-mirror-importer.fullname" . }}
-{{- if not .Values.persistence.enabled }}
-        - name: data
-          emptyDir: {}
-{{- else }}
+            sources:
+              - secret:
+                  name: {{ include "hedera-mirror-importer.fullname" . }}
+              {{- if .Values.global.extaddressbook.enabled }}
+              - secret:
+                  name: mirror-importer-addressbook
+              {{- end }}
+  {{- if not .Values.persistence.enabled }}
+  - name: data
+    emptyDir: {}
+    {{- else }}
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -98,4 +104,4 @@ spec:
         {{- if .Values.persistence.storageClass }}
         storageClassName: "{{ .Values.persistence.storageClass }}"
         {{- end }}
-{{- end }}
+  {{- end }}

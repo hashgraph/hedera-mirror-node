@@ -15,6 +15,8 @@ global:
     username: mirror_api
     password: mirror_api_pass
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
+  extaddressbook:
+    enabled: true
 
 grpc:
   config:
@@ -35,10 +37,13 @@ importer:
             name: mirror_node
             password: mirror_node_pass
             username: mirror_node
+          initialAddressBook: "/usr/etc/hedera-mirror-importer/addressbook.bin"
+          startDate: 2020-09-01T20:00:00.000000000Z
+          network: "OTHER"
+          verifyHashAfter: "2020-09-01T21:34:55Z"
     spring:
-      debug: true
       flyway:
-        baselineVersion: 1.99.0
+        baselineVersion: "1.99.0"
   enabled: true
   redis:
     sentinel:
@@ -56,7 +61,7 @@ networkPolicy:
   enabled: false
 
 postgresql:
-  enabled: true
+  enabled: false
   metrics:
     enabled: false
     resources:
@@ -199,7 +204,17 @@ timescaledb:
   # relies only on ClusterIP service creation
   loadBalancer:
     enabled: false
-  #  patroni:
+  patroni:
+    postgresql:
+      pg_hba:
+        - local     all             postgres                              peer
+        - local     all             all                                   md5
+        - host      mirror_node     mirror_api                            password
+        - host      mirror_node     mirror_grpc                           password
+        - host      all             all                127.0.0.1/32       password
+        - hostssl   all             all                ::1/128            md5
+        - hostssl   replication     standby            all                md5
+        - hostssl   all             all                all                md5
   #    bootstrap:
   #      restore_or_initdb:
   #        command: >
