@@ -161,8 +161,8 @@ public class AccountBalancesFileLoader {
             }
 
             updateAccountBalanceSet(updateSetStatement, complete, consensusTimestamp);
-            updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, validCount, startTime.getEpochSecond(),
-                    Instant.now().getEpochSecond(), fileName);
+            updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, validCount,
+                    startTime.getEpochSecond(), Instant.now().getEpochSecond(), fileName);
 
             if (complete) {
                 log.info("Successfully processed account balances file {} with {} out of {} records inserted in {}",
