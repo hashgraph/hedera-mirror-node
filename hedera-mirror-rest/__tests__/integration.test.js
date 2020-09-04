@@ -48,6 +48,7 @@
 const path = require('path');
 const request = require('supertest');
 const fs = require('fs');
+const _ = require('lodash');
 const S3 = require('aws-sdk/clients/s3');
 const crypto = require('crypto');
 const EntityId = require('../entityId');
@@ -360,10 +361,19 @@ describe('DB integration test - spec based', () => {
     }
   };
 
+  const overrideConfig = (override) => {
+    if (!override) {
+      return;
+    }
+
+    _.merge(config, override);
+  };
+
   const specSetupSteps = async (spec) => {
     await integrationDbOps.cleanUp();
     await integrationDomainOps.setUp(spec, sqlConnection);
     await loadSqlScripts(spec.sqlscripts);
+    overrideConfig(spec.config);
   };
 
   const md5 = (data) => crypto.createHash('md5').update(data).digest('hex');
