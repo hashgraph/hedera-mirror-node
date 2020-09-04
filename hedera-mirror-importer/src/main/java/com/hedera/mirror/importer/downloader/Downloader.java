@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.google.common.base.Stopwatch;
@@ -51,8 +52,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.event.EventListener;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -86,7 +86,7 @@ public abstract class Downloader {
     protected final DownloaderProperties downloaderProperties;
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties commonDownloaderProperties;
-    private final PlatformTransactionManager platformTransactionManager;
+    private final TransactionTemplate transactionTemplate;
 
     protected final ApplicationStatusCode lastValidDownloadedFileKey;
     protected final ApplicationStatusCode lastValidDownloadedFileHashKey;
@@ -107,7 +107,7 @@ public abstract class Downloader {
         this.applicationStatusRepository = applicationStatusRepository;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
-        this.platformTransactionManager = platformTransactionManager;
+        this.transactionTemplate = new TransactionTemplate(platformTransactionManager);
         this.meterRegistry = meterRegistry;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
@@ -394,7 +394,7 @@ public abstract class Downloader {
                         continue;
                     }
 
-                    StreamFile streamFile = readAndVerifyDataFile(signedDataFile, signature.getHashAsHex());
+                    StreamFile streamFile = readAndVerifyStreamFile(signedDataFile, signature.getHashAsHex());
                     streamFile.setNodeAccountId(signature.getNodeAccountId());
 
                     if (Utility.isStreamFileAfterInstant(sigFilename, endDate)) {
@@ -451,31 +451,48 @@ public abstract class Downloader {
         return null;
     }
 
+    private StreamFile readAndVerifyStreamFile(File file, String verifiedHash) {
+        String fileName = file.getName();
+        StreamFile streamFile = readStreamFile(file);
+
+        if (lastValidDownloadedFileHashKey != null) {
+            String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
+            Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
+            if (!verifyHashChain(streamFile.getPreviousHash(), expectedPrevFileHash, verifyHashAfter, fileName)) {
+                throw new HashMismatchException(fileName, expectedPrevFileHash, streamFile.getPreviousHash());
+            }
+        }
+
+        if (!streamFile.getFileHash().contentEquals(verifiedHash)) {
+            throw new HashMismatchException(fileName, verifiedHash, streamFile.getFileHash());
+        }
+
+        return streamFile;
+    }
+
     /**
      * Updates last valid downloaded file and last valid downloaded file hash key in database if applicable. Also saves
      * the stream file to its corresponding database table.
      * @param streamFile the verified stream file
      */
     private void updateApplicationStatus(StreamFile streamFile) {
-        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
-        TransactionStatus transactionStatus = platformTransactionManager.getTransaction(def);
+        transactionTemplate.executeWithoutResult(status -> {
+            try {
+                if (lastValidDownloadedFileHashKey != null) {
+                    applicationStatusRepository
+                            .updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
+                }
+                applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
 
-        try {
-            if (lastValidDownloadedFileHashKey != null) {
-                applicationStatusRepository.updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
+                saveStreamFileRecord(streamFile);
+            } catch (Exception ex) {
+                log.error("Roll back the transaction due to error", ex);
+                status.setRollbackOnly();
             }
-            applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
-
-            saveStreamFileRecord(streamFile);
-        } catch (Exception ex) {
-            platformTransactionManager.rollback(transactionStatus);
-            throw ex;
-        }
-
-        platformTransactionManager.commit(transactionStatus);
+        });
     }
 
-    protected abstract StreamFile readAndVerifyDataFile(File file, String verifiedHash);
+    protected abstract StreamFile readStreamFile(File file);
 
     protected abstract void saveStreamFileRecord(StreamFile streamFile);
 

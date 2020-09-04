@@ -24,9 +24,13 @@ import lombok.NonNull;
 
 public interface StreamFile {
 
+    String getFileHash();
+
     String getName();
 
-    String getFileHash();
+    default String getPreviousHash() {
+        return null;
+    }
 
     void setNodeAccountId(@NonNull EntityId nodeAccountId);
 }

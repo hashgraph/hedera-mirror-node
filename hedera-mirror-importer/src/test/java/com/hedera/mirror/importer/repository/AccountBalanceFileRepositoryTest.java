@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.domain.AccountBalance;
+
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.TestUtils;
@@ -33,9 +35,17 @@ class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
     @Test
     void insert() {
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile("2019-08-30T18_15_00.016002001Z_Balances.csv", 1598810507023456789L, 10L, 40L, "", nodeAccountId, 0L);
+        AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder()
+                .consensusTimestamp(1598810507023456789L)
+                .count(0L)
+                .fileHash("fileHash")
+                .loadEnd(0L)
+                .loadStart(0L)
+                .name("2019-08-30T18_15_00.016002001Z_Balances.csv")
+                .nodeAccountId(nodeAccountId)
+                .build();
         accountBalanceFile = accountBalanceFileRepository.save(accountBalanceFile);
-        assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getName()).get())
+        assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()).get())
                 .isNotNull()
                 .isEqualTo(accountBalanceFile);
     }

@@ -22,10 +22,12 @@ package com.hedera.mirror.importer.parser.balance;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +72,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Resource
-    private BalanceFileReaderImplV2 balanceFileReader;
+    private BalanceFileReaderImpl balanceFileReader;
 
     private FileCopier fileCopier;
     private BalanceFile balanceFile;
@@ -87,10 +89,6 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
                 .filterFiles(balanceFile.getFilename())
                 .to(streamType.getPath(), streamType.getValid());
         testFile = fileCopier.getTo().resolve(balanceFile.getFilename()).toFile();
-
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile(balanceFile.getFilename(), balanceFile.getConsensusTimestamp(), 0L, 0L, "", nodeAccountId, 0L);
-        accountBalanceFileRepository.save(accountBalanceFile);
     }
 
     @ParameterizedTest(name = "load balance file with range [{0}, {1}], expect data persisted? {2}")
@@ -99,13 +97,17 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
             ",,true",
             "2019-08-30T18:15:00.016002002Z, 2019-08-30T18:15:00.016002008Z, false"
     })
-    void loadValidFile(Instant start, Instant end, boolean persisted) {
+    void loadValidFile(Instant start, Instant end, boolean persisted) throws SQLException {
+        insertAccountBalanceFileRecord();
         fileCopier.copy();
         DateRangeFilter filter = null;
         if (start != null || end != null) {
             filter = new DateRangeFilter(start, end);
         }
-        assertThat(loader.loadAccountBalances(testFile, filter)).isTrue();
+
+        Instant loadStart = Instant.now();
+
+        loader.loadAccountBalances(testFile, filter);
 
         Map<AccountBalance.Id, AccountBalance> accountBalanceMap = new HashMap<>();
         accountBalanceRepository.findAll().forEach(accountBalance -> accountBalanceMap.put(accountBalance.getId(), accountBalance));
@@ -129,13 +131,46 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
             assertThat(accountBalanceMap).isEmpty();
             assertThat(accountBalanceSetRepository.count()).isZero();
         }
+
+        AccountBalanceFile accountBalanceFile = accountBalanceFileRepository.findById(balanceFile.getConsensusTimestamp()).get();
+        assertAll(() -> assertThat(accountBalanceFile.getCount()).isEqualTo(balanceFile.getCount()),
+                () -> assertThat(accountBalanceFile.getLoadStart()).isGreaterThanOrEqualTo(loadStart.getEpochSecond()),
+                () -> assertThat(accountBalanceFile.getLoadEnd()).isGreaterThanOrEqualTo(accountBalanceFile.getLoadStart()));
     }
 
     @Test
     void loadEmptyFile() throws IOException {
         FileUtils.write(testFile, "", "utf-8");
-        assertThat(loader.loadAccountBalances(testFile, null)).isFalse();
+        assertThrows(Exception.class, () -> {
+            loader.loadAccountBalances(testFile, null);
+        });
         assertThat(accountBalanceRepository.count()).isZero();
         assertThat(accountBalanceSetRepository.count()).isZero();
+    }
+
+    @Test
+    void rollBackWhenMissingFileInAccountBalanceFileRepo() {
+        fileCopier.copy();
+
+        assertThrows(Exception.class, () -> {
+            loader.loadAccountBalances(testFile, null);
+        });
+        assertThat(accountBalanceFileRepository.count()).isZero();
+        assertThat(accountBalanceRepository.count()).isZero();
+        assertThat(accountBalanceSetRepository.count()).isZero();
+    }
+
+    private void insertAccountBalanceFileRecord() {
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder()
+                .consensusTimestamp(balanceFile.getConsensusTimestamp())
+                .count(0L)
+                .fileHash("fileHash")
+                .loadEnd(0L)
+                .loadStart(0L)
+                .name(balanceFile.getFilename())
+                .nodeAccountId(nodeAccountId)
+                .build();
+        accountBalanceFileRepository.save(accountBalanceFile);
     }
 }

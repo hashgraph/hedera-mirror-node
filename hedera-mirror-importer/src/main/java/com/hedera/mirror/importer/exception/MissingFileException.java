@@ -27,12 +27,4 @@ public class MissingFileException extends ImporterException {
     public MissingFileException(String message) {
         super(message);
     }
-
-    public MissingFileException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public MissingFileException(String message, Throwable throwable) {
-        super(message, throwable);
-    }
 }

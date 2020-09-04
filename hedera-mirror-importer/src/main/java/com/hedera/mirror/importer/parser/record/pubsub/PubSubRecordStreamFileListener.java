@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
+import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
@@ -41,20 +42,19 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     private final ApplicationStatusRepository applicationStatusRepository;
 
     @Override
-    public void onStart(StreamFileData streamFileData) throws ImporterException {
+    public RecordFile onStart(StreamFileData streamFileData) throws ImporterException {
         String fileName = FilenameUtils.getName(streamFileData.getFilename());
-        if (recordFileRepository.findByName(fileName).size() != 1) {
+        List<RecordFile> recordFileList= recordFileRepository.findByName(fileName);
+        if (recordFileList.size() != 1) {
             throw new MissingFileException("File not found in the database: " + fileName);
         }
+
+        return recordFileList.get(0);
     }
 
     @Override
     public void onEnd(RecordFile recordFile) throws ImporterException {
-        int count = recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
-        if (count != 1) {
-            throw new MissingFileException("File " + recordFile.getName() + " not in the database, thus not updated");
-        }
-
+        recordFileRepository.save(recordFile);
         applicationStatusRepository.updateStatusValue(
                 ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
     }

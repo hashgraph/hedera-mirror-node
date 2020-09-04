@@ -77,12 +77,15 @@ public class BalanceFileParser extends FileWatcher {
     }
 
     private void parseBalanceFile(File balanceFile, DateRangeFilter dateRangeFilter) {
-        if (accountBalancesFileLoader.loadAccountBalances(balanceFile, dateRangeFilter)) {
+        try {
+            accountBalancesFileLoader.loadAccountBalances(balanceFile, dateRangeFilter);
             if (parserProperties.isKeepFiles()) {
                 Utility.archiveFile(balanceFile, parserProperties.getParsedPath());
             } else {
                 FileUtils.deleteQuietly(balanceFile);
             }
+        } catch (Exception ex) {
+            log.error("Failed to load account balance file " + balanceFile.getName(), ex);
         }
     }
 }

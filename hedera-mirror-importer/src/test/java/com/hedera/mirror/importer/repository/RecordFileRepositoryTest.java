@@ -45,15 +45,4 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
                 .isNotNull()
                 .isEqualTo(recordFile);
     }
-
-    @Test
-    void updateLoadStats() {
-        RecordFile saved = recordFileRepository.save(recordFile);
-        recordFile.setLoadStart(40L);
-        recordFile.setLoadEnd(60L);
-        recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
-        Assertions.assertThat(recordFileRepository.findById(saved.getId()).get())
-                .isNotNull()
-                .isEqualTo(recordFile);
-    }
 }

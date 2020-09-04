@@ -46,6 +46,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -78,7 +79,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @BeforeEach
     final void beforeEach() {
         String newFileHash = UUID.randomUUID().toString();
-        recordFile = insertAccountBalanceFile(fileName, newFileHash, "fileHash0");
+        recordFile = insertRecordFileRecord(fileName, newFileHash, "fileHash0");
 
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
@@ -224,7 +225,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
 
-        recordFile = insertAccountBalanceFile(UUID.randomUUID().toString(), null, null);
+        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null);
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
         sqlEntityListener.onEntityId(entityId); // duplicate across files
         completeFileAndCommit();
@@ -244,6 +245,15 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
     }
 
+    @Test
+    void testMissingFileInRecordFileRepository() {
+        recordFileRepository.deleteAll();
+
+        assertThrows(MissingFileException.class, () -> {
+            sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        });
+    }
+
     private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
@@ -255,7 +265,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return recordFile.getFileHash();
     }
 
-    private RecordFile insertAccountBalanceFile(String filename, String fileHash, String prevHash) {
+    private RecordFile insertRecordFileRecord(String filename, String fileHash, String prevHash) {
         if (fileHash == null) {
             fileHash = UUID.randomUUID().toString();
         }

@@ -24,5 +24,5 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 
-public interface AccountBalanceFileRepository extends CrudRepository<AccountBalanceFile, String> {
+public interface AccountBalanceFileRepository extends CrudRepository<AccountBalanceFile, Long> {
 }

@@ -133,14 +133,10 @@ public class Utility {
      * Parses record stream file.
      *
      * @param filePath             path to record file
-     * @param expectedPrevFileHash expected previous file's hash in current file. Throws {@link HashMismatchException}
-     *                             on mismatch
-     * @param verifyHashAfter      previous file's hash mismatch is ignored if file is from before this time
      * @param recordItemConsumer   if not null, consumer is invoked for each transaction in the record file
      * @return parsed record file
      */
-    public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
-                                             Consumer<RecordItem> recordItemConsumer) {
+    public static RecordFile parseRecordFile(String filePath, Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
         String fileName = FilenameUtils.getName(filePath);
         recordFile.setName(fileName);
@@ -171,10 +167,6 @@ public class Utility {
                         String previousHash = Hex.encodeHexString(readFileHash);
                         recordFile.setPreviousHash(previousHash);
                         md.update(readFileHash);
-
-                        if (!Utility.verifyHashChain(previousHash, expectedPrevFileHash, verifyHashAfter, fileName)) {
-                            throw new HashMismatchException(fileName, expectedPrevFileHash, previousHash);
-                        }
                         break;
 
                     case FileDelimiter.RECORD_TYPE_RECORD:

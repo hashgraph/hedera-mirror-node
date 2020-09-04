@@ -37,7 +37,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.FileParser;
@@ -136,17 +135,14 @@ public class RecordFileParser implements FileParser {
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
-        String expectedPrevFileHash =
-                applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType());
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
         try {
-            recordStreamFileListener.onStart(streamFileData);
+            RecordFile recordFile = recordStreamFileListener.onStart(streamFileData);
             Stopwatch stopwatch = Stopwatch.createStarted();
-            RecordFile recordFile = Utility.parseRecordFile(
-                    streamFileData.getFilename(), expectedPrevFileHash,
-                    parserProperties.getMirrorProperties().getVerifyHashAfter(),
+            Utility.parseRecordFile(
+                    streamFileData.getFilename(),
                     recordItem -> {
                         if (processRecordItem(recordItem, dateRangeFilter)) {
                             counter.incrementAndGet();

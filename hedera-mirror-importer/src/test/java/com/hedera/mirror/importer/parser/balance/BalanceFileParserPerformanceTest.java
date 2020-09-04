@@ -56,9 +56,16 @@ public class BalanceFileParserPerformanceTest extends IntegrationTest {
                 .filter(p -> p.toString().endsWith(".csv"))
                 .forEach(p -> {
                     String filename = FilenameUtils.getName(p.toString());
-                    AccountBalanceFile abf = new AccountBalanceFile(filename, Utility.getTimestampFromFilename(filename),
-                            0L, 0L, "", nodeAccountId, 0L);
-                    accountBalanceFileRepository.save(abf);
+                    AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder()
+                            .consensusTimestamp(Utility.getTimestampFromFilename(filename))
+                            .count(0L)
+                            .fileHash(filename)
+                            .loadEnd(0L)
+                            .loadStart(0L)
+                            .name(filename)
+                            .nodeAccountId(nodeAccountId)
+                            .build();
+                    accountBalanceFileRepository.save(accountBalanceFile);
                 });
     }
 

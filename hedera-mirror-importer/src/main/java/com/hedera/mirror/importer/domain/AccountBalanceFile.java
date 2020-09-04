@@ -24,11 +24,13 @@ import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 
+@Builder
 @Data
 @Entity
 @AllArgsConstructor
@@ -36,18 +38,18 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 public class AccountBalanceFile implements StreamFile {
 
     @Id
-    private String name;
-
     private Long consensusTimestamp;
 
-    private Long loadStart;
-
-    private Long loadEnd;
+    private Long count;
 
     private String fileHash;
 
+    private Long loadEnd;
+
+    private Long loadStart;
+
+    private String name;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
-
-    private Long count;
 }

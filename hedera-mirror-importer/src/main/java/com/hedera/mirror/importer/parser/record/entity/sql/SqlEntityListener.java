@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -131,22 +132,22 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onStart(StreamFileData streamFileData) {
+    public RecordFile onStart(StreamFileData streamFileData) {
         String fileName = FilenameUtils.getName(streamFileData.getFilename());
-        if (recordFileRepository.findByName(fileName).size() != 1) {
+        List<RecordFile> recordFileList= recordFileRepository.findByName(fileName);
+        if (recordFileList.size() != 1) {
             throw new MissingFileException("File not found in the database: " + fileName);
         }
 
         cleanup();
+
+        return recordFileList.get(0);
     }
 
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-        int count = recordFileRepository.updateLoadStats(recordFile.getName(), recordFile.getLoadStart(), recordFile.getLoadEnd());
-        if (count != 1) {
-            throw new MissingFileException("File " + recordFile.getName() + " not in the database, thus not updated");
-        }
+        recordFileRepository.save(recordFile);
         applicationStatusRepository.updateStatusValue(
                 ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
     }

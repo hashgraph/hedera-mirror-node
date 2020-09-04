@@ -61,11 +61,44 @@ drop function if exists updateRecordFileCount();
 
 -- account_balance_file table
 create table if not exists account_balance_file (
-    name                varchar(250) primary key,
-    consensus_timestamp nanos_timestamp not null,
+    consensus_timestamp nanos_timestamp primary key,
     count               bigint not null,
     load_start          bigint,
     load_end            bigint,
     file_hash           varchar(96),
+	name                varchar(250) not null,
     node_account_id     entity_id not null
 );
+
+create unique index if not exists account_balance_file__name on account_balance_file(name);
+
+-- get balance filename from its consensus timestamp
+create or replace function getBalanceFilenameFromTimestamp(timestampNs nanos_timestamp) returns varchar as
+$$
+declare
+    timestampString varchar;
+    seconds         bigint;
+    nanos           bigint;
+begin
+    seconds := timestampNs / 1000000000;
+    timestampString := to_char(to_timestamp(seconds), 'YYYY-MM-DD"T"HH24_MI_SS');
+    nanos := timestampNs % 1000000000;
+    if nanos != 0 then
+        timestampString := timestampString || '.' || trim(trailing '0' from lpad(cast(nanos as varchar), 9, '0'));
+	end if;
+    return timestampString || 'Z_Balances.csv';
+end
+$$ language plpgsql;
+
+-- process past data from account_balance_sets into account_balance_file
+insert into account_balance_file
+    (consensus_timestamp, count, name, node_account_id)
+select
+    abs.consensus_timestamp,
+    (select count(*) from account_balance as ab where ab.consensus_timestamp = abs.consensus_timestamp),
+    (select getBalanceFilenameFromTimestamp(abs.consensus_timestamp)),
+    3
+from account_balance_sets as abs
+order by abs.consensus_timestamp;
+
+drop function if exists getBalanceFilenameFromTimestamp(nanos_timestamp);

@@ -32,7 +32,6 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -55,22 +54,16 @@ public class AccountBalancesDownloader extends Downloader {
     /**
      * Reads the account balance file and checks that the file hash matches the verified hash.
      * @param file account balance file object
-     * @param verifiedHash the verified hash in hex
      * @return StreamFile object
      */
     @Override
-    protected StreamFile readAndVerifyDataFile(File file, String verifiedHash) {
-        String fileHash = Utility.getBalanceFileHash(file.getPath());
-        if (!verifiedHash.contentEquals(fileHash)) {
-            throw new HashMismatchException(file.getName(), verifiedHash, fileHash);
-        }
-
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
-        accountBalanceFile.setName(file.getName());
-        accountBalanceFile.setConsensusTimestamp(Utility.getTimestampFromFilename(file.getName()));
-        accountBalanceFile.setFileHash(fileHash);
-        accountBalanceFile.setCount(0L);
-        return accountBalanceFile;
+    protected StreamFile readStreamFile(File file) {
+        return AccountBalanceFile.builder()
+                .consensusTimestamp(Utility.getTimestampFromFilename(file.getName()))
+                .count(0L)
+                .fileHash(Utility.getBalanceFileHash(file.getPath()))
+                .name(file.getName())
+                .build();
     }
 
     @Override

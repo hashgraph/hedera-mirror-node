@@ -194,8 +194,16 @@ public class BalanceFileParserTest extends IntegrationTest {
     void insertAccountBalanceFiles(BalanceFile... balanceFiles) {
         final EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         for (BalanceFile bf : balanceFiles) {
-            AccountBalanceFile abf = new AccountBalanceFile(bf.getFilename(), bf.getConsensusTimestamp() - 1, 0L, 0L, "", nodeAccountId, 0L);
-            accountBalanceFileRepository.save(abf);
+            AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder()
+                    .consensusTimestamp(bf.getConsensusTimestamp() - 1)
+                    .count(0L)
+                    .fileHash(bf.getFilename())
+                    .loadEnd(0L)
+                    .loadStart(0L)
+                    .name(bf.getFilename())
+                    .nodeAccountId(nodeAccountId)
+                    .build();
+            accountBalanceFileRepository.save(accountBalanceFile);
         }
     }
 }

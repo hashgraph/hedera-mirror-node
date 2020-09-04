@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -29,7 +28,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -69,7 +67,7 @@ public class RecordFileParserTest {
     private ApplicationStatusRepository applicationStatusRepository;
     @Mock
     private RecordItemListener recordItemListener;
-    @Mock
+    @Mock(lenient = true)
     private RecordStreamFileListener recordStreamFileListener;
     @Mock
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -152,14 +150,14 @@ public class RecordFileParserTest {
 
         streamFileData1 = new StreamFileData(file1.toString(), new FileInputStream(file1));
         streamFileData2 = new StreamFileData(file2.toString(), new FileInputStream(file2));
+
+        doReturn(recordFile1).when(recordStreamFileListener).onStart(streamFileData1);
+        doReturn(recordFile2).when(recordStreamFileListener).onStart(streamFileData2);
     }
 
     @Test
     void parse() throws Exception {
         // given
-        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
-                .thenReturn(recordFile1.getFileHash(), recordFile2.getFileHash());
 
         // when
         recordFileParser.parse(streamFileData1);
@@ -187,36 +185,6 @@ public class RecordFileParserTest {
         verify(recordStreamFileListener).onStart(streamFileData1);
         verify(recordStreamFileListener, never()).onEnd(recordFile1);
         verify(recordStreamFileListener).onError();
-    }
-
-    @Test
-    void hashMismatch() {
-        // given
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
-
-        // when
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            recordFileParser.parse(streamFileData1);
-        });
-
-        // then
-        verify(recordStreamFileListener).onStart(streamFileData1);
-        verify(recordStreamFileListener, never()).onEnd(any());
-        verify(recordStreamFileListener).onError();
-    }
-
-    @Test
-    void bypassHashMismatch() throws Exception {
-        // given
-        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
-
-        // when
-        recordFileParser.parse(streamFileData1);
-
-        // then
-        verify(recordStreamFileListener, never()).onError();
-        assertProcessedFile(streamFileData1, recordFile1, NUM_TXNS_FILE_1);
     }
 
     @Test
@@ -251,8 +219,6 @@ public class RecordFileParserTest {
         doReturn(filter)
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
         fileCopier.copy();
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
-                .thenReturn(recordFile1.getFileHash());
 
         // when
         recordFileParser.parse(streamFileData1);
@@ -278,8 +244,6 @@ public class RecordFileParserTest {
         doReturn(filter)
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
         fileCopier.copy();
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
-                .thenReturn(recordFile1.getFileHash());
 
         // when
         recordFileParser.parse(streamFileData1);

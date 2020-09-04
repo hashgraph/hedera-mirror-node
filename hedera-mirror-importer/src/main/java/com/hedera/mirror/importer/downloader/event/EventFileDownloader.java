@@ -61,29 +61,13 @@ public class EventFileDownloader extends Downloader {
     }
 
     /**
-     * Reads the event file and checks that the file hash matches the verified hash and that data file is next in
-     * line based on previous file hash.
+     * Reads the event file.
      * @param file event file object
-     * @param verifiedHash the verified hash in hex
      * @return StreamFile object
      */
     @Override
-    protected StreamFile readAndVerifyDataFile(File file, String verifiedHash) {
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
-        String fileName = file.getName();
-        Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-
-        EventFile eventFile = eventFileReader.read(file);
-
-        if (!verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash, verifyHashAfter, fileName)) {
-            throw new HashMismatchException(fileName, expectedPrevFileHash, eventFile.getPreviousHash());
-        }
-
-        if (!eventFile.getFileHash().contentEquals(verifiedHash)) {
-            throw new HashMismatchException(fileName, verifiedHash, eventFile.getFileHash());
-        }
-
-        return eventFile;
+    protected StreamFile readStreamFile(File file) {
+        return eventFileReader.read(file);
     }
 
     @Override

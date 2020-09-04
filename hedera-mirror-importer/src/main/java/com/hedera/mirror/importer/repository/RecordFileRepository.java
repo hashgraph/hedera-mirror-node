@@ -21,20 +21,11 @@ package com.hedera.mirror.importer.repository;
  */
 
 import java.util.List;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 
 public interface RecordFileRepository extends CrudRepository<RecordFile, Long> {
 
     List<RecordFile> findByName(String name);
-
-    @Transactional
-    @Modifying
-    @Query("UPDATE RecordFile SET loadStart = :loadStart, loadEnd = :loadEnd WHERE name = :name")
-    int updateLoadStats(@Param("name") String name, @Param("loadStart") Long loadStart, @Param("loadEnd") Long loadEnd);
 }
