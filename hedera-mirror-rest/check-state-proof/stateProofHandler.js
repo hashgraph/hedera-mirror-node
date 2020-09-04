@@ -30,7 +30,7 @@ const {performStateProof} = require('./transactionValidator');
 // responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
 class StateProofHandler {
   constructor(transactionId, stateProofJson) {
-    this.transactionId = makeStateProofDir(transactionId);
+    this.transactionId = makeStateProofDir(transactionId, stateProofJson);
     this.setStateProofComponents(stateProofJson);
   }
 

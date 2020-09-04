@@ -27,14 +27,13 @@ const {StateProofHandler} = require('./stateProofHandler');
 const {getAPIResponse, readJSONFile} = require('./utils');
 
 // get user input
-const {transactionId, url, sample} = startUpScreen();
+const {transactionId, url, storedFile} = startUpScreen();
 
-const getStateProofJson = async (url, test) => {
-  console.log(`Use sample data : ${test}`);
-  return test ? readJSONFile('stateProofSample.json') : getAPIResponse(url);
+const getStateProofJson = async (url, storedFile) => {
+  return storedFile ? readJSONFile(storedFile) : getAPIResponse(url);
 };
 
-getStateProofJson(url, sample).then((stateProofJson) => {
+getStateProofJson(url, storedFile).then((stateProofJson) => {
   const missingFilesPrefix = 'Mirror node StateProof API returned insufficient number of files.';
   if (stateProofJson.address_books.length < 1) {
     console.error(`${missingFilesPrefix} At least 1 addressBook is expected`);
