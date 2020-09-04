@@ -29,7 +29,9 @@ import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Resource;
+import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,6 +42,7 @@ import org.springframework.test.context.jdbc.Sql;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.ResetCacheTestExecutionListener;
 import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -335,8 +338,49 @@ class AddressBookServiceImplTest {
         assertThat(prevAddressBook.getEndConsensusTimestamp()).isNotNull();
     }
 
+    @Test
+    void verifyAddressBookEntriesWithNodeIdAndPortNotSet() {
+        // nodeId 0, port 0
+        NodeAddress nodeAddress1 = NodeAddress.newBuilder()
+                .setIpAddress(ByteString.copyFromUtf8("127.0.0.1"))
+                .setMemo(ByteString.copyFromUtf8("0.0.3"))
+                .setNodeAccountId(AccountID.newBuilder().setAccountNum(3))
+                .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
+                .setRSAPubKey("rsa+public/key")
+                .build();
+        // nodeId 0, port 50211
+        NodeAddress nodeAddress2 = NodeAddress.newBuilder(nodeAddress1)
+                .setIpAddress(ByteString.copyFromUtf8("127.0.0.2"))
+                .setMemo(ByteString.copyFromUtf8("0.0.4"))
+                .setNodeAccountId(AccountID.newBuilder().setAccountNum(4))
+                .setPortno(50211)
+                .build();
+        NodeAddressBook nodeAddressBook = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(List.of(nodeAddress1, nodeAddress2))
+                .build();
+
+        byte[] addressBookBytes = nodeAddressBook.toByteArray();
+        update(addressBookBytes, 1L, true);
+
+        assertAddressBookData(addressBookBytes, 1L);
+        AddressBook addressBook = addressBookService.getCurrent();
+        ListAssert<AddressBookEntry> listAssert = assertThat(addressBook.getEntries()).hasSize(nodeAddressBook.getNodeAddressCount());
+        for (NodeAddress nodeAddress : nodeAddressBook.getNodeAddressList()) {
+            listAssert.anySatisfy(abe -> {
+                assertThat(abe.getIp()).isEqualTo(nodeAddress.getIpAddress().toStringUtf8());
+                assertThat(abe.getMemo()).isEqualTo(nodeAddress.getMemo().toStringUtf8());
+                assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
+                assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
+                assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
+                assertThat(abe.getNodeId()).isNull(); // both entries have null node id
+            });
+        }
+        // one entry has null port and the other's is 50211
+        listAssert.anySatisfy(abe -> assertThat(abe.getPort()).isNull());
+        listAssert.anySatisfy(abe -> assertThat(abe.getPort()).isEqualTo(50211));
+    }
+
     private void assertAddressBookData(byte[] expected, long consensusTimestamp) {
-        // addressBook.startConsensusTimestamp = consensusTimestamp + 1
         AddressBook actualAddressBook = addressBookRepository.findById(consensusTimestamp + 1).get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
     }
