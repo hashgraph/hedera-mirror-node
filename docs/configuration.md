@@ -217,3 +217,25 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
+
+
+### Enable State Proof Alpha
+To enable State Proof logic the REST API configurations must updated to allow for communication with cloud buckets to pull down the necessary files (address book, signatures files and record file).
+The process involves setting the properties under `hedera.mirror.rest.stateproof` as documented above [REST API Config](#rest-api)
+
+An example configuration is provided below
+
+```.yaml
+hedera:
+  mirror:
+    rest:
+      stateproof:
+        enabled: true
+        streams:
+          network: 'TESTNET'
+          cloudProvider: 'GCP'
+          region: 'us-east-1'
+          accessKey: <accessKey>
+          secretKey: <secretKey>
+          bucketName: 'hedera-stable-testnet-streams-2020-08-27'
+```

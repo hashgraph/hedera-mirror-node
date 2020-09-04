@@ -57,44 +57,51 @@ const options = yargs
   })
   .option('e', {
     alias: 'env',
-    describe: 'Your environment e.g. previewnet/testnet/mainnet',
+    describe: 'Your environment e.g. local|mainnet|previewnet|testnet',
     type: 'string',
     demandOption: false,
   }).argv;
 
 const startUpScreen = () => {
   const greeting = chalk.bold(`Hedera Transaction State Proof Checker CLI!`);
-
   const msgBox = boxen(greeting, boxenOptions);
   console.log(msgBox);
 
-  let host;
-  // if host parameter was not passed then set host according to env.
-  if (_.isUndefined(options.host)) {
-    switch (options.env) {
-      case 'previewnet':
-        host = 'https://previewnet.mirrornode.hedera.com';
-        break;
-      case 'mainnet':
-        host = 'https://mainnet.mirrornode.hedera.com';
-        break;
-      case 'testnet':
-        host = 'https://testnet.mirrornode.hedera.com';
-        break;
-      default:
-        host = 'http://localhost:5551';
+  const {transactionId} = options;
+  const storedFile = options.file;
+  let source = storedFile; // default source to filePath
+  let url;
+
+  // update source creating a url based on env and or host if no filePath provided
+  if (_.isUndefined(storedFile)) {
+    let host;
+    // if host parameter was not passed then set host according to env.
+    if (_.isUndefined(options.host)) {
+      switch (options.env) {
+        case 'local':
+          host = 'http://localhost:5551';
+          break;
+        case 'mainnet':
+          host = 'https://mainnet.mirrornode.hedera.com';
+          break;
+        case 'previewnet':
+          host = 'https://previewnet.mirrornode.hedera.com';
+          break;
+        case 'testnet':
+          host = 'https://testnet.mirrornode.hedera.com';
+          break;
+        default:
+          throw Error(`Invalid env value provided: ${options.env}. Check --help option to see correct usage`);
+      }
+    } else {
+      host = options.host;
     }
-  } else {
-    host = options.host;
+
+    url = `${host}/api/v1/transactions/${transactionId}/stateproof`;
+    source = url;
   }
 
-  // to:do sanitize transaction and env values
-  const {transactionId} = options;
-  const url = `${host}/api/v1/transactions/${transactionId}/stateproof`;
-  const storedFile = options.file;
-  const source = _.isUndefined(storedFile) ? url : storedFile;
   console.log(`Initializing state proof for transactionId: ${transactionId} from source: ${source}`);
-
   return {transactionId, url, storedFile};
 };
 module.exports = {
