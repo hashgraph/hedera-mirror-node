@@ -51,7 +51,7 @@ const options = yargs
   })
   .option('h', {
     alias: 'host',
-    describe: 'REST API host. Default is testnet',
+    describe: 'REST API host. Default is testnet. This overrides the value of the env if also provided.',
     type: 'string',
     demandOption: false,
   })
