@@ -56,11 +56,12 @@ public class AddressBookEntry {
 
     private String ip;
 
-    private Integer port;
+    @Builder.Default
+    private int port = 50211;
 
     private String publicKey;
 
-    private Long nodeId;
+    private long nodeId;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;

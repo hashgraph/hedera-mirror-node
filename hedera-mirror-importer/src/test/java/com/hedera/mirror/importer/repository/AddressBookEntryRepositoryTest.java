@@ -49,7 +49,7 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
                 .publicKey("rsa+public/key")
                 .memo("0.0.3")
                 .nodeAccountId(EntityId.of("0.0.5", EntityTypeEnum.ACCOUNT))
-                .nodeId(5L)
+                .nodeId(5)
                 .nodeCertHash("nodeCertHash".getBytes());
 
         if (nodeAddressCustomizer != null) {

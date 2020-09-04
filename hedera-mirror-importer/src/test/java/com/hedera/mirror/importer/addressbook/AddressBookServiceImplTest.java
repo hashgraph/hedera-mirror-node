@@ -24,18 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Resource;
-import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,7 +40,6 @@ import org.springframework.test.context.jdbc.Sql;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.ResetCacheTestExecutionListener;
 import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -55,7 +48,6 @@ import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
-@Log4j2
 @SpringBootTest
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
@@ -64,7 +56,6 @@ class AddressBookServiceImplTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10);
     private static final NodeAddressBook FINAL = addressBook(15);
-    private static final List<FieldDescriptor> allNodeAddressFieldDescriptors = NodeAddress.getDescriptor().getFields();
 
     @TempDir
     Path dataPath;
@@ -344,103 +335,9 @@ class AddressBookServiceImplTest {
         assertThat(prevAddressBook.getEndConsensusTimestamp()).isNotNull();
     }
 
-    @Test
-    void verifyAddressBookWithEmptyAddressBookEntryFields() {
-        NodeAddressBook nodeAddressBook = addressBookWithEmptyAddressBookEntryFields();
-        byte[] nodeAddressBookBytes = nodeAddressBook.toByteArray();
-        update(nodeAddressBookBytes, 1L, true);
-
-        AddressBook current = addressBookService.getCurrent();
-
-        assertThat(current.getEntries()).hasSize(nodeAddressBook.getNodeAddressCount());
-        assertAddressBookData(nodeAddressBookBytes, 1L);
-
-        Map<Long, NodeAddress> nodeAddressMap = nodeAddressBook.getNodeAddressList()
-                .stream()
-                .collect(Collectors.toMap(n -> {
-                    if (n.getNodeId() != 0) {
-                        return n.getNodeId();
-                    } else {
-                        return n.getNodeAccountId().getAccountNum();
-                    }
-                }, n -> n));
-        for (AddressBookEntry actual : current.getEntries()) {
-            NodeAddress expected = nodeAddressMap.get(actual.getNodeAccountId().getEntityNum());
-            Set<Integer> setFieldNumbers = allNodeAddressFieldDescriptors.stream()
-                    .filter(expected::hasField)
-                    .map(FieldDescriptor::getNumber)
-                    .collect(Collectors.toSet());
-            // can't check nodeAccountId since AddressBookEntry tries to get nodeAccountId from both memo and
-            // nodeAccountId fields
-            String ip = setFieldNumbers.contains(NodeAddress.IPADDRESS_FIELD_NUMBER) ? expected.getIpAddress().toStringUtf8() : null;
-            Integer portNo = setFieldNumbers.contains(NodeAddress.PORTNO_FIELD_NUMBER) ? expected.getPortno() : null;
-            String memo = setFieldNumbers.contains(NodeAddress.MEMO_FIELD_NUMBER) ? expected.getMemo().toStringUtf8() : null;
-            String pubKey = setFieldNumbers.contains(NodeAddress.RSA_PUBKEY_FIELD_NUMBER) ? expected.getRSAPubKey() : null;
-            Long nodeId = setFieldNumbers.contains(NodeAddress.NODEID_FIELD_NUMBER) ? expected.getNodeId() : null;
-            byte[] nodeCertHash = setFieldNumbers.contains(NodeAddress.NODECERTHASH_FIELD_NUMBER) ? expected.getNodeCertHash().toByteArray() : null;
-
-            assertAll(() -> assertThat(actual.getIp()).isEqualTo(ip),
-                    () -> assertThat(actual.getPort()).isEqualTo(portNo),
-                    () -> assertThat(actual.getMemo()).isEqualTo(memo),
-                    () -> assertThat(actual.getPublicKey()).isEqualTo(pubKey),
-                    () -> assertThat(actual.getNodeId()).isEqualTo(nodeId),
-                    () -> assertThat(actual.getNodeCertHash()).isEqualTo(nodeCertHash));
-        }
-    }
-
     private void assertAddressBookData(byte[] expected, long consensusTimestamp) {
+        // addressBook.startConsensusTimestamp = consensusTimestamp + 1
         AddressBook actualAddressBook = addressBookRepository.findById(consensusTimestamp + 1).get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
-    }
-
-    private NodeAddressBook addressBookWithEmptyAddressBookEntryFields() {
-        NodeAddressBook.Builder addressBookBuilder = NodeAddressBook.newBuilder();
-        List<Integer> allFieldNumbers = allNodeAddressFieldDescriptors.stream()
-                .map(FieldDescriptor::getNumber)
-                .collect(Collectors.toList());
-
-        int nodeId = 3;
-        for (int fieldNumber : allFieldNumbers) {
-            NodeAddress.Builder builder = NodeAddress.newBuilder()
-                    .setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
-                    .setPortno(1000 + nodeId)
-                    .setNodeId(nodeId)
-                    .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
-                    .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId).build())
-                    .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash" + nodeId))
-                    .setRSAPubKey("rsa+public/key" + nodeId);
-            nodeId++;
-
-            switch (fieldNumber) {
-                case NodeAddress.IPADDRESS_FIELD_NUMBER:
-                    builder.clearIpAddress();
-                    break;
-                case NodeAddress.PORTNO_FIELD_NUMBER:
-                    builder.clearPortno();
-                    break;
-                case NodeAddress.MEMO_FIELD_NUMBER:
-                    builder.clearMemo();
-                    break;
-                case NodeAddress.RSA_PUBKEY_FIELD_NUMBER:
-                    builder.clearRSAPubKey();
-                    break;
-                case NodeAddress.NODEID_FIELD_NUMBER:
-                    builder.clearNodeId();
-                    break;
-                case NodeAddress.NODEACCOUNTID_FIELD_NUMBER:
-                    builder.clearNodeAccountId();
-                    break;
-                case NodeAddress.NODECERTHASH_FIELD_NUMBER:
-                    builder.clearNodeCertHash();
-                    break;
-                default:
-                    log.warn("Unhandled field of NodeAddress protobuf - {}", fieldNumber);
-                    break;
-            }
-
-            addressBookBuilder.addNodeAddress(builder);
-        }
-
-        return addressBookBuilder.build();
     }
 }
