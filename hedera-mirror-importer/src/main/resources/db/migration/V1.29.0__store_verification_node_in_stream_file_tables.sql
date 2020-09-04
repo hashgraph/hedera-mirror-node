@@ -61,7 +61,7 @@ drop function if exists updateRecordFileCount();
 
 -- account_balance_file table
 create table if not exists account_balance_file (
-    consensus_timestamp nanos_timestamp primary key,
+    consensus_timestamp bigint primary key,
     count               bigint not null,
     load_start          bigint,
     load_end            bigint,
@@ -73,7 +73,7 @@ create table if not exists account_balance_file (
 create unique index if not exists account_balance_file__name on account_balance_file(name);
 
 -- get balance filename from its consensus timestamp
-create or replace function getBalanceFilenameFromTimestamp(timestampNs nanos_timestamp) returns varchar as
+create or replace function getBalanceFilenameFromTimestamp(timestampNs bigint) returns varchar as
 $$
 declare
     timestampString varchar;
@@ -101,4 +101,4 @@ select
 from account_balance_sets as abs
 order by abs.consensus_timestamp;
 
-drop function if exists getBalanceFilenameFromTimestamp(nanos_timestamp);
+drop function if exists getBalanceFilenameFromTimestamp(bigint);
