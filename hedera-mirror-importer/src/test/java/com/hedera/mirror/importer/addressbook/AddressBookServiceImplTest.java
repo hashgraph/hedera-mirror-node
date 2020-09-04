@@ -81,11 +81,15 @@ class AddressBookServiceImplTest {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
             long nodeId = 3 + i;
-            builder.addNodeAddress(NodeAddress.newBuilder().setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
-                    .setPortno(i).setNodeId(nodeId).setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
-                    .setNodeAccountId(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(nodeId)
-                            .build()).setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
-                    .setRSAPubKey("rsa+public/key").build());
+            builder.addNodeAddress(NodeAddress.newBuilder()
+                    .setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
+                    .setPortno((int)nodeId)
+                    .setNodeId(nodeId)
+                    .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
+                    .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId))
+                    .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
+                    .setRSAPubKey("rsa+public/key")
+                    .build());
         }
         return builder.build();
     }
@@ -130,7 +134,7 @@ class AddressBookServiceImplTest {
         // assert current addressBook is updated
         AddressBook addressBook = addressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(2L);
-        assertThat(addressBook.getEntries()).hasSize(UPDATED.getNodeAddressCount());
+        assertAddressBook(addressBook, UPDATED);
 
         // assert repositories contain updates
         assertAddressBookData(UPDATED.toByteArray(), 1);
@@ -178,11 +182,13 @@ class AddressBookServiceImplTest {
         });
 
         append(addressBookBytes3, 5L, true);
-        assertThat(addressBookService.getCurrent().getEntries()).hasSize(UPDATED.getNodeAddressCount());
+        assertAddressBook(addressBookService.getCurrent(), UPDATED);
+
         assertAddressBookData(addressBookBytes, 5);
 
         assertEquals(1, addressBookRepository.count());
         assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository.count());
+
 
         AddressBook addressBook = addressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(6L);
@@ -250,7 +256,7 @@ class AddressBookServiceImplTest {
 
         // verify valid address book and repository update
         AddressBook addressBook = addressBookService.getCurrent();
-        assertThat(addressBook.getEntries()).hasSize(FINAL.getNodeAddressCount());
+        assertAddressBook(addressBookService.getCurrent(), FINAL);
         assertAddressBookData(FINAL.toByteArray(), 3);
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(4L);
     }
@@ -301,7 +307,8 @@ class AddressBookServiceImplTest {
         // verify address book and node addresses are updated
         AddressBook addressBook = addressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(8L);
-        assertThat(addressBook.getEntries()).hasSize(UPDATED.getNodeAddressCount());
+        assertAddressBook(addressBookService.getCurrent(), UPDATED);
+
 
         // 15 (101 update) + 12 (102 update)
         assertEquals(UPDATED.getNodeAddressCount() + FINAL
@@ -326,7 +333,7 @@ class AddressBookServiceImplTest {
 
         update(newAddressBookBytes, 10L, true);
         AddressBook newAddressBook = addressBookService.getCurrent();
-        assertThat(newAddressBook.getEntries()).hasSize(FINAL.getNodeAddressCount());
+        assertAddressBook(newAddressBook, FINAL);
         assertAddressBookData(newAddressBookBytes, 10);
 
         assertEquals(2, addressBookRepository.count());
@@ -383,5 +390,21 @@ class AddressBookServiceImplTest {
     private void assertAddressBookData(byte[] expected, long consensusTimestamp) {
         AddressBook actualAddressBook = addressBookRepository.findById(consensusTimestamp + 1).get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
+    }
+
+    private void assertAddressBook(AddressBook actual, NodeAddressBook expected) {
+        ListAssert<AddressBookEntry> listAssert = assertThat(actual.getEntries()).hasSize(expected.getNodeAddressCount());
+
+        for(NodeAddress nodeAddress : expected.getNodeAddressList()) {
+            listAssert.anySatisfy(abe -> {
+                assertThat(abe.getIp()).isEqualTo(nodeAddress.getIpAddress().toStringUtf8());
+                assertThat(abe.getMemo()).isEqualTo(nodeAddress.getMemo().toStringUtf8());
+                assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
+                assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
+                assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
+                assertThat(abe.getNodeId()).isEqualTo(nodeAddress.getNodeId());
+                assertThat(abe.getPort()).isEqualTo(nodeAddress.getPortno());
+            });
+        }
     }
 }
