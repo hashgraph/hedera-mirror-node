@@ -24,6 +24,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const yaml = require('js-yaml');
+const _ = require('lodash');
 const {cloudProviders, defaultBucketNames, networks} = require('../constants');
 
 let tempDir;
@@ -198,7 +199,7 @@ describe('Override stateproof config', () => {
       enabled: true,
       expectThrow: false,
     },
-    ...[networks.DEMO, networks.MAINNET, networks.TESTNET].map((network) => {
+    ..._.values(_.omit(networks, networks.OTHER)).map((network) => {
       return {
         name: `when stateproof enabled with just streams network set to ${network} other fields should get default`,
         enabled: true,

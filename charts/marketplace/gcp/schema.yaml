@@ -148,6 +148,7 @@ properties:
     enum:
       - MAINNET
       - TESTNET
+      - PREVIEWNET
       - DEMO
       - OTHER
   importer.persistence.size:
