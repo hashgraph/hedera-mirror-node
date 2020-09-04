@@ -100,10 +100,9 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
 /**
  * Get the chain of address books and node account IDs at or before consensusNs.
  * @param {String} consensusNs
- * @param {boolean} onlyCurrent
  * @returns {Promise<Object>} List of base64 address book data in chronological order and list of node account IDs.
  */
-let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs, onlyCurrent = false) => {
+let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
   // memo and node account ids from table address_book_entry
   const sqlParams = [consensusNs];
@@ -118,7 +117,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs, onlyCurr
        WHERE start_consensus_timestamp <= $1
          AND file_id = 102
        GROUP BY start_consensus_timestamp`;
-  if (!onlyCurrent) {
+  if (config.stateproof.addressBookHistory) {
     sqlQuery += `
       ORDER BY start_consensus_timestamp`;
   } else {
@@ -128,7 +127,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs, onlyCurr
   }
 
   if (logger.isTraceEnabled()) {
-    logger.info(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
   let addressBookQueryResult;
@@ -237,7 +236,7 @@ const getStateProofForTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
   const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId);
   const rcdFileName = await getRCDFileNameByConsensusNs(consensusNs);
-  const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs, true);
+  const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 
   const sigFileObjects = await downloadRecordStreamFilesFromObjectStorage(
     ..._.map(nodeAccountIds, (nodeAccountId) => `${nodeAccountId}/${rcdFileName}_sig`)
