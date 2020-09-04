@@ -37,8 +37,10 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
@@ -135,25 +137,32 @@ public class RecordFileParser implements FileParser {
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
+        String expectedPrevFileHash =
+                applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType());
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
         try {
-            RecordFile recordFile = recordStreamFileListener.onStart(streamFileData);
+            RecordFile recordFileDb = recordStreamFileListener.onStart(streamFileData);
             Stopwatch stopwatch = Stopwatch.createStarted();
-            Utility.parseRecordFile(
+            RecordFile recordFile = Utility.parseRecordFile(
                     streamFileData.getFilename(),
                     recordItem -> {
                         if (processRecordItem(recordItem, dateRangeFilter)) {
                             counter.incrementAndGet();
                         }
                     });
-            log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
-            recordFile.setLoadStart(startTime.getEpochSecond());
-            recordFile.setLoadEnd(Instant.now().getEpochSecond());
-            recordStreamFileListener.onEnd(recordFile);
+            if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
+                    parserProperties.getMirrorProperties().getVerifyHashAfter(), recordFile.getName())) {
+                throw new HashMismatchException(recordFile.getName(), expectedPrevFileHash, recordFile.getPreviousHash());
+            }
 
-            recordParserLatencyMetric(recordFile);
+            log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            recordFileDb.setLoadStart(startTime.getEpochSecond());
+            recordFileDb.setLoadEnd(Instant.now().getEpochSecond());
+            recordStreamFileListener.onEnd(recordFileDb);
+
+            recordParserLatencyMetric(recordFileDb);
             success = true;
         } catch (Exception ex) {
             recordStreamFileListener.onError(); // rollback
