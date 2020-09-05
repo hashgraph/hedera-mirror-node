@@ -27,6 +27,9 @@ grpc:
             password: mirror_grpc_pass
             username: mirror_grpc
   enabled: true
+  image:
+    pullPolicy: Always
+    tag: 0.18.0-tdb
 
 importer:
   config:
@@ -41,7 +44,7 @@ importer:
           network: "OTHER"
     spring:
       flyway:
-        baselineVersion: "1.99.0"
+        baselineVersion: 1.99.0
   enabled: true
   redis:
     sentinel:

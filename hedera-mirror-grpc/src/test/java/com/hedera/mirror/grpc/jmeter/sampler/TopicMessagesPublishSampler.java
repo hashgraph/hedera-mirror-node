@@ -30,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.logging.log4j.Level;
 
 import com.hedera.hashgraph.sdk.HederaNetworkException;
 import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
@@ -59,6 +61,7 @@ public class TopicMessagesPublishSampler extends PublishSampler {
         log.trace("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
                 .getNodeInfo(), topicMessagePublishRequest);
 
+        Level messageLogLevel = Level.INFO;
         for (int i = 0; i < topicMessagePublishRequest.getMessagesPerBatchCount(); i++) {
 
             try {
@@ -68,6 +71,7 @@ public class TopicMessagesPublishSampler extends PublishSampler {
                         topicMessagePublishRequest.getMessage());
                 publishLatencyStatistics.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
                 transactionIdList.forEach((transactionId -> result.onNext(transactionId)));
+                messageLogLevel = Level.DEBUG;
             } catch (HederaPrecheckStatusException preEx) {
                 hederaResponseCodeEx.compute(preEx.status, (key, val) -> (val == null) ? 1 : val + 1);
             } catch (HederaNetworkException preEx) {
@@ -79,7 +83,8 @@ public class TopicMessagesPublishSampler extends PublishSampler {
             }
         }
 
-        log.info("Submitted {} messages in {} to topic {} on node {}. {} preCheckErrors, {} networkErrors, " +
+        log.log(messageLogLevel, "Submitted {} messages in {} to topic {} on node {}. {} preCheckErrors, {} " +
+                        "networkErrors, " +
                         "{} unknown errors", topicMessagePublishRequest.getMessagesPerBatchCount(), totalStopwatch,
                 topicMessagePublishRequest.getConsensusTopicId(), sdkClient.getNodeInfo().getNodeId(),
                 StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
@@ -94,5 +99,21 @@ public class TopicMessagesPublishSampler extends PublishSampler {
         }
 
         return transactionCount;
+    }
+
+    private void printPublishStats() {
+        // Compute some statistics
+        double min = publishToConsensusLatencyStats.getMin();
+        double max = publishToConsensusLatencyStats.getMax();
+        double mean = publishToConsensusLatencyStats.getMean();
+        double median = publishToConsensusLatencyStats.getPercentile(50);
+        double seventyFifthPercentile = publishToConsensusLatencyStats.getPercentile(75);
+        double ninetyFifthPercentile = publishToConsensusLatencyStats.getPercentile(95);
+
+        log.debug("Publish2Consensus stats, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th percentile: {} " +
+                        "ms," +
+                        " 95th percentile: {} ms", String.format("%.03f", min), String.format("%.03f", max),
+                String.format("%.03f", mean), String.format("%.03f", median),
+                String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
     }
 }

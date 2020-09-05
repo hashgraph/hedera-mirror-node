@@ -52,7 +52,7 @@ public class ListenerProperties {
     private int prefetch = 48;
 
     @NotNull
-    private ListenerType type = ListenerType.REDIS;
+    private ListenerType type = ListenerType.SHARED_POLL;
 
     public enum ListenerType {
         NOTIFY,

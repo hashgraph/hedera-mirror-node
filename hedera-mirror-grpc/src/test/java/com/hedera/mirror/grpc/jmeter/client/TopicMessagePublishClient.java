@@ -113,14 +113,16 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
 
         try {
             log.info("Schedule client tasks every publishInterval: {} ms", publishInterval);
-            AtomicInteger counter = new AtomicInteger(0);
+            AtomicInteger intervalCount = new AtomicInteger(0);
+            AtomicInteger totalCount = new AtomicInteger(0);
+            Stopwatch intervalStopwatch = Stopwatch.createStarted();
             Stopwatch totalStopwatch = Stopwatch.createStarted();
             clientList.forEach(x -> {
                 executor.scheduleAtFixedRate(
                         () -> {
                             TopicMessagesPublishSampler topicMessagesPublishSampler =
                                     new TopicMessagesPublishSampler(topicMessagePublishRequest, x, verifyTransactions);
-                            counter.addAndGet(topicMessagesPublishSampler
+                            intervalCount.addAndGet(topicMessagesPublishSampler
                                     .submitConsensusMessageTransactions());
                         },
                         0,
@@ -129,15 +131,24 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             });
 
             // log progress every minute
+            AtomicInteger batchCount = new AtomicInteger(-1);
             loggerScheduler.scheduleAtFixedRate(() -> {
-                printStatus(counter.get(), totalStopwatch);
+                // update total counter
+                totalCount.addAndGet(intervalCount.get());
+                log.info("Status after {} m", batchCount.addAndGet(1) * printStatusInterval);
+                printStatus(intervalCount.get(), intervalStopwatch);
+
+                // reset interval count and stopwatch
+                intervalCount.set(0);
+                intervalStopwatch.reset();
+                intervalStopwatch.start();
             }, 0, printStatusInterval, TimeUnit.MINUTES);
 
             log.info("Executor await termination publishTimeout: {} secs", publishTimeout);
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);
-            printStatus(counter.get(), totalStopwatch);
+            printStatus(totalCount.get(), totalStopwatch);
             success = true;
-            result.setResponseMessage(String.valueOf(counter.get()));
+            result.setResponseMessage(String.valueOf(totalCount.get()));
             result.setResponseCodeOK();
         } catch (Exception e) {
             log.error("Error publishing HCS messages", e);
@@ -168,10 +179,11 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
     }
 
     private void printStatus(int totalCount, Stopwatch totalStopwatch) {
+        long millis = totalStopwatch.elapsed(TimeUnit.MILLISECONDS);
         double rate = TransactionSubmissionResult
-                .getTransactionSubmissionRate(totalCount, totalStopwatch
-                        .elapsed(TimeUnit.MILLISECONDS));
-        log.info("Published {} total transactions in {} s ({}/s)", totalCount, totalStopwatch
-                .elapsed(TimeUnit.SECONDS), rate);
+                .getTransactionSubmissionRate(totalCount, millis);
+
+        log.info("Published {} transactions in {} s ({}/s)", totalCount, String.format("%.03f", millis / 1000.0),
+                String.format("%.01f", rate));
     }
 }
