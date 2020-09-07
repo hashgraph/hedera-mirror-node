@@ -30,7 +30,7 @@
     "long": "^4.0.0",
     "mathjs": "^7.2.0",
     "node-cache": "^5.1.2",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "pg": "~8.3.3",
     "swagger-stats": "^0.95.17"
   },
