@@ -254,6 +254,34 @@ const getOneTransaction = async (req, res) => {
     });
 };
 
+/**
+ * Function to support readiness check for Terminus, finds one transaction.
+ * @return {} None.
+ */
+const getOneTransactionForHealthCheck = function () {
+  const sqlParams = [];
+
+  let sqlQuery =
+    selectClause +
+    `FROM transaction t
+       JOIN t_transaction_results ttr ON ttr.proto_id = t.result
+       JOIN t_transaction_types ttt ON ttt.proto_id = t.type
+       JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
+     LIMIT 1`;
+
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
+  if (logger.isTraceEnabled()) {
+    logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  }
+
+  // Execute query
+  return pool
+    .query(pgSqlQuery, sqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {});
+};
 module.exports = {
   getTransactions: getTransactions,
   getOneTransaction: getOneTransaction,
@@ -261,4 +289,5 @@ module.exports = {
   reqToSql: reqToSql,
   getTransactionsInnerQuery: getTransactionsInnerQuery,
   getTransactionsOuterQuery: getTransactionsOuterQuery,
+  getOneTransactionForHealthCheck: getOneTransactionForHealthCheck,
 };
