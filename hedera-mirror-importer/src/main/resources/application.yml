@@ -39,8 +39,10 @@ management:
   endpoint:
     health:
       group:
+        liveness:
+          include: ping
         readiness:
-          include: db,diskSpace
+          include: db,diskSpace,ping
 server:
   shutdown: graceful
 spring:
