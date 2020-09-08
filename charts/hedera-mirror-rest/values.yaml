@@ -62,7 +62,7 @@ labels: {}
 
 livenessProbe:
   httpGet:
-    path: /api/v1/transactions?limit=1
+    path: /health/liveness
     port: http
   initialDelaySeconds: 10
   timeoutSeconds: 2
@@ -76,7 +76,7 @@ priorityClassName: ""
 
 readinessProbe:
   httpGet:
-    path: /api/v1/transactions?limit=1
+    path: /health/readiness
     port: http
   initialDelaySeconds: 10
   timeoutSeconds: 2

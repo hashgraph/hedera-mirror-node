@@ -33,7 +33,7 @@ labels: {}
 
 livenessProbe:
   httpGet:
-    path: /actuator/health
+    path: /actuator/health/liveness
     port: http
   initialDelaySeconds: 60
   periodSeconds: 30
@@ -75,7 +75,7 @@ rbac:
 
 readinessProbe:
   httpGet:
-    path: /actuator/health
+    path: /actuator/health/readiness
     port: http
   initialDelaySeconds: 60
   timeoutSeconds: 2
