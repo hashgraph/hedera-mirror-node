@@ -34,9 +34,12 @@ management:
     tags:
       application: ${spring.application.name}
   endpoint:
-    group:
-      readiness:
-        include: db, grpcServices, grpcChannel
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db, grpcServices, grpcChannel, ping
 server:
   shutdown: graceful
   port: 8081
