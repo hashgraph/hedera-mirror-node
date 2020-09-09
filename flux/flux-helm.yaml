@@ -3,4 +3,5 @@ git:
   pollInterval: 1m
 helm:
   versions: v3
+priorityClassName: cluster-critical
 
