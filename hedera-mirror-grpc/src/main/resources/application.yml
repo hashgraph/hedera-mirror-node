@@ -73,7 +73,7 @@ spring:
       hibernate.generate_statistics: true
       hibernate.hbm2ddl.auto: none
   lifecycle:
-    timeout-per-shutdown-phase: 20s
+    timeout-per-shutdown-phase: 40s
   test:
     database:
       replace: NONE
