@@ -19,14 +19,28 @@
  */
 'use strict';
 
-const transactions = require('./transactions.js');
+const {DbError} = require('./errors/dbError');
+const {NotFoundError} = require('./errors/notFoundError');
+const config = require('./config.js');
+
+const readinessQuery = `select true from t_entity_types limit 1;`;
 
 /**
  * Function to determine readiness of application.
  * @return {} None.
  */
 const readinessCheck = async () => {
-  return transactions.getOneTransactionForHealthCheck();
+  return pool
+    .query(readinessQuery)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      if (results.rowCount !== 1) {
+        throw new NotFoundError('Application readiness check failed');
+      }
+      return;
+    });
 };
 
 /**
@@ -43,12 +57,8 @@ const livenessCheck = async () => {
  */
 
 function beforeDown() {
-  // given your readiness probes run every 5 second
-  // may be worth using a bigger number so you won't
-  // run into any race conditions
-  console.log('Test of system');
   return new Promise((resolve) => {
-    setTimeout(resolve, 20000);
+    setTimeout(resolve, config.shutdown.timeout);
   });
 }
 
