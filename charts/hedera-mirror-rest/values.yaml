@@ -64,7 +64,7 @@ livenessProbe:
   httpGet:
     path: /health/liveness
     port: http
-  initialDelaySeconds: 10
+  initialDelaySeconds: 25
   timeoutSeconds: 2
 
 nodeSelector: {}
@@ -78,7 +78,7 @@ readinessProbe:
   httpGet:
     path: /health/readiness
     port: http
-  initialDelaySeconds: 10
+  initialDelaySeconds: 30
   timeoutSeconds: 2
 
 # Only set if HPA is disabled
