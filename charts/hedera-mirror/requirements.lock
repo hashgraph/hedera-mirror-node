@@ -11,5 +11,5 @@ dependencies:
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.5.0-rc1
-digest: sha256:a7cb3c07e16ee4f45f2dd8986421cccfdfa823dfea11180951733bf2d83627b0
-generated: "2020-09-10T16:13:53.884466-05:00"
+digest: sha256:0fdb85a41e5e77dd2fde51b6b17e3a433f72799a4743ed6009d09760c8cf77ff
+generated: "2020-09-10T16:27:07.494854-05:00"
