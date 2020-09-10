@@ -71,6 +71,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -98,6 +99,7 @@ public abstract class AbstractDownloaderTest {
     protected AddressBookService addressBookService;
     @Mock
     protected PlatformTransactionManager platformTransactionManager;
+    protected TransactionTemplate transactionTemplate;
     @TempDir
     protected Path s3Path;
     protected S3Proxy s3Proxy;
@@ -183,6 +185,7 @@ public abstract class AbstractDownloaderTest {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
+        transactionTemplate = new TransactionTemplate(platformTransactionManager);
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
                 AnonymousCredentialsProvider.create())

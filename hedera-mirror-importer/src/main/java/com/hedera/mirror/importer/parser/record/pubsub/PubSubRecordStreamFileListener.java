@@ -44,12 +44,8 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     @Override
     public RecordFile onStart(StreamFileData streamFileData) throws ImporterException {
         String fileName = FilenameUtils.getName(streamFileData.getFilename());
-        List<RecordFile> recordFileList= recordFileRepository.findByName(fileName);
-        if (recordFileList.size() != 1) {
-            throw new MissingFileException("File not found in the database: " + fileName);
-        }
-
-        return recordFileList.get(0);
+        return recordFileRepository.findByName(fileName)
+                .orElseThrow(() -> new MissingFileException("File not found in the database: " + fileName));
     }
 
     @Override

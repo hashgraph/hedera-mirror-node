@@ -20,22 +20,17 @@ package com.hedera.mirror.importer.downloader.event;
  * ‍
  */
 
-import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.time.Instant;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -49,8 +44,8 @@ public class EventFileDownloader extends Downloader {
     public EventFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
-            PlatformTransactionManager platformTransactionManager, MeterRegistry meterRegistry, EventFileReader eventFileReader) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, platformTransactionManager, meterRegistry);
+            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry, EventFileReader eventFileReader) {
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate, meterRegistry);
         this.eventFileReader = eventFileReader;
     }
 

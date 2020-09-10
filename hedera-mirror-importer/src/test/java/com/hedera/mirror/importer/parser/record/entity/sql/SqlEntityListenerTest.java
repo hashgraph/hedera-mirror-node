@@ -242,7 +242,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.count()).isEqualTo(1);
-        assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
+        assertThat(recordFileRepository.findByName(fileName)).isPresent();
     }
 
     @Test

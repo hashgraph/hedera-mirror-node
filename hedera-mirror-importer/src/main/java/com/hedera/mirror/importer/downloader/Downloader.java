@@ -51,7 +51,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.event.EventListener;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -102,12 +101,12 @@ public abstract class Downloader {
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-                      PlatformTransactionManager platformTransactionManager, MeterRegistry meterRegistry) {
+                      TransactionTemplate transactionTemplate, MeterRegistry meterRegistry) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
-        this.transactionTemplate = new TransactionTemplate(platformTransactionManager);
+        this.transactionTemplate = transactionTemplate;
         this.meterRegistry = meterRegistry;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
@@ -477,18 +476,13 @@ public abstract class Downloader {
      */
     private void updateApplicationStatus(StreamFile streamFile) {
         transactionTemplate.executeWithoutResult(status -> {
-            try {
-                if (lastValidDownloadedFileHashKey != null) {
-                    applicationStatusRepository
-                            .updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
-                }
-                applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
-
-                saveStreamFileRecord(streamFile);
-            } catch (Exception ex) {
-                log.error("Roll back the transaction due to error", ex);
-                status.setRollbackOnly();
+            if (lastValidDownloadedFileHashKey != null) {
+                applicationStatusRepository
+                        .updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
             }
+            applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
+
+            saveStreamFileRecord(streamFile);
         });
     }
 
