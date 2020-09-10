@@ -92,10 +92,12 @@ $$ language plpgsql;
 
 -- process past data from account_balance_sets into account_balance_file
 insert into account_balance_file
-    (consensus_timestamp, count, name, node_account_id)
+    (consensus_timestamp, count, load_start, load_end, name, node_account_id)
 select
     abs.consensus_timestamp,
     (select count(*) from account_balance as ab where ab.consensus_timestamp = abs.consensus_timestamp),
+	extract(epoch from abs.processing_start_timestamp)::bigint,
+	extract(epoch from abs.processing_end_timestamp)::bigint,
     (select getBalanceFilenameFromTimestamp(abs.consensus_timestamp)),
     3
 from account_balance_sets as abs
