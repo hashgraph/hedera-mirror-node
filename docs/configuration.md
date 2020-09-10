@@ -213,8 +213,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.stateproof.streams.bucketName`       |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.rest.stateproof.streams.network` |
 | `hedera.mirror.rest.stateproof.streams.cloudProvider`    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
 | `hedera.mirror.rest.stateproof.streams.endpointOverride` |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
-| `hedera.mirror.rest.stateproof.streams.gcpProjectId` |                             | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
+| `hedera.mirror.rest.stateproof.streams.gcpProjectId`     |                         | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
 | `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
-| `hedera.mirror.rest.shutdown.timeout`                    | 20                      | The amount of time (in ms) to give the process to gracefully shut down                         |
+| `hedera.mirror.rest.shutdown.timeout`                    | 20000                   | The amount of time (in ms) to give the process to gracefully shut down                         |
