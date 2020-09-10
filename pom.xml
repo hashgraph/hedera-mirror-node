@@ -344,6 +344,7 @@
                             <basedir>${project.basedir}</basedir>
                             <includes>
                                 <include>charts/**/Chart.yaml</include>
+                                <include>charts/hedera-mirror/requirements.yaml</include>
                                 <include>docker-compose.yml</include>
                                 <include>hedera-mirror-rest/package*.json</include>
                                 <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
@@ -368,6 +369,11 @@
                                 </replacement>
                                 <replacement>
                                     <token><![CDATA[(?<=version: )[0-9a-z.-]+]]></token>
+                                    <value>${release.chartVersion}</value>
+                                </replacement>
+                                <replacement>
+                                    <token>
+                                        <![CDATA[(?<=file://../hedera-mirror-(grpc|importer|rest)</repository><version>)[0-9a-z.-]+]]></token>
                                     <value>${release.chartVersion}</value>
                                 </replacement>
                                 <replacement>
