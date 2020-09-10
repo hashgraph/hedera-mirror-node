@@ -77,13 +77,15 @@ const networks = {
   DEMO: 'DEMO',
   MAINNET: 'MAINNET',
   TESTNET: 'TESTNET',
+  PREVIEWNET: 'PREVIEWNET',
   OTHER: 'OTHER',
 };
 
 const defaultBucketNames = {
   [networks.DEMO]: 'hedera-demo-streams',
   [networks.MAINNET]: 'hedera-stable-mainnet-streams',
-  [networks.TESTNET]: 'hedera-stable-testnet-streams',
+  [networks.TESTNET]: 'hedera-stable-testnet-streams-2020-08-27',
+  [networks.PREVIEWNET]: 'hedera-preview-testnet-streams',
   [networks.OTHER]: null,
 };
 

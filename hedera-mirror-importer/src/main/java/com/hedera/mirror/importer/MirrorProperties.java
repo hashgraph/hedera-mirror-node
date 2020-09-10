@@ -75,7 +75,8 @@ public class MirrorProperties {
     public enum HederaNetwork {
         DEMO("hedera-demo-streams"),
         MAINNET("hedera-stable-mainnet-streams"),
-        TESTNET("hedera-stable-testnet-streams"),
+        TESTNET("hedera-stable-testnet-streams-2020-08-27"),
+        PREVIEWNET("hedera-preview-testnet-streams"),
         OTHER(""); // Pre-prod or ad hoc environments
 
         private final String bucketName;

@@ -21,13 +21,16 @@ package com.hedera.mirror.importer.addressbook;
  */
 
 import com.google.common.collect.ImmutableList;
+import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -221,25 +224,31 @@ public class AddressBookServiceImpl implements AddressBookService {
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) {
         ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
+        Set<Long> nodeIdSet = new HashSet<>();
 
-        if (nodeAddressBook != null) {
-            for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
-                    .getNodeAddressList()) {
-                AddressBookEntry addressBookEntry = AddressBookEntry.builder()
-                        .consensusTimestamp(consensusTimestamp)
-                        .memo(nodeAddressProto.getMemo().toStringUtf8())
-                        .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                        .port(nodeAddressProto.getPortno())
-                        .publicKey(nodeAddressProto.getRSAPubKey())
-                        .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                        .nodeId(nodeAddressProto.getNodeId())
-                        .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
-                        .build();
-                builder.add(addressBookEntry);
-            }
+        for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
+            int port = nodeAddressProto.getPortno();
+            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
+                    .consensusTimestamp(consensusTimestamp)
+                    .memo(nodeAddressProto.getMemo().toStringUtf8())
+                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                    .port(port == 0 ? null : port)
+                    .publicKey(nodeAddressProto.getRSAPubKey())
+                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                    .nodeId(nodeAddressProto.getNodeId())
+                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
+                    .build();
+            builder.add(addressBookEntry);
+            nodeIdSet.add(nodeAddressProto.getNodeId());
         }
 
-        return builder.build();
+        List<AddressBookEntry> addressBookEntryList = builder.build();
+        if (nodeIdSet.size() == 1) {
+            // clear the node ID when all of them are the same
+            addressBookEntryList.forEach(addressBookEntry -> addressBookEntry.setNodeId(null));
+        }
+
+        return addressBookEntryList;
     }
 
     /**

@@ -18,7 +18,7 @@
   "dependencies": {
     "@awaitjs/express": "^0.6.1",
     "asn1js": "^2.0.26",
-    "aws-sdk": "^2.742.0",
+    "aws-sdk": "^2.747.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -31,7 +31,7 @@
     "long": "^4.0.0",
     "mathjs": "^7.2.0",
     "node-cache": "^5.1.2",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "pg": "~8.3.3",
     "swagger-stats": "^0.95.17"
   },
@@ -72,12 +72,12 @@
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.3",
     "nodemon": "^2.0.4",
-    "prettier": "^2.0.5",
+    "prettier": "^2.1.1",
     "pretty-quick": "^3.0.0",
     "rewire": "^5.0.0",
     "sinon": "^9.0.3",
     "supertest": "^4.0.2",
-    "testcontainers": "^3.4.0"
+    "testcontainers": "^3.4.3"
   },
   "husky": {
     "hooks": {

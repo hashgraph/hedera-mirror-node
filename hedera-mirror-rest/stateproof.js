@@ -106,7 +106,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
   // memo and node account ids from table address_book_entry
   const sqlParams = [consensusNs];
-  const sqlQuery = `SELECT
+  let sqlQuery = `SELECT
          file_data,
          node_count,
          string_agg(memo, ',') AS memos,
@@ -116,8 +116,16 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
          ON ab.start_consensus_timestamp = abe.consensus_timestamp
        WHERE start_consensus_timestamp <= $1
          AND file_id = 102
-       GROUP BY start_consensus_timestamp
-       ORDER BY start_consensus_timestamp`;
+       GROUP BY start_consensus_timestamp`;
+  if (config.stateproof.addressBookHistory) {
+    sqlQuery += `
+      ORDER BY start_consensus_timestamp`;
+  } else {
+    sqlQuery += `
+      ORDER BY start_consensus_timestamp DESC
+      LIMIT 1`;
+  }
+
   if (logger.isTraceEnabled()) {
     logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
