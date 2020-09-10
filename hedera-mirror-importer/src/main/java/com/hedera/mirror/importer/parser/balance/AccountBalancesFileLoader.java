@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.MissingFileException;
+import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
@@ -101,7 +102,7 @@ public class AccountBalancesFileLoader {
      * Process the file and load all the data into the database.
      */
     @Transactional
-    public void loadAccountBalances(@NonNull File balanceFile, DateRangeFilter dateRangeFilter) throws SQLException {
+    public void loadAccountBalances(@NonNull File balanceFile, DateRangeFilter dateRangeFilter) {
         log.info("Starting processing account balances file {}", balanceFile.getPath());
         String fileName = balanceFile.getName();
         long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
@@ -171,6 +172,8 @@ public class AccountBalancesFileLoader {
                 log.error("ERRORS processing account balances file {} with {} records parsed so far in {}",
                         fileName, validCount, stopwatch);
             }
+        } catch (SQLException ex) {
+            throw new ParserSQLException("Error processing account balance file " + fileName, ex);
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
@@ -197,16 +200,16 @@ public class AccountBalancesFileLoader {
             insertBalanceStatement.addBatch();
         }
 
+        int count = accountBalanceList.size();
         accountBalanceList.clear();
 
-        int insertedCount = 0;
-        var result = insertBalanceStatement.executeBatch();
+        int[] result = insertBalanceStatement.executeBatch();
         for (int code : result) {
-            if (code != Statement.EXECUTE_FAILED) {
-                insertedCount++;
+            if (code == Statement.EXECUTE_FAILED) {
+                throw new ParserSQLException("Some account balance insert statement in the batch failed to execute");
             }
         }
-        return insertedCount;
+        return count;
     }
 
     private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete,
