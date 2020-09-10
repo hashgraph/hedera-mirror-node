@@ -105,10 +105,6 @@ public class AccountBalancesFileLoader {
     public void loadAccountBalances(@NonNull File balanceFile, DateRangeFilter dateRangeFilter) {
         log.info("Starting processing account balances file {}", balanceFile.getPath());
         String fileName = balanceFile.getName();
-        long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
-        int validCount = 0;
-        int insertedCount = 0;
-        boolean complete;
         Stopwatch stopwatch = Stopwatch.createStarted();
         Instant startTime = Instant.now();
 
@@ -119,8 +115,10 @@ public class AccountBalancesFileLoader {
              PreparedStatement updateAccountBalanceFileStatement = connection.prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT);
              Stream<AccountBalance> stream = balanceFileReader.read(balanceFile)) {
             long consensusTimestamp = -1;
+            long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
             List<AccountBalance> accountBalanceList = new ArrayList<>();
             boolean skip = false;
+            int validCount = 0;
 
             var iter = stream.iterator();
             while (iter.hasNext()) {
@@ -149,27 +147,19 @@ public class AccountBalancesFileLoader {
 
                 if (!skip) {
                     accountBalanceList.add(accountBalance);
-                    insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList,
-                            insertBatchSize);
+                    tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
                 }
             }
 
             if (!skip) {
-                insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
-                complete = (insertedCount == validCount);
-            } else {
-                complete = true;
+                tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
             }
-
-            updateAccountBalanceSet(updateSetStatement, complete, consensusTimestamp);
+            updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, validCount,
                     startTime.getEpochSecond(), Instant.now().getEpochSecond(), fileName);
 
-            if (complete) {
-                log.info("Successfully processed account balances file {} with {} out of {} records inserted in {}",
-                        fileName, insertedCount, validCount, stopwatch);
-            } else {
-                log.error("ERRORS processing account balances file {} with {} records parsed so far in {}",
+            if (!skip) {
+                log.info("Successfully processed account balances file {}, {} records inserted in {}",
                         fileName, validCount, stopwatch);
             }
         } catch (SQLException ex) {
@@ -184,10 +174,10 @@ public class AccountBalancesFileLoader {
         insertSetStatement.execute();
     }
 
-    private int tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
+    private void tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
                                              List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
         if (accountBalanceList.size() < threshold) {
-            return 0;
+            return;
         }
 
         for (var accountBalance : accountBalanceList) {
@@ -200,7 +190,6 @@ public class AccountBalancesFileLoader {
             insertBalanceStatement.addBatch();
         }
 
-        int count = accountBalanceList.size();
         accountBalanceList.clear();
 
         int[] result = insertBalanceStatement.executeBatch();
@@ -209,12 +198,10 @@ public class AccountBalancesFileLoader {
                 throw new ParserSQLException("Some account balance insert statement in the batch failed to execute");
             }
         }
-        return count;
     }
 
-    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete,
-                                         long consensusTimestamp) throws SQLException {
-        updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), complete);
+    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, long consensusTimestamp) throws SQLException {
+        updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), true);
         updateSetStatement.setLong(F_UPDATE_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
         updateSetStatement.execute();
     }
