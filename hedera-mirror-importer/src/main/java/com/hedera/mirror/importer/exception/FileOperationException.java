@@ -20,19 +20,11 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class DuplicateFileException extends ImporterException {
+public class FileOperationException extends ImporterException {
 
-    private static final long serialVersionUID = 3080406728758534575L;
+    private static final long serialVersionUID = 5194246300993814767L;
 
-    public DuplicateFileException(String message) {
-        super(message);
-    }
-
-    public DuplicateFileException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public DuplicateFileException(String message, Throwable throwable) {
+    public FileOperationException(String message, Throwable throwable) {
         super(message, throwable);
     }
 }

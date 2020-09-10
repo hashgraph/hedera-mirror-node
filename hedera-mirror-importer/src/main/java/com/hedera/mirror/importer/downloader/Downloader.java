@@ -69,6 +69,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -315,11 +316,16 @@ public abstract class Downloader {
      *
      * @param sourceFile
      * @param destinationFile
-     * @throws IOException
      */
-    private void moveFile(File sourceFile, File destinationFile) throws IOException {
-        Files.move(sourceFile.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
-        log.trace("Moved {} to {}", sourceFile, destinationFile);
+    private void moveFile(File sourceFile, File destinationFile) {
+        try {
+            Files.move(sourceFile.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
+            if (log.isTraceEnabled()) {
+                log.trace("Moved {} to {}", sourceFile, destinationFile);
+            }
+        } catch (IOException ex) {
+            throw new FileOperationException("Failed to move file " + sourceFile.getName(), ex);
+        }
     }
 
     private void moveSignatureFile(FileStreamSignature signature) {
@@ -393,8 +399,10 @@ public abstract class Downloader {
                         continue;
                     }
 
-                    StreamFile streamFile = readAndVerifyStreamFile(signedDataFile, signature.getHashAsHex());
+                    StreamFile streamFile = readStreamFile(signedDataFile);
                     streamFile.setNodeAccountId(signature.getNodeAccountId());
+
+                    verify(streamFile, signature);
 
                     if (Utility.isStreamFileAfterInstant(sigFilename, endDate)) {
                         downloaderProperties.setEnabled(false);
@@ -402,12 +410,8 @@ public abstract class Downloader {
                         return;
                     }
 
-                    // move the file to the valid directory
-                    File destination = validPath.resolve(signedDataFile.getName()).toFile();
-                    moveFile(signedDataFile, destination);
                     signatures.forEach(this::moveSignatureFile);
-
-                    updateApplicationStatus(streamFile);
+                    updateApplicationStatusAndMoveFile(streamFile, validPath, signedDataFile);
                     valid = true;
                     break;
                 } catch (HashMismatchException e) {
@@ -450,9 +454,14 @@ public abstract class Downloader {
         return null;
     }
 
-    private StreamFile readAndVerifyStreamFile(File file, String verifiedHash) {
-        String fileName = file.getName();
-        StreamFile streamFile = readStreamFile(file);
+    /**
+     * Verifies the stream file is the next file in the hashchain if it's chained and the hash of the stream file
+     * matches the expected hash in the signature.
+     * @param streamFile the stream file object
+     * @param signature the signature object corresponding to the stream file
+     */
+    private void verify(StreamFile streamFile, FileStreamSignature signature) {
+        String fileName = streamFile.getName();
 
         if (lastValidDownloadedFileHashKey != null) {
             String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
@@ -462,19 +471,20 @@ public abstract class Downloader {
             }
         }
 
-        if (!streamFile.getFileHash().contentEquals(verifiedHash)) {
-            throw new HashMismatchException(fileName, verifiedHash, streamFile.getFileHash());
+        String expectedFileHash = signature.getHashAsHex();
+        if (!streamFile.getFileHash().contentEquals(expectedFileHash)) {
+            throw new HashMismatchException(fileName, expectedFileHash, streamFile.getFileHash());
         }
-
-        return streamFile;
     }
 
     /**
-     * Updates last valid downloaded file and last valid downloaded file hash key in database if applicable. Also saves
-     * the stream file to its corresponding database table.
+     * Updates last valid downloaded file and last valid downloaded file hash key in database if applicable, saves
+     * the stream file to its corresponding database table, and moves the verified data file to the valid folder.
      * @param streamFile the verified stream file
+     * @param validPath path to the valid folder
+     * @param verifiedDataFile the verified data file object
      */
-    private void updateApplicationStatus(StreamFile streamFile) {
+    private void updateApplicationStatusAndMoveFile(StreamFile streamFile, Path validPath, File verifiedDataFile) {
         transactionTemplate.executeWithoutResult(status -> {
             if (lastValidDownloadedFileHashKey != null) {
                 applicationStatusRepository
@@ -483,6 +493,10 @@ public abstract class Downloader {
             applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
 
             saveStreamFileRecord(streamFile);
+
+            // move the file to the valid directory
+            File destination = validPath.resolve(verifiedDataFile.getName()).toFile();
+            moveFile(verifiedDataFile, destination);
         });
     }
 
