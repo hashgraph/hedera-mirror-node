@@ -54,7 +54,8 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchEvent;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -161,6 +162,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
+        eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
     }
 
     private void executeBatches() {
@@ -178,7 +180,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             topicMessagePgCopy.copy(topicMessages, connection);
             persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
-            eventPublisher.publishEvent(new EntityBatchEvent(this));
+            eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {

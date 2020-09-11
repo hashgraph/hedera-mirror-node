@@ -21,11 +21,11 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGNotification;
 import org.postgresql.jdbc.PgConnection;
@@ -35,7 +35,8 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchEvent;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class NotifyingEntityListenerTest extends IntegrationTest {
@@ -43,6 +44,11 @@ public class NotifyingEntityListenerTest extends IntegrationTest {
     private final NotifyingEntityListener entityListener;
     private final NotifyProperties notifyProperties;
     private final DataSource dataSource;
+
+    @BeforeEach
+    void setup() {
+        notifyProperties.setEnabled(true);
+    }
 
     @Test
     void isEnabled() {
@@ -64,15 +70,37 @@ public class NotifyingEntityListenerTest extends IntegrationTest {
 
             // when
             entityListener.onTopicMessage(topicMessage);
-            entityListener.onBatch(new EntityBatchEvent(this));
+            entityListener.onSave(new EntityBatchSaveEvent(this));
+            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
             PGNotification[] notifications = connection.getNotifications(500);
 
             // then
-            assertEquals(1, notifications.length);
             assertThat(notifications)
+                    .isNotNull()
+                    .hasSize(1)
                     .extracting(PGNotification::getParameter)
                     .first()
                     .isEqualTo(json);
+        }
+    }
+
+    @Test
+    void onTopicMessageNotifyDisabled() throws Exception {
+        // given
+        notifyProperties.setEnabled(false);
+        TopicMessage topicMessage = topicMessage();
+
+        try (PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class)) {
+            connection.execSQLUpdate("listen topic_message");
+
+            // when
+            entityListener.onTopicMessage(topicMessage);
+            entityListener.onSave(new EntityBatchSaveEvent(this));
+            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+            PGNotification[] notifications = connection.getNotifications(500);
+
+            // then
+            assertThat(notifications).isNull();
         }
     }
 
@@ -87,7 +115,8 @@ public class NotifyingEntityListenerTest extends IntegrationTest {
 
             // when
             entityListener.onTopicMessage(topicMessage);
-            entityListener.onBatch(new EntityBatchEvent(this));
+            entityListener.onSave(new EntityBatchSaveEvent(this));
+            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
             PGNotification[] notifications = connection.getNotifications(500);
 
             // then
