@@ -22,7 +22,7 @@ package com.hedera.mirror.grpc.listener;
 
 import javax.annotation.Resource;
 
-public class SharedPollingTopicListenerTest extends AbstractSharedTopicListenerTest {
+public class SharedPollingTopicListenerTest extends AbstractTopicListenerTest {
 
     @Resource
     private SharedPollingTopicListener topicListener;
