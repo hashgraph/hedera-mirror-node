@@ -153,8 +153,9 @@ public class AccountBalancesFileLoader {
 
             if (!skip) {
                 tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
+                updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             }
-            updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
+
             updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, validCount,
                     startTime.getEpochSecond(), Instant.now().getEpochSecond(), fileName);
 
