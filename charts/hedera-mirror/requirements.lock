@@ -1,15 +1,15 @@
 dependencies:
 - name: hedera-mirror-grpc
   repository: file://../hedera-mirror-grpc
-  version: 0.4.0
+  version: 0.5.1
 - name: hedera-mirror-importer
   repository: file://../hedera-mirror-importer
-  version: 0.4.0
+  version: 0.5.1
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
   version: 3.4.9
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
-  version: 0.4.0
-digest: sha256:db1a5954e7a0921e8f758ab2681e44e8d368e74facefdc107a9248bb61fe51f3
-generated: "2020-07-24T16:33:21.878886-05:00"
+  version: 0.5.1
+digest: sha256:48a410ee79428ef41b3e7a30df9fe0f695a8f0bb11b75624ee108ac0fe908a10
+generated: "2020-09-11T10:06:00.81843-05:00"
