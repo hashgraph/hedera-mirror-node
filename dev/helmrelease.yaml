@@ -27,6 +27,7 @@ spec:
               downloader:
                 cloudProvider: GCP
               network: TESTNET
+              startDate: 1970-01-01T00:00:00Z
       image:
         tag: master-08b2329d4fa53f953cba40c9529ec1e0bcb47399
     postgresql:
