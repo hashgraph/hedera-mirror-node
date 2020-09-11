@@ -22,6 +22,7 @@
 
 // external libraries
 const express = require('express');
+const {createTerminus} = require('@godaddy/terminus');
 const {addAsync} = require('@awaitjs/express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -34,6 +35,7 @@ const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
+const health = require('./health.js');
 const stateproof = require('./stateproof');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
@@ -138,8 +140,17 @@ app.use(responseHandler);
 app.use(handleError);
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(port, () => {
+  let server = app.listen(port, () => {
     console.log(`Server running on port: ${port}`);
+  });
+
+  //Health check endpoints
+  createTerminus(server, {
+    healthChecks: {
+      '/health/readiness': health.readinessCheck,
+      '/health/liveness': health.livenessCheck,
+    },
+    beforeShutdown: health.beforeDown,
   });
 }
 

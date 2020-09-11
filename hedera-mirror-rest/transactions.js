@@ -253,7 +253,6 @@ const getOneTransaction = async (req, res) => {
       };
     });
 };
-
 module.exports = {
   getTransactions: getTransactions,
   getOneTransaction: getOneTransaction,

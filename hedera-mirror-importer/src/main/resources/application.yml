@@ -36,6 +36,15 @@ management:
         step: 30s
     tags:
       application: ${spring.application.name}
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db,diskSpace,ping
+server:
+  shutdown: graceful
 spring:
   application:
     name: hedera-mirror-importer
@@ -78,6 +87,8 @@ spring:
         order_inserts: true
         order_updates: true
     show-sql: false
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   task:
     scheduling:
       pool:
