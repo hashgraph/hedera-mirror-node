@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -36,6 +35,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.event.MirrorDateRangePropertiesProcessedEvent;
@@ -133,13 +133,13 @@ public class MirrorDateRangePropertiesProcessor {
         if (startDate != null) {
             if (startDate.isAfter(lastFileInstant)) {
                 filterStartDate = startDate;
-            } else if (!endDate.equals(Instant.MAX)) {
+            } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
                 filterStartDate = lastFileInstant;
             }
         } else {
             if (lastFileInstant.equals(Instant.EPOCH)) {
                 filterStartDate = MirrorProperties.getStartUpInstant();;
-            } else if (!endDate.equals(Instant.MAX)) {
+            } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
                 filterStartDate = lastFileInstant;
             }
         }

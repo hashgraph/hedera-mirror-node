@@ -103,6 +103,26 @@ public class MirrorDateRangePropertiesProcessorTest {
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
 
+    @Test
+    void startDateNotSetAndEndDateAfterLongMaxAndApplicationStatusNotEmpty() {
+        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100);
+        for (var downloaderProperties : downloaderPropertiesList) {
+            doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
+                    .when(applicationStatusRepository)
+                    .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        }
+        mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG.plusNanos(1));
+
+        mirrorDateRangePropertiesProcessor.process();
+
+        verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
+        verify(applicationStatusRepository, never()).updateStatusValue(any(ApplicationStatusCode.class), any(String.class));
+        for (var downloaderProperties : downloaderPropertiesList) {
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isNull();
+        }
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
+    }
+
     @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
     @ValueSource(longs = {0, 1})
     void startDateNotAfterApplicationStatus(long nanos) {

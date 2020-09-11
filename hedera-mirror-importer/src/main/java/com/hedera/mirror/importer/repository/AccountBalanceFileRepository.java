@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,20 +20,9 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFile;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import org.springframework.data.repository.CrudRepository;
 
-public interface StreamFileListener<T extends StreamFile> {
-    /**
-     * Called when starting to process a new stream file.
-     */
-    T onStart(StreamFileData streamFileData) throws ImporterException;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
 
-    void onEnd(T streamFile) throws ImporterException;
-
-    /**
-     * Called if an error is encountered during processing of stream file.
-     */
-    void onError();
+public interface AccountBalanceFileRepository extends CrudRepository<AccountBalanceFile, Long> {
 }

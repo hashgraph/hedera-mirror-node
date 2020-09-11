@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,20 +20,11 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFile;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+public class FileOperationException extends ImporterException {
 
-public interface StreamFileListener<T extends StreamFile> {
-    /**
-     * Called when starting to process a new stream file.
-     */
-    T onStart(StreamFileData streamFileData) throws ImporterException;
+    private static final long serialVersionUID = 5194246300993814767L;
 
-    void onEnd(T streamFile) throws ImporterException;
-
-    /**
-     * Called if an error is encountered during processing of stream file.
-     */
-    void onError();
+    public FileOperationException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

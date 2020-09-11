@@ -89,7 +89,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     @Override
     public AddressBook getCurrent() {
         Instant now = Instant.now();
-        long consensusTimestamp = Utility.convertToNanos(Instant.now().getEpochSecond(), now.getNano());
+        long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
 
         return addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())

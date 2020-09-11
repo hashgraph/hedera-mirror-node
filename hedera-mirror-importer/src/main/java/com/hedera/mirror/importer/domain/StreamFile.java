@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,20 +20,17 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFile;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import lombok.NonNull;
 
-public interface StreamFileListener<T extends StreamFile> {
-    /**
-     * Called when starting to process a new stream file.
-     */
-    T onStart(StreamFileData streamFileData) throws ImporterException;
+public interface StreamFile {
 
-    void onEnd(T streamFile) throws ImporterException;
+    String getFileHash();
 
-    /**
-     * Called if an error is encountered during processing of stream file.
-     */
-    void onError();
+    String getName();
+
+    default String getPreviousHash() {
+        return null;
+    }
+
+    void setNodeAccountId(@NonNull EntityId nodeAccountId);
 }

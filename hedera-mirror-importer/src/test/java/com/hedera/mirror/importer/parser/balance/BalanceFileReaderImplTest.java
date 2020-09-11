@@ -25,14 +25,14 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.util.Utility;
 
-public class BalanceFileReaderImplV2Test {
+public class BalanceFileReaderImplTest {
     private static final String sampleBalanceFileName = "2019-08-30T18_15_00.016002001Z_Balances.csv";
 
     @TempDir
     Path dataPath;
 
     private MirrorProperties mirrorProperties;
-    private BalanceFileReaderImplV2 balanceFileReader;
+    private BalanceFileReaderImpl balanceFileReader;
     private AccountBalanceLineParser parser;
 
     private long sampleConsensusTimestamp;
@@ -44,7 +44,7 @@ public class BalanceFileReaderImplV2Test {
     void setup() throws IOException {
         mirrorProperties = new MirrorProperties();
         parser = new AccountBalanceLineParser();
-        balanceFileReader = new BalanceFileReaderImplV2(new BalanceParserProperties(mirrorProperties), parser);
+        balanceFileReader = new BalanceFileReaderImpl(new BalanceParserProperties(mirrorProperties), parser);
         var resource = new ClassPathResource("data");
         StreamType streamType = StreamType.BALANCE;
         fileCopier = FileCopier

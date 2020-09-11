@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -45,6 +46,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -72,9 +74,13 @@ public class SqlEntityListenerTest extends IntegrationTest {
     private final SqlProperties sqlProperties;
 
     private String fileName = "2019-08-30T18_10_00.419072Z.rcd";
+    private RecordFile recordFile;
 
     @BeforeEach
     final void beforeEach() {
+        String newFileHash = UUID.randomUUID().toString();
+        recordFile = insertRecordFileRecord(fileName, newFileHash, "fileHash0");
+
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
 
@@ -218,7 +224,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId);
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
-        fileName = UUID.randomUUID().toString();
+
+        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null);
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
         sqlEntityListener.onEntityId(entityId); // duplicate across files
         completeFileAndCommit();
@@ -235,7 +242,16 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.count()).isEqualTo(1);
-        assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
+        assertThat(recordFileRepository.findByName(fileName)).isPresent();
+    }
+
+    @Test
+    void testMissingFileInRecordFileRepository() {
+        recordFileRepository.deleteAll();
+
+        assertThrows(MissingFileException.class, () -> {
+            sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        });
     }
 
     private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
@@ -245,9 +261,22 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private String completeFileAndCommit() {
-        String newFileHash = UUID.randomUUID().toString();
-        sqlEntityListener.onEnd(new RecordFile(1L, 2L, null, fileName, 0L, 0L, newFileHash, "fileHash0", 0));
-        return newFileHash;
+        sqlEntityListener.onEnd(recordFile);
+        return recordFile.getFileHash();
+    }
+
+    private RecordFile insertRecordFileRecord(String filename, String fileHash, String prevHash) {
+        if (fileHash == null) {
+            fileHash = UUID.randomUUID().toString();
+        }
+        if (prevHash == null) {
+            prevHash = UUID.randomUUID().toString();
+        }
+
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        RecordFile rf = new RecordFile(1L, 2L, null, filename, 0L, 0L, fileHash, prevHash, nodeAccountId, 0L, 0);
+        recordFileRepository.save(rf);
+        return rf;
     }
 
     private Transaction makeTransaction() {

@@ -29,6 +29,7 @@ import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -48,6 +49,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -129,8 +131,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onStart(StreamFileData streamFileData) {
+    public RecordFile onStart(StreamFileData streamFileData) {
+        String fileName = FilenameUtils.getName(streamFileData.getFilename());
+        RecordFile recordFile = recordFileRepository.findByName(fileName)
+                .orElseThrow(() -> new MissingFileException("File not found in the database: " + fileName));
         cleanup();
+        return recordFile;
     }
 
     @Override

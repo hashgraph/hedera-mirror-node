@@ -36,6 +36,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -46,7 +47,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Data;
 import org.apache.commons.io.FileUtils;
 import org.gaul.s3proxy.S3Proxy;
@@ -54,15 +58,20 @@ import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -88,6 +97,9 @@ public abstract class AbstractDownloaderTest {
     protected ApplicationStatusRepository applicationStatusRepository;
     @Mock(lenient = true)
     protected AddressBookService addressBookService;
+    @Mock
+    protected PlatformTransactionManager platformTransactionManager;
+    protected TransactionTemplate transactionTemplate;
     @TempDir
     protected Path s3Path;
     protected S3Proxy s3Proxy;
@@ -103,6 +115,10 @@ public abstract class AbstractDownloaderTest {
     protected String file2;
     protected Instant file1Instant;
     protected Instant file2Instant;
+    protected EntityId corruptedNodeAccountId;
+
+    protected static Set<EntityId> allNodeAccountIds;
+    protected static AddressBook addressBook;
 
     @TempDir
     Path dataPath;
@@ -158,11 +174,18 @@ public abstract class AbstractDownloaderTest {
 
     protected abstract void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize);
 
+    @BeforeAll
+    static void beforeAll() throws IOException {
+        addressBook = loadAddressBook("testnet");
+        allNodeAccountIds = addressBook.getNodeSet();
+    }
+
     @BeforeEach
     void beforeEach(TestInfo testInfo) throws Exception {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
+        transactionTemplate = new TransactionTemplate(platformTransactionManager);
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
                 AnonymousCredentialsProvider.create())
@@ -177,13 +200,7 @@ public abstract class AbstractDownloaderTest {
 
         startS3Proxy();
 
-        MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-        Path addressBookPath = ResourceUtils.getFile(String
-                .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
-        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
-        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
-        long now = Instant.now().getEpochSecond();
-        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
+        doReturn(addressBook).when(addressBookService).getCurrent();
     }
 
     @AfterEach
@@ -370,6 +387,7 @@ public abstract class AbstractDownloaderTest {
         verifyForSuccess();
 
         reset(applicationStatusRepository);
+        resetStreamFileRepositoryMock();
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
         Files.walk(downloaderProperties.getSignaturesPath())
                 .filter(this::isSigFile)
@@ -486,6 +504,30 @@ public abstract class AbstractDownloaderTest {
         verifyForSuccess(expectedFiles, expectedFiles.size() == 2);
     }
 
+    @ParameterizedTest(name = "node {0} signature file is corrupted")
+    @MethodSource("provideAllNodeAccountIds")
+    void singleNodeSigFileCorrupted(EntityId nodeAccountId) throws Exception {
+        corruptedNodeAccountId = nodeAccountId;
+        fileCopier.copy();
+        Files.walk(s3Path).filter(this::isSigFile)
+                .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
+                .forEach(AbstractDownloaderTest::corruptFile);
+        downloader.download();
+        verifyForSuccess();
+    }
+
+    @ParameterizedTest(name = "node {0} stream file is corrupted")
+    @MethodSource("provideAllNodeAccountIds")
+    void singleNodeStreamFileCorrupted(EntityId nodeAccountId) throws Exception {
+        corruptedNodeAccountId = nodeAccountId;
+        fileCopier.copy();
+        Files.walk(s3Path).filter(Predicate.not(this::isSigFile))
+                .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
+                .forEach(AbstractDownloaderTest::corruptFile);
+        downloader.download();
+        verifyForSuccess();
+    }
+
     private void differentFilenames(Duration offset) throws Exception {
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
         StreamType type = downloaderProperties.getStreamType();
@@ -521,6 +563,12 @@ public abstract class AbstractDownloaderTest {
     }
 
     private void verifyForSuccess(List<String> files, boolean expectEnabled) throws Exception {
+        verifyApplicationStatus(files);
+        assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
+        assertValidFiles(files);
+    }
+
+    private void verifyApplicationStatus(List<String> files) {
         ApplicationStatusCode lastValidDownloadedFileKey = downloaderProperties.getLastValidDownloadedFileKey();
         ApplicationStatusCode lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
 
@@ -534,38 +582,12 @@ public abstract class AbstractDownloaderTest {
                     .updateStatusValue(eq(lastValidDownloadedFileHashKey), any());
         }
 
-        assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
-        assertValidFiles(files);
+        verifyStreamFileRecord(files);
     }
 
-    protected AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
-        AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
-                .fileData(contents)
-                .startConsensusTimestamp(consensusTimestamp + 1)
-                .fileId(entityId);
+    protected abstract void resetStreamFileRepositoryMock();
 
-        NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(contents);
-        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
-        addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
-        for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
-                .getNodeAddressList()) {
-            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
-                    .consensusTimestamp(consensusTimestamp)
-                    .memo(nodeAddressProto.getMemo().toStringUtf8())
-                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                    .port(nodeAddressProto.getPortno())
-                    .publicKey(nodeAddressProto.getRSAPubKey())
-                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                    .nodeId(nodeAddressProto.getNodeId())
-                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
-                    .build();
-            addressBookEntries.add(addressBookEntry);
-        }
-
-        addressBookBuilder.entries(addressBookEntries);
-
-        return addressBookBuilder.build();
-    }
+    protected abstract void verifyStreamFileRecord(List<String> files);
 
     private Instant chooseFileInstant(String choice) {
         switch (choice) {
@@ -602,6 +624,47 @@ public abstract class AbstractDownloaderTest {
             doAnswer(invocation -> applicationStatus.getStatus()).when(applicationStatusRepository)
                     .findByStatusCode(statusCode);
         }
+    }
+
+    protected static AddressBook loadAddressBook(String filename) throws IOException {
+        Path addressBookPath = ResourceUtils.getFile(String.format("classpath:addressbook/%s", filename)).toPath();
+        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        long now = Instant.now().getEpochSecond();
+        return addressBookFromBytes(addressBookBytes, now, entityId);
+    }
+
+    protected static AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
+        AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
+                .fileData(contents)
+                .startConsensusTimestamp(consensusTimestamp + 1)
+                .fileId(entityId);
+
+        NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(contents);
+        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
+        addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
+        for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
+                .getNodeAddressList()) {
+            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
+                    .consensusTimestamp(consensusTimestamp)
+                    .memo(nodeAddressProto.getMemo().toStringUtf8())
+                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                    .port(nodeAddressProto.getPortno())
+                    .publicKey(nodeAddressProto.getRSAPubKey())
+                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                    .nodeId(nodeAddressProto.getNodeId())
+                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
+                    .build();
+            addressBookEntries.add(addressBookEntry);
+        }
+
+        addressBookBuilder.entries(addressBookEntries);
+
+        return addressBookBuilder.build();
+    }
+
+    private static Stream<Arguments> provideAllNodeAccountIds() {
+        return allNodeAccountIds.stream().map(Arguments::of);
     }
 
     @Data

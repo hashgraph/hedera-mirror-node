@@ -61,6 +61,8 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @UtilityClass
 public class Utility {
 
+    public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
+
     private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
 
@@ -114,13 +116,13 @@ public class Utility {
      * Calculate SHA384 hash of a balance file
      *
      * @param fileName file name
-     * @return byte array of hash value of null if calculating has failed
+     * @return hash in hex or null if calculating has failed
      */
-    public static byte[] getBalanceFileHash(String fileName) {
+    public static String getBalanceFileHash(String fileName) {
         try {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
             byte[] array = Files.readAllBytes(Paths.get(fileName));
-            return md.digest(array);
+            return Utility.bytesToHex(md.digest(array));
         } catch (NoSuchAlgorithmException | IOException e) {
             log.error(e);
             return null;
@@ -131,14 +133,10 @@ public class Utility {
      * Parses record stream file.
      *
      * @param filePath             path to record file
-     * @param expectedPrevFileHash expected previous file's hash in current file. Throws {@link HashMismatchException}
-     *                             on mismatch
-     * @param verifyHashAfter      previous file's hash mismatch is ignored if file is from before this time
      * @param recordItemConsumer   if not null, consumer is invoked for each transaction in the record file
      * @return parsed record file
      */
-    public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
-                                             Consumer<RecordItem> recordItemConsumer) {
+    public static RecordFile parseRecordFile(String filePath, Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
         String fileName = FilenameUtils.getName(filePath);
         recordFile.setName(fileName);
@@ -158,6 +156,7 @@ public class Utility {
 
             log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, fileName);
 
+            long count = 0;
             while (dis.available() != 0) {
                 byte typeDelimiter = dis.readByte();
                 switch (typeDelimiter) {
@@ -168,10 +167,6 @@ public class Utility {
                         String previousHash = Hex.encodeHexString(readFileHash);
                         recordFile.setPreviousHash(previousHash);
                         md.update(readFileHash);
-
-                        if (!Utility.verifyHashChain(previousHash, expectedPrevFileHash, verifyHashAfter, fileName)) {
-                            throw new HashMismatchException(fileName, expectedPrevFileHash, previousHash);
-                        }
                         break;
 
                     case FileDelimiter.RECORD_TYPE_RECORD:
@@ -198,6 +193,7 @@ public class Utility {
                                 recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
                             }
                         }
+                        count++;
                         break;
                     default:
                         throw new IllegalArgumentException(String.format(
@@ -212,6 +208,8 @@ public class Utility {
             }
             recordFile.setFileHash(Hex.encodeHexString(md.digest()));
             log.trace("Calculated file hash for the record file {}", recordFile.getFileHash());
+            recordFile.setCount(count);
+
             return recordFile;
         } catch (Exception e) {
             throw new IllegalArgumentException("Error parsing bad record file " + fileName, e);

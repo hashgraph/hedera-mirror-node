@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.pubsub.v1.PubsubMessage;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,12 +34,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.record.RecordFilePoller;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 public class PubSubRecordParserTest extends PubSubIntegrationTest {
     private static final int NUM_TXNS = 34; // number of transactions in test record files
@@ -51,10 +58,12 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
     private RecordParserProperties parserProperties;
     @Resource
     private RecordFilePoller recordFilePoller;
+    @Resource
+    private RecordFileRepository recordFileRepository;
     private FileCopier fileCopier;
 
     @BeforeEach
-    void beforeEach() {
+    void beforeEach() throws IOException {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
 
@@ -63,6 +72,15 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
                 .from(streamType.getPath(), "v2", "record0.0.3")
                 .filterFiles("*.rcd")
                 .to(streamType.getPath(), streamType.getValid());
+
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        Files.walk(Path.of(testResourcesPath.toString(), streamType.getPath(), "v2", "record0.0.3"))
+                .filter(p -> p.toString().endsWith(".rcd"))
+                .forEach(p -> {
+                    String filename = FilenameUtils.getName(p.toString());
+                    RecordFile rf = new RecordFile(Utility.getTimestampFromFilename(filename), 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 0L, 2);
+                    recordFileRepository.save(rf);
+                });
     }
 
     @Test

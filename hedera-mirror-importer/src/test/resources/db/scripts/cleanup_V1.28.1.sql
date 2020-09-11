@@ -13,4 +13,3 @@ UPDATE t_application_status
 SET status_value = NULL;
 TRUNCATE TABLE address_book RESTART IDENTITY CASCADE;
 TRUNCATE TABLE address_book_entry RESTART IDENTITY CASCADE;
-TRUNCATE TABLE account_balance_file RESTART IDENTITY CASCADE;

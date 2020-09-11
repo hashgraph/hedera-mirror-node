@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
@@ -34,14 +35,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.exception.ParserSQLException;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -55,6 +57,7 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
     private static final int NUM_TXNS = 19;
     private static final int NUM_ENTITIES = 8;
     private static final int NUM_RECORD_FILES = 1;
+    private static final String recordFilename = "2019-08-30T18_10_00.419072Z.rcd";
 
     @TempDir
     static Path dataPath;
@@ -83,6 +86,7 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
     private File file;
     private FileCopier fileCopier;
     private StreamFileData streamFileData;
+    private RecordFile recordFile;
 
     @BeforeEach
     void before() throws FileNotFoundException {
@@ -100,9 +104,15 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
                 .from(streamType.getPath(), "v2", "record0.0.3")
                 .filterFiles("*.rcd");
         fileCopier.copy();
-        file = dataPath.resolve("2019-08-30T18_10_00.419072Z.rcd").toFile();
+        file = dataPath.resolve(recordFilename).toFile();
 
         streamFileData = new StreamFileData(file.toString(), new FileInputStream(file));
+
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null, recordFilename, 0L, 0L,
+                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", nodeAccountId, 0L, 2);
+        recordFileRepository.save(recordFile);
     }
 
     @Test
@@ -115,26 +125,20 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void verifyRollbackAndPostFunctionalityOnRecordFileRepositoryError() throws ParserSQLException,
-            FileNotFoundException {
+    void verifyRollbackAndPostFunctionalityOnRecordFileRepositoryError() {
         // given
-        RecordFile recordFile = new RecordFile();
-        recordFile.setName("2019-08-30T18_10_00.419072Z.rcd");
-        recordFile.setConsensusEnd(0L);
-        recordFile.setConsensusStart(0L);
-        recordFileRepository.save(recordFile);
+        recordFileRepository.deleteAll();
 
         // when
-        Assertions.assertThrows(DataIntegrityViolationException.class, () -> {
+        Assertions.assertThrows(MissingFileException.class, () -> {
             recordFileParser.parse(streamFileData);
         });
 
         // then
-        recordFileRepository.delete(recordFile);
         verifyFinalDatabaseState(0, 0, 0, 0);
 
         // verify continue functionality
-        recordFileRepository.delete(recordFile);
+        recordFileRepository.save(recordFile);
         recordFileParser.parse(streamFileData);
         verifyFinalDatabaseState(NUM_CRYPTOS, NUM_TXNS, NUM_ENTITIES, NUM_RECORD_FILES);
     }
@@ -144,5 +148,12 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         assertEquals(cryptoTransferCount, cryptoTransferRepository.count()); // pg copy populated
         assertEquals(entityCount, entityRepository.count());
         assertEquals(recordFileCount, recordFileRepository.count());
+
+        Iterable<RecordFile> recordFiles = recordFileRepository.findAll();
+        assertThat(recordFiles).allSatisfy(rf -> {
+           assertThat(rf.getLoadStart()).isGreaterThan(0L);
+           assertThat(rf.getLoadEnd()).isGreaterThan(0L);
+           assertThat(rf.getLoadEnd()).isGreaterThanOrEqualTo(rf.getLoadStart());
+        });
     }
 }
