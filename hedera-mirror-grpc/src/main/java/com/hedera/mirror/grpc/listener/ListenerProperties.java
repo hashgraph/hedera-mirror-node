@@ -21,7 +21,6 @@ package com.hedera.mirror.grpc.listener;
  */
 
 import java.time.Duration;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -37,10 +36,6 @@ public class ListenerProperties {
 
     @Min(32)
     private int maxPageSize = 5000;
-
-    @Min(1024)
-    @Max(8192)
-    private int maxBufferSize = 2048;
 
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);

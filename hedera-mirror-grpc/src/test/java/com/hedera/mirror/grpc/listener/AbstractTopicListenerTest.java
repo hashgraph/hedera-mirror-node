@@ -39,7 +39,7 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
-    protected final Instant future = Instant.now().plusSeconds(30L);
+    protected final Instant future = Instant.now().plusSeconds(10L);
 
     @Resource
     protected DomainBuilder domainBuilder;

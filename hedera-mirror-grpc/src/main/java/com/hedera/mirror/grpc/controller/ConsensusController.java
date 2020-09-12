@@ -31,7 +31,6 @@ import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.dao.NonTransientDataAccessResourceException;
 import org.springframework.dao.TransientDataAccessException;
-import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -57,7 +56,6 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
     private static final String DB_ERROR = "Unable to connect to database. Please retry later";
-    private static final String OVERFLOW_ERROR = "Client lags too much behind. Please retry later";
 
     private final TopicMessageService topicMessageService;
 
@@ -72,7 +70,6 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
                 .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
                 .onErrorMap(t -> unknownError(t));
     }
 

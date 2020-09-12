@@ -47,7 +47,6 @@ public class NotifyingTopicListener implements TopicListener {
     private final ObjectMapper objectMapper;
     private final Flux<TopicMessage> topicMessages;
     private final PgChannel channel;
-    private final ListenerProperties listenerProperties;
 
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
         this.objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
@@ -58,7 +57,6 @@ public class NotifyingTopicListener implements TopicListener {
                 .setPort(dbProperties.getPort())
                 .setUser(dbProperties.getUsername());
 
-        this.listenerProperties = listenerProperties;
         Duration frequency = listenerProperties.getFrequency();
         Vertx vertx = Vertx.vertx();
         PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
@@ -91,8 +89,7 @@ public class NotifyingTopicListener implements TopicListener {
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         return topicMessages.filter(t -> filterMessage(t, filter))
-                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
-                .onBackpressureBuffer(listenerProperties.getMaxBufferSize());
+                .doOnSubscribe(s -> log.info("Subscribing: {}", filter));
     }
 
     private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
@@ -104,7 +101,7 @@ public class NotifyingTopicListener implements TopicListener {
     private Flux<String> listen() {
         EmitterProcessor<String> emitterProcessor = EmitterProcessor.create();
         FluxSink<String> sink = emitterProcessor.sink().onDispose(this::unlisten);
-        channel.handler(sink::next);
+        channel.handler(json -> sink.next(json));
         log.info("Listening for messages");
         return emitterProcessor;
     }
