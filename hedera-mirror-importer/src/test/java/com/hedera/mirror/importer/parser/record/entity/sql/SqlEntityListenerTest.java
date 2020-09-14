@@ -24,7 +24,6 @@ import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
@@ -38,7 +37,6 @@ import org.postgresql.jdbc.PgConnection;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -327,6 +325,25 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.count()).isEqualTo(1);
         assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
+    }
+
+    @Test
+    void multipleBatches() {
+        // given
+        int batchSize = sqlProperties.getBatchSize();
+        sqlProperties.setBatchSize(1);
+        var expectedTransaction1 = makeTransaction();
+        var expectedTransaction2 = makeTransaction();
+        expectedTransaction2.setConsensusNs(102L);
+
+        // when
+        sqlEntityListener.onTransaction(expectedTransaction1);
+        sqlEntityListener.onTransaction(expectedTransaction2);
+        completeFileAndCommit();
+
+        // then
+        assertEquals(2, transactionRepository.count());
+        sqlProperties.setBatchSize(batchSize);
     }
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
