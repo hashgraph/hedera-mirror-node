@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -107,6 +108,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         // publish message executor service
         ScheduledExecutorService executor = Executors
                 .newScheduledThreadPool(clientList.size() * Runtime.getRuntime().availableProcessors());
+        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) executor;
 
         // print status executor service
         ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
@@ -135,7 +137,9 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             loggerScheduler.scheduleAtFixedRate(() -> {
                 // update total counter
                 totalCount.addAndGet(intervalCount.get());
-                log.info("Status after {} m", batchCount.addAndGet(1) * printStatusInterval);
+
+                log.info("Status after {} m. ThreadPoolExecutor: {}", batchCount.addAndGet(1) * printStatusInterval,
+                        scheduledThreadPoolExecutor);
                 printStatus(intervalCount.get(), intervalStopwatch);
 
                 // reset interval count and stopwatch

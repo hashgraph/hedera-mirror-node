@@ -74,8 +74,10 @@ public class TopicMessagesPublishSampler extends PublishSampler {
                 messageLogLevel = Level.DEBUG;
             } catch (HederaPrecheckStatusException preEx) {
                 hederaResponseCodeEx.compute(preEx.status, (key, val) -> (val == null) ? 1 : val + 1);
-            } catch (HederaNetworkException preEx) {
+            } catch (HederaNetworkException netEx) {
                 networkFailures.incrementAndGet();
+                log.error("Network Error submitting transaction {} to {}: {}", i, sdkClient.getNodeInfo(),
+                        netEx.getMessage());
             } catch (Exception ex) {
                 unknownFailures.incrementAndGet();
                 log.error("Unexpected exception publishing message {} to {}: {}", i,
@@ -110,10 +112,11 @@ public class TopicMessagesPublishSampler extends PublishSampler {
         double seventyFifthPercentile = publishToConsensusLatencyStats.getPercentile(75);
         double ninetyFifthPercentile = publishToConsensusLatencyStats.getPercentile(95);
 
-        log.debug("Publish2Consensus stats, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th percentile: {} " +
-                        "ms," +
-                        " 95th percentile: {} ms", String.format("%.03f", min), String.format("%.03f", max),
-                String.format("%.03f", mean), String.format("%.03f", median),
-                String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
+        log.trace("Publish2Consensus stats for {} messages, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th " +
+                        "percentile: {} " +
+                        "ms, 95th percentile: {} ms", topicMessagePublishRequest.getMessagesPerBatchCount(),
+                String.format("%.03f", min), String.format("%.03f", max), String.format("%.03f", mean),
+                String.format("%.03f", median), String.format("%.03f", seventyFifthPercentile),
+                String.format("%.03f", ninetyFifthPercentile));
     }
 }
