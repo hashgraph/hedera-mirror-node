@@ -152,17 +152,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
         } finally {
             cleanup();
+            closeQuietly(sqlNotifyTopicMessage);
+            sqlNotifyTopicMessage = null;
+            DataSourceUtils.releaseConnection(connection, dataSource);
+            connection = null;
         }
     }
 
     @Override
     public void onError() {
         cleanup();
+        DataSourceUtils.releaseConnection(connection, dataSource);
+        connection = null;
+        closeQuietly(sqlNotifyTopicMessage);
+        sqlNotifyTopicMessage = null;
     }
 
     private void cleanup() {
-        closeQuietly(sqlNotifyTopicMessage);
-        sqlNotifyTopicMessage = null;
         batchCount = 0;
         contractResults.clear();
         cryptoTransfers.clear();
@@ -172,8 +178,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
-
-        DataSourceUtils.releaseConnection(connection, dataSource);
     }
 
     private void executeBatch(PreparedStatement ps, String entity) {
