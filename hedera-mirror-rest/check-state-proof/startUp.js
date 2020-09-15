@@ -97,7 +97,7 @@ const startUpScreen = () => {
       host = options.host;
     }
 
-    url = `http://${host}/api/v1/transactions/${transactionId}/stateproof`;
+    url = `${host}/api/v1/transactions/${transactionId}/stateproof`;
     source = url;
   }
 
