@@ -34,25 +34,15 @@ const replaceSpecialCharsWithUnderScores = (stringToFormat) => {
 
 const makeStateProofDir = (transactionId, stateProofJson) => {
   const newDirPath = replaceSpecialCharsWithUnderScores(transactionId);
-  fs.mkdir(newDirPath, {recursive: true}, (err, path) => {
-    if (err) {
-      console.error(`Error encountered creating directory ${path}: ${err}`);
-      throw err;
-    }
-
-    console.log(`Supporting files and api json response for the state proof stored in the directory ${newDirPath}`);
-  });
-
-  fs.writeFile(`${newDirPath}/apiResponse.json`, JSON.stringify(stateProofJson), (err) => {
-    if (err) throw err;
-  });
-
+  fs.mkdirSync(newDirPath, {recursive: true});
+  fs.writeFileSync(`${newDirPath}/apiResponse.json`, JSON.stringify(stateProofJson));
+  console.log(`Supporting files and API response for the state proof will be stored in the directory ${newDirPath}`);
   return newDirPath;
 };
 
 const storeFile = (data, file, ext) => {
   const newFilePath = `${replaceSpecialCharsWithUnderScores(file)}.${ext}`;
-  fs.writeFile(`${newFilePath}`, data, (err) => {
+  fs.writeFileSync(`${newFilePath}`, data, (err) => {
     if (err) throw err;
   });
 };
@@ -66,18 +56,16 @@ const getAPIResponse = async (url) => {
     60 * 1000 // in ms
   );
 
-  console.log(`Requesting stateproof files from ${url}...`);
+  console.log(`Requesting state proof files from ${url}...`);
   return await fetch(url, {signal: controller.signal})
     .then(async (response) => {
       if (!response.ok) {
         throw Error(response.statusText);
       }
-      return await response.json();
+      return response.json();
     })
     .catch((error) => {
-      var message = `Fetch error, url : ${url}, error : ${error}`;
-      console.log(message);
-      throw message;
+      throw `Error fetching ${url}: ${error}`;
     })
     .finally(() => {
       clearTimeout(timeout);

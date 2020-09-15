@@ -41,7 +41,6 @@ class StateProofHandler {
   }
 
   parseAddressBooks(addressBooksString) {
-    console.log(`Parsing address books...`);
     const addressBooks = [];
     _.forEach(addressBooksString, (book, index) => {
       const tmpAddrBook = base64StringToBuffer(book);
@@ -54,18 +53,16 @@ class StateProofHandler {
   }
 
   parseRecordFile(recordFileString) {
-    console.log(`Parsing record file...`);
     const tmpRcdFile = base64StringToBuffer(recordFileString);
     storeFile(tmpRcdFile, `${this.transactionId}/recordFile`, 'rcd');
 
     const rcdFile = new RecordFile(tmpRcdFile);
 
-    console.debug(`Parsed record, found ${Object.keys(rcdFile.transactionIdMap).length} transactions`);
+    console.debug(`Parsed record and found ${Object.keys(rcdFile.transactionIdMap).length} transactions`);
     return rcdFile;
   }
 
   parseSignatureFiles(signatureFilesString) {
-    console.log(`Parsing signature files...`);
     const sigFiles = [];
     _.forEach(signatureFilesString, (sigFilesString, nodeId) => {
       const tmpSigFile = base64StringToBuffer(sigFilesString);
@@ -94,9 +91,9 @@ class StateProofHandler {
     const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId);
     if (!transactionInRecordFile) {
       console.error(
-        `transactionId ${this.transactionId} not present in recordFile. Transaction map is {${Object.keys(
+        `Transaction ID ${this.transactionId} not present in record file. Available transaction IDs: ${Object.keys(
           this.recordFile.transactionIdMap
-        )}}`
+        )}`
       );
       return false;
     }
