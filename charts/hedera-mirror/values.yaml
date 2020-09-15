@@ -40,11 +40,15 @@ importer:
             name: mirror_node
             password: mirror_node_pass
             username: mirror_node
+            flywayBaseline: 1.999.0
           initialAddressBook: "/usr/etc/hedera-mirror-importer/addressbook.bin"
           network: "OTHER"
     spring:
       flyway:
-        baselineVersion: 1.99.0
+        baseline-on-migrate: true
+        baseline-version: 1.999.0
+        ignore-missing-migrations: true
+        enabled: false
   enabled: true
   redis:
     sentinel:

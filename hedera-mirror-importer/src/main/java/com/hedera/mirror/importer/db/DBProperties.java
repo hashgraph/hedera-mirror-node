@@ -57,4 +57,6 @@ public class DBProperties {
     @NotBlank
     private String username = "";
 
+    @NotBlank
+    private String flywayBaseline = "1.999.0";
 }

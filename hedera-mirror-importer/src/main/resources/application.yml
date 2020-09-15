@@ -79,6 +79,7 @@ spring:
       api-user: ${hedera.mirror.importer.db.restUsername}
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
+    target: 1.999.0
   jpa:
     properties:
       hibernate:
