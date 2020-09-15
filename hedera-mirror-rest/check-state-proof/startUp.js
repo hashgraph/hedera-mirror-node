@@ -101,7 +101,7 @@ const startUpScreen = () => {
     source = url;
   }
 
-  console.log(`Initializing state proof for transaction ID ${transactionId} from file: ${source}`);
+  console.log(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
   return {transactionId, url, storedFile};
 };
 module.exports = {
