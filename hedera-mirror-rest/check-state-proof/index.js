@@ -33,29 +33,34 @@ const getStateProofJson = async (url, storedFile) => {
   return storedFile ? readJSONFile(storedFile) : getAPIResponse(url);
 };
 
-getStateProofJson(url, storedFile).then((stateProofJson) => {
-  const missingFilesPrefix = 'Mirror node StateProof API returned insufficient number of files.';
-  if (stateProofJson.address_books.length < 1) {
-    console.error(`${missingFilesPrefix} At least 1 addressBook is expected`);
-    return false;
-  }
+getStateProofJson(url, storedFile)
+  .then((stateProofJson) => {
+    const missingFilesPrefix = 'Mirror node StateProof API returned insufficient number of files.';
+    if (stateProofJson.address_books.length < 1) {
+      console.error(`${missingFilesPrefix} At least 1 addressBook is expected`);
+      return false;
+    }
 
-  if (stateProofJson.record_file.length < 1) {
-    console.error(`${missingFilesPrefix} At least 1 record file is expected`);
-    return false;
-  }
+    if (stateProofJson.record_file.length < 1) {
+      console.error(`${missingFilesPrefix} At least 1 record file is expected`);
+      return false;
+    }
 
-  if (stateProofJson.signature_files.length < 2) {
-    console.error(`${missingFilesPrefix} At least 2 signature files are expected`);
-    return false;
-  }
+    if (stateProofJson.signature_files.length < 2) {
+      console.error(`${missingFilesPrefix} At least 2 signature files are expected`);
+      return false;
+    }
 
-  // instantiate stateProofHandler which will parse files and extract needed data
-  const stateProofHandler = new StateProofHandler(transactionId, stateProofJson);
+    // instantiate stateProofHandler which will parse files and extract needed data
+    const stateProofHandler = new StateProofHandler(transactionId, stateProofJson);
 
-  // kick off stateProof flow
-  const validatedTransaction = stateProofHandler.runStateProof();
+    // kick off stateProof flow
+    const validatedTransaction = stateProofHandler.runStateProof();
+    const result = validatedTransaction ? 'valid' : 'invalid';
 
-  console.log(`StateProof validation for ${transactionId} returned ${validatedTransaction}`);
-  return validatedTransaction;
-});
+    console.log(`-----------------------------------------------`);
+    console.log(`The state proof is cryptographically ${result}`);
+    console.log(`-----------------------------------------------`);
+    return validatedTransaction;
+  })
+  .catch((e) => console.error(e));

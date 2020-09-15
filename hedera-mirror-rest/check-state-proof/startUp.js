@@ -63,7 +63,7 @@ const options = yargs
   }).argv;
 
 const startUpScreen = () => {
-  const greeting = chalk.bold(`Hedera Transaction State Proof Checker CLI!`);
+  const greeting = chalk.bold(`Hedera Transaction State Proof Checker CLI`);
   const msgBox = boxen(greeting, boxenOptions);
   console.log(msgBox);
 
@@ -101,7 +101,7 @@ const startUpScreen = () => {
     source = url;
   }
 
-  console.log(`Initializing state proof for transactionId: ${transactionId} from source: ${source}`);
+  console.log(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
   return {transactionId, url, storedFile};
 };
 module.exports = {
