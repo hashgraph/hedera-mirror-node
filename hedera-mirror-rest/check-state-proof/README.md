@@ -42,7 +42,7 @@ If you would like to configure your mirror node to support State Proof Alpha you
 ### Install CLI
 The node based CLI tool `check-state-proof` can be installed as follows
 1. Ensure you've installed [NodeJS](https://nodejs.org/en/about/)
-2. Navigate to the `hedera-mirror-rest/state-proof-demo` directory
+2. Navigate to the `hedera-mirror-rest/check-state-proof` directory
 3. Npm install the tool -  `npm install -g .`
 
 To verify correct installation simply run `check-state-proof --help` or `npm start -- --help` to show usage instructions.
