@@ -47,7 +47,7 @@ public class RecordFilePoller implements FilePoller {
     private final RecordFileParser recordFileParser;
 
     @Override
-    @Scheduled(fixedRateString = "${hedera.mirror.importer.parser.record.frequency:100}")
+    @Scheduled(fixedDelayString = "${hedera.mirror.importer.parser.record.frequency:100}")
     public void poll() {
         if (ShutdownHelper.isStopping()) {
             return;

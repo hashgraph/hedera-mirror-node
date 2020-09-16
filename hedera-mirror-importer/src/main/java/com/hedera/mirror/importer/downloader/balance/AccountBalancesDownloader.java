@@ -41,18 +41,21 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class AccountBalancesDownloader extends Downloader {
 
-    private AccountBalanceFileRepository accountBalanceFileRepository;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
 
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, BalanceDownloaderProperties downloaderProperties,
-            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry, AccountBalanceFileRepository accountBalanceFileRepository) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate, meterRegistry);
+            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
+            AccountBalanceFileRepository accountBalanceFileRepository) {
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
+                meterRegistry);
         this.accountBalanceFileRepository = accountBalanceFileRepository;
     }
 
     /**
      * Reads the account balance file and checks that the file hash matches the verified hash.
+     *
      * @param file account balance file object
      * @return StreamFile object
      */
@@ -68,11 +71,11 @@ public class AccountBalancesDownloader extends Downloader {
 
     @Override
     protected void saveStreamFileRecord(StreamFile streamFile) {
-        accountBalanceFileRepository.save((AccountBalanceFile)streamFile);
+        accountBalanceFileRepository.save((AccountBalanceFile) streamFile);
     }
 
     @Leader
-    @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.balance.frequency:30000}")
+    @Scheduled(fixedDelayString = "${hedera.mirror.importer.downloader.balance.frequency:30000}")
     public void download() {
         downloadNextBatch();
     }
