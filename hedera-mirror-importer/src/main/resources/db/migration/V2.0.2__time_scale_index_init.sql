@@ -12,6 +12,10 @@ create index if not exists balances__account_then_timestamp
 create index if not exists balance_sets__completed
     on account_balance_sets (is_complete, consensus_timestamp desc);
 
+-- account_balance_file
+create unique index if not exists account_balance_file__name
+    on account_balance_file(name, consensus_timestamp desc);
+
 -- address_book_entry
 create index if not exists address_book_entry__timestamp
     on address_book_entry (consensus_timestamp);

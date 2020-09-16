@@ -12,19 +12,23 @@ create domain entity_id as bigint;
 create domain nanos_timestamp as bigint; -- dropped using this domain in some tables as it's needed as a bigint for hyper table partitioning
 
 -- account_balance
-create table  if not exists account_balance (
+create table if not exists account_balance (
     consensus_timestamp     bigint              not null,
     balance                 hbar_tinybars       not null,
     account_realm_num       entity_realm_num    not null,
     account_num             entity_num          not null
 );
-create table if not exists account_balance (
-    consensus_timestamp bigint not null,
-    account_id entity_id not null,
-    balance hbar_tinybars not null,
-    constraint pk__account_balance primary key (consensus_timestamp, account_id)
-);
 comment on table account_balance is 'account balances (historical) in tinybars at different consensus timestamps';
+
+create table if not exists account_balance_file (
+    consensus_timestamp     bigint          primary key,
+    count                   bigint          not null,
+    load_start              bigint,
+    load_end                bigint,
+    file_hash               varchar(96),
+	name                    varchar(250)    not null,
+    node_account_id         entity_id       not null
+);
 
 -- account_balance_sets
 create table if not exists account_balance_sets (
@@ -39,11 +43,11 @@ comment on table account_balance_sets is 'processing state of snapshots of the e
 -- address_book
 create table if not exists address_book
 (
-    start_consensus_timestamp   bigint primary key,
-    end_consensus_timestamp     bigint null,
-    file_id                     entity_id       not null,
-    node_count                  int             null,
-    file_data                   bytea           not null
+    start_consensus_timestamp   bigint      primary key,
+    end_consensus_timestamp     bigint      null,
+    file_id                     entity_id   not null,
+    node_count                  int         null,
+    file_data                   bytea       not null
 );
 
 
@@ -81,10 +85,10 @@ create table if not exists crypto_transfer
 
 -- file_data
 create table if not exists file_data (
-    file_data           bytea null,
-    consensus_timestamp bigint not null,
-    entity_id           entity_id not null,
-    transaction_type    smallint not null
+    file_data           bytea       null,
+    consensus_timestamp bigint      not null,
+    entity_id           entity_id   not null,
+    transaction_type    smallint    not null
 );
 
 -- live_hash
@@ -96,21 +100,23 @@ create table if not exists live_hash (
 -- non_fee_transfer
 create table if not exists non_fee_transfer (
     entity_id           entity_id       not null,
-    consensus_timestamp bigint not null,
+    consensus_timestamp bigint          not null,
     amount              hbar_tinybars   not null
 );
 
 -- record_file
 -- id seq from v1.0 no longer explicitly created as s_record_files_seq
 create table if not exists record_file (
-    id              serial                  primary key,
-    name            character varying(250)  not null,
+    id              serial      primary key,
+    name            character   varying(250)  not null,
     load_start      bigint,
     load_end        bigint,
-    file_hash       character varying(96),
-    prev_hash       character varying(96),
-    consensus_start bigint default 0        not null,
-    consensus_end   bigint default 0        not null
+    file_hash       character   varying(96),
+    prev_hash       character   varying(96),
+    consensus_start bigint      default 0 not null,
+    consensus_end   bigint      default 0 not null,
+    node_account_id entity_id   not null,
+    count           bigint      not null
 );
 
 -- t_application_status
@@ -132,19 +138,19 @@ insert into t_application_status (status_name, status_code) values ('Last proces
 
 -- t_entities
 create table if not exists t_entities (
-    entity_num              bigint                  not null,
-    entity_realm            bigint                  not null,
-    entity_shard            bigint                  not null,
-    fk_entity_type_id       integer                 not null,
+    entity_num              bigint      not null,
+    entity_realm            bigint      not null,
+    entity_shard            bigint      not null,
+    fk_entity_type_id       integer     not null,
     auto_renew_period       bigint,
     key                     bytea,
-    deleted                 boolean DEFAULT false,
+    deleted                 boolean     default false,
     exp_time_ns             bigint,
-    ed25519_public_key_hex  character varying,
+    ed25519_public_key_hex  character   varying,
     submit_key              bytea,
     memo                    text,
     auto_renew_account_id   bigint,
-    id                      bigint                  not null,
+    id                      bigint      not null,
     proxy_account_id        entity_id
 );
 
@@ -336,17 +342,10 @@ create table if not exists transaction (
     valid_duration_seconds  bigint,
     node_account_id         entity_id           not null,
     entity_id               entity_id,
-    initial_balance         bigint DEFAULT 0,
+    initial_balance         bigint              default 0,
     max_fee                 hbar_tinybars,
     charged_tx_fee          bigint,
     memo                    bytea,
     transaction_hash        bytea,
     transaction_bytes       bytea
 );
-
--- is it necessary to explicitly grant the following?
---grant usage on SCHEMA :schema_name to :db_user;
---grant connect on database :db_name to :db_user;
---grant all privileges on database :db_name to db_user;
---grant all privileges on all tables in :schema_name public to db_user;
---grant all ON t_record_files to db_user;

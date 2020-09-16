@@ -10,6 +10,9 @@ create extension if not exists timescaledb cascade;
 -- account_balance
 select create_hypertable('account_balance', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
 
+-- account_balance_file
+select create_hypertable('account_balance_file', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
+
 -- account_balance_sets
 select create_hypertable('account_balance_sets', 'consensus_timestamp', chunk_time_interval => 604800000000000, if_not_exists => true);
 
