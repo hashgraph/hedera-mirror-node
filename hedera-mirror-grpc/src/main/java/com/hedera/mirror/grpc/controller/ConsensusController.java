@@ -41,6 +41,7 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
@@ -74,7 +75,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
                 .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-                .onErrorMap(TimeoutException.class, e -> error(e, Status.DEADLINE_EXCEEDED, TIMEOUT_ERROR))
+                .onErrorMap(ClientTimeoutException.class, e -> error(e, Status.DEADLINE_EXCEEDED, TIMEOUT_ERROR))
                 .onErrorMap(t -> unknownError(t));
     }
 

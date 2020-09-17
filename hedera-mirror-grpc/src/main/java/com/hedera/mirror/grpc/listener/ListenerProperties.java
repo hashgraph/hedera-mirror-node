@@ -39,7 +39,7 @@ public class ListenerProperties {
     private int maxPageSize = 5000;
 
     @Min(8192)
-    @Max(32768)
+    @Max(65536)
     private int maxBufferSize = 16384;
 
     @Min(2000)

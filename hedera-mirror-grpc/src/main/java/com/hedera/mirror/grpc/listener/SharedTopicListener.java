@@ -23,14 +23,16 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 public abstract class SharedTopicListener implements TopicListener {
 
-    protected ListenerProperties listenerProperties;
+    protected final ListenerProperties listenerProperties;
     protected Flux<TopicMessage> sharedTopicMessages;
 
     public SharedTopicListener(ListenerProperties listenerProperties) {
@@ -49,7 +51,8 @@ public abstract class SharedTopicListener implements TopicListener {
                 .doOnSubscribe(s -> getLogger().info("Subscribing: {}", filter))
                 .doOnCancel(() -> processor.onNext("timeout"))
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
-                .timeout(timeoutFlux, message -> timeoutFlux);
+                .timeout(timeoutFlux, message -> timeoutFlux,
+                        Mono.error(new ClientTimeoutException("Client times out to receive the buffered messages")));
     }
 
     private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
