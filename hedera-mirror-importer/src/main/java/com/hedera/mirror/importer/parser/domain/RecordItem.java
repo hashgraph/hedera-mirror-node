@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -40,7 +41,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class RecordItem implements StreamItem {
     static final String BAD_TRANSACTION_BYTES_MESSAGE = "Failed to parse transaction bytes";
     static final String BAD_RECORD_BYTES_MESSAGE = "Failed to parse record bytes";
-    static final String BAD_TRANSACTION_BODY_BYTES_MESSAGE = "Error parsing transactionBody from bodyBytes";
+    static final String BAD_TRANSACTION_BODY_BYTES_MESSAGE = "Error parsing transactionBody from transaction";
 
     private final Transaction transaction;
     private final TransactionBody transactionBody;
@@ -95,20 +96,23 @@ public class RecordItem implements StreamItem {
     }
 
     private static TransactionBody parseTransactionBody(Transaction transaction) {
-        if (transaction.hasBody()) {
-            return transaction.getBody();
-        } else {
-            // Not possible to check existence of bodyBytes field since there is no 'hasBodyBytes()'.
-            // If unset, getBodyBytes() returns empty ByteString which always parses successfully to "empty"
-            //TransactionBody. However, every transaction should have a valid (non "empty") TransactionBody.
-            if (transaction.getBodyBytes() == ByteString.EMPTY) {
-                throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
-            }
-            try {
+        try {
+            if (transaction.getSignedTransactionBytes() != ByteString.EMPTY) {
+                return TransactionBody
+                        .parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+            } else if (transaction.getUnknownFields().hasField(1)) {
+                return TransactionBody.parseFrom(transaction.getUnknownFields().getField(1).getLengthDelimitedList()
+                        .get(0));
+            } else if (transaction.getBodyBytes() != ByteString.EMPTY) {
+                // Not possible to check existence of bodyBytes field since there is no 'hasBodyBytes()'.
+                // If unset, getBodyBytes() returns empty ByteString which always parses successfully to "empty"
+                //TransactionBody. However, every transaction should have a valid (non "empty") TransactionBody.
                 return TransactionBody.parseFrom(transaction.getBodyBytes());
-            } catch (InvalidProtocolBufferException e) {
-                throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
             }
+            throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
+        } catch (
+                InvalidProtocolBufferException e) {
+            throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
     }
 
@@ -124,7 +128,8 @@ public class RecordItem implements StreamItem {
             Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
 
             if (unknownFields.size() != 1) {
-                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly " +
+                throw new IllegalStateException("Unable to guess correct transaction type since there's not " +
+                        "exactly " +
                         "one: " + unknownFields);
             }
 
