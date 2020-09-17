@@ -129,8 +129,7 @@ public class RecordItem implements StreamItem {
 
             if (unknownFields.size() != 1) {
                 throw new IllegalStateException("Unable to guess correct transaction type since there's not " +
-                        "exactly " +
-                        "one: " + unknownFields);
+                        "exactly one: " + unknownFields);
             }
 
             int transactionType = unknownFields.iterator().next();

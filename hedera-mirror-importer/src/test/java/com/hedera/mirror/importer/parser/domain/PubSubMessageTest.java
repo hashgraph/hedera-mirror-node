@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -117,69 +118,43 @@ class PubSubMessageTest {
 
     private static Transaction getTransaction() {
         return Transaction.newBuilder()
-                .setBody(TransactionBody.newBuilder()
-                        .setTransactionID(TransactionID.newBuilder()
-                                .setTransactionValidStart(TIMESTAMP)
-                                .setAccountID(ACCOUNT_ID)
-                                .build())
-                        .setNodeAccountID(ACCOUNT_ID)
-                        .setTransactionFee(INT64_VALUE)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(INT64_VALUE).build())
-                        .setMemoBytes(BYTE_STRING)
-                        .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
-                                .setTopicID(TOPIC_ID)
-                                .setMessage(BYTE_STRING)
-                                .build())
-                        .build())
-                .setSigMap(SignatureMap.newBuilder()
-                        .addSigPair(SignaturePair.newBuilder()
-                                .setEd25519(BYTE_STRING)
-                                .setPubKeyPrefix(BYTE_STRING)
-                                .build())
-                        .build())
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(
+                                        TransactionBody.newBuilder()
+                                                .setTransactionID(TransactionID.newBuilder()
+                                                        .setTransactionValidStart(TIMESTAMP)
+                                                        .setAccountID(ACCOUNT_ID)
+                                                        .build())
+                                                .setNodeAccountID(ACCOUNT_ID)
+                                                .setTransactionFee(INT64_VALUE)
+                                                .setTransactionValidDuration(Duration.newBuilder()
+                                                        .setSeconds(INT64_VALUE).build())
+                                                .setMemoBytes(BYTE_STRING)
+                                                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody
+                                                        .newBuilder()
+                                                        .setTopicID(TOPIC_ID)
+                                                        .setMessage(BYTE_STRING)
+                                                        .build())
+                                                .build()
+                                                .toByteString())
+                                .setSigMap(SignatureMap.newBuilder()
+                                        .addSigPair(SignaturePair.newBuilder()
+                                                .setEd25519(BYTE_STRING)
+                                                .setPubKeyPrefix(BYTE_STRING)
+                                                .build())
+                                        .build())
+                                .build()
+                                .toByteString()
+                )
                 .build();
     }
 
     private static String getExpectedTransactionJson() {
         return "\"transaction\" : {" +
-                "  \"body\": {" +
-                "    \"transactionID\": {" +
-                "      \"transactionValidStart\": {" +
-                "        \"seconds\": \"0\"," +
-                "        \"nanos\": 123456789" +
-                "      }," +
-                "      \"accountID\": {" +
-                "        \"shardNum\": \"0\"," +
-                "        \"realmNum\": \"0\"," +
-                "        \"accountNum\": \"10\"" +
-                "      }" +
-                "    }," +
-                "    \"nodeAccountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "    }," +
-                "    \"transactionFee\": \"100000000\"," +
-                "    \"transactionValidDuration\": {" +
-                "      \"seconds\": \"100000000\"" +
-                "    }," +
-                "    \"generateRecord\": false," +
-                "    \"memo\": \"abcdef\"," +
-                "    \"consensusSubmitMessage\": {" +
-                "      \"topicID\": {" +
-                "        \"shardNum\": \"0\"," +
-                "        \"realmNum\": \"0\"," +
-                "        \"topicNum\": \"20\"" +
-                "      }," +
-                "      \"message\": \"YWJjZGVm\"" +
-                "    }" +
-                "  }," +
-                "  \"sigMap\": {" +
-                "    \"sigPair\": [{" +
-                "      \"pubKeyPrefix\": \"YWJjZGVm\"," +
-                "      \"ed25519\": \"YWJjZGVm\"" +
-                "    }]" +
-                "  }" +
+                "  \"bodyBytes\":\"\"," +
+                "  \"signedTransactionBytes\": " +
+                "\"CjQKCwoFEJWa7zoSAhgKEgIYChiAwtcvIgUIgMLXLzIGYWJjZGVm2gEMCgIYFBIGYWJjZGVmEhIKEAoGYWJjZGVmGgZhYmNkZWY=\"" +
                 "}";
     }
 
@@ -232,7 +207,8 @@ class PubSubMessageTest {
                 "      }," +
                 "      \"amount\": \"100000000\"" +
                 "    }]" +
-                "  }" +
+                "  }," +
+                "  \"tokenTransferLists\":[]" +
                 "}";
     }
 }
