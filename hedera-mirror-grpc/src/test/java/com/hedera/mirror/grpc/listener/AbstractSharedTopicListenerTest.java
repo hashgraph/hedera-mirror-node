@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Vector;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +14,7 @@ import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListenerTest {
 
@@ -84,7 +84,7 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .thenRequest(2)
                 .expectNext(3L, 4L)
                 .thenAwait(Duration.ofMillis(200L)) // timeout begins to count down when overflow happens
-                .expectError(TimeoutException.class)
+                .expectError(ClientTimeoutException.class)
                 .verify(Duration.ofMillis(800L));
     }
 }
