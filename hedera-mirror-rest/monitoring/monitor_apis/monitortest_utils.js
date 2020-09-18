@@ -20,7 +20,6 @@
 
 const AbortController = require('abort-controller');
 const config = require('../../config');
-const long = require('long');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
 
@@ -44,18 +43,6 @@ const testResult = {
   url: '', // last rest-api endpoint call made in test
   message: '', // test message
   failureMessages: [], // failure messages
-};
-
-/**
- * Converts consensus timestamp seconds.nanoseconds to nanoseconds
- * @param {String} consensusTimestamp consensus timestamp
- * @return {Long} timestamp in nanoseconds
- */
-const consensusTimestampToNanos = (consensusTimestamp) => {
-  const parts = consensusTimestamp.split('.');
-  const seconds = long.fromString(parts[0]);
-  const nanos = parseInt(parts[1], 10);
-  return seconds.mul(1000000000).add(nanos);
 };
 
 /**
@@ -237,7 +224,6 @@ const getMaxLimit = (resource) => {
 module.exports = {
   toAccNum,
   fromAccNum,
-  consensusTimestampToNanos,
   getUrl,
   cloneObject,
   getAPIResponse,

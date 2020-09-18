@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-const long = require('long');
 const math = require('mathjs');
 const acctestutils = require('./monitortest_utils');
 
@@ -197,16 +196,14 @@ const getTransactionsWithOrderParam = async (server, classResults) => {
     return;
   }
 
-  let previousNanos = long.ZERO;
+  let previousConsensusTimestamp = '0';
   for (const txn of transactions) {
-    const nanos = acctestutils.consensusTimestampToNanos(txn.consensus_timestamp);
-    if (nanos.lessThan(previousNanos)) {
+    if (txn.consensus_timestamp <= previousConsensusTimestamp) {
       currentTestResult.failureMessages.push('consensus timestamps are not in ascending order');
       acctestutils.addTestResult(classResults, currentTestResult, false);
       return;
     }
-
-    previousNanos = nanos;
+    previousConsensusTimestamp = txn.consensus_timestamp;
   }
 
   currentTestResult.result = 'passed';
