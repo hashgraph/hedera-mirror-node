@@ -39,6 +39,22 @@ git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node/hedera-mirror-rest/monitoring
 ```
 
+To configure a smaller `maxLimit` threshold for individual resources (`account`, `balance`, or `transaction`), for example,
+for environments with lower traffic volume, add the following section to `application.yml`:
+
+```yaml
+hedera:
+  mirror:
+    rest:
+      monitor:
+        account:
+                maxLimit: 100
+        balance:
+                maxLimit: 200
+        transaction:
+                maxLimit: 500
+```
+
 To run the monitor_apis backend:
 
 ```
