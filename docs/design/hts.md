@@ -5,6 +5,15 @@
 The Hedera Token Service (HTS) builds upon the Cryptocurrency Service to provide decentralized issuance of custom tokens on the Hedera Network.
 The behavior will be similar to that of the native HBAR token and as such the Mirror Node will persist token balances and transfer lists and support the retrieval of information through the API's.
 
+This document highlights the architecture and design changes to be made on top of v0.19.0 code to support HTS.
+Changes should be applied in order of
+1.  Database Schema Updates
+2.  Importer Updates for Ingestion
+3.  Existing REST API Updates
+4.  Additional Token REST API additions
+5.  Protobuf updates to TokenService
+6.  GRPC Token Service
+
 ## Goals
 -   Ingest HTS related transactions from record streams from the mainnet and persist information to the database
 -   Ingest token balances from balances streams from the mainnet and persist to the database
@@ -119,10 +128,10 @@ To support the goals the following schema changes should be made
 ```
 
 ### Entities
--   Update `t_entities` table with token entity info, from the `TokenCreation.proto` object insert `adminKey` as `key`, `expiry` as `exp_time_ns`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period` into `t_entities` in either case.
+-   Update `t_entities` table with token entity info, from the `TokenCreation.proto` object insert `adminKey` as `key`, `expiry` as `exp_time_ns`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period`.
 
 ### Token
--   Create `token` class to split out the non shared entity items into a new table. Most API calls may not require this information and therefore sql joins may be avoidable.
+-   Create `token` class to split out the non shared entity items into a new table. Most API calls may not require this information and therefore additional sql joins may be avoided.
 ```sql
     create table if not exists token
         consensus_timestamp bigint  primary key not null,
@@ -138,6 +147,418 @@ To support the goals the following schema changes should be made
         freeze_default      boolean,
         kyc_default         boolean,
         freeze_default      boolean;
+```
+
+## Importer
+
+### Converter
+-   Add `TokenBalanceSerializer` converter to handle object to JSON string serialization
+```java
+   @Named
+   public class TokenBalanceSerializer extends JsonSerializer<List<TokenBalance>> {
+       @Override
+       public void serialize(List<TokenBalance> tokens, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+           if (value != null) {
+               gen.writeStartArray();
+               for (TokenBalance token: tokens) {
+                   gen.writeStartObject();
+                   gen.writeObjectField("token", token);
+                   gen.writeEndObject();
+               }
+               gen.writeEndArray();
+           }
+       }
+   }
+   ```
+
+or
+
+```java
+    @Named
+    public class TokenBalanceSerializer extends JsonSerializer<List<TokenBalance>> {
+        @Override
+        public void serialize(List<TokenBalance> tokens, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value != null) {
+                gen.writeStartArray();
+                for (TokenBalance token: tokens) {
+                    gen.writeObject(token);
+                }
+                gen.writeEndArray();
+            }
+        }
+    }
+```
+### Converter
+-   Add a `TokenIdConverter`
+```java
+    package com.hedera.mirror.importer.converter;
+    ...
+    public class TokenIdConverter extends AbstractEntityIdConverter {
+
+        public FileIdConverter() {
+            super(EntityTypeEnum.TOKEN);
+        }
+    }
+```
+
+### Domain
+
+-   Add `TokenBalance` with `tokens` private class member
+```java
+    public class TokenBalance implements Persistable<TokenBalance.Id> {
+
+        private long balance;
+
+        private String symbol;
+
+        @EmbeddedId
+        @JsonUnwrapped
+        private Id id;
+
+        @Override
+        public boolean isNew() {
+            return true; // Since we never update balances and use a natural ID, avoid Hibernate querying before insert
+        }
+
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Embeddable
+        public static class Id implements Serializable {
+
+            private static final long serialVersionUID = -2399552489266593375L;
+
+            private long consensusTimestamp;
+
+            @Convert(converter = TokenIdConverter.class)
+            @JsonSerialize(using = EntityIdSerializer.class)
+            private EntityId tokenId;
+
+            @Convert(converter = AccountIdConverter.class)
+            @JsonSerialize(using = EntityIdSerializer.class)
+            private EntityId accountId;
+        }
+    }
+```
+
+-   Update `CryptoTransfer` to have a `token_id` and `symbol` class members, to allow it to represent both HBARs and Tokens
+
+-   Add `Token` class to hold Token specific metadata outside of the base entity
+```java
+    public class Token {
+        private EntityId tokenId;
+        private String symbol;
+        private Long initialSupply;
+        private Long  divisibility;
+        @Convert(converter = AccountIdConverter.class)
+        private EntityId treasury;
+        private byte[] kycKey;
+        private byte[] freezeKey;
+        private byte[] wipeKey;
+        private byte[] supplyKey;
+        private boolean freezeDefault;
+        private boolean kycDefault;
+    }
+```
+
+-   Update `EntityTypeEnum` with `Token` type
+```java
+    public enum EntityTypeEnum {
+
+        ACCOUNT(1),
+        CONTRACT(2),
+        FILE(3),
+        TOPIC(4),
+        TOKEN(5);
+
+        private final int id;
+    }
+```
+
+
+
+### Balance Persistence
+
+-   Update `AccountBalanceLineParser.parse` to parse additional token columns representing `TokenRelationships`.
+-   Add `INSERT_TOKEN_BALANCE_STATEMENT` in `AccountBalancesFileLoader` to persist each `TokenRelationship`
+```java
+    private static final String INSERT_TOKEN_BALANCE_STATEMENT = "insert into token_balance " +
+                "(consensus_timestamp, account_id, token_id, balance, symbol) values (?, ?, ?, ?, ?) on conflict do " +
+                "nothing;";
+```
+-   Add `UPDATE_TOKEN_STATUS` in `AccountBalancesFileLoader` to update changes to `kycStatus` and `freezeStatus`
+```java
+    private static final String UPDATE_TOKEN_STATUS = "update token_balance set kyc_status = ?, " +
+                "freeze_status = ? where token_id = ?";
+```
+
+### Token Transfer Parsing
+
+Modify `EntityRecordItemListener` to handle parsing HTS transactions
+
+-   Modify `OnItem()` to check for `TransactionBody.hasTokenCreation()`
+-   Add `insertTokenCreateTransferList()` and `insertTokenTransferList()` to parse out `txRecord.getTokenTransferListsList()`. Create a new CryptoTransfer object for each `TokenTransferList` item and pass it to `entityListener.onCryptoTransfer`. Also pulling out `tokenID` from `TokenTransferList.token`
+-   Add `insertTransfer()` that can be shared for `TransferList` and `TokenTransferList`
+```java
+    private void insertTransfer(long consensusTimestamp, AccountAmount aa, EntityId account, EntityId token, String symbol) {
+        entityListener.onEntityId(account);
+        entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account, tokenId, symbol));
+    }
+```
+-   Add `insertTokenTransferList()` to handle `TokenTransferList` returned by `txRecord.getTokenTransferListsList()`
+-   Update `insertTransferList(...)` to utilize `insertTransfer` and set defaults for tokenId and symbol
+
+> _Note 1:_ For improved API calls it would be valuable to insert the symbol for cryptoTransfers. This is only available on the tokenCreate transaction, so a caching mechanism can be explored ot make this available for transfers
+
+> _Note 2:_ There's an opportunity to refactor the `OnItem()` to focus better on different TransactionBody types but not necessarily within scope
+
+## REST API
+To achieve the goals and for easy integration with existing users the REST API should be updated in the following order
+1.  The `accounts` REST API must be updated to support `tokenBalances`
+2.  The `balances` REST API must be updated to support `tokenBalances`
+3.  The `transactions` REST API must be updated to support `tokenTransfers`
+4.  Add a Token Supply distribution REST API to show token distribution across accounts
+5.  Add a Token Discovery REST API to show available tokens on the network
+
+
+### Accounts Endpoint
+-   Update `/api/v1/accounts` response to add token balances
+```json
+{
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 80,
+          "tokenBalances": [
+            {
+              "symbol": "FOOBAR",
+              "balance": 80
+            },
+            {
+              "symbol": "FOOCOIN",
+              "balance": 50
+            }
+          ]
+        },
+        "account": "0.0.8",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+```
+
+To achieve this
+-   Update `accounts.js` `getAccountss()` to add an additional join to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
+
+
+### Balances Endpoint
+-   Update `/api/v1/balances` response to add token balances
+```json
+    {
+        "timestamp": "0.000002345",
+        "balances": [
+          {
+            "account": "0.0.8",
+            "balance": 100,
+            "tokenBalances": []
+          },
+          {
+            "account": "0.0.10",
+            "balance": 100,
+            "tokenBalances": [
+              {
+                "symbol": "FOOBAR",
+                "balance": 80
+              }
+            ]
+          },
+          {
+            "account": "0.0.13",
+            "balance": 100,
+            "tokenBalances": [
+              {
+                "symbol": "FOOBAR",
+                "balance": 80
+              },
+              {
+                "symbol": "FOOCOIN",
+                "balance": 50
+              }
+            ]
+          }
+        ],
+        "links": {
+          "next": null
+        }
+    }
+```
+To achieve this
+-   Update `balances.js` `getBalances()` to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
+
+### Transactions Endpoint
+-   Update `/api/v1/transactions` response to add token transfers
+```json
+    {
+      "transactions": [
+        {
+          "consensus_timestamp": "1234567890.000000001",
+          "valid_start_timestamp": "1234567890.000000000",
+          "charged_tx_fee": 7,
+          "memo_base64": null,
+          "result": "SUCCESS",
+          "transaction_hash": "aGFzaA==",
+          "name": "CRYPTOTRANSFER",
+          "node": "0.0.3",
+          "transaction_id": "0.0.10-1234567890-000000000",
+          "valid_duration_seconds": "11",
+          "max_fee": "33",
+          "transfers": [
+            {
+              "account": "0.0.9",
+              "amount": 10
+            },
+            {
+              "account": "0.0.10",
+              "amount": -11
+            },
+            {
+              "account": "0.0.98",
+              "amount": 1
+            }
+          ],
+          "tokenTransfers": [
+            {
+              "currency":"0.0.5555",
+              "transfers": [
+                {"account": "0.0.1111", "amount": -10},
+                {"account": "0.0.2222", "amount": 10}
+              ]
+            },
+            {
+              "currency": "0.0.6666",
+              "transfers": [
+                {"account": "0.0.3333", "amount": -10},
+                {"account": "0.0.4444", "amount": 10}
+               ]
+            }
+          ]
+        }
+      ]
+    }
+```
+
+To achieve this
+-   Update `transactions.js` sql queries for `crypto_transfer` to pull the `token_id` and `symbol` columns
+-   Update `createTransferLists()` in `transactions.js` to build a `tokenTransfers` list if `symbol` isn't HBAR or if `token_id` is empty
+
+
+### Token Supply distribution
+
+`/api/v1/tokens/<symbol>/balances` this could be the equivalent of `/api/v1/balances?symbol=<symbol>` currently and would return a list of account and the token balances
+```json
+    {
+        "timestamp": "0.000002345",
+        "tokenBalances": [
+          {
+            "account": "0.15.10",
+            "balance": 100
+          },
+          {
+            "account": "0.15.9",
+            "balance": 90
+          },
+          {
+            "account": "0.15.8",
+            "balance": 80
+          }
+        ],
+        "links": {
+          "next": null
+        }
+    }
+```
+
+To achieve this similar to balances
+-   Create a `tokenBalance.js`
+-   Add a `getTokenBalances()` which based on the time range provided (default to latest timestamp) and token `symbol` pulls out all the  `balance` and `symbol` values and returns them as an element in `tokenBalances` array
+
+```sql
+    select account_id, balance from token_balance where symbol = ? and consensus_timestamp = (select max(consensus_timestamp) from token_balance);
+```
+
+Query parameters should include
+-   `/api/v1/tokens/<symbol>/balances?id=0.0.1000`
+-   `/api/v1/tokens/<symbol>/balances?balance=gt:1000`
+-   `/api/v1/tokens/<symbol>/balances?timestamp=1566562500.040961001`
+
+### Token Discovery
+`/api/v1/tokens` this would return all tokens present on the network
+
+```json
+    {
+        "timestamp": "0.000002345",
+        "tokens": [
+          {
+            "symbol": "FOOBAR",
+            "tokenId": "0.15.10",
+            "key": {
+              "_type": "ProtobufEncoded",
+              "key": "7b2233222c2233222c2233227d"
+            }
+          },
+          {
+            "symbol": "FOOCOIN",
+            "tokenId": "0.15.10",
+            "key": {
+              "_type": "ProtobufEncoded",
+              "key": "9c2233222c2233222c2233227d"
+            }
+          }
+        ],
+        "links": {
+          "next": null
+        }
+    }
+```
+
+To achieve this
+-   Add a `getTokens()` to `tokenBalance.js` which pull the unique `symbol`, `tokenId` from the `token` table and joins with the `t_entities` table for the matching admin_key
+
+```sql
+    select symbol, tokenId e.key from token t
+          join t_entities e on t.token_id = e.id and e.fk_entity_type_id = ${utils.ENTITY_TYPE_TOKEN};
+```
+
+Additions
+-   `/api/v1/tokens?adminkey=HJ^&8` - All tokens with matching admin key
+-   `/api/v1/tokens?account.id=0.0.8` - All tokens for matching account
+
+## Protobuf
+
+```proto
+    message TokenQuery {
+        .proto.TokenID tokenID = 1; // The token ID to retrieve transfers for
+        .proto.AccountID accountID = 2; // An account ID to retrieve transfers for. Required if no tokenID is specified
+        .proto.Timestamp consensusStartTime = 3; // Include messages which reached consensus on or after this time. Defaults to current time if not set.
+        .proto.Timestamp consensusEndTime = 4; // Include messages which reached consensus before this time. If not set it will receive indefinitely.
+        uint64 limit = 5; // The maximum number of messages to receive before stopping. If not set or set to zero it will return messages indefinitely.
+    }
+
+    message TokenResponse {
+        .proto.Timestamp consensusTimestamp = 1; // The time at which the transaction reached consensus
+        .proto.TokenTransfers transfer = 2; // Multiple list of AccountAmount pairs, each of which has an account and an amount to transfer into it (positive) or out of it (negative)
+    }
+
+    service TokenService {
+        rpc subscribeTokenTransfers (TokenQuery) returns (stream TokenResponse);
+    }
 ```
 
 ## GRPC API
@@ -316,411 +737,12 @@ A lot of this logic can be shared for the equivalent `CryptoTransfer` listeners 
     }
 ```
 
-## Protobuf
-
-```proto
-    message TokenQuery {
-        .proto.TokenID tokenID = 1; // The token ID to retrieve transfers for
-        .proto.AccountID accountID = 2; // An account ID to retrieve transfers for. Required if no tokenID is specified
-        .proto.Timestamp consensusStartTime = 3; // Include messages which reached consensus on or after this time. Defaults to current time if not set.
-        .proto.Timestamp consensusEndTime = 4; // Include messages which reached consensus before this time. If not set it will receive indefinitely.
-        uint64 limit = 5; // The maximum number of messages to receive before stopping. If not set or set to zero it will return messages indefinitely.
-    }
-
-    message TokenResponse {
-        .proto.Timestamp consensusTimestamp = 1; // The time at which the transaction reached consensus
-        .proto.TokenTransfers transfer = 2; // Multiple list of AccountAmount pairs, each of which has an account and an amount to transfer into it (positive) or out of it (negative)
-    }
-
-    service TokenService {
-        rpc subscribeTokenTransfers (TokenQuery) returns (stream TokenResponse);
-    }
-```
-
-## Importer
-
-### Converter
--   Add `TokenBalanceSerializer` converter to handle object to JSON string serialization
-```java
-   @Named
-   public class TokenBalanceSerializer extends JsonSerializer<List<TokenBalance>> {
-       @Override
-       public void serialize(List<TokenBalance> tokens, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-           if (value != null) {
-               gen.writeStartArray();
-               for (TokenBalance token: tokens) {
-                   gen.writeStartObject();
-                   gen.writeObjectField("token", token);
-                   gen.writeEndObject();
-               }
-               gen.writeEndArray();
-           }
-       }
-   }
-   ```
-
-or
-
-```java
-    @Named
-    public class TokenBalanceSerializer extends JsonSerializer<List<TokenBalance>> {
-        @Override
-        public void serialize(List<TokenBalance> tokens, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value != null) {
-                gen.writeStartArray();
-                for (TokenBalance token: tokens) {
-                    gen.writeObject(token);
-                }
-                gen.writeEndArray();
-            }
-        }
-    }
-```
-### Converter
--   Add a `TokenIdConverter`
-```java
-    package com.hedera.mirror.importer.converter;
-    ...
-    public class TokenIdConverter extends AbstractEntityIdConverter {
-
-        public FileIdConverter() {
-            super(EntityTypeEnum.TOKEN);
-        }
-    }
-```
-
-### Domain
-
--   Add `TokenBalance` with `tokens` private class member
-```java
-    public class TokenBalance implements Persistable<TokenBalance.Id> {
-
-        private long balance;
-
-        private String symbol;
-
-        @EmbeddedId
-        @JsonUnwrapped
-        private Id id;
-
-        @Override
-        public boolean isNew() {
-            return true; // Since we never update balances and use a natural ID, avoid Hibernate querying before insert
-        }
-
-        @Data
-        @AllArgsConstructor
-        @NoArgsConstructor
-        @Embeddable
-        public static class Id implements Serializable {
-
-            private static final long serialVersionUID = -2399552489266593375L;
-
-            private long consensusTimestamp;
-
-            @Convert(converter = TokenIdConverter.class)
-            @JsonSerialize(using = EntityIdSerializer.class)
-            private EntityId tokenId;
-
-            @Convert(converter = AccountIdConverter.class)
-            @JsonSerialize(using = EntityIdSerializer.class)
-            private EntityId accountId;
-        }
-    }
-```
-
--   Update `CryptoTransfer` to have a `token_id` and `symbol` class members, to allow it to represent both HBARs and Tokens
-
--   Add `Token` class to hold Token specific metadata outside of the base entity
-```java
-    public class Token {
-        private EntityId tokenId;
-        private String symbol;
-        private Long initialSupply;
-        private Long  divisibility;
-        @Convert(converter = AccountIdConverter.class)
-        private EntityId treasury;
-        private byte[] kycKey;
-        private byte[] freezeKey;
-        private byte[] wipeKey;
-        private byte[] supplyKey;
-        private boolean freezeDefault;
-        private boolean kycDefault;
-    }
-```
-
--   Update `EntityTypeEnum` with `Token` type
-```java
-    public enum EntityTypeEnum {
-
-        ACCOUNT(1),
-        CONTRACT(2),
-        FILE(3),
-        TOPIC(4),
-        TOKEN(5);
-
-        private final int id;
-    }
-```
-
-
-
-### Balance Persistence
-
--   Update `AccountBalanceLineParser.parse` to parse additional token columns representing `TokenRelationships`.
--   Add `INSERT_TOKEN_BALANCE_STATEMENT` in `AccountBalancesFileLoader` to persist each `TokenRelationship`
-```java
-    private static final String INSERT_TOKEN_BALANCE_STATEMENT = "insert into token_balance " +
-                "(consensus_timestamp, account_id, token_id, balance, symbol) values (?, ?, ?, ?, ?) on conflict do " +
-                "nothing;";
-```
--   Add `UPDATE_TOKEN_STATUS` in `AccountBalancesFileLoader` to update changes to `kycStatus` and `freezeStatus`
-```java
-    private static final String UPDATE_TOKEN_STATUS = "update token_balance set kyc_status = ?, " +
-                "freeze_status = ? where token_id = ?";
-```
-
-### Token Transfer Parsing
-
-Modify `EntityRecordItemListener` to handle parsing HTS transactions
-
--   Modify `OnItem()` to check for `TransactionBody.hasTokenCreation`
--   Add `insertTokenCreateTransferList()` and `insertTokenTransferList()` to parse out `TransactionBody.tokenTransferLists` and call `entityListener.onEntityId` and `entityListener.onCryptoTransfer` on each account and `TokenTransferList`
--   Update `insertTransferList(...)` to take in `tokenID` from `TransactionReceipt.tokenId` and allow it to be shared by `insertTokenTransferList()` to parse out `TransactionBody.tokenTransferLists` and call `entityListener.onEntityId` and `entityListener.onCryptoTransfer` on each account and `TokenTransferList`
-
-> _Note:_ There's an opportunity to refactor the `OnItem()` to focus better on different TransactionBody types but not necessarily within scope
-
-## REST API
-To achieve the goals
-1.  The `accounts` REST API must be updated to support tokens
-2.  The `balances` REST API must be updated to support tokens
-3.  Add a Token Supply distribution REST API to show token distribution across accounts
-4.  Add a Token Discovery REST API to show available tokens on the network
-
-### Accounts Endpoint
--   Update `/api/v1/accounts` response to add token balances
-```json
-{
-    "accounts": [
-      {
-        "balance": {
-          "timestamp": "0.000002345",
-          "balance": 80,
-          "tokenBalances": [
-            {
-              "symbol": "FOOBAR",
-              "balance": 80
-            },
-            {
-              "symbol": "FOOCOIN",
-              "balance": 50
-            }
-          ]
-        },
-        "account": "0.0.8",
-        "expiry_timestamp": null,
-        "auto_renew_period": null,
-        "key": null,
-        "deleted": false
-      }
-    ],
-    "links": {
-      "next": null
-    }
-  }
-```
-
-To achieve this
--   Update `accounts.js` `getAccountss()` to add an additional join to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
-
-
-### Balances Endpoint
--   Update `/api/v1/balances` response to add token balances
-```json
-    {
-        "timestamp": "0.000002345",
-        "balances": [
-          {
-            "account": "0.0.8",
-            "balance": 100,
-            "tokenBalances": []
-          },
-          {
-            "account": "0.0.10",
-            "balance": 100,
-            "tokenBalances": [
-              {
-                "symbol": "FOOBAR",
-                "balance": 80
-              }
-            ]
-          },
-          {
-            "account": "0.0.13",
-            "balance": 100,
-            "tokenBalances": [
-              {
-                "symbol": "FOOBAR",
-                "balance": 80
-              },
-              {
-                "symbol": "FOOCOIN",
-                "balance": 50
-              }
-            ]
-          }
-        ],
-        "links": {
-          "next": null
-        }
-    }
-```
-To achieve this
--   Update `balances.js` `getBalances()` to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
-
-### Token Supply distribution
-
-`/api/v1/tokens/<symbol>/balances` this could be the equivalent of `/api/v1/balances?symbol=<symbol>` currently and would return a list of account and the token balances
-```json
-    {
-        "timestamp": "0.000002345",
-        "tokenBalances": [
-          {
-            "account": "0.15.10",
-            "balance": 100
-          },
-          {
-            "account": "0.15.9",
-            "balance": 90
-          },
-          {
-            "account": "0.15.8",
-            "balance": 80
-          }
-        ],
-        "links": {
-          "next": null
-        }
-    }
-```
-
-To achieve this similar to balances
--   Create a `tokenBalance.js`
--   Add a `getTokenBalances()` which based on the time range provided (default to latest timestamp) and token `symbol` pulls out all the  `balance` and `symbol` values and returns them as an element in `tokenBalances` array
-
-```sql
-    select account_id, balance from token_balance where symbol = ? and consensus_timestamp = (select max(consensus_timestamp) from token_balance);
-```
-
-Query parameters should include
--   `/api/v1/tokens/<symbol>/balances?id=0.0.1000`
--   `/api/v1/tokens/<symbol>/balances?balance=gt:1000`
--   `/api/v1/tokens/<symbol>/balances?timestamp=1566562500.040961001`
-
-### Token Discovery
-`/api/v1/tokens` this would return all tokens present on the network
-
-```json
-    {
-        "timestamp": "0.000002345",
-        "tokens": [
-          {
-            "symbol": "FOOBAR",
-            "tokenId": "0.15.10",
-            "key": {
-              "_type": "ProtobufEncoded",
-              "key": "7b2233222c2233222c2233227d"
-            }
-          },
-          {
-            "symbol": "FOOCOIN",
-            "tokenId": "0.15.10",
-            "key": {
-              "_type": "ProtobufEncoded",
-              "key": "9c2233222c2233222c2233227d"
-            }
-          }
-        ],
-        "links": {
-          "next": null
-        }
-    }
-```
-
-To achieve this
--   Add a `getTokens()` to `tokenBalance.js` which pull the unique `symbol`, `tokenId` from the `token` table and joins with the `t_entities` table for the matching admin_key
-
-```sql
-    select symbol, tokenId e.key from token t
-          join t_entities e on t.token_id = e.id and e.fk_entity_type_id = ${utils.ENTITY_TYPE_TOKEN};
-```
-
-Additions
--   `/api/v1/tokens?adminkey=HJ^&8` - All tokens with matching admin key
--   `/api/v1/tokens?account.id=0.0.8` - All tokens for matching account
-
-
-
-### Transactions Endpoint
-For easy integration with existing users the /transactions endpoint will be updated to expose tokens in `tokenTransfers`
-```json
-    {
-      "transactions": [
-        {
-          "consensus_timestamp": "1234567890.000000001",
-          "valid_start_timestamp": "1234567890.000000000",
-          "charged_tx_fee": 7,
-          "memo_base64": null,
-          "result": "SUCCESS",
-          "transaction_hash": "aGFzaA==",
-          "name": "CRYPTOTRANSFER",
-          "node": "0.0.3",
-          "transaction_id": "0.0.10-1234567890-000000000",
-          "valid_duration_seconds": "11",
-          "max_fee": "33",
-          "transfers": [
-            {
-              "account": "0.0.9",
-              "amount": 10
-            },
-            {
-              "account": "0.0.10",
-              "amount": -11
-            },
-            {
-              "account": "0.0.98",
-              "amount": 1
-            }
-          ],
-          "tokenTransfers": [
-            {
-              "currency":"0.0.5555",
-              "transfers": [
-                {"account": "0.0.1111", "amount": -10},
-                {"account": "0.0.2222", "amount": 10}
-              ]
-            },
-            {
-              "currency": "0.0.6666",
-              "transfers": [
-                {"account": "0.0.3333", "amount": -10},
-                {"account": "0.0.4444", "amount": 10}
-               ]
-            }
-          ]
-        }
-      ]
-    }
-```
-
-To achieve this
--   Update `transactions.js` sql queries for `crypto_transfer` to pull the `token_id` and `symbol` columns
--   Update `createTransferLists()` in `transactions.js` to build a `tokenTransfers` list if `symbol` isn't HBAR or if `token_id` is empty
-
 ## Non-Functional Requirements
 
 ## Open Questions
+-   What's the maximum character size of the token `symbol` string
 -   Will a `token_id` and `symbol` be assigned a value for HBARs?
 -   Should token only entity items exist in their own table or be added to `t_entities`?
--   Should `account_balance` `accountNum` and `accountRealmNum` me migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
+-   Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
+
 
