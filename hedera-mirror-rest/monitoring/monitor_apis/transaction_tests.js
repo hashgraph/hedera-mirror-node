@@ -20,21 +20,24 @@
 
 'use strict';
 
-const acctestutils = require('./monitortest_utils.js');
-const config = require('../../config.js');
+const _ = require('lodash');
+const long = require('long');
 const math = require('mathjs');
+const acctestutils = require('./monitortest_utils');
+
 const transactionsPath = '/transactions';
-const maxLimit = config.maxLimit;
 const recordsFileUpdateRefreshTime = 5;
+const resource = 'transaction';
 
 /**
  * Makes a call to the rest-api and returns the transacations object from the response
- * @param {String} pathandquery
+ * @param {String} url
+ * @param {Object} currentTestResult
  * @return {Object} Transactions object from response
  */
-const getTransactions = (pathandquery, currentTestResult) => {
+const getTransactions = (url, currentTestResult) => {
   return acctestutils
-    .getAPIResponse(pathandquery)
+    .getAPIResponse(url)
     .then((json) => {
       return json.transactions;
     })
@@ -72,86 +75,85 @@ const checkMandatoryParams = (entry) => {
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const getTransactionsWithAccountCheck = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+  const currentTestResult = acctestutils.getMonitorTestResult();
 
-  let url = acctestutils.getUrl(server, transactionsPath);
+  const query = {};
+  const {maxLimit, isGlobal} = acctestutils.getMaxLimit(resource);
+  if (!isGlobal)  {
+    query.limit = maxLimit;
+  }
+
+  let url = acctestutils.getUrl(server, transactionsPath, query);
   currentTestResult.url = url;
-  let transactions = await getTransactions(url, currentTestResult);
+  const transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (transactions.length !== maxLimit) {
-    var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
+    const message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  let mandatoryParamCheck = checkMandatoryParams(transactions[0]);
-  if (mandatoryParamCheck == false) {
-    var message = `transaction object is missing some mandatory fields`;
+  if (!checkMandatoryParams(transactions[0])) {
+    const message = `transaction object is missing some mandatory fields`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  var accNum = 0;
-  var highestAcc = 0;
-  for (let xfer of transactions[0].transfers) {
-    if (xfer.amount > 0) {
-      accNum = acctestutils.toAccNum(xfer.account);
-      if (accNum > highestAcc) {
-        highestAcc = accNum;
-      }
-    }
-  }
+  const highestAcc = _.max(
+    _.map(
+      _.filter(transactions[0].transfers, (xfer) => xfer.amount > 0),
+      (xfer) => acctestutils.toAccNum(xfer.account)
+    )
+  );
 
-  if (accNum === 0) {
-    var message = `accNum is 0`;
+  if (highestAcc === undefined) {
+    const message = `accNum is 0`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (undefined === transactions[0].consensus_timestamp) {
-    var message = `transactions[0].consensus_timestamp is undefined`;
+    const message = `transactions[0].consensus_timestamp is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  url = acctestutils.getUrl(server, `${transactionsPath}?account.id=${highestAcc}&type=credit&limit=1`);
+  url = acctestutils.getUrl(server, transactionsPath, {
+    'account.id': highestAcc,
+    type: 'credit',
+    limit: 1
+  });
   currentTestResult.url = url;
 
-  let accTransactions = await getTransactions(url, currentTestResult);
+  const accTransactions = await getTransactions(url, currentTestResult);
   if (undefined === accTransactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (accTransactions.length !== 1) {
-    var message = `accTransactions.length of ${transactions.length} is not 1`;
+    const message = `accTransactions.length of ${transactions.length} is not 1`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  let check = false;
-  for (let xfer of accTransactions[0].transfers) {
-    if (acctestutils.toAccNum(xfer.account) === highestAcc) {
-      check = true;
-    }
-  }
-
-  if (check == false) {
-    var message = `Highest acc check was not found`;
+  const {transfers} = accTransactions[0];
+  if (!transfers || !transfers.some((xfer) => acctestutils.toAccNum(xfer.account) === highestAcc)) {
+    const message = `Highest acc check was not found`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
@@ -169,32 +171,42 @@ const getTransactionsWithAccountCheck = async (server, classResults) => {
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const getTransactionsWithOrderParam = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+  const currentTestResult = acctestutils.getMonitorTestResult();
 
-  let url = acctestutils.getUrl(server, `${transactionsPath}?order=asc`);
+  const query = {order: 'asc'};
+  const {maxLimit, isGlobal} =  acctestutils.getMaxLimit(resource);
+  if (!isGlobal) {
+    query.limit = maxLimit;
+  }
+
+  let url = acctestutils.getUrl(server, transactionsPath, query);
   currentTestResult.url = url;
-  let transactions = await getTransactions(url, currentTestResult);
+  const transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (transactions.length !== maxLimit) {
-    var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
+    const message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  let prevSeconds = 0;
+  let previousNanos = long.ZERO;
   for (let txn of transactions) {
-    if (acctestutils.secNsToSeconds(txn.seconds) < prevSeconds) {
-      check = false;
+    const nanos = acctestutils.consensusTimestampToNanos(txn.consensus_timestamp);
+    if (nanos.lessThan(previousNanos)) {
+      currentTestResult.failureMessages.push('consensus timestamps are not in ascending order');
+      acctestutils.addTestResult(classResults, currentTestResult, false);
+      return;
     }
-    prevSeconds = acctestutils.secNsToSeconds(txn.seconds);
+
+    previousNanos = nanos;
   }
 
   currentTestResult.result = 'passed';
@@ -209,21 +221,21 @@ const getTransactionsWithOrderParam = async (server, classResults) => {
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const getTransactionsWithLimitParams = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+  const currentTestResult = acctestutils.getMonitorTestResult();
 
-  let url = acctestutils.getUrl(server, `${transactionsPath}?limit=10`);
+  const url = acctestutils.getUrl(server, transactionsPath, {limit: 10});
   currentTestResult.url = url;
   let transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (transactions.length !== 10) {
-    var message = `transactions.length of ${transactions.length} was expected to be 10`;
+    const message = `transactions.length of ${transactions.length} was expected to be 10`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
@@ -241,42 +253,47 @@ const getTransactionsWithLimitParams = async (server, classResults) => {
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const getTransactionsWithTimeAndLimitParams = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+  const currentTestResult = acctestutils.getMonitorTestResult();
 
-  let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
+  let url = acctestutils.getUrl(server, transactionsPath, {limit: 1});
   currentTestResult.url = url;
   let transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (transactions.length !== 1) {
-    var message = `transactions.length of ${transactions.length} was expected to be 1`;
+    const message = `transactions.length of ${transactions.length} was expected to be 1`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  let plusOne = math.add(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
-  let minusOne = math.subtract(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
-  let paq = `${transactionsPath}?timestamp=gt:${minusOne.toString()}` + `&timestamp=lt:${plusOne.toString()}&limit=1`;
-
-  url = acctestutils.getUrl(server, paq);
+  const plusOne = math.add(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
+  const minusOne = math.subtract(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
+  url = acctestutils.getUrl(server, transactionsPath, {
+    timestamp: [
+      `gt:${minusOne.toString()}`,
+      `lt:${plusOne.toString()}`
+    ],
+    limit: 1
+  });
+  currentTestResult.url = url;
   transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (transactions.length !== 1) {
-    var message = `transactions.length of ${transactions.length} was expected to be 1`;
+    const message = `transactions.length of ${transactions.length} was expected to be 1`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
@@ -294,29 +311,28 @@ const getTransactionsWithTimeAndLimitParams = async (server, classResults) => {
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const getSingleTransactionsById = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+  const currentTestResult = acctestutils.getMonitorTestResult();
 
-  let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
+  let url = acctestutils.getUrl(server, transactionsPath, {limit: 1});
   currentTestResult.url = url;
-  let transactions = await getTransactions(url, currentTestResult);
+  const transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (transactions.length !== 1) {
-    var message = `transactions.length of ${transactions.length} was expected to be 1`;
+    const message = `transactions.length of ${transactions.length} was expected to be 1`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  let mandatoryParamCheck = checkMandatoryParams(transactions[0]);
-  if (mandatoryParamCheck == false) {
-    var message = `transaction object is missing some mandatory fields`;
+  if (!checkMandatoryParams(transactions[0])) {
+    const message = `transaction object is missing some mandatory fields`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
@@ -325,24 +341,23 @@ const getSingleTransactionsById = async (server, classResults) => {
   url = acctestutils.getUrl(server, `${transactionsPath}/${transactions[0].transaction_id}`);
   currentTestResult.url = url;
 
-  let singleTransactions = await getTransactions(url, currentTestResult);
+  const singleTransactions = await getTransactions(url, currentTestResult);
   if (undefined === singleTransactions) {
-    var message = `singleTransactions is undefined`;
+    const message = `singleTransactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (singleTransactions.length !== 1) {
-    var message = `singleTransactions.length of ${transactions.length} is not 1`;
+    const message = `singleTransactions.length of ${transactions.length} is not 1`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
-  mandatoryParamCheck = checkMandatoryParams(transactions[0]);
-  if (mandatoryParamCheck == false) {
-    var message = `single transaction object is missing some mandatory fields`;
+  if (!checkMandatoryParams(transactions[0])) {
+    const message = `single transaction object is missing some mandatory fields`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
@@ -360,21 +375,21 @@ const getSingleTransactionsById = async (server, classResults) => {
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const checkTransactionFreshness = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+  const currentTestResult = acctestutils.getMonitorTestResult();
 
-  let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
+  const url = acctestutils.getUrl(server, transactionsPath, {limit: 1});
   currentTestResult.url = url;
-  let transactions = await getTransactions(url, currentTestResult);
+  const transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
-    var message = `transactions is undefined`;
+    const message = `transactions is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 
   if (transactions.length !== 1) {
-    var message = `transactions.length of ${transactions.length} was expected to be 1`;
+    const message = `transactions.length of ${transactions.length} was expected to be 1`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
@@ -384,10 +399,10 @@ const checkTransactionFreshness = async (server, classResults) => {
   const txSec = transactions[0].consensus_timestamp.split('.')[0];
   const currSec = Math.floor(new Date().getTime() / 1000);
   const delta = currSec - txSec;
-  let freshnessThreshold = recordsFileUpdateRefreshTime * 10;
+  const freshnessThreshold = recordsFileUpdateRefreshTime * 10;
 
   if (delta > freshnessThreshold) {
-    var message = `transactions was stale, ${delta} seconds old`;
+    const message = `transactions was stale, ${delta} seconds old`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
@@ -405,7 +420,7 @@ const checkTransactionFreshness = async (server, classResults) => {
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const runTransactionTests = async (server, classResults) => {
-  var tests = [];
+  const tests = [];
   tests.push(getTransactionsWithAccountCheck(server, classResults));
   tests.push(getTransactionsWithOrderParam(server, classResults));
   tests.push(getTransactionsWithLimitParams(server, classResults));
@@ -417,5 +432,5 @@ const runTransactionTests = async (server, classResults) => {
 };
 
 module.exports = {
-  runTransactionTests: runTransactionTests,
+  runTransactionTests,
 };

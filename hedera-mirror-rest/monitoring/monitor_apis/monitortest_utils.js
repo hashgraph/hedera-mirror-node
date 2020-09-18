@@ -17,10 +17,12 @@
  * limitations under the License.
  * ‍
  */
-const math = require('mathjs');
-const config = require('../../config.js');
-const fetch = require('node-fetch');
+
 const AbortController = require('abort-controller');
+const config = require('../../config');
+const long = require('long');
+const fetch = require('node-fetch');
+const querystring = require('querystring');
 
 const apiPrefix = '/api/v1';
 
@@ -45,12 +47,15 @@ const testResult = {
 };
 
 /**
- * Converts seconds.nanoseconds to seconds (floor)
- * @param {String} secNs Seconds.Nanoseconds
- * @return {Number} Seconds
+ * Converts consensus timestamp seconds.nanoseconds to nanoseconds
+ * @param {String} consensusTimestamp consensus timestamp
+ * @return {Long} timestamp in nanoseconds
  */
-const secNsToSeconds = (secNs) => {
-  return math.floor(Number(secNs));
+const consensusTimestampToNanos = (consensusTimestamp) => {
+  const parts = consensusTimestamp.split('.');
+  const seconds = long.fromString(parts[0]);
+  const nanos = parseInt(parts[1], 10);
+  return seconds.mul(1000000000).add(nanos);
 };
 
 /**
@@ -78,16 +83,25 @@ const cloneObject = (obj) => {
 /**
  * Create and return the url for a rest api call
  * If running on a local server http is employed over https
- * @param {String} pathandquery rest-api endpoint path
+ * @param {Object} server
+ * @param {String} path rest-api endpoint path
+ * @param {Object} query key-value query params
  * @return {String} rest-api endpoint url
  */
-const getUrl = (server, pathandquery) => {
-  var endpoint = server;
+const getUrl = (server, path, query = undefined) => {
+  let endpoint = server;
   if (server.includes('localhost') || server.includes('127.0.0.1')) {
     endpoint = server.replace('https', 'http');
   }
 
-  let url = `${endpoint}${apiPrefix}${pathandquery}`;
+  let url = `${endpoint}${apiPrefix}${path}`;
+  if (query) {
+    const qs = querystring.stringify(query);
+    if (qs !== '') {
+      url += `?${qs}`;
+    }
+  }
+
   return url;
 };
 
@@ -197,15 +211,43 @@ const createFailedResultJson = (title, msg) => {
   return failedResultJson;
 };
 
+/**
+ * Helper function to get max limit for a resource. Returns the lesser of the resource specific maxLimit if exists and
+ * the global maxLimit, otherwise the global maxLimit.
+ * @param resource {String} Name of the resource
+ */
+const getMaxLimit = (resource) => {
+  const result = {
+    maxLimit: config.maxLimit,
+    isGlobal: true
+  }
+
+  const {monitor} = config;
+  if (!monitor) {
+    return result;
+  }
+
+  if (monitor[resource] && monitor[resource].maxLimit) {
+    const {maxLimit: resourceMaxLimit} = monitor[resource];
+    if (resourceMaxLimit < result.maxLimit) {
+      result.maxLimit = resourceMaxLimit;
+      result.isGlobal = false;
+    }
+  }
+
+  return result;
+};
+
 module.exports = {
-  toAccNum: toAccNum,
-  fromAccNum: fromAccNum,
-  secNsToSeconds: secNsToSeconds,
-  getUrl: getUrl,
-  cloneObject: cloneObject,
-  getAPIResponse: getAPIResponse,
-  getMonitorClassResult: getMonitorClassResult,
-  getMonitorTestResult: getMonitorTestResult,
-  addTestResult: addTestResult,
-  createFailedResultJson: createFailedResultJson,
+  toAccNum,
+  fromAccNum,
+  consensusTimestampToNanos,
+  getUrl,
+  cloneObject,
+  getAPIResponse,
+  getMonitorClassResult,
+  getMonitorTestResult,
+  addTestResult,
+  createFailedResultJson,
+  getMaxLimit,
 };
