@@ -22,6 +22,9 @@ package com.hedera.mirror.importer.downloader.record;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -46,11 +49,14 @@ public class RecordFileDownloader extends Downloader {
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
-            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry, RecordFileRepository recordFileRepository) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate, meterRegistry);
+            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
+            RecordFileRepository recordFileRepository) {
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
+                meterRegistry);
         this.recordFileRepository = recordFileRepository;
     }
 
+    @Override
     @Leader
     @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.record.frequency:500}")
     public void download() {
@@ -59,6 +65,7 @@ public class RecordFileDownloader extends Downloader {
 
     /**
      * Reads the record file.
+     *
      * @param file data file object
      * @return StreamFile object
      */
@@ -69,6 +76,13 @@ public class RecordFileDownloader extends Downloader {
 
     @Override
     protected void saveStreamFileRecord(StreamFile streamFile) {
-        recordFileRepository.save((RecordFile)streamFile);
+        RecordFile recordFile = (RecordFile) streamFile;
+        recordFileRepository.save(recordFile);
+
+        Instant consensusEnd = Instant.ofEpochSecond(0, recordFile.getConsensusEnd());
+        downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
+
+        long streamClose = recordFile.getConsensusEnd() - recordFile.getConsensusStart();
+        streamCloseMetric.record(streamClose, TimeUnit.NANOSECONDS);
     }
 }
