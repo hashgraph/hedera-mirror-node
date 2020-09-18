@@ -3,9 +3,9 @@ package com.hedera.mirror.importer.parser.domain;
 /*
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,12 +33,19 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.util.Utility;
 
 class RecordItemTest {
+
+    private static final Path transactionProtoPath = Paths.get("data", "protoExamples", "transaction");
 
     private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
             .setSignedTransactionBytes(
@@ -76,6 +83,13 @@ class RecordItemTest {
             .setMemo("memo")
             .build();
 
+    private static final UnknownFieldSet UNKNOWN_FIELD_SET = UnknownFieldSet.newBuilder()
+            .addField(1,
+                    UnknownFieldSet.Field.newBuilder()
+                            .addLengthDelimited(TRANSACTION_BODY.toByteString())
+                            .build())
+            .build();
+
     @Test
     public void testBadTransactionBytesThrowException() {
         testException(new byte[] {0x0, 0x1}, DEFAULT_RECORD_BYTES, RecordItem.BAD_TRANSACTION_BYTES_MESSAGE);
@@ -94,18 +108,30 @@ class RecordItemTest {
 
     @Test
     public void testWithBody() {
-        UnknownFieldSet.Field.newBuilder().addLengthDelimited(TRANSACTION_BODY.toByteString());
         Transaction transaction = TRANSACTION.toBuilder()
-                .setUnknownFields(UnknownFieldSet.newBuilder()
-                        .addField(1, UnknownFieldSet.Field.newBuilder()
-                                .addLengthDelimited(TRANSACTION_BODY.toByteString())
-                                .build())
-                        .build())
+                .setUnknownFields(UNKNOWN_FIELD_SET)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
         RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD
                 .toByteArray());
         assertRecordItem(transaction, recordItem);
+    }
+
+    @Test
+    public void testWithBodyProto() throws IOException {
+        //An encoded protobuf Transaction with the body set in TransactionBody, as seen in an older proto version
+        byte[] transactionFromProto = FileUtils
+                .readFileToByteArray(Utility
+                        .getResource(transactionProtoPath.resolve("bodyInTransactionBody").toString()));
+
+        Transaction expectedTransaction = TRANSACTION.toBuilder()
+                .setUnknownFields(UNKNOWN_FIELD_SET)
+                .setSigMap(SIGNATURE_MAP)
+                .build();
+
+        RecordItem recordItem = new RecordItem(transactionFromProto, TRANSACTION_RECORD
+                .toByteArray());
+        assertRecordItem(expectedTransaction, recordItem);
     }
 
     @Test
