@@ -8,7 +8,7 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
 ## Goals
 -   Ingest HTS related transactions from record streams from the mainnet and persist information to the database
 -   Ingest token balances from balances streams from the mainnet and persist to the database
--   Provide a HTS REST API to show token balance for account(s)
+-   Expose token balance of accounts in existing REST APIs that show balance
 -   Provide a HTS REST API to return all tokens (Token Discovery)
 -   Provide a HTS REST API to return all accounts holding a specific token (Token Supply Distribution)
 -   Provide a streaming GRPC API to subscribe to HTS transfers for an account
@@ -18,17 +18,27 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
 
 ## Architecture
 
-1. Downloader retrieves transactions and balances from stream files in cloud bucket and validates them
+![Architecture](./images/mirror-arch.png)
+
+1. Downloader retrieves transactions and balances (HBAR & Tokens) from stream files in cloud bucket and validates them
 2. Parser persists to database
-3. Client queries token related APIs for details
-    - REST API retrieves token details and balances from database (END)
-    - GRPC API retrieves token transfers from database and returns to client
-4. GRPC API is notified of new transfers via database Notify/streaming logic
+3. Client queries balance or token APIs for details
+4. REST API retrieves token details and balances from database
+5. Client subscribes to GRPC API for token transfers
+6. GRPC API retrieves token transfers from database and returns to client
+7. GRPC API is notified of new token transfers via database streaming logic
 
 ## Alternatives
 
 ## Database
+To support the goals the following schema changes should be made
+1. `t_entities` and ` t_entity_types` need to be update to represent new TOKEN entity
+2. New `token_balance` table is added to persist token only balances
+3. New `token` table is added to capture token specific entity items
+4. `crypto_transfer` table should be updated to persist token transfers and also distinguish between HBAR and other token transfers
+5. Update transaction types and results to handle token transactions from network.
 
+### Crypto Transfer
 -   Add columns to `crypto_transfer` table. Symbol can be pulled from a `TransactionReceipt#tokenId` of transaction
 ```sql
     alter table if exists crypto_transfer
@@ -37,6 +47,7 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
 ```
 -   Add migration logic to insert default "HBAR" for `symbol` column in `crypto_transfer` for historic data
 
+### Token Balance
 -   Create `token_balance` table to distinctly capture token balances vs HBAR balances
 
 ```sql
@@ -47,11 +58,13 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
         balance             bigint;
 ```
 
+### Entity Types
 -   Add new `t_entity_types` row with name `token`
 ```sql
     insert into t_entity_types (id, name) values (5, 'token');
 ```
 
+### Transaction Types
 -   Add new `t_transaction_types`:
 ```sql
     insert into t_transaction_types (proto_id, name) values
@@ -69,6 +82,7 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
         (67, 'TOKENACCOUNTWIPE');
 ```
 
+### Transaction Results
 -   Add new `t_transaction_result`:
 ```sql
     insert into t_transaction_results (proto_id, result) values
@@ -103,8 +117,11 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
         (193, 'TOKEN_HAS_EXPIRED')
         (194, 'TOKEN_IS_IMMUTABlE');
 ```
+
+### Entities
 -   Update `t_entities` table with token entity info, from the `TokenCreation.proto` object insert `adminKey` as `key`, `expiry` as `exp_time_ns`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period` into `t_entities` in either case.
 
+### Token
 -   Create `token` class to split out the non shared entity items into a new table. Most API calls may not require this information and therefore sql joins may be avoidable.
 ```sql
     create table if not exists token
@@ -141,11 +158,11 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
 ### Domain
 
 -   Add `CryptoTransfer` class with class members `consensusTimestamp`, `entityId`, `amount`, `symbol`. Also add necessary methods to support conversion from domain to protobuf TokenResponse
--   Add a `SubscribeFilter` base class that can be shared by `TopicMessageFilter` and `CryptoTransferFilter` with support for `startTime`, `endTime`, `limit` and `subscriberId`
+-   Add a `StreamItemFilter` base class that can be shared by `TopicMessageFilter` and `CryptoTransferFilter` with support for `startTime`, `endTime`, `limit` and `subscriberId`
 ```java
     package com.hedera.mirror.grpc.domain;
 
-    public class SubscribeFilter {
+    public class StreamItemFilter {
         private Instant endTime;
         private long limit;
         private int realmNum;
@@ -157,12 +174,12 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
         }
     }
 ```
--   Update `TopicMessageFilter` to extend `SubscribeFilter` and add `topicNum`
--   Add `CryptoTransferFilter` to extend `SubscribeFilter` and add `tokenNum`
+-   Update `TopicMessageFilter` to extend `StreamItemFilter` and add `topicNum`
+-   Add `CryptoTransferFilter` to extend `StreamItemFilter` and add `tokenNum`
 ```java
     package com.hedera.mirror.grpc.domain;
 
-    public class CryptoTransferFilter extends SubscribeFilter {
+    public class CryptoTransferFilter extends StreamItemFilter {
         @Min(0)
         private int tokenNum;
     }
@@ -185,102 +202,104 @@ The behavior will be similar to that of the native HBAR token and as such the Mi
 ```
 
 ### Repository
--   Add a `StreamEntityRepository`
+-   Add a `StreamItemRepository`
 ```java
     package com.hedera.mirror.grpc.repository;
 
-    public interface StreamEntityRepository extends CrudRepository<StreamEntity, Long> {
-        List<StreamEntity> findLatest(long consensusTimestamp, Pageable pageable);
-        List<StreamEntity> findByFilter(SubscribeFilter filter);
+    public interface StreamItemRepository extends CrudRepository<StreamItem, Long> {
+        List<StreamItem> findLatest(long consensusTimestamp, Pageable pageable);
+        List<StreamItem> findByFilter(StreamItemFilter filter);
     }
 ```
--   Add `CryptoTransferRepository` which implements `StreamEntityRepository`
--   Update `TopicMessageRepository` to implement `StreamEntityRepository`
+-   Add `CryptoTransferRepository` which implements `StreamItemRepository`
+-   Update `TopicMessageRepository` to implement `StreamItemRepository`
 
 ### Streaming : Listener & Retriever
 The GRPC module currently supports listen and retrieval logic for incoming and historic topic messages respectively.
 A lot of this logic can be shared for the equivalent `CryptoTransfer` listeners and retriever
 
--   Add a `StreamEntity` interface that stream-able domain objects can implement with get methods for `realm`, `entityNum`, `limit` and `consensusTimestamp`
+-   Add a `StreamItem` interface that stream-able domain objects can implement with get methods for `realm`, `entityNum` and `consensusTimestamp`
 ```java
     package com.hedera.mirror.grpc.domain;
 
-    public interface StreamEntity {
+    public interface StreamItem {
         int getRealmNum();
         int getEntityNum();
-        int getConsensusTimestamp();
+        Long getConsensusTimestamp();
     }
 ```
 
--   Update `TopicListener` to be `Listener`. Replace `TopicMessage` and `TopicMessageFilter` with generic type for StreamEntity
+-   Update `TopicListener` to be `SharedListener`. Replace `TopicMessage` and `TopicMessageFilter` with generic type for StreamItem
 ```java
     package com.hedera.mirror.grpc.listener;
 
-    public interface Listener<T extends StreamEntity> {
+    public interface SharedListener<T extends StreamItem> {
         Flux<T> listen(S filter);
     }
 ```
--   Update `CompositeTopicListener` to set generic types `T` and `S` as `TopicMessage` and `TopicMessageFilter` when creating `Listener` implementations.
+-   Update `CompositeTopicListener` to set generic types `T` and `S` as `TopicMessage` and `TopicMessageFilter` when creating `SharedListener` implementations.
 -   Create `CompositeCryptoListener` similar to `CompositeTopicListener` that sets generic types of `T` and `S` as `CryptoTransfer` and `CryptoTransferFilter` when creating `Listener` implementations.
 -   Update `NotifyTopicListener` to be `NotifyListener` and use generics `T` and `S` in place of `TopicMessage` and `TopicMessageFilter`
 ```java
     package com.hedera.mirror.grpc.listener;
 
-    public class NotifyingListener<T extends StreamEntity, S extends SubscribeFilter> implements Listener<T, S> {
+    public class NotifyingListener<T extends StreamItem, S extends StreamItemFilter> implements SharedListener<T, S> {
         ...
     }
 ```
--   Extract `PollingContext` from `SharedPollingTopicListener` and use `StreamEntity` and `SubscribeFilter` in place of `TopicMessage` and `TopicMessageFilter`
+-   Extract `PollingContext` from `SharedPollingTopicListener` and use `StreamItem` and `StreamItemFilter` in place of `TopicMessage` and `TopicMessageFilter`
 ```java
     package com.hedera.mirror.grpc.listener;
 
     private class PollingContext {
-        private final SubscribeFilter filter;
-        private volatile StreamEntity last;
+        private final StreamItemFilter filter;
+        private volatile StreamItem last;
         ...
     }
 ```
--   Update `PollingTopicListener` to `PollingListener` and use `StreamEntity` and `SubscribeFilter` in place of `TopicMessage` and `TopicMessageFilter`. Also swap/add `streamEntityRepository` private member.
+-   Update `PollingTopicListener` to `PollingListener` and use `StreamItem` and `StreamItemFilter` in place of `TopicMessage` and `TopicMessageFilter`. Also swap/add `streamItemRepository` private member.
 ```java
     package com.hedera.mirror.grpc.listener;
 
-    public class PollingListener implements Listener {
+    public class PollingListener implements SharedListener {
         ...
-        private final StreamEntityRepository streamEntityRepository;
+        private final StreamItemRepository streamItemRepository;
         ...
     }
 ```
--   Update `SharedPollingTopicListener` to `SharedPollingListener` and use `StreamEntity` and `SubscribeFilter` in place of `TopicMessage` and `TopicMessageFilter`
+-   Update `SharedPollingTopicListener` to `SharedPollingListener` and use `StreamItem` and `StreamItemFilter` in place of `TopicMessage` and `TopicMessageFilter`
 ```java
     package com.hedera.mirror.grpc.listener;
 
-    public class SharedPollingListener implements Listener {
+    public class SharedPollingListener implements SharedListener {
         ...
-        private final StreamEntityRepository streamEntityRepository;
+        private final StreamItemRepository streamItemRepository;
         ...
     }
 ```
--   Update `TopicMessageRetriever` to be `Retriever` and use `StreamEntity` and `SubscribeFilter` in place of `TopicMessage` and `TopicMessageFilter`
+-   Update `TopicMessageRetriever` to be `Retriever` and use `StreamItem` and `StreamItemFilter` in place of `TopicMessage` and `TopicMessageFilter`
 ```java
     package com.hedera.mirror.grpc.retriever;
 
     public interface Retriever {
-        Flux<StreamEntity> retrieve(SubscribeFilter filter);
+        Flux<StreamItem> retrieve(StreamItemFilter filter);
     }
 ```
--   Update `PollingTopicMessageRetriever` to be `PollingRetriever` and use `StreamEntity`, `SubscribeFilter` and `StreamEntityRepository` in place of `TopicMessage`, `TopicMessageFilter` and `TopicMessageRepository`.
+-   Update `PollingTopicMessageRetriever` to be `PollingRetriever` and use `StreamItem`, `StreamItemFilter` and `StreamItemRepository` in place of `TopicMessage`, `TopicMessageFilter` and `TopicMessageRepository`.
 
 ### Service
+> _Note:_ ***Sequence diagram to be added
+
 -   Add `CryptoTransferService` interface
 ```java
     package com.hedera.mirror.grpc.service;
 
     public interface TokenService {
-        Flux<StreamEntity> subscribeTokenTransfers(@Valid SubscribeFilter filter);
+        Flux<StreamItem> subscribeTokenTransfers(@Valid StreamItemFilter filter);
     }
 ```
 
--   Add `AbstractServiceImpl` that pulls out the common logic from `TopicMessageServiceImpl` `entityExists()`, `incomingMessages()` and `missingMessages()` and uses `StreamEntity`, `SubscribeFilter` and `Retriever` in place of `TopicMessage`, `TopicMessageFilter` and `TopicRetriever`.
+-   Add `AbstractServiceImpl` that pulls out the common logic from `TopicMessageServiceImpl` `entityExists()`, `incomingMessages()` and `missingMessages()` and uses `StreamItem`, `StreamItemFilter` and `Retriever` in place of `TopicMessage`, `TopicMessageFilter` and `TopicRetriever`.
 -   Update `TopicMessageServiceImpl` to extend `AbstractServiceImpl` and still implement `TopicMessageService`
 -   Add `TokenServiceImpl` to extend `AbstractServiceImpl` and implement `TokenService`
 ```java
@@ -289,7 +308,7 @@ A lot of this logic can be shared for the equivalent `CryptoTransfer` listeners 
     public class TokenServiceImpl extends AbstractServiceImpl implements TokenService {
         ...
         private final Retriever retriever;
-        Flux<StreamEntity> subscribeTokenTransfers(@Valid SubscribeFilter filter){
+        Flux<StreamItem> subscribeTokenTransfers(@Valid StreamItemFilter filter){
             ...
         }
 
@@ -472,6 +491,48 @@ Modify `EntityRecordItemListener` to handle parsing HTS transactions
 > _Note:_ There's an opportunity to refactor the `OnItem()` to focus better on different TransactionBody types but not necessarily within scope
 
 ## REST API
+To achieve the goals
+1.  The `accounts` REST API must be updated to support tokens
+2.  The `balances` REST API must be updated to support tokens
+3.  Add a Token Supply distribution REST API to show token distribution across accounts
+4.  Add a Token Discovery REST API to show available tokens on the network
+
+### Accounts Endpoint
+-   Update `/api/v1/accounts` response to add token balances
+```json
+{
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 80,
+          "tokenBalances": [
+            {
+              "symbol": "FOOBAR",
+              "balance": 80
+            },
+            {
+              "symbol": "FOOCOIN",
+              "balance": 50
+            }
+          ]
+        },
+        "account": "0.0.8",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+```
+
+To achieve this
+-   Update `accounts.js` `getAccountss()` to add an additional join to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
+
 
 ### Balances Endpoint
 -   Update `/api/v1/balances` response to add token balances
@@ -515,7 +576,7 @@ Modify `EntityRecordItemListener` to handle parsing HTS transactions
     }
 ```
 To achieve this
--   Update `balances.js` `getBalances()` to pull the `balance` and `symbol` columns from `token_balance` where `account_balance.accountNum` = ... and assign each row to an element of `tokenBalances`
+-   Update `balances.js` `getBalances()` to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
 
 ### Token Supply distribution
 
