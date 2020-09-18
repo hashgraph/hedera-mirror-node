@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -250,8 +251,13 @@ class PubSubRecordItemListenerTest {
         var actual = argument.getValue().getPayload();
         assertThat(actual.getConsensusTimestamp()).isEqualTo(CONSENSUS_TIMESTAMP);
         assertThat(actual.getTransaction()).isEqualTo(expectedTransaction.toBuilder()
-                .clearBodyBytes()
-                .setBody(TransactionBody.parseFrom(expectedTransaction.getBodyBytes()))
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(
+                                        SignedTransaction.parseFrom(expectedTransaction.getSignedTransactionBytes())
+                                                .getBodyBytes())
+                                .build().toByteString()
+                )
                 .build());
         assertThat(actual.getTransactionRecord()).isEqualTo(DEFAULT_RECORD);
         assertThat(argument.getValue().getHeaders()).describedAs("Headers contain consensus timestamp")
@@ -271,7 +277,11 @@ class PubSubRecordItemListenerTest {
         TransactionBody.Builder transactionBodyBuilder = TransactionBody.newBuilder();
         transactionModifier.accept(transactionBodyBuilder);
         return Transaction.newBuilder()
-                .setBodyBytes(transactionBodyBuilder.build().toByteString())
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(transactionBodyBuilder.build().toByteString())
+                                .build().toByteString()
+                )
                 .build();
     }
 

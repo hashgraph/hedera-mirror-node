@@ -20,8 +20,10 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -117,10 +119,19 @@ public class PubSubRecordItemListener implements RecordItemListener {
     }
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
-        Transaction transaction = recordItem.getTransaction().toBuilder()
-                .clearBodyBytes()
-                .setBody(recordItem.getTransactionBody()) // setting deprecated field makes json conversion easier
-                .build();
+        Transaction transaction = recordItem.getTransaction();
+        if (transaction.getSignedTransactionBytes() == ByteString.EMPTY) {
+            transaction = transaction.toBuilder()
+                    .setSignedTransactionBytes(
+                            SignedTransaction.newBuilder()
+                                    .setSigMap(transaction.getSigMap())
+                                    .setBodyBytes(recordItem.getTransactionBody().toByteString())
+                                    .build().toByteString()
+                    )
+                    .clearBodyBytes()
+                    .clearSigMap()
+                    .build();
+        }
         var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getRecord());
         return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(), transaction,
                 recordItem.getRecord(), nonFeeTransfers);
