@@ -58,6 +58,12 @@ class RecordItemTest {
     private static final Transaction TRANSACTION = Transaction.newBuilder()
             .build();
 
+    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
+            .setTransactionFee(10L)
+            .setMemo("memo")
+            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+            .build();
+
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder()
             .addSigPair(
                     SignaturePair.newBuilder()
@@ -65,12 +71,6 @@ class RecordItemTest {
                             .setPubKeyPrefix(ByteString.copyFromUtf8("pubKeyPrefix"))
                             .build()
             ).build();
-
-    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
-            .setTransactionFee(10L)
-            .setMemo("memo")
-            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-            .build();
 
     private static final SignedTransaction SIGNED_TRANSACTION = SignedTransaction.newBuilder()
             .setBodyBytes(TRANSACTION_BODY.toByteString())
