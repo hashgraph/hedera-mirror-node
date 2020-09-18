@@ -36,12 +36,11 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.util.Utility;
 
 class RecordItemTest {
 
@@ -120,9 +119,8 @@ class RecordItemTest {
     @Test
     public void testWithBodyProto() throws IOException {
         //An encoded protobuf Transaction with the body set in TransactionBody, as seen in an older proto version
-        byte[] transactionFromProto = FileUtils
-                .readFileToByteArray(Utility
-                        .getResource(transactionProtoPath.resolve("bodyInTransactionBody").toString()));
+        byte[] transactionFromProto = Base64
+                .decodeBase64("GhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5CgoYCjIEbWVtb3IA");
 
         Transaction expectedTransaction = TRANSACTION.toBuilder()
                 .setUnknownFields(UNKNOWN_FIELD_SET)
