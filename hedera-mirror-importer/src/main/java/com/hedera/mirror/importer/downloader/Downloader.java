@@ -141,7 +141,6 @@ public abstract class Downloader {
                 .register(meterRegistry);
     }
 
-
     @EventListener(MirrorDateRangePropertiesProcessedEvent.class)
     public void onMirrorDateRangePropertiesProcessedEvent() {
         mirrorDateRangePropertiesProcessed = true;
@@ -181,6 +180,7 @@ public abstract class Downloader {
     /**
      * Download all signature files with a timestamp later than the last valid file. Put signature files into a
      * multi-map sorted and grouped by the timestamp.
+     *
      * @param addressBook the current address book
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
@@ -202,7 +202,7 @@ public abstract class Downloader {
          * start maxDownloads download operations.
          */
         for (EntityId nodeAccountId : nodeAccountIds) {
-            final String nodeAccountIdStr = nodeAccountId.entityIdToString();
+            String nodeAccountIdStr = nodeAccountId.entityIdToString();
             tasks.add(Executors.callable(() -> {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 // Get a list of objects in the bucket, 100 at a time
@@ -257,7 +257,8 @@ public abstract class Downloader {
                         }
                     });
                     if (count.get() > 0) {
-                        log.info("Downloaded {} signatures for node {} in {}", count.get(), nodeAccountIdStr, stopwatch);
+                        log.info("Downloaded {} signatures for node {} in {}", count
+                                .get(), nodeAccountIdStr, stopwatch);
                     }
                 } catch (Exception e) {
                     log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
@@ -344,10 +345,12 @@ public abstract class Downloader {
      * file. (3) compare the hash of data file with Hash which has been agreed on by valid signatures, if match, move
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
+     *
      * @param addressBook the current address book
      * @param sigFilesMap signature files grouped by file name
      */
-    private void verifySigsAndDownloadDataFiles(AddressBook addressBook, Multimap<String, FileStreamSignature> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(AddressBook addressBook,
+                                                Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBook);
         Path validPath = downloaderProperties.getValidPath();
         Instant endDate = mirrorProperties.getEndDate();
@@ -394,7 +397,8 @@ public abstract class Downloader {
                 }
 
                 try {
-                    File signedDataFile = downloadSignedDataFile(signature.getFile(), signature.getNodeAccountIdString());
+                    File signedDataFile = downloadSignedDataFile(signature.getFile(), signature
+                            .getNodeAccountIdString());
                     if (signedDataFile == null) {
                         continue;
                     }
@@ -457,8 +461,9 @@ public abstract class Downloader {
     /**
      * Verifies the stream file is the next file in the hashchain if it's chained and the hash of the stream file
      * matches the expected hash in the signature.
+     *
      * @param streamFile the stream file object
-     * @param signature the signature object corresponding to the stream file
+     * @param signature  the signature object corresponding to the stream file
      */
     private void verify(StreamFile streamFile, FileStreamSignature signature) {
         String fileName = streamFile.getName();
@@ -478,10 +483,11 @@ public abstract class Downloader {
     }
 
     /**
-     * Updates last valid downloaded file and last valid downloaded file hash key in database if applicable, saves
-     * the stream file to its corresponding database table, and moves the verified data file to the valid folder.
-     * @param streamFile the verified stream file
-     * @param validPath path to the valid folder
+     * Updates last valid downloaded file and last valid downloaded file hash key in database if applicable, saves the
+     * stream file to its corresponding database table, and moves the verified data file to the valid folder.
+     *
+     * @param streamFile       the verified stream file
+     * @param validPath        path to the valid folder
      * @param verifiedDataFile the verified data file object
      */
     private void updateApplicationStatusAndMoveFile(StreamFile streamFile, Path validPath, File verifiedDataFile) {

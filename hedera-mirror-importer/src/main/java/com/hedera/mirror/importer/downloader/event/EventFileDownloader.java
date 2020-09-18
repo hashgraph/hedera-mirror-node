@@ -45,18 +45,21 @@ public class EventFileDownloader extends Downloader {
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
             TransactionTemplate transactionTemplate, MeterRegistry meterRegistry, EventFileReader eventFileReader) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate, meterRegistry);
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
+                meterRegistry);
         this.eventFileReader = eventFileReader;
     }
 
+    @Override
     @Leader
-    @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:5000}")
+    @Scheduled(fixedDelayString = "${hedera.mirror.downloader.event.frequency:5000}")
     public void download() {
         downloadNextBatch();
     }
 
     /**
      * Reads the event file.
+     *
      * @param file event file object
      * @return StreamFile object
      */
