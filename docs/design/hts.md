@@ -15,12 +15,12 @@ Changes should be applied in order of
 6.  GRPC Token Service
 
 ## Goals
--   Ingest HTS related transactions from record streams from the mainnet and persist information to the database
--   Ingest token balances from balances streams from the mainnet and persist to the database
+-   Ingest HTS Token transactions from record streams rcd files from the mainnet and persist information to the database
+-   Ingest token balances from balance streams  CSV files from the mainnet and persist to the database
 -   Expose token balance of accounts in existing REST APIs that show balance
 -   Provide a HTS REST API to return all tokens (Token Discovery)
 -   Provide a HTS REST API to return all accounts holding a specific token (Token Supply Distribution)
--   Provide a streaming GRPC API to subscribe to HTS transfers for an account
+-   Provide a streaming GRPC API to subscribe to token transfers for an account
 
 ## Non Goals
 -   Provide a streaming GRPC API to subscribe to HTS transfers for all accounts and or all tokens
@@ -40,7 +40,7 @@ Changes should be applied in order of
 ## Alternatives
 
 ## Database
-To support the goals the following schema changes should be made
+To support the goals the following database schema changes should be made
 1. `t_entities` and ` t_entity_types` need to be update to represent new TOKEN entity
 2. New `token_balance` table is added to persist token only balances
 3. New `token` table is added to capture token specific entity items
@@ -128,10 +128,10 @@ To support the goals the following schema changes should be made
 ```
 
 ### Entities
--   Update `t_entities` table with token entity info, from the `TokenCreation.proto` object insert `adminKey` as `key`, `expiry` as `exp_time_ns`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period`.
+-   Insert token entity info into `t_entities` table from `TokenCreation.proto` transaction object. Insert `adminKey` as `key`, `expiry` as `exp_time_ns`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period`.
 
 ### Token
--   Create `token` class to split out the non shared entity items into a new table. Most API calls may not require this information and therefore additional sql joins may be avoided.
+-   Create `token` table to split out the non shared entity items into a new table. Most API calls may not require this information and therefore additional sql joins may be avoided.
 ```sql
     create table if not exists token
         consensus_timestamp bigint  primary key not null,
@@ -145,49 +145,11 @@ To support the goals the following schema changes should be made
         wipe_key            bytea,
         supply_key          bytea,
         freeze_default      boolean,
-        kyc_default         boolean,
-        freeze_default      boolean;
+        kyc_default         boolean;
 ```
 
 ## Importer
 
-### Converter
--   Add `TokenBalanceSerializer` converter to handle object to JSON string serialization
-```java
-   @Named
-   public class TokenBalanceSerializer extends JsonSerializer<List<TokenBalance>> {
-       @Override
-       public void serialize(List<TokenBalance> tokens, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-           if (value != null) {
-               gen.writeStartArray();
-               for (TokenBalance token: tokens) {
-                   gen.writeStartObject();
-                   gen.writeObjectField("token", token);
-                   gen.writeEndObject();
-               }
-               gen.writeEndArray();
-           }
-       }
-   }
-   ```
-
-or
-
-```java
-    @Named
-    public class TokenBalanceSerializer extends JsonSerializer<List<TokenBalance>> {
-        @Override
-        public void serialize(List<TokenBalance> tokens, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value != null) {
-                gen.writeStartArray();
-                for (TokenBalance token: tokens) {
-                    gen.writeObject(token);
-                }
-                gen.writeEndArray();
-            }
-        }
-    }
-```
 ### Converter
 -   Add a `TokenIdConverter`
 ```java
@@ -203,7 +165,23 @@ or
 
 ### Domain
 
--   Add `TokenBalance` with `tokens` private class member
+-   Update `CryptoTransfer` to have a `token_id` and `symbol` class members, to allow it to represent both HBARs and Tokens
+
+-   Update `EntityTypeEnum` with `Token` type
+```java
+    public enum EntityTypeEnum {
+
+        ACCOUNT(1),
+        CONTRACT(2),
+        FILE(3),
+        TOPIC(4),
+        TOKEN(5);
+
+        private final int id;
+    }
+```
+
+-   Add `TokenBalance`
 ```java
     public class TokenBalance implements Persistable<TokenBalance.Id> {
 
@@ -226,7 +204,7 @@ or
         @Embeddable
         public static class Id implements Serializable {
 
-            private static final long serialVersionUID = -2399552489266593375L;
+            private static final long serialVersionUID = 1416544357338674260L;
 
             private long consensusTimestamp;
 
@@ -241,7 +219,6 @@ or
     }
 ```
 
--   Update `CryptoTransfer` to have a `token_id` and `symbol` class members, to allow it to represent both HBARs and Tokens
 
 -   Add `Token` class to hold Token specific metadata outside of the base entity
 ```java
@@ -261,25 +238,9 @@ or
     }
 ```
 
--   Update `EntityTypeEnum` with `Token` type
-```java
-    public enum EntityTypeEnum {
+### Balance Parsing
 
-        ACCOUNT(1),
-        CONTRACT(2),
-        FILE(3),
-        TOPIC(4),
-        TOKEN(5);
-
-        private final int id;
-    }
-```
-
-
-
-### Balance Persistence
-
--   Update `AccountBalanceLineParser.parse` to parse additional token columns representing `TokenRelationships`.
+-   Update `AccountBalanceLineParser.parse` to parse additional token column representing `TokenRelationships`.
 -   Add `INSERT_TOKEN_BALANCE_STATEMENT` in `AccountBalancesFileLoader` to persist each `TokenRelationship`
 ```java
     private static final String INSERT_TOKEN_BALANCE_STATEMENT = "insert into token_balance " +
@@ -292,12 +253,29 @@ or
                 "freeze_status = ? where token_id = ?";
 ```
 
+### Transaction Handlers
+Additional handlers will be needed to support the added Token transaction types
+
+-   Add TokenCreateTransactionsHandler	56
+TokenTransact	57
+TokenGetInfo	58
+TokenFreezeAccount	59
+TokenUnfreezeAccount	60
+TokenGrantKycToAccount	61
+TokenRevokeKycFromAccount	62
+TokenDelete	63
+TokenUpdate	64
+TokenMint	65
+TokenBurn	66
+TokenAccountWipe	67
+
+
 ### Token Transfer Parsing
 
 Modify `EntityRecordItemListener` to handle parsing HTS transactions
 
 -   Modify `OnItem()` to check for `TransactionBody.hasTokenCreation()`
--   Add `insertTokenCreateTransferList()` and `insertTokenTransferList()` to parse out `txRecord.getTokenTransferListsList()`. Create a new CryptoTransfer object for each `TokenTransferList` item and pass it to `entityListener.onCryptoTransfer`. Also pulling out `tokenID` from `TokenTransferList.token`
+-   Add `insertTokenCreateTransferList()` and `insertTokenTransferList()` to parse out `txRecord.getTokenTransferListsList()`. Create a new CryptoTransfer object for each `TokenTransferList` item and pass it to `entityListener.onCryptoTransfer()`. Also, pull out `tokenID` from `TokenTransferList.token`
 -   Add `insertTransfer()` that can be shared for `TransferList` and `TokenTransferList`
 ```java
     private void insertTransfer(long consensusTimestamp, AccountAmount aa, EntityId account, EntityId token, String symbol) {
@@ -317,9 +295,9 @@ To achieve the goals and for easy integration with existing users the REST API s
 1.  The `accounts` REST API must be updated to support `tokenBalances`
 2.  The `balances` REST API must be updated to support `tokenBalances`
 3.  The `transactions` REST API must be updated to support `tokenTransfers`
-4.  Add a Token Supply distribution REST API to show token distribution across accounts
-5.  Add a Token Discovery REST API to show available tokens on the network
-
+4.  Add a Token Supply distribution REST API to show token distribution across accounts - `/api/v1/tokens/<symbol>/balances`
+5.  Add a Token Discovery REST API to show available tokens on the network - `/api/v1/tokens`
+6.  Add a Token Info REST API to show details for a token on the network - `/api/v1/tokens/<symbol>`
 
 ### Accounts Endpoint
 -   Update `/api/v1/accounts` response to add token balances
@@ -493,7 +471,7 @@ To achieve this similar to balances
     select account_id, balance from token_balance where symbol = ? and consensus_timestamp = (select max(consensus_timestamp) from token_balance);
 ```
 
-Query parameters should include
+Optional Filters
 -   `/api/v1/tokens/<symbol>/balances?id=0.0.1000`
 -   `/api/v1/tokens/<symbol>/balances?balance=gt:1000`
 -   `/api/v1/tokens/<symbol>/balances?timestamp=1566562500.040961001`
@@ -536,7 +514,7 @@ To achieve this
           join t_entities e on t.token_id = e.id and e.fk_entity_type_id = ${utils.ENTITY_TYPE_TOKEN};
 ```
 
-Additions
+Optional Filters
 -   `/api/v1/tokens?adminkey=HJ^&8` - All tokens with matching admin key
 -   `/api/v1/tokens?account.id=0.0.8` - All tokens for matching account
 
@@ -744,5 +722,6 @@ A lot of this logic can be shared for the equivalent `CryptoTransfer` listeners 
 -   Will a `token_id` and `symbol` be assigned a value for HBARs?
 -   Should token only entity items exist in their own table or be added to `t_entities`?
 -   Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
+-   What filer options should be provided for new Token API's
 
 
