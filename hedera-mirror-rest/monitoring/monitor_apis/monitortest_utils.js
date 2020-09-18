@@ -112,11 +112,6 @@ const getUrl = (server, path, query = undefined) => {
  * @return {Object} JSON object representing api response
  */
 const getAPIResponse = (url) => {
-  if (url.indexOf('/') === 0) {
-    // if url is path get full url including host
-    url = getUrl(url);
-  }
-
   const controller = new AbortController();
   const timeout = setTimeout(
     () => {
@@ -214,13 +209,14 @@ const createFailedResultJson = (title, msg) => {
 /**
  * Helper function to get max limit for a resource. Returns the lesser of the resource specific maxLimit if exists and
  * the global maxLimit, otherwise the global maxLimit.
- * @param resource {String} Name of the resource
+ * @param {String} resource name of the resource
+ * @returns {{maxLimit: number, isGlobal: boolean}}
  */
 const getMaxLimit = (resource) => {
   const result = {
     maxLimit: config.maxLimit,
-    isGlobal: true
-  }
+    isGlobal: true,
+  };
 
   const {monitor} = config;
   if (!monitor) {

@@ -67,12 +67,12 @@ const getBalancesCheck = async (server, classResults) => {
   const currentTestResult = acctestutils.getMonitorTestResult();
 
   const query = {};
-  const {maxLimit, isGlobal} =  acctestutils.getMaxLimit(resource);
+  const {maxLimit, isGlobal} = acctestutils.getMaxLimit(resource);
   if (!isGlobal) {
     query.limit = maxLimit;
   }
 
-  let url = acctestutils.getUrl(server, balancesPath, query);
+  const url = acctestutils.getUrl(server, balancesPath, query);
   currentTestResult.url = url;
   const balances = await getBalances(url, currentTestResult);
 
@@ -141,11 +141,8 @@ const getBalancesWithTimeAndLimitParams = async (server, classResults) => {
   const plusOne = math.add(math.bignumber(balancesResponse.timestamp), math.bignumber(1));
   const minusOne = math.subtract(math.bignumber(balancesResponse.timestamp), math.bignumber(1));
   url = acctestutils.getUrl(server, balancesPath, {
-    timestamp: [
-      `gt:${minusOne.toString()}`,
-      `lt:${plusOne.toString()}`
-    ],
-    limit: 1
+    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
+    limit: 1,
   });
   currentTestResult.url = url;
   balances = await getBalances(url, currentTestResult);

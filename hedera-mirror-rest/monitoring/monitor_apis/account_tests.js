@@ -103,9 +103,9 @@ const getAccountsWithAccountCheck = async (server, classResults) => {
   const highestAcc = _.max(_.map(accounts, (acct) => acctestutils.toAccNum(acct.account)));
 
   url = acctestutils.getUrl(server, accountsPath, {
-    "account.id": highestAcc,
+    'account.id': highestAcc,
     type: 'credit',
-    limit: 1
+    limit: 1,
   });
   currentTestResult.url = url;
 
@@ -168,11 +168,8 @@ const getAccountsWithTimeAndLimitParams = async (server, classResults) => {
   const minusOne = math.subtract(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
 
   url = acctestutils.getUrl(server, accountsPath, {
-    timestamp: [
-      `gt:${minusOne.toString()}`,
-      `lt:${plusOne.toString()}`
-      ],
-    limit: 1
+    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
+    limit: 1,
   });
   currentTestResult.url = url;
   accounts = await getAccounts(url, currentTestResult);

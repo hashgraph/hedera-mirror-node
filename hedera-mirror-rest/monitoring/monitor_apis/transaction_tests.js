@@ -79,7 +79,7 @@ const getTransactionsWithAccountCheck = async (server, classResults) => {
 
   const query = {};
   const {maxLimit, isGlobal} = acctestutils.getMaxLimit(resource);
-  if (!isGlobal)  {
+  if (!isGlobal) {
     query.limit = maxLimit;
   }
 
@@ -132,7 +132,7 @@ const getTransactionsWithAccountCheck = async (server, classResults) => {
   url = acctestutils.getUrl(server, transactionsPath, {
     'account.id': highestAcc,
     type: 'credit',
-    limit: 1
+    limit: 1,
   });
   currentTestResult.url = url;
 
@@ -174,12 +174,12 @@ const getTransactionsWithOrderParam = async (server, classResults) => {
   const currentTestResult = acctestutils.getMonitorTestResult();
 
   const query = {order: 'asc'};
-  const {maxLimit, isGlobal} =  acctestutils.getMaxLimit(resource);
+  const {maxLimit, isGlobal} = acctestutils.getMaxLimit(resource);
   if (!isGlobal) {
     query.limit = maxLimit;
   }
 
-  let url = acctestutils.getUrl(server, transactionsPath, query);
+  const url = acctestutils.getUrl(server, transactionsPath, query);
   currentTestResult.url = url;
   const transactions = await getTransactions(url, currentTestResult);
 
@@ -198,7 +198,7 @@ const getTransactionsWithOrderParam = async (server, classResults) => {
   }
 
   let previousNanos = long.ZERO;
-  for (let txn of transactions) {
+  for (const txn of transactions) {
     const nanos = acctestutils.consensusTimestampToNanos(txn.consensus_timestamp);
     if (nanos.lessThan(previousNanos)) {
       currentTestResult.failureMessages.push('consensus timestamps are not in ascending order');
@@ -225,7 +225,7 @@ const getTransactionsWithLimitParams = async (server, classResults) => {
 
   const url = acctestutils.getUrl(server, transactionsPath, {limit: 10});
   currentTestResult.url = url;
-  let transactions = await getTransactions(url, currentTestResult);
+  const transactions = await getTransactions(url, currentTestResult);
 
   if (undefined === transactions) {
     const message = `transactions is undefined`;
@@ -276,11 +276,8 @@ const getTransactionsWithTimeAndLimitParams = async (server, classResults) => {
   const plusOne = math.add(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
   const minusOne = math.subtract(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
   url = acctestutils.getUrl(server, transactionsPath, {
-    timestamp: [
-      `gt:${minusOne.toString()}`,
-      `lt:${plusOne.toString()}`
-    ],
-    limit: 1
+    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
+    limit: 1,
   });
   currentTestResult.url = url;
   transactions = await getTransactions(url, currentTestResult);
