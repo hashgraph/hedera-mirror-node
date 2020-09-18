@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.listener;
  */
 
 import java.time.Duration;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -32,6 +33,7 @@ import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 public abstract class SharedTopicListener implements TopicListener {
 
+    protected final Logger log = LogManager.getLogger(getClass());
     protected final ListenerProperties listenerProperties;
     protected Flux<TopicMessage> sharedTopicMessages;
 
@@ -48,7 +50,7 @@ public abstract class SharedTopicListener implements TopicListener {
                 .autoConnect();
 
         return sharedTopicMessages.filter(t -> filterMessage(t, filter))
-                .doOnSubscribe(s -> getLogger().info("Subscribing: {}", filter))
+                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
                 .doOnCancel(() -> processor.onNext("timeout"))
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
                 .timeout(timeoutFlux, message -> timeoutFlux,
@@ -60,6 +62,4 @@ public abstract class SharedTopicListener implements TopicListener {
                 message.getTopicNum() == filter.getTopicNum() &&
                 message.getConsensusTimestamp() >= filter.getStartTimeLong();
     }
-
-    protected abstract Logger getLogger();
 }

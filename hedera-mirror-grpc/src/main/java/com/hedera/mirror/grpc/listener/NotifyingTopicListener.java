@@ -29,8 +29,6 @@ import io.vertx.pgclient.pubsub.PgSubscriber;
 import java.time.Duration;
 import java.util.Objects;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -41,7 +39,6 @@ import com.hedera.mirror.grpc.DbProperties;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 
 @Named
-@Log4j2
 public class NotifyingTopicListener extends SharedTopicListener {
 
     private final ObjectMapper objectMapper;
@@ -108,10 +105,5 @@ public class NotifyingTopicListener extends SharedTopicListener {
             log.error("Error parsing message {}", payload, ex);
             return null;
         }
-    }
-
-    @Override
-    protected Logger getLogger() {
-        return log;
     }
 }

@@ -26,8 +26,6 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.Logger;
 import org.reactivestreams.Subscription;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -42,7 +40,6 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Named
-@Log4j2
 public class SharedPollingTopicListener extends SharedTopicListener {
 
     private final TopicMessageRepository topicMessageRepository;
@@ -89,11 +86,6 @@ public class SharedPollingTopicListener extends SharedTopicListener {
                 .doOnSubscribe(context::onPollStart);
     }
 
-    @Override
-    protected Logger getLogger() {
-        return log;
-    }
-
     @Data
     private class PollingContext {
 
@@ -111,6 +103,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
             var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
             var rate = elapsed > 0 ? (int) (1000.0 * count / elapsed) : 0;
             log.info("Finished querying with {} messages in {} ({}/s)", count, stopwatch, rate);
+            count = 0;
         }
 
         void onPollStart(Subscription subscription) {
