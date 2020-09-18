@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ShardID;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -66,7 +67,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractCreate() throws Exception {
         Transaction transaction = contractCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         ContractCreateTransactionBody contractCreateTransactionBody = transactionBody.getContractCreateInstance();
         TransactionRecord record = createOrUpdateRecord(transactionBody);
 
@@ -87,7 +89,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractCreateFailedWithResult() throws Exception {
         Transaction transaction = contractCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         // Clear receipt.contractID since transaction is failure.
         TransactionRecord.Builder recordBuilder = createOrUpdateRecord(transactionBody,
                 ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION).toBuilder();
@@ -111,7 +114,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractCreateFailedWithoutResult() throws Exception {
         Transaction transaction = contractCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         // Clear receipt.contractID since transaction is failure.
         TransactionRecord.Builder recordBuilder =
                 createOrUpdateRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE)
@@ -139,7 +143,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         entityProperties.getPersist().setContracts(false);
 
         Transaction transaction = contractCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         ContractCreateTransactionBody contractCreateTransactionBody = transactionBody.getContractCreateInstance();
         TransactionRecord record = createOrUpdateRecord(transactionBody);
 
@@ -158,19 +163,21 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         );
     }
 
-
     @Test
     void contractUpdateAllToExisting() throws Exception {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody.parseFrom(contractCreateTransaction.getBodyBytes());
+        TransactionBody createTransactionBody = TransactionBody
+                .parseFrom(SignedTransaction.parseFrom(contractCreateTransaction.getSignedTransactionBytes())
+                        .getBodyBytes());
         TransactionRecord recordCreate = createOrUpdateRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = contractUpdateAllTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = createOrUpdateRecord(transactionBody);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
@@ -191,7 +198,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractUpdateAllToNew() throws Exception {
         Transaction transaction = contractUpdateAllTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = createOrUpdateRecord(transactionBody);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
@@ -213,8 +221,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     void contractUpdateAllToExistingInvalidTransaction() throws Exception {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(contractCreateTransaction.getBodyBytes());
+        TransactionBody createTransactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(contractCreateTransaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord recordCreate = createOrUpdateRecord(createTransactionBody);
         ContractCreateTransactionBody contractCreateTransactionBody = createTransactionBody
                 .getContractCreateInstance();
@@ -223,7 +231,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         // now update
         Transaction transaction = contractUpdateAllTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = createOrUpdateRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
@@ -255,15 +264,16 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     void contractDeleteToExisting() throws Exception {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(contractCreateTransaction.getBodyBytes());
+        TransactionBody createTransactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(contractCreateTransaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord recordCreate = createOrUpdateRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = contractDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = createOrUpdateRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -291,7 +301,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractDeleteToNew() throws Exception {
         Transaction transaction = contractDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = createOrUpdateRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -311,7 +322,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractDeleteToNewInvalidTransaction() throws Exception {
         Transaction transaction = contractDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = createOrUpdateRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
@@ -333,15 +345,16 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     void contractCallToExisting() throws Exception {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(contractCreateTransaction.getBodyBytes());
+        TransactionBody createTransactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(contractCreateTransaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord recordCreate = createOrUpdateRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now call
         Transaction transaction = contractCallTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = callRecord(transactionBody);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
 
@@ -362,7 +375,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractCallToNew() throws Exception {
         Transaction transaction = contractCallTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = callRecord(transactionBody);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
 
@@ -383,7 +397,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractCallFailedWithResult() throws Exception {
         Transaction transaction = contractCallTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -402,7 +417,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void contractCallFailedWithoutResult() throws Exception {
         Transaction transaction = contractCallTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE)
                 .toBuilder().clearContractCallResult().build();
 
@@ -423,7 +439,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     void contractCallDoNotPersist() throws Exception {
         entityProperties.getPersist().setContracts(false);
         Transaction transaction = contractCallTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = callRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -443,7 +460,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     void cryptoTransferBadContractId() throws Exception {
         Transaction transaction = contractCallTransaction(ContractID.newBuilder().setContractNum(-1L).build());
-        var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INVALID_CONTRACT_ID);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -579,7 +597,6 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
                     AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1003).build());
             contractCreate.setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build());
             contractCreate.setShardID(ShardID.newBuilder().setShardNum(0));
-
         });
     }
 
@@ -603,7 +620,6 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
             contractDelete.setContractID(contractId);
         });
     }
-
 
     private Transaction contractCallTransaction() {
         return contractCallTransaction(contractId);

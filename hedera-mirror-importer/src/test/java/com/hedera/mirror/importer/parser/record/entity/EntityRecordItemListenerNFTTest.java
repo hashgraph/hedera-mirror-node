@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -233,13 +234,16 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
         var body = transactionBody().setContractCall(inner);
         return Transaction.newBuilder()
-                .setBodyBytes(body.build().toByteString())
-                .setSigMap(getSigMap()).build();
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                        .setSigMap(getSigMap())
+                        .build().toByteString())
+                .build();
     }
 
     private void contractCallWithTransferList(TransferList.Builder transferList) throws Exception {
         var transaction = contractCall();
-        var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
@@ -252,13 +256,16 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
         var body = transactionBody().setContractCreateInstance(inner);
         return Transaction.newBuilder()
-                .setBodyBytes(body.build().toByteString())
-                .setSigMap(getSigMap()).build();
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                        .setSigMap(getSigMap())
+                        .build().toByteString())
+                .build();
     }
 
     private void contractCreateWithTransferList(TransferList.Builder transferList) throws Exception {
         var transaction = contractCreate();
-        var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
@@ -274,13 +281,16 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
         var body = transactionBody().setCryptoCreateAccount(inner);
         return Transaction.newBuilder()
-                .setBodyBytes(body.build().toByteString())
-                .setSigMap(getSigMap()).build();
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                        .setSigMap(getSigMap())
+                        .build().toByteString())
+                .build();
     }
 
     private void cryptoCreateWithTransferList(TransferList.Builder transferList) throws Exception {
         var transaction = cryptoCreate();
-        var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
@@ -300,13 +310,16 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
         var body = transactionBody().setCryptoTransfer(inner.build());
         return Transaction.newBuilder()
-                .setBodyBytes(body.build().toByteString())
-                .setSigMap(getSigMap()).build();
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                        .setSigMap(getSigMap())
+                        .build().toByteString())
+                .build();
     }
 
     private void cryptoTransferWithTransferList(Transaction transaction, TransferList.Builder transferList,
                                                 ResponseCodeEnum rc) throws Exception {
-        var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         var record = transactionRecord(transactionBody, rc, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));

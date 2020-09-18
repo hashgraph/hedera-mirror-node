@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -44,7 +45,8 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
     @Test
     void freeze() throws Exception {
         Transaction transaction = freezeTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -58,7 +60,8 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
     @Test
     void freezeInvalidTransaction() throws Exception {
         Transaction transaction = freezeTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -85,15 +88,16 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
     }
 
     private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum result) {
-        return buildTransactionRecord(recordBuilder -> {}, transactionBody, result.getNumber());
+        return buildTransactionRecord(recordBuilder -> {
+        }, transactionBody, result.getNumber());
     }
 
     private Transaction freezeTransaction() {
         return buildTransaction(builder -> builder.getFreezeBuilder()
-            .setEndHour(1)
-            .setEndMin(2)
-            .setStartHour(3)
-            .setStartMin(4)
-            .setUpdateFile(FileID.newBuilder().setFileNum(5).build()));
+                .setEndHour(1)
+                .setEndMin(2)
+                .setStartHour(3)
+                .setStartMin(4)
+                .setUpdateFile(FileID.newBuilder().setFileNum(5).build()));
     }
 }

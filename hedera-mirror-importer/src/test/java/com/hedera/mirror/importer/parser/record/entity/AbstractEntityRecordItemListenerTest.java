@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -46,8 +47,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -168,7 +169,8 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
         String fileName = UUID.randomUUID().toString();
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile recordFile = new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", nodeAccountId, 0L, 0);
+        RecordFile recordFile = new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID()
+                .toString(), "", nodeAccountId, 0L, 0);
         recordFileRepository.save(recordFile);
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         entityRecordItemListener.onItem(recordItem);
@@ -244,8 +246,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         customBuilder.accept(bodyBuilder);
 
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                .setBodyBytes(bodyBuilder.build().toByteString())
-                .setSigMap(getSigMap())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(bodyBuilder.build().toByteString())
+                        .setSigMap(getSigMap())
+                        .build().toByteString())
                 .build();
     }
 

@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ShardID;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -71,7 +72,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void cryptoCreate() throws Exception {
         Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -95,7 +97,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void cryptoCreateTransactionWithBody() throws Exception {
         Transaction transaction = createTransactionWithBody();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -121,7 +124,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void cryptoCreateFailedTransaction() throws Exception {
         Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
         // Clear receipt.accountID since transaction is failure.
         TransactionRecord.Builder recordBuilder = transactionRecord(
@@ -149,7 +153,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void cryptoCreateInitialBalanceInTransferList() throws Exception {
         Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
         TransactionRecord tempRecord = transactionRecordSuccess(transactionBody);
 
@@ -181,13 +186,15 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void cryptoCreateTwice() throws Exception {
         Transaction firstTransaction = cryptoCreateTransaction();
-        TransactionBody firstTransactionBody = TransactionBody.parseFrom(firstTransaction.getBodyBytes());
+        TransactionBody firstTransactionBody = TransactionBody
+                .parseFrom(SignedTransaction.parseFrom(firstTransaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord firstRecord = transactionRecordSuccess(firstTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(firstTransaction, firstRecord));
 
         Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -211,7 +218,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         // now update
         Transaction transaction = cryptoUpdateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -247,12 +255,17 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void samePayerAndUpdateAccount() throws Exception {
         Transaction transaction = cryptoUpdateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         transactionBody = TransactionBody.newBuilder()
                 .mergeFrom(transactionBody)
                 .setTransactionID(Utility.getTransactionId(accountId))
                 .build();
-        transaction = Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build();
+        transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(transactionBody.toByteString())
+                        .build().toByteString())
+                .build();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -264,11 +277,15 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     void proxyAccountIdSetTo0() throws Exception {
         // given
         Transaction transaction = cryptoUpdateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         var bodyBuilder = transactionBody.toBuilder();
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
         transactionBody = bodyBuilder.build();
-        transaction = Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build();
+        transaction = Transaction.newBuilder().setSignedTransactionBytes(SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.toByteString())
+                .build().toByteString())
+                .build();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         // then: process the transaction without throwing NPE
@@ -295,7 +312,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                     // (the results of overflows).
                     .setExpirationTime(Timestamp.newBuilder().setSeconds(seconds));
         });
-        var record = transactionRecordSuccess(TransactionBody.parseFrom(updateTransaction.getBodyBytes()));
+        var record = transactionRecordSuccess(TransactionBody
+                .parseFrom(SignedTransaction.parseFrom(updateTransaction.getSignedTransactionBytes()).getBodyBytes()));
 
         parseRecordItemAndCommit(new RecordItem(updateTransaction, record));
 
@@ -311,12 +329,14 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     void cryptoUpdateFailedTransaction() throws Exception {
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionRecord createRecord = transactionRecordSuccess(
-                TransactionBody.parseFrom(createTransaction.getBodyBytes()));
+                TransactionBody.parseFrom(SignedTransaction.parseFrom(createTransaction.getSignedTransactionBytes())
+                        .getBodyBytes()));
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now update
         Transaction transaction = cryptoUpdateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -346,7 +366,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         // now delete
         Transaction transaction = cryptoDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -378,7 +399,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         // now delete
         Transaction transaction = cryptoDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
@@ -410,7 +432,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         // create the account and add live hash
         createAccount();
         Transaction transaction = cryptoAddLiveHashTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoAddLiveHashTransactionBody cryptoAddLiveHashTransactionBody = transactionBody.getCryptoAddLiveHash();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -444,7 +467,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         // create the account and add live hash
         createAccount();
         Transaction transaction = cryptoAddLiveHashTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoAddLiveHashTransactionBody cryptoAddLiveHashTransactionBody = transactionBody.getCryptoAddLiveHash();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -472,11 +496,14 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         createAccount();
         Transaction transactionAddLiveHash = cryptoAddLiveHashTransaction();
         parseRecordItemAndCommit(new RecordItem(transactionAddLiveHash,
-                transactionRecordSuccess(TransactionBody.parseFrom(transactionAddLiveHash.getBodyBytes()))));
+                transactionRecordSuccess(TransactionBody
+                        .parseFrom(SignedTransaction.parseFrom(transactionAddLiveHash.getSignedTransactionBytes())
+                                .getBodyBytes()))));
 
         // now delete the live hash
         Transaction transaction = cryptoDeleteLiveHashTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         CryptoDeleteLiveHashTransactionBody deleteLiveHashTransactionBody = transactionBody.getCryptoDeleteLiveHash();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -504,7 +531,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -525,7 +553,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         entityProperties.getPersist().setCryptoTransferAmounts(false);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -546,7 +575,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -567,7 +597,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     void unknownTransactionResult() throws Exception {
         int unknownResult = -1000;
         Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody, unknownResult);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -580,7 +611,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
     private void createAccount() throws Exception {
         Transaction createTransaction = cryptoCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
+        TransactionBody createTransactionBody = TransactionBody
+                .parseFrom(SignedTransaction.parseFrom(createTransaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
     }
@@ -715,7 +747,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
     private void testRawBytes(Transaction transaction, byte[] expectedBytes) throws Exception {
         // given
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionBody transactionBody = TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         // when
