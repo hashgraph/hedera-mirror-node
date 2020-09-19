@@ -46,7 +46,7 @@ public abstract class SharedTopicListener implements TopicListener {
         Duration delay = Duration.ofMillis(listenerProperties.getBufferTimeout());
         UnicastProcessor<String> processor = UnicastProcessor.create();
         Flux<String> timeoutFlux = processor.delayElements(delay)
-                .publish()
+                .replay(1)
                 .autoConnect();
 
         return sharedTopicMessages.filter(t -> filterMessage(t, filter))
