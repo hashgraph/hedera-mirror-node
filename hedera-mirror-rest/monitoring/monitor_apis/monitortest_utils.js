@@ -20,43 +20,11 @@
 
 const AbortController = require('abort-controller');
 const config = require('../../config');
-const long = require('long');
+const _ = require('lodash');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
 
 const apiPrefix = '/api/v1';
-
-// monitoring class results template
-const classResults = {
-  testResults: [],
-  numPassedTests: 0,
-  numFailedTests: 0,
-  success: true,
-  message: '',
-  startTime: 0,
-  endTime: 0,
-};
-
-// monitoring single test result template
-const testResult = {
-  at: '', // start time of test in millis since epoch
-  result: 'failed', // result of test
-  url: '', // last rest-api endpoint call made in test
-  message: '', // test message
-  failureMessages: [], // failure messages
-};
-
-/**
- * Converts consensus timestamp seconds.nanoseconds to nanoseconds
- * @param {String} consensusTimestamp consensus timestamp
- * @return {Long} timestamp in nanoseconds
- */
-const consensusTimestampToNanos = (consensusTimestamp) => {
-  const parts = consensusTimestamp.split('.');
-  const seconds = long.fromString(parts[0]);
-  const nanos = parseInt(parts[1], 10);
-  return seconds.mul(1000000000).add(nanos);
-};
 
 /**
  * Converts shard.realm.accountNumber to accountNumber
@@ -71,14 +39,6 @@ const toAccNum = (accId) => Number(accId.split('.')[2]);
  * @return {String} shard.realm.accountNumber
  */
 const fromAccNum = (accNum) => `${config.shard}.0.${accNum}`;
-
-/**
- * Return a deep clone of a json object
- * @param {Object} obj
- */
-const cloneObject = (obj) => {
-  return JSON.parse(JSON.stringify(obj));
-};
 
 /**
  * Create and return the url for a rest api call
@@ -109,9 +69,10 @@ const getUrl = (server, path, query = undefined) => {
  * Make an http request to mirror-node api
  * Host info is prepended to if only path is provided
  * @param {*} url rest-api endpoint
- * @return {Object} JSON object representing api response
+ * @param {String} key JSON key of the object to return
+ * @return {Object} JSON object representing api response or error
  */
-const getAPIResponse = (url) => {
+const getAPIResponse = async (url, key = undefined) => {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => {
@@ -120,58 +81,60 @@ const getAPIResponse = (url) => {
     60 * 1000 // in ms
   );
 
-  return fetch(url, {signal: controller.signal})
-    .then((response) => {
-      if (!response.ok) {
-        console.log(`Non success response for call to '${url}'`);
-        throw Error(response.statusText);
-      }
+  try {
+    const response = await fetch(url, {signal: controller.signal});
+    if (!response.ok) {
+      console.log(`Non success response for call to '${url}'`);
+      return Error(response.statusText);
+    }
 
-      return response.json();
-    })
-    .catch((error) => {
-      var message = `Fetch error, url : ${url}, error : ${error}`;
-      console.log(message);
-      throw message;
-    })
-    .finally(() => {
-      clearTimeout(timeout);
-    });
+    const json = await response.json();
+    return key ? json[key] : json;
+  } catch (error) {
+    const message = `Fetch error, url : ${url}, error : ${error}`;
+    console.log(message);
+    return Error(message);
+  } finally {
+    clearTimeout(timeout);
+  }
 };
 
 /**
  * Retrieve a new instance of the monitoring class results object
  */
 const getMonitorClassResult = () => {
-  var newClassResult = cloneObject(classResults);
-  newClassResult.startTime = Date.now();
-  return newClassResult;
+  return {
+    testResults: [],
+    numPassedTests: 0,
+    numFailedTests: 0,
+    success: true,
+    message: '',
+    startTime: Date.now(),
+    endTime: 0,
+  };
 };
 
-/**
- * Retrieve a new instance of the monitoring single test result object
- */
-const getMonitorTestResult = () => {
-  var newTestResult = cloneObject(testResult);
-  newTestResult.at = Date.now();
-  return newTestResult;
-};
+const testRunner = (server, testClassResult) => {
+  return async (testFunc) => {
+    const start = Date.now();
+    const result = await testFunc(server);
 
-/**
- * Add provided result to list of class results
- * Also increment passed and failed count based
- * @param {Object} clssRes Class result object
- * @param {Object} res Test result
- * @param {Boolean} passed Test passed flag
- */
-const addTestResult = (clssRes, res, passed) => {
-  clssRes.testResults.push(res);
-  passed ? clssRes.numPassedTests++ : clssRes.numFailedTests++;
+    const testResult = {
+      at: start,
+      result: result.passed ? 'passed' : 'failed',
+      url: result.url,
+      message: result.passed ? result.message : '',
+      failureMessages: !result.passed ? [result.message] : [],
+    };
 
-  // set class results to failure if any tests failed
-  if (!passed) {
-    clssRes.success = false;
-  }
+    testClassResult.testResults.push(testResult);
+    if (result.passed) {
+      testClassResult.numPassedTests++;
+    } else {
+      testClassResult.numFailedTests++;
+      testClassResult.success = false;
+    }
+  };
 };
 
 /**
@@ -234,16 +197,118 @@ const getMaxLimit = (resource) => {
   return result;
 };
 
+const checkAPIResponseError = (resp) => {
+  if (resp instanceof Error) {
+    return {
+      passed: false,
+      message: resp.message,
+    };
+  }
+  return {passed: true};
+};
+
+const checkRespObjDefined = (resp, option) => {
+  const {message} = option;
+  if (resp === undefined) {
+    return {
+      passed: false,
+      message,
+    };
+  }
+  return {passed: true};
+};
+
+const checkRespArrayLength = (elements, option) => {
+  const {limit, message} = option;
+  if (elements.length !== limit) {
+    return {
+      passed: false,
+      message: message(elements, limit),
+    };
+  }
+  return {passed: true};
+};
+
+const checkAccountNumber = (elements, option) => {
+  const {accountNumber, message} = option;
+  const element = Array.isArray(elements) ? elements[0] : elements;
+  if (element.account !== fromAccNum(accountNumber)) {
+    return {
+      passed: false,
+      message,
+    };
+  }
+  return {passed: true};
+};
+
+const checkMandatoryParams = (elements, option) => {
+  const element = Array.isArray(elements) ? elements[0] : elements;
+  const {params, message} = option;
+  for (let index = 0; index < params.length; index += 1) {
+    if (!_.has(element, params[index])) {
+      return {
+        passed: false,
+        message: `${message}: ${params[index]}`,
+      };
+    }
+  }
+
+  return {passed: true};
+};
+
+const checkRespDataFreshness = (resp, option) => {
+  const {timestamp, threshold, message} = option;
+  const ts = timestamp(Array.isArray(resp) ? resp[0] : resp);
+  const secs = ts.split('.')[0];
+  const currSecs = Math.floor(new Date().getTime() / 1000);
+  const delta = currSecs - secs;
+  if (delta > threshold) {
+    return {
+      passed: false,
+      message: message(delta),
+    };
+  }
+
+  return {passed: true};
+};
+
+class CheckRunner {
+  constructor() {
+    this.checkSpecs = [];
+  }
+
+  withCheckSpec(check, option = {}) {
+    this.checkSpecs.push({check, option});
+    return this;
+  }
+
+  run(data) {
+    for (const checkSpec of this.checkSpecs) {
+      const {check, option} = checkSpec;
+      const result = check(data, option);
+      if (!result.passed) {
+        return result;
+      }
+    }
+
+    return {passed: true};
+  }
+}
+
 module.exports = {
   toAccNum,
   fromAccNum,
-  consensusTimestampToNanos,
   getUrl,
-  cloneObject,
   getAPIResponse,
   getMonitorClassResult,
-  getMonitorTestResult,
-  addTestResult,
   createFailedResultJson,
   getMaxLimit,
+  testRunner,
+  checkAPIResponseError,
+  checkRespObjDefined,
+  checkRespArrayLength,
+  checkAccountNumber,
+  checkMandatoryParams,
+  checkRespDataFreshness,
+  CheckRunner,
 };
