@@ -3,7 +3,7 @@
 ## Purpose
 
 The Hedera Token Service (HTS) builds upon the Cryptocurrency Service to provide decentralized issuance of custom tokens on the Hedera Network.
-The behavior will be similar to that of the native HBAR token and as such the Mirror Node will persist token balances and transfer lists and support the retrieval of information through the API's.
+The behavior will be similar to that of the native HBAR token and as such the Mirror Node will persist token balances and transfer lists and support the retrieval of information through its API's.
 
 This document highlights the architecture and design changes to be made on top of v0.19.0 code to support HTS.
 Changes should be applied in order of
@@ -46,26 +46,47 @@ To support the goals the following database schema changes should be made
 3. New `token` table is added to capture token specific entity items
 4. `crypto_transfer` table should be updated to persist token transfers and also distinguish between HBAR and other token transfers
 5. Update transaction types and results to handle token transactions from network.
+6.  Add `token_account_info` table to persist token specific account state
 
 ### Crypto Transfer
--   Add columns to `crypto_transfer` table. Symbol can be pulled from a `TransactionReceipt#tokenId` of transaction
+-   Add columns to `crypto_transfer` table. As part of migration set existing rows `token_id` to 1
 ```sql
     alter table if exists crypto_transfer
-        add column token_id entity_id
-        add column symbol   character varying(96) not null;
+        add column token_id entity_id not null default 1;
+
+    alter table if exists crypto_transfer
+        alter column token_id drop default;
 ```
--   Add migration logic to insert default "HBAR" for `symbol` column in `crypto_transfer` for historic data
 
 ### Token Balance
 -   Create `token_balance` table to distinctly capture token balances vs HBAR balances
 
 ```sql
+    --- Add token_balance table to capture token account balances
+    --- realm_num and account_num are present for easy joins in sql and are potential column drops when migrating away from postgres
     create table if not exists token_balance
-        consensus_timestamp bigint      primary key not null,
-        symbol              character   varying(96),
-        token_id            entity_id   not null,
-        balance             bigint;
+        consensus_timestamp bigint              primary key not null
+        account_id          entity_id           not null,
+        account_realm_num   entity_realm_num    not null,
+        balance             bigint              not null,
+        token_id            entity_id           not null;
 ```
+
+### Token Account Info
+-   Create `token_account_info` table to distinctly capture token account metadata changes
+
+```sql
+    --- Add token_account_info table to capture token-account info such as frozen, kyc and wipe status
+    create table if not exists token_account_info
+        consensus_timestamp bigint              primary key,
+        account_id          entity_id           not null,
+        frozen              boolean             not null,
+        kyc                 boolean             not null,
+        token_id            entity_id           not null,
+        wiped               boolean             not null default false;
+```
+
+> _Note:_  `frozen` and `kyc` are set by `TokenCreation.freezeDefault` and `TokenCreation.kycDefault` respectively
 
 ### Entity Types
 -   Add new `t_entity_types` row with name `token`
@@ -134,18 +155,18 @@ To support the goals the following database schema changes should be made
 -   Create `token` table to split out the non shared entity items into a new table. Most API calls may not require this information and therefore additional sql joins may be avoided.
 ```sql
     create table if not exists token
-        consensus_timestamp bigint  primary key not null,
-        symbol              character varying(96),
-        token_id            entity_id,
-        initial_supply      bigint,
-        divisibility        bigint,
-        treasury            entity_id,
-        kyc_key             bytea,
+        token_id            entity_id               primary key,
+        consensus_timestamp bigint                  not null,
+        divisibility        bigint                  not null,
+        freeze_default      boolean                 not null,
         freeze_key          bytea,
-        wipe_key            bytea,
+        initial_supply      bigint                  not null,
+        kyc_default         boolean                 not null,
+        kyc_key             bytea,
         supply_key          bytea,
-        freeze_default      boolean,
-        kyc_default         boolean;
+        symbol              character varying(96)   not null,
+        treasury_id         entity_id               not null,
+        wipe_key            bytea;
 ```
 
 ## Importer
@@ -254,20 +275,23 @@ To support the goals the following database schema changes should be made
 ```
 
 ### Transaction Handlers
-Additional handlers will be needed to support the added Token transaction types
+Additional handlers will be needed to support the added Token transaction types.
+In all cases override `getEntity()` pulling entity info from appropriate transactionBody
 
--   Add TokenCreateTransactionsHandler	56
-TokenTransact	57
-TokenGetInfo	58
-TokenFreezeAccount	59
-TokenUnfreezeAccount	60
-TokenGrantKycToAccount	61
-TokenRevokeKycFromAccount	62
-TokenDelete	63
-TokenUpdate	64
-TokenMint	65
-TokenBurn	66
-TokenAccountWipe	67
+-   Add `TokenCreateTransactionsHandler`
+    -   override `updatesEntity()` to return true
+-   Add `TokenTransactTransactionsHandler`
+-   Add `TokenFreezeAccountTransactionsHandler`
+-   Add `TokenUnfreezeAccountTransactionsHandler`
+-   Add `TokenGrantKycToAccountTransactionsHandler`
+-   Add `TokenRevokeKycFromAccountTransactionsHandler`
+-   Add `TokenDeleteTransactionsHandler`
+    -   override `updatesEntity()` to return true
+-   Add `TokenUpdateTransactionsHandler`
+    -   override `updatesEntity()` to return true
+-   Add `TokenMintTransactionsHandler`
+-   Add `TokenBurnTransactionsHandler`
+-   Add `TokenAccountWipeTransactionsHandler`
 
 
 ### Token Transfer Parsing
@@ -333,7 +357,7 @@ To achieve the goals and for easy integration with existing users the REST API s
 ```
 
 To achieve this
--   Update `accounts.js` `getAccountss()` to add an additional join to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
+-   Update `accounts.js` `getAccountss()` to add an additional join to pull the `balance` and `symbol` columns where `account_realm_num` and `account_num` match between tables `token_balance` and `t_entities`, assign each row to an element of `tokenBalances`
 
 
 ### Balances Endpoint
@@ -517,6 +541,43 @@ To achieve this
 Optional Filters
 -   `/api/v1/tokens?adminkey=HJ^&8` - All tokens with matching admin key
 -   `/api/v1/tokens?account.id=0.0.8` - All tokens for matching account
+
+### Token Info
+-   Add a `getTokenInfo()` to `tokens.js` to retrieve token info from `token` table
+```json
+    {
+      "symbol": "FOOCOIN",
+      "tokenId": "0.15.10",
+      "treasury_account": "0.15.10",
+      "adminKey": {
+        "_type": "ProtobufEncoded",
+        "key": "9c2233222c2233222c2233227d"
+      },
+      "kycKey": {
+        "_type": "ProtobufEncoded",
+        "key": "9c2233222c2233222c2233227d"
+      },
+      "freezeKey": {
+        "_type": "ProtobufEncoded",
+        "key": "9c2233222c2233222c2233227d"
+      },
+      "wipeKey": {
+        "_type": "ProtobufEncoded",
+        "key": "9c2233222c2233222c2233227d"
+      },
+      "supplyKey": {
+        "_type": "ProtobufEncoded",
+        "key": "9c2233222c2233222c2233227d"
+      },
+      "freezeDefault": false,
+      "kycDefault": false,
+      "expiryTimestamp": null,
+      "autoRenewAccount": "0.0.6",
+      "autoRenewPeriod": null
+    }
+```
+
+To achieve this select the provided <symbol> from the
 
 ## Protobuf
 
@@ -719,9 +780,11 @@ A lot of this logic can be shared for the equivalent `CryptoTransfer` listeners 
 
 ## Open Questions
 -   What's the maximum character size of the token `symbol` string
--   Will a `token_id` and `symbol` be assigned a value for HBARs?
+-   Will a `token_id` and `symbol` be assigned a value for HBARs e.g. i.e. '1' and 'HBAR' respectively
 -   Should token only entity items exist in their own table or be added to `t_entities`?
 -   Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
 -   What filer options should be provided for new Token API's
+-   How should frozen account and kyc'd account for a token be represented?
+
 
 
