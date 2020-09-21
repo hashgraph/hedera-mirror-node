@@ -65,7 +65,7 @@ const getStatus = () => {
   const httpErrorCodes = results
     .map((result) => result.httpCode)
     .filter((httpCode) => httpCode < 200 || httpCode > 299);
-  const httpCode = httpErrorCodes.length === 0 ? 200 : httpErrorCodes[0];
+  const httpCode = httpErrorCodes.length === 0 ? 200 : 409;
   return {
     results,
     httpCode,
