@@ -42,6 +42,7 @@ public class RecordItem implements StreamItem {
     static final String BAD_TRANSACTION_BYTES_MESSAGE = "Failed to parse transaction bytes";
     static final String BAD_RECORD_BYTES_MESSAGE = "Failed to parse record bytes";
     static final String BAD_TRANSACTION_BODY_BYTES_MESSAGE = "Error parsing transactionBody from transaction";
+    static final int TRANSACTION_BODY_PROTOBUF_TAG = 1;
 
     private final Transaction transaction;
     private final TransactionBody transactionBody;
@@ -100,14 +101,14 @@ public class RecordItem implements StreamItem {
             if (transaction.getSignedTransactionBytes() != ByteString.EMPTY) {
                 return TransactionBody
                         .parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
-            } else if (transaction.getUnknownFields().hasField(1)) {
-                return TransactionBody.parseFrom(transaction.getUnknownFields().getField(1).getLengthDelimitedList()
-                        .get(0));
             } else if (transaction.getBodyBytes() != ByteString.EMPTY) {
                 // Not possible to check existence of bodyBytes field since there is no 'hasBodyBytes()'.
                 // If unset, getBodyBytes() returns empty ByteString which always parses successfully to "empty"
                 //TransactionBody. However, every transaction should have a valid (non "empty") TransactionBody.
                 return TransactionBody.parseFrom(transaction.getBodyBytes());
+            } else if (transaction.getUnknownFields().hasField(TRANSACTION_BODY_PROTOBUF_TAG)) {
+                return TransactionBody.parseFrom(transaction.getUnknownFields().getField(1).getLengthDelimitedList()
+                        .get(0));
             }
             throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
         } catch (
