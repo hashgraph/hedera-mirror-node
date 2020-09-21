@@ -44,8 +44,6 @@ import com.hedera.mirror.importer.exception.ParserException;
 
 class RecordItemTest {
 
-    private static final Path transactionProtoPath = Paths.get("data", "protoExamples", "transaction");
-
     private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
             .setSignedTransactionBytes(
                     SignedTransaction.getDefaultInstance().getBodyBytes())
@@ -53,10 +51,6 @@ class RecordItemTest {
     private static final byte[] DEFAULT_TRANSACTION_BYTES = DEFAULT_TRANSACTION.toByteArray();
     private static final TransactionRecord DEFAULT_RECORD = TransactionRecord.getDefaultInstance();
     private static final byte[] DEFAULT_RECORD_BYTES = DEFAULT_RECORD.toByteArray();
-
-    // 'body' and 'bodyBytes' feilds left empty
-    private static final Transaction TRANSACTION = Transaction.newBuilder()
-            .build();
 
     private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
             .setTransactionFee(10L)
@@ -107,7 +101,7 @@ class RecordItemTest {
 
     @Test
     public void testWithBody() {
-        Transaction transaction = TRANSACTION.toBuilder()
+        Transaction transaction = Transaction.newBuilder()
                 .setUnknownFields(UNKNOWN_FIELD_SET)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
@@ -122,7 +116,7 @@ class RecordItemTest {
         byte[] transactionFromProto = Base64
                 .decodeBase64("GhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5CgoYCjIEbWVtb3IA");
 
-        Transaction expectedTransaction = TRANSACTION.toBuilder()
+        Transaction expectedTransaction = Transaction.newBuilder()
                 .setUnknownFields(UNKNOWN_FIELD_SET)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
@@ -134,7 +128,7 @@ class RecordItemTest {
 
     @Test
     public void testWithBodyBytes() {
-        Transaction transaction = TRANSACTION.toBuilder()
+        Transaction transaction = Transaction.newBuilder()
                 .setBodyBytes(TRANSACTION_BODY.toByteString())
                 .setSigMap(SIGNATURE_MAP)
                 .build();
@@ -144,7 +138,7 @@ class RecordItemTest {
 
     @Test
     public void testWithSignedTransaction() {
-        Transaction transaction = TRANSACTION.toBuilder()
+        Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
                 .build();
         RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
@@ -160,7 +154,7 @@ class RecordItemTest {
         int unknownType = 9999;
         byte[] transactionBodyBytes = Hex.decodeHex(
                 "0a120a0c08eb88d6ee0510e8eff7ab01120218021202180318c280de1922020878321043727970746f2074657374206d656d6ffaf004050a03666f6f");
-        Transaction transaction = TRANSACTION.toBuilder()
+        Transaction transaction = Transaction.newBuilder()
                 .setBodyBytes(ByteString.copyFrom(transactionBodyBytes))
                 .build();
         RecordItem recordItem = new RecordItem(transaction, TRANSACTION_RECORD);
