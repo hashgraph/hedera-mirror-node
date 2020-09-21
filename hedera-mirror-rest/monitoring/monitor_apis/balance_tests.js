@@ -22,6 +22,7 @@
 
 const _ = require('lodash');
 const math = require('mathjs');
+const config = require('./config');
 const {
   checkAPIResponseError,
   checkRespObjDefined,
@@ -30,17 +31,17 @@ const {
   checkMandatoryParams,
   checkRespDataFreshness,
   getAPIResponse,
-  getMaxLimit,
   getUrl,
   fromAccNum,
   testRunner,
   toAccNum,
   CheckRunner,
-} = require('./monitortest_utils');
+} = require('./utils');
 
 const balancesPath = '/balances';
 const balanceFileUpdateRefreshTime = 900;
 const resource = 'balance';
+const resourceLimit = config[resource].limit;
 const jsonRespKey = 'balances';
 const mandatoryParams = ['account', 'balance'];
 
@@ -49,15 +50,14 @@ const mandatoryParams = ['account', 'balance'];
  * @param {String} server API host endpoint
  */
 const getBalancesCheck = async (server) => {
-  const {maxLimit, isGlobal} = getMaxLimit(resource);
-  const url = getUrl(server, balancesPath, !isGlobal ? {limit: maxLimit} : undefined);
+  const url = getUrl(server, balancesPath, {limit: resourceLimit});
   const balances = await getAPIResponse(url, jsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: maxLimit,
+      limit: resourceLimit,
       message: (elements, limit) => `balances.length of ${elements.length} is less than limit ${limit}`,
     })
     .withCheckSpec(checkMandatoryParams, {

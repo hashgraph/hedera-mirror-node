@@ -18,11 +18,13 @@
  * ‍
  */
 
+'use strict';
+
 const AbortController = require('abort-controller');
-const config = require('../../config');
 const _ = require('lodash');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
+const config = require('./config');
 
 const apiPrefix = '/api/v1';
 
@@ -169,34 +171,6 @@ const createFailedResultJson = (title, msg) => {
   return failedResultJson;
 };
 
-/**
- * Helper function to get max limit for a resource. Returns the lesser of the resource specific maxLimit if exists and
- * the global maxLimit, otherwise the global maxLimit.
- * @param {String} resource name of the resource
- * @returns {{maxLimit: number, isGlobal: boolean}}
- */
-const getMaxLimit = (resource) => {
-  const result = {
-    maxLimit: config.maxLimit,
-    isGlobal: true,
-  };
-
-  const {monitor} = config;
-  if (!monitor) {
-    return result;
-  }
-
-  if (monitor[resource] && monitor[resource].maxLimit) {
-    const {maxLimit: resourceMaxLimit} = monitor[resource];
-    if (resourceMaxLimit < result.maxLimit) {
-      result.maxLimit = resourceMaxLimit;
-      result.isGlobal = false;
-    }
-  }
-
-  return result;
-};
-
 const checkAPIResponseError = (resp) => {
   if (resp instanceof Error) {
     return {
@@ -302,7 +276,6 @@ module.exports = {
   getAPIResponse,
   getMonitorClassResult,
   createFailedResultJson,
-  getMaxLimit,
   testRunner,
   checkAPIResponseError,
   checkRespObjDefined,

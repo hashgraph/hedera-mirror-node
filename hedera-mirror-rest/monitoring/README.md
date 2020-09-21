@@ -39,22 +39,6 @@ git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node/hedera-mirror-rest/monitoring
 ```
 
-To configure a smaller `maxLimit` threshold for individual resources (`account`, `balance`, or `transaction`), for example,
-for environments with lower traffic volume, add the following section to `application.yml`:
-
-```yaml
-hedera:
-  mirror:
-    rest:
-      monitor:
-        account:
-                maxLimit: 100
-        balance:
-                maxLimit: 200
-        transaction:
-                maxLimit: 500
-```
-
 To run the monitor_apis backend:
 
 ```
@@ -63,6 +47,21 @@ cp config/sample.serverlist.json config/serverlist.json // Start with the sample
 nano config/serverlist.json // Insert the mirror node deployments you want to monitor
 npm install
 PORT=3000 pm2 start server.js
+```
+
+To configure a smaller `limit` threshold for individual resources (`account`, `balance`, or `transaction`), for example,
+for environments with lower traffic volume, adjust the values of the following section in `config/serverlist.json`:
+
+```json
+"account": {
+"limit": 1000
+},
+"balance": {
+"limit": 1000
+},
+"transaction": {
+"limit": 1000
+}
 ```
 
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.

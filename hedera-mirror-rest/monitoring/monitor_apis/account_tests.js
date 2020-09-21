@@ -22,6 +22,7 @@
 
 const _ = require('lodash');
 const math = require('mathjs');
+const config = require('./config');
 const {
   checkAPIResponseError,
   checkRespObjDefined,
@@ -29,16 +30,16 @@ const {
   checkAccountNumber,
   checkMandatoryParams,
   getAPIResponse,
-  getMaxLimit,
   getUrl,
   fromAccNum,
   testRunner,
   toAccNum,
   CheckRunner,
-} = require('./monitortest_utils');
+} = require('./utils');
 
 const accountsPath = '/accounts';
 const resource = 'account';
+const resourceLimit = config[resource].limit;
 const jsonRespKey = 'accounts';
 const mandatoryParams = [
   'balance',
@@ -58,15 +59,14 @@ const mandatoryParams = [
  * @returns {{url: string, passed: boolean, message: string}}
  */
 const getAccountsWithAccountCheck = async (server) => {
-  const {maxLimit, isGlobal} = getMaxLimit(resource);
-  let url = getUrl(server, accountsPath, !isGlobal ? {limit: maxLimit} : undefined);
+  let url = getUrl(server, accountsPath, {limit: resourceLimit});
   const accounts = await getAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'account is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: maxLimit,
+      limit: resourceLimit,
       message: (accts, limit) => `accounts.length of ${accts.length}  is less than limit ${limit}`,
     })
     .withCheckSpec(checkMandatoryParams, {
@@ -147,15 +147,14 @@ const getAccountsWithTimeAndLimitParams = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getSingleAccount = async (server) => {
-  const {maxLimit, isGlobal} = getMaxLimit(resource);
-  let url = getUrl(server, accountsPath, !isGlobal ? {limit: maxLimit} : undefined);
+  let url = getUrl(server, accountsPath, {limit: resourceLimit});
   const accounts = await getAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: maxLimit,
+      limit: resourceLimit,
       message: (accts, limit) => `accounts.length of ${accts.length} was expected to be ${limit}`,
     })
     .withCheckSpec(checkMandatoryParams, {

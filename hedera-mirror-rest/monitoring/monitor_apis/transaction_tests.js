@@ -22,6 +22,7 @@
 
 const _ = require('lodash');
 const math = require('mathjs');
+const config = require('./config');
 const {
   checkAPIResponseError,
   checkRespObjDefined,
@@ -29,16 +30,16 @@ const {
   checkMandatoryParams,
   checkRespDataFreshness,
   getAPIResponse,
-  getMaxLimit,
   getUrl,
   testRunner,
   toAccNum,
   CheckRunner,
-} = require('./monitortest_utils');
+} = require('./utils');
 
 const transactionsPath = '/transactions';
 const recordsFileUpdateRefreshTime = 5;
 const resource = 'transaction';
+const resourceLimit = config[resource].limit;
 const jsonRespKey = 'transactions';
 const mandatoryParams = [
   'consensus_timestamp',
@@ -88,15 +89,14 @@ const checkTransactionsConsensusTimestampOrder = (transactions, option) => {
  * @param {String} server API host endpoint
  */
 const getTransactionsWithAccountCheck = async (server) => {
-  const {maxLimit, isGlobal} = getMaxLimit(resource);
-  let url = getUrl(server, transactionsPath, !isGlobal ? {limit: maxLimit} : undefined);
+  let url = getUrl(server, transactionsPath, {limit: resourceLimit});
   const transactions = await getAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: maxLimit,
+      limit: resourceLimit,
       message: (elements, limit) => `transactions.length of ${elements.length} is less than limit ${limit}`,
     })
     .withCheckSpec(checkMandatoryParams, {
@@ -162,19 +162,14 @@ const getTransactionsWithAccountCheck = async (server) => {
  * @param {String} server API host endpoint
  */
 const getTransactionsWithOrderParam = async (server) => {
-  const query = {order: 'asc'};
-  const {maxLimit, isGlobal} = getMaxLimit(resource);
-  if (!isGlobal) {
-    query.limit = maxLimit;
-  }
-  const url = getUrl(server, transactionsPath, query);
+  const url = getUrl(server, transactionsPath, {order: 'asc', limit: resourceLimit});
   const transactions = await getAPIResponse(url, jsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: maxLimit,
+      limit: resourceLimit,
       message: (elements, limit) => `transactions.length of ${elements.length} is less than limit ${limit}`,
     })
     .withCheckSpec(checkMandatoryParams, {
