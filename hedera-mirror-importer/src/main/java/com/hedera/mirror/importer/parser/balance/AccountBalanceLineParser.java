@@ -3,6 +3,8 @@ package com.hedera.mirror.importer.parser.balance;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
@@ -39,7 +41,8 @@ public class AccountBalanceLineParser {
                         "shard (%d), got shard (%d)", line, systemShardNum, shardNum));
             }
 
-            return new AccountBalance(balance, new AccountBalance.Id(consensusTimestamp, accountNum, realmNum));
+            return new AccountBalance(balance, new AccountBalance.Id(consensusTimestamp, EntityId
+                    .of(shardNum, realmNum, accountNum, EntityTypeEnum.ACCOUNT)));
         } catch (NullPointerException | NumberFormatException ex) {
             throw new InvalidDatasetException("Invalid account balance line: " + line, ex);
         }

@@ -53,7 +53,7 @@ public class AccountBalancesFileLoader {
     private static final String INSERT_SET_STATEMENT = "insert into account_balance_sets (consensus_timestamp) " +
             "values (?) on conflict do nothing;";
     private static final String INSERT_BALANCE_STATEMENT = "insert into account_balance " +
-            "(consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do " +
+            "(consensus_timestamp, account_id, balance) values (?, ?, ?) on conflict do " +
             "nothing;";
     private static final String UPDATE_SET_STATEMENT = "update account_balance_sets set is_complete = ?, " +
             "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = " +
@@ -66,7 +66,6 @@ public class AccountBalancesFileLoader {
             "   load_end = ?" +
             "where name = ?;";
 
-
     enum F_INSERT_SET {
         ZERO,
         CONSENSUS_TIMESTAMP
@@ -74,7 +73,7 @@ public class AccountBalancesFileLoader {
 
     enum F_INSERT_BALANCE {
         ZERO,
-        CONSENSUS_TIMESTAMP, ACCOUNT_REALM_NUM, ACCOUNT_NUM, BALANCE
+        CONSENSUS_TIMESTAMP, ACCOUNT_ID, BALANCE
     }
 
     enum F_UPDATE_SET {
@@ -93,7 +92,7 @@ public class AccountBalancesFileLoader {
 
     public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
                                      BalanceFileReader balanceFileReader) {
-        this.insertBatchSize = balanceParserProperties.getBatchSize();
+        insertBatchSize = balanceParserProperties.getBatchSize();
         this.dataSource = dataSource;
         this.balanceFileReader = balanceFileReader;
     }
@@ -112,7 +111,8 @@ public class AccountBalancesFileLoader {
         try (PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
              PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
              PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
-             PreparedStatement updateAccountBalanceFileStatement = connection.prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT);
+             PreparedStatement updateAccountBalanceFileStatement = connection
+                     .prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT);
              Stream<AccountBalance> stream = balanceFileReader.read(balanceFile)) {
             long consensusTimestamp = -1;
             long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
@@ -176,7 +176,7 @@ public class AccountBalancesFileLoader {
     }
 
     private void tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
-                                             List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
+                                              List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
         if (accountBalanceList.size() < threshold) {
             return;
         }
@@ -184,9 +184,7 @@ public class AccountBalancesFileLoader {
         for (var accountBalance : accountBalanceList) {
             AccountBalance.Id id = accountBalance.getId();
             insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
-            insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(),
-                    (short) id.getAccountRealmNum());
-            insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), id.getAccountNum());
+            insertBalanceStatement.setLong(F_INSERT_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
             insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
             insertBalanceStatement.addBatch();
         }
@@ -208,7 +206,7 @@ public class AccountBalancesFileLoader {
     }
 
     private void updateAccountBalanceFile(PreparedStatement statement, long consensusTimestamp, long count,
-            long loadStart, long loadEnd, String filename) throws SQLException {
+                                          long loadStart, long loadEnd, String filename) throws SQLException {
         statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
         statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.COUNT.ordinal(), count);
         statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_START.ordinal(), loadStart);

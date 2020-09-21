@@ -23,14 +23,14 @@ package com.hedera.datagenerator.domain;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.importer.domain.EntityId;
+
 @Data
 @RequiredArgsConstructor
 public class AccountBalance {
     private final long consensusTimestamp;
 
-    private final int accountRealmNum;
-
-    private final int accountNum;
+    private final EntityId accountId;
 
     private final long balance;
 }

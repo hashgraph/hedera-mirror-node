@@ -26,7 +26,9 @@ const checkSql = function (parsedparams, condition) {
     }
   }
   console.log(
-    `ERROR: Condition: ${condition.field} ${condition.operator} ${condition.value} not present in the generated SQL`
+    `ERROR: Condition: ${condition.field} ${condition.operator} ${
+      condition.value
+    } not present in the generated SQL: ${JSON.stringify(parsedparams)}`
   );
   return false;
 };
