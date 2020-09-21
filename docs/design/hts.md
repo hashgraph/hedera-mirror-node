@@ -62,13 +62,10 @@ To support the goals the following database schema changes should be made
 ```
 
 ### Crypto Transfer
--   Add `token_id` column to `crypto_transfer` table. As part of migration set existing rows `token_id` to 1
+-   Add `token_id` column to `crypto_transfer` table and allow nullable for hbar case which is not an entity
 ```sql
     alter table if exists crypto_transfer
-        add column token_id entity_id not null default 1;
-
-    alter table if exists crypto_transfer
-        alter column token_id drop default;
+        add column token_id entity_id null;
 ```
 
 ### Token Balance
@@ -76,13 +73,10 @@ To support the goals the following database schema changes should be made
 
 ```sql
     --- Add token_balance table to capture token account balances
-    --- realm_num and account_num are present for easy joins in sql and are potential column drops when migrating away from postgres
     create table if not exists token_balance
         consensus_timestamp bigint              primary key not null
         account_id          entity_id           not null,
-        balance             bigint              not null,
-        account_num         entity_num          not null,
-        account_realm_num   entity_realm_num    not null,
+        balance             bigint              not null
         token_id            entity_id           not null;
 ```
 
@@ -814,14 +808,17 @@ A lot of this logic can be shared for the equivalent `CryptoTransfer` listeners 
 ## Non-Functional Requirements
 
 ## Open Questions
--   What's the maximum character size of the token `symbol` string
--   Will a `token_id` and `token` be assigned a default value for HBARs across the network e.g. i.e. '1' and 'HBAR' respectively
--   Should token only entity items exist in their own table or be added to `t_entities`?
--   Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
--   What filer options should be provided for new Token API's
--   How should frozen account and kyc'd account for a token be represented?
--   Should balance returns for `accounts`, `balances` and `transactions` contain `token` or `tokenId` or both?
--   Should `EntityRecordItemListener.OnItem()` be refactored to more easily focus on different TransactionBody types. May be valuable to testing but not necessarily within scope
+-   [x] What's the maximum character size of the token `symbol` string
+    -   A: Max length is currently 32 chars https://github.com/hashgraph/hedera-services/blob/master/hedera-node/src/main/resources/bootstrap.properties#L52
+-   [x] Will a `token_id` and `token` be assigned a default value for HBARs across the network e.g. i.e. '1' and 'HBAR' respectively
+    -   A: Currently no since hbar is not treated as an entity like tokens will be.
+-   [ ] Should token only entity items exist in their own table or be added to `t_entities`?
+-   [x] Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
+    -   A: Should be migrated to use `account_id` only
+-   [ ] What filer options should be provided for new Token API's
+-   [ ] How should frozen account and kyc'd account for a token be represented?
+-   [ ] Should balance returns for `accounts`, `balances` and `transactions` contain `token` or `tokenId` or both?
+-   [ ] Should `EntityRecordItemListener.OnItem()` be refactored to more easily focus on different TransactionBody types. May be valuable to testing but not necessarily within scope
 
 
 
