@@ -5,18 +5,18 @@
 The Hedera Token Service (HTS) builds upon the Cryptocurrency Service to provide decentralized issuance of custom tokens on the Hedera Network.
 The behavior will be similar to that of the native HBAR token and as such the Mirror Node will persist token balances and transfer lists and support the retrieval of information through its API's.
 
-This document highlights the architecture and design changes to be made on top of v0.19.0 code to support HTS.
-Changes should be applied in order of
+This document highlights the architecture and design changes to be made to support HTS.
+Changes should be applied in order of the following order to support easy 3rd integration.
 1.  Database Schema Updates
-2.  Importer Updates for Ingestion
-3.  Existing REST API Updates
-4.  Additional Token REST API additions
-5.  Protobuf updates to TokenService
-6.  GRPC Token Service
+2.  Importer Updates for Ingestion - Token balance and token transactions
+3.  Existing REST API Updates - Accounts, Balances and Transactions
+4.  Token REST API additions
+5.  Protobuf update for TokenService
+6.  GRPC Token Service addition
 
 ## Goals
--   Ingest HTS Token transactions from record streams rcd files from the mainnet and persist information to the database
--   Ingest token balances from balance streams  CSV files from the mainnet and persist to the database
+-   Ingest HTS Token transactions from record stream rcd files from the mainnet and persist information to the database
+-   Ingest account token balances from balance stream  CSV files from the mainnet and persist to the database
 -   Expose token balance of accounts in existing REST APIs that show balance
 -   Provide a HTS REST API to return all tokens (Token Discovery)
 -   Provide a HTS REST API to return all accounts holding a specific token (Token Supply Distribution)
@@ -41,15 +41,15 @@ Changes should be applied in order of
 
 ## Database
 To support the goals the following database schema changes should be made
-1. `t_entities` and ` t_entity_types` need to be update to represent new TOKEN entity
-2. New `token_balance` table is added to persist token only balances
-3. New `token` table is added to capture token specific entity items
-4. `crypto_transfer` table should be updated to persist token transfers and also distinguish between HBAR and other token transfers
-5. Update transaction types and results to handle token transactions from network.
-6.  Add `token_account_info` table to persist token specific account state
+1. `t_entities` and ` t_entity_types` updated to represent new `TOKEN` entity
+2. New `token_balance` table added to persist token only balances
+3. New `token` table added to capture token specific entity properties
+4. `crypto_transfer` table updated to persist token transfers and also distinguish between HBAR and other token transfers
+5. `t_transaction_types` and `t_transaction_results` updated to handle token transactions from network.
+6.  New `token_account_info` table added to persist token specific account state
 
 ### Crypto Transfer
--   Add columns to `crypto_transfer` table. As part of migration set existing rows `token_id` to 1
+-   Add `token_id` column to `crypto_transfer` table. As part of migration set existing rows `token_id` to 1
 ```sql
     alter table if exists crypto_transfer
         add column token_id entity_id not null default 1;
@@ -67,8 +67,9 @@ To support the goals the following database schema changes should be made
     create table if not exists token_balance
         consensus_timestamp bigint              primary key not null
         account_id          entity_id           not null,
-        account_realm_num   entity_realm_num    not null,
         balance             bigint              not null,
+        account_num         entity_num          not null,
+        account_realm_num   entity_realm_num    not null,
         token_id            entity_id           not null;
 ```
 
@@ -178,7 +179,7 @@ To support the goals the following database schema changes should be made
     ...
     public class TokenIdConverter extends AbstractEntityIdConverter {
 
-        public FileIdConverter() {
+        public TokenIdConverter() {
             super(EntityTypeEnum.TOKEN);
         }
     }
@@ -186,7 +187,7 @@ To support the goals the following database schema changes should be made
 
 ### Domain
 
--   Update `CryptoTransfer` to have a `token_id` and `symbol` class members, to allow it to represent both HBARs and Tokens
+-   Update `CryptoTransfer` to have a `token_id` class member, to allow it to represent both HBAR and Token transfers
 
 -   Update `EntityTypeEnum` with `Token` type
 ```java
@@ -249,7 +250,7 @@ To support the goals the following database schema changes should be made
         private Long initialSupply;
         private Long  divisibility;
         @Convert(converter = AccountIdConverter.class)
-        private EntityId treasury;
+        private EntityId treasuryId;
         private byte[] kycKey;
         private byte[] freezeKey;
         private byte[] wipeKey;
@@ -265,18 +266,13 @@ To support the goals the following database schema changes should be made
 -   Add `INSERT_TOKEN_BALANCE_STATEMENT` in `AccountBalancesFileLoader` to persist each `TokenRelationship`
 ```java
     private static final String INSERT_TOKEN_BALANCE_STATEMENT = "insert into token_balance " +
-                "(consensus_timestamp, account_id, token_id, balance, symbol) values (?, ?, ?, ?, ?) on conflict do " +
+                "(consensus_timestamp, account_id, account_num, account_realm_num, token_id, balance) values (?, ?, ?, ?, ?, ?) on conflict do " +
                 "nothing;";
-```
--   Add `UPDATE_TOKEN_STATUS` in `AccountBalancesFileLoader` to update changes to `kycStatus` and `freezeStatus`
-```java
-    private static final String UPDATE_TOKEN_STATUS = "update token_balance set kyc_status = ?, " +
-                "freeze_status = ? where token_id = ?";
 ```
 
 ### Transaction Handlers
 Additional handlers will be needed to support the added Token transaction types.
-In all cases override `getEntity()` pulling entity info from appropriate transactionBody
+In all cases override `getEntity()`, pulling entity info from appropriate transactionBody
 
 -   Add `TokenCreateTransactionsHandler`
     -   override `updatesEntity()` to return true
@@ -310,9 +306,6 @@ Modify `EntityRecordItemListener` to handle parsing HTS transactions
 -   Add `insertTokenTransferList()` to handle `TokenTransferList` returned by `txRecord.getTokenTransferListsList()`
 -   Update `insertTransferList(...)` to utilize `insertTransfer` and set defaults for tokenId and symbol
 
-> _Note 1:_ For improved API calls it would be valuable to insert the symbol for cryptoTransfers. This is only available on the tokenCreate transaction, so a caching mechanism can be explored ot make this available for transfers
-
-> _Note 2:_ There's an opportunity to refactor the `OnItem()` to focus better on different TransactionBody types but not necessarily within scope
 
 ## REST API
 To achieve the goals and for easy integration with existing users the REST API should be updated in the following order
@@ -357,7 +350,7 @@ To achieve the goals and for easy integration with existing users the REST API s
 ```
 
 To achieve this
--   Update `accounts.js` `getAccountss()` to add an additional join to pull the `balance` and `symbol` columns where `account_realm_num` and `account_num` match between tables `token_balance` and `t_entities`, assign each row to an element of `tokenBalances`
+-   Update `accounts.js` `getAccountss()` to add an additional join to pull the `balance` column where `account_realm_num` and `account_num` match between tables `token_balance` and `t_entities`, assign each row to an element of `tokenBalances`. `symbol` can be retrieved with additional join from `token` table or by a caching mechanism for `tokenId` -> `symbol` mapping
 
 
 ### Balances Endpoint
@@ -402,7 +395,8 @@ To achieve this
     }
 ```
 To achieve this
--   Update `balances.js` `getBalances()` to pull the `balance` and `symbol` columns from `token_balance` where `token_balance.id` = <tokenId> and assign each row to an element of `tokenBalances`
+-   Update `balances.js` `getBalances()` to pull the `balance` column where `account_realm_num` and `account_num` match between tables `token_balance` and `t_entities`, assign each row to an element of `tokenBalances`. `symbol` can be retrieved with additional join from `token` table or by a caching mechanism for `tokenId` -> `symbol` mapping
+
 
 ### Transactions Endpoint
 -   Update `/api/v1/transactions` response to add token transfers
@@ -437,14 +431,14 @@ To achieve this
           ],
           "tokenTransfers": [
             {
-              "currency":"0.0.5555",
+              "symbol":"FOOBAR",
               "transfers": [
                 {"account": "0.0.1111", "amount": -10},
                 {"account": "0.0.2222", "amount": 10}
               ]
             },
             {
-              "currency": "0.0.6666",
+              "symbol":"FOOCOIN",
               "transfers": [
                 {"account": "0.0.3333", "amount": -10},
                 {"account": "0.0.4444", "amount": 10}
@@ -489,10 +483,10 @@ To achieve this
 
 To achieve this similar to balances
 -   Create a `tokenBalance.js`
--   Add a `getTokenBalances()` which based on the time range provided (default to latest timestamp) and token `symbol` pulls out all the  `balance` and `symbol` values and returns them as an element in `tokenBalances` array
+-   Add a `getTokenBalances()` which based on the time range provided (default to latest timestamp) and `tokenId` pulls out `account_id` and `balance` values from `token_balance` and returns them as an element in `tokenBalances` array.
 
 ```sql
-    select account_id, balance from token_balance where symbol = ? and consensus_timestamp = (select max(consensus_timestamp) from token_balance);
+    select account_id, balance from token_balance where token_id = ? and consensus_timestamp = (select max(consensus_timestamp) from token_balance);
 ```
 
 Optional Filters
@@ -517,7 +511,7 @@ Optional Filters
           },
           {
             "symbol": "FOOCOIN",
-            "tokenId": "0.15.10",
+            "tokenId": "0.15.11",
             "key": {
               "_type": "ProtobufEncoded",
               "key": "9c2233222c2233222c2233227d"
@@ -785,6 +779,8 @@ A lot of this logic can be shared for the equivalent `CryptoTransfer` listeners 
 -   Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
 -   What filer options should be provided for new Token API's
 -   How should frozen account and kyc'd account for a token be represented?
+-   Should balance returns for `accounts`, `balances` and `transactions` contain `symbol` or `tokenId` or both?
+-   Should `EntityRecordItemListener.OnItem()` be refactored to more easily focus on different TransactionBody types. May be valuable to testing but not necessarily within scope
 
 
 
