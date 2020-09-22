@@ -56,6 +56,6 @@ public class HCSDirectStubSamplerResult extends HCSSamplerResult<ConsensusTopicR
 
     @Override
     byte[] getMessageByteArray(ConsensusTopicResponse response) {
-        return response.toByteArray();
+        return response.getMessage().toByteArray();
     }
 }

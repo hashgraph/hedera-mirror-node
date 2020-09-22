@@ -150,7 +150,7 @@ public class TopicClient {
             transactionList.sign(submitKey);
         }
 
-        List<TransactionId> transactionIdList = transactionList.execute(client);
+        List<TransactionId> transactionIdList = transactionList.executeAll(client);
 
         TransactionRecord transactionRecord = transactionIdList.get(0).getRecord(client);
         // get only the 1st sequence number
