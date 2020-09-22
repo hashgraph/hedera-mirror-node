@@ -4,6 +4,9 @@
   "description": "Hedera Mirror Node Monitor",
   "main": "server.js",
   "private": true,
+  "engines": {
+    "node": ">=12.6.0"
+  },
   "scripts": {
     "test": "jest --watchAll",
     "dev": "nodemon app.js"
@@ -17,8 +20,11 @@
     "cors": "^2.8.5",
     "dotenv": "^8.0.0",
     "express": "^4.17.1",
+    "lodash": "^4.17.20",
     "log4js": "^6.3.0",
     "mathjs": "^7.2.0",
+    "node-fetch": "^2.6.1",
+    "querystring": "^0.2.0",
     "shelljs": "^0.8.4"
   },
   "devDependencies": {

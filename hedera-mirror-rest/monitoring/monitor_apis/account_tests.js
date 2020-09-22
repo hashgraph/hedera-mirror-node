@@ -20,271 +20,187 @@
 
 'use strict';
 
-const acctestutils = require('./monitortest_utils.js');
-const config = require('../../config.js');
+const _ = require('lodash');
 const math = require('mathjs');
+const config = require('./config');
+const {
+  checkAPIResponseError,
+  checkRespObjDefined,
+  checkRespArrayLength,
+  checkAccountNumber,
+  checkMandatoryParams,
+  getAPIResponse,
+  getUrl,
+  fromAccNum,
+  testRunner,
+  toAccNum,
+  CheckRunner,
+} = require('./utils');
+
 const accountsPath = '/accounts';
-const maxLimit = config.maxLimit;
-
-/**
- * Makes a call to the rest-api and returns the accounts object from the response
- * @param {String} pathandquery
- * @return {Object} Accounts object from response
- */
-const getAccounts = (pathandquery, currentTestResult) => {
-  return acctestutils
-    .getAPIResponse(pathandquery)
-    .then((json) => {
-      return json.accounts;
-    })
-    .catch((error) => {
-      currentTestResult.failureMessages.push(error);
-    });
-};
-
-/**
- * Check the required fields exist in the response object
- * @param {Object} entry Account JSON object
- */
-const checkMandatoryParams = (entry) => {
-  let check = true;
-  ['balance', 'account', 'expiry_timestamp', 'auto_renew_period', 'key', 'deleted'].forEach((field) => {
-    check = check && entry.hasOwnProperty(field);
-  });
-
-  ['timestamp', 'balance'].forEach((field) => {
-    check = check && entry.hasOwnProperty('balance') && entry.balance.hasOwnProperty(field);
-  });
-
-  return check;
-};
+const resource = 'account';
+const resourceLimit = config[resource].limit;
+const jsonRespKey = 'accounts';
+const mandatoryParams = [
+  'balance',
+  'account',
+  'expiry_timestamp',
+  'auto_renew_period',
+  'key',
+  'deleted',
+  'balance.timestamp',
+  'balance.balance',
+];
 
 /**
  * Verify base accounts call
- * Also ensure an account mentioned in the accounts can be confirmed as exisitng
+ * Also ensure an account mentioned in the accounts can be confirmed as existing
  * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @returns {{url: string, passed: boolean, message: string}}
  */
-const getAccountsWithAccountCheck = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+const getAccountsWithAccountCheck = async (server) => {
+  let url = getUrl(server, accountsPath, {limit: resourceLimit});
+  const accounts = await getAPIResponse(url, jsonRespKey);
 
-  let url = acctestutils.getUrl(server, accountsPath);
-  currentTestResult.url = url;
-  let accounts = await getAccounts(url, currentTestResult);
-
-  if (undefined === accounts) {
-    var message = `accounts is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'account is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: resourceLimit,
+      message: (accts, limit) => `accounts.length of ${accts.length}  is less than limit ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: mandatoryParams,
+      message: 'account object is missing some mandatory fields',
+    })
+    .run(accounts);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  if (accounts.length !== maxLimit) {
-    var message = `accounts.length of ${accounts.length} is less than limit ${maxLimit}`;
-    currentTestResult.failureMessages.push(message);
-    return currentTestResult;
+  const highestAcc = _.max(_.map(accounts, (acct) => toAccNum(acct.account)));
+  url = getUrl(server, accountsPath, {
+    'account.id': highestAcc,
+    type: 'credit',
+    limit: 1,
+  });
+  const singleAccount = await getAPIResponse(url, jsonRespKey);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'singleAccount is undefined'})
+    .withCheckSpec(checkAccountNumber, {accountNumber: highestAcc, message: 'Highest acc check was not found'})
+    .run(singleAccount);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  let mandatoryParamCheck = checkMandatoryParams(accounts[0]);
-  if (mandatoryParamCheck == false) {
-    var message = `account object is missing some mandatory fields`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  var highestAcc = 0;
-  for (let acc of accounts) {
-    var accnum = acctestutils.toAccNum(acc.account);
-    if (accnum > highestAcc) {
-      highestAcc = accnum;
-    }
-  }
-
-  url = acctestutils.getUrl(server, `${accountsPath}?account.id=${highestAcc}&type=credit&limit=1`);
-  currentTestResult.url = url;
-
-  let singleAccount = await getAccounts(url, currentTestResult);
-
-  if (undefined === singleAccount) {
-    var message = `singleAccount is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  if (singleAccount.length !== 1) {
-    var message = `singleAccount.length of ${singleAccount.length} was expected to be 1`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  let check = false;
-  if (singleAccount[0].account === acctestutils.fromAccNum(highestAcc)) {
-    check = true;
-  }
-
-  if (check == false) {
-    var message = `Highest acc check was not found`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  currentTestResult.result = 'passed';
-  currentTestResult.message = `Successfully called accounts and performed account check`;
-
-  acctestutils.addTestResult(classResults, currentTestResult, true);
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called accounts and performed account check',
+  };
 };
 
 /**
  * Verify accounts call with time and limit query params provided
  * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getAccountsWithTimeAndLimitParams = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+const getAccountsWithTimeAndLimitParams = async (server) => {
+  let url = getUrl(server, accountsPath, {limit: 1});
+  let accounts = await getAPIResponse(url, jsonRespKey);
 
-  let url = acctestutils.getUrl(server, `${accountsPath}?limit=1`);
-  currentTestResult.url = url;
-  let accounts = await getAccounts(url, currentTestResult);
-
-  if (undefined === accounts) {
-    var message = `accounts is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  const checkRunnder = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (accts) => `accounts.length of ${accts.length} was expected to be 1`,
+    });
+  let result = checkRunnder.run(accounts);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  if (accounts.length !== 1) {
-    var message = `accounts.length of ${accounts.length} was expected to be 1`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  const plusOne = math.add(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
+  const minusOne = math.subtract(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
+  url = getUrl(server, accountsPath, {
+    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
+    limit: 1,
+  });
+  accounts = await getAPIResponse(url, jsonRespKey);
+
+  result = checkRunnder.run(accounts);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  let plusOne = math.add(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
-  let minusOne = math.subtract(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
-  let paq = `${accountsPath}?timestamp=gt:${minusOne.toString()}` + `&timestamp=lt:${plusOne.toString()}&limit=1`;
-
-  url = acctestutils.getUrl(server, paq);
-  currentTestResult.url = url;
-  accounts = await getAccounts(url, currentTestResult);
-
-  if (undefined === accounts) {
-    var message = `accounts is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  if (accounts.length !== 1) {
-    var message = `accounts.length of ${accounts.length} was expected to be 1`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  currentTestResult.result = 'passed';
-  currentTestResult.message = `Successfully called accounts with time and limit params`;
-
-  acctestutils.addTestResult(classResults, currentTestResult, true);
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called accounts with time and limit params',
+  };
 };
 
 /**
  * Verify single account can be retrieved
  * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getSingleAccount = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+const getSingleAccount = async (server) => {
+  let url = getUrl(server, accountsPath, {limit: resourceLimit});
+  const accounts = await getAPIResponse(url, jsonRespKey);
 
-  let url = acctestutils.getUrl(server, `${accountsPath}`);
-  currentTestResult.url = url;
-  let accounts = await getAccounts(url, currentTestResult);
-
-  if (undefined === accounts) {
-    var message = `accounts is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: resourceLimit,
+      message: (accts, limit) => `accounts.length of ${accts.length} was expected to be ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: mandatoryParams,
+      message: 'account object is missing some mandatory fields',
+    })
+    .run(accounts);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  if (accounts.length !== maxLimit) {
-    var message = `accounts.length of ${accounts.length} is less than limit ${maxLimit}`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  const highestAcc = _.max(_.map(accounts, (acct) => toAccNum(acct.account)));
+  url = getUrl(server, `${accountsPath}/${fromAccNum(highestAcc)}`);
+  const singleAccount = await getAPIResponse(url);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
+    .withCheckSpec(checkAccountNumber, {accountNumber: highestAcc, message: 'Highest account number was not found'})
+    .run(singleAccount);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  let mandatoryParamCheck = checkMandatoryParams(accounts[0]);
-  if (mandatoryParamCheck == false) {
-    var message = `account object is missing some mandatory fields`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  var highestAcc = 0;
-  for (let acc of accounts) {
-    var accnum = acctestutils.toAccNum(acc.account);
-    if (accnum > highestAcc) {
-      highestAcc = accnum;
-    }
-  }
-
-  url = acctestutils.getUrl(server, `${accountsPath}/${acctestutils.fromAccNum(highestAcc)}`);
-  currentTestResult.url = url;
-
-  let singleAccount;
-  try {
-    singleAccount = await acctestutils.getAPIResponse(url);
-  } catch (error) {
-    currentTestResult.failureMessages.push(error);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  if (undefined === singleAccount) {
-    var message = `singleAccount is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  let check = false;
-  if (singleAccount.account === acctestutils.fromAccNum(highestAcc)) {
-    check = true;
-  }
-
-  if (check == false) {
-    var message = `Highest acc check was not found`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  currentTestResult.result = 'passed';
-  currentTestResult.message = `Successfully called accounts for single account`;
-
-  acctestutils.addTestResult(classResults, currentTestResult, true);
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called accounts for single account',
+  };
 };
 
 /**
  * Run all tests in an asynchronous fashion waiting for all tests to complete
- * @param {Object} server API host endpoint
+ * @param {String} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
 const runAccountTests = async (server, classResults) => {
-  var tests = [];
-  tests.push(getAccountsWithAccountCheck(server, classResults));
-  tests.push(getAccountsWithTimeAndLimitParams(server, classResults));
-  tests.push(getSingleAccount(server, classResults));
+  const tests = [];
+  const runTest = testRunner(server, classResults);
+  tests.push(runTest(getAccountsWithAccountCheck));
+  tests.push(runTest(getAccountsWithTimeAndLimitParams));
+  tests.push(runTest(getSingleAccount));
 
   return Promise.all(tests);
 };
 
 module.exports = {
-  runAccountTests: runAccountTests,
+  runAccountTests,
 };

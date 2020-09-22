@@ -49,6 +49,21 @@ npm install
 PORT=3000 pm2 start server.js
 ```
 
+To configure a smaller `limit` threshold for individual resources (`account`, `balance`, or `transaction`), for example,
+for environments with lower traffic volume, adjust the values of the following section in `config/serverlist.json`:
+
+```json
+"account": {
+"limit": 1000
+},
+"balance": {
+"limit": 1000
+},
+"transaction": {
+"limit": 1000
+}
+```
+
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.
 The default timeout to populate the data is 60 seconds. After the interval, you can verify the output using `curl http://<host>:<port>/api/v1/status` command.
 

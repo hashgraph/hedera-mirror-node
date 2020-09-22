@@ -20,7 +20,7 @@
 
 'use strict';
 
-const acctestutils = require('./monitortest_utils.js');
+const acctestutils = require('./utils.js');
 const transactionTests = require('./transaction_tests');
 const accountTests = require('./account_tests');
 const balanceTests = require('./balance_tests');

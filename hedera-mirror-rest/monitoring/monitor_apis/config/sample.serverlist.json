@@ -6,5 +6,15 @@
       "name": "MyLocalMirrorNode"
     }
   ],
-  "interval": 60
+  "interval": 60,
+  "shard": 0,
+  "account": {
+    "limit": 1000
+  },
+  "balance": {
+    "limit": 1000
+  },
+  "transaction": {
+    "limit": 1000
+  }
 }
