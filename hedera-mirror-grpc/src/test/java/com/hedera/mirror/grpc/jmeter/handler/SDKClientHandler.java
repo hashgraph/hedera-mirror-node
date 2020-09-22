@@ -107,7 +107,7 @@ public class SDKClientHandler {
     }
 
     public List<TransactionId> submitTopicMessage(ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction) throws HederaStatusException {
-        return consensusMessageSubmitTransaction.execute(client);
+        return consensusMessageSubmitTransaction.executeAll(client);
     }
 
     public TransactionId submitCryptoTransfer(AccountId operatorId, AccountId recipientId, int amount) throws HederaStatusException {
