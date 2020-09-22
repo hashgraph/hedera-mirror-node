@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,18 +20,16 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import javax.inject.Named;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-@Getter
-@RequiredArgsConstructor
-public enum EntityTypeEnum {
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-    ACCOUNT(1),
-    CONTRACT(2),
-    FILE(3),
-    TOPIC(4),
-    TOKEN(5);
-
-    private final int id;
+@Named
+@javax.persistence.Converter
+@ConfigurationPropertiesBinding
+public class TokenIdConverter extends AbstractEntityIdConverter {
+    public TokenIdConverter() {
+        super(EntityTypeEnum.TOKEN);
+    }
 }
