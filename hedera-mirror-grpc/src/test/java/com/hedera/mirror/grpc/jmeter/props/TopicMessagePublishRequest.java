@@ -27,7 +27,7 @@ import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;

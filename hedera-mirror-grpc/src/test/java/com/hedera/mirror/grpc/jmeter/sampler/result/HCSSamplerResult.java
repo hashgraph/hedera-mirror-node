@@ -29,7 +29,7 @@ import lombok.Data;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 @SuperBuilder
 @Data
@@ -51,12 +51,12 @@ public abstract class HCSSamplerResult<T> {
     private boolean success = true;
     private boolean historical = true;
     private boolean calculateLatencies = true;
-    private DescriptiveStatistics e2eLatencyStats = new DescriptiveStatistics();
-    private DescriptiveStatistics publishToConsensusLatencyStats = new DescriptiveStatistics();
-    private DescriptiveStatistics consensusToDeliveryLatencyStats = new DescriptiveStatistics();
-    private final DescriptiveStatistics e2eLatencyTotalStats = new DescriptiveStatistics();
-    private final DescriptiveStatistics publishToConsensusLatencyTotalStats = new DescriptiveStatistics();
-    private final DescriptiveStatistics consensusToDeliveryLatencyTotalStats = new DescriptiveStatistics();
+    private SummaryStatistics e2eLatencyStats = new SummaryStatistics();
+    private SummaryStatistics publishToConsensusLatencyStats = new SummaryStatistics();
+    private SummaryStatistics consensusToDeliveryLatencyStats = new SummaryStatistics();
+    private final SummaryStatistics e2eLatencyTotalStats = new SummaryStatistics();
+    private final SummaryStatistics publishToConsensusLatencyTotalStats = new SummaryStatistics();
+    private final SummaryStatistics consensusToDeliveryLatencyTotalStats = new SummaryStatistics();
 
     abstract Instant getConsensusInstant(T t);
 
@@ -213,7 +213,7 @@ public abstract class HCSSamplerResult<T> {
                 consensusToDelivery);
     }
 
-    private void updateE2ELatencyStats(DescriptiveStatistics interval, DescriptiveStatistics total, double latency) {
+    private void updateE2ELatencyStats(SummaryStatistics interval, SummaryStatistics total, double latency) {
         if (latency > 0) {
             // update interval stats
             interval.addValue(latency);
@@ -234,9 +234,9 @@ public abstract class HCSSamplerResult<T> {
         printIndividualStat(consensusToDeliveryLatencyStats, "Interval ConsensusToDelivery Latency");
 
         // clear interval stat buckets
-        e2eLatencyStats = new DescriptiveStatistics();
-        publishToConsensusLatencyStats = new DescriptiveStatistics();
-        consensusToDeliveryLatencyStats = new DescriptiveStatistics();
+        e2eLatencyStats = new SummaryStatistics();
+        publishToConsensusLatencyStats = new SummaryStatistics();
+        consensusToDeliveryLatencyStats = new SummaryStatistics();
     }
 
     private void printTotalStats() {
@@ -251,20 +251,15 @@ public abstract class HCSSamplerResult<T> {
         printIndividualStat(consensusToDeliveryLatencyTotalStats, "Total ConsensusToDelivery Latency");
     }
 
-    private void printIndividualStat(DescriptiveStatistics stats, String name) {
+    private void printIndividualStat(SummaryStatistics stats, String name) {
         if (stats != null) {
             // Compute some statistics
             double min = stats.getMin();
             double max = stats.getMax();
             double mean = stats.getMean();
-            double median = stats.getPercentile(50);
-            double seventyFifthPercentile = stats.getPercentile(75);
-            double ninetyFifthPercentile = stats.getPercentile(95);
 
-            log.info("{} stats, min: {}s, max: {}s, avg: {}s, median: {}s, 75th percentile: {}s, " +
-                            "95th percentile: {}s", name, String.format("%.03f", min), String.format("%.03f", max),
-                    String.format("%.03f", mean), String.format("%.03f", median),
-                    String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
+            log.info("{} stats, min: {}s, max: {}s, avg: {}s",
+                    name, String.format("%.03f", min), String.format("%.03f", max), String.format("%.03f", mean));
         }
     }
 }
