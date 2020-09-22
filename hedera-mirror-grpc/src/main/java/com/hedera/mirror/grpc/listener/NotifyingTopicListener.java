@@ -29,7 +29,6 @@ import io.vertx.pgclient.pubsub.PgSubscriber;
 import java.time.Duration;
 import java.util.Objects;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -38,18 +37,16 @@ import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.DbProperties;
 import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 @Named
-@Log4j2
-public class NotifyingTopicListener implements TopicListener {
+public class NotifyingTopicListener extends SharedTopicListener {
 
     private final ObjectMapper objectMapper;
-    private final Flux<TopicMessage> topicMessages;
     private final PgChannel channel;
-    private final ListenerProperties listenerProperties;
 
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
+        super(listenerProperties);
+
         this.objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setDatabase(dbProperties.getName())
@@ -58,7 +55,6 @@ public class NotifyingTopicListener implements TopicListener {
                 .setPort(dbProperties.getPort())
                 .setUser(dbProperties.getUsername());
 
-        this.listenerProperties = listenerProperties;
         Duration frequency = listenerProperties.getFrequency();
         Vertx vertx = Vertx.vertx();
         PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
@@ -77,7 +73,7 @@ public class NotifyingTopicListener implements TopicListener {
 
         channel = subscriber.channel("topic_message");
 
-        topicMessages = Flux.defer(() -> listen())
+        sharedTopicMessages = Flux.defer(() -> listen())
                 .publishOn(Schedulers.boundedElastic())
                 .map(this::toTopicMessage)
                 .filter(Objects::nonNull)
@@ -86,19 +82,6 @@ public class NotifyingTopicListener implements TopicListener {
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
                 .share();
-    }
-
-    @Override
-    public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        return topicMessages.filter(t -> filterMessage(t, filter))
-                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
-                .onBackpressureBuffer(listenerProperties.getMaxBufferSize());
-    }
-
-    private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
-        return message.getRealmNum() == filter.getRealmNum() &&
-                message.getTopicNum() == filter.getTopicNum() &&
-                message.getConsensusTimestamp() >= filter.getStartTimeLong();
     }
 
     private Flux<String> listen() {
