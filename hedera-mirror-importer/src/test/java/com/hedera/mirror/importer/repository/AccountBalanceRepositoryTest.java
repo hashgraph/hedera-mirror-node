@@ -26,6 +26,8 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
@@ -45,8 +47,7 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
     private AccountBalance create(long consensusTimestamp, int accountNum, long balance) {
         AccountBalance.Id id = new AccountBalance.Id();
         id.setConsensusTimestamp(consensusTimestamp);
-        id.setAccountNum(accountNum);
-        id.setAccountRealmNum(0);
+        id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
 
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(balance);

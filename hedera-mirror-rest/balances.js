@@ -20,6 +20,7 @@
 'use strict';
 const config = require('./config.js');
 const constants = require('./constants.js');
+const EntityId = require('./entityId');
 const utils = require('./utils.js');
 const {DbError} = require('./errors/dbError');
 
@@ -33,11 +34,7 @@ const getBalances = async (req, res) => {
 
   // Parse the filter parameters for credit/debit, account-numbers,
   // timestamp and pagination
-  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(
-    req.query,
-    'ab.account_realm_num',
-    'ab.account_num'
-  );
+  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
 
   // if the request has a timestamp=xxxx or timestamp=eq:xxxxx, then
   // modify that to be timestamp <= xxxx, so we return the latest balances
@@ -71,15 +68,11 @@ const getBalances = async (req, res) => {
     '\n' +
     'order by consensus_timestamp desc limit 1';
 
-  let sqlQuery =
-    'select ab.consensus_timestamp,\n' +
-    'ab.account_realm_num as realm_num, ab.account_num as entity_num, ab.balance\n' +
-    ' from account_balance ab\n';
+  let sqlQuery = 'select ab.consensus_timestamp,\n' + 'ab.account_id, ab.balance\n' + ' from account_balance ab\n';
   if (joinEntities) {
     sqlQuery +=
       ' join t_entities e\n' +
-      ' on e.entity_realm = ab.account_realm_num\n' +
-      ' and e.entity_num = ab.account_num\n' +
+      ' on e.id = ab.account_id\n' +
       ' and e.entity_shard = ' +
       config.shard +
       '\n' +
@@ -95,7 +88,8 @@ const getBalances = async (req, res) => {
     ' and\n' +
     [accountQuery, pubKeyQuery, balanceQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ') +
     ' order by consensus_timestamp desc, ' +
-    ['account_realm_num', 'account_num'].map((q) => q + ' ' + order).join(',') +
+    'account_id ' +
+    order +
     ' ' +
     query;
 
@@ -123,7 +117,7 @@ const getBalances = async (req, res) => {
       };
 
       function accountIdFromRow(row) {
-        return `${config.shard}.${row.realm_num}.${row.entity_num}`;
+        return EntityId.fromEncodedId(row['account_id']).toString();
       }
 
       // Go through all results, and collect them by seconds.

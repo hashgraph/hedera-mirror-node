@@ -40,15 +40,15 @@ class AccountBalanceLineParserTest {
             "'';true;;;",
             ";true;;;"
     }, delimiter = ';')
-    void parse(String line, boolean expectThrow, Integer expectedRealm, Integer expectedAccount, Long expectedBalance) {
+    void parse(String line, boolean expectThrow, Long expectedRealm, Long expectedAccount, Long expectedBalance) {
         AccountBalanceLineParser parser = new AccountBalanceLineParser();
         if (!expectThrow) {
             AccountBalance accountBalance = parser.parse(line, timestamp, systemShardNum);
             var id = accountBalance.getId();
 
             assertThat(accountBalance.getBalance()).isEqualTo(expectedBalance);
-            assertThat(id.getAccountRealmNum()).isEqualTo(expectedRealm);
-            assertThat(id.getAccountNum()).isEqualTo(expectedAccount);
+            assertThat(id.getAccountId().getRealmNum()).isEqualTo(expectedRealm);
+            assertThat(id.getAccountId().getEntityNum()).isEqualTo(expectedAccount);
             assertThat(id.getConsensusTimestamp()).isEqualTo(timestamp);
         } else {
             assertThrows(InvalidDatasetException.class, () -> {
