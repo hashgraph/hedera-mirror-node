@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.notify;
+package com.hedera.mirror.importer.parser.record.entity.redis;
 
 /*-
  * ‌
@@ -20,14 +20,10 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  * ‍
  */
 
-import static com.fasterxml.jackson.databind.PropertyNamingStrategy.SNAKE_CASE;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
@@ -35,12 +31,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.SessionCallback;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
@@ -49,32 +46,32 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @ConditionOnEntityRecordParser
 @Log4j2
 @Named
-@Order(4)
+@Order(3)
 @RequiredArgsConstructor
-public class NotifyingEntityListener implements BatchEntityListener {
+public class RedisEntityListener implements BatchEntityListener {
 
-    private static final String SQL = "select pg_notify('topic_message', ?)";
-    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().setPropertyNamingStrategy(SNAKE_CASE);
-
-    private final NotifyProperties notifyProperties;
-    private final JdbcTemplate jdbcTemplate;
-    private final MeterRegistry meterRegistry;
+    private final MirrorProperties mirrorProperties;
+    private final RedisProperties redisProperties;
+    private final RedisOperations<String, TopicMessage> redisOperations;
     private final List<TopicMessage> topicMessages = new ArrayList<>();
+    private final MeterRegistry meterRegistry;
 
     private Timer timer;
+    private String topicPrefix;
 
     @PostConstruct
     void init() {
         timer = Timer.builder("hedera.mirror.importer.publish.duration")
-                .description("The amount of time it took to publish the entity")
+                .description("The amount of time it took to publish the domain entity")
                 .tag("entity", TopicMessage.class.getSimpleName())
-                .tag("type", "notify")
+                .tag("type", "redis")
                 .register(meterRegistry);
+        topicPrefix = "topic." + mirrorProperties.getShard() + "."; // Cache to avoid reflection penalty
     }
 
     @Override
     public boolean isEnabled() {
-        return notifyProperties.isEnabled();
+        return redisProperties.isEnabled();
     }
 
     @Override
@@ -85,10 +82,14 @@ public class NotifyingEntityListener implements BatchEntityListener {
     @Override
     @EventListener
     public void onSave(EntityBatchSaveEvent event) {
-        if (isEnabled()) {
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            timer.record(() -> jdbcTemplate.execute(SQL, callback(topicMessages)));
-            log.info("Finished notifying {} messages in {}", topicMessages.size(), stopwatch);
+        try {
+            if (isEnabled()) {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                timer.record(() -> redisOperations.executePipelined(callback()));
+                log.info("Finished notifying {} messages in {}", topicMessages.size(), stopwatch);
+            }
+        } catch (Exception e) {
+            log.error("Unable to publish to redis", e);
         }
     }
 
@@ -99,31 +100,17 @@ public class NotifyingEntityListener implements BatchEntityListener {
         topicMessages.clear();
     }
 
-    private PreparedStatementCallback callback(Collection<TopicMessage> topicMessages) {
-        return preparedStatement -> {
-            for (TopicMessage topicMessage : topicMessages) {
-                String json = toJson(topicMessage);
-                if (json != null) {
-                    preparedStatement.setString(1, json);
-                    preparedStatement.addBatch();
+    // Batch send using Redis pipelining
+    private <K, V> SessionCallback<Object> callback() {
+        return new SessionCallback<>() {
+            @Override
+            public <K, V> Object execute(RedisOperations<K, V> operations) throws DataAccessException {
+                for (TopicMessage topicMessage : topicMessages) {
+                    String channel = topicPrefix + topicMessage.getRealmNum() + "." + topicMessage.getTopicNum();
+                    redisOperations.convertAndSend(channel, topicMessage);
                 }
-            }
-            return preparedStatement.executeBatch();
-        };
-    }
-
-    private String toJson(TopicMessage topicMessage) {
-        try {
-            String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
-
-            if (json.length() >= notifyProperties.getMaxJsonPayloadSize()) {
-                log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
                 return null;
             }
-
-            return json;
-        } catch (Exception e) {
-            throw new ParserException(e);
-        }
+        };
     }
 }

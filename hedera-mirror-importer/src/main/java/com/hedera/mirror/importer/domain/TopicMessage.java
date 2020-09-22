@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -30,6 +31,7 @@ import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdDeserializer;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
@@ -48,6 +50,7 @@ public class TopicMessage implements Persistable<Long> {
 
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
+    @JsonDeserialize(using = EntityIdDeserializer.class)
     private EntityId payerAccountId;
 
     private int realmNum;

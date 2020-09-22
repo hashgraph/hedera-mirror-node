@@ -41,8 +41,8 @@ public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest 
     private JdbcTemplate jdbcTemplate;
 
     @Override
-    protected TopicListener getTopicListener() {
-        return topicListener;
+    protected ListenerProperties.ListenerType getType() {
+        return ListenerProperties.ListenerType.NOTIFY;
     }
 
     // Since importer manually calls pg_notify, we simulate that here with a rule that invokes pg_notify on insert

@@ -24,13 +24,14 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
+import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 
 @Data
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
-public class NotifyProperties {
+public class NotifyProperties implements EntityListenerProperties {
 
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     private int maxJsonPayloadSize = 8000;
 }

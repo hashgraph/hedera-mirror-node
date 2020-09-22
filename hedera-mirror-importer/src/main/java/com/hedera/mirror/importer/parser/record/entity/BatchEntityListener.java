@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.listener;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -20,10 +20,9 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-public class PollingTopicListenerTest extends AbstractTopicListenerTest {
+public interface BatchEntityListener extends EntityListener {
 
-    @Override
-    protected ListenerProperties.ListenerType getType() {
-        return ListenerProperties.ListenerType.POLL;
-    }
+    void onSave(EntityBatchSaveEvent event);
+
+    void onCleanup(EntityBatchCleanupEvent event);
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.listener;
+package com.hedera.mirror.importer.parser.record.entity.redis;
 
 /*-
  * ‌
@@ -20,10 +20,16 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-public class PollingTopicListenerTest extends AbstractTopicListenerTest {
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-    @Override
-    protected ListenerProperties.ListenerType getType() {
-        return ListenerProperties.ListenerType.POLL;
-    }
+import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
+import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
+
+@Data
+@ConditionOnEntityRecordParser
+@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.redis")
+public class RedisProperties implements EntityListenerProperties {
+
+    private boolean enabled = true;
 }
