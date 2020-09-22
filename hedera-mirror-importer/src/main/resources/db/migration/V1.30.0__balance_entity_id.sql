@@ -23,7 +23,7 @@ alter table if exists account_balance
 
 -- Add new pk and index using account_id
 alter table account_balance
-    add constraint pk__account_balance primary key (consensus_timestamp, account_id);
+    add constraint account_balance__pk primary key (consensus_timestamp, account_id);
 
 create index if not exists account_balance__account_timestamp
     on account_balance (account_id desc, consensus_timestamp desc);

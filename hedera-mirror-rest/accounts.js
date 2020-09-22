@@ -56,7 +56,7 @@ const getAccountQueryPrefix = function () {
        e.deleted
     from account_balance ab
     full outer join t_entities e on (
-        ab.account_id =  e.id
+        ab.account_id = e.id
         and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
     )
     where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance)`;

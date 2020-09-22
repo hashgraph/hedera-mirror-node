@@ -51,8 +51,9 @@ const validateAccNumRange = function (accounts, low, high) {
   let ret = true;
   let offender = null;
   for (const acc of accounts.accounts) {
-    if (acc.id < low || acc.id > high) {
-      offender = acc.id;
+    const accNum = acc.account.split('.')[2];
+    if (accNum < low || accNum > high) {
+      offender = accNum;
       ret = false;
     }
   }

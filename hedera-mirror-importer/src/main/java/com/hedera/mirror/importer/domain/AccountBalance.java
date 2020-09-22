@@ -58,7 +58,7 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     @Embeddable
     public static class Id implements Serializable {
 
-        private static final long serialVersionUID = -2399552489266593375L;
+        private static final long serialVersionUID = 1345295043157256768L;
 
         private long consensusTimestamp;
 
