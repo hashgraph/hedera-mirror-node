@@ -52,7 +52,19 @@ public enum TransactionTypeEnum {
     CONSENSUSCREATETOPIC(24),
     CONSENSUSUPDATETOPIC(25),
     CONSENSUSDELETETOPIC(26),
-    CONSENSUSSUBMITMESSAGE(27);
+    CONSENSUSSUBMITMESSAGE(27),
+    UNCHECKEDSUBMIT(28),
+    TOKENCREATE(29),
+    TOKENTRANSFER(30),
+    TOKENFREEZE(31),
+    TOKENUNFREEZE(32),
+    TOKENGRANTKYC(33),
+    TOKENREVOKEKYC(34),
+    TOKENDELETE(35),
+    TOKENUPDATE(36),
+    TOKENMINT(37),
+    TOKENBURN(38),
+    TOKENWIPE(39);
 
     private static final Map<Integer, TransactionTypeEnum> idMap = Arrays.stream(values())
             .collect(Collectors.toMap(TransactionTypeEnum::getProtoId, Function.identity()));
