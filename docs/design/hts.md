@@ -55,15 +55,15 @@ To support the goals the following database schema changes should be made
     -   `amount`
     -   `consensus_timestamp`
     -   `token_id`
--   Add `token_transfer__timestamp` and `token_transfer__token_account_timestamp` indexes
+-   Add a `token_transfer__token_account_timestamp` index with `desc` order on columns
 
 ### Token Balance
 -   Create `token_balance` table to distinctly capture token balances with the following columns
-    -   `consensus_timestamp` (primary key)
+    -   `consensus_timestamp`
     -   `account_id`
     -   `balance`
     -   `token_id`
--   Create index of `token_balance__token_account_timestamp`
+-   Create primary key as combination of `consensus_timestamp`, `token_id` and `account_id`
 
 ### Token Account Info
 -   Create `token_account` table to distinctly capture token account metadata changes with the following columns
@@ -242,14 +242,18 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `tokenId`
 
 ### Balance Parsing
-To support HTS the balance CSV adds a version comment to the file, comments the Timestamp and adds a `accountMetadata` column which is the Base64 encoding of the serialized bytes of `TokenBalances` proto.
+To support HTS the balance CSV
+1. Adds a version comment as the first line of the file i.e. `# version:2`
+2. Comments out the Timestamp e.g. `TimeStamp:2020-09-22T04:25:00.083212003Z`
+3. Adds a `tokenBalances` column which is the Base64 encoding of the serialized bytes of `TokenBalances` proto.
+
 To allow the mirror node to support both V1 and V2 balance files
 -   Rename `BalanceFileReaderImpl` to `BalanceFileReaderImplV1`
--   Add a `BalanceFileReaderImplV2` class to parse `shardNum,realmNum,accountNum,balance,accountMetadata`.  Reader should set `tokenBalances` in `AccountBalance`.
--   Add a `CompositeBalanceFileReader` that implements `BalanceFileReader` and reads the first few headers lines of the CSV
-    -   If the first line is `TimeStamp` use `BalanceFileReaderImplV1` as the reader
-    -   If the first line is `# version:2` use `BalanceFileReaderImplV2` as the reader
-    -   If no `version` or `Timestamp` found throw an `InvalidDatasetException`
+-   Add a `BalanceFileReaderImplV2` class to parse `shardNum,realmNum,accountNum,balance,tokenBalances`.  Reader should set `tokenBalances` in `AccountBalance`.
+-   Add a `CompositeBalanceFileReader` that implements `BalanceFileReader` and reads the first line of the CSV
+    -   If `TimeStamp` is matched use `BalanceFileReaderImplV1` as the reader
+    -   If `# version:2` is matched use `BalanceFileReaderImplV2` as the reader
+    -   If no `# version:2` or `Timestamp` found throw an `InvalidDatasetException`
 -   Add `INSERT_TOKEN_BALANCE_STATEMENT` in `AccountBalancesFileLoader` to persist each `TokenBalance` in the `TokenBalances`
 -   Update `AccountBalancesFileLoader.loadAccountBalances()` to handle new `tokenBalances` member in `AccountBalance` returned by stream. Add logic to use `INSERT_TOKEN_BALANCE_STATEMENT` for every `tokenBalance` if not null;
 
@@ -259,6 +263,7 @@ In all cases override `getEntity()`, pulling entity info from appropriate transa
 
 -   Add `TokenCreateTransactionsHandler`
     -   override `updatesEntity()` to return true
+    -   override `updateEntity()` to set Entities `key`, `expiryTimeNs` and `AutoRenewPeriod` if applicable
 -   Add `TokenTransferTransactionsHandler`
 -   Add `TokenFreezeTransactionsHandler`
 -   Add `TokenUnfreezeTransactionsHandler`
@@ -268,6 +273,7 @@ In all cases override `getEntity()`, pulling entity info from appropriate transa
     -   override `updatesEntity()` to return true
 -   Add `TokenUpdateTransactionsHandler`
     -   override `updatesEntity()` to return true
+    -   override `updateEntity()` to update Entities `key`, `expiryTimeNs` and `AutoRenewPeriod` if applicable
 -   Add `TokenMintTransactionsHandler`
 -   Add `TokenBurnTransactionsHandler`
 -   Add `TokenWipeTransactionsHandler`
@@ -310,7 +316,7 @@ Add logic to check for
 -   `TransactionBody.hasTokenGrantKyc()` and parse `TokenGrantKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to true and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenRevokeKyc()` and parse `TokenRevokeKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to false and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `wipe` column to true and pass it to `entityListener.onTokenAccount()`.
--   `TransactionBody.hasTokenUpdate()` and parse `TokenUpdateTransactionBody` out from the record. Retrieve an existing `Entities` and `Token` db entry, update the appropriate columns and pass it to `entityListener.onEntityId()` and `entityListener.onToken()`.
+-   `TransactionBody.hasTokenUpdate()` and parse `TokenUpdateTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
 
 ## REST API
 To achieve the goals and for easy integration with existing users the REST API should be updated in the following order
@@ -502,7 +508,7 @@ Optional Filters
           {
             "symbol": "FOOBAR",
             "token_id": "0.15.10",
-            "key": {
+            "admin_key": {
               "_type": "ProtobufEncoded",
               "key": "7b2233222c2233222c2233227d"
             }
@@ -510,7 +516,7 @@ Optional Filters
           {
             "symbol": "FOOCOIN",
             "tokenId": "0.15.11",
-            "key": {
+            "admin_key": {
               "_type": "ProtobufEncoded",
               "key": "9c2233222c2233222c2233227d"
             }
@@ -571,17 +577,7 @@ Optional Filters
 ## GRPC API
 
 ### Controller
--   Add a `TokenController` that extends protobuf reactor stubs and implements `subscribeTokenTransfers`
-```java
-    package com.hedera.mirror.grpc.controller;
-
-    public class TokenController extends ReactorTokenServiceGrpc.TokenServiceImplBase {
-            @Override
-            public Flux<TokenResponse> subscribeTokenTransfers(Mono<TokenQuery> request) {
-                ...
-            }
-    }
-```
+-   Add a `TokenController` class that extends protobuf reactor stubs and implements service rpc endpoints
 
 ### Domain
 
@@ -625,7 +621,7 @@ TBD
 -   [x] Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
     -   A: Should be migrated to use `account_id` only
 -   [ ] What filter options should be provided for new Token API's
--   [ ] How should frozen account and kyc'd account for a token be represented?
+-   [x] How should frozen account and kyc'd account for a token be represented?
     -   A: As columns in `token` table
 -   [ ] Should balance returns for `accounts`, `balances` and `transactions` contain `token` or `tokenId` or both?
 -   [x] Should `EntityRecordItemListener.OnItem()` be refactored to more easily focus on different TransactionBody types. May be valuable to testing but not necessarily within scope
