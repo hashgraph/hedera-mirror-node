@@ -2,7 +2,7 @@
   "description": "Stateproof api calls with valid transaction ID but no record file found from node 0.0.4",
   "extendedDescription": [
     "When querying stateproof for transaction 0.0.111152-1570800932-629451400, expect to find it in record file ",
-    "2019-10-11T13_32_41.443132Z.rcd with stored node account id 0.0.4 and all 4 signature files exist. However, ",
+    "2019-10-11T13_35_45.120768Z.rcd with stored node account id 0.0.4 and all 4 signature files exist. However, ",
     "since the record file under account id 0.0.4 is missing, the REST api should return 503."
   ],
   "setup": {
