@@ -102,8 +102,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileCreate() throws Exception {
         Transaction transaction = fileCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -120,8 +119,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         entityProperties.getPersist().setFiles(false);
         entityProperties.getPersist().setSystemFiles(false);
         Transaction transaction = fileCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -136,8 +134,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileCreatePersistSystemPositive() throws Exception {
         entityProperties.getPersist().setFiles(false);
         Transaction transaction = fileCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody,
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
 
@@ -154,8 +151,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileCreatePersistSystemNegative() throws Exception {
         entityProperties.getPersist().setFiles(false);
         Transaction transaction = fileCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody,
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
 
@@ -177,8 +173,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     })
     void fileCreateExpirationTimeOverflow(long seconds, long expectedNanosTimestamp) throws Exception {
         Transaction transaction = fileCreateTransaction(Timestamp.newBuilder().setSeconds(seconds).build());
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -191,17 +186,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileAppendToExisting() throws Exception {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileCreateTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now append
         Transaction transaction = fileAppendTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -222,8 +214,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileAppendToNew() throws Exception {
         Transaction transaction = fileAppendTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -245,8 +236,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileAppendToSystemFile() throws Exception {
         Transaction transaction = fileAppendTransaction(
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build(), FILE_CONTENTS);
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody,
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
 
@@ -267,17 +257,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateAllToExisting() throws Exception {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileCreateTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateAllTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -293,17 +280,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateAllToExistingFailedTransaction() throws Exception {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileCreateTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateAllTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 
@@ -331,15 +315,13 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         // Initial address book update
         Transaction transactionUpdate = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBookUpdate);
-        TransactionBody transactionBodyUpdate = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(transactionUpdate.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBodyUpdate = getTransactionBody(transactionUpdate);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBodyUpdate.getFileUpdate();
         TransactionRecord recordUpdate = transactionRecord(transactionBodyUpdate, ADDRESS_BOOK_FILEID);
 
         // Address book append
         Transaction transactionAppend = fileAppendTransaction(ADDRESS_BOOK_FILEID, addressBookAppend);
-        TransactionBody transactionBodyAppend = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(transactionAppend.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBodyAppend = getTransactionBody(transactionAppend);
         FileAppendTransactionBody fileAppendTransactionBody = transactionBodyAppend.getFileAppend();
         TransactionRecord recordAppend = transactionRecord(transactionBodyAppend, ADDRESS_BOOK_FILEID);
 
@@ -373,8 +355,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileUpdateAllToNew() throws Exception {
         Transaction transaction = fileUpdateAllTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -390,9 +371,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateContentsToExisting() throws Exception {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileCreateTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
 
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
@@ -400,8 +379,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         // now update
         Transaction transaction = fileUpdateContentsTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -423,8 +401,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileUpdateContentsToNew() throws Exception {
         Transaction transaction = fileUpdateContentsTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -446,17 +423,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateExpiryToExisting() throws Exception {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileCreateTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateExpiryTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -479,8 +453,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileUpdateExpiryToNew() throws Exception {
         Transaction transaction = fileUpdateExpiryTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -504,17 +477,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateKeysToExisting() throws Exception {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileCreateTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateKeysTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
 
@@ -537,8 +507,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileUpdateKeysToNew() throws Exception {
         Transaction transaction = fileUpdateKeysTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody);
 
@@ -562,8 +531,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateAllToNewSystem() throws Exception {
         Transaction transaction = fileUpdateAllTransaction(
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build(), FILE_CONTENTS);
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody,
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
@@ -585,8 +553,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         byte[] largeAddressBook = FileUtils.readFileToByteArray(addressBookLarge);
         byte[] addressBookUpdate = Arrays.copyOf(largeAddressBook, largeAddressBook.length / 2);
         Transaction transaction = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBookUpdate);
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody, ADDRESS_BOOK_FILEID);
 
@@ -613,8 +580,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
         assertThat(addressBook).hasSizeLessThan(6144);
         Transaction transaction = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBook);
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody, ADDRESS_BOOK_FILEID);
 
@@ -643,17 +609,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileDeleteToExisting() throws Exception {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileCreateTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -679,9 +642,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileDeleteToNew() throws Exception {
         Transaction fileDeleteTransaction = fileDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileDeleteTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(fileDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileDeleteTransaction, record));
@@ -696,9 +657,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileDeleteFailedTransaction() throws Exception {
         Transaction fileDeleteTransaction = fileDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(fileDeleteTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(fileDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 
         parseRecordItemAndCommit(new RecordItem(fileDeleteTransaction, record));
@@ -713,8 +672,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileSystemDeleteTransaction() throws Exception {
         Transaction systemDeleteTransaction = systemDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(systemDeleteTransaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(systemDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(systemDeleteTransaction, record));
@@ -729,8 +687,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileSystemUnDeleteTransaction() throws Exception {
         Transaction systemUndeleteTransaction = systemUnDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(systemUndeleteTransaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(systemUndeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(systemUndeleteTransaction, record));
@@ -745,9 +702,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileSystemDeleteInvalidTransaction() throws Exception {
         Transaction systemDeleteTransaction = systemDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody
-                .parseFrom(SignedTransaction.parseFrom(systemDeleteTransaction.getSignedTransactionBytes())
-                        .getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(systemDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
         parseRecordItemAndCommit(new RecordItem(systemDeleteTransaction, record));
@@ -761,8 +716,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileSystemUnDeleteFailedTransaction() throws Exception {
         Transaction systemUndeleteTransaction = systemUnDeleteTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(systemUndeleteTransaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(systemUndeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
         parseRecordItemAndCommit(new RecordItem(systemUndeleteTransaction, record));

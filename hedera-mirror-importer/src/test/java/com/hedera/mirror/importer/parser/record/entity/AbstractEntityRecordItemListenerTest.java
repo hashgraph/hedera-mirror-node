@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -304,5 +305,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
         return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAccountNum(accountNum))
                 .setAmount(amount);
+    }
+
+    protected TransactionBody getTransactionBody(com.hederahashgraph.api.proto.java.Transaction transaction) throws InvalidProtocolBufferException {
+        return TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
     }
 }

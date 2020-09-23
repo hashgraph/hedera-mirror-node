@@ -242,8 +242,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
     private void contractCallWithTransferList(TransferList.Builder transferList) throws Exception {
         var transaction = contractCall();
-        var transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        var transactionBody = getTransactionBody(transaction);
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
@@ -264,8 +263,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
     private void contractCreateWithTransferList(TransferList.Builder transferList) throws Exception {
         var transaction = contractCreate();
-        var transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        var transactionBody = getTransactionBody(transaction);
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
@@ -289,8 +287,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
     private void cryptoCreateWithTransferList(TransferList.Builder transferList) throws Exception {
         var transaction = cryptoCreate();
-        var transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        var transactionBody = getTransactionBody(transaction);
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
@@ -318,8 +315,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
 
     private void cryptoTransferWithTransferList(Transaction transaction, TransferList.Builder transferList,
                                                 ResponseCodeEnum rc) throws Exception {
-        var transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        var transactionBody = getTransactionBody(transaction);
         var record = transactionRecord(transactionBody, rc, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));

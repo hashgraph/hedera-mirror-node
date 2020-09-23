@@ -45,8 +45,7 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
     @Test
     void freeze() throws Exception {
         Transaction transaction = freezeTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -60,8 +59,7 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
     @Test
     void freezeInvalidTransaction() throws Exception {
         Transaction transaction = freezeTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
