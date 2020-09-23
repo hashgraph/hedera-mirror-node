@@ -18,7 +18,9 @@ insert into t_transaction_types (proto_id, name) values
     (36, 'TOKENUPDATE'),
     (37, 'TOKENMINT'),
     (38, 'TOKENBURN'),
-    (39, 'TOKENWIPE');
+    (39, 'TOKENWIPE'),
+    (40, 'TOKENASSOCIATE'),
+    (41, 'TOKENDISSOCIATE');
 
 -- Add hts transaction result types
 insert into t_transaction_results (proto_id, result) values
@@ -49,22 +51,25 @@ insert into t_transaction_results (proto_id, result) values
     (189, 'INVALID_WIPE_KEY'),
     (190, 'INVALID_FREEZE_KEY'),
     (191, 'INVALID_SUPPLY_KEY'),
-    (192, 'INVALID_TOKEN_EXPIRY'),
-    (193, 'TOKEN_HAS_EXPIRED'),
-    (194, 'TOKEN_IS_IMMUTABlE');
+    (192, 'TOKEN_NAME_ALREADY_IN_USE'),
+    (193, 'MISSING_TOKEN_NAME'),
+    (194, 'TOKEN_NAME_TOO_LONG'),
+    (195, 'INVALID_WIPING_AMOUNT'),
+    (196, 'TOKEN_IS_IMMUTABlE'),
+    (197, 'TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT');
 
 -- Add token table to hold token properties
 create table if not exists token
 (
     token_id            entity_id               primary key,
-    create_timestamp    bigint                  not null,
+    created_timestamp   bigint                  not null,
     divisibility        bigint                  not null,
     freeze_default      boolean                 not null,
     freeze_key          bytea,
     initial_supply      bigint                  not null,
     kyc_default         boolean                 not null,
     kyc_key             bytea,
-    modify_timestamp    bigint,
+    modified_timestamp  bigint                  not null,
     supply_key          bytea,
     symbol              character varying(100)  not null,
     treasury_account_id entity_id               not null,
@@ -76,18 +81,17 @@ create table if not exists token_account
 (
     id                  serial              primary key,
     account_id          entity_id           not null,
-    create_timestamp    bigint              not null,
+    associated          boolean             not null default false,
+    created_timestamp   bigint              not null,
     frozen              boolean             not null,
     kyc                 boolean             not null,
-    modify_timestamp    bigint              not null,
+    modified_timestamp  bigint              not null,
     token_id            entity_id           not null,
     wiped               boolean             not null default false
 );
 
 create unique index if not exists token_account__token_account on token_account(token_id, account_id);
 
-create index if not exists token_account__token_account_timestamp
-     on token_account (token_id desc, account_id desc, create_timestamp desc);
 
 --- Add token_balance table to capture token account balances
 create table if not exists token_balance
@@ -111,7 +115,7 @@ create table if not exists token_transfer
 );
 
 create index if not exists token_transfer__timestamp
-     on token_transfer (token_id desc, account_id desc, consensus_timestamp desc);
+     on token_transfer (consensus_timestamp desc);
 
 create index if not exists token_transfer__token_account_timestamp
      on token_transfer (token_id desc, account_id desc, consensus_timestamp desc);
