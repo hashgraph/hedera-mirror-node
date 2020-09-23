@@ -268,10 +268,13 @@ describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
   const s3TestDataRoot = path.join(__dirname, 'data/s3');
 
+  let configOverriden = false;
+  let configClone;
   let s3Ops;
 
   const configS3ForStateProof = (endpoint) => {
     config.stateproof = {
+      addressBookHistory: false,
       enabled: true,
       streams: {
         network: 'OTHER',
@@ -342,6 +345,7 @@ describe('DB integration test - spec based', () => {
     await s3Ops.start();
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());
+    configClone = _.cloneDeep(config);
   });
 
   afterAll(async () => {
@@ -367,6 +371,19 @@ describe('DB integration test - spec based', () => {
     }
 
     _.merge(config, override);
+    configOverriden = true;
+  };
+
+  const restoreConfig = () => {
+    if (configOverriden) {
+      Object.assign(config, configClone);
+      Object.keys(config).forEach((key) => {
+        if (!(key in configClone)) {
+          delete config[key];
+        }
+      });
+      configOverriden = false;
+    }
   };
 
   const specSetupSteps = async (spec) => {
@@ -395,6 +412,10 @@ describe('DB integration test - spec based', () => {
       });
     }
   };
+
+  afterEach(() => {
+    restoreConfig();
+  });
 
   const specPath = path.join(__dirname, 'specs');
   fs.readdirSync(specPath).forEach((file) => {
