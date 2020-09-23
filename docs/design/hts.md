@@ -50,7 +50,11 @@ To support the goals the following database schema changes should be made
 7.  New `token_account` table added to persist token specific account state
 
 ### Token Transfer
--   Add `token_transfer` table table. Similar to `crypto_transfer` but with additional `token_id` column of `entity_id` type
+-   Add `token_transfer` table table. with the following class members
+    -   `account_id`
+    -   `amount`
+    -   `consensus_timestamp`
+    -   `token_id`
 -   Add `token_transfer__timestamp` and `token_transfer__token_account_timestamp` indexes
 
 ### Token Balance
@@ -72,7 +76,6 @@ To support the goals the following database schema changes should be made
     -   `token_id`
     -   `wiped`
 -   Create unique index `token_account__token_account`
--   Create index of `token_account__token_account_timestamp`
 
 > _Note:_  `frozen` and `kyc` are set by `TokenCreation.freezeDefault` and `TokenCreation.kycDefault` respectively
 
@@ -182,11 +185,6 @@ To support the goals the following database schema changes should be made
 ```java
 public class AccountBalance implements Persistable<AccountBalance.Id> {
     ...
-    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JoinColumns({
-        @JoinColumn(name="tokenBalance_consensusTimestamp", referencedColumnName="consensusTimestamp"),
-        @JoinColumn(name="tokenBalance_accountId", referencedColumnName="accountId")
-    })
     private List<TokenBalance> tokenBalances;
     ...
 }
@@ -205,7 +203,6 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     public enum EntityTypeEnum {
         ...
         TOKEN(5);
-
         ...
     }
 ```
@@ -252,7 +249,7 @@ To allow the mirror node to support both V1 and V2 balance files
 -   Add a `CompositeBalanceFileReader` that implements `BalanceFileReader` and reads the first few headers lines of the CSV
     -   If the first line is `TimeStamp` use `BalanceFileReaderImplV1` as the reader
     -   If the first line is `# version:2` use `BalanceFileReaderImplV2` as the reader
-    -   If no `version` and `Timestamp` found throw an `InvalidDatasetException`
+    -   If no `version` or `Timestamp` found throw an `InvalidDatasetException`
 -   Add `INSERT_TOKEN_BALANCE_STATEMENT` in `AccountBalancesFileLoader` to persist each `TokenBalance` in the `TokenBalances`
 -   Update `AccountBalancesFileLoader.loadAccountBalances()` to handle new `tokenBalances` member in `AccountBalance` returned by stream. Add logic to use `INSERT_TOKEN_BALANCE_STATEMENT` for every `tokenBalance` if not null;
 
@@ -283,13 +280,19 @@ In all cases override `getEntity()`, pulling entity info from appropriate transa
 ### Token Transfer Parsing
 
 #### EntityListener
--   Add a `onToken()` to handle a `Token` object
+-   Add a `onToken()` to handle create and updates on the `token` table
 ```java
     default void onToken(Token token) throws ImporterException {
     }
 ```
 
--   Add a `onTokenTransfer()` to handle a `TokenTransfer` object
+-   Add a `onTokenAccount()` to handle inserts and updates on the `token_account` table
+```java
+    default void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+    }
+```
+
+-   Add a `onTokenTransfer()` to handle a `token_transfer` table
 ```java
     default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
     }
@@ -297,25 +300,26 @@ In all cases override `getEntity()`, pulling entity info from appropriate transa
 
 #### EntityRecordItemListener
 Modify `EntityRecordItemListener` to handle parsing HTS transactions
-
--   Add logic to check for `TransactionBody.hasTokenCreation()` and parse `TokenCreateTransactionBody` out from the record. Create a new `Token` object and pass it to `entityListener.onToken()`.
--   Add logic to check for `TransactionBody.hasTokenTransfers()` and parse `TokenTransferLists` out from the record. Create a new `TokenTransfer` object for each `AccountAmount` in the `TokenTransferList` object and pass it to `entityListener.onTokenTransfer()`.
--   Add logic to check for `TransactionBody.hasTokenDissociate()` and parse `TokenDissociateBody` out from the record. Set the matching `token_account` db entry `associate` column to false
--   Add logic to check for `TransactionBody.hasTokenFreeze()` and parse `TokenFreezeAccountTransactionBody` and `TokenUnFreezeAccountTransactionBody` out from the record. Set the matching `token_account` db entry `frozen` column to true if `TokenFreezeAccountTransactionBody` and false if `TokenUnFreezeAccountTransactionBody`
--   Add logic to check for `TransactionBody.hasTokenGrantKyc()` and parse `TokenGrantKycTransactionBody` out from the record. Set the matching `token_account` db entry `kyc` column to true
--   Add logic to check for `TransactionBody.hasTokenRevokeKyc()` and parse `TokenRevokeKycTransactionBody` out from the record. Set the matching `token_account` db entry `kyc` column to false
--   Add logic to check for `TransactionBody.hasTokenUnfreeze()` and parse `TokenUnFreezeAccountTransactionBody` out from the record. Set the matching `token_account` db entry `frozen` column to false
--   Add logic to check for `TransactionBody.hasTokenUpdate()` and parse `TokenUpdateTransactionBody` out from the record. Update the matching `t_entities` and `token` db entry
--   Add logic to check for `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Set the matching `token_account` db entry `wipe` column to true
+Add logic to check for
+-   `TransactionBody.hasTokenCreation()` and parse `TokenCreateTransactionBody` out from the record. Create a new `Token` object and pass it to `entityListener.onToken()`.
+-   `TransactionBody.hasTokenTransfers()` and parse `TokenTransferLists` out from the record. Create a new `TokenTransfer` object for each `AccountAmount` in the `TokenTransferList` object and pass it to `entityListener.onTokenTransfer()`.
+-   `TransactionBody.hasTokenAssociate()` and parse `TokenAssociateBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `associate` column to true and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenDissociate()` and parse `TokenDissociateBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `associate` column to false and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenFreeze()` and parse `TokenFreezeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `frozen` column to true and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenUnfreeze()` and parse `TokenUnFreezeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `frozen` column to false and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenGrantKyc()` and parse `TokenGrantKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to true and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenRevokeKyc()` and parse `TokenRevokeKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to false and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `wipe` column to true and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenUpdate()` and parse `TokenUpdateTransactionBody` out from the record. Retrieve an existing `Entities` and `Token` db entry, update the appropriate columns and pass it to `entityListener.onEntityId()` and `entityListener.onToken()`.
 
 ## REST API
 To achieve the goals and for easy integration with existing users the REST API should be updated in the following order
 1.  The `transactions` REST API must be updated to support `tokenTransfers`
 2.  The `balances` REST API must be updated to support `tokenBalances`
 3.  The `accounts` REST API must be updated to support `tokenBalances`
-4.  Add a Token Supply distribution REST API to show token distribution across accounts - `/api/v1/tokens/<token>/balances`
+4.  Add a Token Supply distribution REST API to show token distribution across accounts - `/api/v1/tokens/<symbol>/balances`
 5.  Add a Token Discovery REST API to show available tokens on the network - `/api/v1/tokens`
-6.  Add a Token Info REST API to show details for a token on the network - `/api/v1/tokens/<token>`
+6.  Add a Token Info REST API to show details for a token on the network - `/api/v1/tokens/<symbol>`
 
 ### Accounts Endpoint
 -   Update `/api/v1/accounts` response to add token balances
@@ -326,7 +330,7 @@ To achieve the goals and for easy integration with existing users the REST API s
         "balance": {
           "timestamp": "0.000002345",
           "balance": 80,
-          "tokenBalances": [
+          "token_balances": [
             {
               "symbol": "FOOBAR",
               "balance": 80
@@ -359,12 +363,12 @@ To achieve the goals and for easy integration with existing users the REST API s
           {
             "account": "0.0.8",
             "balance": 100,
-            "tokenBalances": []
+            "token_balances": []
           },
           {
             "account": "0.0.10",
             "balance": 100,
-            "tokenBalances": [
+            "token_balances": [
               {
                 "symbol": "FOOBAR",
                 "balance": 80
@@ -374,7 +378,7 @@ To achieve the goals and for easy integration with existing users the REST API s
           {
             "account": "0.0.13",
             "balance": 100,
-            "tokenBalances": [
+            "token_balances": [
               {
                 "symbol": "FOOBAR",
                 "balance": 80
@@ -425,17 +429,31 @@ To achieve the goals and for easy integration with existing users the REST API s
           ],
           "token_transfers": [
             {
-              "symbol":"FOOBAR",
               "transfers": [
-                {"account": "0.0.1111", "amount": -10},
-                {"account": "0.0.2222", "amount": 10}
+                {
+                  "account": "0.0.1111",
+                  "amount": -10,
+                  "symbol": "FOOBAR"
+                },
+                {
+                  "account": "0.0.2222",
+                  "amount": 10,
+                  "symbol": "FOOBAR"
+                }
               ]
             },
             {
-              "symbol":"FOOCOIN",
               "transfers": [
-                {"account": "0.0.3333", "amount": -10},
-                {"account": "0.0.4444", "amount": 10}
+                {
+                  "account": "0.0.3333",
+                  "amount": -10,
+                  "symbol":"FOOCOIN"
+                },
+                {
+                  "account": "0.0.4444",
+                  "amount": 10,
+                  "symbol":"FOOCOIN"
+                }
                ]
             }
           ]
@@ -446,7 +464,7 @@ To achieve the goals and for easy integration with existing users the REST API s
 
 ### Token Supply distribution
 
-`/api/v1/tokens/<symbol>/balances` this could be the equivalent of `/api/v1/balances?token=<symbol>` currently and would return a list of account and the token balances
+`/api/v1/tokens/<symbol>/balances` this could be the equivalent of `/api/v1/balances?symbol=<symbol>` currently and would return a list of account and the token balances
 ```json
     {
         "timestamp": "0.000002345",
@@ -483,7 +501,7 @@ Optional Filters
         "tokens": [
           {
             "symbol": "FOOBAR",
-            "tokenId": "0.15.10",
+            "token_id": "0.15.10",
             "key": {
               "_type": "ProtobufEncoded",
               "key": "7b2233222c2233222c2233227d"
@@ -505,7 +523,7 @@ Optional Filters
 ```
 
 Optional Filters
--   `/api/v1/tokens?adminkey=HJ^&8` - All tokens with matching admin key
+-   `/api/v1/tokens?publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be` - All tokens with matching admin key
 -   `/api/v1/tokens?account.id=0.0.8` - All tokens for matching account
 
 ### Token Info
@@ -513,33 +531,33 @@ Optional Filters
 ```json
     {
       "symbol": "FOOCOIN",
-      "tokenId": "0.15.10",
+      "token_id": "0.15.10",
       "treasury_account": "0.15.10",
-      "adminKey": {
+      "admin_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "kycKey": {
+      "kyc_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "freezeKey": {
+      "freeze_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "wipeKey": {
+      "wipe_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "supplyKey": {
+      "supply_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "freezeDefault": false,
-      "kycDefault": false,
-      "expiryTimestamp": null,
-      "autoRenewAccount": "0.0.6",
-      "autoRenewPeriod": null
+      "freeze_default": false,
+      "kyc_default": false,
+      "expiry_timestamp": null,
+      "auto_renew_account": "0.0.6",
+      "auto_renew_period": null
     }
 ```
 
