@@ -101,9 +101,6 @@ create table if not exists token_balance
 alter table if exists token_balance
     add constraint token_balance__pk primary key (consensus_timestamp, token_id, account_id);
 
-create index if not exists token_balance__token_account_timestamp
-     on token_balance (token_id desc, account_id desc, consensus_timestamp desc);
-
 --- Add token_transfer
 create table if not exists token_transfer
 (
