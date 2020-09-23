@@ -21,6 +21,7 @@
 'use strict';
 
 const AbortController = require('abort-controller');
+const httpErrors = require('http-errors');
 const _ = require('lodash');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
@@ -87,7 +88,7 @@ const getAPIResponse = async (url, key = undefined) => {
     const response = await fetch(url, {signal: controller.signal});
     if (!response.ok) {
       console.log(`Non success response for call to '${url}'`);
-      return Error(response.statusText);
+      return httpErrors(response.status, response.statusText);
     }
 
     const json = await response.json();
@@ -171,14 +172,31 @@ const createFailedResultJson = (title, msg) => {
   return failedResultJson;
 };
 
-const checkAPIResponseError = (resp) => {
-  if (resp instanceof Error) {
+const checkAPIResponseError = (resp, option) => {
+  const {expectHttpError, status} = option;
+  const isRespError = resp instanceof Error;
+  const isRespHttpError = resp instanceof httpErrors.HttpError;
+
+  if (expectHttpError) {
+    if (isRespHttpError && (!status || resp.status === status)) {
+      return {passed: true};
+    }
+
+    return {
+      passed: false,
+      message: `expect http status ${status}, got ${JSON.stringify(resp)}`,
+    };
+  }
+
+  if (isRespError) {
     return {
       passed: false,
       message: resp.message,
     };
   }
+
   return {passed: true};
+
 };
 
 const checkRespObjDefined = (resp, option) => {

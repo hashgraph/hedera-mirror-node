@@ -200,7 +200,7 @@ const checkBalanceFreshness = async (server) => {
  * @param {String} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const runBalanceTests = async (server, classResults) => {
+const runTests = async (server, classResults) => {
   const tests = [];
   const runTest = testRunner(server, classResults);
   tests.push(runTest(getBalancesCheck));
@@ -212,5 +212,5 @@ const runBalanceTests = async (server, classResults) => {
 };
 
 module.exports = {
-  runBalanceTests,
+  runTests,
 };

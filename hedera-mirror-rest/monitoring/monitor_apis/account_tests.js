@@ -191,7 +191,7 @@ const getSingleAccount = async (server) => {
  * @param {String} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const runAccountTests = async (server, classResults) => {
+const runTests = async (server, classResults) => {
   const tests = [];
   const runTest = testRunner(server, classResults);
   tests.push(runTest(getAccountsWithAccountCheck));
@@ -202,5 +202,5 @@ const runAccountTests = async (server, classResults) => {
 };
 
 module.exports = {
-  runAccountTests,
+  runTests,
 };

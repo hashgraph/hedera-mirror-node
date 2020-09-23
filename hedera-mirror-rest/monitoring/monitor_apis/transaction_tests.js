@@ -334,7 +334,7 @@ const checkTransactionFreshness = async (server) => {
  * @param {String} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const runTransactionTests = async (server, classResults) => {
+const runTests = async (server, classResults) => {
   const tests = [];
   const runTest = testRunner(server, classResults);
   tests.push(runTest(getTransactionsWithAccountCheck));
@@ -348,5 +348,5 @@ const runTransactionTests = async (server, classResults) => {
 };
 
 module.exports = {
-  runTransactionTests,
+  runTests,
 };
