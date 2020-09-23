@@ -61,10 +61,10 @@ create table if not exists token
     token_id            entity_id               primary key,
     created_timestamp   bigint                  not null,
     divisibility        bigint                  not null,
-    freeze_default      boolean                 not null,
+    freeze_default      boolean                 not null default false,
     freeze_key          bytea,
     initial_supply      bigint                  not null,
-    kyc_default         boolean                 not null,
+    kyc_default         boolean                 not null default false,
     kyc_key             bytea,
     modified_timestamp  bigint                  not null,
     supply_key          bytea,
@@ -113,8 +113,5 @@ create table if not exists token_transfer
     amount              hbar_tinybars
 );
 
-create index if not exists token_transfer__timestamp
-     on token_transfer (consensus_timestamp desc);
-
 create index if not exists token_transfer__token_account_timestamp
-     on token_transfer (token_id desc, account_id desc, consensus_timestamp desc);
+     on token_transfer (consensus_timestamp desc, token_id desc, account_id desc);
