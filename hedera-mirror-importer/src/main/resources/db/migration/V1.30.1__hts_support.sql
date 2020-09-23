@@ -18,9 +18,7 @@ insert into t_transaction_types (proto_id, name) values
     (36, 'TOKENUPDATE'),
     (37, 'TOKENMINT'),
     (38, 'TOKENBURN'),
-    (39, 'TOKENWIPE'),
-    (40, 'TOKENASSOCIATE'),
-    (41, 'TOKENDISSOCIATE');
+    (39, 'TOKENWIPE');
 
 -- Add hts transaction result types
 insert into t_transaction_results (proto_id, result) values
@@ -55,8 +53,7 @@ insert into t_transaction_results (proto_id, result) values
     (193, 'MISSING_TOKEN_NAME'),
     (194, 'TOKEN_NAME_TOO_LONG'),
     (195, 'INVALID_WIPING_AMOUNT'),
-    (196, 'TOKEN_IS_IMMUTABlE'),
-    (197, 'TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT');
+    (196, 'TOKEN_IS_IMMUTABlE');
 
 -- Add token table to hold token properties
 create table if not exists token
@@ -81,10 +78,9 @@ create table if not exists token_account
 (
     id                  serial              primary key,
     account_id          entity_id           not null,
-    associated          boolean             not null default false,
     created_timestamp   bigint              not null,
-    frozen              boolean             not null,
-    kyc                 boolean             not null,
+    frozen              boolean             not null default false,
+    kyc                 boolean             not null default false,
     modified_timestamp  bigint              not null,
     token_id            entity_id           not null,
     wiped               boolean             not null default false
@@ -96,11 +92,14 @@ create unique index if not exists token_account__token_account on token_account(
 --- Add token_balance table to capture token account balances
 create table if not exists token_balance
 (
-    consensus_timestamp bigint              primary key not null,
+    consensus_timestamp bigint              not null,
     account_id          entity_id           not null,
     balance             bigint              not null,
     token_id            entity_id           not null
 );
+
+alter table if exists token_balance
+    add constraint token_balance__pk primary key (consensus_timestamp, token_id, account_id);
 
 create index if not exists token_balance__token_account_timestamp
      on token_balance (token_id desc, account_id desc, consensus_timestamp desc);
