@@ -1,7 +1,12 @@
 {
   "description": "Get topic messages with no arguments",
   "setup": {
-    "accounts": [],
+    "accounts": [
+      {
+        "entity_num": 7,
+        "entity_type": 4
+      }
+    ],
     "balances": [],
     "transactions": [],
     "cryptotransfers": [],

@@ -1,7 +1,12 @@
 {
   "description": "Get messages by with repeated valid sequence and timestamp params",
   "setup": {
-    "accounts": [],
+    "accounts": [
+      {
+        "entity_num": 7,
+        "entity_type": 4
+      }
+    ],
     "balances": [],
     "transactions": [],
     "cryptotransfers": [],

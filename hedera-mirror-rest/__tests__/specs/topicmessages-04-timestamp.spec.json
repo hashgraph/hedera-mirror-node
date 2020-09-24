@@ -1,7 +1,12 @@
 {
   "description": "Get single message by valid topic and timestamp",
   "setup": {
-    "accounts": [],
+    "accounts": [
+      {
+        "entity_num": 7,
+        "entity_type": 4
+      }
+    ],
     "balances": [],
     "transactions": [],
     "cryptotransfers": [],

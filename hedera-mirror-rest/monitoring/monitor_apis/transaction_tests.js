@@ -29,6 +29,7 @@ const {
   checkRespArrayLength,
   checkMandatoryParams,
   checkRespDataFreshness,
+  checkConsensusTimestampOrder,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -61,23 +62,6 @@ const checkTransactionTransfers = (transactions, option) => {
       passed: false,
       message,
     };
-  }
-
-  return {passed: true};
-};
-
-const checkTransactionsConsensusTimestampOrder = (transactions, option) => {
-  const {asc} = option;
-  let previous = asc ? '0' : 'A';
-  for (const txn of transactions) {
-    const timestamp = txn.consensus_timestamp;
-    if (asc && timestamp <= previous) {
-      return {passed: false, message: 'consensus timestamps are not in ascending order'};
-    }
-    if (!asc && timestamp >= previous) {
-      return {passed: false, message: 'consensus timestamps are not in descending order'};
-    }
-    previous = timestamp;
   }
 
   return {passed: true};
@@ -176,7 +160,7 @@ const getTransactionsWithOrderParam = async (server) => {
       params: mandatoryParams,
       message: 'transaction object is missing some mandatory fields',
     })
-    .withCheckSpec(checkTransactionsConsensusTimestampOrder, {asc: true})
+    .withCheckSpec(checkConsensusTimestampOrder, {asc: true})
     .run(transactions);
   if (!result.passed) {
     return {url, ...result};
@@ -334,7 +318,7 @@ const checkTransactionFreshness = async (server) => {
  * @param {String} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const runTransactionTests = async (server, classResults) => {
+const runTests = async (server, classResults) => {
   const tests = [];
   const runTest = testRunner(server, classResults);
   tests.push(runTest(getTransactionsWithAccountCheck));
@@ -348,5 +332,5 @@ const runTransactionTests = async (server, classResults) => {
 };
 
 module.exports = {
-  runTransactionTests,
+  runTests,
 };

@@ -65,14 +65,15 @@ let getSuccessfulTransactionConsensusNs = async (transactionId) => {
 };
 
 /**
- * Get the RCD file name where consensusNs is in the range [consensus_start, consensus_end]. Throws exception if no
- * such RCD file found.
+ * Get the RCD file name and the account ID of the node it was downloaded from, where consensusNs is in the range
+ * [consensus_start, consensus_end]. Throws exception if no such RCD file found.
+ *
  * @param {string} consensusNs consensus timestamp within the range of the RCD file to search
- * @returns {Promise<String>} RCD file name
+ * @returns {Promise<{String, String}>} RCD file name and the account ID of the node the file was downloaded from
  */
-let getRCDFileNameByConsensusNs = async (consensusNs) => {
+let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const sqlParams = [consensusNs];
-  const sqlQuery = `SELECT name
+  const sqlQuery = `SELECT name, node_account_id
        FROM record_file
        WHERE consensus_end >= $1
        ORDER BY consensus_end
@@ -93,8 +94,12 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
     throw new NotFoundError(`No matching RCD file found with ${consensusNs} in the range`);
   }
 
-  logger.debug(`Found RCD file ${_.first(rows).name} for consensus timestamp ${consensusNs}`);
-  return _.first(rows).name;
+  const info = rows[0];
+  logger.debug(`Found RCD file ${JSON.stringify(info)} for consensus timestamp ${consensusNs}`);
+  return {
+    rcdFileName: info.name,
+    nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
+  };
 };
 
 /**
@@ -235,11 +240,11 @@ let canReachConsensus = (actualCount, totalCount) => actualCount >= Math.ceil(to
 const getStateProofForTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
   const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId);
-  const rcdFileName = await getRCDFileNameByConsensusNs(consensusNs);
+  const {rcdFileName, nodeAccountId} = await getRCDFileInfoByConsensusNs(consensusNs);
   const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 
   const sigFileObjects = await downloadRecordStreamFilesFromObjectStorage(
-    ..._.map(nodeAccountIds, (nodeAccountId) => `${nodeAccountId}/${rcdFileName}_sig`)
+    ..._.map(nodeAccountIds, (accountId) => `${accountId}/${rcdFileName}_sig`)
   );
 
   if (!canReachConsensus(sigFileObjects.length, nodeAccountIds.length)) {
@@ -249,10 +254,10 @@ const getStateProofForTransaction = async (req, res) => {
     );
   }
 
-  // always download the record file from node 0.0.3
-  const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(`0.0.3/${rcdFileName}`);
+  // download the record file from the stored node
+  const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(`${nodeAccountId}/${rcdFileName}`);
   if (_.isEmpty(rcdFileObjects)) {
-    throw new FileDownloadError(`Failed to download record file ${rcdFileName} from node 0.0.3`);
+    throw new FileDownloadError(`Failed to download record file ${rcdFileName} from node ${nodeAccountId}`);
   }
 
   const sigFilesMap = {};
@@ -275,7 +280,7 @@ module.exports = {
 if (process.env.NODE_ENV === 'test') {
   module.exports = Object.assign(module.exports, {
     getSuccessfulTransactionConsensusNs,
-    getRCDFileNameByConsensusNs,
+    getRCDFileInfoByConsensusNs,
     getAddressBooksAndNodeAccountIdsByConsensusNs,
     downloadRecordStreamFilesFromObjectStorage,
     canReachConsensus,

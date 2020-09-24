@@ -16,5 +16,9 @@
   },
   "transaction": {
     "limit": 1000
+  },
+  "topic": {
+    "limit": 100,
+    "topicId": "0.0.1930"
   }
 }
