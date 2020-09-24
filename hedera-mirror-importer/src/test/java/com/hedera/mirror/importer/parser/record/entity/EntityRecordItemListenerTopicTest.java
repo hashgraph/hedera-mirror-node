@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -537,7 +538,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             innerBody.setMemo(memo);
         }
         var body = createTransactionBody().setConsensusCreateTopic(innerBody).build();
-        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                        .toByteString())
                 .build();
     }
 
@@ -649,14 +652,18 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             innerBody.setMemo(StringValue.of(memo));
         }
         var body = createTransactionBody().setConsensusUpdateTopic(innerBody).build();
-        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                        .toByteString())
                 .build();
     }
 
     private com.hederahashgraph.api.proto.java.Transaction createDeleteTopicTransaction(TopicID topicId) {
         var innerBody = ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId);
         var body = createTransactionBody().setConsensusDeleteTopic(innerBody).build();
-        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                        .toByteString())
                 .build();
     }
 
@@ -685,7 +692,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var innerBody = submitMessageTransactionBodyBuilder.build();
 
         var body = createTransactionBody().setConsensusSubmitMessage(innerBody).build();
-        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                        .toByteString())
                 .build();
     }
 

@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import javax.inject.Named;
@@ -117,12 +116,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
     }
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
-        Transaction transaction = recordItem.getTransaction().toBuilder()
-                .clearBodyBytes()
-                .setBody(recordItem.getTransactionBody()) // setting deprecated field makes json conversion easier
-                .build();
         var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getRecord());
-        return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(), transaction,
+        return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(), new PubSubMessage.Transaction(recordItem.getTransactionBody(), recordItem.getSignatureMap()),
                 recordItem.getRecord(), nonFeeTransfers);
     }
 

@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -40,6 +41,8 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -124,13 +127,12 @@ class PubSubRecordItemListenerTest {
                 .setTopicID(topicID)
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
-
         // when
         doReturn(topicIdEntity).when(transactionHandler).getEntity(any());
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        var pubSubMessage = assertPubSubMessage(transaction, 1);
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
         assertThat(pubSubMessage.getEntity()).isEqualTo(topicIdEntity);
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
@@ -153,7 +155,7 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        var pubSubMessage = assertPubSubMessage(transaction, 1);
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
         assertThat(pubSubMessage.getEntity()).isNull();
         assertThat(pubSubMessage.getNonFeeTransfers()).isEqualTo(nonFeeTransfers);
     }
@@ -195,7 +197,7 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        var pubSubMessage = assertPubSubMessage(transaction, 3);
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 3);
         assertThat(pubSubMessage.getEntity()).isNull();
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
@@ -244,15 +246,12 @@ class PubSubRecordItemListenerTest {
         verify(addressBookService).update(fileData);
     }
 
-    private PubSubMessage assertPubSubMessage(Transaction expectedTransaction, int numSendTries) throws Exception {
+    private PubSubMessage assertPubSubMessage(PubSubMessage.Transaction expectedTransaction, int numSendTries) throws Exception {
         ArgumentCaptor<Message<PubSubMessage>> argument = ArgumentCaptor.forClass(Message.class);
         verify(messageChannel, times(numSendTries)).send(argument.capture());
         var actual = argument.getValue().getPayload();
         assertThat(actual.getConsensusTimestamp()).isEqualTo(CONSENSUS_TIMESTAMP);
-        assertThat(actual.getTransaction()).isEqualTo(expectedTransaction.toBuilder()
-                .clearBodyBytes()
-                .setBody(TransactionBody.parseFrom(expectedTransaction.getBodyBytes()))
-                .build());
+        assertThat(actual.getTransaction()).isEqualTo(expectedTransaction);
         assertThat(actual.getTransactionRecord()).isEqualTo(DEFAULT_RECORD);
         assertThat(argument.getValue().getHeaders()).describedAs("Headers contain consensus timestamp")
                 .hasSize(3) // +2 are default attributes 'id' and 'timestamp' (publish)
@@ -271,8 +270,17 @@ class PubSubRecordItemListenerTest {
         TransactionBody.Builder transactionBodyBuilder = TransactionBody.newBuilder();
         transactionModifier.accept(transactionBodyBuilder);
         return Transaction.newBuilder()
-                .setBodyBytes(transactionBodyBuilder.build().toByteString())
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(transactionBodyBuilder.build().toByteString())
+                                .setSigMap(SignatureMap.getDefaultInstance())
+                                .build().toByteString()
+                )
                 .build();
+    }
+
+    private static PubSubMessage.Transaction buildPubSubTransaction(Transaction transaction) throws InvalidProtocolBufferException {
+        return new PubSubMessage.Transaction(TransactionBody.parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes()), SignatureMap.getDefaultInstance());
     }
 
     private static NodeAddressBook addressBook(int size) {
