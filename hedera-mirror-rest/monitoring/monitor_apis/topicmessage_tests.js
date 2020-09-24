@@ -77,6 +77,20 @@ const checkSequenceNumberOrder = (messages, option) => {
   return {passed: true};
 };
 
+const checkSingleField = (elements, option) => {
+  const {expected, getActual, message} = option;
+  const element = Array.isArray(elements) ? elements[0] : elements;
+  const actual = getActual(element);
+  if (actual !== expected) {
+    return {
+      passed: false,
+      message: message(actual, expected),
+    };
+  }
+
+  return {passed: true};
+};
+
 /**
  * Verifies /topics/:topicId/messages
  *
@@ -120,6 +134,86 @@ const getTopicMessages = async (server) => {
     url,
     passed: true,
     message: `Successfully called topics for ${topicId} and performed order check`,
+  };
+};
+
+/**
+ * Verifies /topics/:topicId/messages?sequencenumber
+ *
+ * @param {String} server API host endpoint
+ * @return {{url: String, passed: boolean, message: String}}
+ */
+const getTopicMessagesBySequenceNumberFilter = async (server) => {
+  let url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: 1});
+  let messages = await getAPIResponse(url, jsonRespKey);
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'messages is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `messages.length of ${elements.length} was expected to be 1`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: mandatoryParams,
+      message: 'topic message object is missing some mandatory fields',
+    })
+    .withCheckSpec(checkSingleField, {
+      expected: 1,
+      getActual: (element) => element.sequence_number,
+      message: (actual, expected) => `sequence number ${actual} was expected to be ${expected}`,
+    })
+    .run(messages);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: ['gte:1', 'lte:3']});
+  messages = await getAPIResponse(url, jsonRespKey);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'messages is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 3,
+      message: (elements) => `messages.length of ${elements.length} was expected to be 3`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: mandatoryParams,
+      message: 'topic message object is missing some mandatory fields',
+    })
+    .run(messages);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: ['gte:3', 'lt:3']});
+  messages = await getAPIResponse(url, jsonRespKey);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'messages is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 0,
+      message: (elements) => `messages.length of ${elements.length} was expected to be 0`,
+    })
+    .run(messages);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: 'a'});
+  messages = await getAPIResponse(url, jsonRespKey);
+
+  result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 400}).run(messages);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called topics with sequencenumber filter',
   };
 };
 
@@ -174,7 +268,7 @@ const getTopicMessagesForNonExistingTopicId = async (server) => {
  * @param {String} server API host endpoint
  * @return {{url: String, passed: boolean, message: String}}
  */
-const getTopicMessagesByTopicIDAndSequenceNumber = async (server) => {
+const getTopicMessagesByTopicIDAndSequenceNumberPath = async (server) => {
   let url = getUrl(server, topicMessagesPath(topicId, 1));
   let message = await getAPIResponse(url);
 
@@ -246,15 +340,10 @@ const getTopicMessagesByConsensusTimestamp = async (server) => {
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'message is undefined'})
-    .withCheckSpec((element) => {
-      const actual = element.consensus_timestamp;
-      if (actual !== consensusTimestamp) {
-        return {
-          passed: false,
-          message: `expect message.consensus_timestamp to be ${consensusTimestamp}, got ${actual}`,
-        };
-      }
-      return {passed: true};
+    .withCheckSpec(checkSingleField, {
+      expected: consensusTimestamp,
+      getActual: (element) => element.consensus_timestamp,
+      message: (actual, expected) => `consensus timestamp ${actual} was expected to be ${expected}`,
     })
     .run(message);
   if (!result.passed) {
@@ -286,9 +375,10 @@ const runTests = async (server, classResults) => {
   const tests = [];
   const runTest = testRunner(server, classResults);
   tests.push(runTest(getTopicMessages));
+  tests.push(runTest(getTopicMessagesBySequenceNumberFilter));
   tests.push(runTest(getTopicMessagesForNonTopicEntityId));
   tests.push(runTest(getTopicMessagesForNonExistingTopicId));
-  tests.push(runTest(getTopicMessagesByTopicIDAndSequenceNumber));
+  tests.push(runTest(getTopicMessagesByTopicIDAndSequenceNumberPath));
   tests.push(runTest(getTopicMessagesByConsensusTimestamp));
 
   return Promise.all(tests);
