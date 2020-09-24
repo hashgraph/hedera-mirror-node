@@ -24,6 +24,7 @@ const accountTests = require('./account_tests');
 const balanceTests = require('./balance_tests');
 const transactionTests = require('./transaction_tests');
 const stateproofTests = require('./stateproof_tests');
+const topicmessageTests = require('./topicmessage_tests');
 const utils = require('./utils');
 
 /**
@@ -41,7 +42,7 @@ const runTests = (server) => {
 
   const results = utils.getMonitorClassResult();
 
-  const testModules = [accountTests, balanceTests, transactionTests, stateproofTests];
+  const testModules = [accountTests, balanceTests, transactionTests, stateproofTests, topicmessageTests];
   return Promise.all(testModules.map((testModule) => testModule.runTests(server, results))).then(() => {
     // set class results endTime
     results.endTime = Date.now();

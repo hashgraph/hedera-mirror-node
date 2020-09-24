@@ -41,7 +41,7 @@ const stateproofPath = (transactionId) => `${transactionsPath}/${transactionId}/
  * Checks state proof for the latest successful transaction.
  *
  * @param {String} server
- * @returns {{url: String, passed: boolean, message: String}}
+ * @return {{url: String, passed: boolean, message: String}}
  */
 const checkStateproofForValidTransaction = async (server) => {
   let url = getUrl(server, transactionsPath, {limit: 1, order: 'desc', result: 'success'});
@@ -86,7 +86,7 @@ const checkStateproofForValidTransaction = async (server) => {
  * Checks state proof for a failed transaction, expects 404 not found.
  *
  * @param {String} server
- * @returns {{url: String, passed: boolean, message: String}}
+ * @return {{url: String, passed: boolean, message: String}}
  */
 const checkStateproofForFailedTransaction = async (server) => {
   let url = getUrl(server, transactionsPath, {limit: 1, order: 'desc', result: 'fail'});
@@ -124,7 +124,7 @@ const checkStateproofForFailedTransaction = async (server) => {
  * Checks state proof for a non-existing transaction, expects 404 not found.
  *
  * @param {String} server
- * @returns {{url: String, passed: boolean, message: String}}
+ * @return {{url: String, passed: boolean, message: String}}
  */
 const checkStateproofForNonExistingTransaction = async (server) => {
   const transactionId = '0.0.19652-10-123456789';

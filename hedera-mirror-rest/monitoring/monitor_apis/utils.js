@@ -182,9 +182,10 @@ const checkAPIResponseError = (resp, option) => {
       return {passed: true};
     }
 
+    const actual = isRespError ? JSON.stringify(resp) : '2xx';
     return {
       passed: false,
-      message: `expect http status ${status}, got ${JSON.stringify(resp)}`,
+      message: `expect http status ${status}, got ${actual}`,
     };
   }
 
@@ -264,6 +265,23 @@ const checkRespDataFreshness = (resp, option) => {
   return {passed: true};
 };
 
+const checkConsensusTimestampOrder = (elements, option) => {
+  const {asc} = option;
+  let previous = asc ? '0' : 'A';
+  for (const element of elements) {
+    const timestamp = element.consensus_timestamp;
+    if (asc && timestamp <= previous) {
+      return {passed: false, message: 'consensus timestamps are not in ascending order'};
+    }
+    if (!asc && timestamp >= previous) {
+      return {passed: false, message: 'consensus timestamps are not in descending order'};
+    }
+    previous = timestamp;
+  }
+
+  return {passed: true};
+};
+
 class CheckRunner {
   constructor() {
     this.checkSpecs = [];
@@ -271,6 +289,15 @@ class CheckRunner {
 
   withCheckSpec(check, option = {}) {
     this.checkSpecs.push({check, option});
+    return this;
+  }
+
+  resetCheckSpec(check, option = {}) {
+    this.checkSpecs.forEach((checkSpec) => {
+      if (checkSpec.check === check) {
+        checkSpec.option = option;
+      }
+    });
     return this;
   }
 
@@ -301,5 +328,6 @@ module.exports = {
   checkAccountNumber,
   checkMandatoryParams,
   checkRespDataFreshness,
+  checkConsensusTimestampOrder,
   CheckRunner,
 };
