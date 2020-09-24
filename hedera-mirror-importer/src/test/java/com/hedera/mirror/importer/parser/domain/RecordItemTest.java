@@ -34,8 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
@@ -77,7 +75,7 @@ class RecordItemTest {
             .build();
 
     private static final UnknownFieldSet UNKNOWN_FIELD_SET = UnknownFieldSet.newBuilder()
-            .addField(1,
+            .addField(RecordItem.TRANSACTION_BODY_PROTOBUF_TAG,
                     UnknownFieldSet.Field.newBuilder()
                             .addLengthDelimited(TRANSACTION_BODY.toByteString())
                             .build())

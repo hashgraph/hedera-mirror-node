@@ -46,9 +46,8 @@ public class RecordItem implements StreamItem {
     static final int TRANSACTION_BODY_PROTOBUF_TAG = 1;
 
     private final Transaction transaction;
-    private final TransactionBody transactionBody;
+    private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap;
     private final TransactionRecord record;
-    private final SignatureMap signatureMap;
     // This field is not TransactionTypeEnum since in case of unknown type, we want exact numerical value rather than
     // -1 in enum.
     private final int transactionType;
@@ -80,9 +79,8 @@ public class RecordItem implements StreamItem {
         } catch (InvalidProtocolBufferException e) {
             throw new ParserException(BAD_RECORD_BYTES_MESSAGE, e);
         }
-        transactionBody = parseTransactionBody(transaction);
-        signatureMap = parseSignatureMap(transaction);
-        transactionType = getTransactionType(transactionBody);
+        transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
+        transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
     }
@@ -92,44 +90,45 @@ public class RecordItem implements StreamItem {
     // then this function can be removed.
     public RecordItem(Transaction transaction, TransactionRecord record) {
         this.transaction = transaction;
-        transactionBody = parseTransactionBody(transaction);
-        signatureMap = parseSignatureMap(transaction);
-        transactionType = getTransactionType(transactionBody);
+        transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
+        transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
         this.record = record;
         transactionBytes = null;
         recordBytes = null;
     }
 
-    private static TransactionBody parseTransactionBody(Transaction transaction) {
+    public TransactionBody getTransactionBody() {
+        return transactionBodyAndSignatureMap.getTransactionBody();
+    }
+
+    public SignatureMap getSignatureMap() {
+        return transactionBodyAndSignatureMap.getSignatureMap();
+    }
+
+    private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {
         try {
-            if (transaction.getSignedTransactionBytes() != ByteString.EMPTY) {
-                return TransactionBody
-                        .parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
-            } else if (transaction.getBodyBytes() != ByteString.EMPTY) {
+            if (!transaction.getSignedTransactionBytes().equals(ByteString.EMPTY)) {
+                SignedTransaction signedTransaction = SignedTransaction
+                        .parseFrom(transaction.getSignedTransactionBytes());
+                return new TransactionBodyAndSignatureMap(TransactionBody
+                        .parseFrom(signedTransaction.getBodyBytes()), signedTransaction.getSigMap());
+            } else if (!transaction.getBodyBytes().equals(ByteString.EMPTY)) {
                 // Not possible to check existence of bodyBytes field since there is no 'hasBodyBytes()'.
                 // If unset, getBodyBytes() returns empty ByteString which always parses successfully to "empty"
                 //TransactionBody. However, every transaction should have a valid (non "empty") TransactionBody.
-                return TransactionBody.parseFrom(transaction.getBodyBytes());
+                return new TransactionBodyAndSignatureMap(TransactionBody
+                        .parseFrom(transaction.getBodyBytes()), transaction.getSigMap());
             } else if (transaction.getUnknownFields().hasField(TRANSACTION_BODY_PROTOBUF_TAG)) {
-                return TransactionBody.parseFrom(transaction.getUnknownFields().getField(1).getLengthDelimitedList()
-                        .get(0));
+                TransactionBody transactionBody = TransactionBody
+                        .parseFrom(transaction.getUnknownFields().getField(1).getLengthDelimitedList()
+                                .get(0));
+                return new TransactionBodyAndSignatureMap(transactionBody, transaction.getSigMap());
             }
             throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
         } catch (
                 InvalidProtocolBufferException e) {
             throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
-    }
-
-    private static SignatureMap parseSignatureMap(Transaction transaction) {
-        if (transaction.getSignedTransactionBytes() != ByteString.EMPTY) {
-            try {
-                return SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getSigMap();
-            } catch (InvalidProtocolBufferException e) {
-                throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
-            }
-        }
-        return transaction.getSigMap();
     }
 
     /**
@@ -153,5 +152,11 @@ public class RecordItem implements StreamItem {
             return transactionType;
         }
         return dataCase.getNumber();
+    }
+
+    @Value
+    private static class TransactionBodyAndSignatureMap {
+        private TransactionBody transactionBody;
+        private SignatureMap signatureMap;
     }
 }
