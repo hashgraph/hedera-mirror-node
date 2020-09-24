@@ -300,7 +300,7 @@ const getSingleTransactionsById = async (server) => {
  * @param {Object} server API host endpoint
  */
 const checkTransactionFreshness = async (server) => {
-  const freshnessThreshold = recordsFileUpdateRefreshTime * 10;;
+  const freshnessThreshold = recordsFileUpdateRefreshTime * 10;
 
   const url = getUrl(server, transactionsPath, {limit: 1});
   const transactions = await getAPIResponse(url, jsonRespKey);

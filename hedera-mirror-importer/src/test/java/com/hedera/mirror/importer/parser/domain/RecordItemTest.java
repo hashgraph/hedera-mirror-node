@@ -3,9 +3,9 @@ package com.hedera.mirror.importer.parser.domain;
 /*
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,19 +20,22 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import org.apache.commons.codec.binary.Hex;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnknownFieldSet;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.io.IOException;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.exception.ParserException;
@@ -40,21 +43,12 @@ import com.hedera.mirror.importer.exception.ParserException;
 class RecordItemTest {
 
     private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
-            .setBodyBytes(TransactionBody.getDefaultInstance().toByteString())
+            .setSignedTransactionBytes(
+                    SignedTransaction.getDefaultInstance().getBodyBytes())
             .build();
     private static final byte[] DEFAULT_TRANSACTION_BYTES = DEFAULT_TRANSACTION.toByteArray();
     private static final TransactionRecord DEFAULT_RECORD = TransactionRecord.getDefaultInstance();
     private static final byte[] DEFAULT_RECORD_BYTES = DEFAULT_RECORD.toByteArray();
-
-    // 'body' and 'bodyBytes' feilds left empty
-    private static final Transaction TRANSACTION = Transaction.newBuilder()
-            .setSigMap(SignatureMap.newBuilder()
-                    .addSigPair(SignaturePair.newBuilder()
-                            .setEd25519(ByteString.copyFromUtf8("ed25519"))
-                            .setPubKeyPrefix(ByteString.copyFromUtf8("pubKeyPrefix"))
-                            .build())
-                    .build())
-            .build();
 
     private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
             .setTransactionFee(10L)
@@ -62,9 +56,29 @@ class RecordItemTest {
             .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
             .build();
 
+    private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder()
+            .addSigPair(
+                    SignaturePair.newBuilder()
+                            .setEd25519(ByteString.copyFromUtf8("ed25519"))
+                            .setPubKeyPrefix(ByteString.copyFromUtf8("pubKeyPrefix"))
+                            .build()
+            ).build();
+
+    private static final SignedTransaction SIGNED_TRANSACTION = SignedTransaction.newBuilder()
+            .setBodyBytes(TRANSACTION_BODY.toByteString())
+            .setSigMap(SIGNATURE_MAP)
+            .build();
+
     private static final TransactionRecord TRANSACTION_RECORD = TransactionRecord.newBuilder()
             .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
             .setMemo("memo")
+            .build();
+
+    private static final UnknownFieldSet UNKNOWN_FIELD_SET = UnknownFieldSet.newBuilder()
+            .addField(RecordItem.TRANSACTION_BODY_PROTOBUF_TAG,
+                    UnknownFieldSet.Field.newBuilder()
+                            .addLengthDelimited(TRANSACTION_BODY.toByteString())
+                            .build())
             .build();
 
     @Test
@@ -85,14 +99,46 @@ class RecordItemTest {
 
     @Test
     public void testWithBody() {
-        Transaction transaction = TRANSACTION.toBuilder().setBody(TRANSACTION_BODY).build();
+        Transaction transaction = Transaction.newBuilder()
+                .setUnknownFields(UNKNOWN_FIELD_SET)
+                .setSigMap(SIGNATURE_MAP)
+                .build();
+        RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD
+                .toByteArray());
+        assertRecordItem(transaction, recordItem);
+    }
+
+    @Test
+    public void testWithBodyProto() throws IOException {
+        //An encoded protobuf Transaction with the body set in TransactionBody, as seen in an older proto version
+        byte[] transactionFromProto = Base64
+                .decodeBase64("GhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5CgoYCjIEbWVtb3IA");
+
+        Transaction expectedTransaction = Transaction.newBuilder()
+                .setUnknownFields(UNKNOWN_FIELD_SET)
+                .setSigMap(SIGNATURE_MAP)
+                .build();
+
+        RecordItem recordItem = new RecordItem(transactionFromProto, TRANSACTION_RECORD
+                .toByteArray());
+        assertRecordItem(expectedTransaction, recordItem);
+    }
+
+    @Test
+    public void testWithBodyBytes() {
+        Transaction transaction = Transaction.newBuilder()
+                .setBodyBytes(TRANSACTION_BODY.toByteString())
+                .setSigMap(SIGNATURE_MAP)
+                .build();
         RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
         assertRecordItem(transaction, recordItem);
     }
 
     @Test
-    public void testWithBodyBytes() {
-        Transaction transaction = TRANSACTION.toBuilder().setBodyBytes(TRANSACTION_BODY.toByteString()).build();
+    public void testWithSignedTransaction() {
+        Transaction transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
+                .build();
         RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
         assertRecordItem(transaction, recordItem);
     }
@@ -106,7 +152,7 @@ class RecordItemTest {
         int unknownType = 9999;
         byte[] transactionBodyBytes = Hex.decodeHex(
                 "0a120a0c08eb88d6ee0510e8eff7ab01120218021202180318c280de1922020878321043727970746f2074657374206d656d6ffaf004050a03666f6f");
-        Transaction transaction = TRANSACTION.toBuilder()
+        Transaction transaction = Transaction.newBuilder()
                 .setBodyBytes(ByteString.copyFrom(transactionBodyBytes))
                 .build();
         RecordItem recordItem = new RecordItem(transaction, TRANSACTION_RECORD);
@@ -126,5 +172,6 @@ class RecordItemTest {
         assertThat(recordItem.getTransactionBody()).isEqualTo(TRANSACTION_BODY);
         assertThat(recordItem.getTransactionBytes()).isEqualTo(transaction.toByteArray());
         assertThat(recordItem.getRecordBytes()).isEqualTo(TRANSACTION_RECORD.toByteArray());
+        assertThat(recordItem.getSignatureMap()).isEqualTo(SIGNATURE_MAP);
     }
 }
