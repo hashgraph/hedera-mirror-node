@@ -60,6 +60,13 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     @JsonUnwrapped
     private Id id;
 
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumns({
+            @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp"),
+            @JoinColumn(name = "accountId", referencedColumnName = "accountId")
+    })
+    private List<TokenBalance> tokenBalances;
+
     @Override
     public boolean isNew() {
         return true; // Since we never update balances and use a natural ID, avoid Hibernate querying before insert
@@ -79,4 +86,11 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId accountId;
     }
+
+//    @PrePersist
+//    public void prePersist() {
+//        if (CollectionUtils.isEmpty(tokenBalances)) {
+//            tokenBalances = null;
+//        }
+//    }
 }
