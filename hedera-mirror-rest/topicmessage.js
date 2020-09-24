@@ -78,30 +78,6 @@ const validateGetTopicMessagesParams = (topicId) => {
   if (!utils.isValidEntityNum(topicId)) {
     throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_NUM);
   }
-  //
-  // const encodedId = topicId.indexOf('.') !== -1 ? EntityId.fromString(topicId).getEncodedId().toString() : topicId;
-  // const pgSqlQuery = `SELECT tet.name
-  //           FROM t_entities te
-  //           JOIN t_entity_types tet
-  //               ON te.fk_entity_type_id = tet.id
-  //           WHERE te.id = $1`;
-  // const pgSqlParams = [encodedId];
-  //
-  // let result;
-  // try {
-  //   result = await pool.query(pgSqlQuery, pgSqlParams);
-  // } catch (err) {
-  //   throw new DbError(err.message);
-  // }
-  //
-  // const {rows} = result;
-  // if (_.isEmpty(rows)) {
-  //   throw new NotFoundError(`No such topic id - ${topicId}`);
-  // }
-  //
-  // if (rows[0].name !== 'topic') {
-  //   throw new InvalidArgumentError(`${topicId} is not a topic id`);
-  // }
 };
 
 /**
