@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,6 +48,7 @@ public class RecordItem implements StreamItem {
     private final Transaction transaction;
     private final TransactionBody transactionBody;
     private final TransactionRecord record;
+    private final SignatureMap signatureMap;
     // This field is not TransactionTypeEnum since in case of unknown type, we want exact numerical value rather than
     // -1 in enum.
     private final int transactionType;
@@ -79,6 +81,7 @@ public class RecordItem implements StreamItem {
             throw new ParserException(BAD_RECORD_BYTES_MESSAGE, e);
         }
         transactionBody = parseTransactionBody(transaction);
+        signatureMap = parseSignatureMap(transaction);
         transactionType = getTransactionType(transactionBody);
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
@@ -90,6 +93,7 @@ public class RecordItem implements StreamItem {
     public RecordItem(Transaction transaction, TransactionRecord record) {
         this.transaction = transaction;
         transactionBody = parseTransactionBody(transaction);
+        signatureMap = parseSignatureMap(transaction);
         transactionType = getTransactionType(transactionBody);
         this.record = record;
         transactionBytes = null;
@@ -115,6 +119,17 @@ public class RecordItem implements StreamItem {
                 InvalidProtocolBufferException e) {
             throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
+    }
+
+    private static SignatureMap parseSignatureMap(Transaction transaction) {
+        if (transaction.getSignedTransactionBytes() != ByteString.EMPTY) {
+            try {
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getSigMap();
+            } catch (InvalidProtocolBufferException e) {
+                throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
+            }
+        }
+        return transaction.getSigMap();
     }
 
     /**
