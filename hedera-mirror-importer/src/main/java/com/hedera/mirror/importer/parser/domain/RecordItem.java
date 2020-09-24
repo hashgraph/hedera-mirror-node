@@ -124,7 +124,7 @@ public class RecordItem implements StreamItem {
     private static SignatureMap parseSignatureMap(Transaction transaction) {
         if (transaction.getSignedTransactionBytes() != ByteString.EMPTY) {
             try {
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getSigMap();
+                return SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getSigMap();
             } catch (InvalidProtocolBufferException e) {
                 throw new ParserException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
             }

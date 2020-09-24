@@ -174,5 +174,6 @@ class RecordItemTest {
         assertThat(recordItem.getTransactionBody()).isEqualTo(TRANSACTION_BODY);
         assertThat(recordItem.getTransactionBytes()).isEqualTo(transaction.toByteArray());
         assertThat(recordItem.getRecordBytes()).isEqualTo(TRANSACTION_RECORD.toByteArray());
+        assertThat(recordItem.getSignatureMap()).isEqualTo(SIGNATURE_MAP);
     }
 }
