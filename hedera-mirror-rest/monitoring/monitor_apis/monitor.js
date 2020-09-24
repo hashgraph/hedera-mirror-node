@@ -22,7 +22,7 @@
 
 const common = require('./common.js');
 const monitorTests = require('./monitor_tests.js');
-const monitorTestutils = require('./monitortest_utils.js');
+const monitorTestutils = require('./utils.js');
 const retryCountMax = 3; // # of times a single process can retry
 
 /**

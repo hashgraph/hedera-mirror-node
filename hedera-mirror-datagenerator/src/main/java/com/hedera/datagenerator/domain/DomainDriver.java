@@ -106,7 +106,8 @@ public class DomainDriver implements ApplicationRunner {
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
         log.info("Writing data to db");
-        sqlEntityListener.onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", nodeAccountId, 0L, 0)); // writes data to db
+        sqlEntityListener
+                .onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", nodeAccountId, 0L, 0)); // writes data to db
         domainWriter.flush(); // writes data to db
         log.info("Total time taken: {}", stopwatch);
     }
@@ -115,8 +116,7 @@ public class DomainDriver implements ApplicationRunner {
     private void writeBalances(long consensusNs) {
         for (Map.Entry<EntityId, Long> entry : entityManager.getBalances().entrySet()) {
             var entity = entry.getKey();
-            domainWriter.onAccountBalance(new AccountBalance(consensusNs, entity.getRealmNum().intValue(),
-                    entity.getEntityNum().intValue(), entry.getValue()));
+            domainWriter.onAccountBalance(new AccountBalance(consensusNs, entity, entry.getValue()));
         }
         log.debug("Wrote balances data at {}", consensusNs);
     }

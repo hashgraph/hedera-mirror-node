@@ -30,7 +30,8 @@ public enum EntityTypeEnum {
     ACCOUNT(1),
     CONTRACT(2),
     FILE(3),
-    TOPIC(4);
+    TOPIC(4),
+    TOKEN(5);
 
     private final int id;
 }

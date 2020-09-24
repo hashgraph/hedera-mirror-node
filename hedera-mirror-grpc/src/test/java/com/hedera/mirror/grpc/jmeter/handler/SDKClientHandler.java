@@ -35,7 +35,6 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionList;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
@@ -108,9 +107,7 @@ public class SDKClientHandler {
     }
 
     public List<TransactionId> submitTopicMessage(ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction) throws HederaStatusException {
-        TransactionList transactionList = consensusMessageSubmitTransaction.build(client);
-
-        return transactionList.execute(client);
+        return consensusMessageSubmitTransaction.executeAll(client);
     }
 
     public TransactionId submitCryptoTransfer(AccountId operatorId, AccountId recipientId, int amount) throws HederaStatusException {

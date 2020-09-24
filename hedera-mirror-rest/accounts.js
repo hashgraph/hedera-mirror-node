@@ -35,7 +35,7 @@ const {DbError} = require('./errors/dbError');
 const processRow = function (row) {
   let accRecord = {};
   accRecord.balance = {};
-  accRecord.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
+  accRecord.account = EntityId.fromEncodedId(row['entity_id']).toString();
   accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
   accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
   accRecord.expiry_timestamp = row.exp_time_ns === null ? null : utils.nsToSecNs(row.exp_time_ns);
@@ -49,18 +49,14 @@ const processRow = function (row) {
 const getAccountQueryPrefix = function () {
   return `select ab.balance as account_balance,
        ab.consensus_timestamp as consensus_timestamp,
-       ${config.shard} as entity_shard,
-       coalesce(ab.account_realm_num, e.entity_realm) as entity_realm,
-       coalesce(ab.account_num, e.entity_num) as entity_num,
+       coalesce(ab.account_id, e.id) as entity_id,
        e.exp_time_ns,
        e.auto_renew_period,
        e.key,
        e.deleted
     from account_balance ab
     full outer join t_entities e on (
-        ${config.shard} = e.entity_shard
-        and ab.account_realm_num = e.entity_realm
-        and ab.account_num =  e.entity_num
+        ab.account_id = e.id
         and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
     )
     where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance)`;
@@ -79,16 +75,8 @@ const getAccounts = async (req, res) => {
 
   // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
   // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
-  const [balancesAccountQuery, balancesAccountParams] = utils.parseAccountIdQueryParam(
-    req.query,
-    'ab.account_realm_num',
-    'ab.account_num'
-  );
-  const [entityAccountQuery, entityAccountParams] = utils.parseAccountIdQueryParam(
-    req.query,
-    'e.entity_realm',
-    ' e.entity_num'
-  );
+  const [balancesAccountQuery, balancesAccountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
+  const [entityAccountQuery, entityAccountParams] = utils.parseAccountIdQueryParam(req.query, 'e.id');
   const accountQuery =
     balancesAccountQuery === ''
       ? ''
@@ -101,7 +89,7 @@ const getAccounts = async (req, res) => {
     getAccountQueryPrefix() +
     '    and \n' +
     [accountQuery, balanceQuery, pubKeyQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ') +
-    ' order by coalesce(ab.account_num, e.entity_num) ' +
+    ' order by coalesce(ab.account_id, e.id) ' +
     order +
     '\n' +
     query;
@@ -179,14 +167,15 @@ const getOneAccount = async (req, res) => {
   const entitySql =
     getAccountQueryPrefix() +
     'and (\n' +
-    '    (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n' +
-    '    or (e.entity_shard = ? and e.entity_realm = ? and e.entity_num = ?\n' +
+    '    (ab.account_id  =  ?)\n' +
+    '    or (e.id = ?\n' +
     '        and e.fk_entity_type_id < ' +
     utils.ENTITY_TYPE_FILE +
     ')\n' +
     ')\n';
 
-  const entityParams = [acc.realm, acc.num, config.shard, acc.realm, acc.num];
+  const accountId = EntityId.of(acc.shard, acc.realm, acc.num).getEncodedId();
+  const entityParams = [accountId, accountId];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
   if (logger.isTraceEnabled()) {

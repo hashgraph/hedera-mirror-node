@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.domain;
+package com.hedera.mirror.grpc.exception;
 
 /*-
  * ‌
@@ -20,17 +20,11 @@ package com.hedera.datagenerator.domain;
  * ‍
  */
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+public class ClientTimeoutException extends RuntimeException {
 
-import com.hedera.mirror.importer.domain.EntityId;
+    private static final long serialVersionUID = -4418363581496162982L;
 
-@Data
-@RequiredArgsConstructor
-public class AccountBalance {
-    private final long consensusTimestamp;
-
-    private final EntityId accountId;
-
-    private final long balance;
+    public ClientTimeoutException(String message) {
+        super(message);
+    }
 }

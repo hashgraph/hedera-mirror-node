@@ -27,10 +27,11 @@ require('dotenv').config({
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-var compression = require('compression');
+const compression = require('compression');
 
-const common = require('./common.js');
-const monitor = require('./monitor.js');
+const {interval, servers} = require('./config');
+const common = require('./common');
+const monitor = require('./monitor');
 
 const app = express();
 
@@ -51,17 +52,17 @@ app.use(bodyParser.json());
 app.use(compression());
 app.use(cors());
 
-let apiPrefix = '/api/v1';
+const apiPrefix = '/api/v1';
 
 common.initResults();
 
 // routes
-app.get(apiPrefix + '/status', (req, res) => {
-  let status = common.getStatus();
+app.get(`${apiPrefix}/status`, (req, res) => {
+  const status = common.getStatus();
   res.status(status.httpCode).send(status.results);
 });
-app.get(apiPrefix + '/status/:id', (req, res) => {
-  let status = common.getStatusWithId(req.params.id);
+app.get(`${apiPrefix}/status/:id`, (req, res) => {
+  const status = common.getStatusWithId(req.params.id);
   res.status(status.httpCode).send(status);
 });
 
@@ -71,22 +72,15 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-// Read the serverlist configuration file, and quit with an error message if the file is invalid.
-const serverlist = common.getServerList();
-if (!(serverlist.hasOwnProperty('interval') && serverlist.hasOwnProperty('servers') && serverlist.servers.length > 0)) {
-  console.log('Error in reading serverlist.json file. Please check the server list and try again.');
-  process.exit(1);
-}
-
 const runMonitorTests = () => {
-  console.log('Running the tests at: ' + new Date());
-  monitor.runEverything(serverlist.servers);
+  console.log(`Running the tests at: ${new Date()}`);
+  monitor.runEverything(servers);
 };
 
 runMonitorTests();
 setInterval(() => {
   // Run all the tests periodically
   runMonitorTests();
-}, serverlist.interval * 1000);
+}, interval * 1000);
 
 module.exports = app;
