@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -29,10 +30,20 @@ import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
+import com.hederahashgraph.api.proto.java.TokenUnfreeze;
+import com.hederahashgraph.api.proto.java.TokenWipeAccount;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.Optional;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -45,6 +56,9 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
@@ -58,6 +72,8 @@ import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -71,12 +87,15 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final Predicate<TransactionFilterFields> transactionFilter;
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
+    private final TokenRepository tokenRepository;
+    private final TokenAccountRepository tokenAccountRepository;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService, EntityRepository entityRepository,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
-                                    TransactionHandlerFactory transactionHandlerFactory) {
+                                    TransactionHandlerFactory transactionHandlerFactory,
+                                    TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
         this.entityRepository = entityRepository;
@@ -84,6 +103,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
         transactionFilter = commonParserProperties.getFilter();
+        this.tokenRepository = tokenRepository;
+        this.tokenAccountRepository = tokenAccountRepository;
     }
 
     public static boolean isSuccessful(TransactionRecord transactionRecord) {
@@ -166,6 +187,34 @@ public class EntityRecordItemListener implements RecordItemListener {
                         txRecord.getReceipt().getFileID(), transactionType);
             } else if (body.hasFileUpdate()) {
                 insertFileUpdate(consensusNs, body.getFileUpdate(), transactionType);
+            }
+//            else if (body.hasTokenAssociate()) {
+//                insertTokenAssociate(body);
+//            }
+            else if (body.hasTokenCreation()) {
+                insertTokenCreate(consensusNs, txRecord, body);
+            } else if (body.hasTokenDeletion()) {
+
+            } else if (body.hasTokenDeletion()) {
+                insertTokenDelete(body);
+            }
+//            else if (body.hasTokenDissociate()) {
+//                insertTokenDissociate(body);
+//            }
+            else if (body.hasTokenFreeze()) {
+                insertTokenAccountFreezeBody(body);
+            } else if (body.hasTokenGrantKyc()) {
+                insertTokenGrantKyc(body);
+            } else if (body.hasTokenRevokeKyc()) {
+                insertTokenRevokeKyc(body);
+            } else if (body.hasTokenTransfers()) {
+                insertTokenTransfers(consensusNs, txRecord);
+            } else if (body.hasTokenUnfreeze()) {
+                insertTokenUnfreeze(body);
+            } else if (body.hasTokenUpdate()) {
+                insertTokenUpdate(consensusNs, body);
+            } else if (body.hasTokenWipe()) {
+                insertTokenWipe(body);
             }
         }
 
@@ -379,5 +428,162 @@ public class EntityRecordItemListener implements RecordItemListener {
             entity.setProxyAccountId(proxyAccount);
         }
         entityRepository.save(entity);
+    }
+
+    private void insertTokenAssociate(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+//            TokenAssociate tokenAssociate = txBody.getTokenAssociate();
+//            tokenAssociate.getTokens().forEach(tokenRef -> {
+//                TokenAccount tokenAccount = retrieveTokenAccount(tokenRef.getToken(), tokenAssociate.getAccount());
+//                if (tokenAccount != null) {
+//                    tokenAccount.setAssociated(true);
+//                    entityListener.onTokenAccount(tokenAccount);
+//                }
+//            });
+        }
+    }
+
+    private void insertTokenCreate(long consensusTimestamp, TransactionRecord txRecord, TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            // pull token details from TokenCreation body and TokenId from receipt
+            TokenCreation tokenCreation = txBody.getTokenCreation();
+            Token token = new Token();
+            token.setCreatedTimestamp(consensusTimestamp);
+            token.setDeleted(false);
+            token.setDivisibility(tokenCreation.getDivisibility());
+            token.setFreezeDefault(tokenCreation.getFreezeDefault());
+            token.setFreezeKey(tokenCreation.getFreezeKey().toByteArray());
+            token.setInitialSupply(tokenCreation.getFloat());
+            token.setKycDefault(tokenCreation.getKycDefault());
+            token.setKycKey(tokenCreation.getKycKey().toByteArray());
+            token.setModifiedTimestamp(consensusTimestamp);
+//            token.setName(tokenCreation.getName());
+            token.setSupplyKey(tokenCreation.getSupplyKey().toByteArray());
+            token.setSymbol(tokenCreation.getSymbol());
+            token.setTokenId(EntityId.of(txRecord.getReceipt().getTokenId()));
+            token.setTreasuryAccountId(EntityId.of(tokenCreation.getTreasury()));
+            token.setWipeKey(tokenCreation.getWipeKey().toByteArray());
+            entityListener.onToken(token);
+        }
+    }
+
+    private void insertTokenDelete(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            TokenDeletion tokenDeletion = txBody.getTokenDeletion();
+            Optional<Token> tokenOptional = tokenRepository
+                    .findById(EntityId.of(tokenDeletion.getToken().getTokenId()));
+            if (tokenOptional.isPresent()) {
+                Token token = tokenOptional.get();
+                token.setDeleted(true);
+                entityListener.onToken(token);
+            }
+        }
+    }
+
+    private void insertTokenDissociate(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+//            TokenDissociate tokenDissociate = txBody.getTokenDissociate();
+//            tokenDissociate.getTokens().forEach(tokenRef -> {
+//                TokenAccount tokenAccount = retrieveTokenAccount(tokenRef.getToken(), tokenDissociate.getAccount());
+//                if (tokenAccount != null) {
+//                    tokenAccount.setAssociated(false);
+//                    entityListener.onTokenAccount(tokenAccount);
+//                }
+//            });
+        }
+    }
+
+    private void insertTokenAccountFreezeBody(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            TokenFreeze tokenFreeze = txBody.getTokenFreeze();
+            TokenAccount tokenAccount = retrieveTokenAccount(tokenFreeze.getToken(), tokenFreeze.getAccount());
+            if (tokenAccount != null) {
+                tokenAccount.setFrozen(true);
+                entityListener.onTokenAccount(tokenAccount);
+            }
+        }
+    }
+
+    private void insertTokenGrantKyc(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            TokenGrantKyc tokenGrantKyc = txBody.getTokenGrantKyc();
+            TokenAccount tokenAccount = retrieveTokenAccount(tokenGrantKyc.getToken(), tokenGrantKyc.getAccount());
+            if (tokenAccount != null) {
+                tokenAccount.setKyc(true);
+                entityListener.onTokenAccount(tokenAccount);
+            }
+        }
+    }
+
+    private void insertTokenRevokeKyc(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            TokenRevokeKyc tokenRevokeKyc = txBody.getTokenRevokeKyc();
+            TokenAccount tokenAccount = retrieveTokenAccount(tokenRevokeKyc.getToken(), tokenRevokeKyc.getAccount());
+            if (tokenAccount != null) {
+                tokenAccount.setKyc(false);
+                entityListener.onTokenAccount(tokenAccount);
+            }
+        }
+    }
+
+    private void insertTokenTransfers(long consensusTimestamp, TransactionRecord txRecord) {
+        if (entityProperties.getPersist().isTokens()) {
+            txRecord.getTokenTransferListsList().forEach(tokenTransferList -> {
+                EntityId tokenId = EntityId.of(tokenTransferList.getToken());
+                tokenTransferList.getTransfersList().forEach(accountAmount -> {
+                    EntityId accountId = EntityId.of(accountAmount.getAccountID());
+                    entityListener.onTokenTransfer(new TokenTransfer(consensusTimestamp, accountAmount
+                            .getAmount(), tokenId, accountId));
+                });
+            });
+        }
+    }
+
+    private void insertTokenUpdate(long consensusTimestamp, TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            TokenManagement tokenManagement = txBody.getTokenUpdate();
+            Optional<Token> tokenOptional = tokenRepository
+                    .findById(EntityId.of(tokenManagement.getToken().getTokenId()));
+            if (tokenOptional.isPresent()) {
+                Token token = tokenOptional.get();
+                token.setFreezeKey(tokenManagement.getFreezeKey().toByteArray());
+                token.setKycKey(tokenManagement.getKycKey().toByteArray());
+                token.setModifiedTimestamp(consensusTimestamp);
+//                token.setName(tokenManagement.getName());
+                token.setSupplyKey(tokenManagement.getSupplyKey().toByteArray());
+                token.setSymbol(tokenManagement.getSymbol());
+                token.setTreasuryAccountId(EntityId.of(tokenManagement.getTreasury()));
+                token.setWipeKey(tokenManagement.getWipeKey().toByteArray());
+                entityListener.onToken(token);
+            }
+        }
+    }
+
+    private void insertTokenUnfreeze(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            TokenUnfreeze tokenUnfreeze = txBody.getTokenUnfreeze();
+            TokenAccount tokenAccount = retrieveTokenAccount(tokenUnfreeze.getToken(), tokenUnfreeze.getAccount());
+            if (tokenAccount != null) {
+                tokenAccount.setFrozen(false);
+                entityListener.onTokenAccount(tokenAccount);
+            }
+        }
+    }
+
+    private void insertTokenWipe(TransactionBody txBody) {
+        if (entityProperties.getPersist().isTokens()) {
+            TokenWipeAccount tokenWipe = txBody.getTokenWipe();
+            TokenAccount tokenAccount = retrieveTokenAccount(tokenWipe.getToken(), tokenWipe.getAccount());
+            if (tokenAccount != null) {
+                tokenAccount.setWiped(true);
+                entityListener.onTokenAccount(tokenAccount);
+            }
+        }
+    }
+
+    private TokenAccount retrieveTokenAccount(TokenRef tokenRef, AccountID accountID) {
+        return tokenAccountRepository
+                .findByTokenIdAndAccountId(EntityId.of(tokenRef.getTokenId()).getId(), EntityId.of(accountID).getId())
+                .orElse(null);
     }
 }
