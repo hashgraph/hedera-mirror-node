@@ -185,7 +185,7 @@ const checkAPIResponseError = (resp, option) => {
     const actual = isRespError ? JSON.stringify(resp) : '2xx';
     return {
       passed: false,
-      message: `expect http status ${status}, got ${actual}`,
+      message: `expect http error ${status || 'any'}, got ${actual}`,
     };
   }
 
