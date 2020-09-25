@@ -69,10 +69,10 @@ To support the goals the following database schema changes should be made
 -   Create `token_account` table to distinctly capture token account metadata changes with the following columns
     -   `id` (primary key)
     -   `account_id`
-    -   `create_timestamp`
+    -   `created_timestamp`
     -   `frozen`
     -   `kyc`
-    -   `modify_timestamp`
+    -   `modified_timestamp`
     -   `token_id`
     -   `wiped`
 -   Create unique index `token_account__token_account`
@@ -150,14 +150,14 @@ To support the goals the following database schema changes should be made
 ### Token
 -   Create `token` table with the following columns. Table will capture non shared `entity` items, most API calls may not require this information and therefore additional sql joins may be avoided.
     -   `token_id` (primary key)
-    -   `create_timestamp`
+    -   `created_timestamp`
     -   `divisibility`
     -   `freeze_default`
     -   `freeze_key`
     -   `initial_supply`
     -   `kyc_default`
     -   `kyc_key`
-    -   `modify_timestamp`
+    -   `modified_timestamp`
     -   `supply_key`
     -   `symbol`
     -   `treasury_account_id`
@@ -209,14 +209,15 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
 
 #### Token
 -   Add `Token` class to hold Token specific metadata outside of the base entity class with the following class members
-    -   `createTimestamp`
+    -   `createdTimestamp`
     -   `divisibility`
     -   `freezeDefault`
     -   `freezeKey`
     -   `initialSupply`
     -   `kycDefault`
     -   `kycKey`
-    -   `modifyTimestamp`
+    -   `modifiedTimestamp`
+    -   `name`
     -   `supplyKey`
     -   `symbol`
     -   `tokenId`
@@ -227,10 +228,11 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
 -   Add `TokenAccount` class with the following class members
     -   `id`
     -   `accountId`
-    -   `createTimestamp`
+    -   `associated`
+    -   `createdTimestamp`
     -   `frozen`
     -   `kyc`
-    -   `modifyTimestamp`
+    -   `modifiedTimestamp`
     -   `tokenId`
     -   `wiped`
 
@@ -244,7 +246,7 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
 ### Balance Parsing
 To support HTS the balance CSV
 1. Adds a version comment as the first line of the file i.e. `# version:2`
-2. Comments out the Timestamp e.g. `TimeStamp:2020-09-22T04:25:00.083212003Z`
+2. Comments out the Timestamp e.g. `# TimeStamp:2020-09-22T04:25:00.083212003Z`
 3. Adds a `tokenBalances` column which is the Base64 encoding of the serialized bytes of `TokenBalances` proto.
 
 To allow the mirror node to support both V1 and V2 balance files
@@ -323,9 +325,9 @@ To achieve the goals and for easy integration with existing users the REST API s
 1.  The `transactions` REST API must be updated to support `tokenTransfers`
 2.  The `balances` REST API must be updated to support `tokenBalances`
 3.  The `accounts` REST API must be updated to support `tokenBalances`
-4.  Add a Token Supply distribution REST API to show token distribution across accounts - `/api/v1/tokens/<symbol>/balances`
+4.  Add a Token Supply distribution REST API to show token distribution across accounts - `/api/v1/tokens/<token_id>/balances`
 5.  Add a Token Discovery REST API to show available tokens on the network - `/api/v1/tokens`
-6.  Add a Token Info REST API to show details for a token on the network - `/api/v1/tokens/<symbol>`
+6.  Add a Token Info REST API to show details for a token on the network - `/api/v1/tokens/<token_id>`
 
 ### Accounts Endpoint
 -   Update `/api/v1/accounts` response to add token balances
@@ -336,13 +338,13 @@ To achieve the goals and for easy integration with existing users the REST API s
         "balance": {
           "timestamp": "0.000002345",
           "balance": 80,
-          "token_balances": [
+          "tokens": [
             {
-              "symbol": "FOOBAR",
+              "token_id": "0.15.3",
               "balance": 80
             },
             {
-              "symbol": "FOOCOIN",
+              "token_id": "0.2.5",
               "balance": 50
             }
           ]
@@ -369,14 +371,14 @@ To achieve the goals and for easy integration with existing users the REST API s
           {
             "account": "0.0.8",
             "balance": 100,
-            "token_balances": []
+            "tokens": []
           },
           {
             "account": "0.0.10",
             "balance": 100,
-            "token_balances": [
+            "tokens": [
               {
-                "symbol": "FOOBAR",
+                "token_id": "0.15.3",
                 "balance": 80
               }
             ]
@@ -384,13 +386,13 @@ To achieve the goals and for easy integration with existing users the REST API s
           {
             "account": "0.0.13",
             "balance": 100,
-            "token_balances": [
+            "tokens": [
               {
-                "symbol": "FOOBAR",
+                "token_id": "0.15.3",
                 "balance": 80
               },
               {
-                "symbol": "FOOCOIN",
+                "token_id": "0.2.4",
                 "balance": 50
               }
             ]
@@ -435,32 +437,30 @@ To achieve the goals and for easy integration with existing users the REST API s
           ],
           "token_transfers": [
             {
+              "token_id": "0.15.3",
               "transfers": [
                 {
-                  "account": "0.0.1111",
-                  "amount": -10,
-                  "symbol": "FOOBAR"
+                    "account": "0.0.1111",
+                    "amount": -10
                 },
                 {
-                  "account": "0.0.2222",
-                  "amount": 10,
-                  "symbol": "FOOBAR"
+                    "account": "0.0.2222",
+                    "amount": 10
                 }
               ]
             },
             {
+              "token_id":"0.2.4",
               "transfers": [
                 {
-                  "account": "0.0.3333",
-                  "amount": -10,
-                  "symbol":"FOOCOIN"
+                    "account": "0.0.3333",
+                    "amount": -10
                 },
                 {
-                  "account": "0.0.4444",
-                  "amount": 10,
-                  "symbol":"FOOCOIN"
+                    "account": "0.0.4444",
+                    "amount": 10
                 }
-               ]
+              ]
             }
           ]
         }
@@ -470,7 +470,7 @@ To achieve the goals and for easy integration with existing users the REST API s
 
 ### Token Supply distribution
 
-`/api/v1/tokens/<symbol>/balances` this could be the equivalent of `/api/v1/balances?symbol=<symbol>` currently and would return a list of account and the token balances
+`/api/v1/tokens/<token_id>/balances` this would return a list of account and the token balances
 ```json
     {
         "timestamp": "0.000002345",
@@ -495,9 +495,10 @@ To achieve the goals and for easy integration with existing users the REST API s
 ```
 
 Optional Filters
--   `/api/v1/tokens/<symbol>/balances?id=0.0.1000`
--   `/api/v1/tokens/<symbol>/balances?balance=gt:1000`
--   `/api/v1/tokens/<symbol>/balances?timestamp=1566562500.040961001`
+-   `/api/v1/tokens/<token_id>/balances?id=0.0.1000`
+-   `/api/v1/tokens/<token_id>/balances?balance=gt:1000`
+-   `/api/v1/tokens/<token_id>/balances?timestamp=1566562500.040961001`
+-   `/api/v1/tokens/<token_id>/balances?publicKey=2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864`
 
 ### Token Discovery
 `/api/v1/tokens` this would return all tokens present on the network
@@ -531,13 +532,15 @@ Optional Filters
 Optional Filters
 -   `/api/v1/tokens?publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be` - All tokens with matching admin key
 -   `/api/v1/tokens?account.id=0.0.8` - All tokens for matching account
+-   `/api/v1/tokens?token.id=gt:0.0.1001` - All tokens in range
 
 ### Token Info
--   Add a `getTokenInfo()` to `tokens.js` to retrieve token info from `token` table
+`/api/v1/tokens/<tokenId>` this would return the info for a single token present on the network
 ```json
     {
       "symbol": "FOOCOIN",
-      "token_id": "0.15.10",
+      "token_id": "0.15.3",
+      "name": "FOO COIN TOKEN",
       "treasury_account": "0.15.10",
       "admin_key": {
         "_type": "ProtobufEncoded",
@@ -620,10 +623,12 @@ TBD
     -   A: Will split out into `token` table
 -   [x] Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
     -   A: Should be migrated to use `account_id` only
--   [ ] What filter options should be provided for new Token API's
+-   [x] What filter options should be provided for new Token API's
+    -   A: parity with /accounts and /balances APIs where applicable i.e. filtering on accountId, tokenId and publicKey
 -   [x] How should frozen account and kyc'd account for a token be represented?
     -   A: As columns in `token` table
--   [ ] Should balance returns for `accounts`, `balances` and `transactions` contain `token` or `tokenId` or both?
+-   [x] Should balance returns for `accounts`, `balances` and `transactions` contain `token` or `tokenId` or both?
+    -   A: `tokenId` for `accounts`, `balances` and `transactions`. Token API would be the place where both `token` and `tokenId` can be returned
 -   [x] Should `EntityRecordItemListener.OnItem()` be refactored to more easily focus on different TransactionBody types. May be valuable to testing but not necessarily within scope
     - A: Will leave to implementation task and sprint scheduling limits
 
