@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.ReactiveSubscription.Message;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.ReactiveRedisMessageListenerContainer;
@@ -33,6 +35,7 @@ import org.springframework.data.redis.listener.Topic;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
@@ -40,26 +43,35 @@ import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
+@Lazy
 @Log4j2
 @Named
 public class RedisTopicListener extends SharedTopicListener {
 
     private final GrpcProperties grpcProperties;
-    private final ReactiveRedisMessageListenerContainer container;
+    private final Mono<ReactiveRedisMessageListenerContainer> container;
     private final SerializationPair<String> channelSerializer;
     private final SerializationPair<TopicMessage> messageSerializer;
     private final Map<String, Flux<TopicMessage>> topicMessages; // Topic name to active subscription
 
     public RedisTopicListener(GrpcProperties grpcProperties,
                               ListenerProperties listenerProperties,
-                              ReactiveRedisMessageListenerContainer container,
+                              ReactiveRedisConnectionFactory connectionFactory,
                               RedisSerializer<TopicMessage> redisSerializer) {
         super(listenerProperties);
         this.grpcProperties = grpcProperties;
-        this.container = container;
         this.channelSerializer = SerializationPair.fromSerializer(RedisSerializer.string());
         this.messageSerializer = SerializationPair.fromSerializer(redisSerializer);
         this.topicMessages = new ConcurrentHashMap<>();
+
+        // Workaround Spring DATAREDIS-1208 by lazily starting connection once with retry
+        Duration frequency = listenerProperties.getFrequency();
+        this.container = Mono.defer(() -> Mono.just(new ReactiveRedisMessageListenerContainer(connectionFactory)))
+                .doOnError(t -> log.error("Error connecting to Redis: ", t))
+                .doOnSubscribe(s -> log.info("Attempting to connect to Redis"))
+                .doOnSuccess(c -> log.info("Connected to Redis"))
+                .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(8)))
+                .cache();
     }
 
     @Override
@@ -77,7 +89,7 @@ public class RedisTopicListener extends SharedTopicListener {
     private Flux<TopicMessage> subscribe(Topic topic) {
         Duration frequency = listenerProperties.getFrequency();
 
-        return container.receive(Arrays.asList(topic), channelSerializer, messageSerializer)
+        return container.flatMapMany(r -> r.receive(Arrays.asList(topic), channelSerializer, messageSerializer))
                 .map(Message::getMessage)
                 .name("redis")
                 .metrics()
@@ -92,6 +104,6 @@ public class RedisTopicListener extends SharedTopicListener {
 
     private void unsubscribe(Topic topic) {
         topicMessages.remove(topic.getTopic());
-        log.info("Cancelled shared subscription to {}", topic);
+        log.info("Unsubscribing from {}", topic);
     }
 }
