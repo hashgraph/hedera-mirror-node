@@ -78,7 +78,7 @@ const checkStateproofForValidTransaction = async (server) => {
   return {
     url,
     passed: true,
-    message: `Successfully called stateproof on the latest successful transaction ${transactionId}`,
+    message: `Successfully called stateproof for the latest successful transaction ${transactionId}`,
   };
 };
 
@@ -116,7 +116,7 @@ const checkStateproofForFailedTransaction = async (server) => {
   return {
     url,
     passed: true,
-    message: `Successfully called stateproof on a failed transaction and got expected 404}`,
+    message: `Successfully called stateproof for a failed transaction and got expected 404}`,
   };
 };
 
@@ -141,12 +141,12 @@ const checkStateproofForNonExistingTransaction = async (server) => {
   return {
     url,
     passed: true,
-    message: `Successfully called stateproof on non-existing transaction ${transactionId} and got expected 404}`,
+    message: `Successfully called stateproof for non-existing transaction ${transactionId} and got expected 404`,
   };
 };
 
 /**
- * Run all tests in an asynchronous fashion waiting for all tests to complete
+ * Run all stateproof tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint

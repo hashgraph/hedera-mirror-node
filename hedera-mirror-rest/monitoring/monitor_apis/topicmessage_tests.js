@@ -366,7 +366,7 @@ const getTopicMessagesByConsensusTimestamp = async (server) => {
 };
 
 /**
- * Run all tests in an asynchronous fashion waiting for all tests to complete
+ * Run all topic message tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
