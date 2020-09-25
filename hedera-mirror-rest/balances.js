@@ -17,11 +17,13 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
-const config = require('./config.js');
-const constants = require('./constants.js');
+
+const config = require('./config');
+const constants = require('./constants');
 const EntityId = require('./entityId');
-const utils = require('./utils.js');
+const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
 
 /**
@@ -34,7 +36,7 @@ const getBalances = async (req, res) => {
 
   // Parse the filter parameters for credit/debit, account-numbers,
   // timestamp and pagination
-  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
+  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
 
   // if the request has a timestamp=xxxx or timestamp=eq:xxxxx, then
   // modify that to be timestamp <= xxxx, so we return the latest balances
@@ -51,54 +53,52 @@ const getBalances = async (req, res) => {
     }
   }
 
-  let [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'ab.consensus_timestamp');
-
-  let [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-
-  let [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
-  let joinEntities = '' !== pubKeyQuery; // Only need to join t_entites if we're selecting on publickey.
-
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'ab.consensus_timestamp');
+  const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
+  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
+  const joinEntities = pubKeyQuery !== ''; // Only need to join t_entites if we're selecting on publickey.
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
-  let innerQuery =
-    'select consensus_timestamp from account_balance ab\n' +
-    ' where\n' +
-    (tsQuery === '' ? '1=1' : tsQuery) +
-    '\n' +
-    'order by consensus_timestamp desc limit 1';
+  const innerQuery = `
+      SELECT
+        consensus_timestamp
+      FROM account_balance ab
+      WHERE ${tsQuery === '' ? '1=1' : tsQuery}
+      ORDER BY consensus_timestamp DESC
+      LIMIT 1`;
 
-  let sqlQuery = 'select ab.consensus_timestamp,\n' + 'ab.account_id, ab.balance\n' + ' from account_balance ab\n';
+  let sqlQuery = `
+      SELECT
+        ab.consensus_timestamp,
+        ab.account_id,
+        ab.balance,
+        string_agg(cast(tb.token_id AS VARCHAR), ',') AS token_ids,
+        string_agg(cast(tb.balance AS VARCHAR), ',') AS token_balances
+      FROM account_balance ab
+      LEFT JOIN token_balance tb
+        ON ab.consensus_timestamp = tb.consensus_timestamp
+          AND ab.account_id = tb.account_id`;
   if (joinEntities) {
-    sqlQuery +=
-      ' join t_entities e\n' +
-      ' on e.id = ab.account_id\n' +
-      ' and e.entity_shard = ' +
-      config.shard +
-      '\n' +
-      ' and e.fk_entity_type_id < ' +
-      utils.ENTITY_TYPE_FILE +
-      '\n';
+    sqlQuery += `
+      JOIN t_entities e
+        ON e.id = ab.account_id
+          AND e.entity_shard = ${config.shard}
+          AND e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}`;
   }
-  sqlQuery +=
-    ' where ' +
-    ' consensus_timestamp = (' +
-    innerQuery +
-    ')\n' +
-    ' and\n' +
-    [accountQuery, pubKeyQuery, balanceQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ') +
-    ' order by consensus_timestamp desc, ' +
-    'account_id ' +
-    order +
-    ' ' +
-    query;
 
-  let sqlParams = tsParams.concat(accountParams).concat(pubKeyParams).concat(balanceParams).concat(params);
+  sqlQuery += `
+      WHERE ab.consensus_timestamp = (${innerQuery})
+        AND ${[accountQuery, pubKeyQuery, balanceQuery].map((q) => (q === '' ? '1=1' : q)).join(' AND ')}
+      GROUP BY ab.consensus_timestamp, ab.account_id
+      ORDER BY ab.account_id ${order}
+      ${query}`;
 
+  const sqlParams = tsParams.concat(accountParams).concat(pubKeyParams).concat(balanceParams).concat(params);
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
   if (logger.isTraceEnabled()) {
-    logger.trace('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+    logger.trace(`getBalance query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);
   }
 
   // Execute query
@@ -107,8 +107,8 @@ const getBalances = async (req, res) => {
     .catch((err) => {
       throw new DbError(err.message);
     })
-    .then((results) => {
-      let ret = {
+    .then((result) => {
+      const ret = {
         timestamp: null,
         balances: [],
         links: {
@@ -116,29 +116,34 @@ const getBalances = async (req, res) => {
         },
       };
 
-      function accountIdFromRow(row) {
-        return EntityId.fromEncodedId(row['account_id']).toString();
+      if (result.rows.length > 0) {
+        ret.timestamp = utils.nsToSecNs(result.rows[0].consensus_timestamp);
       }
 
-      // Go through all results, and collect them by seconds.
-      // These need to be returned as an array (and not an object) because
-      // per ECMA ES2015, the order of keys parsable as integers are implicitly
-      // sorted (i.e. insert order is not maintained)
-      // let retObj = {}
-      for (let row of results.rows) {
-        let ns = utils.nsToSecNs(row.consensus_timestamp);
-        row.account = accountIdFromRow(row);
-
-        if (ret.timestamp === null) {
-          ret.timestamp = ns;
-        }
-        ret.balances.push({
-          account: row.account,
+      const entityIdStrFromEncodedId = (encodedId) => EntityId.fromEncodedId(encodedId).toString();
+      ret.balances = result.rows.map((row) => {
+        const accountBalance = {
+          account: entityIdStrFromEncodedId(row.account_id),
           balance: Number(row.balance),
-        });
-      }
+          tokens: [],
+        };
 
-      const anchorAccountId = results.rows.length > 0 ? results.rows[results.rows.length - 1].account : 0;
+        if (row.token_ids) {
+          const tokenIds = row.token_ids.split(',');
+          const tokenBalances = row.token_balances.split(',');
+          accountBalance.tokens = tokenIds.map((tokenId, index) => {
+            const tokenBalance = tokenBalances[index];
+            return {
+              token_id: entityIdStrFromEncodedId(tokenId),
+              balance: Number(tokenBalance),
+            };
+          });
+        }
+
+        return accountBalance;
+      });
+
+      const anchorAccountId = ret.balances.length > 0 ? ret.balances[ret.balances.length - 1].account : 0;
 
       // Pagination links
       ret.links = {
@@ -146,15 +151,15 @@ const getBalances = async (req, res) => {
       };
 
       if (process.env.NODE_ENV === 'test') {
-        ret.sqlQuery = results.sqlQuery;
+        ret.sqlQuery = result.sqlQuery;
       }
 
-      logger.debug('getBalances returning ' + ret.balances.length + ' entries');
+      logger.debug(`getBalances returning ${ret.balances.length} entries`);
 
       res.locals[constants.responseDataLabel] = ret;
     });
 };
 
 module.exports = {
-  getBalances: getBalances,
+  getBalances,
 };

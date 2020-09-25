@@ -30,12 +30,12 @@ const log4js = require('log4js');
 const compression = require('compression');
 
 // local files
-const config = require('./config.js');
-const transactions = require('./transactions.js');
-const balances = require('./balances.js');
-const accounts = require('./accounts.js');
-const topicmessage = require('./topicmessage.js');
-const health = require('./health.js');
+const config = require('./config');
+const transactions = require('./transactions');
+const balances = require('./balances');
+const accounts = require('./accounts');
+const topicmessage = require('./topicmessage');
+const health = require('./health');
 const stateproof = require('./stateproof');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
@@ -74,7 +74,7 @@ let Pool;
 if (process.env.NODE_ENV !== 'test') {
   Pool = require('pg').Pool;
 } else {
-  Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
+  Pool = require('./__tests__/mockpool'); // Use a mocked up DB for jest unit tests
 }
 
 const pool = new Pool({
@@ -110,28 +110,28 @@ if (config.metrics.enabled) {
 const apiPrefix = '/api/v1';
 
 // accounts routes
-app.getAsync(apiPrefix + '/accounts', accounts.getAccounts);
-app.getAsync(apiPrefix + '/accounts/:id', accounts.getOneAccount);
+app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
+app.getAsync(`${apiPrefix}/accounts/:id`, accounts.getOneAccount);
 
 // balances routes
-app.getAsync(apiPrefix + '/balances', balances.getBalances);
+app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
 // transactions routes
-app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
-app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
+app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
+app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
 
 // stateproof route
 if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
   logger.info('stateproof REST API is enabled, install handler');
-  app.getAsync(apiPrefix + '/transactions/:id/stateproof', stateproof.getStateProofForTransaction);
+  app.getAsync(`${apiPrefix}/transactions/:id/stateproof`, stateproof.getStateProofForTransaction);
 } else {
   logger.info('stateproof REST API is disabled');
 }
 
 // topics routes
-app.getAsync(apiPrefix + '/topics/:id/messages', topicmessage.getTopicMessages);
-app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
-app.getAsync(apiPrefix + '/topics?/messages?/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
+app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
+app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
+app.getAsync(`${apiPrefix}/topics?/messages?/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
 // response data handling middleware
 app.use(responseHandler);
@@ -140,11 +140,11 @@ app.use(responseHandler);
 app.use(handleError);
 
 if (process.env.NODE_ENV !== 'test') {
-  let server = app.listen(port, () => {
+  const server = app.listen(port, () => {
     console.log(`Server running on port: ${port}`);
   });
 
-  //Health check endpoints
+  // Health check endpoints
   createTerminus(server, {
     healthChecks: {
       '/health/readiness': health.readinessCheck,
