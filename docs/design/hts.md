@@ -438,29 +438,23 @@ To achieve the goals and for easy integration with existing users the REST API s
           "token_transfers": [
             {
               "token_id": "0.15.3",
-              "transfers": [
-                {
-                    "account": "0.0.1111",
-                    "amount": -10
-                },
-                {
-                    "account": "0.0.2222",
-                    "amount": 10
-                }
-              ]
+              "account": "0.0.1111",
+              "amount": -10
             },
             {
-              "token_id":"0.2.4",
-              "transfers": [
-                {
-                    "account": "0.0.3333",
-                    "amount": -10
-                },
-                {
-                    "account": "0.0.4444",
-                    "amount": 10
-                }
-              ]
+              "token_id": "0.15.3",
+              "account": "0.0.2222",
+              "amount": -10
+            },
+            {
+              "token_id": "0.2.4",
+              "account": "0.0.3333",
+              "amount": -10
+            },
+            {
+              "token_id": "0.2.4",
+              "account": "0.0.4444",
+              "amount": -10
             }
           ]
         }
