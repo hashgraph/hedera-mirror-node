@@ -162,4 +162,17 @@ public class Token {
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId tokenId;
     }
+
+    @Data
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id implements Serializable {
+
+        private static final long serialVersionUID = -4595724698253758379L;
+
+        @Convert(converter = TokenIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId tokenId;
+    }
 }

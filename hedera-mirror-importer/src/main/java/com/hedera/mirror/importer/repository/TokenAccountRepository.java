@@ -28,6 +28,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TokenAccount;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, TokenAccount.Id> {

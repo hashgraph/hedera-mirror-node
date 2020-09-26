@@ -44,4 +44,14 @@ public class TokenDeleteTransactionsHandler implements TransactionHandler {
     public void updateEntity(Entities entity, RecordItem recordItem) {
         entity.setDeleted(true);
     }
+
+    @Override
+    public boolean updatesEntity() {
+        return true;
+    }
+
+    @Override
+    public void updateEntity(Entities entity, RecordItem recordItem) {
+        entity.setDeleted(true);
+    }
 }
