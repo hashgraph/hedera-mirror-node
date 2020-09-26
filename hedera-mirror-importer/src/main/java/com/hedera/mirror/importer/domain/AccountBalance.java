@@ -23,16 +23,10 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
-import java.util.List;
-import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinColumns;
-import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -60,13 +54,6 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     @JsonUnwrapped
     private Id id;
 
-    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JoinColumns({
-            @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp"),
-            @JoinColumn(name = "accountId", referencedColumnName = "accountId")
-    })
-    private List<TokenBalance> tokenBalances;
-
     @Override
     public boolean isNew() {
         return true; // Since we never update balances and use a natural ID, avoid Hibernate querying before insert
@@ -86,11 +73,4 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId accountId;
     }
-
-//    @PrePersist
-//    public void prePersist() {
-//        if (CollectionUtils.isEmpty(tokenBalances)) {
-//            tokenBalances = null;
-//        }
-//    }
 }

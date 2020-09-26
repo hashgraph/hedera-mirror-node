@@ -49,10 +49,12 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -68,10 +70,13 @@ class PgCopyTest extends IntegrationTest {
     private TransactionRepository transactionRepository;
     @Resource
     private TopicMessageRepository topicMessageRepository;
+    @Resource
+    private TokenTransferRepository tokenTransferRepository;
 
     private PgCopy<CryptoTransfer> cryptoTransferPgCopy;
     private PgCopy<Transaction> transactionPgCopy;
     private PgCopy<TopicMessage> topicMessagePgCopy;
+    private PgCopy<TokenTransfer> tokenTransferPgCopy;
 
     @Resource
     private SqlProperties sqlProperties;
@@ -81,6 +86,7 @@ class PgCopyTest extends IntegrationTest {
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
+        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, sqlProperties);
     }
 
     @Test
@@ -90,9 +96,16 @@ class PgCopyTest extends IntegrationTest {
         cryptoTransfers.add(cryptoTransfer(2));
         cryptoTransfers.add(cryptoTransfer(3));
 
+        var tokenTransfers = new HashSet<TokenTransfer>();
+        tokenTransfers.add(tokenTransfer(1));
+        tokenTransfers.add(tokenTransfer(2));
+        tokenTransfers.add(tokenTransfer(3));
+
         cryptoTransferPgCopy.copy(cryptoTransfers, dataSource.getConnection());
+        tokenTransferPgCopy.copy(tokenTransfers, dataSource.getConnection());
 
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoTransfers);
+        assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenTransfers);
     }
 
     @Test
@@ -149,6 +162,14 @@ class PgCopyTest extends IntegrationTest {
 
     private CryptoTransfer cryptoTransfer(long consensusTimestamp) {
         return new CryptoTransfer(consensusTimestamp, 1L, EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT));
+    }
+
+    private TokenTransfer tokenTransfer(long consensusTimestamp) {
+        return new TokenTransfer(
+                consensusTimestamp,
+                1L,
+                EntityId.of(0L, 1L, 4L, EntityTypeEnum.TOKEN),
+                EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT));
     }
 
     private Transaction transaction(long consensusNs) {

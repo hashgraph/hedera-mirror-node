@@ -23,8 +23,9 @@ package com.hedera.mirror.importer.repository;
 import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TokenAccount;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, Long> {
-    Optional<TokenAccount> findByTokenIdAndAccountId(long encodedTokenId, long encodedAccountId);
+    Optional<TokenAccount> findByTokenIdAndAccountId(EntityId tokenId, EntityId accountId);
 }

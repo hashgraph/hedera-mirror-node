@@ -20,14 +20,21 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serializable;
+import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -36,13 +43,12 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @ToString(exclude = {"freezeKey", "kycKey", "supplyKey", "wipeKey"})
 public class Token {
-    @Id
-    @Convert(converter = TokenIdConverter.class)
-    private EntityId tokenId;
+    @EmbeddedId
+    private Token.Id tokenId;
 
     private long createdTimestamp;
 
-    private boolean deleted;
+//    private boolean deleted;
 
     private int divisibility;
 
@@ -69,32 +75,36 @@ public class Token {
 
     private byte[] wipeKey;
 
-    private String ed25519PublicFreezeKeyHex;
+    @Column(name = "ed25519_freeze_key")
+    private String ed25519FreezeKey;
 
-    private String ed25519PublicKycKeyHex;
+    @Column(name = "ed25519_kyc_key")
+    private String ed25519KycKey;
 
-    private String ed25519PublicSupplyKeyHex;
+    @Column(name = "ed25519_supply_key")
+    private String ed25519SupplyKey;
 
-    private String ed25519PublicWipeKeyHex;
+    @Column(name = "ed25519_wipe_key")
+    private String ed25519WipeKey;
 
     public void setFreezeKey(byte[] key) {
         freezeKey = key;
-        ed25519PublicFreezeKeyHex = convertByteKeyToHex(key);
+        ed25519FreezeKey = convertByteKeyToHex(key);
     }
 
     public void setKycKey(byte[] key) {
         kycKey = key;
-        ed25519PublicKycKeyHex = convertByteKeyToHex(key);
+        ed25519KycKey = convertByteKeyToHex(key);
     }
 
     public void setSupplyKey(byte[] key) {
         supplyKey = key;
-        ed25519PublicSupplyKeyHex = convertByteKeyToHex(key);
+        ed25519SupplyKey = convertByteKeyToHex(key);
     }
 
     public void setWipeKey(byte[] key) {
         wipeKey = key;
-        ed25519PublicWipeKeyHex = convertByteKeyToHex(key);
+        ed25519WipeKey = convertByteKeyToHex(key);
     }
 
     private String convertByteKeyToHex(byte[] key) {
@@ -105,5 +115,18 @@ public class Token {
                     "will be nulled", tokenId, e);
             return null;
         }
+    }
+
+    @Data
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id implements Serializable {
+
+        private static final long serialVersionUID = -4595724698253758379L;
+
+        @Convert(converter = TokenIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId tokenId;
     }
 }
