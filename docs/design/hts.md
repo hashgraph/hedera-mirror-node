@@ -6,7 +6,7 @@ The Hedera Token Service (HTS) builds upon the Cryptocurrency Service to provide
 The behavior will be similar to that of the native HBAR token and as such the Mirror Node will persist token balances and transfer lists and support the retrieval of information through its APIs.
 
 This document highlights the architecture and design changes to be made to support HTS.
-Changes should be applied in order of the following order to support easy third party integration.
+Changes should be applied in the following order to support easy third party integration.
 1.  Database Schema Updates
 2.  Importer Updates for Ingestion - Token balance and token transactions
 3.  Existing REST API Updates - Accounts, Balances and Transactions
@@ -50,7 +50,7 @@ To support the goals the following database schema changes should be made
 7.  New `token_account` table added to persist token specific account state
 
 ### Token Transfer
--   Add `token_transfer` table table. with the following class members
+-   Add `token_transfer` table with the following class members
     -   `account_id`
     -   `amount`
     -   `consensus_timestamp`
