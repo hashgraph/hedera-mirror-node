@@ -61,14 +61,19 @@ create table if not exists token
     token_id            entity_id               primary key,
     created_timestamp   bigint                  not null,
     divisibility        bigint                  not null,
+    ed25519_freeze_key  varchar                 null,
+    ed25519_kyc_key     varchar                 null,
+    ed25519_supply_key  varchar                 null,
+    ed25519_wipe_key    varchar                 null,
     freeze_default      boolean                 not null default false,
     freeze_key          bytea,
     initial_supply      bigint                  not null,
-    kyc_default         boolean                 not null default false,
     kyc_key             bytea,
     modified_timestamp  bigint                  not null,
+    name                character varying(100)  not null,
     supply_key          bytea,
-    symbol              character varying(100)  not null,
+    symbol              character varying(32)   not null,
+    total_supply        bigint                  not null default 0,
     treasury_account_id entity_id               not null,
     wipe_key            bytea
 );
@@ -78,6 +83,7 @@ create table if not exists token_account
 (
     id                  serial              primary key,
     account_id          entity_id           not null,
+    associated          boolean             not null default false,
     created_timestamp   bigint              not null,
     frozen              boolean             not null default false,
     kyc                 boolean             not null default false,
@@ -104,10 +110,10 @@ alter table if exists token_balance
 --- Add token_transfer
 create table if not exists token_transfer
 (
-    token_id            entity_id,
-    account_id          entity_id,
-    consensus_timestamp bigint,
-    amount              hbar_tinybars
+    token_id            entity_id       not null,
+    account_id          entity_id       not null,
+    consensus_timestamp bigint          not null,
+    amount              hbar_tinybars   not null
 );
 
 create index if not exists token_transfer__token_account_timestamp

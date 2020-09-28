@@ -69,6 +69,7 @@ To support the goals the following database schema changes should be made
 -   Create `token_account` table to distinctly capture token account metadata changes with the following columns
     -   `id` (primary key)
     -   `account_id`
+    -   `associated`
     -   `created_timestamp`
     -   `frozen`
     -   `kyc`
@@ -152,12 +153,16 @@ To support the goals the following database schema changes should be made
     -   `token_id` (primary key)
     -   `created_timestamp`
     -   `divisibility`
+    -   `ed25519_freeze_key` (ed25519 public key of freeze key)
+    -   `ed25519_kyc_key` (ed25519 public key of kyc key)
+    -   `ed25519_supply_key` (ed25519 public key of supply key)
+    -   `ed25519_wipe_key` (ed25519 public key of wipe key)
     -   `freeze_default`
     -   `freeze_key`
     -   `initial_supply`
-    -   `kyc_default`
     -   `kyc_key`
     -   `modified_timestamp`
+    -   `name`
     -   `supply_key`
     -   `symbol`
     -   `treasury_account_id`
@@ -211,6 +216,10 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
 -   Add `Token` class to hold Token specific metadata outside of the base entity class with the following class members
     -   `createdTimestamp`
     -   `divisibility`
+    -   `ed25519FreezeKey`
+    -   `ed25519KycKey`
+    -   `ed25519SupplyKey`
+    -   `ed25519WipeKey`
     -   `freezeDefault`
     -   `freezeKey`
     -   `initialSupply`
@@ -221,6 +230,7 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `supplyKey`
     -   `symbol`
     -   `tokenId`
+    -   `totalSupply`
     -   `treasuryAccountId`
     -   `wipeKey`
 
@@ -261,11 +271,12 @@ To allow the mirror node to support both V1 and V2 balance files
 
 ### Transaction Handlers
 Additional handlers will be needed to support the added Token transaction types.
-In all cases override `getEntity()`, pulling entity info from appropriate transactionBody
+In all cases override `getEntity()`, pulling `TokenID` from record receipt for `TokenCreate` and from appropriate transactionBody for all other token transactionBody types.
 
 -   Add `TokenCreateTransactionsHandler`
     -   override `updatesEntity()` to return true
     -   override `updateEntity()` to set Entities `key`, `expiryTimeNs` and `AutoRenewPeriod` if applicable
+    -   override `getEntity()`, pulling `TokenID` from record receipt
 -   Add `TokenTransferTransactionsHandler`
 -   Add `TokenFreezeTransactionsHandler`
 -   Add `TokenUnfreezeTransactionsHandler`
@@ -280,9 +291,7 @@ In all cases override `getEntity()`, pulling entity info from appropriate transa
 -   Add `TokenBurnTransactionsHandler`
 -   Add `TokenWipeTransactionsHandler`
 -   Add `TokenAssociateTransactionsHandler`
-    -   override `updatesEntity()` to return true
 -   Add `TokenDissociateTransactionsHandler`
-    -   override `updatesEntity()` to return true
 
 
 ### Token Transfer Parsing
@@ -319,6 +328,8 @@ Add logic to check for
 -   `TransactionBody.hasTokenRevokeKyc()` and parse `TokenRevokeKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to false and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `wipe` column to true and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenUpdate()` and parse `TokenUpdateTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
+-   `TransactionBody.hasTokenBurn()` and parse `TokenBurnTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
+-   `TransactionBody.hasTokenMint()` and parse `TokenMintTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
 
 ## REST API
 To achieve the goals and for easy integration with existing users the REST API should be updated in the following order
@@ -416,7 +427,7 @@ To achieve the goals and for easy integration with existing users the REST API s
           "memo_base64": null,
           "result": "SUCCESS",
           "transaction_hash": "aGFzaA==",
-          "name": "CRYPTOTRANSFER",
+          "name": "TOKENTRANSFER",
           "node": "0.0.3",
           "transaction_id": "0.0.10-1234567890-000000000",
           "valid_duration_seconds": "11",
@@ -625,6 +636,7 @@ TBD
     -   A: `tokenId` for `accounts`, `balances` and `transactions`. Token API would be the place where both `token` and `tokenId` can be returned
 -   [x] Should `EntityRecordItemListener.OnItem()` be refactored to more easily focus on different TransactionBody types. May be valuable to testing but not necessarily within scope
     - A: Will leave to implementation task and sprint scheduling limits
+-   [ ] Will service return totalSupply for tokens post Mint, Burn and Wipe token transactions? As an interim mirror node can calculate but it would be better to have that as part of the response.
 
 
 
