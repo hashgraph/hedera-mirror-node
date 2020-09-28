@@ -56,40 +56,44 @@ const getBalances = async (req, res) => {
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'ab.consensus_timestamp');
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
   const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
-  const joinEntities = pubKeyQuery !== ''; // Only need to join t_entites if we're selecting on publickey.
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
   const innerQuery = `
       SELECT
-        consensus_timestamp
+        ab.consensus_timestamp
       FROM account_balance ab
       WHERE ${tsQuery === '' ? '1=1' : tsQuery}
-      ORDER BY consensus_timestamp DESC
+      ORDER BY ab.consensus_timestamp DESC
       LIMIT 1`;
 
-  let sqlQuery = `
+  const whereClause = `
+      WHERE ${[`ab.consensus_timestamp = (${innerQuery})`, accountQuery, pubKeyQuery, balanceQuery]
+        .filter((q) => q !== '')
+        .join(' AND ')}`;
+
+  // Only need to join t_entites if we're selecting on publickey.
+  const joinEntityClause =
+    pubKeyQuery !== ''
+      ? `
+      JOIN t_entities e
+        ON e.id = ab.account_id
+          AND e.entity_shard = ${config.shard}
+          AND e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}`
+      : '';
+
+  const sqlQuery = `
       SELECT
         ab.consensus_timestamp,
         ab.account_id,
         ab.balance,
-        string_agg(cast(tb.token_id AS VARCHAR), ',') AS token_ids,
-        string_agg(cast(tb.balance AS VARCHAR), ',') AS token_balances
+        string_agg(tb.token_id || '=' || tb.balance, ',' ORDER BY tb.token_id) AS token_balances
       FROM account_balance ab
       LEFT JOIN token_balance tb
         ON ab.consensus_timestamp = tb.consensus_timestamp
-          AND ab.account_id = tb.account_id`;
-  if (joinEntities) {
-    sqlQuery += `
-      JOIN t_entities e
-        ON e.id = ab.account_id
-          AND e.entity_shard = ${config.shard}
-          AND e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}`;
-  }
-
-  sqlQuery += `
-      WHERE ab.consensus_timestamp = (${innerQuery})
-        AND ${[accountQuery, pubKeyQuery, balanceQuery].map((q) => (q === '' ? '1=1' : q)).join(' AND ')}
+          AND ab.account_id = tb.account_id
+      ${joinEntityClause}
+      ${whereClause}
       GROUP BY ab.consensus_timestamp, ab.account_id
       ORDER BY ab.account_id ${order}
       ${query}`;
@@ -128,14 +132,12 @@ const getBalances = async (req, res) => {
           tokens: [],
         };
 
-        if (row.token_ids) {
-          const tokenIds = row.token_ids.split(',');
-          const tokenBalances = row.token_balances.split(',');
-          accountBalance.tokens = tokenIds.map((tokenId, index) => {
-            const tokenBalance = tokenBalances[index];
+        if (row.token_balances) {
+          accountBalance.tokens = row.token_balances.split(',').map((tokenBalance) => {
+            const [tokenId, balance] = tokenBalance.split('=');
             return {
               token_id: entityIdStrFromEncodedId(tokenId),
-              balance: Number(tokenBalance),
+              balance: Number(balance),
             };
           });
         }

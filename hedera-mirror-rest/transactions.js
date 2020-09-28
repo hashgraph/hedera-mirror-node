@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const utils = require('./utils');
@@ -34,12 +35,40 @@ const selectClause = `SELECT
        coalesce(ttr.result, 'UNKNOWN') AS result,
        coalesce(ttt.name, 'UNKNOWN') AS name,
        t.node_account_id,
-       ctl.entity_id as ctl_entity_id,
-       ctl.amount,
+       ctl.entity_id AS ctl_entity_id,
+       ctl.amount AS amount,
+       string_agg(
+         ttl.token_id || '_' || ttl.account_id || '_' || ttl.amount,
+         ','
+         ORDER BY
+          ttl.token_id DESC,
+          ttl.account_id DESC
+       ) AS token_transfer_list,
        t.charged_tx_fee,
        t.valid_duration_seconds,
        t.max_fee,
-       t.transaction_hash\n`;
+       t.transaction_hash`;
+
+/**
+ * Creates token transfer lists from aggregated ',' separated strings in the query result
+ *
+ * @param tokenTransferList token transfer list string
+ * @return {*[]|{amount: Number, account: string, token: string}[]}
+ */
+const createTokenTransferList = (tokenTransferList) => {
+  if (!tokenTransferList) {
+    return undefined;
+  }
+
+  return tokenTransferList.split(',').map((transfer) => {
+    const [tokenId, accountId, amount] = transfer.split('_');
+    return {
+      token_id: EntityId.fromEncodedId(tokenId).toString(),
+      account: EntityId.fromEncodedId(accountId).toString(),
+      amount: Number(amount),
+    };
+  });
+};
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
@@ -48,37 +77,39 @@ const selectClause = `SELECT
  * @param {Array of objects} rows Array of rows returned as a result of an SQL query
  * @return {{anchorSecNs: (String|number), transactions: {}}}
  */
-const createTransferLists = function (rows) {
+const createTransferLists = (rows) => {
   // If the transaction has a transferlist (i.e. list of individual trasnfers, it
   // will show up as separate rows. Combine those into a single transferlist for
   // a given consensus_ns (Note that there could be two records for the same
   // transaction-id where one would pass and others could fail as duplicates)
-  let transactions = {};
+  const transactions = {};
 
-  for (let row of rows) {
+  for (const row of rows) {
     if (!(row.consensus_ns in transactions)) {
-      var validStartTimestamp = row.valid_start_ns;
-      transactions[row.consensus_ns] = {};
-      transactions[row.consensus_ns]['consensus_timestamp'] = utils.nsToSecNs(row['consensus_ns']);
-      transactions[row.consensus_ns]['transaction_hash'] = utils.encodeBase64(row['transaction_hash']);
-      transactions[row.consensus_ns]['valid_start_timestamp'] = utils.nsToSecNs(validStartTimestamp);
-      transactions[row.consensus_ns]['charged_tx_fee'] = Number(row['charged_tx_fee']);
-      transactions[row.consensus_ns]['id'] = row['id'];
-      transactions[row.consensus_ns]['memo_base64'] = utils.encodeBase64(row['memo']);
-      transactions[row.consensus_ns]['result'] = row['result'];
-      transactions[row.consensus_ns]['name'] = row['name'];
-      transactions[row.consensus_ns]['max_fee'] = utils.getNullableNumber(row['max_fee']);
-      transactions[row.consensus_ns]['valid_duration_seconds'] = utils.getNullableNumber(row['valid_duration_seconds']);
-      transactions[row.consensus_ns]['node'] = EntityId.fromEncodedId(row['node_account_id']).toString();
-      transactions[row.consensus_ns]['transaction_id'] = utils.createTransactionId(
-        EntityId.fromEncodedId(row['payer_account_id']).toString(),
-        validStartTimestamp
-      );
-      transactions[row.consensus_ns].transfers = [];
+      const validStartTimestamp = row.valid_start_ns;
+      transactions[row.consensus_ns] = {
+        consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
+        transaction_hash: utils.encodeBase64(row.transaction_hash),
+        valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
+        charged_tx_fee: Number(row.charged_tx_fee),
+        id: row.id,
+        memo_base64: utils.encodeBase64(row.memo),
+        result: row.result,
+        name: row.name,
+        max_fee: utils.getNullableNumber(row.max_fee),
+        valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
+        node: EntityId.fromEncodedId(row.node_account_id).toString(),
+        transaction_id: utils.createTransactionId(
+          EntityId.fromEncodedId(row.payer_account_id).toString(),
+          validStartTimestamp
+        ),
+        transfers: [],
+        token_transfers: createTokenTransferList(row.token_transfer_list),
+      };
     }
 
     transactions[row.consensus_ns].transfers.push({
-      account: EntityId.fromEncodedId(row['ctl_entity_id']).toString(),
+      account: EntityId.fromEncodedId(row.ctl_entity_id).toString(),
       amount: Number(row.amount),
     });
   }
@@ -87,7 +118,7 @@ const createTransferLists = function (rows) {
 
   return {
     transactions: Object.values(transactions),
-    anchorSecNs: anchorSecNs,
+    anchorSecNs,
   };
 };
 
@@ -102,24 +133,28 @@ const createTransferLists = function (rows) {
  * @return {String} outerQuery Fully formed SQL query
  */
 const getTransactionsOuterQuery = function (innerQuery, order) {
-  return (
-    selectClause +
-    `FROM ( ${innerQuery} ) AS tlist
+  return `
+    ${selectClause}
+    FROM ( ${innerQuery} ) AS tlist
        JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
-     ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`
-  );
+       LEFT JOIN token_transfer ttl
+         ON t.type = 30
+         AND tlist.consensus_timestamp = ttl.consensus_timestamp
+     GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name
+     ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
 };
 
 /**
- * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the
+ * Cryptotransfer transactions queries are organized as follows: First there's an inner query that selects the
  * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
  * extract all relevant information for those transactions.
  * This function forms the inner query base based on all the query criteria specified in the REST URL
  * It selects a list of unique transactions (consensus_timestamps).
  * Also see: getTransactionsOuterQuery function
+ *
  * @param {String} accountQuery SQL query that filters based on the account ids
  * @param {String} tsQuery SQL query that filters based on the timestamps
  * @param {String} resultTypeQuery SQL query that filters based on the result types
@@ -150,19 +185,19 @@ const getTransactionsInnerQuery = function (
 const reqToSql = function (req) {
   // Parse the filter parameters for credit/debit, account-numbers, timestamp, and pagination (limit)
   const [creditDebitQuery] = utils.parseCreditDebitParams(req.query, 'ctl.amount');
-  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ctl.entity_id');
+  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ctl.entity_id');
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  let sqlParams = accountParams.concat(tsParams).concat(params);
+  const sqlParams = accountParams.concat(tsParams).concat(params);
 
-  let innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, query, creditDebitQuery, order);
-  let sqlQuery = getTransactionsOuterQuery(innerQuery, order);
+  const innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, query, creditDebitQuery, order);
+  const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
 
   return {
-    limit: limit,
+    limit,
     query: utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams),
-    order: order,
+    order,
     params: sqlParams,
   };
 };
@@ -176,9 +211,9 @@ const getTransactions = async (req, res) => {
   // Validate query parameters first
   utils.validateReq(req);
 
-  let query = reqToSql(req);
+  const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
-    logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
+    logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   }
 
   // Execute query
@@ -189,7 +224,7 @@ const getTransactions = async (req, res) => {
     })
     .then((results) => {
       const transferList = createTransferLists(results.rows);
-      let ret = {
+      const ret = {
         transactions: transferList.transactions,
       };
 
@@ -207,7 +242,7 @@ const getTransactions = async (req, res) => {
         ret.sqlQuery = results.sqlQuery;
       }
 
-      logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
+      logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
       res.locals[constants.responseDataLabel] = ret;
     });
 };
@@ -221,19 +256,24 @@ const getOneTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
 
-  let sqlQuery =
-    selectClause +
-    `FROM transaction t
-       JOIN t_transaction_results ttr ON ttr.proto_id = t.result
-       JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-       JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
-     WHERE t.payer_account_id = ?
+  // In case of duplicate transactions, only the first succeeds
+  const sqlQuery = `
+    ${selectClause}
+    FROM transaction t
+    JOIN t_transaction_results ttr ON ttr.proto_id = t.result
+    JOIN t_transaction_types ttt ON ttt.proto_id = t.type
+    JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
+    LEFT JOIN token_transfer ttl
+      ON t.type = 30
+      AND t.consensus_ns = ttl.consensus_timestamp
+    WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?
-     ORDER BY consensus_ns ASC, ctl_entity_id ASC, amount ASC`; // In case of duplicate transactions, only the first succeeds
+    GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name
+    ORDER BY consensus_ns ASC, ctl_entity_id ASC, ctl.amount ASC`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {
-    logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+    logger.trace(`getOneTransaction query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);
   }
 
   // Execute query
@@ -247,17 +287,17 @@ const getOneTransaction = async (req, res) => {
       if (transferList.transactions.length === 0) {
         throw new NotFoundError('Not found');
       }
-      logger.debug('getOneTransaction returning ' + transferList.transactions.length + ' entries');
+      logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
       res.locals[constants.responseDataLabel] = {
         transactions: transferList.transactions,
       };
     });
 };
 module.exports = {
-  getTransactions: getTransactions,
-  getOneTransaction: getOneTransaction,
-  createTransferLists: createTransferLists,
-  reqToSql: reqToSql,
-  getTransactionsInnerQuery: getTransactionsInnerQuery,
-  getTransactionsOuterQuery: getTransactionsOuterQuery,
+  getTransactions,
+  getOneTransaction,
+  createTransferLists,
+  reqToSql,
+  getTransactionsInnerQuery,
+  getTransactionsOuterQuery,
 };

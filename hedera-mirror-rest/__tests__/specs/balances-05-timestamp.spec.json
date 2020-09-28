@@ -19,7 +19,14 @@
       {
         "timestamp": 1566560001000000000,
         "id": 4,
-        "balance": 40
+        "balance": 40,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90000,
+            "balance": 300
+          }
+        ]
       },
       {
         "timestamp": 1566560001000000000,
@@ -34,7 +41,14 @@
       {
         "timestamp": 1566560003000000000,
         "id": 4,
-        "balance": 444
+        "balance": 444,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90000,
+            "balance": 1000
+          }
+        ]
       },
       {
         "timestamp": 1566560003000000000,
@@ -59,7 +73,14 @@
       {
         "timestamp": 1566560007000000000,
         "id": 6,
-        "balance": 6
+        "balance": 6,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90000,
+            "balance": 662
+          }
+        ]
       }
     ],
     "transactions": [],
@@ -72,19 +93,28 @@
     "balances": [
       {
         "account": "0.0.7",
-        "balance": 777
+        "balance": 777,
+        "tokens": []
       },
       {
         "account": "0.0.6",
-        "balance": 666
+        "balance": 666,
+        "tokens": []
       },
       {
         "account": "0.0.5",
-        "balance": 555
+        "balance": 555,
+        "tokens": []
       },
       {
         "account": "0.0.4",
-        "balance": 444
+        "balance": 444,
+        "tokens": [
+          {
+            "token_id": "0.0.90000",
+            "balance": 1000
+          }
+        ]
       }
     ],
     "links": {

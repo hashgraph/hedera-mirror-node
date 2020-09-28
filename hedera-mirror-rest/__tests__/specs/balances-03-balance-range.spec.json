@@ -22,7 +22,14 @@
       {
         "timestamp": 2345,
         "id": 17,
-        "balance": 700
+        "balance": 700,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90000,
+            "balance": 1000
+          }
+        ]
       },
       {
         "timestamp": 2345,
@@ -55,11 +62,18 @@
     "balances": [
       {
         "account": "0.0.17",
-        "balance": 700
+        "balance": 700,
+        "tokens": [
+          {
+            "token_id": "0.0.90000",
+            "balance": 1000
+          }
+        ]
       },
       {
         "account": "0.0.20",
-        "balance": 450
+        "balance": 450,
+        "tokens": []
       }
     ],
     "links": {

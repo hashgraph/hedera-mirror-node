@@ -17,9 +17,12 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const math = require('mathjs');
+const pgformat = require('pg-format');
+const config = require('../config');
 const EntityId = require('../entityId');
 
 const NETWORK_FEE = 1;
@@ -27,16 +30,15 @@ const NODE_FEE = 2;
 const SERVICE_FEE = 4;
 
 let sqlConnection;
-let accountEntityIds;
 
 const setUp = async function (testDataJson, sqlconn) {
-  accountEntityIds = {};
   sqlConnection = sqlconn;
-  await loadAccounts(testDataJson['accounts']);
-  await loadBalances(testDataJson['balances']);
-  await loadCryptoTransfers(testDataJson['cryptotransfers']);
-  await loadTransactions(testDataJson['transactions']);
-  await loadTopicMessages(testDataJson['topicmessages']);
+  await loadAccounts(testDataJson.accounts);
+  await loadBalances(testDataJson.balances);
+  await loadCryptoTransfers(testDataJson.cryptotransfers);
+  await loadTokenTransfers(testDataJson.tokentransfers);
+  await loadTransactions(testDataJson.transactions);
+  await loadTopicMessages(testDataJson.topicmessages);
 };
 
 const loadAccounts = async function (accounts) {
@@ -54,8 +56,8 @@ const loadBalances = async function (balances) {
     return;
   }
 
-  for (let i = 0; i < balances.length; ++i) {
-    await setAccountBalance(balances[i]);
+  for (const balance of balances) {
+    await setAccountBalance(balance);
   }
 };
 
@@ -66,6 +68,16 @@ const loadCryptoTransfers = async function (cryptoTransfers) {
 
   for (let i = 0; i < cryptoTransfers.length; ++i) {
     await addCryptoTransaction(cryptoTransfers[i]);
+  }
+};
+
+const loadTokenTransfers = async function (tokenTransfers) {
+  if (tokenTransfers == null) {
+    return;
+  }
+
+  for (const tokenTransfer of tokenTransfers) {
+    await addTokenTransferTransaction(tokenTransfer);
   }
 };
 
@@ -107,7 +119,7 @@ const addAccount = async function (account) {
     `INSERT INTO t_entities (
       id, fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex,
       auto_renew_period, key)
-    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
     [
       EntityId.of(account.entity_shard, account.entity_realm, account.entity_num).getEncodedId(),
       account.entity_type,
@@ -123,17 +135,29 @@ const addAccount = async function (account) {
   );
 };
 
-const setAccountBalance = async function (account) {
-  account = Object.assign({timestamp: 0, id: null, balance: 0, entity_shard: 0, realm_num: 0}, account);
+const setAccountBalance = async function (balance) {
+  balance = Object.assign({timestamp: 0, id: null, balance: 0, realm_num: 0}, balance);
+  const accountId = EntityId.of(config.shard, balance.realm_num, balance.id).getEncodedId().toString();
   await sqlConnection.query(
     `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
-    VALUES (\$1, \$2, \$3);`,
-    [
-      account.timestamp,
-      EntityId.of(account.entity_shard, account.realm_num, account.id).getEncodedId(),
-      account.balance,
-    ]
+    VALUES ($1, $2, $3);`,
+    [balance.timestamp, accountId, balance.balance]
   );
+
+  if (balance.tokens) {
+    const tokenBalances = balance.tokens.map((tokenBalance) => [
+      balance.timestamp,
+      accountId,
+      tokenBalance.balance,
+      EntityId.of(config.shard, tokenBalance.token_realm, tokenBalance.token_num).getEncodedId().toString(),
+    ]);
+    await sqlConnection.query(
+      pgformat(
+        'INSERT INTO token_balance (consensus_timestamp, account_id, balance, token_id) VALUES %L',
+        tokenBalances
+      )
+    );
+  }
 };
 
 const addTransaction = async function (transaction) {
@@ -153,13 +177,13 @@ const addTransaction = async function (transaction) {
 
   transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
 
-  let payerAccount = EntityId.fromString(transaction.payerAccountId);
-  let nodeAccount = EntityId.fromString(transaction.nodeAccountId);
+  const payerAccount = EntityId.fromString(transaction.payerAccountId);
+  const nodeAccount = EntityId.fromString(transaction.nodeAccountId);
   await sqlConnection.query(
     `INSERT INTO transaction (
       consensus_ns, valid_start_ns, payer_account_id, node_account_id,
       result, type, valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash)
-    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
@@ -175,16 +199,36 @@ const addTransaction = async function (transaction) {
   );
   await insertTransfers('crypto_transfer', transaction.consensus_timestamp, transaction.transfers);
   await insertTransfers('non_fee_transfer', transaction.consensus_timestamp, transaction.non_fee_transfers);
+  await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfers);
 };
 
 const insertTransfers = async function (tableName, consensusTimestamp, transfers) {
   for (let i = 0; i < transfers.length; ++i) {
-    let transfer = transfers[i];
+    const transfer = transfers[i];
     await sqlConnection.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id) VALUES (\$1, \$2, \$3);`,
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id) VALUES ($1, $2, $3);`,
       [consensusTimestamp.toString(), transfer.amount, EntityId.fromString(transfer.account).getEncodedId()]
     );
   }
+};
+
+const insertTokenTransfers = async function (consensusTimestamp, transfers) {
+  if (!transfers || transfers.length === 0) {
+    return;
+  }
+
+  const tokenTransfers = transfers.map((transfer) => {
+    return [
+      `${consensusTimestamp}`,
+      EntityId.fromString(transfer.token_id).getEncodedId().toString(),
+      EntityId.fromString(transfer.account).getEncodedId().toString(),
+      transfer.amount,
+    ];
+  });
+
+  await sqlConnection.query(
+    pgformat('INSERT INTO token_transfer (consensus_timestamp, token_id, account_id, amount) VALUES %L', tokenTransfers)
+  );
 };
 
 const addCryptoTransaction = async function (cryptoTransfer) {
@@ -193,13 +237,24 @@ const addCryptoTransaction = async function (cryptoTransfer) {
   }
 
   if (!('transfers' in cryptoTransfer)) {
-    cryptoTransfer['transfers'] = [
+    cryptoTransfer.transfers = [
       {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount},
       {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount},
       {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE},
     ];
   }
   await addTransaction(cryptoTransfer);
+};
+
+const addTokenTransferTransaction = async function (tokenTransfer) {
+  // transaction fees
+  tokenTransfer.transfers = [
+    {account: tokenTransfer.payerAccountId, amount: -NETWORK_FEE - NODE_FEE},
+    {account: tokenTransfer.treasuryAccountId, amount: NETWORK_FEE},
+    {account: tokenTransfer.nodeAccountId, amount: NODE_FEE},
+  ];
+  tokenTransfer.type = 30; // TOKENTRANSFER
+  await addTransaction(tokenTransfer);
 };
 
 const addTopicMessage = async function (message) {
@@ -216,7 +271,7 @@ const addTopicMessage = async function (message) {
   await sqlConnection.query(
     `INSERT INTO topic_message (
        consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash_version)
-    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7);`,
+    VALUES ($1, $2, $3, $4, $5, $6, $7);`,
     [
       message.timestamp,
       message.realm_num,
@@ -230,8 +285,8 @@ const addTopicMessage = async function (message) {
 };
 
 module.exports = {
-  addAccount: addAccount,
-  addCryptoTransaction: addCryptoTransaction,
-  setAccountBalance: setAccountBalance,
-  setUp: setUp,
+  addAccount,
+  addCryptoTransaction,
+  setAccountBalance,
+  setUp,
 };
