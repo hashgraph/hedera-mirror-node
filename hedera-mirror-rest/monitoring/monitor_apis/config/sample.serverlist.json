@@ -12,12 +12,15 @@
     "limit": 1000
   },
   "balance": {
+    "freshnessThreshold": 1000,
     "limit": 1000
   },
   "transaction": {
+    "freshnessThreshold": 50,
     "limit": 1000
   },
   "topic": {
+    "freshnessThreshold": 100,
     "limit": 1000,
     "topicId": "0.0.1930"
   }

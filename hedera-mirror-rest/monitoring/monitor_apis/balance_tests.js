@@ -39,7 +39,6 @@ const {
 } = require('./utils');
 
 const balancesPath = '/balances';
-const balanceFileUpdateRefreshTime = 900;
 const resource = 'balance';
 const resourceLimit = config[resource].limit;
 const jsonRespKey = 'balances';
@@ -171,8 +170,7 @@ const getSingleBalanceById = async (server) => {
  * @param {String} server API host endpoint
  */
 const checkBalanceFreshness = async (server) => {
-  const freshnessThreshold = balanceFileUpdateRefreshTime * 2;
-
+  const {freshnessThreshold} = config[resource];
   const url = getUrl(server, balancesPath, {limit: 1});
   const resp = await getAPIResponse(url);
 

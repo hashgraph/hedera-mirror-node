@@ -29,8 +29,11 @@ const REQUIRED_FIELDS = [
   'interval',
   'shard',
   'account.limit',
+  'balance.freshnessThreshold',
   'balance.limit',
+  'transaction.freshnessThreshold',
   'transaction.limit',
+  'topic.freshnessThreshold',
   'topic.limit',
   'topic.topicId',
 ];

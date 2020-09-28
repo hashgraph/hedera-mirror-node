@@ -49,9 +49,12 @@ cp config/sample.serverlist.json config/serverlist.json // Start with the sample
 nano config/serverlist.json // Insert the mirror node deployments you want to monitor
 ```
 
-To configure the `limit` threshold for individual resources (`account`, `balance`, `transaction`, or `topic`),
-for example, for environments with lower traffic volume, adjust the values of the following section
-in `config/serverlist.json`. `topic.topicId` needs to set to an existing topic ID of the target environment.
+To customize per-resource configuration:
+
+- `limit` threshold for `account`, `balance`, `transation`, and `topic` can be adjusted independently if needed, e.g.,
+  for environments with lower traffic volume
+- `topic.topicId` needs to set to an existing topic ID of the target environment
+- `freshnessThreshold` (in seconds) for `balance`, `transaction`, and `topic` can be adjusted independently if needed
 
 ```json
 {
@@ -59,12 +62,15 @@ in `config/serverlist.json`. `topic.topicId` needs to set to an existing topic I
     "limit": 1000
   },
   "balance": {
+    "freshnessThreshold": 1000,
     "limit": 1000
   },
   "transaction": {
+    "freshnessThreshold": 50,
     "limit": 1000
   },
   "topic": {
+    "freshnessThreshold": 100,
     "limit": 1000,
     "topicId": "0.0.1930"
   }

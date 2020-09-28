@@ -26,6 +26,7 @@ const {
   checkRespObjDefined,
   checkRespArrayLength,
   checkMandatoryParams,
+  checkRespDataFreshness,
   checkConsensusTimestampOrder,
   getAPIResponse,
   getUrl,
@@ -218,51 +219,6 @@ const getTopicMessagesBySequenceNumberFilter = async (server) => {
 };
 
 /**
- * Verifies /topics/0.0.2/messages returns 400
- *
- * @param {String} server API host endpoint
- * @return {{url: String, passed: boolean, message: String}}
- */
-const getTopicMessagesForNonTopicEntityId = async (server) => {
-  const url = getUrl(server, topicMessagesPath('0.0.2'), {limit: resourceLimit});
-  const resp = await getAPIResponse(url);
-
-  const result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 400}).run(resp);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: 'Successfully called topics on non-topic entity id 0.0.2 and got expected 400',
-  };
-};
-
-/**
- * Verifies /topics/:topicId/messages with non-existing topic ID returns 404
- *
- * @param {String} server API host endpoint
- * @return {{url: String, passed: boolean, message: String}}
- */
-const getTopicMessagesForNonExistingTopicId = async (server) => {
-  const nonExistingTopicId = `${config.shard + 1}.0.1930`;
-  const url = getUrl(server, topicMessagesPath(nonExistingTopicId), {limit: resourceLimit});
-  const resp = await getAPIResponse(url);
-
-  const result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 404}).run(resp);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: `Successfully called topics on non-existing topic ID ${nonExistingTopicId} and got expected 404`,
-  };
-};
-
-/**
  * Verifies /topics/:topicId/messages/:sequencenumber
  *
  * @param {String} server API host endpoint
@@ -366,6 +322,38 @@ const getTopicMessagesByConsensusTimestamp = async (server) => {
 };
 
 /**
+ * Verfiy the freshness of the latest topic message returned by the api
+ * @param {String} server API host endpoint
+ */
+const checkTopicMessageFreshness = async (server) => {
+  const {freshnessThreshold} = config[resource];
+  const url = getUrl(server, topicMessagesPath(topicId), {limit: 1, order: 'desc'});
+  const messages = await getAPIResponse(url, jsonRespKey);
+
+  const result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `messages.length of ${elements.length} was expected to be 1`,
+    })
+    .withCheckSpec(checkRespDataFreshness, {
+      timestamp: (message) => message.consensus_timestamp,
+      threshold: freshnessThreshold,
+      message: (delta) => `balance was stale, ${delta} seconds old`,
+    })
+    .run(messages);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully retrieved balance from with ${freshnessThreshold} seconds ago`,
+  };
+};
+
+/**
  * Run all topic message tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
@@ -376,10 +364,9 @@ const runTests = async (server, classResults) => {
   const runTest = testRunner(server, classResults);
   tests.push(runTest(getTopicMessages));
   tests.push(runTest(getTopicMessagesBySequenceNumberFilter));
-  tests.push(runTest(getTopicMessagesForNonTopicEntityId));
-  tests.push(runTest(getTopicMessagesForNonExistingTopicId));
   tests.push(runTest(getTopicMessagesByTopicIDAndSequenceNumberPath));
   tests.push(runTest(getTopicMessagesByConsensusTimestamp));
+  tests.push(runTest(checkTopicMessageFreshness));
 
   return Promise.all(tests);
 };

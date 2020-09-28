@@ -38,7 +38,6 @@ const {
 } = require('./utils');
 
 const transactionsPath = '/transactions';
-const recordsFileUpdateRefreshTime = 5;
 const resource = 'transaction';
 const resourceLimit = config[resource].limit;
 const jsonRespKey = 'transactions';
@@ -284,8 +283,7 @@ const getSingleTransactionsById = async (server) => {
  * @param {Object} server API host endpoint
  */
 const checkTransactionFreshness = async (server) => {
-  const freshnessThreshold = recordsFileUpdateRefreshTime * 10;
-
+  const {freshnessThreshold} = config[resource];
   const url = getUrl(server, transactionsPath, {limit: 1});
   const transactions = await getAPIResponse(url, jsonRespKey);
 
