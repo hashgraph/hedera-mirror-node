@@ -31,6 +31,6 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class TokenWipeTransactionsHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenWipe().getToken().getTokenId());
+        return EntityId.of(recordItem.getRecord().getReceipt().getTokenId());
     }
 }

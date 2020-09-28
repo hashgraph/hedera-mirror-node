@@ -48,8 +48,6 @@ public class Token {
 
     private long createdTimestamp;
 
-//    private boolean deleted;
-
     private int divisibility;
 
     private boolean freezeDefault;
@@ -57,6 +55,8 @@ public class Token {
     private byte[] freezeKey;
 
     private Long initialSupply;
+
+//    private Long currentSupply; // Increment with Mint amount, decrement with Burn amount
 
     private boolean kycDefault;
 

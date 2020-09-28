@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class TokenUpdateTransactionsHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken().getTokenId());
+        return EntityId.of(recordItem.getRecord().getReceipt().getTokenId());
     }
 
     @Override
