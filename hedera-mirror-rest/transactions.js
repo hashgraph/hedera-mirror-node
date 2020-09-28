@@ -50,10 +50,10 @@ const selectClause = `SELECT
        t.transaction_hash`;
 
 /**
- * Creates token transfer lists from aggregated ',' separated strings in the query result
+ * Creates token transfer list from aggregated ',' separated string in the query result
  *
  * @param tokenTransferList token transfer list string
- * @return {*[]|{amount: Number, account: string, token: string}[]}
+ * @return {*[]|{amount: Number, account: string, token_id: string}[]}
  */
 const createTokenTransferList = (tokenTransferList) => {
   if (!tokenTransferList) {
