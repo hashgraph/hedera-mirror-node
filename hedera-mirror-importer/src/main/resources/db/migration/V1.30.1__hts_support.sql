@@ -58,24 +58,24 @@ insert into t_transaction_results (proto_id, result) values
 -- Add token table to hold token properties
 create table if not exists token
 (
-    token_id            entity_id               primary key,
-    created_timestamp   bigint                  not null,
-    divisibility        bigint                  not null,
-    ed25519_freeze_key  varchar                 null,
-    ed25519_kyc_key     varchar                 null,
-    ed25519_supply_key  varchar                 null,
-    ed25519_wipe_key    varchar                 null,
-    freeze_default      boolean                 not null default false,
-    freeze_key          bytea,
-    initial_supply      bigint                  not null,
-    kyc_key             bytea,
-    modified_timestamp  bigint                  not null,
-    name                character varying(100)  not null,
-    supply_key          bytea,
-    symbol              character varying(32)   not null,
-    total_supply        bigint                  not null default 0,
-    treasury_account_id entity_id               not null,
-    wipe_key            bytea
+    token_id                entity_id               primary key,
+    created_timestamp       bigint                  not null,
+    divisibility            bigint                  not null,
+    ed25519_freeze_key_hex  varchar                 null,
+    ed25519_kyc_key_hex     varchar                 null,
+    ed25519_supply_key_hex  varchar                 null,
+    ed25519_wipe_key_hex    varchar                 null,
+    freeze_default          boolean                 not null default false,
+    freeze_key              bytea,
+    initial_supply          bigint                  not null,
+    kyc_key                 bytea,
+    modified_timestamp      bigint                  not null,
+    name                    character varying(100)  not null,
+    supply_key              bytea,
+    symbol                  character varying(32)   not null,
+    total_supply            bigint                  not null default 0,
+    treasury_account_id     entity_id               not null,
+    wipe_key                bytea
 );
 
 --- Add token_account table to capture token-account info such as frozen, kyc and wipe status
