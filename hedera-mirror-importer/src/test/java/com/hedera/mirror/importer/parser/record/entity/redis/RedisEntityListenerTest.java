@@ -28,16 +28,17 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 
 public class RedisEntityListenerTest extends BatchEntityListenerTest {
 
-    private final RedisOperations<String, TopicMessage> redisOperations;
+    private final RedisOperations<String, StreamMessage> redisOperations;
 
     @Autowired
     public RedisEntityListenerTest(RedisEntityListener entityListener, RedisProperties properties,
-                                   RedisOperations<String, TopicMessage> redisOperations) {
+                                   RedisOperations<String, StreamMessage> redisOperations) {
         super(entityListener, properties);
         this.redisOperations = redisOperations;
     }

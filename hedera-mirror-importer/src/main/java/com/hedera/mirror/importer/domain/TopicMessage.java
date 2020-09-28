@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
@@ -31,13 +33,15 @@ import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdDeserializer;
+import com.hedera.mirror.importer.converter.AccountIdDeserializer;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
+@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
+@JsonTypeName("TopicMessage")
 @ToString(exclude = {"message", "runningHash"})
-public class TopicMessage implements Persistable<Long> {
+public class TopicMessage implements Persistable<Long>, StreamMessage {
 
     private Integer chunkNum;
 
@@ -50,7 +54,7 @@ public class TopicMessage implements Persistable<Long> {
 
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
-    @JsonDeserialize(using = EntityIdDeserializer.class)
+    @JsonDeserialize(using = AccountIdDeserializer.class)
     private EntityId payerAccountId;
 
     private int realmNum;

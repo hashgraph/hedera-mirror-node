@@ -30,21 +30,21 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.domain.StreamMessage;
 
 @Configuration
 public class RedisConfiguration {
 
     @Bean
-    RedisSerializer<TopicMessage> redisSerializer() {
-        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(TopicMessage.class);
+    RedisSerializer<StreamMessage> redisSerializer() {
+        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(StreamMessage.class);
         jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper(new MessagePackFactory()));
         return jackson2JsonRedisSerializer;
     }
 
     @Bean
-    RedisOperations<String, TopicMessage> redisOperations(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, TopicMessage> redisTemplate = new RedisTemplate<>();
+    RedisOperations<String, StreamMessage> redisOperations(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, StreamMessage> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         redisTemplate.setValueSerializer(redisSerializer());
         return redisTemplate;

@@ -30,7 +30,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
-public class EntityIdDeserializer extends JsonDeserializer<EntityId> {
+public class AccountIdDeserializer extends JsonDeserializer<EntityId> {
     @Override
     public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException,
             JsonProcessingException {

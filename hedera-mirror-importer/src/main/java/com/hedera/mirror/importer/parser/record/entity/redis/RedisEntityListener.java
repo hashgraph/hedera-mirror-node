@@ -36,6 +36,7 @@ import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
@@ -52,7 +53,7 @@ public class RedisEntityListener implements BatchEntityListener {
 
     private final MirrorProperties mirrorProperties;
     private final RedisProperties redisProperties;
-    private final RedisOperations<String, TopicMessage> redisOperations;
+    private final RedisOperations<String, StreamMessage> redisOperations;
     private final List<TopicMessage> topicMessages = new ArrayList<>();
     private final MeterRegistry meterRegistry;
 

@@ -42,7 +42,7 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 @Named
 public class NotifyingTopicListener extends SharedTopicListener {
 
-    private final ObjectMapper objectMapper;
+    final ObjectMapper objectMapper;
     private final PgChannel channel;
     private final Flux<TopicMessage> topicMessages;
 
