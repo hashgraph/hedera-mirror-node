@@ -25,8 +25,8 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.UnicastProcessor;
 
 import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
@@ -45,18 +45,19 @@ public class RedisEntityListenerTest extends BatchEntityListenerTest {
 
     @Override
     protected Flux<TopicMessage> subscribe(long topicNum) {
-        DirectProcessor<TopicMessage> directProcessor = DirectProcessor.create();
+        UnicastProcessor<TopicMessage> processor = UnicastProcessor.create();
         RedisSerializer stringSerializer = ((RedisTemplate<String, ?>) redisOperations).getStringSerializer();
         RedisSerializer<TopicMessage> serializer = (RedisSerializer<TopicMessage>) redisOperations.getValueSerializer();
 
         RedisCallback<TopicMessage> redisCallback = connection -> {
             byte[] channel = stringSerializer.serialize("topic.0.0." + topicNum);
-            connection.subscribe((message, pattern) -> directProcessor
-                    .onNext(serializer.deserialize(message.getBody())), channel);
+            connection.subscribe((message, pattern) -> {
+                processor.onNext(serializer.deserialize(message.getBody()));
+            }, channel);
             return null;
         };
 
         redisOperations.execute(redisCallback);
-        return directProcessor;
+        return processor;
     }
 }

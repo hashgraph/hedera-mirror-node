@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
 public class NotifyProperties implements EntityListenerProperties {
 
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     private int maxJsonPayloadSize = 8000;
 }
