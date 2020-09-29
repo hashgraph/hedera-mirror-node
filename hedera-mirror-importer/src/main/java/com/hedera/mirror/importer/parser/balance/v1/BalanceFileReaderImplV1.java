@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.balance.v1;
 
 /*-
  * ‌
@@ -35,20 +35,22 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.balance.BalanceFileReader;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class BalanceFileReaderImpl implements BalanceFileReader {
+public class BalanceFileReaderImplV1 implements BalanceFileReader {
     private static final int MAX_HEADER_ROWS = 10;
     private static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
     private static final String COLUMN_HEADER_PREFIX = "shard";
 
     private final int fileBufferSize;
     private final long systemShardNum;
-    private final AccountBalanceLineParser parser;
+    private final AccountBalanceLineParserV1 parser;
 
-    public BalanceFileReaderImpl(BalanceParserProperties balanceParserProperties, AccountBalanceLineParser parser) {
+    public BalanceFileReaderImplV1(BalanceParserProperties balanceParserProperties, AccountBalanceLineParserV1 parser) {
         this.fileBufferSize = balanceParserProperties.getFileBufferSize();
         this.systemShardNum = balanceParserProperties.getMirrorProperties().getShard();
         this.parser = parser;
@@ -57,14 +59,15 @@ public class BalanceFileReaderImpl implements BalanceFileReader {
     @Override
     public Stream<AccountBalance> read(File file) {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)), fileBufferSize);
-            final long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
+                    fileBufferSize);
+            long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
 
             return reader.lines()
                     .map(line -> {
                         try {
                             return parser.parse(line, consensusTimestamp, systemShardNum);
-                        } catch(InvalidDatasetException ex) {
+                        } catch (InvalidDatasetException ex) {
                             log.error(ex);
                             return null;
                         }
@@ -73,10 +76,10 @@ public class BalanceFileReaderImpl implements BalanceFileReader {
                     .onClose(() -> {
                         try {
                             reader.close();
-                        } catch(Exception ex) {
+                        } catch (Exception ex) {
                         }
                     });
-        } catch(IOException ex) {
+        } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
         }
     }

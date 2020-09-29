@@ -9,8 +9,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
 
-class AccountBalanceLineParserTest {
+class AccountBalanceLineParserV1Test {
     private static final long timestamp = 1596340377922333444L;
     private static final long systemShardNum = 0;
 
@@ -41,7 +42,7 @@ class AccountBalanceLineParserTest {
             ";true;;;"
     }, delimiter = ';')
     void parse(String line, boolean expectThrow, Long expectedRealm, Long expectedAccount, Long expectedBalance) {
-        AccountBalanceLineParser parser = new AccountBalanceLineParser();
+        AccountBalanceLineParserV1 parser = new AccountBalanceLineParserV1();
         if (!expectThrow) {
             AccountBalance accountBalance = parser.parse(line, timestamp, systemShardNum);
             var id = accountBalance.getId();

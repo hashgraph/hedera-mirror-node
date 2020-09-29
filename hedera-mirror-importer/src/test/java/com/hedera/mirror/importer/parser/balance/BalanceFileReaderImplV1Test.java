@@ -23,17 +23,19 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
+import com.hedera.mirror.importer.parser.balance.v1.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.util.Utility;
 
-public class BalanceFileReaderImplTest {
+public class BalanceFileReaderImplV1Test {
     private static final String sampleBalanceFileName = "2019-08-30T18_15_00.016002001Z_Balances.csv";
 
     @TempDir
     Path dataPath;
 
     private MirrorProperties mirrorProperties;
-    private BalanceFileReaderImpl balanceFileReader;
-    private AccountBalanceLineParser parser;
+    private BalanceFileReaderImplV1 balanceFileReader;
+    private AccountBalanceLineParserV1 parser;
 
     private long sampleConsensusTimestamp;
     private FileCopier fileCopier;
@@ -43,8 +45,8 @@ public class BalanceFileReaderImplTest {
     @BeforeEach
     void setup() throws IOException {
         mirrorProperties = new MirrorProperties();
-        parser = new AccountBalanceLineParser();
-        balanceFileReader = new BalanceFileReaderImpl(new BalanceParserProperties(mirrorProperties), parser);
+        parser = new AccountBalanceLineParserV1();
+        balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(mirrorProperties), parser);
         var resource = new ClassPathResource("data");
         StreamType streamType = StreamType.BALANCE;
         fileCopier = FileCopier
@@ -142,7 +144,7 @@ public class BalanceFileReaderImplTest {
     @Test
     void readValidWhenFileHasTrailingEmptyLines() throws IOException {
         fileCopier.copy();
-        FileUtils.writeStringToFile(testFile, "\n\n\n", "utf-8",true);
+        FileUtils.writeStringToFile(testFile, "\n\n\n", "utf-8", true);
 
         Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
         verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
@@ -151,7 +153,7 @@ public class BalanceFileReaderImplTest {
     @Test
     void readValidWhenFileHasBadTrailingLines() throws IOException {
         fileCopier.copy();
-        FileUtils.writeStringToFile(testFile, "\n0.0.3.20340\nfoobar\n", "utf-8",true);
+        FileUtils.writeStringToFile(testFile, "\n0.0.3.20340\nfoobar\n", "utf-8", true);
 
         Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
         verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
@@ -162,13 +164,14 @@ public class BalanceFileReaderImplTest {
         fileCopier.copy();
         long otherShard = mirrorProperties.getShard() + 1;
         FileUtils.writeStringToFile(testFile,
-                String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard), "utf-8",true);
+                String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard), "utf-8", true);
 
         Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
         verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
     }
 
-    private void verifySuccess(File file, Stream<AccountBalance> stream, long expectedConsensusTimestamp, int skipLines) throws IOException {
+    private void verifySuccess(File file, Stream<AccountBalance> stream, long expectedConsensusTimestamp,
+                               int skipLines) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
             while (skipLines > 0) {
                 reader.readLine();
@@ -186,10 +189,11 @@ public class BalanceFileReaderImplTest {
                 }
 
                 try {
-                    AccountBalance expectedItem = parser.parse(line, expectedConsensusTimestamp, mirrorProperties.getShard());
+                    AccountBalance expectedItem = parser
+                            .parse(line, expectedConsensusTimestamp, mirrorProperties.getShard());
                     AccountBalance actualItem = accountBalanceIter.next();
                     assertThat(actualItem).isEqualTo(expectedItem);
-                } catch(InvalidDatasetException ex) {
+                } catch (InvalidDatasetException ex) {
                 }
             }
 

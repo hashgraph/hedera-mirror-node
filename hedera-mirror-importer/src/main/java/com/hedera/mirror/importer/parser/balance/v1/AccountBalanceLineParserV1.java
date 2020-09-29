@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.balance.v1;
 
 import javax.inject.Named;
 
@@ -8,7 +8,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
-public class AccountBalanceLineParser {
+public class AccountBalanceLineParserV1 {
 
     /**
      * Parses an account balance line to extract shard, realm, account, and balance. If the shard matches
