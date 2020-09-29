@@ -56,7 +56,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.Optional;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -799,5 +798,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
          return optionalToken;
+    }
+
+    private Token retrieveToken(TokenID tokenID) {
+        return tokenRepository
+                .findById(new Token.Id(EntityId.of(tokenID)))
+                .orElse(null);
     }
 }
