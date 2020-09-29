@@ -297,7 +297,7 @@ const checkTransactionFreshness = async (server) => {
     .withCheckSpec(checkRespDataFreshness, {
       timestamp: (data) => data.consensus_timestamp,
       threshold: freshnessThreshold,
-      message: (delta) => `balance was stale, ${delta} seconds old`,
+      message: (delta) => `transaction was stale, ${delta} seconds old`,
     })
     .run(transactions);
   if (!result.passed) {
@@ -315,21 +315,21 @@ const checkTransactionFreshness = async (server) => {
  * Run all transaction tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
-const runTests = async (server, classResults) => {
-  const tests = [];
-  const runTest = testRunner(server, classResults);
-  tests.push(runTest(getTransactionsWithAccountCheck));
-  tests.push(runTest(getTransactionsWithOrderParam));
-  tests.push(runTest(getTransactionsWithLimitParams));
-  tests.push(runTest(getTransactionsWithTimeAndLimitParams));
-  tests.push(runTest(getSingleTransactionsById));
-  tests.push(runTest(checkTransactionFreshness));
-
-  return Promise.all(tests);
+const runTests = async (server, testResult) => {
+  const runTest = testRunner(server, testResult, resource);
+  return Promise.all([
+    runTest(getTransactionsWithAccountCheck),
+    runTest(getTransactionsWithOrderParam),
+    runTest(getTransactionsWithLimitParams),
+    runTest(getTransactionsWithTimeAndLimitParams),
+    runTest(getSingleTransactionsById),
+    runTest(checkTransactionFreshness),
+  ]);
 };
 
 module.exports = {
+  resource,
   runTests,
 };

@@ -31,6 +31,7 @@ const REQUIRED_FIELDS = [
   'account.limit',
   'balance.freshnessThreshold',
   'balance.limit',
+  'stateproof.intervalMultiplier',
   'transaction.freshnessThreshold',
   'transaction.limit',
   'topic.freshnessThreshold',

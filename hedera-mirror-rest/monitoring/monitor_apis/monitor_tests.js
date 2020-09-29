@@ -20,33 +20,62 @@
 
 'use strict';
 
-const accountTests = require('./account_tests');
-const balanceTests = require('./balance_tests');
-const transactionTests = require('./transaction_tests');
-const stateproofTests = require('./stateproof_tests');
-const topicmessageTests = require('./topicmessage_tests');
+const {getServerCurrentResults} = require('./common');
+const config = require('./config');
 const utils = require('./utils');
+
+const allTestModules = [
+  require('./account_tests'),
+  require('./balance_tests'),
+  require('./transaction_tests'),
+  require('./stateproof_tests'),
+  require('./topicmessage_tests'),
+];
+
+const counters = {};
 
 /**
  * Run node based tests against api endpoint
- * Each class manages its tests and returns a class rsults object
- * A single combined result object covering transaction, accounts and balances is returned
- * @param {String} server API host endpoint
+ * Each class manages its tests and returns a class results object
+ * A single combined result object covering all test resources is returned
+ *
+ * @param {String} name server name
+ * @param {String} address server address in the format of http://ip:port
  * @return {Object} results object capturing tests for given endpoint
  */
-const runTests = (server) => {
-  if (undefined === server) {
-    console.log(`server is undefined, skipping ....`);
-    return;
+const runTests = (name, address) => {
+  const counter = name in counters ? counters[name] : 0;
+  const skippedResource = [];
+  const testModules = allTestModules.filter((testModule) => {
+    const {intervalMultiplier} = config[testModule.resource];
+    if (!intervalMultiplier || counter % intervalMultiplier === 0) {
+      return true;
+    }
+
+    skippedResource.push(testModule.resource);
+    return false;
+  });
+  counters[name] = counter + 1;
+
+  const serverTestResult = new utils.ServerTestResult();
+  if (skippedResource.length !== 0) {
+    const currentResults = getServerCurrentResults(name);
+    for (const testResult of currentResults.testResults) {
+      if (skippedResource.includes(testResult.resource)) {
+        serverTestResult.addTestResult(testResult);
+      }
+    }
   }
 
-  const results = utils.getMonitorClassResult();
+  if (testModules.length === 0) {
+    serverTestResult.finish();
+    return Promise.resolve(serverTestResult.result);
+  }
 
-  const testModules = [accountTests, balanceTests, transactionTests, stateproofTests, topicmessageTests];
-  return Promise.all(testModules.map((testModule) => testModule.runTests(server, results))).then(() => {
+  return Promise.all(testModules.map((testModule) => testModule.runTests(address, serverTestResult))).then(() => {
     // set class results endTime
-    results.endTime = Date.now();
-    return results;
+    serverTestResult.finish();
+    return serverTestResult.result;
   });
 };
 

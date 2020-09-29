@@ -189,18 +189,18 @@ const getSingleAccount = async (server) => {
 /**
  * Run all account tests in an asynchronous fashion waiting for all tests to complete
  * @param {String} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
-const runTests = async (server, classResults) => {
-  const tests = [];
-  const runTest = testRunner(server, classResults);
-  tests.push(runTest(getAccountsWithAccountCheck));
-  tests.push(runTest(getAccountsWithTimeAndLimitParams));
-  tests.push(runTest(getSingleAccount));
-
-  return Promise.all(tests);
+const runTests = async (server, testResult) => {
+  const runTest = testRunner(server, testResult, resource);
+  return Promise.all([
+    runTest(getAccountsWithAccountCheck),
+    runTest(getAccountsWithTimeAndLimitParams),
+    runTest(getSingleAccount),
+  ]);
 };
 
 module.exports = {
+  resource,
   runTests,
 };

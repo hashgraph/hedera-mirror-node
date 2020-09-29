@@ -15,6 +15,9 @@
     "freshnessThreshold": 1000,
     "limit": 1000
   },
+  "stateproof": {
+    "intervalMultiplier": 10
+  },
   "transaction": {
     "freshnessThreshold": 50,
     "limit": 1000

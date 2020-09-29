@@ -31,6 +31,7 @@ const {
   CheckRunner,
 } = require('./utils');
 
+const resource = 'stateproof';
 const transactionsPath = '/transactions';
 const transactionsJsonKey = 'transactions';
 const mandatoryParams = ['record_file', 'address_books', 'signature_files'];
@@ -149,18 +150,18 @@ const checkStateproofForNonExistingTransaction = async (server) => {
  * Run all stateproof tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
-const runTests = async (server, classResults) => {
-  const tests = [];
-  const runTest = testRunner(server, classResults);
-  tests.push(runTest(checkStateproofForValidTransaction));
-  tests.push(runTest(checkStateproofForFailedTransaction));
-  tests.push(runTest(checkStateproofForNonExistingTransaction));
-
-  return Promise.all(tests);
+const runTests = async (server, testResult) => {
+  const runTest = testRunner(server, testResult, resource);
+  return Promise.all([
+    runTest(checkStateproofForValidTransaction),
+    runTest(checkStateproofForFailedTransaction),
+    runTest(checkStateproofForNonExistingTransaction),
+  ]);
 };
 
 module.exports = {
+  resource,
   runTests,
 };

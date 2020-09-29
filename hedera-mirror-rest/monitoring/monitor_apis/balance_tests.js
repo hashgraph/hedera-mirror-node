@@ -197,19 +197,19 @@ const checkBalanceFreshness = async (server) => {
  * Run all balance tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
-const runTests = async (server, classResults) => {
-  const tests = [];
-  const runTest = testRunner(server, classResults);
-  tests.push(runTest(getBalancesCheck));
-  tests.push(runTest(getBalancesWithTimeAndLimitParams));
-  tests.push(runTest(getSingleBalanceById));
-  tests.push(runTest(checkBalanceFreshness));
-
-  return Promise.all(tests);
+const runTests = async (server, testResult) => {
+  const runTest = testRunner(server, testResult, resource);
+  return Promise.all([
+    runTest(getBalancesCheck),
+    runTest(getBalancesWithTimeAndLimitParams),
+    runTest(getSingleBalanceById),
+    runTest(checkBalanceFreshness),
+  ]);
 };
 
 module.exports = {
+  resource,
   runTests,
 };

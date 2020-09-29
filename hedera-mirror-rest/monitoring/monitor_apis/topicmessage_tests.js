@@ -203,14 +203,6 @@ const getTopicMessagesBySequenceNumberFilter = async (server) => {
     return {url, ...result};
   }
 
-  url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: 'a'});
-  messages = await getAPIResponse(url, jsonRespKey);
-
-  result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 400}).run(messages);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
   return {
     url,
     passed: true,
@@ -236,22 +228,6 @@ const getTopicMessagesByTopicIDAndSequenceNumberPath = async (server) => {
       message: 'topic message object is missing some mandatory fields',
     })
     .run(message);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  url = getUrl(server, topicMessagesPath(topicId, 0));
-  message = await getAPIResponse(url);
-
-  result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 400}).run(message);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  url = getUrl(server, topicMessagesPath(topicId, -1));
-  message = await getAPIResponse(url);
-
-  result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 400}).run(message);
   if (!result.passed) {
     return {url, ...result};
   }
@@ -291,7 +267,7 @@ const getTopicMessagesByConsensusTimestamp = async (server) => {
 
   const consensusTimestamp = messages[0].consensus_timestamp;
   url = getUrl(server, `/topics/messages/${consensusTimestamp}`);
-  let message = await getAPIResponse(url);
+  const message = await getAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -302,14 +278,6 @@ const getTopicMessagesByConsensusTimestamp = async (server) => {
       message: (actual, expected) => `consensus timestamp ${actual} was expected to be ${expected}`,
     })
     .run(message);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  url = getUrl(server, '/topics/messages/0');
-  message = await getAPIResponse(url);
-
-  result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 404}).run(message);
   if (!result.passed) {
     return {url, ...result};
   }
@@ -339,7 +307,7 @@ const checkTopicMessageFreshness = async (server) => {
     .withCheckSpec(checkRespDataFreshness, {
       timestamp: (message) => message.consensus_timestamp,
       threshold: freshnessThreshold,
-      message: (delta) => `balance was stale, ${delta} seconds old`,
+      message: (delta) => `topic message was stale, ${delta} seconds old`,
     })
     .run(messages);
   if (!result.passed) {
@@ -357,20 +325,20 @@ const checkTopicMessageFreshness = async (server) => {
  * Run all topic message tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
-const runTests = async (server, classResults) => {
-  const tests = [];
-  const runTest = testRunner(server, classResults);
-  tests.push(runTest(getTopicMessages));
-  tests.push(runTest(getTopicMessagesBySequenceNumberFilter));
-  tests.push(runTest(getTopicMessagesByTopicIDAndSequenceNumberPath));
-  tests.push(runTest(getTopicMessagesByConsensusTimestamp));
-  tests.push(runTest(checkTopicMessageFreshness));
-
-  return Promise.all(tests);
+const runTests = async (server, testResult) => {
+  const runTest = testRunner(server, testResult, resource);
+  return Promise.all([
+    runTest(getTopicMessages),
+    runTest(getTopicMessagesBySequenceNumberFilter),
+    runTest(getTopicMessagesByTopicIDAndSequenceNumberPath),
+    runTest(getTopicMessagesByConsensusTimestamp),
+    runTest(checkTopicMessageFreshness),
+  ]);
 };
 
 module.exports = {
+  resource,
   runTests,
 };

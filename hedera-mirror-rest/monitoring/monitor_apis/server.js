@@ -61,8 +61,8 @@ app.get(`${apiPrefix}/status`, (req, res) => {
   const status = common.getStatus();
   res.status(status.httpCode).send(status.results);
 });
-app.get(`${apiPrefix}/status/:id`, (req, res) => {
-  const status = common.getStatusWithId(req.params.id);
+app.get(`${apiPrefix}/status/:name`, (req, res) => {
+  const status = common.getStatusByName(req.params.name);
   res.status(status.httpCode).send(status);
 });
 

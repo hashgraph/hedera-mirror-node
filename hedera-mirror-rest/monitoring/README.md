@@ -53,8 +53,9 @@ To customize per-resource configuration:
 
 - `limit` threshold for `account`, `balance`, `transation`, and `topic` can be adjusted independently if needed, e.g.,
   for environments with lower traffic volume
-- `topic.topicId` needs to set to an existing topic ID of the target environment
 - `freshnessThreshold` (in seconds) for `balance`, `transaction`, and `topic` can be adjusted independently if needed
+- set `stateproof.intervalMultipler` to run stateproof tests every `interval * intervalMultiplier` seconds
+- set `topic.topicId` to an existing topic ID of the target environment
 
 ```json
 {
@@ -64,6 +65,9 @@ To customize per-resource configuration:
   "balance": {
     "freshnessThreshold": 1000,
     "limit": 1000
+  },
+  "stateproof": {
+    "intervalMultiplier": 10
   },
   "transaction": {
     "freshnessThreshold": 50,

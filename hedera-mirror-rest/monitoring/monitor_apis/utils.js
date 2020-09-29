@@ -102,22 +102,43 @@ const getAPIResponse = async (url, key = undefined) => {
   }
 };
 
-/**
- * Retrieve a new instance of the monitoring class results object
- */
-const getMonitorClassResult = () => {
-  return {
-    testResults: [],
-    numPassedTests: 0,
-    numFailedTests: 0,
-    success: true,
-    message: '',
-    startTime: Date.now(),
-    endTime: 0,
-  };
-};
+class ServerTestResult {
+  constructor() {
+    this.result = {
+      testResults: [],
+      numPassedTests: 0,
+      numFailedTests: 0,
+      success: true,
+      message: '',
+      startTime: Date.now(),
+      endTime: 0,
+    };
+  }
 
-const testRunner = (server, testClassResult) => {
+  addTestResult(testResult) {
+    this.result.testResults.push(testResult);
+    if (testResult.result === 'passed') {
+      this.result.numPassedTests += 1;
+    } else {
+      this.result.numFailedTests += 1;
+      this.result.success = false;
+    }
+  }
+
+  finish() {
+    this.result.endTime = Date.now();
+  }
+}
+
+/**
+ * Creates a function to run specific tests with the provided server address, classs result, and resource
+ *
+ * @param {String} server server address in the format of http://ip:port
+ * @param {ServerTestResult} testClassResult test class result object
+ * @param {String} resource name of the resource to test
+ * @return {function(...[*]=)}
+ */
+const testRunner = (server, testClassResult, resource) => {
   return async (testFunc) => {
     const start = Date.now();
     const result = await testFunc(server);
@@ -128,15 +149,10 @@ const testRunner = (server, testClassResult) => {
       url: result.url,
       message: result.passed ? result.message : '',
       failureMessages: !result.passed ? [result.message] : [],
+      resource,
     };
 
-    testClassResult.testResults.push(testResult);
-    if (result.passed) {
-      testClassResult.numPassedTests++;
-    } else {
-      testClassResult.numFailedTests++;
-      testClassResult.success = false;
-    }
+    testClassResult.addTestResult(testResult);
   };
 };
 
@@ -147,7 +163,7 @@ const testRunner = (server, testClassResult) => {
  * @return {Object} Constructed failed result object
  */
 const createFailedResultJson = (title, msg) => {
-  const failedResultJson = getMonitorClassResult();
+  const failedResultJson = new ServerTestResult().result;
   failedResultJson.numFailedTests = 1;
   failedResultJson.success = false;
   failedResultJson.message = 'Prerequisite tests failed';
@@ -319,7 +335,6 @@ module.exports = {
   fromAccNum,
   getUrl,
   getAPIResponse,
-  getMonitorClassResult,
   createFailedResultJson,
   testRunner,
   checkAPIResponseError,
@@ -330,4 +345,5 @@ module.exports = {
   checkRespDataFreshness,
   checkConsensusTimestampOrder,
   CheckRunner,
+  ServerTestResult,
 };
