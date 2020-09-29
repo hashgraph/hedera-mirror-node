@@ -141,12 +141,10 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
         Token token = new Token();
         token.setCreatedTimestamp(1L);
-//        token.setDeleted(false);
         token.setDivisibility(1000);
         token.setFreezeDefault(false);
         token.setFreezeKey(input.toByteArray());
         token.setInitialSupply(1_000_000_000L);
-        token.setKycDefault(false);
         token.setKycKey(input.toByteArray());
         token.setModifiedTimestamp(3L);
         token.setName("FOO COIN TOKEN");

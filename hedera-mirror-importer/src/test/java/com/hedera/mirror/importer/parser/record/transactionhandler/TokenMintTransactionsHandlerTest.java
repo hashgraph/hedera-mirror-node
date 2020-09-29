@@ -21,7 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintCoins;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -37,7 +37,7 @@ public class TokenMintTransactionsHandlerTest extends AbstractTransactionHandler
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenMint(TokenMintCoins.getDefaultInstance());
+                .setTokenMint(TokenMintTransactionBody.getDefaultInstance());
     }
 
     @Override

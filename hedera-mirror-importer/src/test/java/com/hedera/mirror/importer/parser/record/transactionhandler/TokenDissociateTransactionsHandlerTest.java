@@ -20,28 +20,37 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-public class TokenDissociateTransactionsHandlerTest {
-//    @Override
-//    protected TransactionHandler getTransactionHandler() {
-//        return new TokenDissociateTransactionsHandler();
-//    }
-//
-//    @Override
-//    protected TransactionBody.Builder getDefaultTransactionBody() {
-//        return TransactionBody.newBuilder();
-////                .setTokenTokenDissociate(TokenDissociate.getDefaultInstance());
-//    }
-//
-//    @Override
-//    protected TransactionRecord.Builder getDefaultTransactionRecord() {
-//        return TransactionRecord.newBuilder()
-//                .setReceipt(TransactionReceipt.newBuilder()
-//                        .setAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build())
-//                        .setTokenId(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()));
-//    }
-//
-//    @Override
-//    protected EntityTypeEnum getExpectedEntityIdType() {
-//        return EntityTypeEnum.TOKEN;
-//    }
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+public class TokenDissociateTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new TokenDissociateTransactionsHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setTokenDissociate(TokenDissociateTransactionBody.getDefaultInstance());
+    }
+
+    @Override
+    protected TransactionRecord.Builder getDefaultTransactionRecord() {
+        return TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder()
+                        .setAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build())
+                        .setTokenId(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.TOKEN;
+    }
 }

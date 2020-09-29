@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenBurnCoins;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -37,7 +37,7 @@ public class TokenBurnTransactionsHandlerTest extends AbstractTransactionHandler
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenBurn(TokenBurnCoins.getDefaultInstance());
+                .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance());
     }
 
     @Override

@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -38,7 +38,7 @@ public class TokenRemoveKycTransactionsHandlerTest extends AbstractTransactionHa
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenRevokeKyc(TokenRevokeKyc.getDefaultInstance());
+                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.getDefaultInstance());
     }
 
     @Override

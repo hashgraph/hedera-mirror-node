@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -37,7 +37,7 @@ public class TokenCreateTransactionsHandlerTest extends AbstractTransactionHandl
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenCreation(TokenCreation.getDefaultInstance());
+                .setTokenCreation(TokenCreateTransactionBody.getDefaultInstance());
     }
 
     @Override

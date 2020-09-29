@@ -21,7 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -38,7 +38,7 @@ public class TokenFreezeTransactionsHandlerTest extends AbstractTransactionHandl
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenFreeze(TokenFreeze.getDefaultInstance());
+                .setTokenFreeze(TokenFreezeAccountTransactionBody.getDefaultInstance());
     }
 
     @Override

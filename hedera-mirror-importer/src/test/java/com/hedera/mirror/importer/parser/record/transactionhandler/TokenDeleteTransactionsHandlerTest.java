@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -37,7 +37,7 @@ public class TokenDeleteTransactionsHandlerTest extends AbstractTransactionHandl
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenDeletion(TokenDeletion.getDefaultInstance());
+                .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance());
     }
 
     @Override

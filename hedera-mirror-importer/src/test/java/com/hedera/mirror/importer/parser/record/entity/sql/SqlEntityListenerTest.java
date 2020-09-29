@@ -386,23 +386,21 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     private Token getToken(String tokenId, String accountId) throws DecoderException {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-        var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
+        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build().toByteArray();
         Token token = new Token();
         token.setCreatedTimestamp(1L);
-//        token.setDeleted(false);
         token.setDivisibility(1000);
         token.setFreezeDefault(false);
-        token.setFreezeKey(input.toByteArray());
+        token.setFreezeKey(hexKey);
         token.setInitialSupply(1_000_000_000L);
-        token.setKycDefault(false);
-        token.setKycKey(input.toByteArray());
+        token.setKycKey(hexKey);
         token.setModifiedTimestamp(3L);
         token.setName("FOO COIN TOKEN");
-        token.setSupplyKey(input.toByteArray());
+        token.setSupplyKey(hexKey);
         token.setSymbol("FOOTOK");
         token.setTokenId(new Token.Id(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         token.setTreasuryAccountId(EntityId.of(accountId, ACCOUNT));
-        token.setWipeKey(input.toByteArray());
+        token.setWipeKey(hexKey);
 
         return token;
     }

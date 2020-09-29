@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -43,15 +43,15 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
 
     @Override
     public void updateEntity(Entities entity, RecordItem recordItem) {
-        TokenManagement txMessage = recordItem.getTransactionBody().getTokenUpdate();
+        TokenUpdateTransactionBody txMessage = recordItem.getTransactionBody().getTokenUpdate();
         if (txMessage.hasAdminKey()) {
             entity.setKey(txMessage.getAdminKey().toByteArray());
         }
-//        if (txMessage.hasAutoRenewAccount()) {
-//            entity.setAutoRenewAccountId(EntityId.of(txMessage.getAutoRenewAccount()));
-//        }
+        if (txMessage.hasAutoRenewAccount()) {
+            entity.setAutoRenewAccountId(EntityId.of(txMessage.getAutoRenewAccount()));
+        }
 //        if (txMessage.hasAutoRenewPeriod()) {
-//            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+//            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod());
 //        }
     }
 }

@@ -28,6 +28,7 @@ import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -38,9 +39,12 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 import com.hedera.mirror.importer.util.Utility;
 
+@Builder
 @Data
 @Entity
 @Log4j2
+@NoArgsConstructor
+@AllArgsConstructor
 @ToString(exclude = {"freezeKey", "kycKey", "supplyKey", "wipeKey"})
 public class Token {
     @EmbeddedId
@@ -56,9 +60,7 @@ public class Token {
 
     private Long initialSupply;
 
-//    private Long currentSupply; // Increment with Mint amount, decrement with Burn amount
-
-    private boolean kycDefault;
+    private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
 
     private byte[] kycKey;
 
@@ -75,17 +77,24 @@ public class Token {
 
     private byte[] wipeKey;
 
-    @Column(name = "ed25519_freeze_key")
+    @Column(name = "ed25519_freeze_key_hex")
     private String ed25519FreezeKey;
 
-    @Column(name = "ed25519_kyc_key")
+    @Column(name = "ed25519_kyc_key_hex")
     private String ed25519KycKey;
 
-    @Column(name = "ed25519_supply_key")
+    @Column(name = "ed25519_supply_key_hex")
     private String ed25519SupplyKey;
 
-    @Column(name = "ed25519_wipe_key")
+    @Column(name = "ed25519_wipe_key_hex")
     private String ed25519WipeKey;
+
+    public void setInitialSupply(Long initialSupply) {
+        this.initialSupply = initialSupply;
+
+        // default totalSupply to initial supply
+        totalSupply = initialSupply;
+    }
 
     public void setFreezeKey(byte[] key) {
         freezeKey = key;

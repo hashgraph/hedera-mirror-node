@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -54,14 +53,13 @@ import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
 public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
-    //    private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-    //    .setAccountNum(1001)
-//            .build();
     static final String SYMBOL = "FOOCOIN";
     static final
-    Key tokenRefKey = keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
+    Key TOKEN_REF_KEY = keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
     private static final
-    TokenID tokenID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(2).build();
+    TokenID TOKEN_ID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(2).build();
+    private static final long CREATE_TIMESTAMP = 1L;
+    private static final long ASSOCIATE_TIMESTAMP = 5L;
 
     @Resource
     protected TokenRepository tokenRepository;
@@ -77,128 +75,163 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenCreate() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
-        assertTokenInRepository(tokenID, true, 1L, 1L, SYMBOL);
+        createTokenEntity(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP);
+
+        // verify entity count
+        Entities tokenEntities = getTokenEntity(TOKEN_ID);
+        var expectedEntity = createEntity(tokenEntities, null, null, TOKEN_REF_KEY, null, TRANSACTION_MEMO, 1L,
+                30L, EntityTypeEnum.TOKEN);
+        assertEquals(5, entityRepository.count()); // Node, payer, token and autorenew
+        assertThat(getEntity(tokenEntities.getId())).isEqualTo(expectedEntity);
+
+        // verify token
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL);
     }
 
     @Test
     void tokenCreateWithoutPersistence() throws InvalidProtocolBufferException {
         entityProperties.getPersist().setTokens(false);
 
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
-        assertTokenInRepository(tokenID, false, 1L, 1L, SYMBOL);
+        createTokenEntity(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP);
+
+        assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL);
+    }
+
+    @Test
+    void tokenAssociate() throws InvalidProtocolBufferException {
+        createTokenEntity(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP);
+
+        // delete token
+        Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
+        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, null);
+
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, true, false,
+                false, false);
+    }
+
+    @Test
+    void tokenDissociate() throws InvalidProtocolBufferException {
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+
+        Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER);
+        long dissociateTimeStamp = 10L;
+        insertAndParseTransaction(dissociateTransaction, dissociateTimeStamp, null);
+
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, dissociateTimeStamp, false, false,
+                false, false);
     }
 
     @Test
     void tokenDelete() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
         // delete token
-        Transaction deleteTransaction = tokenDeleteTransaction(tokenID, SYMBOL);
-        long transferTimeStamp = 5L;
+        Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
+        long transferTimeStamp = 10L;
         insertAndParseTransaction(deleteTransaction, transferTimeStamp, null);
 
-        Entities tokenEntities = getTokenEntity(tokenID);
-        var expectedEntity = createEntity(tokenEntities, null, null, tokenRefKey, null, TRANSACTION_MEMO, 1L,
+        Entities tokenEntities = getTokenEntity(TOKEN_ID);
+        var expectedEntity = createEntity(tokenEntities, null, null, TOKEN_REF_KEY, null, TRANSACTION_MEMO, 1L,
                 30L, EntityTypeEnum.TOKEN);
 
         expectedEntity.setDeleted(true);
         assertThat(getEntity(tokenEntities.getId())).isEqualTo(expectedEntity);
 
         assertEquals(5, entityRepository.count());
-        assertTokenInRepository(tokenID, true, 1L, transferTimeStamp, SYMBOL);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, transferTimeStamp, SYMBOL);
     }
 
     @Test
     void tokenAccountFreeze() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
-        Transaction transaction = tokenFreezeTransaction(tokenID, SYMBOL, true);
+        Transaction transaction = tokenFreezeTransaction(TOKEN_ID, true);
         long transferTimeStamp = 10L;
         insertAndParseTransaction(transaction, transferTimeStamp, null);
 
-        assertTokenAccountInRepository(tokenID, PAYER, true, transferTimeStamp, transferTimeStamp, true, true, false,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, transferTimeStamp, true, true, false,
                 false);
     }
 
     @Test
     void tokenAccountUnfreeze() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
         // freeze first
-        Transaction freezeTransaction = tokenFreezeTransaction(tokenID, SYMBOL, true);
+        Transaction freezeTransaction = tokenFreezeTransaction(TOKEN_ID, true);
         long freezeTimeStamp = 10L;
         insertAndParseTransaction(freezeTransaction, freezeTimeStamp, null);
 
-        assertTokenAccountInRepository(tokenID, PAYER, true, freezeTimeStamp, freezeTimeStamp, true, true, false,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, freezeTimeStamp, true, true, false,
                 false);
 
         // unfreeze
-        Transaction unfreezeTransaction = tokenFreezeTransaction(tokenID, SYMBOL, false);
+        Transaction unfreezeTransaction = tokenFreezeTransaction(TOKEN_ID, false);
         long unfreezeTimeStamp = 444;
         insertAndParseTransaction(unfreezeTransaction, unfreezeTimeStamp, null);
 
-        assertTokenAccountInRepository(tokenID, PAYER, true, freezeTimeStamp, unfreezeTimeStamp, true, false, false,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, unfreezeTimeStamp, true, false,
+                false,
                 false);
     }
 
     @Test
     void tokenAccountGrantKyc() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
-        Transaction transaction = tokenKycTransaction(tokenID, SYMBOL, true);
+        Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
         long transferTimeStamp = 10L;
         insertAndParseTransaction(transaction, transferTimeStamp, null);
 
-        assertTokenAccountInRepository(tokenID, PAYER, true, transferTimeStamp, transferTimeStamp, true, false, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, transferTimeStamp, true, false, true,
                 false);
     }
 
     @Test
     void tokenAccountRevokeKyc() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
         // grant first
-        Transaction grantTransaction = tokenKycTransaction(tokenID, SYMBOL, true);
+        Transaction grantTransaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
         insertAndParseTransaction(grantTransaction, grantTimeStamp, null);
 
-        assertTokenAccountInRepository(tokenID, PAYER, true, grantTimeStamp, grantTimeStamp, true, false, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, grantTimeStamp, true, false, true,
                 false);
 
         // revoke
-        Transaction revokeTransaction = tokenKycTransaction(tokenID, SYMBOL, false);
+        Transaction revokeTransaction = tokenKycTransaction(TOKEN_ID, false);
         long revokeTimeStamp = 333;
         insertAndParseTransaction(revokeTransaction, revokeTimeStamp, null);
 
-        assertTokenAccountInRepository(tokenID, PAYER, true, grantTimeStamp, revokeTimeStamp, true, false, false,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, revokeTimeStamp, true, false, false,
                 false);
     }
 
     @Test
     void tokenBurn() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
-        Transaction transaction = tokenSupplyTransaction(tokenID, SYMBOL, false);
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, false);
         long transferTimeStamp = 10L;
         insertAndParseTransaction(transaction, transferTimeStamp, null);
     }
 
     @Test
     void tokenMint() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
-        Transaction transaction = tokenSupplyTransaction(tokenID, SYMBOL, true);
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, true);
         long transferTimeStamp = 10L;
         insertAndParseTransaction(transaction, transferTimeStamp, null);
     }
 
     @Test
     void tokenTransfer() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
         TokenID tokenID2 = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(7).build();
         String symbol2 = "MIRROR";
-        createTokenEntityVerification(tokenID2, symbol2, 5L, 6);
+        createTokenEntity(tokenID2, symbol2, 10L);
 
         AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
 
@@ -206,7 +239,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction transaction = tokenTransferTransaction();
 
         TokenTransferList transferList1 = TokenTransferList.newBuilder()
-                .setToken(tokenID)
+                .setToken(TOKEN_ID)
                 .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER).setAmount(-1000).build())
                 .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(1000).build())
                 .build();
@@ -216,31 +249,31 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(-333).build())
                 .build();
 
-        long transferTimeStamp = 10L;
+        long transferTimeStamp = 15L;
         insertAndParseTransaction(transaction, transferTimeStamp, List.of(transferList1, transferList2));
 
-        assertTokenTransferInRepository(tokenID, PAYER, transferTimeStamp, -1000);
-        assertTokenTransferInRepository(tokenID, accountId, transferTimeStamp, 1000);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, transferTimeStamp, -1000);
+        assertTokenTransferInRepository(TOKEN_ID, accountId, transferTimeStamp, 1000);
         assertTokenTransferInRepository(tokenID2, PAYER, transferTimeStamp, 333);
         assertTokenTransferInRepository(tokenID2, accountId, transferTimeStamp, -333);
     }
 
     @Test
     void tokenWipe() throws InvalidProtocolBufferException {
-        createTokenEntityVerification(tokenID, SYMBOL, 1L, 5);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
-        Transaction transaction = tokenWipeTransaction(tokenID, SYMBOL);
+        Transaction transaction = tokenWipeTransaction(TOKEN_ID);
         long wipeTimeStamp = 10L;
         insertAndParseTransaction(transaction, wipeTimeStamp, null);
 
-        assertTokenAccountInRepository(tokenID, PAYER, true, wipeTimeStamp, wipeTimeStamp, true, false, false,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, wipeTimeStamp, true, false, false,
                 true);
     }
 
     private void insertAndParseTransaction(Transaction transaction, long transferTimeStamp, List tokenTransferLists) throws InvalidProtocolBufferException {
         TransactionBody transactionBody = getTransactionBody(transaction);
 
-        var transactionRecord = createTransactionRecord(transferTimeStamp, tokenID
+        var transactionRecord = createTransactionRecord(transferTimeStamp, TOKEN_ID
                 .getTokenNum(), transactionBody, ResponseCodeEnum.SUCCESS, tokenTransferLists);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
@@ -250,11 +283,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     private Transaction tokenCreateTransaction(Key key, String symbol) {
         return buildTransaction(builder -> builder.getTokenCreationBuilder()
                 .setAdminKey(key)
-                .setDivisibility(1000)
-                .setFloat(1_000_000L)
+                .setDecimals(1000)
+                .setInitialSupply(1_000_000L)
                 .setFreezeDefault(false)
                 .setFreezeKey(key)
-                .setKycDefault(false)
                 .setKycKey(key)
                 .setSupplyKey(key)
                 .setSymbol(symbol)
@@ -262,61 +294,69 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .setWipeKey(key));
     }
 
-    private Transaction tokenDeleteTransaction(TokenID tokenID, String symbol) {
-        return buildTransaction(builder -> builder.getTokenDeletionBuilder()
-                .setToken(TokenRef.newBuilder().setTokenId(tokenID).setSymbol(symbol).build()));
+    private Transaction tokenAssociate(List<TokenID> tokenIDs, AccountID accountID) {
+        return buildTransaction(builder -> builder.getTokenAssociateBuilder()
+                .setAccount(accountID)
+                .addAllTokens(tokenIDs));
     }
 
-    private Transaction tokenFreezeTransaction(TokenID tokenID, String symbol, boolean freeze) {
-        TokenRef tokenRef = TokenRef.newBuilder().setTokenId(tokenID).setSymbol(symbol).build();
+    private Transaction tokenDissociate(List<TokenID> tokenIDs, AccountID accountID) {
+        return buildTransaction(builder -> builder.getTokenDissociateBuilder()
+                .setAccount(accountID)
+                .addAllTokens(tokenIDs));
+    }
+
+    private Transaction tokenDeleteTransaction(TokenID tokenID) {
+        return buildTransaction(builder -> builder.getTokenDeletionBuilder()
+                .setToken(tokenID));
+    }
+
+    private Transaction tokenFreezeTransaction(TokenID tokenID, boolean freeze) {
         Transaction transaction = null;
         if (freeze) {
             transaction = buildTransaction(builder -> builder.getTokenFreezeBuilder()
-                    .setToken(tokenRef)
+                    .setToken(tokenID)
                     .setAccount(PAYER));
         } else {
             transaction = buildTransaction(builder -> builder.getTokenUnfreezeBuilder()
-                    .setToken(tokenRef)
+                    .setToken(tokenID)
                     .setAccount(PAYER));
         }
 
         return transaction;
     }
 
-    private Transaction tokenKycTransaction(TokenID tokenID, String symbol, boolean kyc) {
-        TokenRef tokenRef = TokenRef.newBuilder().setTokenId(tokenID).setSymbol(symbol).build();
+    private Transaction tokenKycTransaction(TokenID tokenID, boolean kyc) {
         Transaction transaction = null;
         if (kyc) {
             transaction = buildTransaction(builder -> builder.getTokenGrantKycBuilder()
-                    .setToken(tokenRef)
+                    .setToken(tokenID)
                     .setAccount(PAYER));
         } else {
             transaction = buildTransaction(builder -> builder.getTokenRevokeKycBuilder()
-                    .setToken(tokenRef)
+                    .setToken(tokenID)
                     .setAccount(PAYER));
         }
 
         return transaction;
     }
 
-    private Transaction tokenSupplyTransaction(TokenID tokenID, String symbol, boolean mint) {
-        TokenRef tokenRef = TokenRef.newBuilder().setTokenId(tokenID).setSymbol(symbol).build();
+    private Transaction tokenSupplyTransaction(TokenID tokenID, boolean mint) {
         Transaction transaction = null;
         if (mint) {
             transaction = buildTransaction(builder -> builder.getTokenMintBuilder()
-                    .setToken(tokenRef));
+                    .setToken(tokenID));
         } else {
             transaction = buildTransaction(builder -> builder.getTokenBurnBuilder()
-                    .setToken(tokenRef));
+                    .setToken(tokenID));
         }
 
         return transaction;
     }
 
-    private Transaction tokenWipeTransaction(TokenID tokenID, String symbol) {
-        TokenRef tokenRef = TokenRef.newBuilder().setTokenId(tokenID).setSymbol(symbol).build();
+    private Transaction tokenWipeTransaction(TokenID tokenID) {
         return buildTransaction(builder -> builder.getTokenWipeBuilder()
-                .setToken(tokenRef)
+                .setToken(tokenID)
                 .setAccount(PAYER));
     }
 
@@ -366,7 +406,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .findByTokenIdAndAccountId(EntityId.of(tokenID), EntityId.of(accountId));
         if (present) {
             assertThat(tokenAccountOptional.get())
-//                    .returns(createdTimestamp, from(TokenAccount::getCreatedTimestamp))
+                    .returns(createdTimestamp, from(TokenAccount::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(TokenAccount::getModifiedTimestamp))
                     .returns(associated, from(TokenAccount::isAssociated))
                     .returns(frozen, from(TokenAccount::isFrozen))
@@ -390,19 +430,24 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         return getEntity(EntityId.of(tokenID).getId());
     }
 
-    private void createTokenEntityVerification(TokenID tokenID, String symbol, long consensusTimestamp,
-                                               int entityCount) throws InvalidProtocolBufferException {
-        Transaction createTransaction = tokenCreateTransaction(tokenRefKey, symbol);
+    private void createTokenEntity(TokenID tokenID, String symbol, long consensusTimestamp) throws InvalidProtocolBufferException {
+        Transaction createTransaction = tokenCreateTransaction(TOKEN_REF_KEY, symbol);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         var createTransactionRecord = createTransactionRecord(consensusTimestamp, tokenID
                 .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, null);
 
         parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
+    }
 
-        Entities tokenEntities = getTokenEntity(tokenID);
-        var expectedEntity = createEntity(tokenEntities, null, null, tokenRefKey, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.TOKEN);
-        assertEquals(entityCount, entityRepository.count()); // Node, payer, token and autorenew
-        assertThat(getEntity(tokenEntities.getId())).isEqualTo(expectedEntity);
+    private void createAndAssociateToken(TokenID tokenID, String symbol, long createTimestamp,
+                                         long associateTimestamp, AccountID accountID) throws InvalidProtocolBufferException {
+        createTokenEntity(tokenID, symbol, createTimestamp);
+        assertTokenInRepository(tokenID, true, createTimestamp, createTimestamp, symbol);
+
+        Transaction associateTransaction = tokenAssociate(List.of(tokenID), accountID);
+        insertAndParseTransaction(associateTransaction, associateTimestamp, null);
+
+        assertTokenAccountInRepository(tokenID, accountID, true, associateTimestamp, associateTimestamp, true, false,
+                false, false);
     }
 }

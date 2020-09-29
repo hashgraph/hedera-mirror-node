@@ -21,7 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -38,7 +38,7 @@ public class TokenGrantKycTransactionsHandlerTest extends AbstractTransactionHan
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenGrantKyc(TokenGrantKyc.getDefaultInstance());
+                .setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance());
     }
 
     @Override
