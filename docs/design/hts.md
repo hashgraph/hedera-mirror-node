@@ -71,13 +71,13 @@ To support the goals the following database schema changes should be made
     -   `account_id`
     -   `associated`
     -   `created_timestamp`
+    -   `freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
+    -   `kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
     -   `modified_timestamp`
-    -   `token_freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
     -   `token_id`
-    -   `token_kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
 -   Create unique index `token_account__token_account`
 
-> _Note:_  `token_freeze_status` and `token_kyc_status` are set by the presence of a `TokenCreation.kycKey` and `TokenCreation.kycKey` value respectively
+> _Note:_  `freeze_status` and `kyc_status` are set by the presence of a `TokenCreation.kycKey` and `TokenCreation.kycKey` value respectively
 
 ### Entity Types
 -   Add new `t_entity_types` row with `id` value of 5 and `name `token`
@@ -238,10 +238,10 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `accountId`
     -   `associated`
     -   `createdTimestamp`
+    -   `freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
+    -   `kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
     -   `modifiedTimestamp`
-    -   `token_freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
     -   `tokenId`
-    -   `token_kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
 
 #### TokenBalance
 -   Add `TokenBalance` class with the following class members
@@ -323,10 +323,10 @@ Add logic to check for
 -   `TransactionBody.hasTokenUnfreeze()` and parse `TokenUnFreezeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `frozen` column to false and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenGrantKyc()` and parse `TokenGrantKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to true and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenRevokeKyc()` and parse `TokenRevokeKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to false and pass it to `entityListener.onTokenAccount()`.
--   `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `wipe` column to true and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Retrieve an existing `Token` db entry, decrement the `totalSupply` column and pass it to `entityListener.onToken()`.
 -   `TransactionBody.hasTokenUpdate()` and parse `TokenUpdateTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
--   `TransactionBody.hasTokenBurn()` and parse `TokenBurnTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
--   `TransactionBody.hasTokenMint()` and parse `TokenMintTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
+-   `TransactionBody.hasTokenBurn()` and parse `TokenBurnTransactionBody` out from the record. Retrieve an existing `Token` db entry, decrement the `totalSupply` column and pass it to `entityListener.onToken()`.
+-   `TransactionBody.hasTokenMint()` and parse `TokenMintTransactionBody` out from the record. Retrieve an existing `Token` db entry, increment the `totalSupply` column and pass it to `entityListener.onToken()`.
 
 ## REST API
 To achieve the goals and for easy integration with existing users the REST API should be updated in the following order

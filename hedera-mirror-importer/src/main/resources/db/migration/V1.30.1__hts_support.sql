@@ -87,11 +87,10 @@ create table if not exists token_account
     account_id          entity_id           not null,
     associated          boolean             not null default false,
     created_timestamp   bigint              not null,
+    freeze_status       smallint            not null default 0,
+    kyc_status          smallint            not null default 0,
     modified_timestamp  bigint              not null,
-    token_freeze_status smallint            not null default 0,
-    token_id            entity_id           not null,
-    token_kyc_status    smallint            not null default 0,
-    wiped               boolean             not null default false
+    token_id            entity_id           not null
 );
 
 create unique index if not exists token_account__token_account on token_account(token_id, account_id);
