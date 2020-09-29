@@ -200,8 +200,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
-            tokenRepository.saveAll(tokens);
-            tokenAccountRepository.saveAll(tokenAccounts);
             persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
@@ -265,12 +263,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onToken(Token token) throws ImporterException {
-        tokens.add(token);
+        tokenRepository.save(token);
     }
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        tokenAccounts.add(tokenAccount);
+        tokenAccountRepository.save(tokenAccount);
     }
 
     @Override

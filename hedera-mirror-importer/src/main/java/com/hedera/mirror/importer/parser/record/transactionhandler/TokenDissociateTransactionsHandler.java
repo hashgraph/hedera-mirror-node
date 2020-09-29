@@ -20,13 +20,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import javax.inject.Named;
+import lombok.AllArgsConstructor;
+
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
+@Named
+@AllArgsConstructor
 public class TokenDissociateTransactionsHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getTokenId());
+        return null;
     }
 }
 

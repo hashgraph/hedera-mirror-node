@@ -47,7 +47,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.Optional;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -444,7 +443,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     tokenAccount.setModifiedTimestamp(consensusTimestamp);
                     tokenAccount.setAccountId(EntityId.of(accountID));
                     tokenAccount.setTokenId(EntityId.of(token));
-                    tokenAccountRepository.save(tokenAccount);
+                    entityListener.onTokenAccount(tokenAccount);
                 }
             });
         }
@@ -453,10 +452,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenBurn(long consensusTimestamp, TransactionBody txBody) {
         if (entityProperties.getPersist().isTokens()) {
             TokenBurnTransactionBody tokenBurnTransactionBody = txBody.getTokenBurn();
-            Optional<Token> tokenOptional = tokenRepository
-                    .findById(new Token.Id(EntityId.of(tokenBurnTransactionBody.getToken())));
-            if (tokenOptional.isPresent()) {
-                Token token = tokenOptional.get();
+            Token token = retrieveToken(tokenBurnTransactionBody.getToken());
+            if (token != null) {
                 token.setModifiedTimestamp(consensusTimestamp);
                 token.setTotalSupply(token.getTotalSupply() - tokenBurnTransactionBody.getAmount());
                 entityListener.onToken(token);
@@ -489,10 +486,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenDelete(long consensusTimestamp, TransactionBody txBody) {
         if (entityProperties.getPersist().isTokens()) {
             TokenDeleteTransactionBody tokenDeletion = txBody.getTokenDeletion();
-            Optional<Token> tokenOptional = tokenRepository
-                    .findById(new Token.Id(EntityId.of(tokenDeletion.getToken())));
-            if (tokenOptional.isPresent()) {
-                Token token = tokenOptional.get();
+            Token token = retrieveToken(tokenDeletion.getToken());
+            if (token != null) {
                 token.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onToken(token);
             }
@@ -508,7 +503,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 if (tokenAccount != null) {
                     tokenAccount.setAssociated(false);
                     tokenAccount.setModifiedTimestamp(consensusTimestamp);
-                    tokenAccountRepository.save(tokenAccount);
+                    entityListener.onTokenAccount(tokenAccount);
                 }
             });
         }
@@ -545,10 +540,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenMint(long consensusTimestamp, TransactionBody txBody) {
         if (entityProperties.getPersist().isTokens()) {
             TokenMintTransactionBody tokenMintTransactionBody = txBody.getTokenMint();
-            Optional<Token> tokenOptional = tokenRepository
-                    .findById(new Token.Id(EntityId.of(tokenMintTransactionBody.getToken())));
-            if (tokenOptional.isPresent()) {
-                Token token = tokenOptional.get();
+            Token token = retrieveToken(tokenMintTransactionBody.getToken());
+            if (token != null) {
                 token.setModifiedTimestamp(consensusTimestamp);
                 token.setTotalSupply(token.getTotalSupply() + tokenMintTransactionBody.getAmount());
                 entityListener.onToken(token);
@@ -587,18 +580,38 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenUpdate(long consensusTimestamp, TransactionBody txBody) {
         if (entityProperties.getPersist().isTokens()) {
             TokenUpdateTransactionBody tokenUpdateTransactionBody = txBody.getTokenUpdate();
-            Optional<Token> tokenOptional = tokenRepository
-                    .findById(new Token.Id(EntityId.of(tokenUpdateTransactionBody.getToken())));
-            if (tokenOptional.isPresent()) {
-                Token token = tokenOptional.get();
-                token.setFreezeKey(tokenUpdateTransactionBody.getFreezeKey().toByteArray());
-                token.setKycKey(tokenUpdateTransactionBody.getKycKey().toByteArray());
+            Token token = retrieveToken(tokenUpdateTransactionBody.getToken());
+            if (token != null) {
                 token.setModifiedTimestamp(consensusTimestamp);
-                token.setName(tokenUpdateTransactionBody.getName());
-                token.setSupplyKey(tokenUpdateTransactionBody.getSupplyKey().toByteArray());
-                token.setSymbol(tokenUpdateTransactionBody.getSymbol());
-                token.setTreasuryAccountId(EntityId.of(tokenUpdateTransactionBody.getTreasury()));
-                token.setWipeKey(tokenUpdateTransactionBody.getWipeKey().toByteArray());
+
+                if (tokenUpdateTransactionBody.hasFreezeKey()) {
+                    token.setFreezeKey(tokenUpdateTransactionBody.getFreezeKey().toByteArray());
+                }
+
+                if (tokenUpdateTransactionBody.hasKycKey()) {
+                    token.setKycKey(tokenUpdateTransactionBody.getKycKey().toByteArray());
+                }
+
+                if (tokenUpdateTransactionBody.hasSupplyKey()) {
+                    token.setSupplyKey(tokenUpdateTransactionBody.getSupplyKey().toByteArray());
+                }
+
+                if (tokenUpdateTransactionBody.hasTreasury()) {
+                    token.setTreasuryAccountId(EntityId.of(tokenUpdateTransactionBody.getTreasury()));
+                }
+
+                if (tokenUpdateTransactionBody.hasWipeKey()) {
+                    token.setWipeKey(tokenUpdateTransactionBody.getWipeKey().toByteArray());
+                }
+
+                if (!tokenUpdateTransactionBody.getName().isEmpty()) {
+                    token.setSymbol(tokenUpdateTransactionBody.getName());
+                }
+
+                if (!tokenUpdateTransactionBody.getSymbol().isEmpty()) {
+                    token.setName(tokenUpdateTransactionBody.getSymbol());
+                }
+
                 entityListener.onToken(token);
             }
         }
@@ -636,6 +649,12 @@ public class EntityRecordItemListener implements RecordItemListener {
     private TokenAccount retrieveTokenAccount(TokenID tokenID, AccountID accountID) {
         return tokenAccountRepository
                 .findByTokenIdAndAccountId(EntityId.of(tokenID), EntityId.of(accountID))
+                .orElse(null);
+    }
+
+    private Token retrieveToken(TokenID tokenID) {
+        return tokenRepository
+                .findById(new Token.Id(EntityId.of(tokenID)))
                 .orElse(null);
     }
 }

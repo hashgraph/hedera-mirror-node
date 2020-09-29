@@ -24,12 +24,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenRemoveKycTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenRevokeKycTransactionsHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new TokenRevokeKycTransactionsHandler();
@@ -38,15 +36,9 @@ public class TokenRemoveKycTransactionsHandlerTest extends AbstractTransactionHa
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.getDefaultInstance());
-    }
-
-    @Override
-    protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return TransactionRecord.newBuilder()
-                .setReceipt(TransactionReceipt.newBuilder()
-                        .setAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build())
-                        .setTokenId(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()));
+                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
+                        .setAccount(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM))
+                        .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()).build());
     }
 
     @Override

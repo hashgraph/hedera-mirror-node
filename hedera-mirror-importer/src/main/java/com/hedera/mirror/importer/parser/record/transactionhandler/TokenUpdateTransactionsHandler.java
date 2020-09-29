@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class TokenUpdateTransactionsHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getTokenId());
+        return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
     }
 
     @Override
@@ -47,11 +47,17 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
         if (txMessage.hasAdminKey()) {
             entity.setKey(txMessage.getAdminKey().toByteArray());
         }
+
         if (txMessage.hasAutoRenewAccount()) {
             entity.setAutoRenewAccountId(EntityId.of(txMessage.getAutoRenewAccount()));
         }
-//        if (txMessage.hasAutoRenewPeriod()) {
-//            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod());
-//        }
+
+        if (txMessage.getExpiry() != 0) {
+            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod());
+        }
+
+        if (txMessage.getExpiry() != 0) {
+            entity.setExpiryTimeNs(txMessage.getExpiry());
+        }
     }
 }
