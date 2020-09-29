@@ -67,7 +67,7 @@ const getAccountsWithAccountCheck = async (server) => {
     .withCheckSpec(checkRespObjDefined, {message: 'account is undefined'})
     .withCheckSpec(checkRespArrayLength, {
       limit: resourceLimit,
-      message: (accts, limit) => `accounts.length of ${accts.length}  is less than limit ${limit}`,
+      message: (accts, limit) => `accounts.length of ${accts.length} is less than limit ${limit}`,
     })
     .withCheckSpec(checkMandatoryParams, {
       params: mandatoryParams,

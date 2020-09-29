@@ -142,6 +142,9 @@ const testRunner = (server, testClassResult, resource) => {
   return async (testFunc) => {
     const start = Date.now();
     const result = await testFunc(server);
+    if (result.skipped) {
+      return;
+    }
 
     const testResult = {
       at: start,
@@ -298,6 +301,52 @@ const checkConsensusTimestampOrder = (elements, option) => {
   return {passed: true};
 };
 
+/**
+ * Checks resource freshness
+ *
+ * @param server the server address in the format of http://ip:port
+ * @param path resource path
+ * @param resource resource name
+ * @param timestamp function to extract timestamp from response
+ * @param jsonRespKey json response key to extract data from json response
+ * @return {Promise<>}
+ */
+const checkResourceFreshness = async (server, path, resource, timestamp, jsonRespKey) => {
+  const {freshnessThreshold} = config[resource];
+  if (freshnessThreshold === 0) {
+    return {skipped: true};
+  }
+
+  const url = getUrl(server, path, {limit: 1, order: 'desc'});
+  const resp = await getAPIResponse(url, jsonRespKey);
+
+  const checkRunner = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: `${resource}: response object is undefined`});
+  if (Array.isArray(resp)) {
+    checkRunner.withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `${resource}: response data length of ${elements.length} was expected to be 1`,
+    });
+  }
+  const result = checkRunner
+    .withCheckSpec(checkRespDataFreshness, {
+      timestamp,
+      threshold: freshnessThreshold,
+      message: (delta) => `${resource} was stale, ${delta} seconds old`,
+    })
+    .run(resp);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully retrieved ${resource} from with ${freshnessThreshold} seconds ago`,
+  };
+};
+
 class CheckRunner {
   constructor() {
     this.checkSpecs = [];
@@ -342,8 +391,8 @@ module.exports = {
   checkRespArrayLength,
   checkAccountNumber,
   checkMandatoryParams,
-  checkRespDataFreshness,
   checkConsensusTimestampOrder,
+  checkResourceFreshness,
   CheckRunner,
   ServerTestResult,
 };

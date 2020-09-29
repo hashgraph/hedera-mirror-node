@@ -29,7 +29,7 @@ const {
   checkRespArrayLength,
   checkAccountNumber,
   checkMandatoryParams,
-  checkRespDataFreshness,
+  checkResourceFreshness,
   getAPIResponse,
   getUrl,
   fromAccNum,
@@ -170,27 +170,7 @@ const getSingleBalanceById = async (server) => {
  * @param {String} server API host endpoint
  */
 const checkBalanceFreshness = async (server) => {
-  const {freshnessThreshold} = config[resource];
-  const url = getUrl(server, balancesPath, {limit: 1});
-  const resp = await getAPIResponse(url);
-
-  const result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespDataFreshness, {
-      timestamp: (data) => data.timestamp,
-      threshold: freshnessThreshold,
-      message: (delta) => `balance was stale, ${delta} seconds old`,
-    })
-    .run(resp);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: `Successfully retrieved balance from with ${freshnessThreshold} seconds ago`,
-  };
+  return checkResourceFreshness(server, balancesPath, resource, (data) => data.timestamp);
 };
 
 /**

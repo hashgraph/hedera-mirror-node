@@ -26,8 +26,8 @@ const {
   checkRespObjDefined,
   checkRespArrayLength,
   checkMandatoryParams,
-  checkRespDataFreshness,
   checkConsensusTimestampOrder,
+  checkResourceFreshness,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -217,10 +217,10 @@ const getTopicMessagesBySequenceNumberFilter = async (server) => {
  * @return {{url: String, passed: boolean, message: String}}
  */
 const getTopicMessagesByTopicIDAndSequenceNumberPath = async (server) => {
-  let url = getUrl(server, topicMessagesPath(topicId, 1));
-  let message = await getAPIResponse(url);
+  const url = getUrl(server, topicMessagesPath(topicId, 1));
+  const message = await getAPIResponse(url);
 
-  let result = new CheckRunner()
+  const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'messages is undefined'})
     .withCheckSpec(checkMandatoryParams, {
@@ -290,35 +290,18 @@ const getTopicMessagesByConsensusTimestamp = async (server) => {
 };
 
 /**
- * Verfiy the freshness of the latest topic message returned by the api
+ * Verifies the freshness of the latest topic message returned by the api
+ *
  * @param {String} server API host endpoint
  */
 const checkTopicMessageFreshness = async (server) => {
-  const {freshnessThreshold} = config[resource];
-  const url = getUrl(server, topicMessagesPath(topicId), {limit: 1, order: 'desc'});
-  const messages = await getAPIResponse(url, jsonRespKey);
-
-  const result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (elements) => `messages.length of ${elements.length} was expected to be 1`,
-    })
-    .withCheckSpec(checkRespDataFreshness, {
-      timestamp: (message) => message.consensus_timestamp,
-      threshold: freshnessThreshold,
-      message: (delta) => `topic message was stale, ${delta} seconds old`,
-    })
-    .run(messages);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: `Successfully retrieved balance from with ${freshnessThreshold} seconds ago`,
-  };
+  return checkResourceFreshness(
+    server,
+    topicMessagesPath(topicId),
+    resource,
+    (message) => message.consensus_timestamp,
+    jsonRespKey
+  );
 };
 
 /**
@@ -328,6 +311,10 @@ const checkTopicMessageFreshness = async (server) => {
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {
+  if (!topicId) {
+    return Promise.resolve();
+  }
+
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getTopicMessages),

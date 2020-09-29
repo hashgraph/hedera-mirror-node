@@ -28,7 +28,7 @@ const {
   checkRespObjDefined,
   checkRespArrayLength,
   checkMandatoryParams,
-  checkRespDataFreshness,
+  checkResourceFreshness,
   checkConsensusTimestampOrder,
   getAPIResponse,
   getUrl,
@@ -283,32 +283,7 @@ const getSingleTransactionsById = async (server) => {
  * @param {Object} server API host endpoint
  */
 const checkTransactionFreshness = async (server) => {
-  const {freshnessThreshold} = config[resource];
-  const url = getUrl(server, transactionsPath, {limit: 1});
-  const transactions = await getAPIResponse(url, jsonRespKey);
-
-  const result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (elements) => `transactions.length of ${elements.length} was expected to be 1`,
-    })
-    .withCheckSpec(checkRespDataFreshness, {
-      timestamp: (data) => data.consensus_timestamp,
-      threshold: freshnessThreshold,
-      message: (delta) => `transaction was stale, ${delta} seconds old`,
-    })
-    .run(transactions);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: `Successfully retrieved transactions from with ${freshnessThreshold} seconds ago`,
-  };
+  return checkResourceFreshness(server, transactionsPath, resource, (data) => data.consensus_timestamp, jsonRespKey);
 };
 
 /**

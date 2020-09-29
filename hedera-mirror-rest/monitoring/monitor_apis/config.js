@@ -36,7 +36,6 @@ const REQUIRED_FIELDS = [
   'transaction.limit',
   'topic.freshnessThreshold',
   'topic.limit',
-  'topic.topicId',
 ];
 const SERVERLIST_FILE = path.join(__dirname, 'config', 'serverlist.json');
 let config = {};
