@@ -47,11 +47,11 @@ import com.hederahashgraph.api.proto.java.TokenDeletion;
 import com.hederahashgraph.api.proto.java.TokenFreeze;
 import com.hederahashgraph.api.proto.java.TokenGrantKyc;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
-import com.hederahashgraph.api.proto.java.TokenMintCoins;
-import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
-import com.hederahashgraph.api.proto.java.TokenUnfreeze;
-import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -237,25 +237,25 @@ public class EntityRecordItemListener implements RecordItemListener {
             else if (body.hasTokenCreation()) {
                 insertTokenCreate(consensusNs, txRecord, body);
             } else if (body.hasTokenDeletion()) {
-                insertTokenDelete(consensusNs, body, txRecord.getReceipt().getTokenId());
-            }
-//            else if (body.hasTokenDissociate()) {
-//                insertTokenDissociate(body);
-//            }
-            else if (body.hasTokenFreeze()) {
-                insertTokenAccountFreezeBody(consensusNs, body, txRecord.getReceipt().getTokenId());
+                insertTokenDelete(consensusNs, body);
+            } else if (body.hasTokenDissociate()) {
+                insertTokenDissociate(consensusNs, body);
+            } else if (body.hasTokenFreeze()) {
+                insertTokenAccountFreezeBody(consensusNs, body);
             } else if (body.hasTokenGrantKyc()) {
-                insertTokenAccountGrantKyc(consensusNs, body, txRecord.getReceipt().getTokenId());
+                insertTokenAccountGrantKyc(consensusNs, body);
+            } else if (body.hasTokenMint()) {
+                insertTokenMint(consensusNs, body);
             } else if (body.hasTokenRevokeKyc()) {
-                insertTokenAccountRevokeKyc(consensusNs, body, txRecord.getReceipt().getTokenId());
+                insertTokenAccountRevokeKyc(consensusNs, body);
             } else if (body.hasTokenTransfers()) {
                 insertTokenTransfers(consensusNs, txRecord);
             } else if (body.hasTokenUnfreeze()) {
-                insertTokenAccountUnfreeze(consensusNs, body, txRecord.getReceipt().getTokenId());
+                insertTokenAccountUnfreeze(consensusNs, body);
             } else if (body.hasTokenUpdate()) {
                 insertTokenUpdate(consensusNs, body);
             } else if (body.hasTokenWipe()) {
-                insertTokenAccountWipe(consensusNs, body, txRecord.getReceipt().getTokenId());
+                insertTokenAccountWipe(consensusNs, body);
             }
         }
 

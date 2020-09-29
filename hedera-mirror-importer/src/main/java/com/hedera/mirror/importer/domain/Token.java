@@ -28,6 +28,7 @@ import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -38,6 +39,7 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 import com.hedera.mirror.importer.util.Utility;
 
+@Builder
 @Data
 @Entity
 @Log4j2
@@ -92,6 +94,13 @@ public class Token {
     @Column(name = "wipe_key_ed25519_hex")
     @ToString.Exclude
     private String wipeKeyEd25519Hex;
+
+    public void setInitialSupply(Long initialSupply) {
+        this.initialSupply = initialSupply;
+
+        // default totalSupply to initial supply
+        totalSupply = initialSupply;
+    }
 
     public void setInitialSupply(Long initialSupply) {
         this.initialSupply = initialSupply;
