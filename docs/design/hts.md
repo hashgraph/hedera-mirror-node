@@ -71,14 +71,13 @@ To support the goals the following database schema changes should be made
     -   `account_id`
     -   `associated`
     -   `created_timestamp`
-    -   `frozen`
-    -   `kyc`
     -   `modified_timestamp`
+    -   `token_freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
     -   `token_id`
-    -   `wiped`
+    -   `token_kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
 -   Create unique index `token_account__token_account`
 
-> _Note:_  `frozen` and `kyc` are set by `TokenCreation.freezeDefault` and `TokenCreation.kycDefault` respectively
+> _Note:_  `token_freeze_status` and `token_kyc_status` are set by the presence of a `TokenCreation.kycKey` and `TokenCreation.kycKey` value respectively
 
 ### Entity Types
 -   Add new `t_entity_types` row with `id` value of 5 and `name `token`
@@ -91,13 +90,13 @@ To support the goals the following database schema changes should be made
 ```sql
     insert into t_transaction_types (proto_id, name) values
          (28, 'UNCHECKEDSUBMIT'),
-         (29, 'TOKENCREATE'),
-         (30, 'TOKENTRANSFER'),
+         (29, 'TOKENCREATION'),
+         (30, 'TOKENTRANSFERS'),
          (31, 'TOKENFREEZE'),
          (32, 'TOKENUNFREEZE'),
          (33, 'TOKENGRANTKYC'),
          (34, 'TOKENREVOKEKYC'),
-         (35, 'TOKENDELETE'),
+         (35, 'TOKENDELETION'),
          (36, 'TOKENUPDATE'),
          (37, 'TOKENMINT'),
          (38, 'TOKENBURN'),
@@ -152,21 +151,21 @@ To support the goals the following database schema changes should be made
 -   Create `token` table with the following columns. Table will capture non shared `entity` items, most API calls may not require this information and therefore additional sql joins may be avoided.
     -   `token_id` (primary key)
     -   `created_timestamp`
-    -   `divisibility`
-    -   `ed25519_freeze_key` (ed25519 public key of freeze key)
-    -   `ed25519_kyc_key` (ed25519 public key of kyc key)
-    -   `ed25519_supply_key` (ed25519 public key of supply key)
-    -   `ed25519_wipe_key` (ed25519 public key of wipe key)
+    -   `decimals`
     -   `freeze_default`
     -   `freeze_key`
+    -   `freeze_key_ed25519_hex` (ed25519 public key of freeze key)
     -   `initial_supply`
     -   `kyc_key`
+    -   `kyc_key_ed25519_hex` (ed25519 public key of kyc key)
     -   `modified_timestamp`
     -   `name`
     -   `supply_key`
+    -   `supply_key_ed25519_hex` (ed25519 public key of supply key)
     -   `symbol`
     -   `treasury_account_id`
     -   `wipe_key`
+    -   `wipe_key_ed25519_hex` (ed25519 public key of wipe key)
 
 ## Importer
 
@@ -215,24 +214,23 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
 #### Token
 -   Add `Token` class to hold Token specific metadata outside of the base entity class with the following class members
     -   `createdTimestamp`
-    -   `divisibility`
-    -   `ed25519FreezeKey`
-    -   `ed25519KycKey`
-    -   `ed25519SupplyKey`
-    -   `ed25519WipeKey`
+    -   `decimals`
     -   `freezeDefault`
     -   `freezeKey`
+    -   `freezeKeyEd25519Hex`
     -   `initialSupply`
-    -   `kycDefault`
     -   `kycKey`
+    -   `kycKeyEd25519Hex`
     -   `modifiedTimestamp`
     -   `name`
     -   `supplyKey`
+    -   `supplyKeyEd25519Hex`
     -   `symbol`
     -   `tokenId`
     -   `totalSupply`
     -   `treasuryAccountId`
     -   `wipeKey`
+    -   `wipeKeyEd25519Hex`
 
 #### TokenAccount
 -   Add `TokenAccount` class with the following class members
@@ -240,11 +238,10 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `accountId`
     -   `associated`
     -   `createdTimestamp`
-    -   `frozen`
-    -   `kyc`
     -   `modifiedTimestamp`
+    -   `token_freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
     -   `tokenId`
-    -   `wiped`
+    -   `token_kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
 
 #### TokenBalance
 -   Add `TokenBalance` class with the following class members
@@ -309,7 +306,7 @@ In all cases override `getEntity()`, pulling `TokenID` from record receipt for `
     }
 ```
 
--   Add a `onTokenTransfer()` to handle a `token_transfer` table
+-   Add a `onTokenTransfer()` to handle inserts on the `token_transfer` table
 ```java
     default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
     }
