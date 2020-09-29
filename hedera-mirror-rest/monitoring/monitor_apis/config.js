@@ -28,13 +28,17 @@ const REQUIRED_FIELDS = [
   'servers',
   'interval',
   'shard',
+  'account.intervalMultiplier',
   'account.limit',
   'balance.freshnessThreshold',
+  'balance.intervalMultiplier',
   'balance.limit',
   'stateproof.intervalMultiplier',
   'transaction.freshnessThreshold',
+  'transaction.intervalMultiplier',
   'transaction.limit',
   'topic.freshnessThreshold',
+  'topic.intervalMultiplier',
   'topic.limit',
 ];
 const SERVERLIST_FILE = path.join(__dirname, 'config', 'serverlist.json');

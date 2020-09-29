@@ -48,7 +48,7 @@ const runTests = (name, address) => {
   const skippedResource = [];
   const testModules = allTestModules.filter((testModule) => {
     const {intervalMultiplier} = config[testModule.resource];
-    if (!intervalMultiplier || counter % intervalMultiplier === 0) {
+    if (counter % intervalMultiplier === 0) {
       return true;
     }
 
