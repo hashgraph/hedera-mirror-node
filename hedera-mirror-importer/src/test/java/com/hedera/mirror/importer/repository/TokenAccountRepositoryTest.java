@@ -44,9 +44,8 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
     private TokenAccount tokenAccount(String tokenId, String accountId) throws DecoderException {
         TokenAccount tokenAccount = new TokenAccount();
         tokenAccount.setAssociated(true);
-        tokenAccount.setKyc(false);
-        tokenAccount.setWiped(false);
-        tokenAccount.setFrozen(false);
+        tokenAccount.setKycStatus(0);
+        tokenAccount.setFreezeStatus(0);
         tokenAccount.setAccountId(EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
         tokenAccount.setCreatedTimestamp(1L);
         tokenAccount.setModifiedTimestamp(2L);

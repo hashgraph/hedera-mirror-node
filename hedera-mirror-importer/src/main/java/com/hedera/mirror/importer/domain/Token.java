@@ -52,7 +52,7 @@ public class Token {
 
     private long createdTimestamp;
 
-    private int divisibility;
+    private int decimals;
 
     private boolean freezeDefault;
 
@@ -77,17 +77,17 @@ public class Token {
 
     private byte[] wipeKey;
 
-    @Column(name = "ed25519_freeze_key_hex")
-    private String ed25519FreezeKey;
+    @Column(name = "freeze_key_ed25519_hex")
+    private String freezeKeyEd25519Hex;
 
-    @Column(name = "ed25519_kyc_key_hex")
-    private String ed25519KycKey;
+    @Column(name = "kyc_key_ed25519_hex")
+    private String kycKeyEd25519Hex;
 
-    @Column(name = "ed25519_supply_key_hex")
-    private String ed25519SupplyKey;
+    @Column(name = "supply_key_ed25519_hex")
+    private String supplyKeyEd25519Hex;
 
-    @Column(name = "ed25519_wipe_key_hex")
-    private String ed25519WipeKey;
+    @Column(name = "wipe_key_ed25519_hex")
+    private String wipeKeyEd25519Hex;
 
     public void setInitialSupply(Long initialSupply) {
         this.initialSupply = initialSupply;
@@ -98,22 +98,55 @@ public class Token {
 
     public void setFreezeKey(byte[] key) {
         freezeKey = key;
-        ed25519FreezeKey = convertByteKeyToHex(key);
+        freezeKeyEd25519Hex = convertByteKeyToHex(key);
     }
 
     public void setKycKey(byte[] key) {
         kycKey = key;
-        ed25519KycKey = convertByteKeyToHex(key);
+        kycKeyEd25519Hex = convertByteKeyToHex(key);
     }
 
     public void setSupplyKey(byte[] key) {
         supplyKey = key;
-        ed25519SupplyKey = convertByteKeyToHex(key);
+        supplyKeyEd25519Hex = convertByteKeyToHex(key);
     }
 
     public void setWipeKey(byte[] key) {
         wipeKey = key;
-        ed25519WipeKey = convertByteKeyToHex(key);
+        wipeKeyEd25519Hex = convertByteKeyToHex(key);
+    }
+
+    // FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2
+    // If the token does not have Freeze key, FreezeNotApplicable is returned, if not take value of freezeDefault
+
+    /**
+     * Get initial freeze status for an account being associated with this token If the token does not have Freeze key,
+     * FreezeNotApplicable is returned, if not take value of freezeDefault. FreezeNotApplicable = 0, Frozen = 1,
+     * Unfrozen = 2
+     *
+     * @return Freeze status code
+     */
+    public int getNewAccountFreezeStatus() {
+        if (freezeKey == null) {
+            return 0;
+        }
+
+        return freezeDefault ? 1 : 0;
+    }
+
+    /**
+     * Get initial kyc status for an account being associated with this token If the token does not have kyc key,
+     * KycNotApplicable is returned, if it does set to Revoked as kyc must be performed. KycNotApplicable = 0, Granted =
+     * 1, Revoked = 2
+     *
+     * @return Freeze status code
+     */
+    public int getNewAccountKycStatus() {
+        if (kycKey == null) {
+            return 0;
+        }
+
+        return kycKey == null ? 0 : 2;
     }
 
     private String convertByteKeyToHex(byte[] key) {

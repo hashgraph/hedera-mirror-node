@@ -32,7 +32,7 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(key))).build().toByteArray();
         Token token = new Token();
         token.setCreatedTimestamp(1L);
-        token.setDivisibility(1000);
+        token.setDecimals(1000);
         token.setFreezeDefault(false);
         token.setFreezeKey(hexKey);
         token.setInitialSupply(1_000_000_000L);
@@ -51,7 +51,7 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         assertAll(
                 () -> assertNotNull(actual),
                 () -> assertEquals(expected.getCreatedTimestamp(), actual.getCreatedTimestamp()),
-                () -> assertEquals(expected.getDivisibility(), actual.getDivisibility()),
+                () -> assertEquals(expected.getDecimals(), actual.getDecimals()),
                 () -> assertArrayEquals(expected.getFreezeKey(), actual.getFreezeKey()),
                 () -> assertEquals(expected.getInitialSupply(), actual.getInitialSupply()),
                 () -> assertArrayEquals(expected.getKycKey(), actual.getKycKey()),
@@ -60,10 +60,10 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
                 () -> assertArrayEquals(expected.getSupplyKey(), actual.getSupplyKey()),
                 () -> assertEquals(expected.getSymbol(), actual.getSymbol()),
                 () -> assertArrayEquals(expected.getWipeKey(), actual.getWipeKey()),
-                () -> assertEquals(expected.getEd25519FreezeKey(), actual.getEd25519FreezeKey()),
-                () -> assertEquals(expected.getEd25519KycKey(), actual.getEd25519KycKey()),
-                () -> assertEquals(expected.getEd25519SupplyKey(), actual.getEd25519SupplyKey()),
-                () -> assertEquals(expected.getEd25519WipeKey(), actual.getEd25519WipeKey())
+                () -> assertEquals(expected.getFreezeKeyEd25519Hex(), actual.getFreezeKeyEd25519Hex()),
+                () -> assertEquals(expected.getKycKeyEd25519Hex(), actual.getKycKeyEd25519Hex()),
+                () -> assertEquals(expected.getSupplyKeyEd25519Hex(), actual.getSupplyKeyEd25519Hex()),
+                () -> assertEquals(expected.getWipeKeyEd25519Hex(), actual.getWipeKeyEd25519Hex())
         );
     }
 }

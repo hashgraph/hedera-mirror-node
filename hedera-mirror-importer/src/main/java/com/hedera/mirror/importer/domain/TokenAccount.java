@@ -46,14 +46,12 @@ public class TokenAccount {
 
     private long createdTimestamp;
 
-    private boolean frozen;
+    private int freezeStatus;
 
-    private boolean kyc;
+    private int kycStatus;
 
     private long modifiedTimestamp;
 
     @Convert(converter = TokenIdConverter.class)
     private EntityId tokenId;
-
-    private boolean wiped;
 }

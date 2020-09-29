@@ -141,7 +141,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
         Token token = new Token();
         token.setCreatedTimestamp(1L);
-        token.setDivisibility(1000);
+        token.setDecimals(1000);
         token.setFreezeDefault(false);
         token.setFreezeKey(input.toByteArray());
         token.setInitialSupply(1_000_000_000L);
@@ -161,9 +161,8 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     void onTokenAccount() throws ImporterException {
         TokenAccount tokenAccount = new TokenAccount();
         tokenAccount.setAssociated(true);
-        tokenAccount.setKyc(false);
-        tokenAccount.setWiped(false);
-        tokenAccount.setFrozen(false);
+        tokenAccount.setKycStatus(0);
+        tokenAccount.setFreezeStatus(0);
         tokenAccount.setAccountId(ENTITY_ID);
         tokenAccount.setCreatedTimestamp(1L);
         tokenAccount.setModifiedTimestamp(2L);
