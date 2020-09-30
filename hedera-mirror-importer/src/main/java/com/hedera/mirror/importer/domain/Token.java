@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
