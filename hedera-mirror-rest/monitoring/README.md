@@ -31,6 +31,7 @@ A dashboard polls the above-mentioned APIs and displays the results.
 ### Requirements
 
 -   [ ] List of addresses of Hedera mirror nodes that you want to monitor
+-   [ ] An existing topic ID of the target Hedera Mirrornode environment if you want to run topic message tests
 -   [ ] An external server where you want to run this code to monitor the mirror node. You will need two TCP ports on the server.
 -   [ ] npm and pm2
 
@@ -39,33 +40,61 @@ git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node/hedera-mirror-rest/monitoring
 ```
 
-To run the monitor_apis backend:
+To install the dependencies and configure monitor_apis:
 
 ```
 cd monitor_apis
+npm install
 cp config/sample.serverlist.json config/serverlist.json // Start with the sample configuration file
 nano config/serverlist.json // Insert the mirror node deployments you want to monitor
-npm install
-PORT=3000 pm2 start server.js
 ```
 
-To configure a smaller `limit` threshold for individual resources (`account`, `balance`, or `transaction`), for example,
-for environments with lower traffic volume, adjust the values of the following section in `config/serverlist.json`:
+To customize per-resource configuration:
+
+- `freshnessThreshold` (in seconds) for `balance`, `transaction`, and `topic` can be adjusted independently if needed.
+   Set to 0 to disable freshness check for a resource
+- `intervalMultiplier` for all resources. The tests for a resource will run every `interval * intervalMultiplier` seconds.
+   For `stateproof`, it defaults to 10, so the tests run at a lower frequency to reduce cost
+- `limit` threshold for `account`, `balance`, `transatcion`, and `topic` can be adjusted independently if needed, e.g.,
+  for environments with lower traffic volume
+- set `topic.topicId` to an existing topic ID of the target environment. If not set, topic message tests will be skipped
 
 ```json
-"account": {
-"limit": 1000
-},
-"balance": {
-"limit": 1000
-},
-"transaction": {
-"limit": 1000
+{
+  "account": {
+    "intervalMultiplier": 1,
+    "limit": 1000
+  },
+  "balance": {
+    "freshnessThreshold": 1000,
+    "intervalMultiplier": 1,
+    "limit": 1000
+  },
+  "stateproof": {
+    "intervalMultiplier": 10
+  },
+  "transaction": {
+    "freshnessThreshold": 50,
+    "intervalMultiplier": 1,
+    "limit": 1000
+  },
+  "topic": {
+    "freshnessThreshold": 100,
+    "intervalMultiplier": 1,
+    "limit": 1000,
+    "topicId": "0.0.1930"
+  }
 }
 ```
 
+TO run the monitor_apis backend:
+
+```
+PORT=3000 pm2 start server.js
+```
+
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.
-The default timeout to populate the data is 60 seconds. After the interval, you can verify the output using `curl http://<host>:<port>/api/v1/status` command.
+The default interval to populate the data is 60 seconds. You can verify the output using `curl http://<host>:<port>/api/v1/status` command.
 
 To run the dashboard (from `hedera-mirror-rest/monitoring` directory):
 

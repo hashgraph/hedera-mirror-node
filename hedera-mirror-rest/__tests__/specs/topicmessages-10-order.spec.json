@@ -1,7 +1,12 @@
 {
   "description": "Get messages by with order param",
   "setup": {
-    "accounts": [],
+    "accounts": [
+      {
+        "entity_num": 7,
+        "entity_type": 4
+      }
+    ],
     "balances": [],
     "transactions": [],
     "cryptotransfers": [],

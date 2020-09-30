@@ -17,10 +17,14 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
-const config = require('./config.js');
-const constants = require('./constants.js');
-const utils = require('./utils.js');
+
+const _ = require('lodash');
+const config = require('./config');
+const constants = require('./constants');
+const EntityId = require('./entityId');
+const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
@@ -43,7 +47,7 @@ const columnMap = {
 /**
  * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
  */
-const validateConsensusTimestampParam = function (consensusTimestamp) {
+const validateConsensusTimestampParam = (consensusTimestamp) => {
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
     throw InvalidArgumentError.forParams(topicMessageColumns.CONSENSUS_TIMESTAMP);
   }
@@ -52,8 +56,8 @@ const validateConsensusTimestampParam = function (consensusTimestamp) {
 /**
  * Verify topicId and sequencenumber meet entity_num format
  */
-const validateGetSequenceMessageParams = function (topicId, seqNum) {
-  let badParams = [];
+const validateGetSequenceMessageParams = (topicId, seqNum) => {
+  const badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
     badParams.push(topicMessageColumns.TOPIC_NUM);
   }
@@ -70,9 +74,41 @@ const validateGetSequenceMessageParams = function (topicId, seqNum) {
 /**
  * Verify topicId and sequencenumber meet entity_num and limit format
  */
-const validateGetTopicMessagesParams = function (topicId) {
+const validateGetTopicMessagesParams = (topicId) => {
   if (!utils.isValidEntityNum(topicId)) {
     throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_NUM);
+  }
+};
+
+/**
+ * Verify topicId exists and is a topic id
+ *
+ * @param topicId
+ * @return {Promise<void>}
+ */
+const validateTopicId = async (topicId) => {
+  const encodedId = topicId.indexOf('.') !== -1 ? EntityId.fromString(topicId).getEncodedId().toString() : topicId;
+  const pgSqlQuery = `SELECT tet.name
+            FROM t_entities te
+            JOIN t_entity_types tet
+                ON te.fk_entity_type_id = tet.id
+            WHERE te.id = $1`;
+  const pgSqlParams = [encodedId];
+
+  let result;
+  try {
+    result = await pool.query(pgSqlQuery, pgSqlParams);
+  } catch (err) {
+    throw new DbError(err.message);
+  }
+
+  const {rows} = result;
+  if (_.isEmpty(rows)) {
+    throw new NotFoundError(`No such topic id - ${topicId}`);
+  }
+
+  if (rows[0].name !== 'topic') {
+    throw new InvalidArgumentError(`${topicId} is not a topic id`);
   }
 };
 
@@ -86,7 +122,7 @@ const validateGetTopicMessagesRequest = (topicId, filters) => {
 /**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
-const formatTopicMessageRow = function (row, messageEncoding) {
+const formatTopicMessageRow = (row, messageEncoding) => {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
     topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
@@ -106,7 +142,7 @@ const getMessageByConsensusTimestamp = async (req, res) => {
   const consensusTimestampParam = req.params.consensusTimestamp;
   validateConsensusTimestampParam(consensusTimestampParam);
 
-  let consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
+  const consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
   const pgSqlQuery = `SELECT * FROM topic_message WHERE consensus_timestamp = $1`;
   const pgSqlParams = [consensusTimestamp];
@@ -125,6 +161,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const topicId = req.params.id;
   const seqNum = req.params.sequencenumber;
   validateGetSequenceMessageParams(topicId, seqNum);
+  await validateTopicId(topicId);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
   const entity = utils.parseEntityId(topicId);
@@ -148,12 +185,14 @@ const getTopicMessages = async (req, res) => {
   // validate params
   validateGetTopicMessagesRequest(topicId, filters);
 
+  await validateTopicId(topicId);
+
   // build sql query validated param and filters
-  let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
+  const {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
 
   const messageEncoding = req.query[constants.filterKeys.ENCODING];
 
-  let topicMessagesResponse = {
+  const topicMessagesResponse = {
     messages: [],
     links: {
       next: null,
@@ -166,7 +205,7 @@ const getTopicMessages = async (req, res) => {
     topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
 
     // populate next
-    let lastTimeStamp =
+    const lastTimeStamp =
       topicMessagesResponse.messages.length > 0
         ? topicMessagesResponse.messages[topicMessagesResponse.messages.length - 1][
             topicMessageColumns.CONSENSUS_TIMESTAMP
@@ -189,12 +228,12 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   const entity = utils.parseEntityId(topicId);
   let pgSqlQuery = `select * from topic_message where realm_num = $1 and topic_num = $2`;
   let nextParamCount = 3;
-  let pgSqlParams = [entity.realm, entity.num];
+  const pgSqlParams = [entity.realm, entity.num];
 
   // add filters
   let limit;
   let order = 'asc';
-  for (let filter of filters) {
+  for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
       continue;
@@ -258,7 +297,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  let messages = [];
+  const messages = [];
 
   return pool
     .query(pgSqlQuery, pgSqlParams)
@@ -270,19 +309,19 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
         messages.push(results.rows[i]);
       }
 
-      logger.debug('getMessages returning ' + messages.length + ' entries');
+      logger.debug(`getMessages returning ${messages.length} entries`);
 
       return messages;
     });
 };
 
 module.exports = {
-  extractSqlFromTopicMessagesRequest: extractSqlFromTopicMessagesRequest,
-  formatTopicMessageRow: formatTopicMessageRow,
-  getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
-  getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
-  getTopicMessages: getTopicMessages,
-  validateConsensusTimestampParam: validateConsensusTimestampParam,
-  validateGetSequenceMessageParams: validateGetSequenceMessageParams,
-  validateGetTopicMessagesParams: validateGetTopicMessagesParams,
+  extractSqlFromTopicMessagesRequest,
+  formatTopicMessageRow,
+  getMessageByConsensusTimestamp,
+  getMessageByTopicAndSequenceRequest,
+  getTopicMessages,
+  validateConsensusTimestampParam,
+  validateGetSequenceMessageParams,
+  validateGetTopicMessagesParams,
 };

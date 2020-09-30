@@ -21,6 +21,7 @@
 'use strict';
 
 const AbortController = require('abort-controller');
+const httpErrors = require('http-errors');
 const _ = require('lodash');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
@@ -87,7 +88,7 @@ const getAPIResponse = async (url, key = undefined) => {
     const response = await fetch(url, {signal: controller.signal});
     if (!response.ok) {
       console.log(`Non success response for call to '${url}'`);
-      return Error(response.statusText);
+      return httpErrors(response.status, response.statusText);
     }
 
     const json = await response.json();
@@ -101,25 +102,49 @@ const getAPIResponse = async (url, key = undefined) => {
   }
 };
 
-/**
- * Retrieve a new instance of the monitoring class results object
- */
-const getMonitorClassResult = () => {
-  return {
-    testResults: [],
-    numPassedTests: 0,
-    numFailedTests: 0,
-    success: true,
-    message: '',
-    startTime: Date.now(),
-    endTime: 0,
-  };
-};
+class ServerTestResult {
+  constructor() {
+    this.result = {
+      testResults: [],
+      numPassedTests: 0,
+      numFailedTests: 0,
+      success: true,
+      message: '',
+      startTime: Date.now(),
+      endTime: 0,
+    };
+  }
 
-const testRunner = (server, testClassResult) => {
+  addTestResult(testResult) {
+    this.result.testResults.push(testResult);
+    if (testResult.result === 'passed') {
+      this.result.numPassedTests += 1;
+    } else {
+      this.result.numFailedTests += 1;
+      this.result.success = false;
+    }
+  }
+
+  finish() {
+    this.result.endTime = Date.now();
+  }
+}
+
+/**
+ * Creates a function to run specific tests with the provided server address, classs result, and resource
+ *
+ * @param {String} server server address in the format of http://ip:port
+ * @param {ServerTestResult} testClassResult test class result object
+ * @param {String} resource name of the resource to test
+ * @return {function(...[*]=)}
+ */
+const testRunner = (server, testClassResult, resource) => {
   return async (testFunc) => {
     const start = Date.now();
     const result = await testFunc(server);
+    if (result.skipped) {
+      return;
+    }
 
     const testResult = {
       at: start,
@@ -127,15 +152,10 @@ const testRunner = (server, testClassResult) => {
       url: result.url,
       message: result.passed ? result.message : '',
       failureMessages: !result.passed ? [result.message] : [],
+      resource,
     };
 
-    testClassResult.testResults.push(testResult);
-    if (result.passed) {
-      testClassResult.numPassedTests++;
-    } else {
-      testClassResult.numFailedTests++;
-      testClassResult.success = false;
-    }
+    testClassResult.addTestResult(testResult);
   };
 };
 
@@ -146,7 +166,7 @@ const testRunner = (server, testClassResult) => {
  * @return {Object} Constructed failed result object
  */
 const createFailedResultJson = (title, msg) => {
-  const failedResultJson = getMonitorClassResult();
+  const failedResultJson = new ServerTestResult().result;
   failedResultJson.numFailedTests = 1;
   failedResultJson.success = false;
   failedResultJson.message = 'Prerequisite tests failed';
@@ -171,14 +191,32 @@ const createFailedResultJson = (title, msg) => {
   return failedResultJson;
 };
 
-const checkAPIResponseError = (resp) => {
-  if (resp instanceof Error) {
+const checkAPIResponseError = (resp, option) => {
+  const {expectHttpError, status} = option;
+  const isRespError = resp instanceof Error;
+  const isRespHttpError = resp instanceof httpErrors.HttpError;
+
+  if (expectHttpError) {
+    if (isRespHttpError && (!status || resp.status === status)) {
+      return {passed: true};
+    }
+
+    const actual = isRespError ? JSON.stringify(resp) : '2xx';
+    return {
+      passed: false,
+      message: `expect http error ${status || 'any'}, got ${actual}`,
+    };
+  }
+
+  if (isRespError) {
     return {
       passed: false,
       message: resp.message,
     };
   }
+
   return {passed: true};
+
 };
 
 const checkRespObjDefined = (resp, option) => {
@@ -246,6 +284,69 @@ const checkRespDataFreshness = (resp, option) => {
   return {passed: true};
 };
 
+const checkConsensusTimestampOrder = (elements, option) => {
+  const {asc} = option;
+  let previous = asc ? '0' : 'A';
+  for (const element of elements) {
+    const timestamp = element.consensus_timestamp;
+    if (asc && timestamp <= previous) {
+      return {passed: false, message: 'consensus timestamps are not in ascending order'};
+    }
+    if (!asc && timestamp >= previous) {
+      return {passed: false, message: 'consensus timestamps are not in descending order'};
+    }
+    previous = timestamp;
+  }
+
+  return {passed: true};
+};
+
+/**
+ * Checks resource freshness
+ *
+ * @param server the server address in the format of http://ip:port
+ * @param path resource path
+ * @param resource resource name
+ * @param timestamp function to extract timestamp from response
+ * @param jsonRespKey json response key to extract data from json response
+ * @return {Promise<>}
+ */
+const checkResourceFreshness = async (server, path, resource, timestamp, jsonRespKey) => {
+  const {freshnessThreshold} = config[resource];
+  if (freshnessThreshold === 0) {
+    return {skipped: true};
+  }
+
+  const url = getUrl(server, path, {limit: 1, order: 'desc'});
+  const resp = await getAPIResponse(url, jsonRespKey);
+
+  const checkRunner = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: `${resource}: response object is undefined`});
+  if (Array.isArray(resp)) {
+    checkRunner.withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `${resource}: response data length of ${elements.length} was expected to be 1`,
+    });
+  }
+  const result = checkRunner
+    .withCheckSpec(checkRespDataFreshness, {
+      timestamp,
+      threshold: freshnessThreshold,
+      message: (delta) => `${resource} was stale, ${delta} seconds old`,
+    })
+    .run(resp);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully retrieved ${resource} from with ${freshnessThreshold} seconds ago`,
+  };
+};
+
 class CheckRunner {
   constructor() {
     this.checkSpecs = [];
@@ -253,6 +354,15 @@ class CheckRunner {
 
   withCheckSpec(check, option = {}) {
     this.checkSpecs.push({check, option});
+    return this;
+  }
+
+  resetCheckSpec(check, option = {}) {
+    this.checkSpecs.forEach((checkSpec) => {
+      if (checkSpec.check === check) {
+        checkSpec.option = option;
+      }
+    });
     return this;
   }
 
@@ -274,7 +384,6 @@ module.exports = {
   fromAccNum,
   getUrl,
   getAPIResponse,
-  getMonitorClassResult,
   createFailedResultJson,
   testRunner,
   checkAPIResponseError,
@@ -282,6 +391,8 @@ module.exports = {
   checkRespArrayLength,
   checkAccountNumber,
   checkMandatoryParams,
-  checkRespDataFreshness,
+  checkConsensusTimestampOrder,
+  checkResourceFreshness,
   CheckRunner,
+  ServerTestResult,
 };
