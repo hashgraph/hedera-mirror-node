@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -120,33 +122,33 @@ public class Token {
     // If the token does not have Freeze key, FreezeNotApplicable is returned, if not take value of freezeDefault
 
     /**
-     * Get initial freeze status for an account being associated with this token If the token does not have Freeze key,
-     * FreezeNotApplicable is returned, if not take value of freezeDefault. FreezeNotApplicable = 0, Frozen = 1,
-     * Unfrozen = 2
+     * Get initial freeze status for an account being associated with this token. If the token does not have a
+     * freezeKey, FreezeNotApplicable is returned, if it does account frozen status is set based on freezeDefault.
+     * FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2
      *
      * @return Freeze status code
      */
     public int getNewAccountFreezeStatus() {
         if (freezeKey == null) {
-            return 0;
+            return TokenFreezeStatus.FreezeNotApplicable_VALUE;
         }
 
-        return freezeDefault ? 1 : 0;
+        return freezeDefault ? TokenFreezeStatus.Frozen_VALUE : TokenFreezeStatus.Unfrozen_VALUE;
     }
 
     /**
-     * Get initial kyc status for an account being associated with this token If the token does not have kyc key,
-     * KycNotApplicable is returned, if it does set to Revoked as kyc must be performed. KycNotApplicable = 0, Granted =
-     * 1, Revoked = 2
+     * Get initial kyc status for an account being associated with this token. If the token does not have a kycKey,
+     * KycNotApplicable is returned, if it does account should be set to Revoked as kyc must be performed.
+     * KycNotApplicable = 0, Granted = 1, Revoked = 2
      *
-     * @return Freeze status code
+     * @return Kyc status code
      */
     public int getNewAccountKycStatus() {
         if (kycKey == null) {
-            return 0;
+            return TokenKycStatus.KycNotApplicable_VALUE;
         }
 
-        return kycKey == null ? 0 : 2;
+        return TokenKycStatus.Revoked_VALUE;
     }
 
     private String convertByteKeyToHex(byte[] key) {

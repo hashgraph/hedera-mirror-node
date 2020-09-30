@@ -20,12 +20,21 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_30M;
+
 import java.util.Optional;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TokenAccount;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, Long> {
+    @Cacheable(cacheNames = "tokenaccounts", cacheManager = EXPIRE_AFTER_30M, key = "{#p0.id, #p1.id}")
     Optional<TokenAccount> findByTokenIdAndAccountId(EntityId tokenId, EntityId accountId);
+
+    @CachePut(cacheNames = "tokenaccounts", cacheManager = EXPIRE_AFTER_30M, key = "{#p0.tokenId.id, #p0.accountId.id}")
+    @Override
+    <S extends TokenAccount> S save(S entity);
 }
