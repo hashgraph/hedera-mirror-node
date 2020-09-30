@@ -40,6 +40,7 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.util.Utility;
@@ -54,6 +55,9 @@ public class AccountBalancesFileLoader {
             "values (?) on conflict do nothing;";
     private static final String INSERT_BALANCE_STATEMENT = "insert into account_balance " +
             "(consensus_timestamp, account_id, balance) values (?, ?, ?) on conflict do " +
+            "nothing;";
+    private static final String INSERT_TOKEN_BALANCE_STATEMENT = "insert into token_balance " +
+            "(consensus_timestamp, account_id, balance, token_id) values (?, ?, ?, ?) on conflict do " +
             "nothing;";
     private static final String UPDATE_SET_STATEMENT = "update account_balance_sets set is_complete = ?, " +
             "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = " +
@@ -76,6 +80,11 @@ public class AccountBalancesFileLoader {
         CONSENSUS_TIMESTAMP, ACCOUNT_ID, BALANCE
     }
 
+    enum F_INSERT_TOKEN_BALANCE {
+        ZERO,
+        CONSENSUS_TIMESTAMP, ACCOUNT_ID, BALANCE, TOKEN_ID
+    }
+
     enum F_UPDATE_SET {
         ZERO,
         IS_COMPLETE, CONSENSUS_TIMESTAMP
@@ -88,10 +97,10 @@ public class AccountBalancesFileLoader {
 
     private final int insertBatchSize;
     private final DataSource dataSource;
-    private final BalanceFileReader balanceFileReader;
+    private final CompositeBalanceFileReader balanceFileReader;
 
     public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
-                                     BalanceFileReader balanceFileReader) {
+                                     CompositeBalanceFileReader balanceFileReader) {
         insertBatchSize = balanceParserProperties.getBatchSize();
         this.dataSource = dataSource;
         this.balanceFileReader = balanceFileReader;
@@ -110,6 +119,8 @@ public class AccountBalancesFileLoader {
         Connection connection = DataSourceUtils.getConnection(dataSource);
         try (PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
              PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
+             PreparedStatement insertTokenBalanceStatement = connection
+                     .prepareStatement(INSERT_TOKEN_BALANCE_STATEMENT);
              PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
              PreparedStatement updateAccountBalanceFileStatement = connection
                      .prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT);
@@ -148,6 +159,7 @@ public class AccountBalancesFileLoader {
                 if (!skip) {
                     accountBalanceList.add(accountBalance);
                     tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
+                    tryInsertBatchTokenBalance(insertTokenBalanceStatement, accountBalanceList, insertBatchSize);
                 }
             }
 
@@ -195,6 +207,29 @@ public class AccountBalancesFileLoader {
         for (int code : result) {
             if (code == Statement.EXECUTE_FAILED) {
                 throw new ParserSQLException("Some account balance insert statement in the batch failed to execute");
+            }
+        }
+    }
+
+    private void tryInsertBatchTokenBalance(PreparedStatement insertTokenBalanceStatement,
+                                            List<AccountBalance> tokenBalanceList, int threshold) throws SQLException {
+        if (tokenBalanceList.size() < threshold) {
+            return;
+        }
+
+        for (var accountBalance : tokenBalanceList) {
+            for (var tokenBalance : accountBalance.getTokenBalances()) {
+                TokenBalance.Id id = tokenBalance.getId();
+                insertTokenBalanceStatement
+                        .setLong(F_INSERT_TOKEN_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp
+                                ());
+                insertTokenBalanceStatement
+                        .setLong(F_INSERT_TOKEN_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
+                insertTokenBalanceStatement
+                        .setLong(F_INSERT_TOKEN_BALANCE.BALANCE.ordinal(), tokenBalance.getBalance());
+                insertTokenBalanceStatement
+                        .setLong(F_INSERT_TOKEN_BALANCE.TOKEN_ID.ordinal(), id.getTokenId().getId());
+                insertTokenBalanceStatement.addBatch();
             }
         }
     }
