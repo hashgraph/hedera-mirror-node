@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.notify;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,18 +20,12 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  * ‍
  */
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
-
-@Data
-@ConditionOnEntityRecordParser
-@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
-public class NotifyProperties implements EntityListenerProperties {
-
-    private boolean enabled = true;
-
-    private int maxJsonPayloadSize = 8000;
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = TopicMessage.class, name = "TopicMessage")
+})
+public interface StreamMessage {
 }

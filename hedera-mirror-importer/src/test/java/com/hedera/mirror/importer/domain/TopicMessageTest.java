@@ -47,6 +47,7 @@ public class TopicMessageTest {
         ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         String json = objectMapper.writeValueAsString(topicMessage);
         assertThat(json).isEqualTo("{" +
+                "\"@type\":\"TopicMessage\"," +
                 "\"chunk_num\":1," +
                 "\"chunk_total\":2," +
                 "\"consensus_timestamp\":1594401417000000000," +

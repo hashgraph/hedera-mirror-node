@@ -21,9 +21,12 @@ package com.hedera.mirror.grpc.service;
  */
 
 import com.google.common.base.Stopwatch;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +56,16 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     private final TopicListener topicListener;
     private final EntityRepository entityRepository;
     private final TopicMessageRetriever topicMessageRetriever;
+    private final MeterRegistry meterRegistry;
+    private final AtomicLong subscriberCount = new AtomicLong(0L);
+
+    @PostConstruct
+    void init() {
+        Gauge.builder("hedera.mirror.subscribers", () -> subscriberCount)
+                .description("The number of active subscribers")
+                .tag("type", TopicMessage.class.getSimpleName())
+                .register(meterRegistry);
+    }
 
     @Override
     public Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter) {
@@ -67,7 +80,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
                 .doOnCancel(topicContext::onCancel)
-                .doOnComplete(topicContext::onComplete));
+                .doOnComplete(topicContext::onComplete))
+                .doOnSubscribe(s -> subscriberCount.incrementAndGet())
+                .doFinally(s -> subscriberCount.decrementAndGet());
     }
 
     private Mono<?> topicExists(TopicMessageFilter filter) {

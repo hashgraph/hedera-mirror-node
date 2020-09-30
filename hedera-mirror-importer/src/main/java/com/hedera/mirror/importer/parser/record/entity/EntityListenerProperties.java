@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.notify;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -20,18 +20,9 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  * ‍
  */
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+public interface EntityListenerProperties {
 
-import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
+    boolean isEnabled();
 
-@Data
-@ConditionOnEntityRecordParser
-@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
-public class NotifyProperties implements EntityListenerProperties {
-
-    private boolean enabled = true;
-
-    private int maxJsonPayloadSize = 8000;
+    void setEnabled(boolean enabled);
 }

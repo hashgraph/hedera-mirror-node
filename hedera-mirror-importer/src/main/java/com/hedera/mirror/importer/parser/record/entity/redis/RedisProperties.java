@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.notify;
+package com.hedera.mirror.importer.parser.record.entity.redis;
 
 /*-
  * ‌
@@ -28,10 +28,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 
 @Data
 @ConditionOnEntityRecordParser
-@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
-public class NotifyProperties implements EntityListenerProperties {
+@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.redis")
+public class RedisProperties implements EntityListenerProperties {
 
-    private boolean enabled = true;
-
-    private int maxJsonPayloadSize = 8000;
+    private boolean enabled = false;
 }

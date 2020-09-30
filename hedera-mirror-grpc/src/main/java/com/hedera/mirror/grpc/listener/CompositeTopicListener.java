@@ -43,6 +43,7 @@ public class CompositeTopicListener implements TopicListener {
     private final ListenerProperties listenerProperties;
     private final NotifyingTopicListener notifyingTopicListener;
     private final PollingTopicListener pollingTopicListener;
+    private final RedisTopicListener redisTopicListener;
     private final SharedPollingTopicListener sharedPollingTopicListener;
     private final MeterRegistry meterRegistry;
     private Timer consensusToPublishTimer;
@@ -63,6 +64,7 @@ public class CompositeTopicListener implements TopicListener {
         }
 
         return getTopicListener().listen(filter)
+                .filter(t -> filterMessage(t, filter))
                 .doOnNext(this::recordMetric);
     }
 
@@ -74,11 +76,19 @@ public class CompositeTopicListener implements TopicListener {
                 return notifyingTopicListener;
             case POLL:
                 return pollingTopicListener;
+            case REDIS:
+                return redisTopicListener;
             case SHARED_POLL:
                 return sharedPollingTopicListener;
             default:
                 throw new UnsupportedOperationException("Unknown listener type: " + type);
         }
+    }
+
+    private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
+        return message.getRealmNum() == filter.getRealmNum() &&
+                message.getTopicNum() == filter.getTopicNum() &&
+                message.getConsensusTimestamp() >= filter.getStartTimeLong();
     }
 
     private void recordMetric(TopicMessage topicMessage) {

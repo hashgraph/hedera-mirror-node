@@ -42,7 +42,7 @@ management:
         liveness:
           include: ping
         readiness:
-          include: db,diskSpace,ping
+          include: db, diskSpace, ping, redis
 server:
   shutdown: graceful
 spring:
