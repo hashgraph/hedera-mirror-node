@@ -144,6 +144,22 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
+    void tokenAccountUpdate() throws InvalidProtocolBufferException {
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+
+        String newSymbol = "NEWSYMBOL";
+        Transaction transaction = tokenUpdateTransaction(
+                TOKEN_ID,
+                newSymbol,
+                keyFromString("updated-key"),
+                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build());
+        long updateTimeStamp = 10L;
+        insertAndParseTransaction(transaction, updateTimeStamp, null);
+
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimeStamp, newSymbol);
+    }
+
+    @Test
     void tokenAccountFreeze() throws InvalidProtocolBufferException {
         createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
 
@@ -283,6 +299,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .setSupplyKey(TOKEN_REF_KEY)
                     .setSymbol(symbol)
                     .setTreasury(PAYER)
+                    .setAutoRenewAccount(PAYER)
+                    .setAutoRenewPeriod(100)
+                    .setName(symbol + "_token_name")
                     .setWipeKey(TOKEN_REF_KEY);
 
             if (setFreezeKey) {
@@ -295,6 +314,23 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 builder.getTokenCreationBuilder().setKycKey(TOKEN_REF_KEY);
             }
         });
+    }
+
+    private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, Key newKey, AccountID accountID) {
+        return buildTransaction(builder -> builder.getTokenUpdateBuilder()
+                .setToken(tokenID)
+                .setAdminKey(newKey)
+                .setKycKey(newKey)
+                .setSupplyKey(newKey)
+                .setSymbol(symbol)
+                .setName(symbol + "_update_name")
+                .setTreasury(accountID)
+                .setAutoRenewAccount(accountID)
+                .setAutoRenewPeriod(12)
+                .setExpiry(360)
+                .setFreezeKey(newKey)
+                .setWipeKey(newKey)
+        );
     }
 
     private Transaction tokenAssociate(List<TokenID> tokenIDs, AccountID accountID) {

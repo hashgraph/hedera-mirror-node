@@ -52,7 +52,7 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
             entity.setAutoRenewAccountId(EntityId.of(txMessage.getAutoRenewAccount()));
         }
 
-        if (txMessage.getExpiry() != 0) {
+        if (txMessage.getAutoRenewPeriod() != 0) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod());
         }
 

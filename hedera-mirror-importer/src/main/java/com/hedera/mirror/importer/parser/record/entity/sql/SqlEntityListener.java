@@ -102,8 +102,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<LiveHash> liveHashes;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<EntityId> entityIds;
-    private final Collection<Token> tokens;
-    private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenTransfer> tokenTransfers;
 
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
@@ -139,8 +137,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashes = new ArrayList<>();
         entityIds = new HashSet<>();
         topicMessages = new ArrayList<>();
-        tokens = new ArrayList<>();
-        tokenAccounts = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
     }
 
@@ -180,8 +176,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
-        tokens.clear();
-        tokenAccounts.clear();
         tokenTransfers.clear();
         eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
     }

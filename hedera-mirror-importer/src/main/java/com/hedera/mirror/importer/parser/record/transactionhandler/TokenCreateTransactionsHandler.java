@@ -47,10 +47,17 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
         if (txMessage.hasAdminKey()) {
             entity.setKey(txMessage.getAdminKey().toByteArray());
         }
+
         if (txMessage.hasAutoRenewAccount()) {
             entity.setAutoRenewAccountId(EntityId.of(txMessage.getAutoRenewAccount()));
         }
 
-        entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod());
+        if (txMessage.getAutoRenewPeriod() != 0) {
+            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod());
+        }
+
+        if (txMessage.getExpiry() != 0) {
+            entity.setExpiryTimeNs(txMessage.getExpiry());
+        }
     }
 }

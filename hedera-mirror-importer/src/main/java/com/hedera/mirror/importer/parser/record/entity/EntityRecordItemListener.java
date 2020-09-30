@@ -36,8 +36,10 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
@@ -458,6 +460,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             Token token = retrieveToken(tokenBurnTransactionBody.getToken());
             if (token != null) {
                 token.setModifiedTimestamp(consensusTimestamp);
+                // mirror will calculate new totalSupply as an interim solution until network returns it
                 token.setTotalSupply(token.getTotalSupply() - tokenBurnTransactionBody.getAmount());
                 entityListener.onToken(token);
             }
@@ -535,8 +538,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             TokenAccount tokenAccount = retrieveTokenAccount(tokenID, tokenFreeze.getAccount());
             if (tokenAccount != null) {
-                // FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2
-                tokenAccount.setFreezeStatus(1);
+                tokenAccount.setFreezeStatus(TokenFreezeStatus.Frozen_VALUE);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onTokenAccount(tokenAccount);
             }
@@ -550,8 +552,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             TokenAccount tokenAccount = retrieveTokenAccount(tokenID, tokenGrantKyc.getAccount());
             if (tokenAccount != null) {
-                // KycNotApplicable = 0, Granted = 1, Revoked = 2
-                tokenAccount.setKycStatus(1);
+                tokenAccount.setKycStatus(TokenKycStatus.Granted_VALUE);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onTokenAccount(tokenAccount);
             }
@@ -564,6 +565,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             Token token = retrieveToken(tokenMintTransactionBody.getToken());
             if (token != null) {
                 token.setModifiedTimestamp(consensusTimestamp);
+                // mirror will calculate new totalSupply as an interim solution until network returns it
                 token.setTotalSupply(token.getTotalSupply() + tokenMintTransactionBody.getAmount());
                 entityListener.onToken(token);
             }
@@ -577,8 +579,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             TokenAccount tokenAccount = retrieveTokenAccount(tokenID, tokenRevokeKyc.getAccount());
             if (tokenAccount != null) {
-                // KycNotApplicable = 0, Granted = 1, Revoked = 2
-                tokenAccount.setKycStatus(2);
+                tokenAccount.setKycStatus(TokenKycStatus.Revoked_VALUE);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onTokenAccount(tokenAccount);
             }
@@ -627,11 +628,11 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
 
                 if (!tokenUpdateTransactionBody.getName().isEmpty()) {
-                    token.setSymbol(tokenUpdateTransactionBody.getName());
+                    token.setName(tokenUpdateTransactionBody.getName());
                 }
 
                 if (!tokenUpdateTransactionBody.getSymbol().isEmpty()) {
-                    token.setName(tokenUpdateTransactionBody.getSymbol());
+                    token.setSymbol(tokenUpdateTransactionBody.getSymbol());
                 }
 
                 entityListener.onToken(token);
@@ -647,8 +648,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenAccount tokenAccount = retrieveTokenAccount(tokenID, tokenUnfreezeAccountTransactionBody
                     .getAccount());
             if (tokenAccount != null) {
-                // FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2
-                tokenAccount.setFreezeStatus(2);
+                tokenAccount.setFreezeStatus(TokenFreezeStatus.Unfrozen_VALUE);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onTokenAccount(tokenAccount);
             }
@@ -659,7 +659,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenWipeAccountTransactionBody tokenWipeAccountTransactionBody = txBody.getTokenWipe();
 
-            // update token total supply
+            // update token total supply similar to TokenBurn transaction
             Token token = retrieveToken(tokenWipeAccountTransactionBody.getToken());
             if (token != null) {
                 token.setModifiedTimestamp(consensusTimestamp);
