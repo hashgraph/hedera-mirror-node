@@ -24,7 +24,7 @@
         "payerAccountId": "0.0.300",
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
-        "token_transfers": [
+        "token_transfer_list": [
           {
             "token_id": "0.0.90000",
             "account": "0.0.300",
