@@ -20,123 +20,86 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import javax.sql.DataSource;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGNotification;
 import org.postgresql.jdbc.PgConnection;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.support.JdbcUtils;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
+import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class NotifyingEntityListenerTest extends IntegrationTest {
+public class NotifyingEntityListenerTest extends BatchEntityListenerTest {
 
-    private final NotifyingEntityListener entityListener;
-    private final NotifyProperties notifyProperties;
     private final DataSource dataSource;
+
+    @Autowired
+    public NotifyingEntityListenerTest(NotifyingEntityListener entityListener, NotifyProperties properties,
+                                       DataSource dataSource) {
+        super(entityListener, properties);
+        this.dataSource = dataSource;
+    }
 
     @BeforeEach
     void setup() {
-        notifyProperties.setEnabled(true);
+        properties.setEnabled(true);
     }
 
     @Test
-    void isEnabled() {
-        notifyProperties.setEnabled(false);
-        assertThat(entityListener.isEnabled()).isFalse();
-
-        notifyProperties.setEnabled(true);
-        assertThat(entityListener.isEnabled()).isTrue();
-    }
-
-    @Test
-    void onTopicMessageNotify() throws Exception {
-        // given
-        TopicMessage topicMessage = topicMessage();
-        String json = NotifyingEntityListener.OBJECT_MAPPER.writeValueAsString(topicMessage);
-
-        try (PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class)) {
-            connection.execSQLUpdate("listen topic_message");
-
-            // when
-            entityListener.onTopicMessage(topicMessage);
-            entityListener.onSave(new EntityBatchSaveEvent(this));
-            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-            PGNotification[] notifications = connection.getNotifications(500);
-
-            // then
-            assertThat(notifications)
-                    .isNotNull()
-                    .hasSize(1)
-                    .extracting(PGNotification::getParameter)
-                    .first()
-                    .isEqualTo(json);
-        }
-    }
-
-    @Test
-    void onTopicMessageNotifyDisabled() throws Exception {
-        // given
-        notifyProperties.setEnabled(false);
-        TopicMessage topicMessage = topicMessage();
-
-        try (PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class)) {
-            connection.execSQLUpdate("listen topic_message");
-
-            // when
-            entityListener.onTopicMessage(topicMessage);
-            entityListener.onSave(new EntityBatchSaveEvent(this));
-            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-            PGNotification[] notifications = connection.getNotifications(500);
-
-            // then
-            assertThat(notifications).isNull();
-        }
-    }
-
-    @Test
-    void onTopicMessageNotifyPayloadTooLong() throws Exception {
+    void onTopicMessagePayloadTooLong() {
         // given
         TopicMessage topicMessage = topicMessage();
         topicMessage.setMessage(RandomUtils.nextBytes(5824)); // Just exceeds 8000B
+        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicNum());
 
-        try (PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class)) {
+        // when
+        entityListener.onTopicMessage(topicMessage);
+        entityListener.onSave(new EntityBatchSaveEvent(this));
+
+        // then
+        topicMessages.as(StepVerifier::create)
+                .expectNextCount(0L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Override
+    protected Flux<TopicMessage> subscribe(long topicNum) {
+        try {
+            PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
             connection.execSQLUpdate("listen topic_message");
-
-            // when
-            entityListener.onTopicMessage(topicMessage);
-            entityListener.onSave(new EntityBatchSaveEvent(this));
-            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-            PGNotification[] notifications = connection.getNotifications(500);
-
-            // then
-            assertThat(notifications).isNull();
+            return Flux.defer(() -> getNotifications(connection))
+                    .repeat()
+                    .timeout(Duration.ofSeconds(2))
+                    .doAfterTerminate(() -> JdbcUtils.closeConnection(connection));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private TopicMessage topicMessage() {
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
-        topicMessage.setRunningHash("running hash".getBytes());
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
-        topicMessage.setValidStartTimestamp(4L);
-        return topicMessage;
+    private Flux<TopicMessage> getNotifications(PgConnection pgConnection) {
+        Collection<TopicMessage> topicMessages = new ArrayList<>();
+        try {
+            PGNotification[] notifications = pgConnection.getNotifications(100);
+            if (notifications != null) {
+                for (PGNotification pgNotification : notifications) {
+                    TopicMessage topicMessage = NotifyingEntityListener.OBJECT_MAPPER
+                            .readValue(pgNotification.getParameter(), TopicMessage.class);
+                    topicMessages.add(topicMessage);
+                }
+            }
+            return Flux.fromIterable(topicMessages);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

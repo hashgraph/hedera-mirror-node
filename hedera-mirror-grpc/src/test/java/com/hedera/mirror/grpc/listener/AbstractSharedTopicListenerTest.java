@@ -24,26 +24,30 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
         int maxBufferSize = 16;
         listenerProperties.setMaxBufferSize(maxBufferSize);
 
-        TopicMessageFilter filter = TopicMessageFilter.builder()
+        TopicMessageFilter filterFast = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
 
         // create a normal subscriber to keep the shared flux open
         Vector<Long> sequenceNumbers = new Vector<>();
-        var subscription = getTopicListener().listen(filter)
+        var subscription = topicListener.listen(filterFast)
                 .map(TopicMessage::getSequenceNumber)
                 .subscribe(sequenceNumbers::add);
 
+        TopicMessageFilter filterSlow = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
         // the slow subscriber
-        getTopicListener().listen(filter)
+        topicListener.listen(filterSlow)
                 .map(TopicMessage::getSequenceNumber)
-                .as(p -> StepVerifier.create(p, 1)) // initial request amount - 1
+                .as(p -> StepVerifier.create(p, 1)) // initial request amount of 1
                 .thenRequest(1) // trigger subscription
                 .thenAwait(Duration.ofMillis(10L))
                 .then(() -> {
                     // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
                     // overflow error
-                    domainBuilder.topicMessages(maxBufferSize + 3, future).blockLast();
+                    publish(domainBuilder.topicMessages(maxBufferSize + 3, future));
                 })
                 .expectNext(1L, 2L)
                 .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
@@ -54,7 +58,8 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
 
         assertThat(subscription.isDisposed()).isFalse();
         subscription.dispose();
-        assertThat(sequenceNumbers).isEqualTo(LongStream.range(1, maxBufferSize + 4).boxed().collect(Collectors.toList()));
+        assertThat(sequenceNumbers)
+                .isEqualTo(LongStream.range(1, maxBufferSize + 4).boxed().collect(Collectors.toList()));
     }
 
     @Test
@@ -62,14 +67,14 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
     void slowSubscribeOverflowThenTimeout() {
         int maxBufferSize = 16;
         listenerProperties.setMaxBufferSize(maxBufferSize);
-        listenerProperties.setBufferTimeout(550L);
+        listenerProperties.setBufferTimeout(Duration.ofMillis(550L));
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
 
         // the slow subscriber
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(p -> StepVerifier.create(p, 1)) // initial request amount - 1
                 .thenRequest(1) // trigger subscription
@@ -77,7 +82,7 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .then(() -> {
                     // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
                     // overflow error
-                    domainBuilder.topicMessages(maxBufferSize + 3, future).blockLast();
+                    publish(domainBuilder.topicMessages(maxBufferSize + 3, future));
                 })
                 .expectNext(1L, 2L)
                 .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer

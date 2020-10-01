@@ -59,7 +59,6 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
     private static final String DB_ERROR = "Unable to connect to database. Please retry later";
     private static final String OVERFLOW_ERROR = "Client lags too much behind. Please retry later";
-    private static final String TIMEOUT_ERROR = "Client times out after buffer overflow. Please retry later";
 
     private final TopicMessageService topicMessageService;
 
@@ -75,7 +74,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
                 .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-                .onErrorMap(ClientTimeoutException.class, e -> error(e, Status.DEADLINE_EXCEEDED, TIMEOUT_ERROR))
+                .onErrorMap(ClientTimeoutException.class, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
                 .onErrorMap(t -> unknownError(t));
     }
 

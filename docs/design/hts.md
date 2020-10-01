@@ -69,15 +69,15 @@ To support the goals the following database schema changes should be made
 -   Create `token_account` table to distinctly capture token account metadata changes with the following columns
     -   `id` (primary key)
     -   `account_id`
+    -   `associated`
     -   `created_timestamp`
-    -   `frozen`
-    -   `kyc`
+    -   `freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
+    -   `kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
     -   `modified_timestamp`
     -   `token_id`
-    -   `wiped`
 -   Create unique index `token_account__token_account`
 
-> _Note:_  `frozen` and `kyc` are set by `TokenCreation.freezeDefault` and `TokenCreation.kycDefault` respectively
+> _Note:_  `freeze_status` and `kyc_status` are set by the presence of a `TokenCreation.kycKey` and `TokenCreation.kycKey` value respectively
 
 ### Entity Types
 -   Add new `t_entity_types` row with `id` value of 5 and `name `token`
@@ -90,13 +90,13 @@ To support the goals the following database schema changes should be made
 ```sql
     insert into t_transaction_types (proto_id, name) values
          (28, 'UNCHECKEDSUBMIT'),
-         (29, 'TOKENCREATE'),
-         (30, 'TOKENTRANSFER'),
+         (29, 'TOKENCREATION'),
+         (30, 'TOKENTRANSFERS'),
          (31, 'TOKENFREEZE'),
          (32, 'TOKENUNFREEZE'),
          (33, 'TOKENGRANTKYC'),
          (34, 'TOKENREVOKEKYC'),
-         (35, 'TOKENDELETE'),
+         (35, 'TOKENDELETION'),
          (36, 'TOKENUPDATE'),
          (37, 'TOKENMINT'),
          (38, 'TOKENBURN'),
@@ -151,17 +151,21 @@ To support the goals the following database schema changes should be made
 -   Create `token` table with the following columns. Table will capture non shared `entity` items, most API calls may not require this information and therefore additional sql joins may be avoided.
     -   `token_id` (primary key)
     -   `created_timestamp`
-    -   `divisibility`
+    -   `decimals`
     -   `freeze_default`
     -   `freeze_key`
+    -   `freeze_key_ed25519_hex` (ed25519 public key of freeze key)
     -   `initial_supply`
-    -   `kyc_default`
     -   `kyc_key`
+    -   `kyc_key_ed25519_hex` (ed25519 public key of kyc key)
     -   `modified_timestamp`
+    -   `name`
     -   `supply_key`
+    -   `supply_key_ed25519_hex` (ed25519 public key of supply key)
     -   `symbol`
     -   `treasury_account_id`
     -   `wipe_key`
+    -   `wipe_key_ed25519_hex` (ed25519 public key of wipe key)
 
 ## Importer
 
@@ -210,19 +214,23 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
 #### Token
 -   Add `Token` class to hold Token specific metadata outside of the base entity class with the following class members
     -   `createdTimestamp`
-    -   `divisibility`
+    -   `decimals`
     -   `freezeDefault`
     -   `freezeKey`
+    -   `freezeKeyEd25519Hex`
     -   `initialSupply`
-    -   `kycDefault`
     -   `kycKey`
+    -   `kycKeyEd25519Hex`
     -   `modifiedTimestamp`
     -   `name`
     -   `supplyKey`
+    -   `supplyKeyEd25519Hex`
     -   `symbol`
     -   `tokenId`
+    -   `totalSupply`
     -   `treasuryAccountId`
     -   `wipeKey`
+    -   `wipeKeyEd25519Hex`
 
 #### TokenAccount
 -   Add `TokenAccount` class with the following class members
@@ -230,11 +238,10 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `accountId`
     -   `associated`
     -   `createdTimestamp`
-    -   `frozen`
-    -   `kyc`
+    -   `freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
+    -   `kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
     -   `modifiedTimestamp`
     -   `tokenId`
-    -   `wiped`
 
 #### TokenBalance
 -   Add `TokenBalance` class with the following class members
@@ -261,11 +268,12 @@ To allow the mirror node to support both V1 and V2 balance files
 
 ### Transaction Handlers
 Additional handlers will be needed to support the added Token transaction types.
-In all cases override `getEntity()`, pulling entity info from appropriate transactionBody
+In all cases override `getEntity()`, pulling `TokenID` from record receipt for `TokenCreate` and from appropriate transactionBody for all other token transactionBody types.
 
 -   Add `TokenCreateTransactionsHandler`
     -   override `updatesEntity()` to return true
     -   override `updateEntity()` to set Entities `key`, `expiryTimeNs` and `AutoRenewPeriod` if applicable
+    -   override `getEntity()`, pulling `TokenID` from record receipt
 -   Add `TokenTransferTransactionsHandler`
 -   Add `TokenFreezeTransactionsHandler`
 -   Add `TokenUnfreezeTransactionsHandler`
@@ -280,9 +288,7 @@ In all cases override `getEntity()`, pulling entity info from appropriate transa
 -   Add `TokenBurnTransactionsHandler`
 -   Add `TokenWipeTransactionsHandler`
 -   Add `TokenAssociateTransactionsHandler`
-    -   override `updatesEntity()` to return true
 -   Add `TokenDissociateTransactionsHandler`
-    -   override `updatesEntity()` to return true
 
 
 ### Token Transfer Parsing
@@ -300,7 +306,7 @@ In all cases override `getEntity()`, pulling entity info from appropriate transa
     }
 ```
 
--   Add a `onTokenTransfer()` to handle a `token_transfer` table
+-   Add a `onTokenTransfer()` to handle inserts on the `token_transfer` table
 ```java
     default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
     }
@@ -317,8 +323,10 @@ Add logic to check for
 -   `TransactionBody.hasTokenUnfreeze()` and parse `TokenUnFreezeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `frozen` column to false and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenGrantKyc()` and parse `TokenGrantKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to true and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenRevokeKyc()` and parse `TokenRevokeKycTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `kyc` column to false and pass it to `entityListener.onTokenAccount()`.
--   `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `wipe` column to true and pass it to `entityListener.onTokenAccount()`.
+-   `TransactionBody.hasTokenWipe()` and parse `TokenWipeAccountTransactionBody` out from the record. Retrieve an existing `Token` db entry, decrement the `totalSupply` column and pass it to `entityListener.onToken()`.
 -   `TransactionBody.hasTokenUpdate()` and parse `TokenUpdateTransactionBody` out from the record. Retrieve an existing `Token` db entry, update the appropriate columns and pass it to `entityListener.onToken()`.
+-   `TransactionBody.hasTokenBurn()` and parse `TokenBurnTransactionBody` out from the record. Retrieve an existing `Token` db entry, decrement the `totalSupply` column and pass it to `entityListener.onToken()`.
+-   `TransactionBody.hasTokenMint()` and parse `TokenMintTransactionBody` out from the record. Retrieve an existing `Token` db entry, increment the `totalSupply` column and pass it to `entityListener.onToken()`.
 
 ## REST API
 To achieve the goals and for easy integration with existing users the REST API should be updated in the following order
@@ -416,7 +424,7 @@ To achieve the goals and for easy integration with existing users the REST API s
           "memo_base64": null,
           "result": "SUCCESS",
           "transaction_hash": "aGFzaA==",
-          "name": "CRYPTOTRANSFER",
+          "name": "TOKENTRANSFER",
           "node": "0.0.3",
           "transaction_id": "0.0.10-1234567890-000000000",
           "valid_duration_seconds": "11",
@@ -625,6 +633,7 @@ TBD
     -   A: `tokenId` for `accounts`, `balances` and `transactions`. Token API would be the place where both `token` and `tokenId` can be returned
 -   [x] Should `EntityRecordItemListener.OnItem()` be refactored to more easily focus on different TransactionBody types. May be valuable to testing but not necessarily within scope
     - A: Will leave to implementation task and sprint scheduling limits
+-   [ ] Will service return totalSupply for tokens post Mint, Burn and Wipe token transactions? As an interim mirror node can calculate but it would be better to have that as part of the response.
 
 
 

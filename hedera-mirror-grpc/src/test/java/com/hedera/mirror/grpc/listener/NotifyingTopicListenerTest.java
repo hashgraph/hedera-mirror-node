@@ -23,10 +23,10 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
@@ -41,30 +41,15 @@ public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest 
     private JdbcTemplate jdbcTemplate;
 
     @Override
-    protected TopicListener getTopicListener() {
-        return topicListener;
-    }
-
-    // Since importer manually calls pg_notify, we simulate that here with a rule that invokes pg_notify on insert
-    @BeforeEach
-    void createRule() {
-        jdbcTemplate.execute("create rule topic_message_rule " +
-                "as on insert to topic_message do also " +
-                "select pg_notify('topic_message', (select row_to_json(payload)::text from (select NEW.chunk_num,NEW" +
-                ".chunk_total,NEW.consensus_timestamp,encode(NEW.message, 'base64') as message,NEW.payer_account_id," +
-                "NEW.realm_num,encode(NEW.running_hash, 'base64') as running_hash,NEW.running_hash_version,NEW" +
-                ".sequence_number,NEW.topic_num,NEW.valid_start_timestamp) payload)) payload2");
-    }
-
-    @AfterEach
-    void dropRule() {
-        jdbcTemplate.execute("drop rule if exists topic_message_rule on topic_message");
+    protected ListenerProperties.ListenerType getType() {
+        return ListenerProperties.ListenerType.NOTIFY;
     }
 
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
     @Test
     void json() {
         String json = "{" +
+                "\"@type\":\"TopicMessage\"," +
                 "\"chunk_num\":1," +
                 "\"chunk_total\":2," +
                 "\"consensus_timestamp\":1594401417000000000," +
@@ -118,5 +103,21 @@ public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest 
                 .expectNoEvent(Duration.ofMillis(500L))
                 .thenCancel()
                 .verify(Duration.ofMillis(600L));
+    }
+
+    @Override
+    protected void publish(Flux<TopicMessage> publisher) {
+        publisher.concatMap(t -> {
+            jdbcTemplate.execute("NOTIFY topic_message, '" + toJson(t) + "'");
+            return Mono.just(t);
+        }).blockLast();
+    }
+
+    private String toJson(TopicMessage topicMessage) {
+        try {
+            return topicListener.objectMapper.writeValueAsString(topicMessage);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

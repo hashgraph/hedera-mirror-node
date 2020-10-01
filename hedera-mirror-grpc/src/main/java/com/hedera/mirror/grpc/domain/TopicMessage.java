@@ -20,7 +20,10 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
@@ -50,9 +53,11 @@ import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 @Builder
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true, value = {"consensusTimestampInstant", "response"})
+@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
+@JsonTypeName("TopicMessage")
 @NoArgsConstructor(force = true)
 @Value
-public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long> {
+public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>, StreamMessage {
 
     private static final Comparator<TopicMessage> COMPARATOR = Comparator
             .nullsFirst(Comparator.comparingLong(TopicMessage::getSequenceNumber));
@@ -61,6 +66,7 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @ToString.Exclude
     private Long consensusTimestamp;
 
+    @JsonIgnore
     @Getter(lazy = true)
     @Transient
     private Instant consensusTimestampInstant = LongToInstantConverter.INSTANCE.convert(consensusTimestamp);

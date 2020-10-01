@@ -41,17 +41,17 @@ import org.springframework.jdbc.core.PreparedStatementCallback;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @ConditionOnEntityRecordParser
 @Log4j2
 @Named
-@Order(3)
+@Order(4)
 @RequiredArgsConstructor
-public class NotifyingEntityListener implements EntityListener {
+public class NotifyingEntityListener implements BatchEntityListener {
 
     private static final String SQL = "select pg_notify('topic_message', ?)";
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().setPropertyNamingStrategy(SNAKE_CASE);
@@ -68,7 +68,7 @@ public class NotifyingEntityListener implements EntityListener {
         timer = Timer.builder("hedera.mirror.importer.publish.duration")
                 .description("The amount of time it took to publish the entity")
                 .tag("entity", TopicMessage.class.getSimpleName())
-                .tag("type", "redis")
+                .tag("type", "notify")
                 .register(meterRegistry);
     }
 
@@ -82,6 +82,7 @@ public class NotifyingEntityListener implements EntityListener {
         topicMessages.add(topicMessage);
     }
 
+    @Override
     @EventListener
     public void onSave(EntityBatchSaveEvent event) {
         if (isEnabled()) {
@@ -91,6 +92,7 @@ public class NotifyingEntityListener implements EntityListener {
         }
     }
 
+    @Override
     @EventListener
     public void onCleanup(EntityBatchCleanupEvent event) {
         log.debug("Finished clearing {} messages", topicMessages.size());
