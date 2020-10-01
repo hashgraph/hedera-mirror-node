@@ -82,6 +82,7 @@ const getBalances = async (req, res) => {
           AND e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}`
       : '';
 
+  // token balances pairs are aggregated as a string, e.g., "100=600,101=700"
   const sqlQuery = `
       SELECT
         ab.consensus_timestamp,
@@ -126,23 +127,11 @@ const getBalances = async (req, res) => {
 
       const entityIdStrFromEncodedId = (encodedId) => EntityId.fromEncodedId(encodedId).toString();
       ret.balances = result.rows.map((row) => {
-        const accountBalance = {
+        return {
           account: entityIdStrFromEncodedId(row.account_id),
           balance: Number(row.balance),
-          tokens: [],
+          tokens: utils.parseTokenBalances(row.token_balances),
         };
-
-        if (row.token_balances) {
-          accountBalance.tokens = row.token_balances.split(',').map((tokenBalance) => {
-            const [tokenId, balance] = tokenBalance.split('=');
-            return {
-              token_id: entityIdStrFromEncodedId(tokenId),
-              balance: Number(balance),
-            };
-          });
-        }
-
-        return accountBalance;
       });
 
       const anchorAccountId = ret.balances.length > 0 ? ret.balances[ret.balances.length - 1].account : 0;

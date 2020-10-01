@@ -17,12 +17,14 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
-const config = require('./config.js');
-const constants = require('./constants.js');
+
+const config = require('./config');
+const constants = require('./constants');
 const EntityId = require('./entityId');
-const utils = require('./utils.js');
-const transactions = require('./transactions.js');
+const utils = require('./utils');
+const transactions = require('./transactions');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {DbError} = require('./errors/dbError');
@@ -32,12 +34,13 @@ const {DbError} = require('./errors/dbError');
  * @param {Object} row One row of the SQL query result
  * @return {Object} accRecord Processed account record
  */
-const processRow = function (row) {
-  let accRecord = {};
+const processRow = (row) => {
+  const accRecord = {};
   accRecord.balance = {};
-  accRecord.account = EntityId.fromEncodedId(row['entity_id']).toString();
+  accRecord.account = EntityId.fromEncodedId(row.entity_id).toString();
   accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
   accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
+  accRecord.balance.tokens = utils.parseTokenBalances(row.token_balances);
   accRecord.expiry_timestamp = row.exp_time_ns === null ? null : utils.nsToSecNs(row.exp_time_ns);
   accRecord.auto_renew_period = row.auto_renew_period === null ? null : Number(row.auto_renew_period);
   accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
@@ -46,25 +49,45 @@ const processRow = function (row) {
   return accRecord;
 };
 
-const getAccountQueryPrefix = function () {
+/**
+ * Creates account query with optional extra where condition, order clause, and query
+ *
+ * @param {string} extraWhereCondition optional extra where condition
+ * @param {string} orderClause optional order clause
+ * @param {string} query optional additional query, e.g., limit clause
+ * @return {string} the complete account query
+ */
+const getAccountQuery = (extraWhereCondition, orderClause, query) => {
+  // token balances pairs are aggregated as a string, e.g., "100=600,101=700"
   return `select ab.balance as account_balance,
        ab.consensus_timestamp as consensus_timestamp,
        coalesce(ab.account_id, e.id) as entity_id,
        e.exp_time_ns,
        e.auto_renew_period,
        e.key,
-       e.deleted
+       e.deleted,
+       (
+           select string_agg(tb.token_id || '=' || tb.balance, ',' order by tb.token_id) as token_balances
+           from token_balance tb
+           where
+               ab.consensus_timestamp = tb.consensus_timestamp
+               and ab.account_id = tb.account_id
+       ) as token_balances
     from account_balance ab
     full outer join t_entities e on (
         ab.account_id = e.id
         and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
     )
-    where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance)`;
+    where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance) ${extraWhereCondition || ''}
+    ${orderClause || ''}
+    ${query || ''}`;
 };
 
 /**
  * Handler function for /accounts API.
+ *
  * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
  * @return {Promise} Promise for PostgreSQL query
  */
 const getAccounts = async (req, res) => {
@@ -82,17 +105,14 @@ const getAccounts = async (req, res) => {
       ? ''
       : `(${balancesAccountQuery} or (${entityAccountQuery} and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}))`;
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-  let [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
+  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'asc');
 
-  const entitySql =
-    getAccountQueryPrefix() +
-    '    and \n' +
-    [accountQuery, balanceQuery, pubKeyQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ') +
-    ' order by coalesce(ab.account_id, e.id) ' +
-    order +
-    '\n' +
-    query;
+  const entitySql = getAccountQuery(
+    `and ${[accountQuery, balanceQuery, pubKeyQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ')}`,
+    `order by coalesce(ab.account_id, e.id) ${order}`,
+    query
+  );
 
   const entityParams = balancesAccountParams
     .concat(entityAccountParams)
@@ -103,7 +123,7 @@ const getAccounts = async (req, res) => {
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
   if (logger.isTraceEnabled()) {
-    logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
+    logger.trace(`getAccounts query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
   }
 
   // Execute query
@@ -113,16 +133,12 @@ const getAccounts = async (req, res) => {
       throw new DbError(err.message);
     })
     .then((results) => {
-      let ret = {
-        accounts: [],
+      const ret = {
+        accounts: results.rows.map((row) => processRow(row)),
         links: {
           next: null,
         },
       };
-
-      for (let row of results.rows) {
-        ret.accounts.push(processRow(row));
-      }
 
       let anchorAcc = '0.0.0';
       if (ret.accounts.length > 0) {
@@ -137,7 +153,7 @@ const getAccounts = async (req, res) => {
         ret.sqlQuery = results.sqlQuery;
       }
 
-      logger.debug('getAccounts returning ' + ret.accounts.length + ' entries');
+      logger.debug(`getAccounts returning ${ret.accounts.length} entries`);
       res.locals[constants.responseDataLabel] = ret;
     });
 };
@@ -158,28 +174,25 @@ const getOneAccount = async (req, res) => {
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
-  let ret = {
+  const ret = {
     transactions: [],
   };
 
   // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
   // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
-  const entitySql =
-    getAccountQueryPrefix() +
-    'and (\n' +
-    '    (ab.account_id  =  ?)\n' +
-    '    or (e.id = ?\n' +
-    '        and e.fk_entity_type_id < ' +
-    utils.ENTITY_TYPE_FILE +
-    ')\n' +
-    ')\n';
+  const entitySql = getAccountQuery(` and (
+      (ab.account_id  =  ?)
+      or (e.id = ?
+          and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
+          )
+       )`);
 
   const accountId = EntityId.of(acc.shard, acc.realm, acc.num).getEncodedId();
   const entityParams = [accountId, accountId];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
   if (logger.isTraceEnabled()) {
-    logger.trace('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
+    logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
   }
 
   // Execute query & get a promise
@@ -189,7 +202,7 @@ const getOneAccount = async (req, res) => {
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [EntityId.of(config.shard, acc.realm, acc.num).getEncodedId()];
 
-  let innerQuery = transactions.getTransactionsInnerQuery(
+  const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
     tsQuery,
     resultTypeQuery,
@@ -199,13 +212,11 @@ const getOneAccount = async (req, res) => {
   );
 
   const innerParams = accountParams.concat(tsParams).concat(params);
-
-  let transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-
+  const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
 
   if (logger.isTraceEnabled()) {
-    logger.trace('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
+    logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${JSON.stringify(innerParams)}`);
   }
 
   // Execute query & get a promise
@@ -216,7 +227,7 @@ const getOneAccount = async (req, res) => {
     .catch((err) => {
       throw new DbError(err.message);
     })
-    .then(function (values) {
+    .then((values) => {
       const entityResults = values[0];
       const transactionsResults = values[1];
 
@@ -229,12 +240,7 @@ const getOneAccount = async (req, res) => {
         throw new NotFoundError('Error: Could not get entity information');
       }
 
-      for (let row of entityResults.rows) {
-        const r = processRow(row);
-        for (let key in r) {
-          ret[key] = r[key];
-        }
-      }
+      Object.assign(ret, processRow(entityResults.rows[0]));
 
       if (process.env.NODE_ENV === 'test') {
         ret.entitySqlQuery = entityResults.sqlQuery;
@@ -243,7 +249,7 @@ const getOneAccount = async (req, res) => {
       // Process the results of transaction query
       const transferList = transactions.createTransferLists(transactionsResults.rows);
       ret.transactions = transferList.transactions;
-      let anchorSecNs = transferList.anchorSecNs;
+      const {anchorSecNs} = transferList;
 
       if (process.env.NODE_ENV === 'test') {
         ret.transactionsSqlQuery = transactionsResults.sqlQuery;
@@ -254,12 +260,12 @@ const getOneAccount = async (req, res) => {
         next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order),
       };
 
-      logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
+      logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
       res.locals[constants.responseDataLabel] = ret;
     });
 };
 
 module.exports = {
-  getAccounts: getAccounts,
-  getOneAccount: getOneAccount,
+  getAccounts,
+  getOneAccount,
 };
