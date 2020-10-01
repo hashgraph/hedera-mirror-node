@@ -33,7 +33,15 @@ management:
         step: 30s
     tags:
       application: ${spring.application.name}
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db, grpcServices, grpcChannel, ping, redis
 server:
+  shutdown: graceful
   port: 8081
 spring:
   application:
@@ -64,6 +72,14 @@ spring:
       hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true
       hibernate.hbm2ddl.auto: none
+  lifecycle:
+    timeout-per-shutdown-phase: 40s
   test:
     database:
       replace: NONE
+  redis:
+    lettuce:
+      cluster:
+        refresh:
+          period: 60s
+    timeout: 5s

@@ -38,8 +38,12 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.AccountBalanceSet;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
 
@@ -59,6 +63,9 @@ public class BalanceFileParserTest extends IntegrationTest {
 
     @Resource
     private AccountBalanceSetRepository accountBalanceSetRepository;
+
+    @Resource
+    private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Resource
     private BalanceParserProperties parserProperties;
@@ -94,6 +101,7 @@ public class BalanceFileParserTest extends IntegrationTest {
 
     @Test
     void discardFiles() throws Exception {
+        insertAccountBalanceFiles(balanceFile1, balanceFile2);
         fileCopier.copy();
 
         balanceFileParser.parse();
@@ -105,6 +113,7 @@ public class BalanceFileParserTest extends IntegrationTest {
 
     @Test
     void keepFiles() throws Exception {
+        insertAccountBalanceFiles(balanceFile1, balanceFile2);
         parserProperties.setKeepFiles(true);
         fileCopier.copy();
 
@@ -117,6 +126,7 @@ public class BalanceFileParserTest extends IntegrationTest {
 
     @Test
     void invalidFile() throws Exception {
+        insertAccountBalanceFiles(balanceFile2);
         fileCopier.copy();
         File file1 = fileCopier.getTo().resolve(balanceFile1.getFilename()).toFile();
         FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
@@ -126,6 +136,16 @@ public class BalanceFileParserTest extends IntegrationTest {
         assertValidFiles(balanceFile1);
         assertParsedFiles();
         assertAccountBalances(balanceFile2); // Latest is processed first, so it succeeds
+    }
+
+    @Test
+    void missingFileInDb() throws Exception {
+        fileCopier.copy();
+
+        balanceFileParser.parse();
+
+        assertParsedFiles();
+        assertAccountBalances();
     }
 
     void assertParsedFiles(BalanceFile... balanceFiles) throws Exception {
@@ -152,16 +172,38 @@ public class BalanceFileParserTest extends IntegrationTest {
     }
 
     void assertAccountBalances(BalanceFile... balanceFiles) {
-        IterableAssert<AccountBalanceSet> iterableAssert = assertThat(accountBalanceSetRepository.findAll())
+        IterableAssert<AccountBalanceSet> absIterableAssert = assertThat(accountBalanceSetRepository.findAll())
                 .hasSize(balanceFiles.length)
                 .allMatch(abs -> abs.isComplete())
                 .allMatch(abs -> abs.getProcessingEndTimestamp() != null)
                 .allMatch(abs -> abs.getProcessingStartTimestamp() != null);
 
+        IterableAssert<AccountBalanceFile> abfIterableAssert = assertThat(accountBalanceFileRepository.findAll())
+                .hasSize(balanceFiles.length)
+                .allMatch(abf -> abf.getLoadStart() > 0L)
+                .allMatch(abf -> abf.getLoadEnd() > 0L);
+
         for (BalanceFile balanceFile : balanceFiles) {
-            iterableAssert.anyMatch(abs -> balanceFile.getConsensusTimestamp() == abs.getConsensusTimestamp() &&
+            absIterableAssert.anyMatch(abs -> balanceFile.getConsensusTimestamp() == abs.getConsensusTimestamp() &&
                     accountBalanceRepository.findByIdConsensusTimestamp(abs.getConsensusTimestamp()).size() ==
                             balanceFile.getCount());
+            abfIterableAssert.anyMatch(abf -> balanceFile.getConsensusTimestamp() == abf.getConsensusTimestamp());
+        }
+    }
+
+    void insertAccountBalanceFiles(BalanceFile... balanceFiles) {
+        final EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        for (BalanceFile bf : balanceFiles) {
+            AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder()
+                    .consensusTimestamp(bf.getConsensusTimestamp() - 1)
+                    .count(0L)
+                    .fileHash(bf.getFilename())
+                    .loadEnd(0L)
+                    .loadStart(0L)
+                    .name(bf.getFilename())
+                    .nodeAccountId(nodeAccountId)
+                    .build();
+            accountBalanceFileRepository.save(accountBalanceFile);
         }
     }
 }

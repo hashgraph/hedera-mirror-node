@@ -38,8 +38,9 @@ public class CacheConfiguration {
 
     @Bean(ENTITY_CACHE)
     CacheManager entityCache(GrpcProperties grpcProperties) {
+        int cacheSize = grpcProperties.getEntityCacheSize();
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=" + grpcProperties.getEntityCacheSize());
+        caffeineCacheManager.setCacheSpecification("expireAfterWrite=24h,maximumSize=" + cacheSize);
         return caffeineCacheManager;
     }
 }

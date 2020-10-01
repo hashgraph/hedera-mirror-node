@@ -22,23 +22,19 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
-import javax.annotation.Resource;
-import javax.sql.DataSource;
-import org.apache.commons.lang3.RandomUtils;
+import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.postgresql.PGNotification;
-import org.postgresql.jdbc.PgConnection;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -50,8 +46,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
-import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -63,54 +58,39 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class SqlEntityListenerTest extends IntegrationTest {
 
-    @Resource
-    protected TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository;
+    private final EntityRepository entityRepository;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final NonFeeTransferRepository nonFeeTransferRepository;
+    private final ContractResultRepository contractResultRepository;
+    private final LiveHashRepository liveHashRepository;
+    private final FileDataRepository fileDataRepository;
+    private final TopicMessageRepository topicMessageRepository;
+    private final RecordFileRepository recordFileRepository;
+    private final SqlEntityListener sqlEntityListener;
+    private final SqlProperties sqlProperties;
 
-    @Resource
-    protected EntityRepository entityRepository;
-
-    @Resource
-    protected CryptoTransferRepository cryptoTransferRepository;
-
-    @Resource
-    protected NonFeeTransferRepository nonFeeTransferRepository;
-
-    @Resource
-    protected ContractResultRepository contractResultRepository;
-
-    @Resource
-    protected LiveHashRepository liveHashRepository;
-
-    @Resource
-    protected FileDataRepository fileDataRepository;
-
-    @Resource
-    protected TopicMessageRepository topicMessageRepository;
-
-    @Resource
-    protected RecordFileRepository recordFileRepository;
-
-    @Resource
-    protected SqlEntityListener sqlEntityListener;
-
-    @Resource
-    protected SqlProperties sqlProperties;
-
-    @Resource
-    private DataSource dataSource;
-
-    private String fileName;
+    private String fileName = "2019-08-30T18_10_00.419072Z.rcd";
+    private RecordFile recordFile;
 
     @BeforeEach
     final void beforeEach() {
-        fileName = UUID.randomUUID().toString();
+        String newFileHash = UUID.randomUUID().toString();
+        recordFile = insertRecordFileRecord(fileName, newFileHash, "fileHash0");
+
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
 
-    void completeFileAndCommit() {
-        sqlEntityListener.onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0));
+    @Test
+    void isEnabled() {
+        sqlProperties.setEnabled(false);
+        assertThat(sqlEntityListener.isEnabled()).isFalse();
+
+        sqlProperties.setEnabled(true);
+        assertThat(sqlEntityListener.isEnabled()).isTrue();
     }
 
     @Test
@@ -126,15 +106,17 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertEquals(2, cryptoTransferRepository.count());
-        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer1, 1L);
-        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer2, 2L);
+        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer1, cryptoTransfer1.getId());
+        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer2, cryptoTransfer2.getId());
     }
 
     @Test
     void onNonFeeTransfer() throws Exception {
         // given
-        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
-        NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
+        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
+                .of(0L, 0L, 1L, ACCOUNT)));
+        NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(-2L, new NonFeeTransfer.Id(2L, EntityId
+                .of(0L, 0L, 2L, ACCOUNT)));
 
         // when
         sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
@@ -143,13 +125,12 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertEquals(2, nonFeeTransferRepository.count());
-        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, 1L);
-        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, 2L);
+        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, nonFeeTransfer1.getId());
+        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, nonFeeTransfer2.getId());
     }
 
     @Test
     void onTopicMessage() throws Exception {
-        sqlProperties.setNotifyTopicMessage(false);
         // given
         TopicMessage topicMessage = getTopicMessage();
 
@@ -160,95 +141,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertEquals(1, topicMessageRepository.count());
         assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
-        sqlProperties.setNotifyTopicMessage(true);
-    }
-
-    @Test
-    void onTopicMessageNotify() throws Exception {
-        // given
-        TopicMessage topicMessage = getTopicMessage();
-
-        String json = SqlEntityListener.OBJECT_MAPPER.writeValueAsString(topicMessage);
-        PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
-        connection.execSQLUpdate("listen topic_message");
-
-        // when
-        sqlEntityListener.onTopicMessage(topicMessage);
-        completeFileAndCommit();
-        PGNotification[] notifications = connection.getNotifications(500);
-
-        // then
-        assertEquals(1, topicMessageRepository.count());
-        assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
-        assertEquals(1, notifications.length);
-        assertThat(notifications)
-                .extracting(PGNotification::getParameter)
-                .first()
-                .isEqualTo(json);
-        connection.close();
-    }
-
-    @Test
-    void onTopicMessageNotifyPayloadTooLong() throws Exception {
-        // given
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage(RandomUtils.nextBytes(5824)); // Just exceeds 8000B
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
-        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
-        topicMessage.setValidStartTimestamp(4L);
-
-        PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
-        connection.execSQLUpdate("listen topic_message");
-
-        // when
-        sqlEntityListener.onTopicMessage(topicMessage);
-        completeFileAndCommit();
-        PGNotification[] notifications = connection.getNotifications(500);
-
-        // then
-        assertThat(topicMessageRepository.count()).isEqualTo(1);
-        assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
-        assertThat(notifications).isNull();
-        connection.close();
-    }
-
-    @Test
-    void verifyRollback() {
-        sqlProperties.setMaxJsonPayloadSize(Integer.MAX_VALUE);
-        // given
-        TopicMessage topicMessage = getTopicMessage();
-
-        TopicMessage topicMessage2 = getTopicMessage();
-        topicMessage2.setConsensusTimestamp(2L);
-        topicMessage2.setSequenceNumber(2L);
-        topicMessage2.setMessage(RandomUtils.nextBytes(10000)); // Just exceeds 8000B
-
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
-
-        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
-
-        // when
-        sqlEntityListener.onTopicMessage(topicMessage);
-        sqlEntityListener.onTopicMessage(topicMessage2); // error causing submission
-        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
-        sqlEntityListener.onEntityId(entityId);
-
-        assertThatThrownBy(() -> completeFileAndCommit())
-                .isInstanceOf(ParserException.class)
-                .extracting(Throwable::getCause)
-                .isInstanceOf(SQLException.class);
-        sqlEntityListener.onError();
-
-        assertEquals(0, topicMessageRepository.count());
-        assertEquals(0, cryptoTransferRepository.count());
-        assertEquals(0, entityRepository.count());
     }
 
     @Test
@@ -332,7 +224,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId);
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
-        fileName = UUID.randomUUID().toString();
+
+        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null);
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
         sqlEntityListener.onEntityId(entityId); // duplicate across files
         completeFileAndCommit();
@@ -343,30 +236,47 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onDuplicateFileReturnEmpty() {
-        // given: file processed once
-        completeFileAndCommit();
-
-        // when, then
-        assertThrows(DuplicateFileException.class, () -> {
-            sqlEntityListener.onStart(new StreamFileData(fileName, null));
-        });
-    }
-
-    @Test
     void testRecordFile() {
         // when
         completeFileAndCommit();
 
         // then
         assertThat(recordFileRepository.count()).isEqualTo(1);
-        assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
+        assertThat(recordFileRepository.findByName(fileName)).isPresent();
     }
 
-    static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
+    @Test
+    void testMissingFileInRecordFileRepository() {
+        recordFileRepository.deleteAll();
+
+        assertThrows(MissingFileException.class, () -> {
+            sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        });
+    }
+
+    private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
         assertEquals(expected, actual.get());
+    }
+
+    private String completeFileAndCommit() {
+        sqlEntityListener.onEnd(recordFile);
+        return recordFile.getFileHash();
+    }
+
+    private RecordFile insertRecordFileRecord(String filename, String fileHash, String prevHash) {
+        if (fileHash == null) {
+            fileHash = UUID.randomUUID().toString();
+        }
+        if (prevHash == null) {
+            prevHash = UUID.randomUUID().toString();
+        }
+
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        RecordFile rf = new RecordFile(1L, 2L, null, filename, 0L, 0L, fileHash, prevHash, nodeAccountId, 0L, 0);
+        recordFileRepository.save(rf);
+        return rf;
     }
 
     private Transaction makeTransaction() {

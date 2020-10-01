@@ -12,7 +12,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.17.0-rc1</version>
+        <version>0.19.0-rc1</version>
     </parent>
 
     <properties>
@@ -20,8 +20,8 @@
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
         <jmeter.publishThreadCount></jmeter.publishThreadCount>
         <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
-        <cucumber.version>6.4.0</cucumber.version>
-        <cucumber-reporting.version>4.0.70</cucumber-reporting.version>
+        <cucumber.version>6.6.0</cucumber.version>
+        <cucumber-reporting.version>4.0.77</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -34,9 +34,8 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <!-- grpc v 1.27.2 is the last known version that supports acceptance test running  -->
-            <!-- v 1.28.0 introduced a java.lang.NoSuchFieldError: NETTY_SHADED error https://github.com/grpc/grpc-java/issues/6982 -->
-            <version>1.27.2</version>
+            <!-- grpc v 1.30.2 is the last known version that supports acceptance test running  -->
+            <version>1.30.2</version>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
@@ -188,6 +187,16 @@
             <id>acceptance-tests</id>
             <build>
                 <plugins>
+                    <!-- This disables the package/jar phase, while still preserving the rest of the lifecycle -->
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-jar</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
@@ -204,6 +213,8 @@
                         </configuration>
                         <executions>
                             <execution>
+                                <!-- Overriding the default-test execution to run during integration-test phase-->
+                                <id>default-test</id>
                                 <phase>integration-test</phase>
                                 <goals>
                                     <goal>test</goal>

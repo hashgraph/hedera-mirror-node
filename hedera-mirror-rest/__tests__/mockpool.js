@@ -84,10 +84,10 @@ class Pool {
         orderprefix = 'consensus_ns';
         break;
       case 'balances':
-        orderprefix = 'account_num';
+        orderprefix = 'account_id';
         break;
       case 'accounts':
-        orderprefix = 'coalesce\\(ab.account_num, e.entity_num\\)';
+        orderprefix = 'coalesce\\(ab.account_id, e.id\\)';
         break;
       default:
         break;
@@ -229,7 +229,7 @@ class Pool {
     // Adjust the low/high values based on the SQL query parameters
     for (const param of parsedparams) {
       switch (param.field) {
-        case 'account_num':
+        case 'account_id':
           accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
           break;
         case 'consensus_timestamp':
@@ -261,8 +261,7 @@ class Pool {
     for (let i = 0; i < limit.high; i++) {
       let row = {};
       row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
-      row.realm_num = 0;
-      row.entity_num =
+      row.account_id =
         Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));
       row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
 
@@ -299,7 +298,7 @@ class Pool {
     // Adjust the low/high values based on the SQL query parameters
     for (const param of parsedparams) {
       switch (param.field) {
-        case 'account_num':
+        case 'account_id':
           accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
           break;
         case 'balance':
@@ -326,9 +325,7 @@ class Pool {
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
-      row.entity_shard = 0;
-      row.entity_realm = 0;
-      row.entity_num =
+      row.entity_id =
         Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));
       row.exp_time_ns = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;

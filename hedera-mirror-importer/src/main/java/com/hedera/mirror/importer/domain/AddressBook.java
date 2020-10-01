@@ -64,9 +64,9 @@ public class AddressBook {
     @JoinColumn(name = "consensusTimestamp")
     private List<AddressBookEntry> entries;
 
-    public Set<String> getNodeSet() {
+    public Set<EntityId> getNodeSet() {
         return entries.stream()
-                .map(AddressBookEntry::getNodeAccountIdString)
+                .map(AddressBookEntry::getNodeAccountId)
                 .collect(Collectors.toSet());
     }
 }

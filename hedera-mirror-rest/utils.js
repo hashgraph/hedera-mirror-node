@@ -322,21 +322,10 @@ const parseParams = function (paramValues, processOpAndValue) {
   return [partialQueries.join(' and '), values];
 };
 
-const parseAccountIdQueryParamAsEncoded = function (parsedQueryParams, columnName) {
-  return parseAccountIdQueryParamCommon(parsedQueryParams, '', columnName, true);
-};
-
-const parseAccountIdQueryParam = function (parsedQueryParams, realmColumnName, numColumnName) {
-  return parseAccountIdQueryParamCommon(parsedQueryParams, realmColumnName, numColumnName, false);
-};
-
-const parseAccountIdQueryParamCommon = function (parsedQueryParams, realmColumnName, numColumnName, isEncoded) {
+const parseAccountIdQueryParam = function (parsedQueryParams, columnName) {
   return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], (op, value) => {
-    let entity = parseEntityId(value);
-    if (isEncoded) {
-      return [`${numColumnName} ${op} ?`, [EntityId.of(config.shard, entity.realm, entity.num).getEncodedId()]];
-    }
-    return [`${realmColumnName} ${opsMap['eq']} ? and ${numColumnName} ${op} ?`, [entity.realm, entity.num]];
+    const entity = parseEntityId(value);
+    return [`${columnName} ${op} ?`, [EntityId.of(entity.shard, entity.realm, entity.num).getEncodedId()]];
   });
 };
 
@@ -746,7 +735,6 @@ module.exports = {
   parseBalanceQueryParam: parseBalanceQueryParam,
   parsePublicKeyQueryParam: parsePublicKeyQueryParam,
   parseAccountIdQueryParam: parseAccountIdQueryParam,
-  parseAccountIdQueryParamAsEncoded: parseAccountIdQueryParamAsEncoded,
   parseTimestampQueryParam: parseTimestampQueryParam,
   parseResultParams: parseResultParams,
   parseTimestampParam: parseTimestampParam,

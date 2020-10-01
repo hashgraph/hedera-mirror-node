@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,19 +20,11 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+public class FileOperationException extends ImporterException {
 
-import com.hedera.mirror.importer.domain.EntityId;
+    private static final long serialVersionUID = 5194246300993814767L;
 
-public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
-    @Autowired
-    @Lazy
-    EntityRepository entityRepository;
-
-    @Override
-    public void insertEntityId(EntityId entityId) {
-        entityRepository.insertEntityId(entityId.getId(), entityId.getShardNum(),
-                entityId.getRealmNum(), entityId.getEntityNum(), entityId.getType());
+    public FileOperationException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

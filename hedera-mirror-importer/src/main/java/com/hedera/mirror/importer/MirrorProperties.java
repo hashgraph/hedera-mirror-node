@@ -38,6 +38,8 @@ import com.hedera.mirror.importer.util.Utility;
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
 
+    private static final Instant startUpInstant = Instant.now();
+
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 
@@ -54,9 +56,18 @@ public class MirrorProperties {
 
     private Long topicRunningHashV2AddedTimestamp;
 
+    private Instant startDate;
+
+    @NotNull
+    private Instant endDate = Utility.MAX_INSTANT_LONG;
+
     public void setDataPath(Path dataPath) {
         Utility.ensureDirectory(dataPath);
         this.dataPath = dataPath;
+    }
+
+    public static Instant getStartUpInstant() {
+        return startUpInstant;
     }
 
     @Getter
@@ -64,7 +75,8 @@ public class MirrorProperties {
     public enum HederaNetwork {
         DEMO("hedera-demo-streams"),
         MAINNET("hedera-stable-mainnet-streams"),
-        TESTNET("hedera-stable-testnet-streams"),
+        TESTNET("hedera-stable-testnet-streams-2020-08-27"),
+        PREVIEWNET("hedera-preview-testnet-streams"),
         OTHER(""); // Pre-prod or ad hoc environments
 
         private final String bucketName;

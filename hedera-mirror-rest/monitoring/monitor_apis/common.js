@@ -20,23 +20,21 @@
 
 'use strict';
 
-const fs = require('fs');
+const config = require('./config');
 
-let currentResults = {}; // Results of current tests are stored here
-let pids = {}; // PIDs for the monitoring test processes
+const currentResults = {}; // Results of current tests are stored here
+const pids = {}; // PIDs for the monitoring test processes
 
 /**
  * Initializer for results
  * @return {} None. Updates currentResults
  */
 const initResults = () => {
-  const restservers = getServerList().servers;
+  const {servers} = config;
 
-  for (const server of restservers) {
+  for (const server of servers) {
     currentResults[server.name] = {
-      ip: server.ip,
-      name: server.name,
-      port: server.port,
+      ...server,
       results: [],
     };
   }
@@ -49,14 +47,22 @@ const initResults = () => {
  * @return {} None. Updates currentResults
  */
 const saveResults = (server, results) => {
-  if (server.name != undefined && server.name != null) {
+  if (server.name) {
     currentResults[server.name] = {
-      ip: server.ip,
-      name: server.name,
-      port: server.port,
-      results: results,
+      ...server,
+      results,
     };
   }
+};
+
+/**
+ * Gets the current results of the server
+ *
+ * @param {String} name server name
+ * @return {Object} results object
+ */
+const getServerCurrentResults = (name) => {
+  return currentResults[name].results;
 };
 
 /**
@@ -65,23 +71,24 @@ const saveResults = (server, results) => {
  * @return {Object} Snapshot of results from the latest completed round of tests
  */
 const getStatus = () => {
-  let results = Object.keys(currentResults).map((net) => {
-    return currentResults[net];
-  });
+  const results = Object.values(currentResults);
+  const httpErrorCodes = results
+    .map((result) => result.httpCode)
+    .filter((httpCode) => httpCode < 200 || httpCode > 299);
+  const httpCode = httpErrorCodes.length === 0 ? 200 : 409;
   return {
-    results: results,
-    httpCode: 200,
+    results,
+    httpCode,
   };
 };
 
 /**
  * Getter for a snapshot of results for a server specified in the HTTP request
- * @param {HTTPRequest} req HTTP Request object
- * @param {HTTPResponse} res HTTP Response object
+ * @param {String} name server name
  * @return {Object} Snapshot of results from the latest completed round of tests for
  *      the specified server
  */
-const getStatusWithId = (net) => {
+const getStatusByName = (name) => {
   let ret = {
     numPassedTests: 0,
     numFailedTests: 0,
@@ -92,44 +99,23 @@ const getStatusWithId = (net) => {
   };
 
   // Return 404 (Not found) for illegal name of the serer
-  if (net == undefined || net == null) {
+  if (name === undefined || name === null) {
     ret.httpCode = 404;
-    ret.message = `Not found. Net: ${net}`;
+    ret.message = `Not found. Net: ${name}`;
     return ret;
   }
 
   // Return 404 (Not found) for if the server doesn't appear in our results table
-  if (
-    !currentResults.hasOwnProperty(net) ||
-    currentResults.hasOwnProperty(net) == undefined ||
-    !currentResults[net].hasOwnProperty('results')
-  ) {
+  if (!currentResults[name] || !currentResults[name].results) {
     ret.httpCode = 404;
-    ret.message = `Test results unavailable for Net: ${net}`;
+    ret.message = `Test results unavailable for Net: ${name}`;
     return ret;
   }
 
   // Return the results saved in the currentResults object
-  ret = currentResults[net];
-  ret.httpCode = currentResults[net].results.success ? 200 : 409;
+  ret = currentResults[name];
+  ret.httpCode = currentResults[name].results.success ? 200 : 409;
   return ret;
-};
-
-/**
- * Read the servers list file
- * @param {} None
- * @return {Object} config The configuration object
- */
-const getServerList = () => {
-  const SERVERLIST_FILE = './config/serverlist.json';
-
-  try {
-    const configtext = fs.readFileSync(SERVERLIST_FILE);
-    const config = JSON.parse(configtext);
-    return config;
-  } catch (err) {
-    return {};
-  }
 };
 
 /**
@@ -149,12 +135,10 @@ const getProcess = (server) => {
  */
 const saveProcess = (server, count) => {
   const key = `${server.ip}_${server.port}`;
-  const processObject = {
+  pids[key] = {
     id: server.name,
     encountered: count,
   };
-
-  pids[key] = processObject;
 };
 
 /**
@@ -168,12 +152,12 @@ const deleteProcess = (server) => {
 };
 
 module.exports = {
-  initResults: initResults,
-  saveResults: saveResults,
-  getStatus: getStatus,
-  getStatusWithId: getStatusWithId,
-  getServerList: getServerList,
-  getProcess: getProcess,
-  saveProcess: saveProcess,
-  deleteProcess: deleteProcess,
+  initResults,
+  saveResults,
+  getServerCurrentResults,
+  getStatus,
+  getStatusByName,
+  getProcess,
+  saveProcess,
+  deleteProcess,
 };

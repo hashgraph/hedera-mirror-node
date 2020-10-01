@@ -14,7 +14,6 @@ logging:
     root: warn
     com.hedera.mirror.importer: info
     org.flywaydb.core.internal.command.DbMigrate: info
-    #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
   endpoints:
@@ -37,6 +36,15 @@ management:
         step: 30s
     tags:
       application: ${spring.application.name}
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db, diskSpace, ping, redis
+server:
+  shutdown: graceful
 spring:
   application:
     name: hedera-mirror-importer
@@ -56,7 +64,10 @@ spring:
     username: ${hedera.mirror.importer.db.username}
     hikari:
       data-source-properties:
+        #loggerLevel: TRACE
+        logUnclosedConnections: true
         reWriteBatchedInserts: true
+      maximumPoolSize: 14 # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
   flyway:
     connectRetries: 20
     baselineOnMigrate: true
@@ -71,6 +82,13 @@ spring:
     properties:
       hibernate:
         generate_statistics: true
+        jdbc:
+          batch_size: 250
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   task:
     scheduling:
       pool:

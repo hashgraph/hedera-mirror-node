@@ -20,21 +20,17 @@ package com.hedera.mirror.importer.downloader.event;
  * ‍
  */
 
-import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
-import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -48,57 +44,32 @@ public class EventFileDownloader extends Downloader {
     public EventFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry, EventFileReader eventFileReader) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
+            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry, EventFileReader eventFileReader) {
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
+                meterRegistry);
         this.eventFileReader = eventFileReader;
     }
 
-    @Leader
     @Override
-    @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:5000}")
+    @Leader
+    @Scheduled(fixedDelayString = "${hedera.mirror.downloader.event.frequency:5000}")
     public void download() {
         downloadNextBatch();
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH;
-    }
-
     /**
-     * Checks that hash of data file matches the verified hash and that data file is next in line based on previous file
-     * hash. Returns false if any condition is false.
+     * Reads the event file.
+     *
+     * @param file event file object
+     * @return StreamFile object
      */
     @Override
-    protected boolean verifyDataFile(File file, byte[] verifiedHash) {
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
-        String fileName = file.getName();
+    protected StreamFile readStreamFile(File file) {
+        return eventFileReader.read(file);
+    }
 
-        try {
-            EventFile eventFile = eventFileReader.read(file);
-
-            if (!verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash,
-                    downloaderProperties.getMirrorProperties().getVerifyHashAfter(), fileName)) {
-                log.error("PreviousHash mismatch for file {}. Expected = {}, Actual = {}", fileName,
-                        expectedPrevFileHash, eventFile.getPreviousHash());
-                return false;
-            }
-
-            String expectedFileHash = Hex.encodeHexString(verifiedHash);
-            if (!eventFile.getFileHash().contentEquals(expectedFileHash)) {
-                log.error("File {}'s hash mismatch. Expected = {}, Actual = {}", fileName, expectedFileHash,
-                        eventFile.getFileHash());
-                return false;
-            }
-        } catch (ImporterException e) {
-            log.error(e);
-            return false;
-        }
-        return true;
+    @Override
+    protected void saveStreamFileRecord(StreamFile streamFile) {
+        // no-op, save the EventFile record to db when event parser is implemented
     }
 }

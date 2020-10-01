@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,20 +20,11 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class InvalidConfigurationException extends ImporterException {
 
-import org.junit.jupiter.api.Test;
+    private static final long serialVersionUID = -2996303169427541497L;
 
-import com.hedera.mirror.importer.domain.EntityType;
-
-public class EntityTypeRepositoryTest extends AbstractRepositoryTest {
-
-    @Test
-    void findByName() {
-        assertThat(entityTypeRepository.findByName("account"))
-                .isPresent()
-                .get()
-                .extracting(EntityType::getId)
-                .isNotEqualTo(0L);
+    public InvalidConfigurationException(String message) {
+        super(message);
     }
 }

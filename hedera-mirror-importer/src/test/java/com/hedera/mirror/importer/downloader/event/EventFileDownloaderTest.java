@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.downloader.event;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     @Override
     protected Downloader getDownloader() {
         return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (EventDownloaderProperties) downloaderProperties, meterRegistry, new EventFileReaderImpl());
+                (EventDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry, new EventFileReaderImpl());
     }
 
     @Override
@@ -60,6 +61,22 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
         return Duration.ofSeconds(5L);
     }
 
+    @Override
+    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
+        EventDownloaderProperties properties = (EventDownloaderProperties) downloaderProperties;
+        properties.setBatchSize(batchSize);
+    }
+
+    @Override
+    protected void resetStreamFileRepositoryMock() {
+        // no-op, add the logic when event file is saved into db
+    }
+
+    @Override
+    protected void verifyStreamFileRecord(List<String> files) {
+        // no-op, add the logic when event file is saved into db
+    }
+
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
@@ -69,7 +86,9 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
 
     @BeforeEach
     void beforeEach() {
-        file1 = "2020-04-11T00_12_00.025035Z.evts";
-        file2 = "2020-04-11T00_12_05.059945Z.evts";
+        setTestFilesAndInstants(
+                "2020-04-11T00_12_00.025035Z.evts",
+                "2020-04-11T00_12_05.059945Z.evts"
+        );
     }
 }

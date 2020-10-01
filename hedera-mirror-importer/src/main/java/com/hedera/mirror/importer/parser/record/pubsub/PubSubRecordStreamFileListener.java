@@ -20,15 +20,18 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
+import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 
+import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
@@ -36,18 +39,20 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @ConditionalOnPubSubRecordParser
 public class PubSubRecordStreamFileListener implements RecordStreamFileListener {
     private final RecordFileRepository recordFileRepository;
+    private final ApplicationStatusRepository applicationStatusRepository;
 
     @Override
-    public void onStart(StreamFileData streamFileData) throws ImporterException {
+    public RecordFile onStart(StreamFileData streamFileData) throws ImporterException {
         String fileName = FilenameUtils.getName(streamFileData.getFilename());
-        if (recordFileRepository.findByName(fileName).size() > 0) {
-            throw new DuplicateFileException("File already exists in the database: " + fileName);
-        }
+        return recordFileRepository.findByName(fileName)
+                .orElseThrow(() -> new MissingFileException("File not found in the database: " + fileName));
     }
 
     @Override
     public void onEnd(RecordFile recordFile) throws ImporterException {
         recordFileRepository.save(recordFile);
+        applicationStatusRepository.updateStatusValue(
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
     }
 
     @Override

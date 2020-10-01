@@ -27,70 +27,62 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 public class RecordFileDownloader extends Downloader {
 
+    private final RecordFileRepository recordFileRepository;
+
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
+            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
+            RecordFileRepository recordFileRepository) {
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
+                meterRegistry);
+        this.recordFileRepository = recordFileRepository;
     }
 
-    @Leader
     @Override
-    @Scheduled(fixedRateString = "${hedera.mirror.importer.downloader.record.frequency:500}")
+    @Leader
+    @Scheduled(fixedDelayString = "${hedera.mirror.importer.downloader.record.frequency:500}")
     public void download() {
         downloadNextBatch();
     }
 
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
-    }
-
-    @Override
-    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH;
-    }
-
     /**
-     * Checks that hash of data file matches the verified hash and that data file is next in line based on previous file
-     * hash. Returns false if any condition is false.
+     * Reads the record file.
+     *
+     * @param file data file object
+     * @return StreamFile object
      */
     @Override
-    protected boolean verifyDataFile(File file, byte[] verifiedHash) {
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
-        try {
-            RecordFile recordFile = Utility.parseRecordFile(file.getPath(), expectedPrevFileHash,
-                    downloaderProperties.getMirrorProperties().getVerifyHashAfter(), null);
-            if (!recordFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
-                return false;
-            }
+    protected StreamFile readStreamFile(File file) {
+        return Utility.parseRecordFile(file.getPath(), null);
+    }
 
-            Instant consensusEnd = Instant.ofEpochSecond(0, recordFile.getConsensusEnd());
-            downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
+    @Override
+    protected void saveStreamFileRecord(StreamFile streamFile) {
+        RecordFile recordFile = (RecordFile) streamFile;
+        recordFileRepository.save(recordFile);
 
-            long streamClose = recordFile.getConsensusEnd() - recordFile.getConsensusStart();
-            streamCloseMetric.record(streamClose, TimeUnit.NANOSECONDS);
-        } catch (HashMismatchException e) {
-            log.error(e);
-            return false;
-        }
-        return true;
+        Instant consensusEnd = Instant.ofEpochSecond(0, recordFile.getConsensusEnd());
+        downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
+
+        long streamClose = recordFile.getConsensusEnd() - recordFile.getConsensusStart();
+        streamCloseMetric.record(streamClose, TimeUnit.NANOSECONDS);
     }
 }

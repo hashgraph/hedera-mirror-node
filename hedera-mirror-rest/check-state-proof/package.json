@@ -1,0 +1,39 @@
+{
+  "name": "hedera-mirror-state-proof-demo",
+  "version": "1.0.0",
+  "description": "An example implementation of a state proof flow fora transaction utilizing the mirror node.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --testPathPattern='tests/*'",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hashgraph/hedera-mirror-node.git"
+  },
+  "keywords": [
+    "hedera",
+    "transaction",
+    "stateproof"
+  ],
+  "author": "Hedera Mirror Node Team",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/hashgraph/hedera-mirror-node/issues"
+  },
+  "homepage": "https://github.com/hashgraph/hedera-mirror-node#readme",
+  "bin": {
+    "check-state-proof": "./index.js"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^1.3.0",
+    "abort-controller": "^3.0.0",
+    "boxen": "^4.2.0",
+    "chalk": "^4.1.0",
+    "jest": "^26.4.0",
+    "lodash": "^4.17.19",
+    "node-fetch": "^2.6.1",
+    "node-rsa": "^1.1.1",
+    "yargs": "^15.4.1"
+  }
+}

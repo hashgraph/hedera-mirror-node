@@ -150,7 +150,7 @@ const getTransactionsInnerQuery = function (
 const reqToSql = function (req) {
   // Parse the filter parameters for credit/debit, account-numbers, timestamp, and pagination (limit)
   const [creditDebitQuery] = utils.parseCreditDebitParams(req.query, 'ctl.amount');
-  let [accountQuery, accountParams] = utils.parseAccountIdQueryParamAsEncoded(req.query, 'ctl.entity_id');
+  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ctl.entity_id');
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
@@ -253,7 +253,6 @@ const getOneTransaction = async (req, res) => {
       };
     });
 };
-
 module.exports = {
   getTransactions: getTransactions,
   getOneTransaction: getOneTransaction,

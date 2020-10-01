@@ -20,15 +20,10 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-import javax.annotation.Resource;
-
 public class PollingTopicListenerTest extends AbstractTopicListenerTest {
 
-    @Resource
-    private PollingTopicListener topicListener;
-
     @Override
-    protected TopicListener getTopicListener() {
-        return topicListener;
+    protected ListenerProperties.ListenerType getType() {
+        return ListenerProperties.ListenerType.POLL;
     }
 }

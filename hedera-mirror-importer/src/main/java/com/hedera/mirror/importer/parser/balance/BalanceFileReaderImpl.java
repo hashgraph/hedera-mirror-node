@@ -39,7 +39,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class BalanceFileReaderImplV2 implements BalanceFileReader {
+public class BalanceFileReaderImpl implements BalanceFileReader {
     private static final int MAX_HEADER_ROWS = 10;
     private static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
     private static final String COLUMN_HEADER_PREFIX = "shard";
@@ -48,7 +48,7 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
     private final long systemShardNum;
     private final AccountBalanceLineParser parser;
 
-    public BalanceFileReaderImplV2(BalanceParserProperties balanceParserProperties, AccountBalanceLineParser parser) {
+    public BalanceFileReaderImpl(BalanceParserProperties balanceParserProperties, AccountBalanceLineParser parser) {
         this.fileBufferSize = balanceParserProperties.getFileBufferSize();
         this.systemShardNum = balanceParserProperties.getMirrorProperties().getShard();
         this.parser = parser;

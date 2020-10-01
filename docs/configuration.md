@@ -53,8 +53,12 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.record.threads`                   | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
+| `hedera.mirror.importer.downloader.s3.externalId`                    |                         | The external id required to assume the role to connect to S3, if one was set                   |
+| `hedera.mirror.importer.downloader.s3.roleArn`                       |                         | The ARN for the role that needs to be assumed to connect to S3.  Only required if wishing to use temporary security credentials |
+| `hedera.mirror.importer.downloader.s3.roleSessionName`               | hedera-mirror-node      | A session name for assuming the role to access S3.  2-62 characters, can be alphanumeric, underscore, or any of =,.@- |
+| `hedera.mirror.importer.endDate`                                     | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
-| `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
+| `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
@@ -68,6 +72,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
 | `hedera.mirror.importer.parser.record.frequency`                     | 100ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.importer.parser.record.keepFiles`                     | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
+| `hedera.mirror.importer.parser.record.entity.notify.enabled`                | true                    | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                    |
+| `hedera.mirror.importer.parser.record.entity.notify.maxJsonPayloadSize`     | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
 | `hedera.mirror.importer.parser.record.entity.persist.claims`                | false                   | Persist claim data to the database                                                             |
 | `hedera.mirror.importer.parser.record.entity.persist.contracts`             | true                    | Persist contract data to the database                                                          |
 | `hedera.mirror.importer.parser.record.entity.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |
@@ -75,13 +81,16 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
+| `hedera.mirror.importer.parser.record.entity.redis.enabled`                 | false                   | Whether to use Redis to send messages to the gRPC process                                      |
+| `hedera.mirror.importer.parser.record.entity.repository.enabled`            | false                   | Whether to use Spring Data JPA repositories to insert into the database (experimental)         |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 20_000                  | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.entity.sql.bufferSize`                | 11441                   | The size of the byte buffer to allocate for each batch                                         |
-| `hedera.mirror.importer.parser.record.entity.sql.maxJsonPayloadSize`        | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
+| `hedera.mirror.importer.parser.record.entity.sql.enabled`                   | true                    | Whether to use PostgreSQL Copy mechanism to insert into the database                           |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
+| `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 | `hedera.mirror.importer.verifyHashAfter`                             | 1970-01-01T00:00:00Z  | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 
 #### Export transactions to PubSub
@@ -96,6 +105,39 @@ Importer can be configured to publish transactions (in json format) to a Pubsub 
 
 See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
 for more info about `spring.cloud.gcp.*` properties.
+
+#### Connect to S3 with AssumeRole
+
+Importer can be configured to connect to S3 using temporary security credentials via AssumeRole.  This is only available
+when using AWS S3 as the cloud provider.  With this, a user that does not have permission to access an AWS resource can
+request a temporary role that will grant them that permission.  This is useful when dealing with multiple accounts
+where a user in one account needs access to a resource in another account, and is generally considered more secure than
+using long-term credentials.
+
+The following properties are used to enable this:
+
+-   `hedera.mirror.importer.downloader.accessKey` (The access key of the user requesting access)
+-   `hedera.mirror.importer.downloader.secretKey` (The secret key of the user requesting access)
+-   `hedera.mirror.importer.downloader.s3.externalId` (An external ID is an optional property attached to the role in AWS to make it more secure)
+-   `hedera.mirror.importer.downloader.s3.roleArn` (Amazon Resource Name)
+-   `hedera.mirror.importer.downloader.s3.roleSessionName` (A name to give to the session.  Defaults to "hedera-mirror-node")
+
+```yaml
+hedera:
+  mirror:
+    importer:
+      downloader:
+        accessKey: access_key
+        secretKey: secret_key
+        s3:
+          externalId: external_id
+          roleArn: arn:aws:iam::123123123123:role/testrole
+          roleSessionName: test_session
+```
+
+See [AssumeRole Documentation](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) for more
+information on how AssumeRole works.  For details on how to set up a role in AWS to allow for this, see
+[how to create a role and grant permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html).
 
 ## GRPC API
 
@@ -114,11 +156,12 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.db.username`                            | mirror_grpc      | The username the GRPC API uses to connect to the database                                      |
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.entityCacheSize`                        | 50000            | The maximum size of the cache to store entities used for existence check                       |
+| `hedera.mirror.grpc.listener.bufferTimeout`                 | 4s               | The time to wait for a client to receive all buffered messages after buffer overflow. On timeout, server will send an error. Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.enabled`                       | true             | Whether to listen for incoming massages or not                                                 |
-| `hedera.mirror.grpc.listener.maxBufferSize`                 | 2048             | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
-| `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
 | `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
-| `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL or SHARED_POLL  |
+| `hedera.mirror.grpc.listener.maxBufferSize`                 | 16384            | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
+| `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
+| `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL, REDIS or SHARED_POLL |
 | `hedera.mirror.grpc.netty.executorCoreThreadCount`          | 10               | The number of core threads                                                                     |
 | `hedera.mirror.grpc.netty.executorMaxThreadCount`           | 1000             | The maximum allowed number of threads                                                          |
 | `hedera.mirror.grpc.netty.keepAliveTime`                    | 60               | The seconds limit for which threads may remain idle before being terminated                    |
@@ -172,10 +215,33 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.stateproof.streams.bucketName`       |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.rest.stateproof.streams.network` |
 | `hedera.mirror.rest.stateproof.streams.cloudProvider`    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
 | `hedera.mirror.rest.stateproof.streams.endpointOverride` |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
-| `hedera.mirror.rest.stateproof.streams.gcpProjectId` |                             | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
-| `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
+| `hedera.mirror.rest.stateproof.streams.gcpProjectId`     |                         | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
+| `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
+| `hedera.mirror.rest.shutdown.timeout`                    | 20000                   | The amount of time (in ms) to give the process to gracefully shut down                         |
+
+
+### Enable State Proof Alpha
+To enable State Proof logic the REST API configurations must updated to allow for communication with cloud buckets to pull down the necessary files (address book, signatures files and record file).
+The process involves setting the properties under `hedera.mirror.rest.stateproof` as documented above [REST API Config](#rest-api)
+
+An example configuration is provided below
+
+```.yaml
+hedera:
+  mirror:
+    rest:
+      stateproof:
+        enabled: true
+        streams:
+          network: 'TESTNET'
+          cloudProvider: 'GCP'
+          region: 'us-east-1'
+          accessKey: <accessKey>
+          secretKey: <secretKey>
+          bucketName: 'hedera-stable-testnet-streams-2020-08-27'
+```
 
 
 ## Rosetta API

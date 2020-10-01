@@ -20,7 +20,10 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
+import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
@@ -29,21 +32,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
+import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class AccountBalance implements Persistable<AccountBalance.AccountBalanceId> {
+public class AccountBalance implements Persistable<AccountBalance.Id> {
 
     private long balance;
 
     @EmbeddedId
-    private AccountBalanceId id;
-
-    @Override
-    public AccountBalanceId getId() {
-        return id;
-    }
+    @JsonUnwrapped
+    private Id id;
 
     @Override
     public boolean isNew() {
@@ -54,14 +56,14 @@ public class AccountBalance implements Persistable<AccountBalance.AccountBalance
     @AllArgsConstructor
     @NoArgsConstructor
     @Embeddable
-    public static class AccountBalanceId implements Serializable {
+    public static class Id implements Serializable {
 
-        private static final long serialVersionUID = 471939491840098746L;
+        private static final long serialVersionUID = 1345295043157256768L;
 
         private long consensusTimestamp;
 
-        private int accountNum;
-
-        private int accountRealmNum;
+        @Convert(converter = AccountIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId accountId;
     }
 }

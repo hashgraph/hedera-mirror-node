@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
@@ -44,11 +44,10 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 public class NodeSignatureVerifier {
 
-    private final Map<String, PublicKey> nodeIDPubKeyMap;
+    private final Map<String, PublicKey> nodeAccountIDPubKeyMap;
 
-    public NodeSignatureVerifier(AddressBookService addressBookService) {
-        nodeIDPubKeyMap = addressBookService
-                .getCurrent()
+    public NodeSignatureVerifier(AddressBook currentAddressBook) {
+        nodeAccountIDPubKeyMap = currentAddressBook
                 .getEntries()
                 .stream()
                 .collect(Collectors
@@ -79,7 +78,7 @@ public class NodeSignatureVerifier {
         int consensusCount = 0;
 
         long sigFileCount = signatures.size();
-        long nodeCount = nodeIDPubKeyMap.size();
+        long nodeCount = nodeAccountIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
             throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
                     sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures));
@@ -129,9 +128,9 @@ public class NodeSignatureVerifier {
      * @return true if the signature is valid
      */
     private boolean verifySignature(FileStreamSignature fileStreamSignature) {
-        PublicKey publicKey = nodeIDPubKeyMap.get(fileStreamSignature.getNode());
+        PublicKey publicKey = nodeAccountIDPubKeyMap.get(fileStreamSignature.getNodeAccountIdString());
         if (publicKey == null) {
-            log.warn("Missing PublicKey for node {}", fileStreamSignature.getNode());
+            log.warn("Missing PublicKey for node {}", fileStreamSignature.getNodeAccountIdString());
             return false;
         }
 
@@ -155,9 +154,9 @@ public class NodeSignatureVerifier {
     private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures) {
         Map<String, Collection<String>> statusMap = signatures.stream()
                 .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
-                        Collectors.mapping(FileStreamSignature::getNode, Collectors.toCollection(TreeSet::new))));
-        Set<String> seenNodes = signatures.stream().map(FileStreamSignature::getNode).collect(Collectors.toSet());
-        Set<String> missingNodes = new TreeSet<>(Sets.difference(nodeIDPubKeyMap.keySet(), seenNodes));
+                        Collectors.mapping(FileStreamSignature::getNodeAccountIdString, Collectors.toCollection(TreeSet::new))));
+        Set<String> seenNodes = signatures.stream().map(FileStreamSignature::getNodeAccountIdString).collect(Collectors.toSet());
+        Set<String> missingNodes = new TreeSet<>(Sets.difference(nodeAccountIDPubKeyMap.keySet(), seenNodes));
         statusMap.put("MISSING", missingNodes);
         statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
         return statusMap;

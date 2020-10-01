@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.grpc.exception;
 
 /*-
  * ‌
@@ -20,19 +20,11 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class DuplicateFileException extends ImporterException {
+public class ClientTimeoutException extends RuntimeException {
 
-    private static final long serialVersionUID = 3080406728758534575L;
+    private static final long serialVersionUID = -4418363581496162982L;
 
-    public DuplicateFileException(String message) {
+    public ClientTimeoutException(String message) {
         super(message);
-    }
-
-    public DuplicateFileException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public DuplicateFileException(String message, Throwable throwable) {
-        super(message, throwable);
     }
 }

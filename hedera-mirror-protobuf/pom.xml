@@ -11,12 +11,12 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.17.0-rc1</version>
+        <version>0.19.0-rc1</version>
     </parent>
 
     <properties>
         <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
-        <reactor-grpc.version>1.0.0</reactor-grpc.version>
+        <reactor-grpc.version>1.0.1</reactor-grpc.version>
     </properties>
 
     <dependencies>

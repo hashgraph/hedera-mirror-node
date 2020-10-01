@@ -19,8 +19,11 @@ hedera:
           pubsub:
             topicName: testTopic
       network: TESTNET
+      startDate: 1970-01-01T00:00:00Z
 
 spring:
+  redis:
+    url: redis://${embedded.redis.user}:${embedded.redis.password}@${embedded.redis.host}:${embedded.redis.port}
   task:
     scheduling:
       enabled: false

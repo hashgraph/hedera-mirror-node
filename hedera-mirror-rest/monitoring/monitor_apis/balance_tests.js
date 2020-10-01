@@ -20,269 +20,176 @@
 
 'use strict';
 
-const acctestutils = require('./monitortest_utils.js');
-const config = require('../../config.js');
+const _ = require('lodash');
 const math = require('mathjs');
+const config = require('./config');
+const {
+  checkAPIResponseError,
+  checkRespObjDefined,
+  checkRespArrayLength,
+  checkAccountNumber,
+  checkMandatoryParams,
+  checkResourceFreshness,
+  getAPIResponse,
+  getUrl,
+  fromAccNum,
+  testRunner,
+  toAccNum,
+  CheckRunner,
+} = require('./utils');
+
 const balancesPath = '/balances';
-const maxLimit = config.maxLimit;
-const balanceFileUpdateRefreshTime = 900;
-
-/**
- * Makes a call to the rest-api and returns the balances object from the response
- * @param {String} pathandquery
- * @return {Object} Transactions object from response
- */
-const getBalances = (pathandquery, currentTestResult) => {
-  return acctestutils
-    .getAPIResponse(pathandquery)
-    .then((json) => {
-      return json.balances;
-    })
-    .catch((error) => {
-      currentTestResult.failureMessages.push(error);
-    });
-};
-
-/**
- * Check the required fields exist in the response object
- * @param {Object} entry Balance JSON object
- */
-const checkMandatoryParams = (entry) => {
-  let check = true;
-  ['account', 'balance'].forEach((field) => {
-    check = check && entry.hasOwnProperty(field);
-  });
-
-  return check;
-};
+const resource = 'balance';
+const resourceLimit = config[resource].limit;
+const jsonRespKey = 'balances';
+const mandatoryParams = ['account', 'balance'];
 
 /**
  * Verify base balances call
- * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {String} server API host endpoint
  */
-const getBalancesCheck = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+const getBalancesCheck = async (server) => {
+  const url = getUrl(server, balancesPath, {limit: resourceLimit});
+  const balances = await getAPIResponse(url, jsonRespKey);
 
-  let url = acctestutils.getUrl(server, balancesPath);
-  currentTestResult.url = url;
-  let balances = await getBalances(url, currentTestResult);
-
-  if (undefined === balances) {
-    var message = `balances is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  const result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: resourceLimit,
+      message: (elements, limit) => `balances.length of ${elements.length} is less than limit ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: mandatoryParams,
+      message: 'balance object is missing some mandatory fields',
+    })
+    .run(balances);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  if (balances.length !== maxLimit) {
-    var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  let mandatoryParamCheck = checkMandatoryParams(balances[0]);
-  if (mandatoryParamCheck == false) {
-    var message = `balance object is missing some mandatory fields`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  currentTestResult.result = 'passed';
-  currentTestResult.message = `Successfully called balances and performed account check`;
-
-  acctestutils.addTestResult(classResults, currentTestResult, true);
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called balances and performed account check',
+  };
 };
 
 /**
  * Verify balances call with time and limit query params provided
- * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {String} server API host endpoint
  */
-const getBalancesWithTimeAndLimitParams = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+const getBalancesWithTimeAndLimitParams = async (server) => {
+  let url = getUrl(server, balancesPath, {limit: 1});
+  const resp = await getAPIResponse(url);
+  let balances = resp instanceof Error ? resp : resp.balances;
 
-  let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
-  currentTestResult.url = url;
-  let balancesResponse;
-  try {
-    balancesResponse = await acctestutils.getAPIResponse(url);
-  } catch (error) {
-    currentTestResult.failureMessages.push(error);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  const checkRunner = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `balances.length of ${elements.length} was expected to be 1`,
+    });
+  let result = checkRunner.run(balances);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  let balances = balancesResponse.balances;
+  const {timestamp} = resp;
+  const plusOne = math.add(math.bignumber(timestamp), math.bignumber(1));
+  const minusOne = math.subtract(math.bignumber(timestamp), math.bignumber(1));
+  url = getUrl(server, balancesPath, {
+    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
+    limit: 1,
+  });
+  balances = await getAPIResponse(url, jsonRespKey);
 
-  if (undefined === balances) {
-    var message = `balances is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  result = checkRunner.run(balances);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  if (balances.length !== 1) {
-    var message = `balances.length of ${balances.length} was expected to be 1`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  let plusOne = math.add(math.bignumber(balancesResponse.timestamp), math.bignumber(1));
-  let minusOne = math.subtract(math.bignumber(balancesResponse.timestamp), math.bignumber(1));
-  let paq = `${balancesPath}?timestamp=gt:${minusOne.toString()}` + `&timestamp=lt:${plusOne.toString()}&limit=1`;
-
-  url = acctestutils.getUrl(server, paq);
-  currentTestResult.url = url;
-  balances = await getBalances(url, currentTestResult);
-
-  if (undefined === balances) {
-    var message = `balances is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  if (balances.length !== 1) {
-    var message = `balances.length of ${balances.length} was expected to be 1`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  currentTestResult.result = 'passed';
-  currentTestResult.message = `Successfully called balances with time and limit params`;
-
-  acctestutils.addTestResult(classResults, currentTestResult, true);
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called balances with time and limit params',
+  };
 };
 
 /**
  * Verify single balance can be retrieved
- * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {String} server API host endpoint
  */
-const getSingleBalanceById = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
+const getSingleBalanceById = async (server) => {
+  let url = getUrl(server, balancesPath, {limit: 10});
+  const balances = await getAPIResponse(url, jsonRespKey);
 
-  let url = acctestutils.getUrl(server, `${balancesPath}?limit=10`);
-  currentTestResult.url = url;
-  let balances = await getBalances(url, currentTestResult);
-
-  if (undefined === balances) {
-    var message = `balances is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 10,
+      message: (elements) => `balances.length of ${elements.length} was expected to be 10`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: mandatoryParams,
+      message: 'balance object is missing some mandatory fields',
+    })
+    .run(balances);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  if (balances.length !== 10) {
-    var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return currentTestResult;
+  const highestAcc = _.max(_.map(balances, (balance) => toAccNum(balance.account)));
+  url = getUrl(server, balancesPath, {'account.id': fromAccNum(highestAcc)});
+  const singleBalance = await getAPIResponse(url, jsonRespKey);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `balances.length of ${elements.length} was expected to be 1`,
+    })
+    .withCheckSpec(checkAccountNumber, {accountNumber: highestAcc, message: 'Highest acc check was not found'})
+    .run(singleBalance);
+  if (!result.passed) {
+    return {url, ...result};
   }
 
-  let mandatoryParamCheck = checkMandatoryParams(balances[0]);
-  if (mandatoryParamCheck == false) {
-    var message = `account object is missing some mandatory fields`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return currentTestResult;
-  }
-
-  var highestAcc = 0;
-  for (let acc of balances) {
-    var accnum = acctestutils.toAccNum(acc.account);
-    if (accnum > highestAcc) {
-      highestAcc = accnum;
-    }
-  }
-
-  url = acctestutils.getUrl(server, `${balancesPath}?account.id=${acctestutils.fromAccNum(highestAcc)}`);
-  currentTestResult.url = url;
-  let singleBalance = await getBalances(url, currentTestResult);
-
-  if (undefined === singleBalance || undefined === singleBalance[0]) {
-    var message = `singleBalance is undefined`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  let check = false;
-  if (singleBalance[0].account === acctestutils.fromAccNum(highestAcc)) {
-    check = true;
-  }
-
-  if (check == false) {
-    var message = `Highest acc check was not found`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  currentTestResult.result = 'passed';
-  currentTestResult.message = `Successfully called balances and performed account check`;
-
-  acctestutils.addTestResult(classResults, currentTestResult, true);
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called balances and performed account check',
+  };
 };
 
 /**
  * Verfiy the freshness of balances returned by the api
- * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {String} server API host endpoint
  */
-const checkBalanceFreshness = async (server, classResults) => {
-  var currentTestResult = acctestutils.getMonitorTestResult();
-
-  let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
-  currentTestResult.url = url;
-  let balancesResponse;
-  try {
-    balancesResponse = await acctestutils.getAPIResponse(url);
-  } catch (error) {
-    currentTestResult.failureMessages.push(error);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  // Check for freshness of data
-  const txSec = balancesResponse.timestamp.split('.')[0];
-  const currSec = Math.floor(new Date().getTime() / 1000);
-  const delta = currSec - txSec;
-  const freshnessThreshold = balanceFileUpdateRefreshTime * 2;
-
-  if (delta > freshnessThreshold) {
-    var message = `balance was stale, ${delta} seconds old`;
-    currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, currentTestResult, false);
-    return;
-  }
-
-  currentTestResult.result = 'passed';
-  currentTestResult.message = `Successfully retrieved balance from with ${freshnessThreshold} seconds ago`;
-
-  acctestutils.addTestResult(classResults, currentTestResult, true);
+const checkBalanceFreshness = async (server) => {
+  return checkResourceFreshness(server, balancesPath, resource, (data) => data.timestamp);
 };
 
 /**
- * Run all tests in an asynchronous fashion waiting for all tests to complete
- * @param {Object} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * Run all balance tests in an asynchronous fashion waiting for all tests to complete
+ *
+ * @param {String} server API host endpoint
+ * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
-const runBalanceTests = async (server, classResults) => {
-  var tests = [];
-  tests.push(getBalancesCheck(server, classResults));
-  tests.push(getBalancesWithTimeAndLimitParams(server, classResults));
-  tests.push(getSingleBalanceById(server, classResults));
-  tests.push(checkBalanceFreshness(server, classResults));
-
-  return Promise.all(tests);
+const runTests = async (server, testResult) => {
+  const runTest = testRunner(server, testResult, resource);
+  return Promise.all([
+    runTest(getBalancesCheck),
+    runTest(getBalancesWithTimeAndLimitParams),
+    runTest(getSingleBalanceById),
+    runTest(checkBalanceFreshness),
+  ]);
 };
 
 module.exports = {
-  runBalanceTests: runBalanceTests,
+  resource,
+  runTests,
 };

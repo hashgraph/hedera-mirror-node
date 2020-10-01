@@ -36,6 +36,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -47,7 +48,8 @@ import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
 @TestPropertySource(properties = "spring.flyway.target=1.28.0")
-//@Disabled
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_V1.28.1.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_V1.28.1.sql")
 public class V1_28_1__Address_BookTest extends IntegrationTest {
     @Resource
     private V1_28_1__Address_Book migration;
@@ -102,7 +104,7 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(12, fileDataRepository.count());
+        assertEquals(11, fileDataRepository.count());
         assertEquals(6, addressBookRepository.count());
         assertEquals(37, addressBookEntryRepository.count());
     }
@@ -141,7 +143,7 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(7, fileDataRepository.count());
+        assertEquals(6, fileDataRepository.count());
         // only bootstrap address book
         assertEquals(1, addressBookRepository.count());
         assertEquals(4, addressBookEntryRepository.count());

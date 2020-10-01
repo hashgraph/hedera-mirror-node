@@ -21,13 +21,16 @@ package com.hedera.mirror.importer.addressbook;
  */
 
 import com.google.common.collect.ImmutableList;
+import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -47,6 +50,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 @AllArgsConstructor
 public class AddressBookServiceImpl implements AddressBookService {
+
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
 
@@ -85,7 +89,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     @Override
     public AddressBook getCurrent() {
         Instant now = Instant.now();
-        long consensusTimestamp = Utility.convertToNanos(Instant.now().getEpochSecond(), now.getNano());
+        long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
 
         return addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
@@ -104,9 +108,8 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     /**
-     * Parses provided fileData object into an AddressBook object if valid and stores into db. Saves fileData into db
-     * regardless for reference. Also updates previous address book endConsensusTimestamp based on new address books
-     * startConsensusTimestamp
+     * Parses provided fileData object into an AddressBook object if valid and stores into db. Also updates previous
+     * address book endConsensusTimestamp based on new address book's startConsensusTimestamp.
      *
      * @param fileData file data with timestamp, contents, entityId and transaction type for parsing
      */
@@ -118,9 +121,6 @@ public class AddressBookServiceImpl implements AddressBookService {
         } else {
             addressBookBytes = fileData.getFileData();
         }
-
-        // store fileData information
-        fileData = fileDataRepository.save(fileData);
 
         AddressBook addressBook = buildAddressBook(addressBookBytes, fileData.getConsensusTimestamp(), fileData
                 .getEntityId());
@@ -142,36 +142,37 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     private byte[] combinePreviousFileDataContents(FileData fileData) {
         Optional<FileData> optionalFileData = fileDataRepository.findLatestMatchingFile(
-                fileData.getConsensusTimestamp(), fileData.getEntityId().getId(),
-                List.of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        byte[] combinedBytes = null;
-        if (optionalFileData.isPresent()) {
-            FileData firstPartialAddressBook = optionalFileData.get();
-            long consensusTimeStamp = firstPartialAddressBook.getConsensusTimestamp();
-            List<FileData> appendFileDataEntries = fileDataRepository
-                    .findFilesInRange(
-                            consensusTimeStamp + 1, fileData.getConsensusTimestamp() - 1, firstPartialAddressBook
-                                    .getEntityId().getId(),
-                            TransactionTypeEnum.FILEAPPEND.getProtoId());
+                fileData.getConsensusTimestamp(),
+                fileData.getEntityId().getId(),
+                List.of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId())
+        );
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length);
-            try {
-                bos.write(firstPartialAddressBook.getFileData());
-                for (int i = 0; i < appendFileDataEntries.size(); i++) {
-                    bos.write(appendFileDataEntries.get(i).getFileData());
-                }
-
-                bos.write(fileData.getFileData());
-                combinedBytes = bos.toByteArray();
-            } catch (IOException ex) {
-                throw new InvalidDatasetException("Error concatenating partial address book fileData entries", ex);
-            }
-        } else {
+        if (!optionalFileData.isPresent()) {
             throw new IllegalStateException("Missing FileData entry. FileAppend expects a corresponding " +
                     "FileCreate/FileUpdate entry");
         }
 
-        return combinedBytes;
+        FileData firstPartialAddressBook = optionalFileData.get();
+        long consensusTimeStamp = firstPartialAddressBook.getConsensusTimestamp();
+
+        List<FileData> appendFileDataEntries = fileDataRepository.findFilesInRange(
+                consensusTimeStamp + 1,
+                fileData.getConsensusTimestamp() - 1,
+                firstPartialAddressBook.getEntityId().getId(),
+                TransactionTypeEnum.FILEAPPEND.getProtoId()
+        );
+
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length)) {
+            bos.write(firstPartialAddressBook.getFileData());
+            for (int i = 0; i < appendFileDataEntries.size(); i++) {
+                bos.write(appendFileDataEntries.get(i).getFileData());
+            }
+
+            bos.write(fileData.getFileData());
+            return bos.toByteArray();
+        } catch (IOException ex) {
+            throw new InvalidDatasetException("Error concatenating partial address book fileData entries", ex);
+        }
     }
 
     /**
@@ -223,25 +224,31 @@ public class AddressBookServiceImpl implements AddressBookService {
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) {
         ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
+        Set<Long> nodeIdSet = new HashSet<>();
 
-        if (nodeAddressBook != null) {
-            for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
-                    .getNodeAddressList()) {
-                AddressBookEntry addressBookEntry = AddressBookEntry.builder()
-                        .consensusTimestamp(consensusTimestamp)
-                        .memo(nodeAddressProto.getMemo().toStringUtf8())
-                        .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                        .port(nodeAddressProto.getPortno())
-                        .publicKey(nodeAddressProto.getRSAPubKey())
-                        .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                        .nodeId(nodeAddressProto.getNodeId())
-                        .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
-                        .build();
-                builder.add(addressBookEntry);
-            }
+        for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
+            int port = nodeAddressProto.getPortno();
+            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
+                    .consensusTimestamp(consensusTimestamp)
+                    .memo(nodeAddressProto.getMemo().toStringUtf8())
+                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                    .port(port == 0 ? null : port)
+                    .publicKey(nodeAddressProto.getRSAPubKey())
+                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                    .nodeId(nodeAddressProto.getNodeId())
+                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
+                    .build();
+            builder.add(addressBookEntry);
+            nodeIdSet.add(nodeAddressProto.getNodeId());
         }
 
-        return builder.build();
+        List<AddressBookEntry> addressBookEntryList = builder.build();
+        if (nodeIdSet.size() == 1) {
+            // clear the node ID when all of them are the same
+            addressBookEntryList.forEach(addressBookEntry -> addressBookEntry.setNodeId(null));
+        }
+
+        return addressBookEntryList;
     }
 
     /**

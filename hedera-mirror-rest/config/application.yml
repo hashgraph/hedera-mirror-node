@@ -22,6 +22,7 @@ hedera:
           uriPath: '/swagger'
       shard: 0
       stateproof:
+        addressBookHistory: false
         enabled: false
         streams:
           network: 'DEMO'
@@ -32,3 +33,5 @@ hedera:
           accessKey:
           secretKey:
           bucketName:
+      shutdown:
+        timeout: 20000

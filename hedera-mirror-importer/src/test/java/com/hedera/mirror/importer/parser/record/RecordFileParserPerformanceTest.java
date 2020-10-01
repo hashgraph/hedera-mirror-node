@@ -20,26 +20,32 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Resource;
-import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
+import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RecordFileParserPerformanceTest extends IntegrationTest {
+
+    private static final String WARMUP_FILE = "2020-02-09T18_30_00.000084Z.rcd";
 
     @TempDir
     static Path dataPath;
@@ -48,40 +54,51 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
     Path testPath;
 
     @Resource
-    private RecordFileParser recordFileParser;
+    private RecordFilePoller recordFilePoller;
 
     @Resource
     private RecordParserProperties parserProperties;
 
-    private FileCopier fileCopier;
+    @Resource
+    private RecordFileRepository recordFileRepository;
 
     private StreamType streamType;
 
     @BeforeAll
-    void warmUp() {
-        streamType = parserProperties.getStreamType();
-        parse("2020-02-09T18_30_00.000084Z.rcd");
-    }
-
-    @BeforeEach
-    void before() {
+    void warmUp() throws Exception {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
+
+        streamType = parserProperties.getStreamType();
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        Files.walk(Path.of(testPath.toString(), streamType.getPath(), "performance"))
+                .filter(p -> p.toString().endsWith(".rcd"))
+                .forEach(p -> {
+                    String filename = FilenameUtils.getName(p.toString());
+                    long timestamp = Utility.getTimestampFromFilename(filename);
+                    RecordFile rf = new RecordFile(timestamp, 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 0L, 2);
+                    recordFileRepository.save(rf);
+                });
+
+        parse(WARMUP_FILE, true);
     }
 
     @Timeout(30)
     @Test
     void parseAndIngestMultipleFiles60000Transactions() throws Exception {
-        parse("*.rcd");
+        parse("*.rcd", false);
     }
 
-    private void parse(String filePath) {
-        fileCopier = FileCopier.create(testPath, dataPath)
+    private void parse(String filePath, boolean warmup) throws Exception {
+        FileCopier fileCopier = FileCopier.create(testPath, dataPath)
                 .from(streamType.getPath(), "performance")
                 .filterFiles(filePath)
                 .to(streamType.getPath(), streamType.getValid());
         fileCopier.copy();
-
-        recordFileParser.parse();
+        if (!warmup) {
+            Files.deleteIfExists(fileCopier.getTo().resolve(WARMUP_FILE));
+        }
+        recordFilePoller.poll();
+        Files.deleteIfExists(fileCopier.getTo().resolve(WARMUP_FILE));
     }
 }

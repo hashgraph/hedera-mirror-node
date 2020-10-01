@@ -25,6 +25,8 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMax;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -38,10 +40,16 @@ public class ListenerProperties {
     @Min(32)
     private int maxPageSize = 5000;
 
-    @Min(1024)
-    @Max(8192)
-    private int maxBufferSize = 2048;
+    @Min(8192)
+    @Max(65536)
+    private int maxBufferSize = 16384;
 
+    @DurationMin(seconds = 2)
+    @DurationMax(seconds = 10)
+    @NotNull
+    private Duration bufferTimeout = Duration.ofSeconds(4);
+
+    @DurationMin(millis = 50)
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
 
@@ -51,6 +59,7 @@ public class ListenerProperties {
     public enum ListenerType {
         NOTIFY,
         POLL,
+        REDIS,
         SHARED_POLL
     }
 }

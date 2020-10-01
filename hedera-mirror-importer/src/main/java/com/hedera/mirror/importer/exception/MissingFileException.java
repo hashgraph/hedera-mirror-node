@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,8 +20,11 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.EntityId;
+public class MissingFileException extends ImporterException {
 
-public interface EntityRepositoryCustom {
-    void insertEntityId(EntityId entityId);
+    private static final long serialVersionUID = -3538381075104588657L;
+
+    public MissingFileException(String message) {
+        super(message);
+    }
 }

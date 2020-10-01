@@ -25,11 +25,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.transaction.TransactionAwareCacheManagerProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-
-import com.hedera.mirror.importer.parser.CommonParserProperties;
 
 @Configuration
 @ConditionalOnProperty(prefix = "spring.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -37,11 +36,8 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 @RequiredArgsConstructor
 public class CacheConfiguration {
 
-    private final CommonParserProperties commonParserProperties;
-
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
     public static final String EXPIRE_AFTER_30M = "cacheManagerExpireAfter30m";
-    public static final String TINY_LRU_CACHE = "tinyLruCache";
     public static final String NEVER_EXPIRE_LARGE = "cacheManagerNeverExpireLarge";
 
     @Bean(EXPIRE_AFTER_5M)
@@ -49,28 +45,20 @@ public class CacheConfiguration {
     CacheManager cacheManager5m() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100,expireAfterWrite=5m");
-        return caffeineCacheManager;
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 
     @Bean(EXPIRE_AFTER_30M)
     CacheManager cacheManager30m() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=10000,expireAfterWrite=30m");
-        return caffeineCacheManager;
-    }
-
-    // Cache for small sets of DB "constants" that don't change and are looked up once.
-    @Bean(TINY_LRU_CACHE)
-    CacheManager tinyLruCache() {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=100");
-        return caffeineCacheManager;
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 
     @Bean(NEVER_EXPIRE_LARGE)
     CacheManager cacheManagerNeverExpireLarge() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=2000000"); // 2 million 120MB
-        return caffeineCacheManager;
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 }
