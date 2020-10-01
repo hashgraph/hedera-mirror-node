@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.parser.balance.v1.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
@@ -72,7 +73,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Resource
-    private BalanceFileReaderImpl balanceFileReader;
+    private BalanceFileReaderImplV1 balanceFileReader;
 
     private FileCopier fileCopier;
     private BalanceFile balanceFile;
@@ -110,7 +111,8 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
         loader.loadAccountBalances(testFile, filter);
 
         Map<AccountBalance.Id, AccountBalance> accountBalanceMap = new HashMap<>();
-        accountBalanceRepository.findAll().forEach(accountBalance -> accountBalanceMap.put(accountBalance.getId(), accountBalance));
+        accountBalanceRepository.findAll()
+                .forEach(accountBalance -> accountBalanceMap.put(accountBalance.getId(), accountBalance));
 
         if (persisted) {
             assertThat(accountBalanceMap.size()).isEqualTo(balanceFile.getCount());
@@ -132,10 +134,12 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
             assertThat(accountBalanceSetRepository.count()).isZero();
         }
 
-        AccountBalanceFile accountBalanceFile = accountBalanceFileRepository.findById(balanceFile.getConsensusTimestamp()).get();
+        AccountBalanceFile accountBalanceFile = accountBalanceFileRepository
+                .findById(balanceFile.getConsensusTimestamp()).get();
         assertAll(() -> assertThat(accountBalanceFile.getCount()).isEqualTo(balanceFile.getCount()),
                 () -> assertThat(accountBalanceFile.getLoadStart()).isGreaterThanOrEqualTo(loadStart.getEpochSecond()),
-                () -> assertThat(accountBalanceFile.getLoadEnd()).isGreaterThanOrEqualTo(accountBalanceFile.getLoadStart()));
+                () -> assertThat(accountBalanceFile.getLoadEnd())
+                        .isGreaterThanOrEqualTo(accountBalanceFile.getLoadStart()));
     }
 
     @Test
