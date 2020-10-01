@@ -81,6 +81,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
+| `hedera.mirror.importer.parser.record.entity.redis.enabled`                 | false                   | Whether to use Redis to send messages to the gRPC process                                      |
 | `hedera.mirror.importer.parser.record.entity.repository.enabled`            | false                   | Whether to use Spring Data JPA repositories to insert into the database (experimental)         |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 20_000                  | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.entity.sql.bufferSize`                | 11441                   | The size of the byte buffer to allocate for each batch                                         |
@@ -155,12 +156,12 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.db.username`                            | mirror_grpc      | The username the GRPC API uses to connect to the database                                      |
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.entityCacheSize`                        | 50000            | The maximum size of the cache to store entities used for existence check                       |
-| `hedera.mirror.grpc.listener.bufferTimeout`                 | 4000             | The time in milliseconds to wait for a client to receive all buffered messages after buffer overflow. On timeout, server will send an error |
+| `hedera.mirror.grpc.listener.bufferTimeout`                 | 4s               | The time to wait for a client to receive all buffered messages after buffer overflow. On timeout, server will send an error. Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.enabled`                       | true             | Whether to listen for incoming massages or not                                                 |
 | `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.maxBufferSize`                 | 16384            | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
 | `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
-| `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL or SHARED_POLL  |
+| `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL, REDIS or SHARED_POLL |
 | `hedera.mirror.grpc.netty.executorCoreThreadCount`          | 10               | The number of core threads                                                                     |
 | `hedera.mirror.grpc.netty.executorMaxThreadCount`           | 1000             | The maximum allowed number of threads                                                          |
 | `hedera.mirror.grpc.netty.keepAliveTime`                    | 60               | The seconds limit for which threads may remain idle before being terminated                    |

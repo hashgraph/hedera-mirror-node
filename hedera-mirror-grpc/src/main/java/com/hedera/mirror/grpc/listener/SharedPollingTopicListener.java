@@ -37,6 +37,7 @@ import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Named
@@ -44,6 +45,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
 
     private final TopicMessageRepository topicMessageRepository;
     private final InstantToLongConverter instantToLongConverter;
+    private final Flux<TopicMessage> topicMessages;
 
     public SharedPollingTopicListener(ListenerProperties listenerProperties,
                                       TopicMessageRepository topicMessageRepository,
@@ -56,7 +58,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         Duration frequency = listenerProperties.getFrequency();
         PollingContext context = new PollingContext();
 
-        sharedTopicMessages = Flux.defer(() -> poll(context)
+        topicMessages = Flux.defer(() -> poll(context)
                 .subscribeOn(scheduler)
                 .publishOn(Schedulers.boundedElastic()))
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
@@ -69,6 +71,11 @@ public class SharedPollingTopicListener extends SharedTopicListener {
                 .doOnSubscribe(context::onStart)
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
                 .share();
+    }
+
+    @Override
+    protected Flux<TopicMessage> getSharedListener(TopicMessageFilter filter) {
+        return topicMessages;
     }
 
     private Flux<TopicMessage> poll(PollingContext context) {

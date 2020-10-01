@@ -28,6 +28,7 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -47,16 +48,32 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     @Resource
     protected ListenerProperties listenerProperties;
 
-    protected abstract TopicListener getTopicListener();
+    @Resource
+    protected CompositeTopicListener topicListener;
+
+    protected abstract ListenerProperties.ListenerType getType();
+
+    private ListenerProperties.ListenerType defaultType;
 
     @BeforeEach
     void setup() {
+        defaultType = listenerProperties.getType();
         listenerProperties.setEnabled(true);
+        listenerProperties.setType(getType());
     }
 
     @AfterEach
     void after() {
         listenerProperties.setEnabled(false);
+        listenerProperties.setType(defaultType);
+    }
+
+    private void publish(Publisher<TopicMessage> publisher) {
+        publish(Flux.from(publisher));
+    }
+
+    protected void publish(Flux<TopicMessage> publisher) {
+        publisher.blockLast();
     }
 
     @Test
@@ -65,7 +82,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .startTime(Instant.EPOCH)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .expectSubscription()
@@ -79,11 +96,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .startTime(Instant.EPOCH)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(2, future).blockLast())
+                .then(() -> publish(domainBuilder.topicMessages(2, future)))
                 .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -98,11 +115,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .startTime(Instant.EPOCH)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(2, future).blockLast())
+                .then(() -> publish(domainBuilder.topicMessages(2, future)))
                 .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -119,11 +136,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .startTime(Instant.EPOCH)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(3, future).blockLast())
+                .then(() -> publish(domainBuilder.topicMessages(3, future)))
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -137,11 +154,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .startTime(Instant.EPOCH)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(10, future).blockLast())
+                .then(() -> publish(domainBuilder.topicMessages(10, future)))
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -154,11 +171,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .startTime(future)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> topicMessage.block())
+                .then(() -> publish(topicMessage))
                 .expectNext(1L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -171,10 +188,10 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .startTime(future)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> topicMessage.block())
+                .then(() -> publish(topicMessage))
                 .expectNextCount(0)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -193,11 +210,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .topicNum(1)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.blockLast())
+                .then(() -> publish(generator))
                 .expectNext(2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -216,11 +233,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .realmNum(1)
                 .build();
 
-        getTopicListener().listen(filter)
+        topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.blockLast())
+                .then(() -> publish(generator))
                 .expectNext(2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -247,7 +264,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .topicNum(2)
                 .build();
 
-        StepVerifier stepVerifier1 = getTopicListener()
+        StepVerifier stepVerifier1 = topicListener
                 .listen(filter1)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
@@ -255,7 +272,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .thenCancel()
                 .verifyLater();
 
-        StepVerifier stepVerifier2 = getTopicListener()
+        StepVerifier stepVerifier2 = topicListener
                 .listen(filter2)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
@@ -264,12 +281,12 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .verifyLater();
 
         Uninterruptibles.sleepUninterruptibly(50, TimeUnit.MILLISECONDS);
-        generator.blockLast();
+        publish(generator);
 
         stepVerifier1.verify(Duration.ofMillis(500));
         stepVerifier2.verify(Duration.ofMillis(500));
 
-        getTopicListener()
+        topicListener
                 .listen(filter1)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)

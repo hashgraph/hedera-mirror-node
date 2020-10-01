@@ -1,7 +1,12 @@
 {
   "description": "Get messages with limit param",
   "setup": {
-    "accounts": [],
+    "accounts": [
+      {
+        "entity_num": 7,
+        "entity_type": 4
+      }
+    ],
     "balances": [],
     "transactions": [],
     "cryptotransfers": [],

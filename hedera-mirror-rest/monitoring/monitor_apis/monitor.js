@@ -22,12 +22,13 @@
 
 const common = require('./common.js');
 const monitorTests = require('./monitor_tests.js');
-const monitorTestutils = require('./utils.js');
+const utils = require('./utils.js');
+
 const retryCountMax = 3; // # of times a single process can retry
 
 /**
  * Main function to run the tests and save results
- * @param {} None
+ * @param {Array} servers array of servers to test
  * @return {} None
  */
 const runEverything = async (servers) => {
@@ -39,13 +40,13 @@ const runEverything = async (servers) => {
     }
 
     for (const server of restservers) {
-      let processObj = common.getProcess(server);
+      const processObj = common.getProcess(server);
 
-      if (processObj == undefined) {
+      if (processObj === undefined) {
         // execute test and store name
-        monitorTests.runTests(`http://${server.ip}:${server.port}`).then((outJson) => {
-          let results = {};
-          if (outJson.hasOwnProperty('testResults')) {
+        monitorTests.runTests(server.name, `http://${server.ip}:${server.port}`).then((outJson) => {
+          let results;
+          if (outJson.testResults) {
             results = outJson;
             console.log(
               `Completed tests run for ${server.name} at: ${new Date()} with ${results.numPassedTests}/${
@@ -53,7 +54,7 @@ const runEverything = async (servers) => {
               } tests passed`
             );
           } else {
-            results = monitorTestutils.createFailedResultJson(
+            results = utils.createFailedResultJson(
               `Test result unavailable`,
               `Test results not available for: ${server.name}`
             );
@@ -66,7 +67,7 @@ const runEverything = async (servers) => {
 
         common.saveProcess(server, 1);
       } else {
-        const results = monitorTestutils.createFailedResultJson(
+        const results = utils.createFailedResultJson(
           `Test result unavailable`,
           `Previous tests are still running for: ${server.name}`
         );
@@ -89,12 +90,12 @@ const runEverything = async (servers) => {
       }
     }
   } catch (err) {
-    console.log('Error in runEverything: ' + err);
+    console.log(`Error in runEverything: ${err}`);
     console.log(err.stack);
     console.trace();
   }
 };
 
 module.exports = {
-  runEverything: runEverything,
+  runEverything,
 };

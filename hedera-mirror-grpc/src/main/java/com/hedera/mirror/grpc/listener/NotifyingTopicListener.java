@@ -37,12 +37,14 @@ import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.DbProperties;
 import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 @Named
 public class NotifyingTopicListener extends SharedTopicListener {
 
-    private final ObjectMapper objectMapper;
+    final ObjectMapper objectMapper;
     private final PgChannel channel;
+    private final Flux<TopicMessage> topicMessages;
 
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
         super(listenerProperties);
@@ -73,7 +75,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
 
         channel = subscriber.channel("topic_message");
 
-        sharedTopicMessages = Flux.defer(() -> listen())
+        topicMessages = Flux.defer(() -> listen())
                 .publishOn(Schedulers.boundedElastic())
                 .map(this::toTopicMessage)
                 .filter(Objects::nonNull)
@@ -82,6 +84,11 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
                 .share();
+    }
+
+    @Override
+    protected Flux<TopicMessage> getSharedListener(TopicMessageFilter filter) {
+        return topicMessages;
     }
 
     private Flux<String> listen() {

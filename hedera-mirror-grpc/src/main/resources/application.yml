@@ -39,7 +39,7 @@ management:
         liveness:
           include: ping
         readiness:
-          include: db, grpcServices, grpcChannel, ping
+          include: db, grpcServices, grpcChannel, ping, redis
 server:
   shutdown: graceful
   port: 8081
@@ -77,3 +77,9 @@ spring:
   test:
     database:
       replace: NONE
+  redis:
+    lettuce:
+      cluster:
+        refresh:
+          period: 60s
+    timeout: 5s

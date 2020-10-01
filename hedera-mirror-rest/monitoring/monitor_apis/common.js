@@ -56,6 +56,16 @@ const saveResults = (server, results) => {
 };
 
 /**
+ * Gets the current results of the server
+ *
+ * @param {String} name server name
+ * @return {Object} results object
+ */
+const getServerCurrentResults = (name) => {
+  return currentResults[name].results;
+};
+
+/**
  * Getter for a snapshot of results
  * @param {} None
  * @return {Object} Snapshot of results from the latest completed round of tests
@@ -74,11 +84,11 @@ const getStatus = () => {
 
 /**
  * Getter for a snapshot of results for a server specified in the HTTP request
- * @param {String} net
+ * @param {String} name server name
  * @return {Object} Snapshot of results from the latest completed round of tests for
  *      the specified server
  */
-const getStatusWithId = (net) => {
+const getStatusByName = (name) => {
   let ret = {
     numPassedTests: 0,
     numFailedTests: 0,
@@ -89,22 +99,22 @@ const getStatusWithId = (net) => {
   };
 
   // Return 404 (Not found) for illegal name of the serer
-  if (net === undefined || net === null) {
+  if (name === undefined || name === null) {
     ret.httpCode = 404;
-    ret.message = `Not found. Net: ${net}`;
+    ret.message = `Not found. Net: ${name}`;
     return ret;
   }
 
   // Return 404 (Not found) for if the server doesn't appear in our results table
-  if (!currentResults[net] || !currentResults[net].results) {
+  if (!currentResults[name] || !currentResults[name].results) {
     ret.httpCode = 404;
-    ret.message = `Test results unavailable for Net: ${net}`;
+    ret.message = `Test results unavailable for Net: ${name}`;
     return ret;
   }
 
   // Return the results saved in the currentResults object
-  ret = currentResults[net];
-  ret.httpCode = currentResults[net].results.success ? 200 : 409;
+  ret = currentResults[name];
+  ret.httpCode = currentResults[name].results.success ? 200 : 409;
   return ret;
 };
 
@@ -125,12 +135,10 @@ const getProcess = (server) => {
  */
 const saveProcess = (server, count) => {
   const key = `${server.ip}_${server.port}`;
-  const processObject = {
+  pids[key] = {
     id: server.name,
     encountered: count,
   };
-
-  pids[key] = processObject;
 };
 
 /**
@@ -146,8 +154,9 @@ const deleteProcess = (server) => {
 module.exports = {
   initResults,
   saveResults,
+  getServerCurrentResults,
   getStatus,
-  getStatusWithId,
+  getStatusByName,
   getProcess,
   saveProcess,
   deleteProcess,

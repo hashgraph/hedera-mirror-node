@@ -89,6 +89,11 @@
             <artifactId>hibernate-validator</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.msgpack</groupId>
+            <artifactId>jackson-dataformat-msgpack</artifactId>
+            <version>${msgpack.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -131,6 +136,10 @@
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -181,6 +190,12 @@
         <dependency>
             <groupId>com.playtika.testcontainers</groupId>
             <artifactId>embedded-postgresql</artifactId>
+            <version>${embedded.testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.playtika.testcontainers</groupId>
+            <artifactId>embedded-redis</artifactId>
             <version>${embedded.testcontainers.version}</version>
             <scope>test</scope>
         </dependency>

@@ -24,7 +24,23 @@ const fs = require('fs');
 const _ = require('lodash');
 const path = require('path');
 
-const REQUIRED_FIELDS = ['servers', 'interval', 'shard', 'account.limit', 'balance.limit', 'transaction.limit'];
+const REQUIRED_FIELDS = [
+  'servers',
+  'interval',
+  'shard',
+  'account.intervalMultiplier',
+  'account.limit',
+  'balance.freshnessThreshold',
+  'balance.intervalMultiplier',
+  'balance.limit',
+  'stateproof.intervalMultiplier',
+  'transaction.freshnessThreshold',
+  'transaction.intervalMultiplier',
+  'transaction.limit',
+  'topic.freshnessThreshold',
+  'topic.intervalMultiplier',
+  'topic.limit',
+];
 const SERVERLIST_FILE = path.join(__dirname, 'config', 'serverlist.json');
 let config = {};
 let loaded = false;

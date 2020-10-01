@@ -28,7 +28,8 @@ const {
   checkRespObjDefined,
   checkRespArrayLength,
   checkMandatoryParams,
-  checkRespDataFreshness,
+  checkResourceFreshness,
+  checkConsensusTimestampOrder,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -37,7 +38,6 @@ const {
 } = require('./utils');
 
 const transactionsPath = '/transactions';
-const recordsFileUpdateRefreshTime = 5;
 const resource = 'transaction';
 const resourceLimit = config[resource].limit;
 const jsonRespKey = 'transactions';
@@ -61,23 +61,6 @@ const checkTransactionTransfers = (transactions, option) => {
       passed: false,
       message,
     };
-  }
-
-  return {passed: true};
-};
-
-const checkTransactionsConsensusTimestampOrder = (transactions, option) => {
-  const {asc} = option;
-  let previous = asc ? '0' : 'A';
-  for (const txn of transactions) {
-    const timestamp = txn.consensus_timestamp;
-    if (asc && timestamp <= previous) {
-      return {passed: false, message: 'consensus timestamps are not in ascending order'};
-    }
-    if (!asc && timestamp >= previous) {
-      return {passed: false, message: 'consensus timestamps are not in descending order'};
-    }
-    previous = timestamp;
   }
 
   return {passed: true};
@@ -176,7 +159,7 @@ const getTransactionsWithOrderParam = async (server) => {
       params: mandatoryParams,
       message: 'transaction object is missing some mandatory fields',
     })
-    .withCheckSpec(checkTransactionsConsensusTimestampOrder, {asc: true})
+    .withCheckSpec(checkConsensusTimestampOrder, {asc: true})
     .run(transactions);
   if (!result.passed) {
     return {url, ...result};
@@ -300,53 +283,28 @@ const getSingleTransactionsById = async (server) => {
  * @param {Object} server API host endpoint
  */
 const checkTransactionFreshness = async (server) => {
-  const freshnessThreshold = recordsFileUpdateRefreshTime * 10;
-
-  const url = getUrl(server, transactionsPath, {limit: 1});
-  const transactions = await getAPIResponse(url, jsonRespKey);
-
-  const result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (elements) => `transactions.length of ${elements.length} was expected to be 1`,
-    })
-    .withCheckSpec(checkRespDataFreshness, {
-      timestamp: (data) => data.consensus_timestamp,
-      threshold: freshnessThreshold,
-      message: (delta) => `balance was stale, ${delta} seconds old`,
-    })
-    .run(transactions);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: `Successfully retrieved transactions from with ${freshnessThreshold} seconds ago`,
-  };
+  return checkResourceFreshness(server, transactionsPath, resource, (data) => data.consensus_timestamp, jsonRespKey);
 };
 
 /**
- * Run all tests in an asynchronous fashion waiting for all tests to complete
+ * Run all transaction tests in an asynchronous fashion waiting for all tests to complete
+ *
  * @param {String} server API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
+ * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
-const runTransactionTests = async (server, classResults) => {
-  const tests = [];
-  const runTest = testRunner(server, classResults);
-  tests.push(runTest(getTransactionsWithAccountCheck));
-  tests.push(runTest(getTransactionsWithOrderParam));
-  tests.push(runTest(getTransactionsWithLimitParams));
-  tests.push(runTest(getTransactionsWithTimeAndLimitParams));
-  tests.push(runTest(getSingleTransactionsById));
-  tests.push(runTest(checkTransactionFreshness));
-
-  return Promise.all(tests);
+const runTests = async (server, testResult) => {
+  const runTest = testRunner(server, testResult, resource);
+  return Promise.all([
+    runTest(getTransactionsWithAccountCheck),
+    runTest(getTransactionsWithOrderParam),
+    runTest(getTransactionsWithLimitParams),
+    runTest(getTransactionsWithTimeAndLimitParams),
+    runTest(getSingleTransactionsById),
+    runTest(checkTransactionFreshness),
+  ]);
 };
 
 module.exports = {
-  runTransactionTests,
+  resource,
+  runTests,
 };

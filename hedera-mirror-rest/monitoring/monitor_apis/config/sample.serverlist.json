@@ -9,12 +9,26 @@
   "interval": 60,
   "shard": 0,
   "account": {
+    "intervalMultiplier": 1,
     "limit": 1000
   },
   "balance": {
+    "freshnessThreshold": 1000,
+    "intervalMultiplier": 1,
     "limit": 1000
   },
+  "stateproof": {
+    "intervalMultiplier": 10
+  },
   "transaction": {
+    "freshnessThreshold": 50,
+    "intervalMultiplier": 1,
     "limit": 1000
+  },
+  "topic": {
+    "freshnessThreshold": 100,
+    "intervalMultiplier": 1,
+    "limit": 1000,
+    "topicId": "0.0.1930"
   }
 }

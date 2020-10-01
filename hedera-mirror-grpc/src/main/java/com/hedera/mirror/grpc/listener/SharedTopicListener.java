@@ -20,7 +20,7 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-import java.time.Duration;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Flux;
@@ -31,35 +31,25 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
+@RequiredArgsConstructor
 public abstract class SharedTopicListener implements TopicListener {
 
     protected final Logger log = LogManager.getLogger(getClass());
     protected final ListenerProperties listenerProperties;
-    protected Flux<TopicMessage> sharedTopicMessages;
-
-    public SharedTopicListener(ListenerProperties listenerProperties) {
-        this.listenerProperties = listenerProperties;
-    }
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        Duration delay = Duration.ofMillis(listenerProperties.getBufferTimeout());
         UnicastProcessor<String> processor = UnicastProcessor.create();
-        Flux<String> timeoutFlux = processor.delayElements(delay)
+        Flux<String> timeoutFlux = processor.delayElements(listenerProperties.getBufferTimeout())
                 .replay(1)
                 .autoConnect();
 
-        return sharedTopicMessages.filter(t -> filterMessage(t, filter))
-                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
+        return getSharedListener(filter).doOnSubscribe(s -> log.info("Subscribing: {}", filter))
                 .doOnCancel(() -> processor.onNext("timeout"))
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
-                .timeout(timeoutFlux, message -> timeoutFlux,
-                        Mono.error(new ClientTimeoutException("Client times out to receive the buffered messages")));
+                .timeout(timeoutFlux, message -> timeoutFlux, Mono.error(
+                        new ClientTimeoutException("Client timed out while consuming the buffered messages")));
     }
 
-    private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
-        return message.getRealmNum() == filter.getRealmNum() &&
-                message.getTopicNum() == filter.getTopicNum() &&
-                message.getConsensusTimestamp() >= filter.getStartTimeLong();
-    }
+    protected abstract Flux<TopicMessage> getSharedListener(TopicMessageFilter filter);
 }

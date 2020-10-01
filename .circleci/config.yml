@@ -16,6 +16,9 @@ references:
     image: google/cloud-sdk:290.0.1
     command: [ "/bin/sh", "-c", "gcloud beta emulators pubsub start" ]
 
+  docker_redis: &docker_redis
+    image: redis:6.0.8-alpine
+
   machine_ubuntu: &machine_ubuntu
     machine:
       image: ubuntu-1604:201903-01
@@ -117,9 +120,10 @@ commands:
                   \<<: *db
                 grpc:
                   \<<: *db
-
+            spring:
+              redis:
+                url: redis://127.0.0.1:6379
             ---
-
             spring:
               profiles: pubsub
               cloud:
@@ -219,6 +223,7 @@ jobs:
       - *docker_jdk11
       - *docker_db
       - *docker_pubsub
+      - *docker_redis
     steps:
       - checkout
       - restore_maven_cache
@@ -255,6 +260,7 @@ jobs:
     docker:
       - *docker_jdk11
       - *docker_db
+      - *docker_redis
     steps:
       - checkout
       - restore_maven_cache
