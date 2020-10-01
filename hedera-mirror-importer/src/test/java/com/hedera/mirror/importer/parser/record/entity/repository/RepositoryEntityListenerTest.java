@@ -153,7 +153,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         token.setTokenId(new Token.Id(TOKEN_ID));
         token.setTreasuryAccountId(ENTITY_ID);
         token.setWipeKey(input.toByteArray());
-        tokenRepository.save(token);
+        repositoryEntityListener.onToken(token);
         assertThat(tokenRepository.findAll()).contains(token);
     }
 
@@ -168,7 +168,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         tokenAccount.setModifiedTimestamp(2L);
         tokenAccount.setId(1L);
         tokenAccount.setTokenId(TOKEN_ID);
-        tokenAccountRepository.save(tokenAccount);
+        repositoryEntityListener.onTokenAccount(tokenAccount);
         assertThat(tokenAccountRepository.findAll()).contains(tokenAccount);
     }
 
@@ -177,7 +177,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         TokenTransfer tokenTransfer = new TokenTransfer();
         tokenTransfer.setAmount(1000);
         tokenTransfer.setId(new TokenTransfer.Id(2L, TOKEN_ID, ENTITY_ID));
-        tokenTransferRepository.save(tokenTransfer);
+        repositoryEntityListener.onTokenTransfer(tokenTransfer);
         assertThat(tokenTransferRepository.findAll()).contains(tokenTransfer);
     }
 

@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,8 +39,28 @@ public class TokenCreateTransactionsHandlerTest extends AbstractTransactionHandl
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
+        Key key = Key.newBuilder()
+                .setEd25519(ByteString.copyFromUtf8("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f"))
+                .build();
         return TransactionBody.newBuilder()
-                .setTokenCreation(TokenCreateTransactionBody.getDefaultInstance());
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setAdminKey(key)
+                        .setDecimals(1000)
+                        .setExpiry(360)
+                        .setInitialSupply(1_000_000L)
+                        .setFreezeDefault(false)
+                        .setKycKey(key)
+                        .setAutoRenewPeriod(100)
+                        .setName("_token_name")
+                        .setFreezeKey(key)
+                        .setSymbol("SYMBOL")
+                        .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
+                        .setAutoRenewAccount(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2)
+                                .build())
+                        .setAutoRenewPeriod(100)
+                        .setName("token_name")
+                        .setWipeKey(key)
+                        .build());
     }
 
     @Override

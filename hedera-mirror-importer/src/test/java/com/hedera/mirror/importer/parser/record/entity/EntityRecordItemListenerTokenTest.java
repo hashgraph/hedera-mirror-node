@@ -294,6 +294,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
             builder.getTokenCreationBuilder()
                     .setAdminKey(TOKEN_REF_KEY)
                     .setDecimals(1000)
+                    .setExpiry(360)
                     .setInitialSupply(1_000_000L)
                     .setFreezeDefault(false)
                     .setSupplyKey(TOKEN_REF_KEY)
