@@ -713,18 +713,18 @@ const formatComparator = (comparator) => {
 };
 
 /**
- * Parses tokenBalances string into an array of {token_id: string, balance: Number} objects
+ * Parses tokenBalances into an array of {token_id: string, balance: Number} objects
  *
- * @param {string} tokenBalances the token balances string, format: 'tokenId1=balance1,tokenId2=balance2'
+ * @param {{token_id: Number, balance: Number}[]} tokenBalances array of token balance objects
  * @return {[]|{token_id: string, balance: Number}[]}
  */
 const parseTokenBalances = (tokenBalances) => {
   return tokenBalances
-    ? tokenBalances.split(',').map((tokenBalance) => {
-        const [tokenId, balance] = tokenBalance.split('=');
+    ? tokenBalances.map((tokenBalance) => {
+        const {token_id: tokenId, balance} = tokenBalance;
         return {
           token_id: EntityId.fromEncodedId(tokenId).toString(),
-          balance: Number(balance),
+          balance,
         };
       })
     : [];

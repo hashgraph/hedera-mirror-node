@@ -27,7 +27,15 @@ const TransactionId = require('./transactionId');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 
-const selectClause = `SELECT
+/**
+ * Gets the select clause with token transfers sorted by token_id and account_id in the specified order
+ *
+ * @param {string} order sorting order
+ * @return {string}
+ */
+const getSelectClauseWithTokenTransferOrder = (order) => {
+  // token transfers are aggregated as an array of json objects {token_id, account_id, amount}
+  return `SELECT
        t.payer_account_id,
        t.memo,
        t.consensus_ns,
@@ -37,17 +45,20 @@ const selectClause = `SELECT
        t.node_account_id,
        ctl.entity_id AS ctl_entity_id,
        ctl.amount AS amount,
-       string_agg(
-         ttl.token_id || '_' || ttl.account_id || '_' || ttl.amount,
-         ','
-         ORDER BY
-          ttl.token_id DESC,
-          ttl.account_id DESC
-       ) AS token_transfer_list,
+       json_agg(
+         json_build_object(
+           'token_id', ttl.token_id,
+           'account_id', ttl.account_id,
+           'amount', ttl.amount
+         ) ORDER BY
+             ttl.token_id ${order || ''},
+             ttl.account_id ${order || ''}
+       ) FILTER (WHERE ttl.token_id IS NOT NULL) AS token_transfer_list,
        t.charged_tx_fee,
        t.valid_duration_seconds,
        t.max_fee,
        t.transaction_hash`;
+};
 
 /**
  * Creates token transfer list from aggregated ',' separated string in the query result
@@ -60,12 +71,12 @@ const createTokenTransferList = (tokenTransferList) => {
     return undefined;
   }
 
-  return tokenTransferList.split(',').map((transfer) => {
-    const [tokenId, accountId, amount] = transfer.split('_');
+  return tokenTransferList.map((transfer) => {
+    const {token_id: tokenId, account_id: accountId, amount} = transfer;
     return {
       token_id: EntityId.fromEncodedId(tokenId).toString(),
       account: EntityId.fromEncodedId(accountId).toString(),
-      amount: Number(amount),
+      amount,
     };
   });
 };
@@ -134,13 +145,13 @@ const createTransferLists = (rows) => {
  */
 const getTransactionsOuterQuery = function (innerQuery, order) {
   return `
-    ${selectClause}
+    ${getSelectClauseWithTokenTransferOrder(order)}
     FROM ( ${innerQuery} ) AS tlist
        JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
-       LEFT JOIN token_transfer ttl
+       LEFT OUTER JOIN token_transfer ttl
          ON t.type = 30
          AND tlist.consensus_timestamp = ttl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name
@@ -258,7 +269,7 @@ const getOneTransaction = async (req, res) => {
 
   // In case of duplicate transactions, only the first succeeds
   const sqlQuery = `
-    ${selectClause}
+    ${getSelectClauseWithTokenTransferOrder()}
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type

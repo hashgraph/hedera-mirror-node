@@ -184,12 +184,12 @@
         "balance": 20,
         "tokens": [
           {
-            "token_id": "0.0.90000",
-            "balance": 1000
-          },
-          {
             "token_id": "0.0.90002",
             "balance": 1890
+          },
+          {
+            "token_id": "0.0.90000",
+            "balance": 1000
           }
         ]
       },
@@ -198,12 +198,12 @@
         "balance": 10,
         "tokens": [
           {
-            "token_id": "0.0.90000",
-            "balance": 80
-          },
-          {
             "token_id": "0.0.90001",
             "balance": 180
+          },
+          {
+            "token_id": "0.0.90000",
+            "balance": 80
           }
         ]
       }

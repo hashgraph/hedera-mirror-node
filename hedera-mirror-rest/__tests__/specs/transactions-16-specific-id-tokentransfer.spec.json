@@ -76,8 +76,8 @@
         ],
         "token_transfers": [
           {
-            "account": "0.0.400",
-            "amount": 1000,
+            "account": "0.0.200",
+            "amount": 200,
             "token_id": "0.0.90000"
           },
           {
@@ -86,8 +86,8 @@
             "token_id": "0.0.90000"
           },
           {
-            "account": "0.0.200",
-            "amount": 200,
+            "account": "0.0.400",
+            "amount": 1000,
             "token_id": "0.0.90000"
           }
         ]

@@ -82,13 +82,18 @@ const getBalances = async (req, res) => {
           AND e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}`
       : '';
 
-  // token balances pairs are aggregated as a string, e.g., "100=600,101=700"
+  // token balances pairs are aggregated as an array of json objects {token_id, balance}
   const sqlQuery = `
       SELECT
         ab.consensus_timestamp,
         ab.account_id,
         ab.balance,
-        string_agg(tb.token_id || '=' || tb.balance, ',' ORDER BY tb.token_id) AS token_balances
+        json_agg(
+          json_build_object(
+            'token_id', tb.token_id,
+            'balance', tb.balance
+          ) order by tb.token_id ${order}
+        ) FILTER (WHERE tb.token_id IS NOT NULL) AS token_balances
       FROM account_balance ab
       LEFT JOIN token_balance tb
         ON ab.consensus_timestamp = tb.consensus_timestamp

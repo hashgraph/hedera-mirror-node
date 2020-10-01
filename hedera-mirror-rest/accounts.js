@@ -54,12 +54,14 @@ const processRow = (row) => {
  *
  * @param {string} extraWhereCondition optional extra where condition
  * @param {string} orderClause optional order clause
+ * @param {string} order optional sorting order
  * @param {string} query optional additional query, e.g., limit clause
  * @return {string} the complete account query
  */
-const getAccountQuery = (extraWhereCondition, orderClause, query) => {
-  // token balances pairs are aggregated as a string, e.g., "100=600,101=700"
-  return `select ab.balance as account_balance,
+const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
+  // token balances pairs are aggregated as an array of json objects {token_id, balance}
+  return `
+    select ab.balance as account_balance,
        ab.consensus_timestamp as consensus_timestamp,
        coalesce(ab.account_id, e.id) as entity_id,
        e.exp_time_ns,
@@ -67,16 +69,22 @@ const getAccountQuery = (extraWhereCondition, orderClause, query) => {
        e.key,
        e.deleted,
        (
-           select string_agg(tb.token_id || '=' || tb.balance, ',' order by tb.token_id) as token_balances
-           from token_balance tb
-           where
-               ab.consensus_timestamp = tb.consensus_timestamp
-               and ab.account_id = tb.account_id
+         select
+           json_agg(
+             json_build_object(
+               'token_id', tb.token_id,
+               'balance', tb.balance
+             ) order by tb.token_id ${order || ''}
+           )
+         from token_balance tb
+         where
+           ab.consensus_timestamp = tb.consensus_timestamp
+           and ab.account_id = tb.account_id
        ) as token_balances
     from account_balance ab
     full outer join t_entities e on (
-        ab.account_id = e.id
-        and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
+      ab.account_id = e.id
+      and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
     )
     where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance) ${extraWhereCondition || ''}
     ${orderClause || ''}
@@ -111,6 +119,7 @@ const getAccounts = async (req, res) => {
   const entitySql = getAccountQuery(
     `and ${[accountQuery, balanceQuery, pubKeyQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ')}`,
     `order by coalesce(ab.account_id, e.id) ${order}`,
+    order,
     query
   );
 
