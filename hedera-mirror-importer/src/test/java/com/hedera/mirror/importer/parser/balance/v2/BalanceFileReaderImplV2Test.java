@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.balance.v2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,19 +23,18 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
-import com.hedera.mirror.importer.parser.balance.v1.BalanceFileReaderImplV1;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.util.Utility;
 
-public class BalanceFileReaderImplV1Test {
-    private static final String sampleBalanceFileName = "2019-08-30T18_15_00.016002001Z_Balances.csv";
+class BalanceFileReaderImplV2Test {
+    private static final String sampleBalanceFileName = "2020-09-22T04_25_00.083212003Z_Balances.csv";
 
     @TempDir
     Path dataPath;
 
     private MirrorProperties mirrorProperties;
-    private BalanceFileReaderImplV1 balanceFileReader;
-    private AccountBalanceLineParserV1 parser;
+    private BalanceFileReaderImplV2 balanceFileReader;
+    private AccountBalanceLineParserV2 parser;
 
     private long sampleConsensusTimestamp;
     private FileCopier fileCopier;
@@ -45,13 +44,13 @@ public class BalanceFileReaderImplV1Test {
     @BeforeEach
     void setup() throws IOException {
         mirrorProperties = new MirrorProperties();
-        parser = new AccountBalanceLineParserV1();
-        balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(mirrorProperties), parser);
+        parser = new AccountBalanceLineParserV2();
+        balanceFileReader = new BalanceFileReaderImplV2(new BalanceParserProperties(mirrorProperties), parser);
         var resource = new ClassPathResource("data");
-        StreamType streamType = StreamType.BALANCE;
+        StreamType streamType = StreamType.BALANCE_V2;
         fileCopier = FileCopier
                 .create(resource.getFile().toPath(), dataPath)
-                .from(streamType.getPath(), "balance0.0.3")
+                .from(streamType.getPath())
                 .filterFiles(sampleBalanceFileName)
                 .to(streamType.getPath(), streamType.getValid());
         sampleFile = fileCopier.getFrom().resolve(sampleBalanceFileName).toFile();
@@ -82,6 +81,20 @@ public class BalanceFileReaderImplV1Test {
     void readInvalidWhenFileHasNoTimestampHeader() throws IOException {
         List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
         lines.remove(0);
+        FileUtils.writeLines(testFile, lines);
+
+        assertThrows(InvalidDatasetException.class, () -> {
+            balanceFileReader.read(testFile);
+        });
+    }
+
+    @Test
+    void readInvalidWhenFileHasV1TimestampHeader() throws IOException {
+        List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        lines.remove(0);
+        List<String> copy = new LinkedList<>();
+        copy.add("TimeStamp:2020-09-22T04:25:00.083212003Z");
+        copy.addAll(lines);
         FileUtils.writeLines(testFile, lines);
 
         assertThrows(InvalidDatasetException.class, () -> {

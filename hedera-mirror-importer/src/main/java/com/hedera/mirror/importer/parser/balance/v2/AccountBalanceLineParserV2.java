@@ -1,11 +1,18 @@
 package com.hedera.mirror.importer.parser.balance.v2;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.TokenBalances;
+import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javax.inject.Named;
+import org.apache.commons.codec.binary.Base64;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
@@ -25,7 +32,12 @@ public class AccountBalanceLineParserV2 {
     public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
         try {
             String[] parts = line.split(",");
-            if (parts.length != 5) {
+            boolean hasTokenBalance;
+            if (parts.length == 5) {
+                hasTokenBalance = true;
+            } else if (parts.length == 4) {
+                hasTokenBalance = false;
+            } else {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
             }
 
@@ -33,7 +45,7 @@ public class AccountBalanceLineParserV2 {
             int realmNum = Integer.parseInt(parts[1]);
             int accountNum = Integer.parseInt(parts[2]);
             long balance = Long.parseLong(parts[3]);
-            // TODO TokenBalance tokenBalance = TokenBalance.parseFrom(parts[4]);
+
             if (shardNum < 0 || realmNum < 0 || accountNum < 0 || balance < 0) {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
             }
@@ -43,10 +55,32 @@ public class AccountBalanceLineParserV2 {
                         "shard (%d), got shard (%d)", line, systemShardNum, shardNum));
             }
 
-            return new AccountBalance(balance, new ArrayList<>(), new AccountBalance.Id(consensusTimestamp, EntityId
+            EntityId accountId = EntityId
+                    .of(shardNum, realmNum, accountNum, EntityTypeEnum.ACCOUNT);
+
+            List<TokenBalance> tokenBalances = hasTokenBalance ? parseTokenBalanceList(parts[4], consensusTimestamp,
+                    accountId) : Collections
+                    .emptyList();
+
+            return new AccountBalance(balance, tokenBalances, new AccountBalance.Id(consensusTimestamp, EntityId
                     .of(shardNum, realmNum, accountNum, EntityTypeEnum.ACCOUNT)));
-        } catch (NullPointerException | NumberFormatException ex) {
+        } catch (NullPointerException | NumberFormatException | InvalidProtocolBufferException ex) {
             throw new InvalidDatasetException("Invalid account balance line: " + line, ex);
         }
+    }
+
+    private List<TokenBalance> parseTokenBalanceList(String tokenBalancesProtoString, long consensusTimestamp,
+                                                     EntityId accountId) throws InvalidProtocolBufferException {
+        List<com.hederahashgraph.api.proto.java.TokenBalance> tokenBalanceProtoList =
+                TokenBalances.parseFrom(Base64.decodeBase64(tokenBalancesProtoString)).getTokenBalancesList();
+        List<TokenBalance> tokenBalances = new ArrayList<>();
+        for (com.hederahashgraph.api.proto.java.TokenBalance tokenBalanceProto : tokenBalanceProtoList) {
+            TokenID tokenId = tokenBalanceProto.getTokenId();
+            TokenBalance tokenBalance = new TokenBalance(tokenBalanceProto
+                    .getBalance(), new TokenBalance.Id(consensusTimestamp, accountId,
+                    EntityId.of(tokenId)));
+            tokenBalances.add(tokenBalance);
+        }
+        return tokenBalances;
     }
 }

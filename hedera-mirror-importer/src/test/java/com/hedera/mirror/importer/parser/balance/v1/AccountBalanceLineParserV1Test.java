@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.balance.v1;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
 
 class AccountBalanceLineParserV1Test {
     private static final long timestamp = 1596340377922333444L;

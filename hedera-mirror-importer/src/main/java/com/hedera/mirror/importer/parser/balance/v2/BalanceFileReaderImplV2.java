@@ -37,22 +37,20 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.balance.BalanceFileReader;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 public class BalanceFileReaderImplV2 implements BalanceFileReader {
     private static final int MAX_HEADER_ROWS = 10;
-    private static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
-    private static final String VERSION_010_HEADER_PREFIX = "# 0.1.0";
+    private static final String TIMESTAMP_HEADER_PREFIX = "# timestamp:";
     private static final String COLUMN_HEADER_PREFIX = "shard";
 
     private final int fileBufferSize;
     private final long systemShardNum;
-    private final AccountBalanceLineParserV1 parser;
+    private final AccountBalanceLineParserV2 parser;
 
-    public BalanceFileReaderImplV2(BalanceParserProperties balanceParserProperties, AccountBalanceLineParserV1
+    public BalanceFileReaderImplV2(BalanceParserProperties balanceParserProperties, AccountBalanceLineParserV2
             parser) {
         this.fileBufferSize = balanceParserProperties.getFileBufferSize();
         this.systemShardNum = balanceParserProperties.getMirrorProperties().getShard();
@@ -90,6 +88,8 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
     private long parseHeaderForConsensusTimestamp(BufferedReader reader) {
         String line = null;
         try {
+            //Discard the first line/version number
+            reader.readLine();
             long consensusTimestamp = -1;
             for (int i = 0; i < MAX_HEADER_ROWS; i++) {
                 line = Optional.of(reader.readLine()).get().trim();
