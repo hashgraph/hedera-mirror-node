@@ -29,7 +29,6 @@ import org.apache.commons.io.FilenameUtils;
 public enum StreamType {
 
     BALANCE("accountBalances", "balance", "_Balances", "csv"),
-    BALANCE_V2("accountBalancesV2", "balance", "_Balances", "csv"),
     EVENT("eventsStreams", "events_", "", "evts"),
     RECORD("recordstreams", "record", "", "rcd");
 

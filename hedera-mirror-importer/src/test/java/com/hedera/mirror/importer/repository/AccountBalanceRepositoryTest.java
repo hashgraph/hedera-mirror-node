@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Collections;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +40,7 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         AccountBalance accountBalance1 = create(1L, 1, 100);
         AccountBalance accountBalance2 = create(1L, 2, 200);
         create(2L, 1, 50);
-
+        
         assertThat(accountBalanceRepository.findByIdConsensusTimestamp(1L))
                 .containsExactlyInAnyOrder(accountBalance1, accountBalance2);
     }
@@ -52,6 +53,7 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(balance);
         accountBalance.setId(id);
+        accountBalance.setTokenBalances(Collections.emptyList());
         return accountBalanceRepository.save(accountBalance);
     }
 }

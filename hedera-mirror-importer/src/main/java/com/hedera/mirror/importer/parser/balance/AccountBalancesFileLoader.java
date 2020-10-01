@@ -158,13 +158,15 @@ public class AccountBalancesFileLoader {
 
                 if (!skip) {
                     accountBalanceList.add(accountBalance);
-                    tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
-                    tryInsertBatchTokenBalance(insertTokenBalanceStatement, accountBalanceList, insertBatchSize);
+                    tryInsertBatchAccountBalanceAndTokenBalance(insertBalanceStatement,
+                            insertTokenBalanceStatement, accountBalanceList,
+                            insertBatchSize);
                 }
             }
 
             if (!skip) {
-                tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
+                tryInsertBatchAccountBalanceAndTokenBalance(insertBalanceStatement,
+                        insertTokenBalanceStatement, accountBalanceList, 1);
                 updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             }
 
@@ -187,38 +189,46 @@ public class AccountBalancesFileLoader {
         insertSetStatement.execute();
     }
 
-    private void tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
-                                              List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
+    private void tryInsertBatchAccountBalanceAndTokenBalance(PreparedStatement insertBalanceStatement,
+                                                             PreparedStatement insertBatchTokenBalanceStatement,
+                                                             List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
         if (accountBalanceList.size() < threshold) {
             return;
         }
-
         for (var accountBalance : accountBalanceList) {
-            AccountBalance.Id id = accountBalance.getId();
-            insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
-            insertBalanceStatement.setLong(F_INSERT_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
-            insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
-            insertBalanceStatement.addBatch();
+            buildBatchAccountBalanceStatement(insertBalanceStatement, accountBalance);
+            buildBatchAccountTokenBalanceStatement(insertBatchTokenBalanceStatement, accountBalance.getTokenBalances());
         }
-
+        tryExecuteBatchStatement(insertBalanceStatement, "Some account balance insert statement in the " +
+                "batch failed to execute");
+        tryExecuteBatchStatement(insertBatchTokenBalanceStatement, "Some account token balance insert statement in " +
+                "the batch failed to execute");
         accountBalanceList.clear();
+    }
 
+    private void buildBatchAccountBalanceStatement(PreparedStatement insertBalanceStatement,
+                                                   AccountBalance accountBalance) throws SQLException {
+        AccountBalance.Id id = accountBalance.getId();
+        insertBalanceStatement
+                .setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
+        insertBalanceStatement.setLong(F_INSERT_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
+        insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
+        insertBalanceStatement.addBatch();
+    }
+
+    private void tryExecuteBatchStatement(PreparedStatement insertBalanceStatement, String errorMessage) throws SQLException {
         int[] result = insertBalanceStatement.executeBatch();
         for (int code : result) {
             if (code == Statement.EXECUTE_FAILED) {
-                throw new ParserSQLException("Some account balance insert statement in the batch failed to execute");
+                throw new ParserSQLException(errorMessage);
             }
         }
     }
 
-    private void tryInsertBatchTokenBalance(PreparedStatement insertTokenBalanceStatement,
-                                            List<AccountBalance> tokenBalanceList, int threshold) throws SQLException {
-        if (tokenBalanceList.size() < threshold) {
-            return;
-        }
-
-        for (var accountBalance : tokenBalanceList) {
-            for (var tokenBalance : accountBalance.getTokenBalances()) {
+    private void buildBatchAccountTokenBalanceStatement(PreparedStatement insertTokenBalanceStatement,
+                                                        List<TokenBalance> tokenBalanceList) throws SQLException {
+        if (tokenBalanceList != null) {
+            for (var tokenBalance : tokenBalanceList) {
                 TokenBalance.Id id = tokenBalance.getId();
                 insertTokenBalanceStatement
                         .setLong(F_INSERT_TOKEN_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp
@@ -234,7 +244,8 @@ public class AccountBalancesFileLoader {
         }
     }
 
-    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, long consensusTimestamp) throws SQLException {
+    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, long consensusTimestamp) throws
+            SQLException {
         updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), true);
         updateSetStatement.setLong(F_UPDATE_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
         updateSetStatement.execute();

@@ -47,10 +47,11 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.balance.v1.BalanceFileReaderImplV1;
+import com.hedera.mirror.importer.parser.balance.v2.BalanceFileReaderImplV2;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
+import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
 public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
@@ -67,13 +68,16 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
     private AccountBalanceRepository accountBalanceRepository;
 
     @Resource
+    private TokenBalanceRepository tokenBalanceRepository;
+
+    @Resource
     private AccountBalanceSetRepository accountBalanceSetRepository;
 
     @Resource
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Resource
-    private BalanceFileReaderImplV1 balanceFileReader;
+    private BalanceFileReaderImplV2 balanceFileReader;
 
     private FileCopier fileCopier;
     private BalanceFile balanceFile;
@@ -81,12 +85,12 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
-        balanceFile = new BalanceFile(1567188900016002001L, 25391, "2019-08-30T18_15_00.016002001Z_Balances.csv");
+        balanceFile = new BalanceFile(1600748700083212003L, 106, "2020-09-22T04_25_00.083212003Z_Balances.csv");
 
         StreamType streamType = StreamType.BALANCE;
         fileCopier = FileCopier
                 .create(sourcePath, dataPath)
-                .from(streamType.getPath(), "balance0.0.3")
+                .from(streamType.getPath(), "v2")
                 .filterFiles(balanceFile.getFilename())
                 .to(streamType.getPath(), streamType.getValid());
         testFile = fileCopier.getTo().resolve(balanceFile.getFilename()).toFile();
@@ -94,9 +98,9 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
     @ParameterizedTest(name = "load balance file with range [{0}, {1}], expect data persisted? {2}")
     @CsvSource(value = {
-            "2019-08-30T18:15:00.016002001Z, 2019-08-30T18:15:00.016002001Z, true",
+            "2020-09-22T04:25:00.083212003Z, 2020-09-22T04:25:00.083212003Z, true",
             ",,true",
-            "2019-08-30T18:15:00.016002002Z, 2019-08-30T18:15:00.016002008Z, false"
+            "2020-09-22T04:25:00.083212004Z, 2020-09-22T04:25:00.083212009Z, false"
     })
     void loadValidFile(Instant start, Instant end, boolean persisted) throws SQLException {
         insertAccountBalanceFileRecord();
@@ -120,7 +124,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
                 var accountBalanceIter = stream.iterator();
                 while (accountBalanceIter.hasNext()) {
                     AccountBalance expected = accountBalanceIter.next();
-                    assertThat(accountBalanceMap.get(expected.getId())).isEqualTo(expected);
+                    assertThat(accountBalanceMap.get(expected.getId())).usingRecursiveComparison().isEqualTo(expected);
                 }
             }
 

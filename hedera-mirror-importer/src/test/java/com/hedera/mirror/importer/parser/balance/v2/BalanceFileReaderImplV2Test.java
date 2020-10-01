@@ -47,10 +47,10 @@ class BalanceFileReaderImplV2Test {
         parser = new AccountBalanceLineParserV2();
         balanceFileReader = new BalanceFileReaderImplV2(new BalanceParserProperties(mirrorProperties), parser);
         var resource = new ClassPathResource("data");
-        StreamType streamType = StreamType.BALANCE_V2;
+        StreamType streamType = StreamType.BALANCE;
         fileCopier = FileCopier
                 .create(resource.getFile().toPath(), dataPath)
-                .from(streamType.getPath())
+                .from(streamType.getPath(), "v2")
                 .filterFiles(sampleBalanceFileName)
                 .to(streamType.getPath(), streamType.getValid());
         sampleFile = fileCopier.getFrom().resolve(sampleBalanceFileName).toFile();

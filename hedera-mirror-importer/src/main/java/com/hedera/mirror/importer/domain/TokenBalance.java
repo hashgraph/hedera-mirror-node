@@ -33,6 +33,7 @@ import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.converter.TokenIdConverter;
 //import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
@@ -60,7 +61,7 @@ public class TokenBalance implements Persistable<TokenBalance.Id> {
         @Convert(converter = AccountIdConverter.class)
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId accountId;
-        //        @Convert(converter = TokenIdConverter.class)
+        @Convert(converter = TokenIdConverter.class)
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId tokenId;
     }
