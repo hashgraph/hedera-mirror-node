@@ -99,7 +99,7 @@ create table if not exists token_balance
 );
 
 alter table if exists token_balance
-    add constraint token_balance__pk primary key (consensus_timestamp, token_id, account_id);
+    add constraint token_balance__pk primary key (consensus_timestamp, account_id, token_id);
 
 --- Add token_transfer
 create table if not exists token_transfer
