@@ -199,7 +199,7 @@ public class AccountBalancesFileLoader {
             buildBatchAccountBalanceStatement(insertBalanceStatement, accountBalance);
             buildBatchAccountTokenBalanceStatement(insertBatchTokenBalanceStatement, accountBalance.getTokenBalances());
         }
-        tryExecuteBatchStatement(insertBalanceStatement, "Some account balance insert statement in the " +
+        tryExecuteBatchStatement(insertBalanceStatement, "Some account balance insert statements in the " +
                 "batch failed to execute");
         tryExecuteBatchStatement(insertBatchTokenBalanceStatement, "Some account token balance insert statement in " +
                 "the batch failed to execute");

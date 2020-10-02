@@ -16,7 +16,7 @@ import com.hedera.mirror.importer.parser.balance.v2.BalanceFileReaderImplV2;
 
 @Named
 public class CompositeBalanceFileReader implements BalanceFileReader {
-    private static final String VERSION_010_HEADER_PREFIX = "# 0.1.0";
+    private static final String VERSION_2_HEADER_PREFIX = "# version:2";
 
     private final int fileBufferSize;
 

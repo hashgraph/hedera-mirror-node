@@ -42,7 +42,6 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @Named
 public class BalanceFileReaderImplV2 implements BalanceFileReader {
-    private static final int MAX_HEADER_ROWS = 10;
     private static final String TIMESTAMP_HEADER_PREFIX = "# timestamp:";
     private static final String COLUMN_HEADER_PREFIX = "shard";
 
@@ -90,18 +89,12 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
         try {
             //Discard the first line/version number
             reader.readLine();
-            long consensusTimestamp = -1;
-            for (int i = 0; i < MAX_HEADER_ROWS; i++) {
-                line = Optional.of(reader.readLine()).get().trim();
-                String lineLowered = line.toLowerCase();
-                if (lineLowered.startsWith(TIMESTAMP_HEADER_PREFIX)) {
-                    consensusTimestamp = convertTimestampLine(line);
-                } else if (lineLowered.startsWith(COLUMN_HEADER_PREFIX)) {
-                    if (consensusTimestamp == -1) {
-                        break;
-                    }
-                    return consensusTimestamp;
-                }
+            line = Optional.of(reader.readLine()).get().trim();
+            String lineLowered = line.toLowerCase();
+            if (lineLowered.startsWith(TIMESTAMP_HEADER_PREFIX)) {
+                return convertTimestampLine(line);
+            } else {
+                throw new InvalidDatasetException("Timestamp / column header not found in account balance file");
             }
         } catch (NullPointerException ex) {
             throw new InvalidDatasetException("Timestamp / column header not found in account balance file");
@@ -110,8 +103,6 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
         } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
         }
-
-        throw new InvalidDatasetException("Timestamp / column header not found in account balance file");
     }
 
     private long convertTimestampLine(String timestampLine) {

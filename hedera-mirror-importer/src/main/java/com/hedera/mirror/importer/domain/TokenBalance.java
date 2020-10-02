@@ -34,7 +34,6 @@ import org.springframework.data.domain.Persistable;
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
-//import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @AllArgsConstructor
@@ -56,11 +55,15 @@ public class TokenBalance implements Persistable<TokenBalance.Id> {
     @NoArgsConstructor
     @Embeddable
     public static class Id implements Serializable {
+
         private static final long serialVersionUID = -8547332015249955424L;
+
         private long consensusTimestamp;
+
         @Convert(converter = AccountIdConverter.class)
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId accountId;
+
         @Convert(converter = TokenIdConverter.class)
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId tokenId;
