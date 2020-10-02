@@ -256,18 +256,19 @@ merged into) the current configuration:
 3. Environment variables that start with `HEDERA_MIRROR_ROSETTA_` (e.g. `HEDERA_MIRROR_ROSETTA_API_VERSION=1.4.2`)
 
 The following table lists the available properties along with their default values.
+
 | Name                                                    | Default                 | Description                                                                                    |
 | ------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `hedera.mirror.rosetta.apiVersion`                      | 1.4.2                     | The version of the Rosetta interface the implementation adheres to                           |
+| `hedera.mirror.rosetta.apiVersion`                      | 1.4.4                   | The version of the Rosetta interface the implementation adheres to                             |
 | `hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database                                                                       |
-| `hedera.mirror.rosetta.db.password`                     | mirror_api_pass         | The database password the processor uses to connect. **Should be changed from default**        |
+| `hedera.mirror.rosetta.db.password`                     | mirror_node_pass        | The database password the processor uses to connect. **Should be changed from default**        |
 | `hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.rosetta.db.username`                     | mirror_api              | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rosetta.db.username`                     | mirror_node             | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime                                              |
 | `hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface                                               |
 | `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port                                                                              |
-| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |
 | `hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard                                                      |
-| `hedera.mirror.rosetta.version`                         | 0.16                    | The version of the Hedera Mirror Node used to adhere to the Rosetta interface                  |
+| `hedera.mirror.rosetta.version`                         | 0.20.0                    | The version of the Hedera Mirror Node used to adhere to the Rosetta interface                  |

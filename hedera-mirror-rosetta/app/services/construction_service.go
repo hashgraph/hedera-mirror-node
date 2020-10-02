@@ -131,18 +131,20 @@ func (c *ConstructionAPIService) ConstructionParse(ctx context.Context, request 
 		})
 	}
 
-	var signers []string
+	var accountIdentifiers []*rTypes.AccountIdentifier
 
 	if request.Signed {
 		signaturePairs := transaction.SignaturePairs()
 		for _, signaturePair := range signaturePairs {
-			signers = append(signers, hex.EncodeToString(signaturePair.PubKeyPrefix))
+			accountIdentifiers = append(accountIdentifiers, &rTypes.AccountIdentifier{
+				Address: hex.EncodeToString(signaturePair.PubKeyPrefix),
+			})
 		}
 	}
 
 	return &rTypes.ConstructionParseResponse{
-		Operations: operations,
-		Signers:    signers,
+		Operations:               operations,
+		AccountIdentifierSigners: accountIdentifiers,
 	}, nil
 }
 
@@ -231,8 +233,10 @@ func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rType
 	return &rTypes.ConstructionPayloadsResponse{
 		UnsignedTransaction: hexutils.SafeAddHexPrefix(hex.EncodeToString(bytesTransaction)),
 		Payloads: []*rTypes.SigningPayload{{
-			Address: sender.String(),
-			Bytes:   transaction.BodyBytes(),
+			AccountIdentifier: &rTypes.AccountIdentifier{
+				Address: sender.String(),
+			},
+			Bytes: transaction.BodyBytes(),
 		}},
 	}, nil
 }

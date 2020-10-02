@@ -10,7 +10,7 @@ As General structure the Rosetta API server has 4 main components.
 ### Domain models
 These are models internal to the system allowing for safe and easy serialization and passing off information. These are ultimately converted to/from Rosetta models or are marshaled from Database records.
 ### Domain Repositories
-These are repositories used for fetching data from the Mirror node database and Marshaling it into the Domain Models. They are providing an abstraction into the persistance layer and allowing the Services to request the necessary data.
+These are repositories used for fetching data from the Mirror node database and Marshaling it into the Domain Models. They are providing an abstraction into the persistence layer and allowing the Services to request the necessary data.
 ### Business Logic Services
 These are services executing the business logic in response to the request from the client side applications. They make use of the Repositories to gather the necessary domain models, convert them to the necessary Rosetta types and return them back to the client.
 ### Rosetta API Controllers
