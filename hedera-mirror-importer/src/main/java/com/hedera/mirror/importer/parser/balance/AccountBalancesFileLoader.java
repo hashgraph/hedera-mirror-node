@@ -31,6 +31,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.sql.DataSource;
@@ -215,24 +216,25 @@ public class AccountBalancesFileLoader {
 
     private void tryInsertBatchTokenBalance(PreparedStatement insertTokenBalanceStatement,
                                             List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
-        if (accountBalanceList.size() < threshold) {
+        List<TokenBalance> tokenBalances = accountBalanceList.stream()
+                .flatMap(balance -> balance.getTokenBalances().stream()).collect(Collectors.toList());
+
+        if (tokenBalances.size() < threshold) {
             return;
         }
 
-        for (var accountBalance : accountBalanceList) {
-            for (var tokenBalance : accountBalance.getTokenBalances()) {
-                TokenBalance.Id id = tokenBalance.getId();
-                insertTokenBalanceStatement
-                        .setLong(F_INSERT_TOKEN_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp
-                                ());
-                insertTokenBalanceStatement
-                        .setLong(F_INSERT_TOKEN_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
-                insertTokenBalanceStatement
-                        .setLong(F_INSERT_TOKEN_BALANCE.BALANCE.ordinal(), tokenBalance.getBalance());
-                insertTokenBalanceStatement
-                        .setLong(F_INSERT_TOKEN_BALANCE.TOKEN_ID.ordinal(), id.getTokenId().getId());
-                insertTokenBalanceStatement.addBatch();
-            }
+        for (var tokenBalance : tokenBalances) {
+            TokenBalance.Id id = tokenBalance.getId();
+            insertTokenBalanceStatement
+                    .setLong(F_INSERT_TOKEN_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp
+                            ());
+            insertTokenBalanceStatement
+                    .setLong(F_INSERT_TOKEN_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
+            insertTokenBalanceStatement
+                    .setLong(F_INSERT_TOKEN_BALANCE.BALANCE.ordinal(), tokenBalance.getBalance());
+            insertTokenBalanceStatement
+                    .setLong(F_INSERT_TOKEN_BALANCE.TOKEN_ID.ordinal(), id.getTokenId().getId());
+            insertTokenBalanceStatement.addBatch();
         }
 
         accountBalanceList.clear();
