@@ -1,6 +1,7 @@
 package com.hedera.mirror.importer.config;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.STARTUP_TIME;
 import static org.apache.commons.lang3.ObjectUtils.max;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,11 +53,13 @@ public class MirrorDateRangePropertiesProcessorTest {
     @BeforeEach
     void setUp() {
         mirrorProperties = new MirrorProperties();
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         CommonDownloaderProperties commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
         var balanceDownloaderProperties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        var eventDownloaderProperties=  new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         var recordDownloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        downloaderPropertiesList = List.of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
+        downloaderPropertiesList = List
+                .of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
         mirrorDateRangePropertiesProcessor = new MirrorDateRangePropertiesProcessor(applicationEventPublisher,
                 mirrorProperties, applicationStatusRepository, downloaderPropertiesList);
 
@@ -64,8 +67,10 @@ public class MirrorDateRangePropertiesProcessorTest {
         eventDownloaderProperties.setEnabled(true);
         recordDownloaderProperties.setEnabled(true);
 
-        maxAdjustment = downloaderPropertiesList.stream().map(DownloaderProperties::getStartDateAdjustment).max(Duration::compareTo).get();
-        minAdjustment = downloaderPropertiesList.stream().map(DownloaderProperties::getStartDateAdjustment).min(Duration::compareTo).get();
+        maxAdjustment = downloaderPropertiesList.stream().map(DownloaderProperties::getStartDateAdjustment)
+                .max(Duration::compareTo).get();
+        minAdjustment = downloaderPropertiesList.stream().map(DownloaderProperties::getStartDateAdjustment)
+                .min(Duration::compareTo).get();
     }
 
     @Test
@@ -73,20 +78,35 @@ public class MirrorDateRangePropertiesProcessorTest {
         mirrorDateRangePropertiesProcessor.process();
 
         verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
-        Instant startUpInstant = MirrorProperties.getStartUpInstant();
+        Instant startUpInstant = STARTUP_TIME;
         DateRangeFilter expectedFilter = new DateRangeFilter(startUpInstant, null);
         for (var downloaderProperties : downloaderPropertiesList) {
             String expectedFilename = Utility.getStreamFilenameFromInstant(
                     downloaderProperties.getStreamType(), adjustStartDate(startUpInstant, downloaderProperties));
-            verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), expectedFilename);
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isEqualTo(expectedFilter);
+            verify(applicationStatusRepository)
+                    .updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), expectedFilename);
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+                    .isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(MirrorProperties.getStartUpInstant(), minAdjustment));
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(STARTUP_TIME, minAdjustment));
+    }
+
+    @Test
+    void notSetAndDemoNetwork() {
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
+        mirrorDateRangePropertiesProcessor.process();
+
+        verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
+        for (var downloaderProperties : downloaderPropertiesList) {
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+                    .isEqualTo(DateRangeFilter.all());
+        }
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
 
     @Test
     void notSetAndApplicationStatusNotEmpty() {
-        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100);
+        Instant past = STARTUP_TIME.minusSeconds(100);
         for (var downloaderProperties : downloaderPropertiesList) {
             doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
                     .when(applicationStatusRepository)
@@ -96,16 +116,18 @@ public class MirrorDateRangePropertiesProcessorTest {
         mirrorDateRangePropertiesProcessor.process();
 
         verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
-        verify(applicationStatusRepository, never()).updateStatusValue(any(ApplicationStatusCode.class), any(String.class));
+        verify(applicationStatusRepository, never())
+                .updateStatusValue(any(ApplicationStatusCode.class), any(String.class));
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isNull();
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+                    .isEqualTo(DateRangeFilter.all());
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
 
     @Test
     void startDateNotSetAndEndDateAfterLongMaxAndApplicationStatusNotEmpty() {
-        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100);
+        Instant past = STARTUP_TIME.minusSeconds(100);
         for (var downloaderProperties : downloaderPropertiesList) {
             doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
                     .when(applicationStatusRepository)
@@ -116,9 +138,11 @@ public class MirrorDateRangePropertiesProcessorTest {
         mirrorDateRangePropertiesProcessor.process();
 
         verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
-        verify(applicationStatusRepository, never()).updateStatusValue(any(ApplicationStatusCode.class), any(String.class));
+        verify(applicationStatusRepository, never())
+                .updateStatusValue(any(ApplicationStatusCode.class), any(String.class));
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isNull();
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+                    .isEqualTo(DateRangeFilter.all());
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
@@ -126,7 +150,7 @@ public class MirrorDateRangePropertiesProcessorTest {
     @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
     @ValueSource(longs = {0, 1})
     void startDateNotAfterApplicationStatus(long nanos) {
-        Instant past = MirrorProperties.getStartUpInstant().minusSeconds(100);
+        Instant past = STARTUP_TIME.minusSeconds(100);
         for (var downloaderProperties : downloaderPropertiesList) {
             doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), past))
                     .when(applicationStatusRepository)
@@ -137,9 +161,11 @@ public class MirrorDateRangePropertiesProcessorTest {
         mirrorDateRangePropertiesProcessor.process();
 
         verify(applicationEventPublisher).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
-        verify(applicationStatusRepository, never()).updateStatusValue(any(ApplicationStatusCode.class), any(String.class));
+        verify(applicationStatusRepository, never())
+                .updateStatusValue(any(ApplicationStatusCode.class), any(String.class));
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isNull();
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+                    .isEqualTo(DateRangeFilter.all());
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
@@ -166,11 +192,13 @@ public class MirrorDateRangePropertiesProcessorTest {
                 verify(applicationStatusRepository, never())
                         .updateStatusValue(eq(downloaderProperties.getLastValidDownloadedFileKey()), any(String.class));
             } else {
-                String expectedFilename = Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), effectiveStartDate);
+                String expectedFilename = Utility
+                        .getStreamFilenameFromInstant(downloaderProperties.getStreamType(), effectiveStartDate);
                 verify(applicationStatusRepository)
                         .updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), expectedFilename);
             }
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType())).isEqualTo(expectedFilter);
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+                    .isEqualTo(expectedFilter);
         }
 
         Instant expectedVerifyHashAfter;
@@ -182,7 +210,8 @@ public class MirrorDateRangePropertiesProcessorTest {
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(expectedVerifyHashAfter);
     }
 
-    @ParameterizedTest(name = "startDate {0} endDate {1} application status {2} violates (effective) start date <= end date constraint")
+    @ParameterizedTest(name = "startDate {0} endDate {1} application status {2} violates (effective) start date <= " +
+            "end date constraint")
     @CsvSource(value = {
             "2020-08-18T09:00:05.124Z, 2020-08-18T09:00:05.123Z,",
             "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:05.124Z",
@@ -195,13 +224,15 @@ public class MirrorDateRangePropertiesProcessorTest {
         mirrorProperties.setEndDate(endDate);
         if (applicationStatusDate != null) {
             for (var downloaderProperties : downloaderPropertiesList) {
-                doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), applicationStatusDate))
+                doReturn(Utility
+                        .getStreamFilenameFromInstant(downloaderProperties.getStreamType(), applicationStatusDate))
                         .when(applicationStatusRepository)
                         .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
             }
         }
 
-        assertThatThrownBy(() -> mirrorDateRangePropertiesProcessor.process()).isInstanceOf(InvalidConfigurationException.class);
+        assertThatThrownBy(() -> mirrorDateRangePropertiesProcessor.process())
+                .isInstanceOf(InvalidConfigurationException.class);
         verify(applicationEventPublisher, never()).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
     }
 

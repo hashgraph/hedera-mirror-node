@@ -31,6 +31,7 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -49,6 +50,8 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 @RequiredArgsConstructor
 public class MirrorDateRangePropertiesProcessor {
+
+    static final Instant STARTUP_TIME = Instant.now();
 
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MirrorProperties mirrorProperties;
@@ -136,22 +139,20 @@ public class MirrorDateRangePropertiesProcessor {
 
         Instant filterStartDate = null;
         if (startDate != null) {
-            if (startDate.isAfter(lastFileInstant)) {
+            if (lastFileInstant != null && startDate.isAfter(lastFileInstant)) {
                 filterStartDate = startDate;
             } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
                 filterStartDate = lastFileInstant;
             }
         } else {
-            if (lastFileInstant.equals(Instant.EPOCH)) {
-                filterStartDate = MirrorProperties.getStartUpInstant();
+            if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.DEMO && lastFileInstant == null) {
+                filterStartDate = STARTUP_TIME;
             } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
                 filterStartDate = lastFileInstant;
             }
         }
 
-        if (filterStartDate != null) {
-            filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(filterStartDate, endDate));
-        }
+        filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(filterStartDate, endDate));
     }
 
     /**
@@ -163,9 +164,9 @@ public class MirrorDateRangePropertiesProcessor {
      * @param effectiveStartDate   the effective startDate
      */
     private void updateApplicationStatus(DownloaderProperties downloaderProperties, Instant effectiveStartDate) {
-        // update application status
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
         StreamType streamType = downloaderProperties.getStreamType();
+
         if (!effectiveStartDate.equals(lastFileInstant)) {
             String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
             applicationStatusRepository
@@ -198,22 +199,29 @@ public class MirrorDateRangePropertiesProcessor {
      */
     private Instant getEffectiveStartDate(DownloaderProperties downloaderProperties) {
         Instant startDate = mirrorProperties.getStartDate();
-        Instant startUpInstant = MirrorProperties.getStartUpInstant();
+        Instant startUpInstant = STARTUP_TIME;
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
         Duration adjustment = downloaderProperties.getStartDateAdjustment();
 
         if (startDate != null) {
             return max(startDate.minus(adjustment), lastFileInstant);
         } else if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
-            return Instant.EPOCH;
+            return Instant.EPOCH; // Demo network contains only data in the past, so don't default to now
+        } else if (lastFileInstant == null) {
+            return startUpInstant.minus(adjustment);
         } else {
-            return lastFileInstant.equals(Instant.EPOCH) ? startUpInstant.minus(adjustment) : lastFileInstant;
+            return lastFileInstant;
         }
     }
 
     private Instant getLastValidDownloadedFileInstant(DownloaderProperties downloaderProperties) {
         String filename = applicationStatusRepository
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+
+        if (StringUtils.isBlank(filename)) {
+            return null;
+        }
+
         return Utility.getInstantFromFilename(filename);
     }
 
@@ -254,6 +262,10 @@ public class MirrorDateRangePropertiesProcessor {
 
         public static DateRangeFilter empty() {
             return new DateRangeFilter(Instant.EPOCH.plusNanos(1), Instant.EPOCH);
+        }
+
+        public static DateRangeFilter all() {
+            return new DateRangeFilter(Instant.EPOCH, Utility.MAX_INSTANT_LONG);
         }
     }
 }

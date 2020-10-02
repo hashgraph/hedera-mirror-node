@@ -3,5 +3,5 @@ chart-repos:
   - fluxcd=https://charts.fluxcd.io
   - loki=https://grafana.github.io/loki/charts
   - prometheus=https://prometheus-community.github.io/helm-charts
-  - traefik=https://containous.github.io/traefik-helm-chart
+  - traefik=https://helm.traefik.io/traefik
 check-version-increment: false
