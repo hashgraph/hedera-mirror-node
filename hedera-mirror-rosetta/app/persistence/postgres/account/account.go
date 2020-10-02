@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	whereClauseBeforeConsensusEnd string = "consensus_timestamp = (SELECT MAX(consensus_timestamp) FROM %s WHERE consensus_timestamp <= %d)"
-	balanceChangeBetween          string = "select sum(amount::bigint) as value, count(consensus_timestamp) as number_of_transfers from %s where consensus_timestamp > %d and consensus_timestamp <= %d and entity_id = %d"
+	balanceChangeBetween string = "select sum(amount::bigint) as value, count(consensus_timestamp) as number_of_transfers from %s where consensus_timestamp > %d and consensus_timestamp <= %d and entity_id = %d"
 )
 
 type accountBalance struct {
@@ -57,7 +56,11 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensus
 
 	// gets the most recent balance before block
 	ab := &accountBalance{}
-	if ar.dbClient.Where(&accountBalance{AccountRealmNum: int16(acc.Realm), AccountNum: int32(acc.Number)}).Where(fmt.Sprintf(whereClauseBeforeConsensusEnd, ab.TableName(), consensusEnd)).Find(&ab).RecordNotFound() {
+	if ar.dbClient.
+		Where(fmt.Sprintf(`account_realm_num=%d AND account_num=%d AND consensus_timestamp <= %d`, int16(acc.Realm), int32(acc.Number), consensusEnd)).
+		Order("consensus_timestamp desc").
+		Limit(1).
+		Find(&ab).RecordNotFound() {
 		ab.Balance = 0
 	}
 
