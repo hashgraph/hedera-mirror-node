@@ -159,15 +159,14 @@ public class AccountBalancesFileLoader {
 
                 if (!skip) {
                     accountBalanceList.add(accountBalance);
-                    tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
-                    tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
                     tryInsertBatchTokenBalance(insertTokenBalanceStatement, accountBalanceList, insertBatchSize);
+                    tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
                 }
             }
 
             if (!skip) {
-                tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
                 tryInsertBatchTokenBalance(insertTokenBalanceStatement, accountBalanceList, 1);
+                tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
                 updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             }
 
@@ -236,8 +235,6 @@ public class AccountBalancesFileLoader {
                     .setLong(F_INSERT_TOKEN_BALANCE.TOKEN_ID.ordinal(), id.getTokenId().getId());
             insertTokenBalanceStatement.addBatch();
         }
-
-        accountBalanceList.clear();
 
         int[] result = insertTokenBalanceStatement.executeBatch();
         for (int code : result) {
