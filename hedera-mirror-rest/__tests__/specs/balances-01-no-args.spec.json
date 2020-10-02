@@ -50,13 +50,37 @@
         "timestamp": 2000,
         "id": 1,
         "realm_num": 15,
-        "balance": 10
+        "balance": 10,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90000,
+            "balance": 80
+          },
+          {
+            "token_realm": 0,
+            "token_num": 90001,
+            "balance": 180
+          }
+        ]
       },
       {
         "timestamp": 2000,
         "id": 2,
         "realm_num": 15,
-        "balance": 20
+        "balance": 20,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90000,
+            "balance": 1000
+          },
+          {
+            "token_realm": 0,
+            "token_num": 90002,
+            "balance": 1890
+          }
+        ]
       },
       {
         "timestamp": 2000,
@@ -117,43 +141,71 @@
     "balances": [
       {
         "account": "0.15.10",
-        "balance": 100
+        "balance": 100,
+        "tokens": []
       },
       {
         "account": "0.15.9",
-        "balance": 90
+        "balance": 90,
+        "tokens": []
       },
       {
         "account": "0.15.8",
-        "balance": 80
+        "balance": 80,
+        "tokens": []
       },
       {
         "account": "0.15.7",
-        "balance": 70
+        "balance": 70,
+        "tokens": []
       },
       {
         "account": "0.15.6",
-        "balance": 60
+        "balance": 60,
+        "tokens": []
       },
       {
         "account": "0.15.5",
-        "balance": 50
+        "balance": 50,
+        "tokens": []
       },
       {
         "account": "0.15.4",
-        "balance": 40
+        "balance": 40,
+        "tokens": []
       },
       {
         "account": "0.15.3",
-        "balance": 30
+        "balance": 30,
+        "tokens": []
       },
       {
         "account": "0.15.2",
-        "balance": 20
+        "balance": 20,
+        "tokens": [
+          {
+            "token_id": "0.0.90002",
+            "balance": 1890
+          },
+          {
+            "token_id": "0.0.90000",
+            "balance": 1000
+          }
+        ]
       },
       {
         "account": "0.15.1",
-        "balance": 10
+        "balance": 10,
+        "tokens": [
+          {
+            "token_id": "0.0.90001",
+            "balance": 180
+          },
+          {
+            "token_id": "0.0.90000",
+            "balance": 80
+          }
+        ]
       }
     ],
     "links": {

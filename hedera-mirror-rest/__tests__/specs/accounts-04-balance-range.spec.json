@@ -27,12 +27,36 @@
       {
         "timestamp": 2345,
         "id": 18,
-        "balance": 20
+        "balance": 20,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 99999,
+            "balance": 20
+          },
+          {
+            "token_realm": 0,
+            "token_num": 99998,
+            "balance": 2020
+          }
+        ]
       },
       {
         "timestamp": 2345,
         "id": 19,
-        "balance": 90
+        "balance": 90,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 99998,
+            "balance": 19
+          },
+          {
+            "token_realm": 0,
+            "token_num": 99999,
+            "balance": 1919
+          }
+        ]
       },
       {
         "timestamp": 2345,
@@ -55,7 +79,17 @@
       {
         "balance": {
           "timestamp": "0.000002345",
-          "balance": 90
+          "balance": 90,
+          "tokens": [
+            {
+              "token_id": "0.0.99999",
+              "balance": 1919
+            },
+            {
+              "token_id": "0.0.99998",
+              "balance": 19
+            }
+          ]
         },
         "account": "0.0.19",
         "expiry_timestamp": null,
@@ -66,7 +100,8 @@
       {
         "balance": {
           "timestamp": "0.000002345",
-          "balance": 70
+          "balance": 70,
+          "tokens": []
         },
         "account": "0.0.17",
         "expiry_timestamp": null,

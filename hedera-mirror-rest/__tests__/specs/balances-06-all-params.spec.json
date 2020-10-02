@@ -114,7 +114,8 @@
     "balances": [
       {
         "account": "0.1.19",
-        "balance": 900
+        "balance": 900,
+        "tokens": []
       }
     ],
     "links": {
