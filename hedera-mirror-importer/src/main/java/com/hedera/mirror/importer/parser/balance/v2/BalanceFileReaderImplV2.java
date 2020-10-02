@@ -28,7 +28,6 @@ import java.io.InputStreamReader;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -89,12 +88,18 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
         try {
             //Discard the first line/version number
             reader.readLine();
-            line = Optional.of(reader.readLine()).get().trim();
+            line = reader.readLine().trim();
             String lineLowered = line.toLowerCase();
             if (lineLowered.startsWith(TIMESTAMP_HEADER_PREFIX)) {
-                return convertTimestampLine(line);
+                long consensusTimestamp = convertTimestampLine(line);
+                line = reader.readLine();
+                if (line.startsWith(COLUMN_HEADER_PREFIX)) {
+                    return consensusTimestamp;
+                } else {
+                    throw new InvalidDatasetException("Column header not found in account balance file");
+                }
             } else {
-                throw new InvalidDatasetException("Timestamp / column header not found in account balance file");
+                throw new InvalidDatasetException("Timestamp not found in account balance file");
             }
         } catch (NullPointerException ex) {
             throw new InvalidDatasetException("Timestamp / column header not found in account balance file");

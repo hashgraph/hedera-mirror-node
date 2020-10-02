@@ -67,20 +67,21 @@ class BalanceFileReaderImplV2Test {
     }
 
     @Test
-    void readValidFileWithLeadingEmptyLine() throws IOException {
+    void readInvalidFileWithLeadingEmptyLine() throws IOException {
         List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
         List<String> copy = new LinkedList<>();
         copy.add("");
         copy.addAll(lines);
-        FileUtils.writeLines(testFile, lines);
-        Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
-        verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
+        FileUtils.writeLines(testFile, copy);
+        assertThrows(InvalidDatasetException.class, () -> {
+            balanceFileReader.read(testFile);
+        });
     }
 
     @Test
     void readInvalidWhenFileHasNoTimestampHeader() throws IOException {
         List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
-        lines.remove(0);
+        lines.remove(1);
         FileUtils.writeLines(testFile, lines);
 
         assertThrows(InvalidDatasetException.class, () -> {
@@ -91,11 +92,13 @@ class BalanceFileReaderImplV2Test {
     @Test
     void readInvalidWhenFileHasV1TimestampHeader() throws IOException {
         List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
-        lines.remove(0);
+        lines.remove(1);
         List<String> copy = new LinkedList<>();
+        copy.add(lines.get(0));
+        lines.remove(0);
         copy.add("TimeStamp:2020-09-22T04:25:00.083212003Z");
         copy.addAll(lines);
-        FileUtils.writeLines(testFile, lines);
+        FileUtils.writeLines(testFile, copy);
 
         assertThrows(InvalidDatasetException.class, () -> {
             balanceFileReader.read(testFile);
@@ -105,6 +108,7 @@ class BalanceFileReaderImplV2Test {
     @Test
     void readInvalidWhenFileHasNoHeader() throws IOException {
         List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        lines.remove(0);
         lines.remove(0);
         lines.remove(0);
         FileUtils.writeLines(testFile, lines);
@@ -117,7 +121,7 @@ class BalanceFileReaderImplV2Test {
     @Test
     void readInvalidWhenFileHasNoColumnHeader() throws IOException {
         List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
-        lines.remove(1);
+        lines.remove(2);
         FileUtils.writeLines(testFile, lines);
 
         assertThrows(InvalidDatasetException.class, () -> {
@@ -143,11 +147,13 @@ class BalanceFileReaderImplV2Test {
     @Test
     void readInvalidWhenFileHasMalformedTimestamp() throws IOException {
         List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
-        lines.remove(0);
+        lines.remove(1);
         List<String> copy = new LinkedList<>();
-        copy.add("Timestamp:AAAA-08-30T18:15:00.016002001Z");
+        copy.add(lines.get(0));
+        lines.remove(0);
+        copy.add("# Timestamp:AAAA-08-30T18:15:00.016002001Z");
         copy.addAll(lines);
-        FileUtils.writeLines(testFile, lines);
+        FileUtils.writeLines(testFile, copy);
 
         assertThrows(InvalidDatasetException.class, () -> {
             balanceFileReader.read(testFile);
