@@ -135,7 +135,7 @@ redis:
         memory: 25Mi
   serviceAccount:
     create: true
-  slave: # Both master and slave are configured via slave property when sentinel is enabled
+  slave:  # Both master and slave are configured via slave property when sentinel is enabled
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
