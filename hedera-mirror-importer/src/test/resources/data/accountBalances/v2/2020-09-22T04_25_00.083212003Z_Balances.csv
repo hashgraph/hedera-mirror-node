@@ -1,4 +1,4 @@
-# 0.1.0
+# version:2
 # TimeStamp:2020-09-22T04:25:00.083212003Z
 shardNum,realmNum,accountNum,balance,tokenBalances
 0,0,1,100000000000000,
