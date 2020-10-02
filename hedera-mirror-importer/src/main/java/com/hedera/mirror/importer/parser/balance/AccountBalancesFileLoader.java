@@ -31,7 +31,6 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.sql.DataSource;
@@ -129,6 +128,7 @@ public class AccountBalancesFileLoader {
             long consensusTimestamp = -1;
             long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
             List<AccountBalance> accountBalanceList = new ArrayList<>();
+            List<TokenBalance> tokenBalanceList = new ArrayList<>();
             boolean skip = false;
             int validCount = 0;
 
@@ -159,14 +159,15 @@ public class AccountBalancesFileLoader {
 
                 if (!skip) {
                     accountBalanceList.add(accountBalance);
-                    tryInsertBatchTokenBalance(insertTokenBalanceStatement, accountBalanceList, insertBatchSize);
+                    tokenBalanceList.addAll(accountBalance.getTokenBalances());
                     tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
+                    tryInsertBatchTokenBalance(insertTokenBalanceStatement, tokenBalanceList, insertBatchSize);
                 }
             }
 
             if (!skip) {
-                tryInsertBatchTokenBalance(insertTokenBalanceStatement, accountBalanceList, 1);
                 tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
+                tryInsertBatchTokenBalance(insertTokenBalanceStatement, tokenBalanceList, 1);
                 updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             }
 
@@ -214,10 +215,7 @@ public class AccountBalancesFileLoader {
     }
 
     private void tryInsertBatchTokenBalance(PreparedStatement insertTokenBalanceStatement,
-                                            List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
-        List<TokenBalance> tokenBalances = accountBalanceList.stream()
-                .flatMap(balance -> balance.getTokenBalances().stream()).collect(Collectors.toList());
-
+                                            List<TokenBalance> tokenBalances, int threshold) throws SQLException {
         if (tokenBalances.size() < threshold) {
             return;
         }
@@ -235,6 +233,8 @@ public class AccountBalancesFileLoader {
                     .setLong(F_INSERT_TOKEN_BALANCE.TOKEN_ID.ordinal(), id.getTokenId().getId());
             insertTokenBalanceStatement.addBatch();
         }
+
+        tokenBalances.clear();
 
         int[] result = insertTokenBalanceStatement.executeBatch();
         for (int code : result) {
