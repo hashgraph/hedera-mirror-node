@@ -16,7 +16,7 @@ import com.hedera.mirror.importer.parser.balance.v2.BalanceFileReaderImplV2;
 
 @Named
 public class CompositeBalanceFileReader implements BalanceFileReader {
-    private static final String VERSION_2_HEADER_PREFIX = "# version:2";
+    static final String VERSION_2_HEADER_PREFIX = "# version:2";
 
     private final int fileBufferSize;
 
@@ -46,6 +46,8 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
             }
         } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
+        } catch (NullPointerException ex) {
+            throw new InvalidDatasetException("Timestamp / column header not found in account balance file");
         }
     }
 }

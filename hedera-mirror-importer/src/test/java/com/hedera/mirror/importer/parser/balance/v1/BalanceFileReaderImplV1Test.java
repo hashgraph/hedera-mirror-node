@@ -72,7 +72,7 @@ public class BalanceFileReaderImplV1Test {
         List<String> copy = new LinkedList<>();
         copy.add("");
         copy.addAll(lines);
-        FileUtils.writeLines(testFile, lines);
+        FileUtils.writeLines(testFile, copy);
         Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
         verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
     }
@@ -96,7 +96,7 @@ public class BalanceFileReaderImplV1Test {
         copy.add("# 0.1.0");
         copy.add("# TimeStamp:2020-09-22T04:25:00.083212003Z");
         copy.addAll(lines);
-        FileUtils.writeLines(testFile, lines);
+        FileUtils.writeLines(testFile, copy);
 
         assertThrows(InvalidDatasetException.class, () -> {
             balanceFileReader.read(testFile);
@@ -148,7 +148,7 @@ public class BalanceFileReaderImplV1Test {
         List<String> copy = new LinkedList<>();
         copy.add("Timestamp:AAAA-08-30T18:15:00.016002001Z");
         copy.addAll(lines);
-        FileUtils.writeLines(testFile, lines);
+        FileUtils.writeLines(testFile, copy);
 
         assertThrows(InvalidDatasetException.class, () -> {
             balanceFileReader.read(testFile);

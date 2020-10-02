@@ -62,8 +62,7 @@ public class AccountBalanceLineParserV2 {
                     accountId) : Collections
                     .emptyList();
 
-            return new AccountBalance(balance, tokenBalances, new AccountBalance.Id(consensusTimestamp, EntityId
-                    .of(shardNum, realmNum, accountNum, EntityTypeEnum.ACCOUNT)));
+            return new AccountBalance(balance, tokenBalances, new AccountBalance.Id(consensusTimestamp, accountId));
         } catch (NullPointerException | NumberFormatException | InvalidProtocolBufferException ex) {
             throw new InvalidDatasetException("Invalid account balance line: " + line, ex);
         }
