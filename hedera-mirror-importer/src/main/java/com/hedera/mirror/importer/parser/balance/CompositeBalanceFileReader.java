@@ -39,7 +39,7 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
             String line = Optional.of(reader.readLine()).get().trim();
             String lineLowered = line.toLowerCase();
             reader.close();
-            if (lineLowered.startsWith(VERSION_010_HEADER_PREFIX)) {
+            if (lineLowered.startsWith(VERSION_2_HEADER_PREFIX)) {
                 return version2Reader.read(file);
             } else {
                 return version1Reader.read(file);
