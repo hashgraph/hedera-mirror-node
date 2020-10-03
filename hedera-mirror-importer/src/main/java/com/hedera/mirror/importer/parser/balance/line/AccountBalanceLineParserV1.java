@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.balance.line;
 
 /*-
  * ‌
@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
-public class AccountBalanceLineParserV1 {
+public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
 
     /**
      * Parses an account balance line to extract shard, realm, account, and balance. If the shard matches
@@ -42,6 +42,7 @@ public class AccountBalanceLineParserV1 {
      * @return {@code AccountBalance} entity object
      * @throws InvalidDatasetException if the line is malformed or the shard does not match {@code systemShardNum}
      */
+    @Override
     public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
         try {
             String[] parts = line.split(",");

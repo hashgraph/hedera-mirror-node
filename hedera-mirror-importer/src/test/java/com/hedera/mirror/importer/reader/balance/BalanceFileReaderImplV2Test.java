@@ -42,7 +42,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.AccountBalanceLineParserV2;
+import com.hedera.mirror.importer.parser.balance.line.AccountBalanceLineParserV2;
 import com.hedera.mirror.importer.util.Utility;
 
 class BalanceFileReaderImplV2Test extends IntegrationTest {

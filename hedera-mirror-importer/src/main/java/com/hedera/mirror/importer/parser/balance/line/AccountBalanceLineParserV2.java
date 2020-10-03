@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.balance.line;
 
 /*-
  * ‌
@@ -36,12 +36,12 @@ import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
-public class AccountBalanceLineParserV2 {
+public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
 
     /**
-     * Parses an account balance line to extract shard, realm, account, and balance. If the shard matches
-     * systemShardNum, creates and returns an {@code AccountBalance} entity object. The account balance line should be
-     * in the format of "shard,realm,account,balance"
+     * Parses an account balance line to extract shard, realm, account, balance, and token balances. If the shard
+     * matches systemShardNum, creates and returns an {@code AccountBalance} entity object. The account balance line
+     * should be in the format of "shard,realm,account,balance"
      *
      * @param line               The account balance line
      * @param consensusTimestamp The consensus timestamp of the account balance line
@@ -49,6 +49,7 @@ public class AccountBalanceLineParserV2 {
      * @return {@code AccountBalance} entity object
      * @throws InvalidDatasetException if the line is malformed or the shard does not match {@code systemShardNum}
      */
+    @Override
     public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
         try {
             String[] parts = line.split(",");
