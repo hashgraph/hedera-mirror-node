@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.parser.balance.v2.AccountBalanceLineParserV2;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -30,8 +30,11 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
     private static final String VERSION_2_HEADER_PREFIX = "# version:2";
     private static final String VERSION_1_TIMESTAMP_HEADER_PREFIX = "timestamp:";
 
+    @Resource
     private MirrorProperties mirrorProperties;
+    @Resource
     private BalanceFileReaderImplV2 balanceFileReader;
+    @Resource
     private AccountBalanceLineParserV2 parser;
 
     private long sampleConsensusTimestamp;
@@ -42,9 +45,6 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
 
     @BeforeEach
     void setup() throws IOException {
-        mirrorProperties = new MirrorProperties();
-        parser = new AccountBalanceLineParserV2();
-        balanceFileReader = new BalanceFileReaderImplV2(new BalanceParserProperties(mirrorProperties), parser);
         sampleConsensusTimestamp = Utility.getTimestampFromFilename(balanceFile.getName());
         testFile = Files.createTempFile(null, null).toFile();
     }

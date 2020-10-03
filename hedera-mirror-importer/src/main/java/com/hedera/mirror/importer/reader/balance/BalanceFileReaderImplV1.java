@@ -53,8 +53,9 @@ public class BalanceFileReaderImplV1 implements BalanceFileReader {
 
     @Override
     public Stream<AccountBalance> read(File file) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
-                balanceParserProperties.getFileBufferSize())) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
+                    balanceParserProperties.getFileBufferSize());
             long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
 
             return reader.lines()
