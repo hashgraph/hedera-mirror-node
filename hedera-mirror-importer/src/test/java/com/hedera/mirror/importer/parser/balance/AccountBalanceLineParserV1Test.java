@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance.v1;
+package com.hedera.mirror.importer.parser.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;

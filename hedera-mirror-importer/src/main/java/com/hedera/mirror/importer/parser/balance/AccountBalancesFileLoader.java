@@ -43,6 +43,7 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
+import com.hedera.mirror.importer.reader.balance.CompositeBalanceFileReader;
 import com.hedera.mirror.importer.util.Utility;
 
 /**

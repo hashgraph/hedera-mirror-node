@@ -36,8 +36,8 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.balance.AccountBalanceLineParserV1;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
 import com.hedera.mirror.importer.util.Utility;
 
 @AllArgsConstructor

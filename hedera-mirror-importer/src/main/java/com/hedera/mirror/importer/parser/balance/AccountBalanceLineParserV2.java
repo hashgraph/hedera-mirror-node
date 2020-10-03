@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance.v2;
+package com.hedera.mirror.importer.parser.balance;
 
 /*-
  * ‌

@@ -40,8 +40,9 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         AccountBalance accountBalance1 = create(1L, 1, 100);
         AccountBalance accountBalance2 = create(1L, 2, 200);
         create(2L, 1, 50);
-        
+
         assertThat(accountBalanceRepository.findByIdConsensusTimestamp(1L))
+                .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrder(accountBalance1, accountBalance2);
     }
 
