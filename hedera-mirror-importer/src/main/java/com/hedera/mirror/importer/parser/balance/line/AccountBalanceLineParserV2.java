@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.balance.line;
  * ‍
  */
 
+import com.google.common.base.Splitter;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -52,20 +53,20 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
     @Override
     public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
         try {
-            String[] parts = line.split(",");
+            List<String> parts = Splitter.on(',').trimResults().omitEmptyStrings().splitToList(line);
             boolean hasTokenBalance;
-            if (parts.length == 5) {
+            if (parts.size() == 5) {
                 hasTokenBalance = true;
-            } else if (parts.length == 4) {
+            } else if (parts.size() == 4) {
                 hasTokenBalance = false;
             } else {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
             }
 
-            long shardNum = Long.parseLong(parts[0]);
-            int realmNum = Integer.parseInt(parts[1]);
-            int accountNum = Integer.parseInt(parts[2]);
-            long balance = Long.parseLong(parts[3]);
+            long shardNum = Long.parseLong(parts.get(0));
+            int realmNum = Integer.parseInt(parts.get(1));
+            int accountNum = Integer.parseInt(parts.get(2));
+            long balance = Long.parseLong(parts.get(3));
 
             if (shardNum < 0 || realmNum < 0 || accountNum < 0 || balance < 0) {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
@@ -79,7 +80,7 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
             EntityId accountId = EntityId
                     .of(shardNum, realmNum, accountNum, EntityTypeEnum.ACCOUNT);
 
-            List<TokenBalance> tokenBalances = hasTokenBalance ? parseTokenBalanceList(parts[4], consensusTimestamp,
+            List<TokenBalance> tokenBalances = hasTokenBalance ? parseTokenBalanceList(parts.get(4), consensusTimestamp,
                     accountId) : Collections
                     .emptyList();
 

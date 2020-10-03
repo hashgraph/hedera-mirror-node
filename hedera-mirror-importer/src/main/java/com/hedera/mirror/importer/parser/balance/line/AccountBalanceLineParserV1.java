@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.balance.line;
  * ‍
  */
 
+import com.google.common.base.Splitter;
 import java.util.Collections;
+import java.util.List;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -45,15 +47,15 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
     @Override
     public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
         try {
-            String[] parts = line.split(",");
-            if (parts.length != 4) {
+            List<String> parts = Splitter.on(',').trimResults().omitEmptyStrings().splitToList(line);
+            if (parts.size() != 4) {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
             }
 
-            long shardNum = Long.parseLong(parts[0]);
-            int realmNum = Integer.parseInt(parts[1]);
-            int accountNum = Integer.parseInt(parts[2]);
-            long balance = Long.parseLong(parts[3]);
+            long shardNum = Long.parseLong(parts.get(0));
+            int realmNum = Integer.parseInt(parts.get(1));
+            int accountNum = Integer.parseInt(parts.get(2));
+            long balance = Long.parseLong(parts.get(3));
             if (shardNum < 0 || realmNum < 0 || accountNum < 0 || balance < 0) {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
             }
