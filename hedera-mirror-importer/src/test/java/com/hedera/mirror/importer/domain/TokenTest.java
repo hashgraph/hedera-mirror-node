@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
@@ -67,7 +65,7 @@ public class TokenTest {
     @Test
     void verifyNewAccountFreezeStatusWithNoFreezeKey() {
         Token token = new Token();
-        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatus.FreezeNotApplicable_VALUE);
+        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.NOTAPPLICABLE);
     }
 
     @Test
@@ -75,7 +73,7 @@ public class TokenTest {
         Token token = new Token();
         token.setFreezeKey("freezekey".getBytes());
         token.setFreezeDefault(true);
-        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatus.Frozen_VALUE);
+        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.FROZEN);
     }
 
     @Test
@@ -83,20 +81,20 @@ public class TokenTest {
         Token token = new Token();
         token.setFreezeKey("freezekey".getBytes());
         token.setFreezeDefault(false);
-        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatus.Unfrozen_VALUE);
+        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.UNFROZEN);
     }
 
     @Test
     void verifyNewAccountKycStatusWithNoKycKey() {
         Token token = new Token();
-        assertEquals(token.getNewAccountKycStatus(), TokenKycStatus.KycNotApplicable_VALUE);
+        assertEquals(token.getNewAccountKycStatus(), TokenKycStatusEnum.NOTAPPLICABLE);
     }
 
     @Test
     void verifyNewAccountKycStatusWithKycKey() {
         Token token = new Token();
         token.setKycKey("kyckey".getBytes());
-        assertEquals(token.getNewAccountKycStatus(), TokenKycStatus.Revoked_VALUE);
+        assertEquals(token.getNewAccountKycStatus(), TokenKycStatusEnum.REVOKED);
     }
 
     private Token token(long consensusTimestamp) throws DecoderException {

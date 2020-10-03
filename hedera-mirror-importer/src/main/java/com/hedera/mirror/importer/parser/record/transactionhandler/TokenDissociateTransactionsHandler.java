@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class TokenDissociateTransactionsHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return null;
+        return EntityId.of(recordItem.getTransactionBody().getTokenDissociate().getAccount());
     }
 }
 

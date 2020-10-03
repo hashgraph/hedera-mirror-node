@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,17 +20,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import javax.inject.Named;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+@Getter
+@RequiredArgsConstructor
+public enum TokenKycStatusEnum {
 
-@Named
-@AllArgsConstructor
-public class TokenAssociateTransactionsHandler implements TransactionHandler {
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenAssociate().getAccount());
-    }
+    NOTAPPLICABLE(0),
+    GRANTED(1),
+    REVOKED(2);
+
+    private final int id;
 }

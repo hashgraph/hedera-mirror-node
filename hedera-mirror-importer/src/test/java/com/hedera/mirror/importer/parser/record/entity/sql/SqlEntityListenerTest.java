@@ -49,6 +49,8 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -285,8 +287,12 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onTokenAccount() throws Exception {
-        TokenAccount tokenAccount1 = getTokenAccount(1, "0.0.3", "0.0.5");
-        TokenAccount tokenAccount2 = getTokenAccount(2, "0.0.7", "0.0.11");
+        String tokenId1 = "0.0.3";
+        String tokenId2 = "0.0.5";
+        String accountId1 = "0.0.7";
+        String accountId2 = "0.0.11";
+        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1);
+        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11");
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
@@ -295,8 +301,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertEquals(2, tokenAccountRepository.count());
-        assertExistsAndEquals(tokenAccountRepository, tokenAccount1, 1L);
-        assertExistsAndEquals(tokenAccountRepository, tokenAccount2, 2L);
+        assertExistsAndEquals(tokenAccountRepository, tokenAccount1, new TokenAccount.Id(EntityId
+                .of(tokenId1, EntityTypeEnum.TOKEN), EntityId.of(accountId1, ACCOUNT)));
+        assertExistsAndEquals(tokenAccountRepository, tokenAccount2, new TokenAccount.Id(EntityId
+                .of(tokenId2, EntityTypeEnum.TOKEN), EntityId.of(accountId2, ACCOUNT)));
     }
 
     @Test
@@ -405,16 +413,14 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return token;
     }
 
-    private TokenAccount getTokenAccount(long id, String tokenId, String accountId) {
-        TokenAccount tokenAccount = new TokenAccount();
+    private TokenAccount getTokenAccount(String tokenId, String accountId) {
+        TokenAccount tokenAccount = new TokenAccount(EntityId
+                .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
         tokenAccount.setAssociated(true);
-        tokenAccount.setKycStatus(0);
-        tokenAccount.setFreezeStatus(0);
-        tokenAccount.setAccountId(EntityId.of(accountId, ACCOUNT));
+        tokenAccount.setKycStatus(TokenKycStatusEnum.NOTAPPLICABLE);
+        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOTAPPLICABLE);
         tokenAccount.setCreatedTimestamp(1L);
         tokenAccount.setModifiedTimestamp(2L);
-        tokenAccount.setId(id);
-        tokenAccount.setTokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN));
 
         return tokenAccount;
     }

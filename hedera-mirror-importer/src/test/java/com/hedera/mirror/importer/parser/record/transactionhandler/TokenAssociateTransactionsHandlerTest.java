@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -34,11 +35,12 @@ public class TokenAssociateTransactionsHandlerTest extends AbstractTransactionHa
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenAssociate(TokenAssociateTransactionBody.getDefaultInstance());
+                .setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                        .setAccount(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM)));
     }
 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
-        return null;
+        return EntityTypeEnum.ACCOUNT;
     }
 }

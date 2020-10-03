@@ -43,21 +43,22 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
 
     @Override
     public void updateEntity(Entities entity, RecordItem recordItem) {
-        TokenCreateTransactionBody txMessage = recordItem.getTransactionBody().getTokenCreation();
-        if (txMessage.hasAdminKey()) {
-            entity.setKey(txMessage.getAdminKey().toByteArray());
+        TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
+        if (tokenCreateTransactionBody.hasAdminKey()) {
+            entity.setKey(tokenCreateTransactionBody.getAdminKey().toByteArray());
         }
 
-        if (txMessage.hasAutoRenewAccount()) {
-            entity.setAutoRenewAccountId(EntityId.of(txMessage.getAutoRenewAccount()));
+        if (tokenCreateTransactionBody.getAutoRenewPeriod() != 0) {
+            entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod());
         }
 
-        if (txMessage.getAutoRenewPeriod() != 0) {
-            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod());
+        if (tokenCreateTransactionBody.getExpiry() != 0) {
+            entity.setExpiryTimeNs(tokenCreateTransactionBody.getExpiry());
         }
+    }
 
-        if (txMessage.getExpiry() != 0) {
-            entity.setExpiryTimeNs(txMessage.getExpiry());
-        }
+    @Override
+    public EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getTokenCreation().getAutoRenewAccount());
     }
 }

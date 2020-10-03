@@ -20,38 +20,86 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serializable;
 import javax.persistence.Convert;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
 @Log4j2
+@NoArgsConstructor
 public class TokenAccount {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId accountId;
+    @EmbeddedId
+    @JsonUnwrapped
+    private TokenAccount.Id id;
 
     private boolean associated;
 
     private long createdTimestamp;
 
-    private int freezeStatus;
+    @Enumerated(EnumType.ORDINAL)
+    private TokenFreezeStatusEnum freezeStatus;
 
-    private int kycStatus;
+    @Enumerated(EnumType.ORDINAL)
+    private TokenKycStatusEnum kycStatus;
 
     private long modifiedTimestamp;
 
-    @Convert(converter = TokenIdConverter.class)
-    private EntityId tokenId;
+    public TokenAccount(EntityId tokenId, EntityId accountId) {
+        id = new TokenAccount.Id(tokenId, accountId);
+    }
+
+    public void toggleAssociatedStatus() {
+        associated = !associated;
+    }
+
+    public void toggleFreezeStatus() {
+        // only toggle applicable states
+        if (freezeStatus == TokenFreezeStatusEnum.NOTAPPLICABLE) {
+            return;
+        }
+
+        freezeStatus = freezeStatus == TokenFreezeStatusEnum.FROZEN ? TokenFreezeStatusEnum.UNFROZEN :
+                TokenFreezeStatusEnum.FROZEN;
+    }
+
+    public void toggleKycStatus() {
+        // only toggle applicable states
+        if (kycStatus == TokenKycStatusEnum.NOTAPPLICABLE) {
+            return;
+        }
+
+        kycStatus = kycStatus == TokenKycStatusEnum.GRANTED ? TokenKycStatusEnum.REVOKED :
+                TokenKycStatusEnum.GRANTED;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Embeddable
+    public static class Id implements Serializable {
+        private static final long serialVersionUID = -4069569824910871771L;
+
+        @Convert(converter = TokenIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId tokenId;
+
+        @Convert(converter = AccountIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId accountId;
+    }
 }

@@ -43,6 +43,6 @@ public class TokenFreezeTransactionsHandlerTest extends AbstractTransactionHandl
 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.TOKEN;
+        return EntityTypeEnum.ACCOUNT;
     }
 }

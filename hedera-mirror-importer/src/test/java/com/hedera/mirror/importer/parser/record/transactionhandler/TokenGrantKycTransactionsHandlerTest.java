@@ -43,6 +43,6 @@ public class TokenGrantKycTransactionsHandlerTest extends AbstractTransactionHan
 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.TOKEN;
+        return EntityTypeEnum.ACCOUNT;
     }
 }

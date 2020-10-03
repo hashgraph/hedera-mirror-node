@@ -40,6 +40,8 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -159,15 +161,12 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
 
     @Test
     void onTokenAccount() throws ImporterException {
-        TokenAccount tokenAccount = new TokenAccount();
+        TokenAccount tokenAccount = new TokenAccount(TOKEN_ID, ENTITY_ID);
         tokenAccount.setAssociated(true);
-        tokenAccount.setKycStatus(0);
-        tokenAccount.setFreezeStatus(0);
-        tokenAccount.setAccountId(ENTITY_ID);
+        tokenAccount.setKycStatus(TokenKycStatusEnum.NOTAPPLICABLE);
+        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOTAPPLICABLE);
         tokenAccount.setCreatedTimestamp(1L);
         tokenAccount.setModifiedTimestamp(2L);
-        tokenAccount.setId(1L);
-        tokenAccount.setTokenId(TOKEN_ID);
         repositoryEntityListener.onTokenAccount(tokenAccount);
         assertThat(tokenAccountRepository.findAll()).contains(tokenAccount);
     }

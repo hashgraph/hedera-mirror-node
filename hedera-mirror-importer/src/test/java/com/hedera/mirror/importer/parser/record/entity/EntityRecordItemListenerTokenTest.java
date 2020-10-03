@@ -29,9 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,6 +47,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
@@ -103,29 +103,28 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     void tokenAssociate() throws InvalidProtocolBufferException {
         createTokenEntity(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, true, true);
 
-        // delete token
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, null);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, true,
-                TokenFreezeStatus.Frozen_VALUE, TokenKycStatus.Revoked_VALUE);
+                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED);
     }
 
     @Test
     void tokenDissociate() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER);
         long dissociateTimeStamp = 10L;
         insertAndParseTransaction(dissociateTransaction, dissociateTimeStamp, null);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, dissociateTimeStamp, false,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
+                TokenFreezeStatusEnum.NOTAPPLICABLE, TokenKycStatusEnum.NOTAPPLICABLE);
     }
 
     @Test
     void tokenDelete() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         // delete token
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
@@ -145,7 +144,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenAccountUpdate() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         String newSymbol = "NEWSYMBOL";
         Transaction transaction = tokenUpdateTransaction(
@@ -161,14 +160,15 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenAccountFreeze() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, true, false);
 
         Transaction transaction = tokenFreezeTransaction(TOKEN_ID, true);
         long transferTimeStamp = 10L;
         insertAndParseTransaction(transaction, transferTimeStamp, null);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, transferTimeStamp, true, 1,
-                0);
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, transferTimeStamp, true,
+                TokenFreezeStatusEnum.FROZEN,
+                TokenKycStatusEnum.NOTAPPLICABLE);
     }
 
     @Test
@@ -180,25 +180,31 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, null);
 
+        Transaction freezeTransaction = tokenFreezeTransaction(TOKEN_ID, true);
+        long transferTimeStamp = 10L;
+        insertAndParseTransaction(freezeTransaction, transferTimeStamp, null);
+
         // unfreeze
         Transaction unfreezeTransaction = tokenFreezeTransaction(TOKEN_ID, false);
         long unfreezeTimeStamp = 444;
         insertAndParseTransaction(unfreezeTransaction, unfreezeTimeStamp, null);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, unfreezeTimeStamp, true, 2,
-                0);
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, unfreezeTimeStamp, true,
+                TokenFreezeStatusEnum.UNFROZEN,
+                TokenKycStatusEnum.NOTAPPLICABLE);
     }
 
     @Test
     void tokenAccountGrantKyc() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, true);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
         long transferTimeStamp = 10L;
         insertAndParseTransaction(transaction, transferTimeStamp, null);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, transferTimeStamp, true, 0,
-                1);
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, transferTimeStamp, true,
+                TokenFreezeStatusEnum.NOTAPPLICABLE,
+                TokenKycStatusEnum.GRANTED);
     }
 
     @Test
@@ -210,17 +216,22 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, null);
 
+        Transaction grantTransaction = tokenKycTransaction(TOKEN_ID, true);
+        long transferTimeStamp = 10L;
+        insertAndParseTransaction(grantTransaction, transferTimeStamp, null);
+
         // revoke
         Transaction revokeTransaction = tokenKycTransaction(TOKEN_ID, false);
         long revokeTimeStamp = 333;
         insertAndParseTransaction(revokeTransaction, revokeTimeStamp, null);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, revokeTimeStamp, true, 0, 2);
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, revokeTimeStamp, true,
+                TokenFreezeStatusEnum.NOTAPPLICABLE, TokenKycStatusEnum.REVOKED);
     }
 
     @Test
     void tokenBurn() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         Transaction transaction = tokenSupplyTransaction(TOKEN_ID, false);
         long transferTimeStamp = 10L;
@@ -229,7 +240,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenMint() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         Transaction transaction = tokenSupplyTransaction(TOKEN_ID, true);
         long transferTimeStamp = 10L;
@@ -238,7 +249,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenTransfer() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
         TokenID tokenID2 = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(7).build();
         String symbol2 = "MIRROR";
         createTokenEntity(tokenID2, symbol2, 10L, false, false);
@@ -270,13 +281,15 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenWipe() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         Transaction transaction = tokenWipeTransaction(TOKEN_ID);
         long wipeTimeStamp = 10L;
         insertAndParseTransaction(transaction, wipeTimeStamp, null);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, wipeTimeStamp, true, 0, 0);
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, wipeTimeStamp, true,
+                TokenFreezeStatusEnum.NOTAPPLICABLE,
+                TokenKycStatusEnum.NOTAPPLICABLE);
     }
 
     private void insertAndParseTransaction(Transaction transaction, long transferTimeStamp, List tokenTransferLists) throws InvalidProtocolBufferException {
@@ -307,7 +320,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
             if (setFreezeKey) {
                 builder.getTokenCreationBuilder()
-                        .setFreezeDefault(true)
+//                        .setFreezeDefault(true)
                         .setFreezeKey(TOKEN_REF_KEY);
             }
 
@@ -441,9 +454,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, boolean present,
                                                 long createdTimestamp, long modifiedTimestamp, boolean associated,
-                                                int frozenStatus, int kycStatus) {
+                                                TokenFreezeStatusEnum frozenStatus, TokenKycStatusEnum kycStatus) {
         Optional<TokenAccount> tokenAccountOptional = tokenAccountRepository
-                .findByTokenIdAndAccountId(EntityId.of(tokenID), EntityId.of(accountId));
+                .findByTokenIdAndAccountId(EntityId.of(tokenID).getId(), EntityId.of(accountId).getId());
         if (present) {
             assertThat(tokenAccountOptional.get())
                     .returns(createdTimestamp, from(TokenAccount::getCreatedTimestamp))
@@ -480,15 +493,16 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void createAndAssociateToken(TokenID tokenID, String symbol, long createTimestamp,
-                                         long associateTimestamp, AccountID accountID) throws InvalidProtocolBufferException {
-        createTokenEntity(tokenID, symbol, createTimestamp, false, false);
+                                         long associateTimestamp, AccountID accountID, boolean setFreezeKey,
+                                         boolean setKycKey) throws InvalidProtocolBufferException {
+        createTokenEntity(tokenID, symbol, createTimestamp, setFreezeKey, setKycKey);
         assertTokenInRepository(tokenID, true, createTimestamp, createTimestamp, symbol);
 
         Transaction associateTransaction = tokenAssociate(List.of(tokenID), accountID);
         insertAndParseTransaction(associateTransaction, associateTimestamp, null);
 
         assertTokenAccountInRepository(tokenID, accountID, true, associateTimestamp, associateTimestamp, true,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE);
+                setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOTAPPLICABLE,
+                setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOTAPPLICABLE);
     }
 }

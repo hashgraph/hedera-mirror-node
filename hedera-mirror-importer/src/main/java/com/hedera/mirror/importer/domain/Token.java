@@ -21,8 +21,6 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -44,48 +42,55 @@ import com.hedera.mirror.importer.util.Utility;
 @Entity
 @Log4j2
 @NoArgsConstructor
-@ToString(exclude = {"freezeKey", "kycKey", "supplyKey", "wipeKey"})
 public class Token {
     @EmbeddedId
     private Token.Id tokenId;
 
     private long createdTimestamp;
 
-    private int decimals;
+    private long decimals;
 
     private boolean freezeDefault;
 
+    @ToString.Exclude
     private byte[] freezeKey;
 
-    private Long initialSupply;
+    @Column(name = "freeze_key_ed25519_hex")
+    @ToString.Exclude
+    private String freezeKeyEd25519Hex;
 
-    private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
+    private long initialSupply;
 
+    private long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
+
+    @ToString.Exclude
     private byte[] kycKey;
+
+    @Column(name = "kyc_key_ed25519_hex")
+    @ToString.Exclude
+    private String kycKeyEd25519Hex;
 
     private long modifiedTimestamp;
 
     private String name;
 
+    @ToString.Exclude
     private byte[] supplyKey;
+
+    @Column(name = "supply_key_ed25519_hex")
+    @ToString.Exclude
+    private String supplyKeyEd25519Hex;
 
     private String symbol;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId treasuryAccountId;
 
+    @ToString.Exclude
     private byte[] wipeKey;
 
-    @Column(name = "freeze_key_ed25519_hex")
-    private String freezeKeyEd25519Hex;
-
-    @Column(name = "kyc_key_ed25519_hex")
-    private String kycKeyEd25519Hex;
-
-    @Column(name = "supply_key_ed25519_hex")
-    private String supplyKeyEd25519Hex;
-
     @Column(name = "wipe_key_ed25519_hex")
+    @ToString.Exclude
     private String wipeKeyEd25519Hex;
 
     public void setInitialSupply(Long initialSupply) {
@@ -97,26 +102,23 @@ public class Token {
 
     public void setFreezeKey(byte[] key) {
         freezeKey = key;
-        freezeKeyEd25519Hex = convertByteKeyToHex(key);
+        freezeKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
     }
 
     public void setKycKey(byte[] key) {
         kycKey = key;
-        kycKeyEd25519Hex = convertByteKeyToHex(key);
+        kycKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
     }
 
     public void setSupplyKey(byte[] key) {
         supplyKey = key;
-        supplyKeyEd25519Hex = convertByteKeyToHex(key);
+        supplyKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
     }
 
     public void setWipeKey(byte[] key) {
         wipeKey = key;
-        wipeKeyEd25519Hex = convertByteKeyToHex(key);
+        wipeKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
     }
-
-    // FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2
-    // If the token does not have Freeze key, FreezeNotApplicable is returned, if not take value of freezeDefault
 
     /**
      * Get initial freeze status for an account being associated with this token. If the token does not have a
@@ -125,12 +127,12 @@ public class Token {
      *
      * @return Freeze status code
      */
-    public int getNewAccountFreezeStatus() {
+    public TokenFreezeStatusEnum getNewAccountFreezeStatus() {
         if (freezeKey == null) {
-            return TokenFreezeStatus.FreezeNotApplicable_VALUE;
+            return TokenFreezeStatusEnum.NOTAPPLICABLE;
         }
 
-        return freezeDefault ? TokenFreezeStatus.Frozen_VALUE : TokenFreezeStatus.Unfrozen_VALUE;
+        return freezeDefault ? TokenFreezeStatusEnum.FROZEN : TokenFreezeStatusEnum.UNFROZEN;
     }
 
     /**
@@ -140,22 +142,12 @@ public class Token {
      *
      * @return Kyc status code
      */
-    public int getNewAccountKycStatus() {
+    public TokenKycStatusEnum getNewAccountKycStatus() {
         if (kycKey == null) {
-            return TokenKycStatus.KycNotApplicable_VALUE;
+            return TokenKycStatusEnum.NOTAPPLICABLE;
         }
 
-        return TokenKycStatus.Revoked_VALUE;
-    }
-
-    private String convertByteKeyToHex(byte[] key) {
-        try {
-            return Utility.protobufKeyToHexIfEd25519OrNull(key);
-        } catch (Exception e) {
-            log.error("Invalid ED25519 key could not be translated to hex text for entity {}. Field " +
-                    "will be nulled", tokenId, e);
-            return null;
-        }
+        return TokenKycStatusEnum.REVOKED;
     }
 
     @Data
