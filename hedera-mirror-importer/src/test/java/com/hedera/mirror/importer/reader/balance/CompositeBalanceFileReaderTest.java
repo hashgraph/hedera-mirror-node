@@ -57,6 +57,17 @@ public class CompositeBalanceFileReaderTest {
     }
 
     @Test
+    void verifyLongFirstLineStopsAtBuffer() throws IOException {
+        String firstLine = "A".repeat(32);
+        String bufferedFirstLine = "A".repeat(CompositeBalanceFileReader.BUFFER_SIZE);
+        FileUtils.writeStringToFile(balanceFile, firstLine, "utf-8");
+        when(readerImplV2.isFirstLineFromFileVersion(bufferedFirstLine)).thenReturn(false);
+        compositeBalanceFileReader.read(balanceFile);
+        verify(readerImplV1, times(1)).read(balanceFile);
+        verify(readerImplV2, times(0)).read(balanceFile);
+    }
+
+    @Test
     void missingFile() throws IOException {
         assertThrows(InvalidDatasetException.class, () -> {
             compositeBalanceFileReader.read(new File(""));
