@@ -35,10 +35,8 @@ import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
@@ -58,6 +56,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.Optional;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -802,9 +801,8 @@ public class EntityRecordItemListener implements RecordItemListener {
          return optionalToken;
     }
 
-    private Token retrieveToken(TokenID tokenID) {
+    private Optional<Token> retrieveToken(TokenID tokenID) {
         return tokenRepository
-                .findById(new Token.Id(EntityId.of(tokenID)))
-                .orElse(null);
+                .findById(new Token.Id(EntityId.of(tokenID)));
     }
 }

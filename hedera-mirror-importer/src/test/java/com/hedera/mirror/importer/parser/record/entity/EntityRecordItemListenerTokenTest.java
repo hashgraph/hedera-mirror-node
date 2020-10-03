@@ -29,9 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -186,7 +184,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenAccountUpdate() throws InvalidProtocolBufferException {
-        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER);
+        createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         String newSymbol = "NEWSYMBOL";
         Transaction transaction = tokenUpdateTransaction(
