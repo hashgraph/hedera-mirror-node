@@ -1,4 +1,5 @@
 package com.hedera.mirror.importer.domain;
+
 /*-
  * ‌
  * Hedera Mirror Node
