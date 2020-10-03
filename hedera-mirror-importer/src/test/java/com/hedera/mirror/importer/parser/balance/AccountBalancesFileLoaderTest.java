@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.balance.v2.BalanceFileReaderImplV2;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV2;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;

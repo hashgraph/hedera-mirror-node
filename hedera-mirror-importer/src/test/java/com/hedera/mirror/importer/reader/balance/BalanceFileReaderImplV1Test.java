@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance.v1;
+package com.hedera.mirror.importer.reader.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -8,67 +8,54 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.beans.factory.annotation.Value;
 
-import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
 import com.hedera.mirror.importer.util.Utility;
 
-public class BalanceFileReaderImplV1Test {
+public class BalanceFileReaderImplV1Test extends IntegrationTest {
     private static final String sampleBalanceFileName = "2019-08-30T18_15_00.016002001Z_Balances.csv";
-
-    @TempDir
-    Path dataPath;
 
     private MirrorProperties mirrorProperties;
     private BalanceFileReaderImplV1 balanceFileReader;
     private AccountBalanceLineParserV1 parser;
 
+    @Value("classpath:data/accountBalances/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
+    File balanceFile;
+    File testFile;
+
     private long sampleConsensusTimestamp;
-    private FileCopier fileCopier;
-    private File sampleFile;
-    private File testFile;
 
     @BeforeEach
     void setup() throws IOException {
         mirrorProperties = new MirrorProperties();
         parser = new AccountBalanceLineParserV1();
         balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(mirrorProperties), parser);
-        var resource = new ClassPathResource("data");
-        StreamType streamType = StreamType.BALANCE;
-        fileCopier = FileCopier
-                .create(resource.getFile().toPath(), dataPath)
-                .from(streamType.getPath(), "balance0.0.3")
-                .filterFiles(sampleBalanceFileName)
-                .to(streamType.getPath(), streamType.getValid());
-        sampleFile = fileCopier.getFrom().resolve(sampleBalanceFileName).toFile();
-        testFile = fileCopier.getTo().resolve(sampleBalanceFileName).toFile();
         sampleConsensusTimestamp = Utility.getTimestampFromFilename(sampleBalanceFileName);
+        testFile = Files.createTempFile(null, null).toFile();
     }
 
     @Test
     void readValid() throws IOException {
-        fileCopier.copy();
-        File balanceFile = fileCopier.getTo().resolve(sampleBalanceFileName).toFile();
         Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(balanceFile);
         verifySuccess(balanceFile, accountBalanceStream, sampleConsensusTimestamp, 2);
     }
 
     @Test
     void readValidFileWithLeadingEmptyLine() throws IOException {
-        List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
         List<String> copy = new LinkedList<>();
         copy.add("");
         copy.addAll(lines);
@@ -79,7 +66,7 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readInvalidWhenFileHasNoTimestampHeader() throws IOException {
-        List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
         lines.remove(0);
         FileUtils.writeLines(testFile, lines);
 
@@ -90,7 +77,7 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readInvalidWhenFileHasV2TimestampHeader() throws IOException {
-        List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
         lines.remove(0);
         List<String> copy = new LinkedList<>();
         copy.add("# 0.1.0");
@@ -105,7 +92,7 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readInvalidWhenFileHasNoHeader() throws IOException {
-        List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
         lines.remove(0);
         lines.remove(0);
         FileUtils.writeLines(testFile, lines);
@@ -117,7 +104,7 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readInvalidWhenFileHasNoColumnHeader() throws IOException {
-        List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
         lines.remove(1);
         FileUtils.writeLines(testFile, lines);
 
@@ -143,7 +130,7 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readInvalidWhenFileHasMalformedTimestamp() throws IOException {
-        List<String> lines = FileUtils.readLines(sampleFile, "utf-8");
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
         lines.remove(0);
         List<String> copy = new LinkedList<>();
         copy.add("Timestamp:AAAA-08-30T18:15:00.016002001Z");
@@ -157,7 +144,8 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readValidWhenFileHasTrailingEmptyLines() throws IOException {
-        fileCopier.copy();
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
+        FileUtils.writeLines(testFile, lines);
         FileUtils.writeStringToFile(testFile, "\n\n\n", "utf-8", true);
 
         Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
@@ -166,7 +154,8 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readValidWhenFileHasBadTrailingLines() throws IOException {
-        fileCopier.copy();
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
+        FileUtils.writeLines(testFile, lines);
         FileUtils.writeStringToFile(testFile, "\n0.0.3.20340\nfoobar\n", "utf-8", true);
 
         Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
@@ -175,7 +164,8 @@ public class BalanceFileReaderImplV1Test {
 
     @Test
     void readValidWhenFileHasLinesWithDifferentShardNum() throws IOException {
-        fileCopier.copy();
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
+        FileUtils.writeLines(testFile, lines);
         long otherShard = mirrorProperties.getShard() + 1;
         FileUtils.writeStringToFile(testFile,
                 String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard), "utf-8", true);

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance.v2;
+package com.hedera.mirror.importer.reader.balance;
 
 /*-
  * ‌
@@ -30,42 +30,37 @@ import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.BalanceFileReader;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.parser.balance.v2.AccountBalanceLineParserV2;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
+@RequiredArgsConstructor
 public class BalanceFileReaderImplV2 implements BalanceFileReader {
-    private static final String TIMESTAMP_HEADER_PREFIX = "# timestamp:";
     private static final String COLUMN_HEADER_PREFIX = "shard";
+    private static final String TIMESTAMP_HEADER_PREFIX = "# TimeStamp:";
+    private static final String VERSION_2_HEADER_PREFIX = "# version:2";
 
-    private final int fileBufferSize;
-    private final long systemShardNum;
+    private final BalanceParserProperties balanceParserProperties;
     private final AccountBalanceLineParserV2 parser;
-
-    public BalanceFileReaderImplV2(BalanceParserProperties balanceParserProperties, AccountBalanceLineParserV2
-            parser) {
-        this.fileBufferSize = balanceParserProperties.getFileBufferSize();
-        this.systemShardNum = balanceParserProperties.getMirrorProperties().getShard();
-        this.parser = parser;
-    }
 
     @Override
     public Stream<AccountBalance> read(File file) {
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
-                    fileBufferSize);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
+                balanceParserProperties.getFileBufferSize())) {
             long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
 
             return reader.lines()
                     .map(line -> {
                         try {
-                            return parser.parse(line, consensusTimestamp, systemShardNum);
+                            return parser.parse(line, consensusTimestamp, balanceParserProperties.getMirrorProperties()
+                                    .getShard());
                         } catch (InvalidDatasetException ex) {
                             log.error(ex);
                             return null;
@@ -83,14 +78,17 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
         }
     }
 
+    public boolean isFirstLineFromFileVersion(String firstLine) {
+        return firstLine.startsWith(VERSION_2_HEADER_PREFIX);
+    }
+
     private long parseHeaderForConsensusTimestamp(BufferedReader reader) {
         String line = null;
         try {
             //Discard the first line/version number
             reader.readLine();
-            line = reader.readLine().trim();
-            String lineLowered = line.toLowerCase();
-            if (lineLowered.startsWith(TIMESTAMP_HEADER_PREFIX)) {
+            line = reader.readLine();
+            if (line.startsWith(TIMESTAMP_HEADER_PREFIX)) {
                 long consensusTimestamp = convertTimestampLine(line);
                 line = reader.readLine();
                 if (line.startsWith(COLUMN_HEADER_PREFIX)) {

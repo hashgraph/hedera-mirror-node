@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance.v1;
+package com.hedera.mirror.importer.reader.balance;
 
 /*-
  * ‌
@@ -31,14 +31,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import javax.inject.Named;
+import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.BalanceFileReader;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.parser.balance.v1.AccountBalanceLineParserV1;
 import com.hedera.mirror.importer.util.Utility;
 
+@AllArgsConstructor
 @Log4j2
 @Named
 public class BalanceFileReaderImplV1 implements BalanceFileReader {
@@ -46,27 +48,20 @@ public class BalanceFileReaderImplV1 implements BalanceFileReader {
     private static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
     private static final String COLUMN_HEADER_PREFIX = "shard";
 
-    private final int fileBufferSize;
-    private final long systemShardNum;
+    private final BalanceParserProperties balanceParserProperties;
     private final AccountBalanceLineParserV1 parser;
-
-    public BalanceFileReaderImplV1(BalanceParserProperties balanceParserProperties, AccountBalanceLineParserV1 parser) {
-        this.fileBufferSize = balanceParserProperties.getFileBufferSize();
-        this.systemShardNum = balanceParserProperties.getMirrorProperties().getShard();
-        this.parser = parser;
-    }
 
     @Override
     public Stream<AccountBalance> read(File file) {
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
-                    fileBufferSize);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
+                balanceParserProperties.getFileBufferSize())) {
             long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
 
             return reader.lines()
                     .map(line -> {
                         try {
-                            return parser.parse(line, consensusTimestamp, systemShardNum);
+                            return parser.parse(line, consensusTimestamp, balanceParserProperties.getMirrorProperties()
+                                    .getShard());
                         } catch (InvalidDatasetException ex) {
                             log.error(ex);
                             return null;
