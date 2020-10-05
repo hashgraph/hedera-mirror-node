@@ -23,7 +23,7 @@
     "http-errors": "^1.8.0",
     "lodash": "^4.17.20",
     "log4js": "^6.3.0",
-    "mathjs": "^7.2.0",
+    "mathjs": "^7.3.0",
     "node-fetch": "^2.6.1",
     "querystring": "^0.2.0",
     "shelljs": "^0.8.4"
@@ -31,6 +31,6 @@
   "devDependencies": {
     "jest": "^26.4.2",
     "nodemon": "^2.0.4",
-    "supertest": "^4.0.2"
+    "supertest": "^5.0.0"
   }
 }

@@ -42,7 +42,8 @@
     "balances": [
       {
         "account": "0.0.8",
-        "balance": 80
+        "balance": 80,
+        "tokens": []
       }
     ],
     "links": {

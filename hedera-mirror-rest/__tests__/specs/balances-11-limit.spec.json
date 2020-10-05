@@ -55,11 +55,13 @@
     "balances": [
       {
         "account": "0.0.17",
-        "balance": 700
+        "balance": 700,
+        "tokens": []
       },
       {
         "account": "0.0.19",
-        "balance": 900
+        "balance": 900,
+        "tokens": []
       }
     ],
     "links": {

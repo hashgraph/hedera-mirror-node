@@ -17,12 +17,14 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
-const constants = require('./constants.js');
-const EntityId = require('./entityId');
+
 const math = require('mathjs');
-const config = require('./config.js');
-const ed25519 = require('./ed25519.js');
+const constants = require('./constants');
+const EntityId = require('./entityId');
+const config = require('./config');
+const ed25519 = require('./ed25519');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const ENTITY_TYPE_FILE = 3;
@@ -710,41 +712,60 @@ const formatComparator = (comparator) => {
   }
 };
 
+/**
+ * Parses tokenBalances into an array of {token_id: string, balance: Number} objects
+ *
+ * @param {{token_id: Number, balance: Number}[]} tokenBalances array of token balance objects
+ * @return {[]|{token_id: string, balance: Number}[]}
+ */
+const parseTokenBalances = (tokenBalances) => {
+  return tokenBalances
+    ? tokenBalances.map((tokenBalance) => {
+        const {token_id: tokenId, balance} = tokenBalance;
+        return {
+          token_id: EntityId.fromEncodedId(tokenId).toString(),
+          balance,
+        };
+      })
+    : [];
+};
+
 module.exports = {
-  buildFilterObject: buildFilterObject,
-  buildComparatorFilter: buildComparatorFilter,
-  buildPgSqlObject: buildPgSqlObject,
-  createTransactionId: createTransactionId,
-  convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
-  encodeBase64: encodeBase64,
+  buildFilterObject,
+  buildComparatorFilter,
+  buildPgSqlObject,
+  createTransactionId,
+  convertMySqlStyleQueryToPostgres,
+  encodeBase64,
   encodeBinary,
   encodeUtf8,
-  encodeKey: encodeKey,
-  ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
-  filterValidityChecks: filterValidityChecks,
-  formatComparator: formatComparator,
-  getNullableNumber: getNullableNumber,
-  getPaginationLink: getPaginationLink,
-  isValidEntityNum: isValidEntityNum,
-  isValidLimitNum: isValidLimitNum,
-  isValidNum: isValidNum,
-  isValidTimestampParam: isValidTimestampParam,
-  parseCreditDebitParams: parseCreditDebitParams,
-  parseEntityId: parseEntityId,
-  parseLimitAndOrderParams: parseLimitAndOrderParams,
-  parseBalanceQueryParam: parseBalanceQueryParam,
-  parsePublicKeyQueryParam: parsePublicKeyQueryParam,
-  parseAccountIdQueryParam: parseAccountIdQueryParam,
-  parseTimestampQueryParam: parseTimestampQueryParam,
-  parseResultParams: parseResultParams,
-  parseTimestampParam: parseTimestampParam,
-  nsToSecNs: nsToSecNs,
-  nsToSecNsWithHyphen: nsToSecNsWithHyphen,
-  returnEntriesLimit: returnEntriesLimit,
-  secNsToNs: secNsToNs,
-  secNsToSeconds: secNsToSeconds,
-  toHexString: toHexString,
-  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
-  validateAndParseFilters: validateAndParseFilters,
-  validateReq: validateReq,
+  encodeKey,
+  ENTITY_TYPE_FILE,
+  filterValidityChecks,
+  formatComparator,
+  getNullableNumber,
+  getPaginationLink,
+  isValidEntityNum,
+  isValidLimitNum,
+  isValidNum,
+  isValidTimestampParam,
+  parseCreditDebitParams,
+  parseEntityId,
+  parseLimitAndOrderParams,
+  parseBalanceQueryParam,
+  parsePublicKeyQueryParam,
+  parseAccountIdQueryParam,
+  parseTimestampQueryParam,
+  parseResultParams,
+  parseTimestampParam,
+  nsToSecNs,
+  nsToSecNsWithHyphen,
+  returnEntriesLimit,
+  secNsToNs,
+  secNsToSeconds,
+  toHexString,
+  TRANSACTION_RESULT_SUCCESS,
+  validateAndParseFilters,
+  validateReq,
+  parseTokenBalances,
 };

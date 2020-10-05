@@ -16,12 +16,31 @@
       {
         "timestamp": 2345,
         "id": 7,
-        "balance": 70
+        "balance": 70,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 100001,
+            "balance": 7
+          },
+          {
+            "token_realm": 0,
+            "token_num": 100002,
+            "balance": 77
+          }
+        ]
       },
       {
         "timestamp": 2345,
         "id": 8,
-        "balance": 80
+        "balance": 80,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 200001,
+            "balance": 8
+          }
+        ]
       },
       {
         "timestamp": 2345,
@@ -39,7 +58,13 @@
       {
         "balance": {
           "timestamp": "0.000002345",
-          "balance": 80
+          "balance": 80,
+          "tokens": [
+            {
+              "token_id": "0.0.200001",
+              "balance": 8
+            }
+          ]
         },
         "account": "0.0.8",
         "expiry_timestamp": null,
