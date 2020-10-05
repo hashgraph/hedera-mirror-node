@@ -43,7 +43,7 @@ The beta mirror node works as follows:
 
 -   Event files are handled in same manner as record files.
 
--   In addition, nodes regularly generate a balance file which contains the list of Hedera accounts and their corresponding balance which is also uploaded to S3 and Google File Storage.
+-   In addition, nodes regularly generate a balance file which contains the list of Hedera accounts and their corresponding hbar balance and miscellaneous token balances which is also uploaded to S3 and Google File Storage.
 -   The files are also signed by the nodes.
 -   This mirror node software can download the balance files, validate at least 1/3 of nodes have signed and then process the balance files for long term storage.
 
