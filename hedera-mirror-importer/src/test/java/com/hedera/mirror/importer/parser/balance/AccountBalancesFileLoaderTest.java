@@ -42,11 +42,12 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV2;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
-import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
 public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
@@ -57,22 +58,37 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
     private AccountBalanceRepository accountBalanceRepository;
 
     @Resource
-    private TokenBalanceRepository tokenBalanceRepository;
-
-    @Resource
     private AccountBalanceSetRepository accountBalanceSetRepository;
 
     @Resource
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Resource
-    private BalanceFileReaderImplV2 balanceFileReader;
+    private BalanceFileReaderImplV1 balanceFileReaderV1;
 
-    private BalanceFile balanceFileStats;
+    @Resource
+    private BalanceFileReaderImplV2 balanceFileReaderV2;
+
+    @Value("classpath:data/accountBalances/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
+    File balanceFileV1;
+
     @Value("classpath:data/accountBalances/v2/2020-09-22T04_25_00.083212003Z_Balances.csv")
     File balanceFileV2;
 
+    BalanceFile balanceFileStats;
+
     private File testFile;
+
+    @ParameterizedTest(name = "load balance file version 1 with range [{0}, {1}], expect data persisted? {2}")
+    @CsvSource(value = {
+            "2019-08-30T18:15:00.016002001Z, 2019-08-30T18:15:00.016002001Z, true",
+            ",,true",
+            "2019-08-30T18:15:00.016002002Z, 2019-08-30T18:15:00.016002008Z, false"
+    })
+    void loadValidFileVersion1(Instant start, Instant end, boolean persisted) throws SQLException {
+        balanceFileStats = new BalanceFile(1567188900016002001L, 25391, balanceFileV1.getName());
+        loadValidFile(balanceFileV1, balanceFileReaderV1, start, end, persisted);
+    }
 
     @ParameterizedTest(name = "load balance file version 2 with range [{0}, {1}], expect data persisted? {2}")
     @CsvSource(value = {
@@ -82,7 +98,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
     })
     void loadValidFileVersion2(Instant start, Instant end, boolean persisted) throws SQLException {
         balanceFileStats = new BalanceFile(1600748700083212003L, 106, balanceFileV2.getName());
-        loadValidFile(balanceFileV2, start, end, persisted);
+        loadValidFile(balanceFileV2, balanceFileReaderV2, start, end, persisted);
     }
 
     @Test
@@ -105,7 +121,8 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
         assertThat(accountBalanceSetRepository.count()).isZero();
     }
 
-    private void loadValidFile(File balanceFile, Instant start, Instant end, boolean persisted) {
+    private void loadValidFile(File balanceFile, BalanceFileReader balanceFileReader, Instant start, Instant end,
+                               boolean persisted) {
         insertAccountBalanceFileRecord(balanceFile);
         DateRangeFilter filter = null;
         if (start != null || end != null) {
