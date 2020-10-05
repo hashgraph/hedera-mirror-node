@@ -51,8 +51,8 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
 
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumns({
-            @JoinColumn(name = "consensusTimestamp"),
-            @JoinColumn(name = "accountId")
+            @JoinColumn(name = "accountId"),
+            @JoinColumn(name = "consensusTimestamp")
     })
     private List<TokenBalance> tokenBalances;
 
