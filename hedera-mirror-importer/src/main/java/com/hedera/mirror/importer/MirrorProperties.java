@@ -44,7 +44,7 @@ public class MirrorProperties {
     private Path initialAddressBook;
 
     @NotNull
-    private Instant verifyHashAfter = Instant.parse("1970-01-01T00:00:00Z");
+    private Instant verifyHashAfter = Instant.EPOCH;
 
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;

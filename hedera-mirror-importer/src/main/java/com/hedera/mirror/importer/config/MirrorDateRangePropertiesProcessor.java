@@ -136,19 +136,15 @@ public class MirrorDateRangePropertiesProcessor {
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
+        Instant filterStartDate = lastFileInstant;
 
-        Instant filterStartDate = null;
         if (startDate != null) {
             if (lastFileInstant != null && startDate.isAfter(lastFileInstant)) {
                 filterStartDate = startDate;
-            } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
-                filterStartDate = lastFileInstant;
             }
         } else {
             if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.DEMO && lastFileInstant == null) {
                 filterStartDate = STARTUP_TIME;
-            } else if (endDate.isBefore(Utility.MAX_INSTANT_LONG)) {
-                filterStartDate = lastFileInstant;
             }
         }
 
@@ -204,13 +200,13 @@ public class MirrorDateRangePropertiesProcessor {
         Duration adjustment = downloaderProperties.getStartDateAdjustment();
 
         if (startDate != null) {
-            return max(startDate.minus(adjustment), lastFileInstant);
+            return max(startDate.minus(adjustment), lastFileInstant != null ? lastFileInstant : Instant.EPOCH);
+        } else if (lastFileInstant != null) {
+            return lastFileInstant;
         } else if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
             return Instant.EPOCH; // Demo network contains only data in the past, so don't default to now
-        } else if (lastFileInstant == null) {
-            return startUpInstant.minus(adjustment);
         } else {
-            return lastFileInstant;
+            return startUpInstant.minus(adjustment);
         }
     }
 
