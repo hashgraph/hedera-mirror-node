@@ -93,6 +93,10 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private static final String MISSING_TOKEN_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
+            "{} with timestamp {}";
+    private static final String MISSING_TOKEN_ACCOUNT_MESSAGE = "Missing token_account for token {} and account {}, " +
+            "unable to persist transaction type {} with timestamp {}";
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService, EntityRepository entityRepository,
@@ -439,28 +443,27 @@ public class EntityRecordItemListener implements RecordItemListener {
             AccountID accountID = tokenAssociateTransactionBody.getAccount();
 
             tokenAssociateTransactionBody.getTokensList().forEach(token -> {
-                EntityId tokenID = EntityId.of(token);
-                entityListener.onEntityId(tokenID);
 
-                Optional<TokenAccount> optionalTokenAccount = retrieveTokenAccount(token, accountID);
-                TokenAccount tokenAccount = null;
-                if (retrieveTokenAccount(token, accountID).isPresent()) {
-                    tokenAccount = optionalTokenAccount.get();
-                } else {
+                long consensusTimeStamp = recordItem.getConsensusTimestamp();
+                if (!insertTokenAccountUpdate(consensusTimeStamp, token, accountID,
+                        TransactionTypeEnum.TOKENASSOCIATE)) {
                     // if not onboarded create TokenAccount based on Token details
+                    EntityId tokenID = EntityId.of(token);
                     Optional<Token> optionalToken = retrieveToken(token);
                     if (optionalToken.isPresent()) {
                         Token storedToken = optionalToken.get();
-                        tokenAccount = new TokenAccount(tokenID, EntityId.of(accountID));
+                        TokenAccount tokenAccount = new TokenAccount(tokenID, EntityId.of(accountID));
                         tokenAccount.setCreatedTimestamp(recordItem.getConsensusTimestamp());
                         tokenAccount.setFreezeStatus(storedToken.getNewAccountFreezeStatus());
                         tokenAccount.setKycStatus(storedToken.getNewAccountKycStatus());
+                        tokenAccount.setAssociated(true);
+                        tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+                        entityListener.onTokenAccount(tokenAccount);
+                    } else {
+                        log.warn(MISSING_TOKEN_MESSAGE, tokenID, TransactionTypeEnum.TOKENASSOCIATE,
+                                consensusTimeStamp);
                     }
                 }
-
-                tokenAccount.setAssociated(true);
-                tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
-                entityListener.onTokenAccount(tokenAccount);
             });
         }
     }
@@ -468,15 +471,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenBurn(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenBurnTransactionBody tokenBurnTransactionBody = recordItem.getTransactionBody().getTokenBurn();
-            Optional<Token> optionalToken = retrieveToken(tokenBurnTransactionBody.getToken());
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
-
-                // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(token.getTotalSupply() - tokenBurnTransactionBody.getAmount());
-                entityListener.onToken(token);
-            }
+            insertSingleTokenPropertyUpdate(recordItem.getConsensusTimestamp(), tokenBurnTransactionBody
+                    .getToken(), tokenBurnTransactionBody.getAmount(), TransactionTypeEnum.TOKENBURN);
         }
     }
 
@@ -523,12 +519,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenDelete(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenDeleteTransactionBody tokenDeleteTransactionBody = recordItem.getTransactionBody().getTokenDeletion();
-            Optional<Token> optionalToken = retrieveToken(tokenDeleteTransactionBody.getToken());
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
-                entityListener.onToken(token);
-            }
+            insertSingleTokenPropertyUpdate(recordItem.getConsensusTimestamp(), tokenDeleteTransactionBody
+                    .getToken(), 0, TransactionTypeEnum.TOKENDELETION);
         }
     }
 
@@ -539,7 +531,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             AccountID accountID = tokenDissociateTransactionBody.getAccount();
 
             tokenDissociateTransactionBody.getTokensList().forEach(token -> {
-                insertTokenAccountUpdate(recordItem.getConsensusTimestamp(), token, accountID, true, false, false);
+                insertTokenAccountUpdate(recordItem
+                        .getConsensusTimestamp(), token, accountID, TransactionTypeEnum.TOKENDISSOCIATE);
             });
         }
     }
@@ -550,7 +543,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     .getTokenFreeze();
 
             insertTokenAccountUpdate(recordItem.getConsensusTimestamp(), tokenFreezeAccountTransactionBody
-                    .getToken(), tokenFreezeAccountTransactionBody.getAccount(), false, true, false);
+                    .getToken(), tokenFreezeAccountTransactionBody.getAccount(), TransactionTypeEnum.TOKENFREEZE);
         }
     }
 
@@ -560,24 +553,15 @@ public class EntityRecordItemListener implements RecordItemListener {
                     .getTokenGrantKyc();
 
             insertTokenAccountUpdate(recordItem.getConsensusTimestamp(), tokenGrantKycTransactionBody
-                    .getToken(), tokenGrantKycTransactionBody.getAccount(), false, false, true);
+                    .getToken(), tokenGrantKycTransactionBody.getAccount(), TransactionTypeEnum.TOKENGRANTKYC);
         }
     }
 
     private void insertTokenMint(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenMintTransactionBody tokenMintTransactionBody = recordItem.getTransactionBody().getTokenMint();
-            TokenID tokenID = tokenMintTransactionBody.getToken();
-            entityListener.onEntityId(EntityId.of(tokenID));
-
-            Optional<Token> optionalToken = retrieveToken(tokenID);
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
-                // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(token.getTotalSupply() + tokenMintTransactionBody.getAmount());
-                entityListener.onToken(token);
-            }
+            insertSingleTokenPropertyUpdate(recordItem.getConsensusTimestamp(), tokenMintTransactionBody
+                    .getToken(), tokenMintTransactionBody.getAmount(), TransactionTypeEnum.TOKENMINT);
         }
     }
 
@@ -587,7 +571,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     .getTokenRevokeKyc();
 
             insertTokenAccountUpdate(recordItem.getConsensusTimestamp(), tokenRevokeKycTransactionBody
-                    .getToken(), tokenRevokeKycTransactionBody.getAccount(), false, false, true);
+                    .getToken(), tokenRevokeKycTransactionBody.getAccount(), TransactionTypeEnum.TOKENREVOKEKYC);
         }
     }
 
@@ -595,6 +579,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
                 EntityId tokenId = EntityId.of(tokenTransferList.getToken());
+                entityListener.onEntityId(tokenId);
+
                 tokenTransferList.getTransfersList().forEach(accountAmount -> {
                     EntityId accountId = EntityId.of(accountAmount.getAccountID());
                     entityListener.onEntityId(accountId);
@@ -610,7 +596,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
             TokenID tokenID = tokenUpdateTransactionBody.getToken();
-            entityListener.onEntityId(EntityId.of(tokenID));
 
             Optional<Token> optionalToken = retrieveToken(tokenID);
             if (optionalToken.isPresent()) {
@@ -648,32 +633,64 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
 
                 entityListener.onToken(token);
+            } else {
+                log.warn(MISSING_TOKEN_MESSAGE, tokenID, TransactionTypeEnum.TOKENDELETION, recordItem
+                        .getConsensusTimestamp());
             }
         }
     }
 
-    private void insertTokenAccountUpdate(long consensusTimestamp, TokenID tokenID, AccountID accountID,
-                                          boolean toggleAssociate, boolean toggleFreeze, boolean toggleKyc) {
+    private boolean insertTokenAccountUpdate(long consensusTimestamp, TokenID tokenID, AccountID accountID,
+                                             TransactionTypeEnum transactionTypeEnum) {
         entityListener.onEntityId(EntityId.of(tokenID));
 
         Optional<TokenAccount> optionalTokenAccount = retrieveTokenAccount(tokenID, accountID);
-        if (optionalTokenAccount.isPresent()) {
+        boolean tokenAccountFound = optionalTokenAccount.isPresent();
+        if (tokenAccountFound) {
+
             TokenAccount tokenAccount = optionalTokenAccount.get();
             tokenAccount.setModifiedTimestamp(consensusTimestamp);
 
-            if (toggleAssociate) {
+            if (transactionTypeEnum == TransactionTypeEnum.TOKENASSOCIATE || transactionTypeEnum == TransactionTypeEnum.TOKENDISSOCIATE) {
                 tokenAccount.toggleAssociatedStatus();
             }
 
-            if (toggleFreeze) {
+            if (transactionTypeEnum == TransactionTypeEnum.TOKENFREEZE || transactionTypeEnum == TransactionTypeEnum.TOKENUNFREEZE) {
                 tokenAccount.toggleFreezeStatus();
             }
 
-            if (toggleKyc) {
+            if (transactionTypeEnum == TransactionTypeEnum.TOKENGRANTKYC || transactionTypeEnum == TransactionTypeEnum.TOKENREVOKEKYC) {
                 tokenAccount.toggleKycStatus();
             }
 
             entityListener.onTokenAccount(tokenAccount);
+        } else {
+            log.warn(MISSING_TOKEN_ACCOUNT_MESSAGE, tokenID, accountID, transactionTypeEnum, consensusTimestamp);
+        }
+
+        return tokenAccountFound;
+    }
+
+    private void insertSingleTokenPropertyUpdate(long consensusTimestamp, TokenID tokenID, long amount,
+                                                 TransactionTypeEnum transactionTypeEnum) {
+        Optional<Token> optionalToken = retrieveToken(tokenID);
+        if (optionalToken.isPresent()) {
+            Token token = optionalToken.get();
+            token.setModifiedTimestamp(consensusTimestamp);
+
+            if (transactionTypeEnum == TransactionTypeEnum.TOKENMINT) {
+                // mirror will calculate new totalSupply as an interim solution until network returns it
+                token.setTotalSupply(token.getTotalSupply() + amount);
+            }
+
+            if (transactionTypeEnum == TransactionTypeEnum.TOKENBURN || transactionTypeEnum == TransactionTypeEnum.TOKENWIPE) {
+                // mirror will calculate new totalSupply as an interim solution until network returns it
+                token.setTotalSupply(token.getTotalSupply() - amount);
+            }
+
+            entityListener.onToken(token);
+        } else {
+            log.warn(MISSING_TOKEN_MESSAGE, tokenID, transactionTypeEnum, consensusTimestamp);
         }
     }
 
@@ -684,7 +701,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             insertTokenAccountUpdate(recordItem.getConsensusTimestamp(), tokenUnfreezeAccountTransactionBody
                     .getToken(), tokenUnfreezeAccountTransactionBody
-                    .getAccount(), false, true, false);
+                    .getAccount(), TransactionTypeEnum.TOKENUNFREEZE);
         }
     }
 
@@ -692,17 +709,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenWipeAccountTransactionBody tokenWipeAccountTransactionBody = recordItem.getTransactionBody()
                     .getTokenWipe();
-            TokenID tokenID = tokenWipeAccountTransactionBody.getToken();
-            entityListener.onEntityId(EntityId.of(tokenID));
-
-            // update token total supply similar to TokenBurn transaction
-            Optional<Token> optionalToken = retrieveToken(tokenID);
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
-                token.setTotalSupply(token.getTotalSupply() - tokenWipeAccountTransactionBody.getAmount());
-                entityListener.onToken(token);
-            }
+            insertSingleTokenPropertyUpdate(recordItem.getConsensusTimestamp(), tokenWipeAccountTransactionBody
+                    .getToken(), tokenWipeAccountTransactionBody.getAmount(), TransactionTypeEnum.TOKENWIPE);
         }
     }
 
