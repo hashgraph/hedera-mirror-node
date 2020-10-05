@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/entity-id-codec"
-	"strconv"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
 	"strings"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -36,8 +36,8 @@ func (a *Account) ComputeEncodedID() (int64, error) {
 	return entity_id_codec.Encode(a.Shard, a.Realm, a.Number)
 }
 
-// FormatToString - returns the string representation of the account
-func (a *Account) FormatToString() string {
+// String - returns the string representation of the account
+func (a *Account) String() string {
 	return fmt.Sprintf("%d.%d.%d", a.Shard, a.Realm, a.Number)
 }
 
@@ -49,7 +49,7 @@ func FromRosettaAccount(rAccount *rTypes.AccountIdentifier) (*Account, *rTypes.E
 // ToRosettaAccount returns Rosetta type Account from the current domain type Account
 func (a *Account) ToRosettaAccount() *rTypes.AccountIdentifier {
 	return &rTypes.AccountIdentifier{
-		Address: a.FormatToString(),
+		Address: a.String(),
 	}
 }
 
@@ -60,22 +60,22 @@ func AccountFromString(account string) (*Account, *rTypes.Error) {
 		return nil, errors.Errors[errors.InvalidAccount]
 	}
 
-	shard, err := strconv.Atoi(inputs[0])
+	shard, err := parse.ToInt64(inputs[0])
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidAccount]
 	}
-	realm, err := strconv.Atoi(inputs[1])
+	realm, err := parse.ToInt64(inputs[1])
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidAccount]
 	}
-	number, err := strconv.Atoi(inputs[2])
+	number, err := parse.ToInt64(inputs[2])
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidAccount]
 	}
 
 	return &Account{
-		Shard:  int64(shard),
-		Realm:  int64(realm),
-		Number: int64(number),
+		Shard:  shard,
+		Realm:  realm,
+		Number: number,
 	}, nil
 }

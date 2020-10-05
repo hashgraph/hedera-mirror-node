@@ -3,13 +3,13 @@ package validator
 import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"strconv"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
 )
 
 func ValidateOperationsSum(operations []*types.Operation) *types.Error {
-	sum := 0
+	var sum int64 = 0
 	for _, operation := range operations {
-		amount, err := strconv.Atoi(operation.Amount.Value)
+		amount, err := parse.ToInt64(operation.Amount.Value)
 		if err != nil {
 			return errors.Errors[errors.InvalidAmount]
 		}

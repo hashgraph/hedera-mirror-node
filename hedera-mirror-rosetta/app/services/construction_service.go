@@ -11,6 +11,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	hexutils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/validator"
 	"github.com/hashgraph/hedera-sdk-go"
 	"strconv"
@@ -204,7 +205,7 @@ func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rType
 			return nil, errors.Errors[errors.InvalidAccount]
 		}
 
-		amount, err := strconv.Atoi(operation.Amount.Value)
+		amount, err := parse.ToInt64(operation.Amount.Value)
 		if err != nil {
 			return nil, errors.Errors[errors.InvalidAmount]
 		}
@@ -213,10 +214,10 @@ func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rType
 			sender = account
 			builderTransaction.AddSender(
 				sender,
-				hedera.HbarFromTinybar(int64(-amount)))
+				hedera.HbarFromTinybar(-amount))
 		} else {
 			builderTransaction.AddRecipient(account,
-				hedera.HbarFromTinybar(int64(amount)))
+				hedera.HbarFromTinybar(amount))
 		}
 	}
 

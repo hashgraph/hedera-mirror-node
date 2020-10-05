@@ -18,7 +18,7 @@ type AddressBookEntries struct {
 // ToRosettaPeer returns Rosetta type Peer from the current domain type AddressBookEntry
 func (abe *AddressBookEntry) ToRosettaPeer() *rTypes.Peer {
 	return &rTypes.Peer{
-		PeerID:   abe.PeerId.FormatToString(),
+		PeerID:   abe.PeerId.String(),
 		Metadata: abe.Metadata,
 	}
 }
