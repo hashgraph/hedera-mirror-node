@@ -284,10 +284,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         Transaction transaction = tokenWipeTransaction(TOKEN_ID);
-        long wipeTimeStamp = 10L;
-        insertAndParseTransaction(transaction, wipeTimeStamp, null);
+        insertAndParseTransaction(transaction, 10L, null);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, wipeTimeStamp, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.NOTAPPLICABLE,
                 TokenKycStatusEnum.NOTAPPLICABLE);
     }

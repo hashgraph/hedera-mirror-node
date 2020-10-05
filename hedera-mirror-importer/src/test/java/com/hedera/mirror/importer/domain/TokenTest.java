@@ -42,9 +42,9 @@ public class TokenTest {
                 () -> assertNotNull(token.getKycKeyEd25519Hex()),
                 () -> assertNotNull(token.getSupplyKeyEd25519Hex()),
                 () -> assertNotNull(token.getWipeKeyEd25519Hex()),
-                () -> assertNotEquals(token.getTotalSupply(), 0),
-                () -> assertNotEquals(token.getNewAccountFreezeStatus(), 0),
-                () -> assertNotEquals(token.getNewAccountKycStatus(), 0)
+                () -> assertNotEquals(0, token.getTotalSupply()),
+                () -> assertNotEquals(TokenFreezeStatusEnum.NOTAPPLICABLE, token.getNewAccountFreezeStatus()),
+                () -> assertNotEquals(TokenKycStatusEnum.NOTAPPLICABLE, token.getNewAccountKycStatus())
         );
     }
 

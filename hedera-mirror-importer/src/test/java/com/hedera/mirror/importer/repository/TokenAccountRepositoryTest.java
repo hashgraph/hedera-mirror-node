@@ -45,7 +45,7 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
                         .of("0.2.44", EntityTypeEnum.ACCOUNT).getId())).isEqualTo(Optional.empty());
     }
 
-    private TokenAccount tokenAccount(String tokenId, String accountId) throws DecoderException {
+    private TokenAccount tokenAccount(String tokenId, String accountId) {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
         tokenAccount.setAssociated(true);

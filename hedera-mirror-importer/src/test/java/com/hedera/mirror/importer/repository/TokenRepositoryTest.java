@@ -1,6 +1,6 @@
 package com.hedera.mirror.importer.repository;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
@@ -24,8 +24,8 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() throws DecoderException {
         Token token = tokenRepository.save(token(1));
-        tokenMatch(token, tokenRepository.findById(token.getTokenId())
-                .get());
+        assertThat(tokenRepository.findById(token.getTokenId())
+                .get()).isEqualTo(token);
     }
 
     private Token token(long consensusTimestamp) throws DecoderException {
@@ -45,25 +45,5 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         token.setTreasuryAccountId(treasuryAccount);
         token.setWipeKey(hexKey);
         return token;
-    }
-
-    private void tokenMatch(Token expected, Token actual) {
-        assertAll(
-                () -> assertNotNull(actual),
-                () -> assertEquals(expected.getCreatedTimestamp(), actual.getCreatedTimestamp()),
-                () -> assertEquals(expected.getDecimals(), actual.getDecimals()),
-                () -> assertArrayEquals(expected.getFreezeKey(), actual.getFreezeKey()),
-                () -> assertEquals(expected.getInitialSupply(), actual.getInitialSupply()),
-                () -> assertArrayEquals(expected.getKycKey(), actual.getKycKey()),
-                () -> assertEquals(expected.getModifiedTimestamp(), actual.getModifiedTimestamp()),
-                () -> assertEquals(expected.getName(), actual.getName()),
-                () -> assertArrayEquals(expected.getSupplyKey(), actual.getSupplyKey()),
-                () -> assertEquals(expected.getSymbol(), actual.getSymbol()),
-                () -> assertArrayEquals(expected.getWipeKey(), actual.getWipeKey()),
-                () -> assertEquals(expected.getFreezeKeyEd25519Hex(), actual.getFreezeKeyEd25519Hex()),
-                () -> assertEquals(expected.getKycKeyEd25519Hex(), actual.getKycKeyEd25519Hex()),
-                () -> assertEquals(expected.getSupplyKeyEd25519Hex(), actual.getSupplyKeyEd25519Hex()),
-                () -> assertEquals(expected.getWipeKeyEd25519Hex(), actual.getWipeKeyEd25519Hex())
-        );
     }
 }
