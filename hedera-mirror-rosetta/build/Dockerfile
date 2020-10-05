@@ -1,3 +1,7 @@
+# This Dockerfile configuration is used to build
+# Importer, Rosetta and PostgreSQL into one image
+# and run the services using supervisord
+
 # ------------------------------  Rosetta  ------------------------------- #
 FROM golang:1.13 as rosetta-builder
 WORKDIR /tmp
@@ -22,18 +26,15 @@ FROM ubuntu:18.04 as runner
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
 RUN apt-get update && apt-get install -y gnupg
-RUN apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
 
 # Add PostgreSQL's repository. It contains the most recent stable release
 #  of PostgreSQL.
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 
-# Install PostgreSQL 9.6, supervisor, git and openjdk-11 
+# Install PostgreSQL 9.6, supervisor, git and openjdk-11
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6 supervisor git openjdk-11-jdk-headless curl
-# Install Nodejs
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
-RUN apt-get install -y nodejs
 
 # ---------------------------- Install yq ----------------------------- #
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
@@ -75,11 +76,6 @@ USER root
 RUN mkdir -p /data/data
 RUN ln -s /data/data /hedera-mirror-node
 
-# Copy & npm install the REST API
-WORKDIR /var/rest
-RUN cp -r /hedera-mirror-node/hedera-mirror-rest .
-RUN cd hedera-mirror-rest && npm install
-
 # Copy the Rosetta Executable from the Rosetta Builder stage
 WORKDIR /var/rosetta
 COPY --from=rosetta-builder /tmp/hedera-mirror-node/hedera-mirror-rosetta/rosetta-executable .
@@ -87,17 +83,11 @@ COPY --from=rosetta-builder /tmp/hedera-mirror-node/hedera-mirror-rosetta/config
 
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer
-COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-0.17.0-rc1-exec.jar ./hedera-mirror-importer.jar
+COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-0.19.0-rc1-exec.jar ./hedera-mirror-importer.jar
 COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/src/main/resources/application.yml .
 
-# Copy the GRPC Jar and Config from the Java-Builder stage
-WORKDIR /var/grpc
-COPY --from=java-builder /hedera-mirror-node/hedera-mirror-grpc/target/hedera-mirror-grpc-0.17.0-rc1-exec.jar ./hedera-mirror-grpc.jar
-COPY --from=java-builder /hedera-mirror-node/hedera-mirror-grpc/src/main/resources/application.yml .
-
-WORKDIR /hedera-mirror-node
-
+WORKDIR /hedera-mirror-node/hedera-mirror-rosetta/build
 # Expose the ports
-# (DB)(Rosetta)(Rest)(GRPC)
-EXPOSE 5432 5700 5551 5600
+# (DB)(Rosetta)
+EXPOSE 5432 5700
 ENTRYPOINT [ "./run_supervisord.sh" ]

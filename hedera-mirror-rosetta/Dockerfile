@@ -6,5 +6,5 @@ RUN go build -o main ./cmd
 FROM ubuntu:latest
 WORKDIR $GOPATH/src/hedera-mirror-rosetta
 COPY --from=build /tmp/src/hedera-mirror-rosetta/main .
-COPY . .
+COPY ./config/application.yml ./config/application.yml
 CMD ["./main"]
