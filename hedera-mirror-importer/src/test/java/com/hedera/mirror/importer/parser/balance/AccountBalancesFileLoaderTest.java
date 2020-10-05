@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.HashMap;
@@ -103,6 +104,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
     @Test
     void loadEmptyFile() throws IOException {
+        testFile = Files.createTempFile(null, null).toFile();
         FileUtils.write(testFile, "", "utf-8");
         assertThrows(Exception.class, () -> {
             loader.loadAccountBalances(testFile, null);
