@@ -54,7 +54,7 @@ public class BalanceFileReaderImplV1Test extends IntegrationTest {
     @Resource
     private AccountBalanceLineParserV1 parser;
 
-    @Value("classpath:data/accountBalances/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
+    @Value("classpath:data/accountBalances/v1/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
     File balanceFile;
     File testFile;
 

@@ -69,7 +69,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
     @Resource
     private BalanceFileReaderImplV2 balanceFileReaderV2;
 
-    @Value("classpath:data/accountBalances/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
+    @Value("classpath:data/accountBalances/v1/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
     File balanceFileV1;
 
     @Value("classpath:data/accountBalances/v2/2020-09-22T04_25_00.083212003Z_Balances.csv")
