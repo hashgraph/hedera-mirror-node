@@ -231,32 +231,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasTokenWipe()) {
                 insertTokenAccountWipe(recordItem);
             }
-//            else if (body.hasTokenAssociate()) {
-//                insertTokenAssociate(body);
-//            }
-            else if (body.hasTokenCreation()) {
-                insertTokenCreate(consensusNs, txRecord, body);
-            } else if (body.hasTokenDeletion()) {
-                insertTokenDelete(consensusNs, body);
-            } else if (body.hasTokenDissociate()) {
-                insertTokenDissociate(consensusNs, body);
-            } else if (body.hasTokenFreeze()) {
-                insertTokenAccountFreezeBody(consensusNs, body);
-            } else if (body.hasTokenGrantKyc()) {
-                insertTokenAccountGrantKyc(consensusNs, body);
-            } else if (body.hasTokenMint()) {
-                insertTokenMint(consensusNs, body);
-            } else if (body.hasTokenRevokeKyc()) {
-                insertTokenAccountRevokeKyc(consensusNs, body);
-            } else if (body.hasTokenTransfers()) {
-                insertTokenTransfers(consensusNs, txRecord);
-            } else if (body.hasTokenUnfreeze()) {
-                insertTokenAccountUnfreeze(consensusNs, body);
-            } else if (body.hasTokenUpdate()) {
-                insertTokenUpdate(consensusNs, body);
-            } else if (body.hasTokenWipe()) {
-                insertTokenAccountWipe(consensusNs, body);
-            }
         }
 
         entityListener.onTransaction(tx);
@@ -505,7 +479,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                  tokenAccount.setAssociated(true);
                 tokenAccount.setModifiedTimestamp(consensusTimeStamp);
                 entityListener.onTokenAccount(tokenAccount);
-                log.info("*** Created and associated token_account {}", tokenAccount);
             });
         }
     }
@@ -566,7 +539,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
              entityListener.onToken(token);
-            log.info("*** Created token {}", token);
         }
     }
 
@@ -587,7 +559,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                     tokenAccount.setAssociated(false);
                     tokenAccount.setModifiedTimestamp(consensusTimeStamp);
                     entityListener.onTokenAccount(tokenAccount);
-                    log.info("*** Dissociated token_account {}", tokenAccount);
                 }
             });
         }
@@ -699,7 +670,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     consensusTimestamp);
             if (optionalToken.isPresent()) {
                 Token token = optionalToken.get();
-                token.setModifiedTimestamp(consensusTimestamp);
+                token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
 
                  if (tokenUpdateTransactionBody.hasFreezeKey()) {
                     token.setFreezeKey(tokenUpdateTransactionBody.getFreezeKey().toByteArray());
