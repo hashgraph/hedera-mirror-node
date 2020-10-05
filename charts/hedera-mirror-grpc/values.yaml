@@ -20,6 +20,8 @@ fullnameOverride: ""
 
 global:
   namespaceOverride: ""
+  redis:
+    password: redis_password
 
 hpa:
   enabled: true

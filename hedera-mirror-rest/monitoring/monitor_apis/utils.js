@@ -216,7 +216,6 @@ const checkAPIResponseError = (resp, option) => {
   }
 
   return {passed: true};
-
 };
 
 const checkRespObjDefined = (resp, option) => {

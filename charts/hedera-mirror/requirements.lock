@@ -7,9 +7,12 @@ dependencies:
   version: 0.6.0-rc1
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
-  version: 3.4.9
+  version: 3.8.0
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 11.0.6
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.6.0-rc1
-digest: sha256:e32a2a0632c1c56689e6e228b8c0883d8844f4d496d2a5f48c56c88de6cf0677
-generated: "2020-09-14T16:47:37.554355-05:00"
+digest: sha256:420e583d090f1c80f465f866ae3b3898cd73d051782724e1507d1a9a1de9ddb4
+generated: "2020-09-29T11:58:36.068999-05:00"

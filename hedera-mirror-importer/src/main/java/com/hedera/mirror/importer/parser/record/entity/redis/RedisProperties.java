@@ -31,5 +31,5 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.redis")
 public class RedisProperties implements EntityListenerProperties {
 
-    private boolean enabled = false;
+    private boolean enabled = true;
 }
