@@ -183,7 +183,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountUpdate() throws InvalidProtocolBufferException {
+    void tokenUpdate() throws InvalidProtocolBufferException {
         createAndAssociateToken(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER, false, false);
 
         String newSymbol = "NEWSYMBOL";
@@ -196,6 +196,21 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(transaction, updateTimeStamp, null);
 
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimeStamp, newSymbol);
+    }
+
+    @Test
+    void tokenUpdateWithMissingToken() throws InvalidProtocolBufferException {
+        String newSymbol = "NEWSYMBOL";
+        Transaction transaction = tokenUpdateTransaction(
+                TOKEN_ID,
+                newSymbol,
+                keyFromString("updated-key"),
+                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build());
+        long updateTimeStamp = 10L;
+        insertAndParseTransaction(transaction, updateTimeStamp, null);
+
+        // verify token was not created when missing
+        assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, SYMBOL);
     }
 
     @Test
