@@ -90,9 +90,10 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
             reader.readLine();
             line = reader.readLine();
             if (line.startsWith(TIMESTAMP_HEADER_PREFIX)) {
+                long consensusTimestamp = convertTimestampLine(line);
                 line = reader.readLine();
                 if (line.startsWith(COLUMN_HEADER_PREFIX)) {
-                    return convertTimestampLine(line);
+                    return consensusTimestamp;
                 } else {
                     throw new InvalidDatasetException("Column header not found in account balance file");
                 }
