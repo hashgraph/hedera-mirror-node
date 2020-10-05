@@ -46,7 +46,6 @@ import com.hedera.mirror.importer.parser.balance.line.AccountBalanceLineParserV1
 import com.hedera.mirror.importer.util.Utility;
 
 public class BalanceFileReaderImplV1Test extends IntegrationTest {
-    private static final String sampleBalanceFileName = "2019-08-30T18_15_00.016002001Z_Balances.csv";
 
     @Resource
     private MirrorProperties mirrorProperties;
@@ -63,7 +62,7 @@ public class BalanceFileReaderImplV1Test extends IntegrationTest {
 
     @BeforeEach
     void setup() throws IOException {
-        sampleConsensusTimestamp = Utility.getTimestampFromFilename(sampleBalanceFileName);
+        sampleConsensusTimestamp = Utility.getTimestampFromFilename(balanceFile.getName());
         testFile = Files.createTempFile(null, null).toFile();
     }
 
