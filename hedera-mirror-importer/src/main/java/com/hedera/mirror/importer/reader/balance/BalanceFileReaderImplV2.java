@@ -32,11 +32,12 @@ import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.parser.balance.line.AccountBalanceLineParserV2;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV2;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -80,28 +81,29 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
     }
 
     public boolean isFirstLineFromFileVersion(String firstLine) {
-        return firstLine.startsWith(VERSION_2_HEADER_PREFIX);
+        return StringUtils.startsWith(firstLine, VERSION_2_HEADER_PREFIX);
     }
 
     private long parseHeaderForConsensusTimestamp(BufferedReader reader) {
         String line = null;
         try {
-            //Discard the first line/version number
-            reader.readLine();
             line = reader.readLine();
-            if (line.startsWith(TIMESTAMP_HEADER_PREFIX)) {
-                long consensusTimestamp = convertTimestampLine(line);
+            if (isFirstLineFromFileVersion(line)) {
                 line = reader.readLine();
-                if (line.startsWith(COLUMN_HEADER_PREFIX)) {
-                    return consensusTimestamp;
+                if (StringUtils.startsWith(line, TIMESTAMP_HEADER_PREFIX)) {
+                    long consensusTimestamp = convertTimestampLine(line);
+                    line = reader.readLine();
+                    if (StringUtils.startsWith(line, COLUMN_HEADER_PREFIX)) {
+                        return consensusTimestamp;
+                    } else {
+                        throw new InvalidDatasetException("Column header not found in account balance file");
+                    }
                 } else {
-                    throw new InvalidDatasetException("Column header not found in account balance file");
+                    throw new InvalidDatasetException("Timestamp not found in account balance file");
                 }
             } else {
-                throw new InvalidDatasetException("Timestamp not found in account balance file");
+                throw new InvalidDatasetException("Version number not found in account balance file");
             }
-        } catch (NullPointerException ex) {
-            throw new InvalidDatasetException("Timestamp / column header not found in account balance file");
         } catch (DateTimeParseException ex) {
             throw new InvalidDatasetException("Invalid timestamp header line: " + line, ex);
         } catch (IOException ex) {

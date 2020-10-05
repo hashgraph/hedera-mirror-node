@@ -42,7 +42,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.line.AccountBalanceLineParserV1;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 import com.hedera.mirror.importer.util.Utility;
 
 public class BalanceFileReaderImplV1Test extends IntegrationTest {
@@ -55,8 +55,8 @@ public class BalanceFileReaderImplV1Test extends IntegrationTest {
     private AccountBalanceLineParserV1 parser;
 
     @Value("classpath:data/accountBalances/v1/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
-    File balanceFile;
-    File testFile;
+    private File balanceFile;
+    private File testFile;
 
     private long sampleConsensusTimestamp;
 

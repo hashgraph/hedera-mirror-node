@@ -49,6 +49,7 @@ import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV2;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
+import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
 public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
@@ -57,6 +58,9 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
     @Resource
     private AccountBalanceRepository accountBalanceRepository;
+
+    @Resource
+    private TokenBalanceRepository tokenBalanceRepository;
 
     @Resource
     private AccountBalanceSetRepository accountBalanceSetRepository;
@@ -71,12 +75,12 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
     private BalanceFileReaderImplV2 balanceFileReaderV2;
 
     @Value("classpath:data/accountBalances/v1/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")
-    File balanceFileV1;
+    private File balanceFileV1;
 
     @Value("classpath:data/accountBalances/v2/2020-09-22T04_25_00.083212003Z_Balances.csv")
-    File balanceFileV2;
+    private File balanceFileV2;
 
-    BalanceFile balanceFileStats;
+    private BalanceFile balanceFileStats;
 
     private File testFile;
 

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance.line;
+package com.hedera.mirror.importer.reader.balance.line;
 
 /*-
  * ‌
@@ -32,6 +32,7 @@ import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
 public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
+    private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
 
     /**
      * Parses an account balance line to extract shard, realm, account, and balance. If the shard matches
@@ -47,7 +48,7 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
     @Override
     public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
         try {
-            List<String> parts = Splitter.on(',').trimResults().omitEmptyStrings().splitToList(line);
+            List<String> parts = SPLITTER.splitToList(line);
             if (parts.size() != 4) {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
             }

@@ -42,7 +42,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.line.AccountBalanceLineParserV2;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV2;
 import com.hedera.mirror.importer.util.Utility;
 
 class BalanceFileReaderImplV2Test extends IntegrationTest {
@@ -60,8 +60,8 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
     private long sampleConsensusTimestamp;
 
     @Value("classpath:data/accountBalances/v2/2020-09-22T04_25_00.083212003Z_Balances.csv")
-    File balanceFile;
-    File testFile;
+    private File balanceFile;
+    private File testFile;
 
     @BeforeEach
     void setup() throws IOException {
@@ -82,6 +82,17 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         copy.add("");
         copy.addAll(lines);
         FileUtils.writeLines(testFile, copy);
+        assertThrows(InvalidDatasetException.class, () -> {
+            balanceFileReader.read(testFile);
+        });
+    }
+
+    @Test
+    void readInvalidWhenFileHasNoVersionHeader() throws IOException {
+        List<String> lines = FileUtils.readLines(balanceFile, "utf-8");
+        lines.remove(0);
+        FileUtils.writeLines(testFile, lines);
+
         assertThrows(InvalidDatasetException.class, () -> {
             balanceFileReader.read(testFile);
         });
@@ -209,6 +220,11 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
     @Test
     void fileVersion1HeaderIsRejected() {
         assertThat(balanceFileReader.isFirstLineFromFileVersion(VERSION_1_TIMESTAMP_HEADER_PREFIX)).isFalse();
+    }
+
+    @Test
+    void nullFirstLineIsRejected() {
+        assertThat(balanceFileReader.isFirstLineFromFileVersion(null)).isFalse();
     }
 
     @Test

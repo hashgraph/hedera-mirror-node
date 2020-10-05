@@ -51,12 +51,14 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
                      new BufferedReader(new InputStreamReader(new BoundedInputStream(new FileInputStream(file),
                              BUFFER_SIZE)), BUFFER_SIZE)) {
             String line = reader.readLine();
-            if (version2Reader.isFirstLineFromFileVersion(line)) {
+            if (line == null) {
+                throw new InvalidDatasetException("Account balance file is empty");
+            } else if (version2Reader.isFirstLineFromFileVersion(line)) {
                 return version2Reader;
             } else {
                 return version1Reader;
             }
-        } catch (IOException | NullPointerException ex) {
+        } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
         }
     }

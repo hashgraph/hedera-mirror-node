@@ -100,4 +100,11 @@ public class CompositeBalanceFileReaderTest {
             compositeBalanceFileReader.read(null);
         });
     }
+
+    @Test
+    void emptyFile() throws IOException {
+        assertThrows(InvalidDatasetException.class, () -> {
+            compositeBalanceFileReader.read(balanceFile);
+        });
+    }
 }
