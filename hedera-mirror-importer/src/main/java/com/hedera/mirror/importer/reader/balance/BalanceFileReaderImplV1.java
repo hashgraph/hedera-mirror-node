@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -53,6 +54,9 @@ public class BalanceFileReaderImplV1 implements BalanceFileReader {
 
     @Override
     public Stream<AccountBalance> read(File file) {
+        if (file == null) {
+            throw new InvalidDatasetException("Null file provided to balance file reader");
+        }
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
                     balanceParserProperties.getFileBufferSize());
@@ -93,18 +97,16 @@ public class BalanceFileReaderImplV1 implements BalanceFileReader {
             for (int i = 0; i < MAX_HEADER_ROWS; i++) {
                 line = Optional.of(reader.readLine()).get().trim();
                 String lineLowered = line.toLowerCase();
-                if (lineLowered.startsWith(TIMESTAMP_HEADER_PREFIX)) {
+                if (StringUtils.startsWith(lineLowered, TIMESTAMP_HEADER_PREFIX)) {
                     Instant instant = Instant.parse(line.substring(TIMESTAMP_HEADER_PREFIX.length()));
                     consensusTimestamp = Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
-                } else if (lineLowered.startsWith(COLUMN_HEADER_PREFIX)) {
+                } else if (StringUtils.startsWith(lineLowered, COLUMN_HEADER_PREFIX)) {
                     if (consensusTimestamp == -1) {
                         break;
                     }
                     return consensusTimestamp;
                 }
             }
-        } catch (NullPointerException ex) {
-            throw new InvalidDatasetException("Timestamp / column header not found in account balance file");
         } catch (DateTimeParseException ex) {
             throw new InvalidDatasetException("Invalid timestamp header line: " + line, ex);
         } catch (IOException ex) {

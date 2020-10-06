@@ -47,6 +47,9 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
     }
 
     private BalanceFileReader getReader(File file) {
+        if (file == null) {
+            throw new InvalidDatasetException("Null file provided to balance file reader");
+        }
         try (BufferedReader reader =
                      new BufferedReader(new InputStreamReader(new BoundedInputStream(new FileInputStream(file),
                              BUFFER_SIZE)), BUFFER_SIZE)) {

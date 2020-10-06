@@ -53,6 +53,9 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
 
     @Override
     public Stream<AccountBalance> read(File file) {
+        if (file == null) {
+            throw new InvalidDatasetException("Null file provided to balance file reader");
+        }
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
                     balanceParserProperties.getFileBufferSize());

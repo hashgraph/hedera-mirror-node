@@ -213,6 +213,13 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
     }
 
     @Test
+    void readNullFile() throws IOException {
+        assertThrows(InvalidDatasetException.class, () -> {
+            balanceFileReader.read(null);
+        });
+    }
+
+    @Test
     void fileVersion2HeaderConfirmed() {
         assertThat(balanceFileReader.isFirstLineFromFileVersion(VERSION_2_HEADER_PREFIX)).isTrue();
     }

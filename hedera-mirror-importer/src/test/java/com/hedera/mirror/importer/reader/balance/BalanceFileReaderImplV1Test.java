@@ -193,6 +193,13 @@ public class BalanceFileReaderImplV1Test extends IntegrationTest {
         verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
     }
 
+    @Test
+    void readNullFile() throws IOException {
+        assertThrows(InvalidDatasetException.class, () -> {
+            balanceFileReader.read(null);
+        });
+    }
+
     private void verifySuccess(File file, Stream<AccountBalance> stream, long expectedConsensusTimestamp,
                                int skipLines) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
