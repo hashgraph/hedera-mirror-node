@@ -100,13 +100,6 @@ public class Token {
         totalSupply = initialSupply;
     }
 
-    public void setInitialSupply(Long initialSupply) {
-        this.initialSupply = initialSupply;
-
-        // default totalSupply to initial supply
-        totalSupply = initialSupply;
-    }
-
     public void setFreezeKey(byte[] key) {
         freezeKey = key;
         freezeKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
@@ -155,19 +148,6 @@ public class Token {
         }
 
         return TokenKycStatusEnum.REVOKED;
-    }
-
-    @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Id implements Serializable {
-
-        private static final long serialVersionUID = -4595724698253758379L;
-
-        @Convert(converter = TokenIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId tokenId;
     }
 
     @Data
