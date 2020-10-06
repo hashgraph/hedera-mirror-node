@@ -41,11 +41,6 @@ func (a *Account) String() string {
 	return fmt.Sprintf("%d.%d.%d", a.Shard, a.Realm, a.Number)
 }
 
-// FromRosettaAccount populates domain type Account from Rosetta type Account
-func FromRosettaAccount(rAccount *rTypes.AccountIdentifier) (*Account, *rTypes.Error) {
-	return AccountFromString(rAccount.Address)
-}
-
 // ToRosettaAccount returns Rosetta type Account from the current domain type Account
 func (a *Account) ToRosettaAccount() *rTypes.AccountIdentifier {
 	return &rTypes.AccountIdentifier{

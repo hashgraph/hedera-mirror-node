@@ -6,6 +6,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/jinzhu/gorm"
+	"log"
 )
 
 const (
@@ -44,8 +45,12 @@ func (aber *AddressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 
 	entries := make([]*types.AddressBookEntry, len(dbEntries))
 	for i, e := range dbEntries {
+		peerId, err := e.getPeerId()
+		if err != nil {
+			return nil, err
+		}
 		entries[i] = &types.AddressBookEntry{
-			PeerId: e.getPeerId(),
+			PeerId: peerId,
 			Metadata: map[string]interface{}{
 				"ip":   e.Ip,
 				"port": e.Port,
@@ -57,21 +62,23 @@ func (aber *AddressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 		Entries: entries}, nil
 }
 
-func (abe *addressBookEntry) getPeerId() *types.Account {
+func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
 	if abe.NodeId == nil {
 		acc, err := types.AccountFromString(abe.Memo)
 		if err != nil {
-			panic(fmt.Sprintf(errors.CreateAccountDbIdFailed, abe.Memo))
+			log.Printf(errors.CreateAccountDbIdFailed, abe.Memo)
+			return nil, errors.Errors[errors.InternalServerError]
 		}
-		return acc
+		return acc, nil
 	}
 
 	decoded, err := types.NewAccountFromEncodedID(*abe.NodeId)
 	if err != nil {
-		panic(fmt.Sprintf(errors.CreateAccountDbIdFailed, abe.NodeId))
+		log.Printf(errors.CreateAccountDbIdFailed, abe.NodeId)
+		return nil, errors.Errors[errors.InternalServerError]
 	}
 
-	return decoded
+	return decoded, nil
 }
 
 func (aber *AddressBookEntryRepository) retrieveEntries() []addressBookEntry {

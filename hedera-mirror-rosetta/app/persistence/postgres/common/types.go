@@ -1,4 +1,4 @@
-package types
+package common
 
 type CryptoTransfer struct {
 	EntityID           int64 `gorm:"type:bigint"`

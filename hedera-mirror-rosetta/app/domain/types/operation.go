@@ -13,25 +13,6 @@ type Operation struct {
 	Amount  *Amount
 }
 
-// FromRosettaOperation populates domain type Operation from Rosetta type Operation
-func FromRosettaOperation(rOperation *rTypes.Operation) (*Operation, *rTypes.Error) {
-	acc, err := FromRosettaAccount(rOperation.Account)
-	if err != nil {
-		return nil, err
-	}
-	amount, err := FromRosettaAmount(rOperation.Amount)
-	if err != nil {
-		return nil, err
-	}
-	return &Operation{
-		Index:   rOperation.OperationIdentifier.Index,
-		Type:    rOperation.Type,
-		Status:  rOperation.Status,
-		Account: acc,
-		Amount:  amount,
-	}, nil
-}
-
 // ToRosettaOperation returns Rosetta type Operation from the current domain type Operation
 func (t *Operation) ToRosettaOperation() *rTypes.Operation {
 	rOperation := rTypes.Operation{

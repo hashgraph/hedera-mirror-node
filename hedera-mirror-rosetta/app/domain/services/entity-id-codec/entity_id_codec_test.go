@@ -1,7 +1,6 @@
 package entity_id_codec
 
 import (
-	"fmt"
 	"math"
 	"testing"
 )
@@ -18,13 +17,10 @@ func TestEntityIdEncoding(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		testname := fmt.Sprintf("%d.%d.%d", tt.shard, tt.realm, tt.number)
-		t.Run(testname, func(t *testing.T) {
-			res, _ := Encode(tt.shard, tt.realm, tt.number)
-			if res != tt.expected {
-				t.Errorf("Got %d, expected %d", res, tt.expected)
-			}
-		})
+		res, _ := Encode(tt.shard, tt.realm, tt.number)
+		if res != tt.expected {
+			t.Errorf("Got %d, expected %d", res, tt.expected)
+		}
 	}
 }
 
@@ -41,13 +37,10 @@ func TestEntityIdEncodeThrows(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		testname := fmt.Sprintf("%d.%d.%d", tt.shard, tt.realm, tt.number)
-		t.Run(testname, func(t *testing.T) {
-			_, err := Encode(tt.shard, tt.realm, tt.number)
-			if err == nil {
-				t.Errorf("Expected error when providing invalid encoding parameters")
-			}
-		})
+		_, err := Encode(tt.shard, tt.realm, tt.number)
+		if err == nil {
+			t.Errorf("Expected error when providing invalid encoding parameters")
+		}
 	}
 }
 
@@ -64,15 +57,12 @@ func TestEntityIdDecoding(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		testname := fmt.Sprintf("%d.%d.%d", tt.shard, tt.realm, tt.number)
-		t.Run(testname, func(t *testing.T) {
-			res, _ := Decode(tt.input)
-			if res.ShardNum != tt.shard ||
-				res.RealmNum != tt.realm ||
-				res.EntityNum != tt.number {
-				t.Errorf("Got %d.%d.%d, expected %d.%d.%d", res.ShardNum, res.RealmNum, res.EntityNum, tt.shard, tt.realm, tt.number)
-			}
-		})
+		res, _ := Decode(tt.input)
+		if res.ShardNum != tt.shard ||
+			res.RealmNum != tt.realm ||
+			res.EntityNum != tt.number {
+			t.Errorf("Got %d.%d.%d, expected %d.%d.%d", res.ShardNum, res.RealmNum, res.EntityNum, tt.shard, tt.realm, tt.number)
+		}
 	}
 }
 

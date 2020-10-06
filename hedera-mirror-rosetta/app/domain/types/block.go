@@ -17,28 +17,6 @@ type Block struct {
 	Transactions        []*Transaction
 }
 
-// FromRosettaBlock populates domain type Block from Rosetta type Block
-func FromRosettaBlock(rBlock *rTypes.Block) (*Block, *rTypes.Error) {
-	transactions := make([]*Transaction, len(rBlock.Transactions))
-	for i, rosettaT := range rBlock.Transactions {
-		t, err := FromRosettaTransaction(rosettaT)
-		if err != nil {
-			return nil, err
-		}
-		transactions[i] = t
-	}
-
-	return &Block{
-		Index:               rBlock.BlockIdentifier.Index,
-		Hash:                hex.SafeRemoveHexPrefix(rBlock.BlockIdentifier.Hash),
-		ConsensusStartNanos: rBlock.BlockIdentifier.Index,
-		ConsensusEndNanos:   rBlock.Timestamp,
-		ParentIndex:         rBlock.ParentBlockIdentifier.Index,
-		ParentHash:          hex.SafeRemoveHexPrefix(rBlock.ParentBlockIdentifier.Hash),
-		Transactions:        transactions,
-	}, nil
-}
-
 // ToRosettaBlock returns Rosetta type Block from the current domain type Block
 func (b *Block) ToRosettaBlock() *rTypes.Block {
 	transactions := make([]*rTypes.Transaction, len(b.Transactions))

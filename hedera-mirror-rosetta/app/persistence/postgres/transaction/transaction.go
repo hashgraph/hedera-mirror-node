@@ -3,8 +3,9 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/postgres/types"
+	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/postgres/common"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"log"
 	"strconv"
 	"strings"
 
@@ -43,7 +44,7 @@ type transactionType struct {
 	Name    string `gorm:"size:30"`
 }
 
-type transactionStatus struct {
+type transactionResult struct {
 	ProtoID int    `gorm:"type:integer;primary_key"`
 	Result  string `gorm:"size:100"`
 }
@@ -58,8 +59,8 @@ func (transactionType) TableName() string {
 	return "t_transaction_types"
 }
 
-// TableName - Set table name of the Transaction Statuses to be `t_transaction_results`
-func (transactionStatus) TableName() string {
+// TableName - Set table name of the Transaction Results to be `t_transaction_results`
+func (transactionResult) TableName() string {
 	return "t_transaction_results"
 }
 
@@ -72,7 +73,7 @@ type TransactionRepository struct {
 	dbClient *gorm.DB
 }
 
-// NewTransactionRepository creates an instance of a TransactionRepository struct. Populates the transaction types and statuses on init
+// NewTransactionRepository creates an instance of a TransactionRepository struct
 func NewTransactionRepository(dbClient *gorm.DB) *TransactionRepository {
 	return &TransactionRepository{dbClient: dbClient}
 }
@@ -88,32 +89,25 @@ func (tr *TransactionRepository) Types() map[int]string {
 	return tMap
 }
 
-// Statuses returns map of all Transaction Statuses
+// Statuses returns map of all Transaction Results
 // TODO implement cache instead of retrieving this everytime form DB
 func (tr *TransactionRepository) Statuses() map[int]string {
-	statusesArray := tr.retrieveTransactionStatuses()
-	sMap := make(map[int]string)
-	for _, s := range statusesArray {
-		sMap[s.ProtoID] = s.Result
+	rArray := tr.retrieveTransactionResults()
+	rMap := make(map[int]string)
+	for _, s := range rArray {
+		rMap[s.ProtoID] = s.Result
 	}
-	return sMap
+	return rMap
 }
 
 func (tr *TransactionRepository) TypesAsArray() []string {
 	return maphelper.GetStringValuesFromIntStringMap(tr.Types())
 }
 
-// FindByTimestamp retrieves Transaction by given timestamp
-func (tr *TransactionRepository) FindByTimestamp(timestamp int64) *types.Transaction {
-	t := transaction{}
-	tr.dbClient.Find(&t, timestamp)
-	return tr.constructTransaction([]transaction{t})
-}
-
 // FindBetween retrieves all Transactions between the provided start and end timestamp
 func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
 	if start > end {
-		return nil, errors.Errors[errors.StartMustBeBeforeEnd]
+		return nil, errors.Errors[errors.StartMustNotBeAfterEnd]
 	}
 	var transactions []transaction
 	tr.dbClient.Where(whereClauseBetweenConsensus, start, end).Find(&transactions)
@@ -125,7 +119,11 @@ func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.T
 	}
 	res := make([]*types.Transaction, 0, len(sameHashMap))
 	for _, sameHashTransactions := range sameHashMap {
-		res = append(res, tr.constructTransaction(sameHashTransactions))
+		transaction, err := tr.constructTransaction(sameHashTransactions)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, transaction)
 	}
 	return res, nil
 }
@@ -137,12 +135,31 @@ func (tr *TransactionRepository) FindByHashInBlock(hashStr string, consensusStar
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
 	}
-	tr.dbClient.Where(whereClauseBetweenConsensus, consensusStart, consensusEnd).Where(&transaction{TransactionHash: transactionHash}).Find(&transactions)
+	tr.dbClient.Where(&transaction{TransactionHash: transactionHash}).Find(&transactions)
+	transactions = filterTransactionsForRange(transactions, consensusStart, consensusEnd)
+
 	if len(transactions) == 0 {
 		return nil, errors.Errors[errors.TransactionNotFound]
 	}
 
-	return tr.constructTransaction(transactions), nil
+	transaction, err1 := tr.constructTransaction(transactions)
+	if err1 != nil {
+		return nil, err1
+	}
+	return transaction, nil
+}
+
+// filterTransactionsForRange - Filters the passed transactions. If the ConnsensusNS is not in the given [consensusStart; consensusEnd] range, the transaction is removed from the list
+func filterTransactionsForRange(transactions []transaction, consensusStart int64, consensusEnd int64) []transaction {
+	var length int
+	for _, t := range transactions {
+		if t.ConsensusNS < consensusStart || t.ConsensusNS > consensusEnd {
+			continue
+		}
+		transactions[length] = t
+		length++
+	}
+	return transactions[:length]
 }
 
 func (tr *TransactionRepository) findCryptoTransfers(timestamps []int64) []dbTypes.CryptoTransfer {
@@ -158,13 +175,13 @@ func (tr *TransactionRepository) retrieveTransactionTypes() []transactionType {
 	return transactionTypes
 }
 
-func (tr *TransactionRepository) retrieveTransactionStatuses() []transactionStatus {
-	var statuses []transactionStatus
-	tr.dbClient.Find(&statuses)
-	return statuses
+func (tr *TransactionRepository) retrieveTransactionResults() []transactionResult {
+	var tResults []transactionResult
+	tr.dbClient.Find(&tResults)
+	return tResults
 }
 
-func (tr *TransactionRepository) constructTransaction(sameHashTransactions []transaction) *types.Transaction {
+func (tr *TransactionRepository) constructTransaction(sameHashTransactions []transaction) (*types.Transaction, *rTypes.Error) {
 	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
 
 	transactionsMap := make(map[int64]transaction)
@@ -174,32 +191,39 @@ func (tr *TransactionRepository) constructTransaction(sameHashTransactions []tra
 		timestamps[i] = t.ConsensusNS
 	}
 	cryptoTransfers := tr.findCryptoTransfers(timestamps)
-	operations := tr.constructOperations(cryptoTransfers, transactionsMap)
+	operations, err := tr.constructOperations(cryptoTransfers, transactionsMap)
+	if err != nil {
+		return nil, err
+	}
 	tResult.Operations = operations
 
-	return tResult
+	return tResult, nil
 }
 
-func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.CryptoTransfer, transactionsMap map[int64]transaction) []*types.Operation {
+func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.CryptoTransfer, transactionsMap map[int64]transaction) ([]*types.Operation, *rTypes.Error) {
 	transactionTypes := tr.Types()
 	transactionStatuses := tr.Statuses()
 
 	operations := make([]*types.Operation, len(cryptoTransfers))
 	for i, ct := range cryptoTransfers {
-		a := constructAccount(ct.EntityID)
+		a, err := constructAccount(ct.EntityID)
+		if err != nil {
+			return nil, err
+		}
 		operationType := transactionTypes[transactionsMap[ct.ConsensusTimestamp].Type]
 		operationStatus := transactionStatuses[transactionsMap[ct.ConsensusTimestamp].Result]
 		operations[i] = &types.Operation{Index: int64(i), Type: operationType, Status: operationStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
 	}
-	return operations
+	return operations, nil
 }
 
-func constructAccount(encodedID int64) *types.Account {
+func constructAccount(encodedID int64) (*types.Account, *rTypes.Error) {
 	acc, err := types.NewAccountFromEncodedID(encodedID)
 	if err != nil {
-		panic(fmt.Sprintf(errors.CreateAccountDbIdFailed, encodedID))
+		log.Printf(errors.CreateAccountDbIdFailed, encodedID)
+		return nil, errors.Errors[errors.InternalServerError]
 	}
-	return acc
+	return acc, nil
 }
 
 func intsToString(ints []int64) string {

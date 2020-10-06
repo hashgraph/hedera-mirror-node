@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/caarlos0/env/v6 v6.3.0
+	github.com/coinbase/rosetta-cli v0.5.7 // indirect
 	github.com/coinbase/rosetta-sdk-go v0.4.9
 	github.com/hashgraph/hedera-sdk-go v0.9.1
 	github.com/jinzhu/gorm v1.9.16
