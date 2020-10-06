@@ -60,12 +60,12 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
                     balanceParserProperties.getFileBufferSize());
             long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
+            long shard = balanceParserProperties.getMirrorProperties().getShard();
 
             return reader.lines()
                     .map(line -> {
                         try {
-                            return parser.parse(line, consensusTimestamp, balanceParserProperties.getMirrorProperties()
-                                    .getShard());
+                            return parser.parse(line, consensusTimestamp, shard);
                         } catch (InvalidDatasetException ex) {
                             log.error(ex);
                             return null;
@@ -91,22 +91,19 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
         String line = null;
         try {
             line = reader.readLine();
-            if (isFirstLineFromFileVersion(line)) {
-                line = reader.readLine();
-                if (StringUtils.startsWith(line, TIMESTAMP_HEADER_PREFIX)) {
-                    long consensusTimestamp = convertTimestampLine(line);
-                    line = reader.readLine();
-                    if (StringUtils.startsWith(line, COLUMN_HEADER_PREFIX)) {
-                        return consensusTimestamp;
-                    } else {
-                        throw new InvalidDatasetException("Column header not found in account balance file");
-                    }
-                } else {
-                    throw new InvalidDatasetException("Timestamp not found in account balance file");
-                }
-            } else {
+            if (!isFirstLineFromFileVersion(line)) {
                 throw new InvalidDatasetException("Version number not found in account balance file");
             }
+            line = reader.readLine();
+            if (!StringUtils.startsWith(line, TIMESTAMP_HEADER_PREFIX)) {
+                throw new InvalidDatasetException("Timestamp not found in account balance file");
+            }
+            long consensusTimestamp = convertTimestampLine(line);
+            line = reader.readLine();
+            if (!StringUtils.startsWith(line, COLUMN_HEADER_PREFIX)) {
+                throw new InvalidDatasetException("Column header not found in account balance file");
+            }
+            return consensusTimestamp;
         } catch (DateTimeParseException ex) {
             throw new InvalidDatasetException("Invalid timestamp header line: " + line, ex);
         } catch (IOException ex) {

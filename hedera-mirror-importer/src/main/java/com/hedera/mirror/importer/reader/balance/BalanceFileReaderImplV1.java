@@ -60,12 +60,12 @@ public class BalanceFileReaderImplV1 implements BalanceFileReader {
             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
                     balanceParserProperties.getFileBufferSize());
             long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
+            long shard = balanceParserProperties.getMirrorProperties().getShard();
 
             return reader.lines()
                     .map(line -> {
                         try {
-                            return parser.parse(line, consensusTimestamp, balanceParserProperties.getMirrorProperties()
-                                    .getShard());
+                            return parser.parse(line, consensusTimestamp, shard);
                         } catch (InvalidDatasetException ex) {
                             log.error(ex);
                             return null;
