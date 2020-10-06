@@ -28,7 +28,6 @@ import java.io.InputStreamReader;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
@@ -95,8 +94,8 @@ public class BalanceFileReaderImplV1 implements BalanceFileReader {
         try {
             long consensusTimestamp = -1;
             for (int i = 0; i < MAX_HEADER_ROWS; i++) {
-                line = Optional.of(reader.readLine()).get().trim();
-                String lineLowered = line.toLowerCase();
+                line = reader.readLine();
+                String lineLowered = line != null ? line.trim().toLowerCase() : StringUtils.EMPTY;
                 if (StringUtils.startsWith(lineLowered, TIMESTAMP_HEADER_PREFIX)) {
                     Instant instant = Instant.parse(line.substring(TIMESTAMP_HEADER_PREFIX.length()));
                     consensusTimestamp = Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
