@@ -25,6 +25,7 @@ import com.google.common.base.Splitter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import java.io.Serializable;
 import java.util.List;
@@ -81,6 +82,10 @@ public class EntityId implements Serializable {
 
     public static EntityId of(TopicID topicID) {
         return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum(), EntityTypeEnum.TOPIC);
+    }
+
+    public static EntityId of(TokenID tokenID) {
+        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), EntityTypeEnum.TOKEN);
     }
 
     public static EntityId of(String entityId, EntityTypeEnum type) {
