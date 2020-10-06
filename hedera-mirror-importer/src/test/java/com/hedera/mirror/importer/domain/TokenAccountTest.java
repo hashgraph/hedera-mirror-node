@@ -40,48 +40,6 @@ public class TokenAccountTest {
         );
     }
 
-    @Test
-    void toggleAssociatedStatus() {
-        TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
-        assertEquals(false, tokenAccount.isAssociated());
-        tokenAccount.toggleAssociatedStatus();
-        assertEquals(true, tokenAccount.isAssociated());
-    }
-
-    @Test
-    void toggleFreezeStatusWhenNotApplicable() {
-        TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
-        tokenAccount.toggleFreezeStatus();
-        assertEquals(TokenFreezeStatusEnum.NOT_APPLICABLE, tokenAccount.getFreezeStatus());
-    }
-
-    @Test
-    void toggleFreezeStatusWhenApplicable() {
-        TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
-        tokenAccount.toggleFreezeStatus();
-        assertEquals(TokenFreezeStatusEnum.UNFROZEN, tokenAccount.getFreezeStatus());
-        tokenAccount.toggleFreezeStatus();
-        assertEquals(TokenFreezeStatusEnum.FROZEN, tokenAccount.getFreezeStatus());
-    }
-
-    @Test
-    void toggleKycStatusWhenNotApplicable() {
-        TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
-        tokenAccount.toggleKycStatus();
-        assertEquals(TokenKycStatusEnum.NOT_APPLICABLE, tokenAccount.getKycStatus());
-    }
-
-    @Test
-    void toggleKycStatusWhenApplicable() {
-        TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.REVOKED);
-        tokenAccount.toggleKycStatus();
-        assertEquals(TokenKycStatusEnum.GRANTED, tokenAccount.getKycStatus());
-        tokenAccount.toggleKycStatus();
-        assertEquals(TokenKycStatusEnum.REVOKED, tokenAccount.getKycStatus());
-    }
-
     private TokenAccount tokenAccount(EntityId tokenId, EntityId accountId) {
         TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
         tokenAccount.setAssociated(false);

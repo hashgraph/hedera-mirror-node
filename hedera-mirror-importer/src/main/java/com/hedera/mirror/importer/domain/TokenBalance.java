@@ -3,15 +3,9 @@ package com.hedera.mirror.importer.domain;
 /*-
  * ‌
  * Hedera Mirror Node
-<<<<<<< HEAD
  *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
  *
-=======
- * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
->>>>>>> Add Importer Logic to Persist HTS transactions
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at

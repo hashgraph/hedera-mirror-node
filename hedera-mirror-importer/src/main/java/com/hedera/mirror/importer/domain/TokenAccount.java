@@ -63,30 +63,6 @@ public class TokenAccount {
         id = new TokenAccount.Id(tokenId, accountId);
     }
 
-    public void toggleAssociatedStatus() {
-        associated = !associated;
-    }
-
-    public void toggleFreezeStatus() {
-        // only toggle applicable states
-        if (freezeStatus == TokenFreezeStatusEnum.NOT_APPLICABLE) {
-            return;
-        }
-
-        freezeStatus = freezeStatus == TokenFreezeStatusEnum.FROZEN ? TokenFreezeStatusEnum.UNFROZEN :
-                TokenFreezeStatusEnum.FROZEN;
-    }
-
-    public void toggleKycStatus() {
-        // only toggle applicable states
-        if (kycStatus == TokenKycStatusEnum.NOT_APPLICABLE) {
-            return;
-        }
-
-        kycStatus = kycStatus == TokenKycStatusEnum.GRANTED ? TokenKycStatusEnum.REVOKED :
-                TokenKycStatusEnum.GRANTED;
-    }
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
