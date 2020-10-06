@@ -129,7 +129,7 @@ public class Token {
      */
     public TokenFreezeStatusEnum getNewAccountFreezeStatus() {
         if (freezeKey == null) {
-            return TokenFreezeStatusEnum.NOTAPPLICABLE;
+            return TokenFreezeStatusEnum.NOT_APPLICABLE;
         }
 
         return freezeDefault ? TokenFreezeStatusEnum.FROZEN : TokenFreezeStatusEnum.UNFROZEN;
@@ -144,7 +144,7 @@ public class Token {
      */
     public TokenKycStatusEnum getNewAccountKycStatus() {
         if (kycKey == null) {
-            return TokenKycStatusEnum.NOTAPPLICABLE;
+            return TokenKycStatusEnum.NOT_APPLICABLE;
         }
 
         return TokenKycStatusEnum.REVOKED;

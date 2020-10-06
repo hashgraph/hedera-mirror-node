@@ -49,8 +49,8 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
         tokenAccount.setAssociated(true);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOTAPPLICABLE);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOTAPPLICABLE);
+        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setCreatedTimestamp(1L);
         tokenAccount.setModifiedTimestamp(2L);
         return tokenAccount;

@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TokenKycStatusEnum {
 
-    NOTAPPLICABLE(0),
+    NOT_APPLICABLE(0),
     GRANTED(1),
     REVOKED(2);
 

@@ -43,8 +43,8 @@ public class TokenTest {
                 () -> assertNotNull(token.getSupplyKeyEd25519Hex()),
                 () -> assertNotNull(token.getWipeKeyEd25519Hex()),
                 () -> assertNotEquals(0, token.getTotalSupply()),
-                () -> assertNotEquals(TokenFreezeStatusEnum.NOTAPPLICABLE, token.getNewAccountFreezeStatus()),
-                () -> assertNotEquals(TokenKycStatusEnum.NOTAPPLICABLE, token.getNewAccountKycStatus())
+                () -> assertNotEquals(TokenFreezeStatusEnum.NOT_APPLICABLE, token.getNewAccountFreezeStatus()),
+                () -> assertNotEquals(TokenKycStatusEnum.NOT_APPLICABLE, token.getNewAccountKycStatus())
         );
     }
 
@@ -65,7 +65,7 @@ public class TokenTest {
     @Test
     void verifyNewAccountFreezeStatusWithNoFreezeKey() {
         Token token = new Token();
-        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.NOTAPPLICABLE);
+        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.NOT_APPLICABLE);
     }
 
     @Test
@@ -87,7 +87,7 @@ public class TokenTest {
     @Test
     void verifyNewAccountKycStatusWithNoKycKey() {
         Token token = new Token();
-        assertEquals(token.getNewAccountKycStatus(), TokenKycStatusEnum.NOTAPPLICABLE);
+        assertEquals(token.getNewAccountKycStatus(), TokenKycStatusEnum.NOT_APPLICABLE);
     }
 
     @Test

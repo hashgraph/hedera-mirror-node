@@ -34,8 +34,8 @@ public class TokenAccountTest {
         TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
         assertAll(
                 () -> assertNotEquals(0, tokenAccount.getCreatedTimestamp()),
-                () -> assertEquals(TokenFreezeStatusEnum.NOTAPPLICABLE, tokenAccount.getFreezeStatus()),
-                () -> assertEquals(TokenKycStatusEnum.NOTAPPLICABLE, tokenAccount.getKycStatus()),
+                () -> assertEquals(TokenFreezeStatusEnum.NOT_APPLICABLE, tokenAccount.getFreezeStatus()),
+                () -> assertEquals(TokenKycStatusEnum.NOT_APPLICABLE, tokenAccount.getKycStatus()),
                 () -> assertNotEquals(0, tokenAccount.getModifiedTimestamp())
         );
     }
@@ -52,7 +52,7 @@ public class TokenAccountTest {
     void toggleFreezeStatusWhenNotApplicable() {
         TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
         tokenAccount.toggleFreezeStatus();
-        assertEquals(TokenFreezeStatusEnum.NOTAPPLICABLE, tokenAccount.getFreezeStatus());
+        assertEquals(TokenFreezeStatusEnum.NOT_APPLICABLE, tokenAccount.getFreezeStatus());
     }
 
     @Test
@@ -69,7 +69,7 @@ public class TokenAccountTest {
     void toggleKycStatusWhenNotApplicable() {
         TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
         tokenAccount.toggleKycStatus();
-        assertEquals(TokenKycStatusEnum.NOTAPPLICABLE, tokenAccount.getKycStatus());
+        assertEquals(TokenKycStatusEnum.NOT_APPLICABLE, tokenAccount.getKycStatus());
     }
 
     @Test
@@ -85,8 +85,8 @@ public class TokenAccountTest {
     private TokenAccount tokenAccount(EntityId tokenId, EntityId accountId) {
         TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
         tokenAccount.setAssociated(false);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOTAPPLICABLE);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOTAPPLICABLE);
+        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setCreatedTimestamp(1L);
         tokenAccount.setModifiedTimestamp(2L);
         return tokenAccount;

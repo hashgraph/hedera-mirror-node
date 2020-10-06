@@ -129,7 +129,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(dissociateTransaction, dissociateTimeStamp, null);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, dissociateTimeStamp, false,
-                TokenFreezeStatusEnum.NOTAPPLICABLE, TokenKycStatusEnum.NOTAPPLICABLE);
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
     }
 
     @Test
@@ -138,8 +138,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         // delete token
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
-        long deleteTimeStamp = 10L;
-        insertAndParseTransaction(deleteTransaction, deleteTimeStamp, null);
+        insertAndParseTransaction(deleteTransaction, 10L, null);
 
         Entities tokenEntities = getTokenEntity(TOKEN_ID);
         var expectedEntity = createEntity(tokenEntities, null, null, TOKEN_REF_KEY, null, TRANSACTION_MEMO, 1L,
@@ -149,7 +148,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         assertThat(getEntity(tokenEntities.getId())).isEqualTo(expectedEntity);
 
         assertEquals(5, entityRepository.count());
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, deleteTimeStamp, SYMBOL);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL);
     }
 
     @Test
@@ -192,7 +191,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(transaction, freezeTimeStamp, null);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, freezeTimeStamp, true,
-                TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.NOTAPPLICABLE);
+                TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.NOT_APPLICABLE);
     }
 
     @Test
@@ -215,7 +214,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, unfreezeTimeStamp, true,
                 TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.NOTAPPLICABLE);
+                TokenKycStatusEnum.NOT_APPLICABLE);
     }
 
     @Test
@@ -227,7 +226,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(transaction, grantTimeStamp, null);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, grantTimeStamp, true,
-                TokenFreezeStatusEnum.NOTAPPLICABLE,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
                 TokenKycStatusEnum.GRANTED);
     }
 
@@ -241,7 +240,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         // verify token account was not created when missing
         assertTokenAccountInRepository(TOKEN_ID, PAYER, false, ASSOCIATE_TIMESTAMP, grantTimeStamp, true,
-                TokenFreezeStatusEnum.NOTAPPLICABLE,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
                 TokenKycStatusEnum.GRANTED);
     }
 
@@ -264,7 +263,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(revokeTransaction, revokeTimeStamp, null);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, revokeTimeStamp, true,
-                TokenFreezeStatusEnum.NOTAPPLICABLE, TokenKycStatusEnum.REVOKED);
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.REVOKED);
     }
 
     @Test
@@ -543,7 +542,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(associateTransaction, associateTimestamp, null);
 
         assertTokenAccountInRepository(tokenID, accountID, true, associateTimestamp, associateTimestamp, true,
-                setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOTAPPLICABLE,
-                setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOTAPPLICABLE);
+                setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOT_APPLICABLE,
+                setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE);
     }
 }

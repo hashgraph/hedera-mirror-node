@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,16 +20,9 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.CrudRepository;
 
-@Getter
-@RequiredArgsConstructor
-public enum TokenFreezeStatusEnum {
+import com.hedera.mirror.importer.domain.TokenBalance;
 
-    NOT_APPLICABLE(0),
-    FROZEN(1),
-    UNFROZEN(2);
-
-    private final int id;
+public interface TokenBalanceRepository extends CrudRepository<TokenBalance, TokenBalance.Id> {
 }

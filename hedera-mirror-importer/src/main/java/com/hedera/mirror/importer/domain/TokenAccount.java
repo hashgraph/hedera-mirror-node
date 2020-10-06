@@ -69,7 +69,7 @@ public class TokenAccount {
 
     public void toggleFreezeStatus() {
         // only toggle applicable states
-        if (freezeStatus == TokenFreezeStatusEnum.NOTAPPLICABLE) {
+        if (freezeStatus == TokenFreezeStatusEnum.NOT_APPLICABLE) {
             return;
         }
 
@@ -79,7 +79,7 @@ public class TokenAccount {
 
     public void toggleKycStatus() {
         // only toggle applicable states
-        if (kycStatus == TokenKycStatusEnum.NOTAPPLICABLE) {
+        if (kycStatus == TokenKycStatusEnum.NOT_APPLICABLE) {
             return;
         }
 

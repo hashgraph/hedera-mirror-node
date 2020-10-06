@@ -163,8 +163,8 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     void onTokenAccount() throws ImporterException {
         TokenAccount tokenAccount = new TokenAccount(TOKEN_ID, ENTITY_ID);
         tokenAccount.setAssociated(true);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOTAPPLICABLE);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOTAPPLICABLE);
+        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setCreatedTimestamp(1L);
         tokenAccount.setModifiedTimestamp(2L);
         repositoryEntityListener.onTokenAccount(tokenAccount);
