@@ -3,7 +3,9 @@ package com.hedera.mirror.importer.reader.balance.line;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -13,6 +15,12 @@ import com.hedera.mirror.importer.exception.InvalidDatasetException;
 class AccountBalanceLineParserV1Test {
     private static final long timestamp = 1596340377922333444L;
     private static final long systemShardNum = 0;
+    private AccountBalanceLineParserV1 parser;
+
+    @BeforeEach
+    void setup() {
+        parser = new AccountBalanceLineParserV1();
+    }
 
     @DisplayName("Parse account balance line")
     @ParameterizedTest(name = "from \"{0}\"")
@@ -41,7 +49,6 @@ class AccountBalanceLineParserV1Test {
             ";true;;;"
     }, delimiter = ';')
     void parse(String line, boolean expectThrow, Long expectedRealm, Long expectedAccount, Long expectedBalance) {
-        AccountBalanceLineParserV1 parser = new AccountBalanceLineParserV1();
         if (!expectThrow) {
             AccountBalance accountBalance = parser.parse(line, timestamp, systemShardNum);
             var id = accountBalance.getId();
@@ -55,5 +62,12 @@ class AccountBalanceLineParserV1Test {
                 parser.parse(line, timestamp, systemShardNum);
             });
         }
+    }
+
+    @Test
+    void parseNullLine() {
+        assertThrows(InvalidDatasetException.class, () -> {
+            parser.parse(null, timestamp, systemShardNum);
+        });
     }
 }

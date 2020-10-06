@@ -54,6 +54,9 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
     @Override
     public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
         try {
+            if (line == null) {
+                throw new InvalidDatasetException("Null line cannot be parsed");
+            }
             List<String> parts = SPLITTER.splitToList(line);
             boolean hasTokenBalance;
             if (parts.size() == 5) {
@@ -86,7 +89,7 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
                     .emptyList();
 
             return new AccountBalance(balance, tokenBalances, new AccountBalance.Id(consensusTimestamp, accountId));
-        } catch (NullPointerException | NumberFormatException | InvalidProtocolBufferException ex) {
+        } catch (NumberFormatException | InvalidProtocolBufferException ex) {
             throw new InvalidDatasetException("Invalid account balance line: " + line, ex);
         }
     }

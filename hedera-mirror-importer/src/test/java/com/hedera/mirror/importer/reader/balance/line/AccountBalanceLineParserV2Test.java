@@ -29,7 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -42,6 +44,12 @@ class AccountBalanceLineParserV2Test {
 
     private static final long timestamp = 1596340377922333444L;
     private static final long systemShardNum = 0;
+    private AccountBalanceLineParserV2 parser;
+
+    @BeforeEach
+    void setup() {
+        parser = new AccountBalanceLineParserV2();
+    }
 
     @DisplayName("Parse account balance line")
     @ParameterizedTest(name = "from \"{0}\"")
@@ -82,7 +90,6 @@ class AccountBalanceLineParserV2Test {
     }, delimiter = ';')
     void parse(String line, boolean expectThrow, Long expectedRealm, Long expectedAccount, Long expectedBalance,
                String tokenBalances) throws IOException {
-        AccountBalanceLineParserV2 parser = new AccountBalanceLineParserV2();
         if (!expectThrow) {
             AccountBalance accountBalance = parser.parse(line, timestamp, systemShardNum);
             var id = accountBalance.getId();
@@ -122,5 +129,12 @@ class AccountBalanceLineParserV2Test {
                 parser.parse(line, timestamp, systemShardNum);
             });
         }
+    }
+
+    @Test
+    void parseNullLine() {
+        assertThrows(InvalidDatasetException.class, () -> {
+            parser.parse(null, timestamp, systemShardNum);
+        });
     }
 }
