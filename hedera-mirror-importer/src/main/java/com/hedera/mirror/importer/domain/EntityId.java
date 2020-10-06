@@ -37,11 +37,11 @@ import lombok.Value;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 /**
- * Common encapsulation for accountID, fileID, contractID, and topicID.
+ * Common encapsulation for accountID, fileID, contractID, topicID and tokenID.
  * <p>
- * There is no valid entity in Hedera network with an id '0.0.0'. When AccountID/FileID/ContractID/TopicID are not set,
- * their values default to '0.0.0'. If such an unset (default) instance is used to create EntityId using one of the
- * of(..) functions, null is returned.
+ * There is no valid entity in Hedera network with an id '0.0.0'. When AccountID/FileID/ContractID/TopicID/TokenID are
+ * not set, their values default to '0.0.0'. If such an unset (default) instance is used to create EntityId using one of
+ * the of(..) functions, null is returned.
  */
 @Value
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

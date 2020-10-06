@@ -54,7 +54,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
@@ -132,8 +131,8 @@ public class Utility {
     /**
      * Parses record stream file.
      *
-     * @param filePath             path to record file
-     * @param recordItemConsumer   if not null, consumer is invoked for each transaction in the record file
+     * @param filePath           path to record file
+     * @param recordItemConsumer if not null, consumer is invoked for each transaction in the record file
      * @return parsed record file
      */
     public static RecordFile parseRecordFile(String filePath, Consumer<RecordItem> recordItemConsumer) {
@@ -441,18 +440,25 @@ public class Utility {
      *                                        (BasicTypes.proto)
      */
     public static @Nullable
-    String protobufKeyToHexIfEd25519OrNull(@Nullable byte[] protobufKey)
-            throws InvalidProtocolBufferException {
+    String protobufKeyToHexIfEd25519OrNull(@Nullable byte[] protobufKey) {
         if ((null == protobufKey) || (0 == protobufKey.length)) {
             return null;
         }
 
-        var parsedKey = Key.parseFrom(protobufKey);
-        if (ED25519 != parsedKey.getKeyCase()) {
+        try {
+            var parsedKey = Key.parseFrom(protobufKey);
+            if (ED25519 != parsedKey.getKeyCase()) {
+                return null;
+            }
+
+            return Hex.encodeHexString(parsedKey.getEd25519().toByteArray(), true);
+        } catch (InvalidProtocolBufferException protoEx) {
+            log.error("Invalid protobuf Key, could parse key", protoEx);
+            return null;
+        } catch (Exception e) {
+            log.error("Invalid ED25519 key could not be translated to hex text.", e);
             return null;
         }
-
-        return Hex.encodeHexString(parsedKey.getEd25519().toByteArray(), true);
     }
 
     /**

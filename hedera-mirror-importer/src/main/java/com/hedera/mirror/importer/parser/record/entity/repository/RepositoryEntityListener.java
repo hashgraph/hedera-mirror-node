@@ -31,6 +31,9 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -42,6 +45,9 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -59,6 +65,9 @@ public class RepositoryEntityListener implements EntityListener {
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
+    private final TokenRepository tokenRepository;
+    private final TokenAccountRepository tokenAccountRepository;
+    private final TokenTransferRepository tokenTransferRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
 
@@ -95,6 +104,21 @@ public class RepositoryEntityListener implements EntityListener {
     @Override
     public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
         nonFeeTransferRepository.save(nonFeeTransfer);
+    }
+
+    @Override
+    public void onToken(Token token) throws ImporterException {
+        tokenRepository.save(token);
+    }
+
+    @Override
+    public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        tokenAccountRepository.save(tokenAccount);
+    }
+
+    @Override
+    public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
+        tokenTransferRepository.save(tokenTransfer);
     }
 
     @Override

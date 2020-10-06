@@ -45,6 +45,19 @@ public class TransactionHandlerFactory {
     private final FileCreateTransactionHandler fileCreateTransactionHandler;
     private final FileDeleteTransactionHandler fileDeleteTransactionHandler;
     private final FileUpdateTransactionHandler fileUpdateTransactionHandler;
+    private final TokenAssociateTransactionsHandler tokenAssociateTransactionsHandler;
+    private final TokenBurnTransactionsHandler tokenBurnTransactionsHandler;
+    private final TokenCreateTransactionsHandler tokenCreateTransactionsHandler;
+    private final TokenDeleteTransactionsHandler tokenDeleteTransactionsHandler;
+    private final TokenDissociateTransactionsHandler tokenDissociateTransactionsHandler;
+    private final TokenFreezeTransactionsHandler tokenFreezeTransactionsHandler;
+    private final TokenGrantKycTransactionsHandler tokenGrantKycTransactionsHandler;
+    private final TokenMintTransactionsHandler tokenMintTransactionsHandler;
+    private final TokenRevokeKycTransactionsHandler tokenRevokeKycTransactionsHandler;
+    private final TokenTransferTransactionsHandler tokenTransferTransactionsHandler;
+    private final TokenUnfreezeTransactionsHandler tokenUnfreezeTransactionsHandler;
+    private final TokenUpdateTransactionsHandler tokenUpdateTransactionsHandler;
+    private final TokenWipeTransactionsHandler tokenWipeTransactionsHandler;
     private final SystemDeleteTransactionHandler systemDeleteTransactionHandler;
     private final SystemUndeleteTransactionHandler systemUndeleteTransactionHandler;
     private final UnknownDataTransactionHandler unknownDataTransactionHandler;
@@ -86,6 +99,32 @@ public class TransactionHandlerFactory {
             return fileDeleteTransactionHandler;
         } else if (body.hasFileUpdate()) {
             return fileUpdateTransactionHandler;
+        } else if (body.hasTokenAssociate()) {
+            return tokenAssociateTransactionsHandler;
+        } else if (body.hasTokenBurn()) {
+            return tokenBurnTransactionsHandler;
+        } else if (body.hasTokenCreation()) {
+            return tokenCreateTransactionsHandler;
+        } else if (body.hasTokenDeletion()) {
+            return tokenDeleteTransactionsHandler;
+        } else if (body.hasTokenDissociate()) {
+            return tokenDissociateTransactionsHandler;
+        } else if (body.hasTokenFreeze()) {
+            return tokenFreezeTransactionsHandler;
+        } else if (body.hasTokenGrantKyc()) {
+            return tokenGrantKycTransactionsHandler;
+        } else if (body.hasTokenMint()) {
+            return tokenMintTransactionsHandler;
+        } else if (body.hasTokenRevokeKyc()) {
+            return tokenRevokeKycTransactionsHandler;
+        } else if (body.hasTokenTransfers()) {
+            return tokenTransferTransactionsHandler;
+        } else if (body.hasTokenUnfreeze()) {
+            return tokenUnfreezeTransactionsHandler;
+        } else if (body.hasTokenUpdate()) {
+            return tokenUpdateTransactionsHandler;
+        } else if (body.hasTokenWipe()) {
+            return tokenWipeTransactionsHandler;
         } else if (body.hasSystemDelete()) {
             return systemDeleteTransactionHandler;
         } else if (body.hasSystemUndelete()) {

@@ -3,9 +3,9 @@ package com.hedera.mirror.importer.domain;
 /*-
  * ‌
  * Hedera Mirror Node
- *
+ * ​
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
@@ -37,37 +38,43 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Entity
-public class TokenBalance implements Persistable<TokenBalance.Id> {
-    private long balance;
+@NoArgsConstructor
+public class TokenTransfer implements Persistable<TokenTransfer.Id> {
+
+    public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
+        id = new TokenTransfer.Id(consensusTimestamp, tokenId, accountId);
+        this.amount = amount;
+    }
 
     @EmbeddedId
     @JsonUnwrapped
-    private TokenBalance.Id id;
+    private Id id;
 
+    private long amount;
+
+    @JsonIgnore
     @Override
     public boolean isNew() {
-        return true; // Since we never update balances and use a natural ID, avoid Hibernate querying before insert
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
     @Data
+    @Embeddable
     @AllArgsConstructor
     @NoArgsConstructor
-    @Embeddable
     public static class Id implements Serializable {
 
-        private static final long serialVersionUID = -8547332015249955424L;
+        private static final long serialVersionUID = 8693129287509470469L;
 
         private long consensusTimestamp;
-
-        @Convert(converter = AccountIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId accountId;
 
         @Convert(converter = TokenIdConverter.class)
         @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId tokenId;
+
+        @Convert(converter = AccountIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId accountId;
     }
 }
