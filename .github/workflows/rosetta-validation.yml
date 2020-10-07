@@ -1,6 +1,6 @@
 name: Rosetta Validation
 
-on: 
+on:
   - pull_request
 
 jobs:
@@ -10,11 +10,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Override Mirror Node Importer StartDate
+      uses: mikefarah/yq@3.4.0
+      with:
+        cmd: yq write -i application.yml hedera.mirror.importer.startDate 2019-10-11T00:00:00.000000Z
+
     - name: Run Rosetta Mirror Node
       run: docker-compose up --build -d
 
-    - name: Wait for Mirror Node to start
-      run: bash ./.github/workflows/wait-for-mirror-node.sh
+    - name: Wait for Mirror Node to start (60s)
+      run: sleep 60
 
     - name: Run CLI Validation
-      run: bash ./hedera-mirror-rosetta/run-validation.sh
+      run: bash ./hedera-mirror-rosetta/validation/run-validation.sh

@@ -1,14 +1,18 @@
 #!/bin/bash
 parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cd "$parent_path"
-echo Getting Rosetta CLI...
-# Temporarily using Git Clone instead of Go Get. New version with support of start & end indexes is not released yet
-git clone https://github.com/coinbase/rosetta-cli.git
-cd ./rosetta-cli || exit 1
+
+if ./rosetta-cli | grep -q 'CLI for the Rosetta API'; then
+    echo Rosetta CLI already installed. Skipping installation.
+else
+    echo Installing Rosetta CLI...
+    curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/master/scripts/install.sh | sh -s -- -b .
+fi
+
 network="$1"
 function run_from_genesis() {
     echo Running Rosetta Data API Validation \#1
-    if ! go run main.go check:data --configuration-file=./../validation/$network/validate-from-genesis.json; then
+    if ! ./rosetta-cli check:data --configuration-file=./$network/validate-from-genesis.json; then
         echo Failed to Pass API Validation \#1
         exit 1
     fi
@@ -17,7 +21,7 @@ function run_demo() {
     echo Running DEMO Validation
     run_from_genesis
     echo Running Rosetta Data API Validation \#2
-    if ! go run main.go check:data --configuration-file=./../validation/$network/validate-from-block-10.json; then
+    if ! ./rosetta-cli check:data --configuration-file=./$network/validate-from-block-10.json; then
         echo Failed to Pass API Validation \#2
         exit 1
     fi
@@ -32,6 +36,7 @@ case $network in
     ;;
     *)
         network="demo"
+        echo $network
         run_demo
     ;;
 esac

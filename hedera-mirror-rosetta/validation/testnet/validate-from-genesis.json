@@ -18,7 +18,7 @@
     "reconciliation_disabled": false,
     "inactive_discrepency_search_disabled": false,
     "balance_tracking_disabled": false,
-    "bootstrap_balances": "./../validation/testnet/data_genesis_balances.json",
+    "bootstrap_balances": "./testnet/data_genesis_balances.json",
     "ignore_reconciliation_error": true
   }
 }
