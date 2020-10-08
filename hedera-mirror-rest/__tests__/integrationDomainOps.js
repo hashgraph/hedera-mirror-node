@@ -118,7 +118,7 @@ const addEntity = async (defaults, entity) => {
     entity_realm: 0,
     exp_time_ns: null,
     public_key: null,
-    entity_type: 5,
+    entity_type: 1,
     auto_renew_period: null,
     key: null,
     ...defaults,
