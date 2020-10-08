@@ -1,5 +1,5 @@
 {
-  "description": "Token api call for all tokens",
+  "description": "Token api call for all tokens associated with a given account id",
   "setup": {
     "accounts": [
       {

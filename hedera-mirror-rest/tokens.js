@@ -25,7 +25,6 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 // select columns
 const sqlQueryColumns = {
@@ -46,10 +45,14 @@ const tokensSelectQuery = `select t.token_id, symbol, e.key from token t`;
 const accountIdJoinQuery = ` join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id`;
 const entityIdJoinQuery = ` join t_entities e on e.id = t.token_id`;
 
-const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, orderBy, filters) => {
+/**
+ * Given top level select columns and filters from request query, extract filters and create final sql query with appropriate where clauses.
+ */
+const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, filters) => {
   // add filters
   let limit;
   let order = 'asc';
+  let applicableFilters = 0;
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
@@ -67,13 +70,14 @@ const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, ord
       continue;
     }
 
-    pgSqlQuery += pgSqlParams.length == 0 ? ` where ` : ` and `;
+    pgSqlQuery += applicableFilters === 0 ? ` where ` : ` and `;
+    applicableFilters++;
     pgSqlQuery += `${filterColumnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
     pgSqlParams.push(filter.value);
   }
 
   // add order
-  pgSqlQuery += ` order by ${orderBy} ${order}`;
+  pgSqlQuery += ` order by ${sqlQueryColumns.TOKEN_ID} ${order}`;
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
@@ -97,17 +101,6 @@ const formatTokenRow = (row) => {
   };
 };
 
-/**
- * Verify topicId and sequencenumber meet entity_num format
- */
-const validateTokenFilters = (accountId, filters) => {
-  if (accountId && !utils.isValidEntityNum(accountId)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID);
-  }
-
-  utils.validateAndParseFilters(filters);
-};
-
 const getTokensRequest = async (req, res) => {
   const filters = utils.buildFilterObject(req.query);
 
@@ -126,14 +119,13 @@ const getTokensRequest = async (req, res) => {
   getTokensSqlQuery += entityIdJoinQuery;
 
   // validate filters
-  validateTokenFilters(accountFilter, filters);
+  utils.validateAndParseFilters(filters);
 
   // build sql query validated param and filters
   const {query, params, order, limit} = extractSqlFromTokenRequest(
     `${getTokensSqlQuery}`,
     getTokenSqlParams,
     nextParamCount,
-    sqlQueryColumns.TOKEN_ID,
     filters
   );
   const tokensResponse = {

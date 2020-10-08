@@ -42,11 +42,7 @@
         "token_id": 98784293486,
         "symbol": "HEDERACOIN"
       }
-    ],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "tokentransfers": []
+    ]
   },
   "url": "/api/v1/tokens?entity.publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
   "responseStatus": 200,

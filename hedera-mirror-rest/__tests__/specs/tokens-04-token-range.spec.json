@@ -1,5 +1,5 @@
 {
-  "description": "Token api call for all tokens",
+  "description": "Token api call for all tokens within a given token id range",
   "setup": {
     "accounts": [
       {
@@ -34,11 +34,7 @@
         "token_id": 98784293486,
         "symbol": "HEDERACOIN"
       }
-    ],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "tokentransfers": []
+    ]
   },
   "url": "/api/v1/tokens?token.id=gte:0.0.18&token.id=lt:0.30000.0&limit=2",
   "responseStatus": 200,

@@ -359,7 +359,7 @@ const addToken = async function (token) {
 };
 
 const addTokenAccount = async function (tokenAccount) {
-  // create token object
+  // create token account object
   tokenAccount = Object.assign(
     {
       account_id: 0,

@@ -1,5 +1,5 @@
 {
-  "description": "Token api call for all tokens",
+  "description": "Token api call for all tokens with no applicable tokens",
   "setup": {
     "accounts": [],
     "tokens": [],
