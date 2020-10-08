@@ -77,7 +77,7 @@ const makeTable = (data, server) => {
       return;
     }
     const failureMsg =
-      result.failureMessages == undefined ? '' : result.failureMessages.join('<br>,').replace('\n', '<br>');
+      result.failureMessages == undefined ? '' : result.failureMessages.join('<br>,').replaceAll('\n', '<br>');
 
     h +=
       '<tr>' +
