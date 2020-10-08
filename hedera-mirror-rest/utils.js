@@ -774,6 +774,7 @@ module.exports = {
   parseEntityId,
   parseLimitAndOrderParams,
   parseBalanceQueryParam,
+  parsePublicKey,
   parsePublicKeyQueryParam,
   parseAccountIdQueryParam,
   parseTimestampQueryParam,

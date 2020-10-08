@@ -41,6 +41,7 @@ const filterColumnMap = {
   'token.id': sqlQueryColumns.TOKEN_ID,
 };
 
+// sql queries
 const tokensSelectQuery = `select t.token_id, symbol, e.key from token t`;
 const accountIdJoinQuery = ` join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id`;
 const entityIdJoinQuery = ` join t_entities e on e.id = t.token_id`;
@@ -102,32 +103,35 @@ const formatTokenRow = (row) => {
 };
 
 const getTokensRequest = async (req, res) => {
+  // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
 
-  // if account.id filter is present join on token_account
-  const accountFilter = req.query[constants.filterKeys.ACCOUNT_ID];
+  // validate filters
+  utils.validateAndParseFilters(filters);
+
   let getTokensSqlQuery = tokensSelectQuery;
   let getTokenSqlParams = [];
   let nextParamCount = 1;
 
+  // if account.id filter is present join on token_account
+  const accountFilter = req.query[constants.filterKeys.ACCOUNT_ID];
   if (accountFilter) {
     getTokensSqlQuery += accountIdJoinQuery;
     getTokenSqlParams.push(accountFilter);
     nextParamCount++;
   }
 
+  // add join with entities table to sql query
   getTokensSqlQuery += entityIdJoinQuery;
 
-  // validate filters
-  utils.validateAndParseFilters(filters);
-
-  // build sql query validated param and filters
+  // build final sql query
   const {query, params, order, limit} = extractSqlFromTokenRequest(
     `${getTokensSqlQuery}`,
     getTokenSqlParams,
     nextParamCount,
     filters
   );
+
   const tokensResponse = {
     tokens: [],
     links: {
@@ -139,10 +143,9 @@ const getTokensRequest = async (req, res) => {
     // format messages
     tokensResponse.tokens = tokens.map((m) => formatTokenRow(m));
 
-    // populate next
+    // populate next link
     const lastTokenId =
       tokensResponse.tokens.length > 0 ? tokensResponse.tokens[tokensResponse.tokens.length - 1].token_id : null;
-
     tokensResponse.links.next = utils.getPaginationLink(
       req,
       tokens.length !== limit,
