@@ -89,6 +89,7 @@
     "collectCoverage": true,
     "coverageDirectory": "./coverage/",
     "coveragePathIgnorePatterns": [
+      "<rootDir>/__tests__/balancesCommon.js",
       "<rootDir>/__tests__/integrationDbOps.js",
       "<rootDir>/__tests__/integrationDomainOps.js",
       "<rootDir>/__tests__/integrationS3Ops.js",
@@ -101,12 +102,13 @@
       "jest-junit"
     ],
     "testPathIgnorePatterns": [
-      "__tests__/testutils.js",
-      "__tests__/mockpool.js",
+      "__tests__/balancesCommon.js",
       "__tests__/integrationDbOps.js",
       "__tests__/integrationDomainOps.js",
       "__tests__/integrationS3Ops.js",
-      "__tests__/integrationUtils.js"
+      "__tests__/integrationUtils.js",
+      "__tests__/mockpool.js",
+      "__tests__/testutils.js"
     ],
     "verbose": true
   },

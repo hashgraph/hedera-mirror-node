@@ -34,26 +34,12 @@ const {DbError} = require('./errors/dbError');
 const getBalances = async (req, res) => {
   utils.validateReq(req);
 
-  // Parse the filter parameters for credit/debit, account-numbers,
-  // timestamp and pagination
+  // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
-
-  // if the request has a timestamp=xxxx or timestamp=eq:xxxxx, then
-  // modify that to be timestamp <= xxxx, so we return the latest balances
-  // as of the user-supplied timestamp.
-  if ('timestamp' in req.query) {
-    const pattern = /^(eq:)?(\d*\.?\d*)$/;
-    const replacement = 'lte:$2';
-    if (Array.isArray(req.query.timestamp)) {
-      for (let index = 0; index < req.query.timestamp.length; index++) {
-        req.query.timestamp[index] = req.query.timestamp[index].replace(pattern, replacement);
-      }
-    } else {
-      req.query.timestamp = req.query.timestamp.replace(pattern, replacement);
-    }
-  }
-
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'ab.consensus_timestamp');
+  // transform the timestamp=xxxx or timestamp=eq:xxxx query in url to 'timestamp <= xxxx' SQL query condition
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'ab.consensus_timestamp', {
+    [utils.opsMap.eq]: utils.opsMap.lte,
+  });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
   const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
@@ -90,7 +76,7 @@ const getBalances = async (req, res) => {
         ab.balance,
         json_agg(
           json_build_object(
-            'token_id', tb.token_id,
+            'token_id', tb.token_id::text,
             'balance', tb.balance
           ) order by tb.token_id ${order}
         ) FILTER (WHERE tb.token_id IS NOT NULL) AS token_balances
@@ -130,10 +116,9 @@ const getBalances = async (req, res) => {
         ret.timestamp = utils.nsToSecNs(result.rows[0].consensus_timestamp);
       }
 
-      const entityIdStrFromEncodedId = (encodedId) => EntityId.fromEncodedId(encodedId).toString();
       ret.balances = result.rows.map((row) => {
         return {
-          account: entityIdStrFromEncodedId(row.account_id),
+          account: EntityId.fromString(row.account_id).toString(),
           balance: Number(row.balance),
           tokens: utils.parseTokenBalances(row.token_balances),
         };

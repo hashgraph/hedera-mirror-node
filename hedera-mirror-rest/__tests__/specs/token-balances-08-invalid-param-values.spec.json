@@ -1,0 +1,32 @@
+{
+  "description": "Token balances api invalid query format",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/tokens/0.20.1/balances?account.id=lte:0.1&account.balance=gt:-2&account.publickey=-2&timestamp=-1.2&order=any",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: account.id"
+        },
+        {
+          "message": "Invalid parameter: account.balance"
+        },
+        {
+          "message": "Invalid parameter: account.publickey"
+        },
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: order"
+        }
+      ]
+    }
+  }
+}

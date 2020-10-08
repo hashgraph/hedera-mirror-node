@@ -98,7 +98,7 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   logger.debug(`Found RCD file ${JSON.stringify(info)} for consensus timestamp ${consensusNs}`);
   return {
     rcdFileName: info.name,
-    nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
+    nodeAccountId: EntityId.fromString(info.node_account_id).toString(),
   };
 };
 
@@ -151,7 +151,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
 
   let nodeAccountIds = [];
   if (lastAddressBook.node_account_ids) {
-    nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (id) => EntityId.fromEncodedId(id).toString());
+    nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (id) => EntityId.fromString(id).toString());
   } else if (lastAddressBook.memos) {
     nodeAccountIds = lastAddressBook.memos.split(',');
   }

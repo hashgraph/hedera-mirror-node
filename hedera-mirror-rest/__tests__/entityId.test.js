@@ -17,22 +17,92 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const EntityId = require('../entityId');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 describe('EntityId fromString', () => {
-  test('0.0.0', () => {
-    expect(EntityId.fromString('0.0.0')).toEqual(EntityId.of(0, 0, 0));
-  });
+  const specs = [
+    {
+      entityIdStr: '0.0.0',
+      expected: EntityId.of(0, 0, 0),
+    },
+    {
+      entityIdStr: '0.0.4294967295',
+      expected: EntityId.of(0, 0, 4294967295),
+    },
+    {
+      entityIdStr: '32767.65535.4294967295',
+      expected: EntityId.of(32767, 65535, 4294967295),
+    },
+    {
+      entityIdStr: '0',
+      expected: EntityId.of(0, 0, 0),
+    },
+    {
+      entityIdStr: '10',
+      expected: EntityId.of(0, 0, 10),
+    },
+    {
+      entityIdStr: '4294967295',
+      expected: EntityId.of(0, 0, 4294967295),
+    },
+    {
+      entityIdStr: '2814792716779530',
+      expected: EntityId.of(10, 10, 10),
+    },
+    {
+      entityIdStr: '9223372036854775807',
+      expected: EntityId.of(32767, 65535, 4294967295),
+    },
+    {
+      entityIdStr: '9223090561878065152',
+      expected: EntityId.of(32767, 0, 0),
+    },
+    {
+      entityIdStr: '0.1.x',
+      expectErr: true,
+    },
+    {
+      entityIdStr: 'a',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '0.1.2.3',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '0.1',
+      expectErr: true,
+    },
+    {
+      entityIdStr: 'a.b.c',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '-1.-1.-1',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '-1',
+      expectErr: true,
+    },
+  ];
 
-  test('0.0.4294967295', () => {
-    expect(EntityId.fromString('0.0.4294967295')).toEqual(EntityId.of(0, 0, 4294967295));
-  });
-
-  test('32767.65535.4294967295', () => {
-    expect(EntityId.fromString('32767.65535.4294967295')).toEqual(EntityId.of(32767, 65535, 4294967295));
-  });
+  for (const spec of specs) {
+    const {entityIdStr, expectErr, expected} = spec;
+    test(entityIdStr, () => {
+      if (!expectErr) {
+        expect(EntityId.fromString(entityIdStr)).toEqual(expected);
+      } else {
+        expect(() => {
+          EntityId.fromString(entityIdStr);
+        }).toThrowError(InvalidArgumentError);
+      }
+    });
+  }
 });
 
 describe('EntityId toString', () => {
@@ -68,31 +138,5 @@ describe('EntityId encoding', () => {
 
   test('32767.0.0', () => {
     expect(EntityId.fromString('32767.0.0').getEncodedId()).toBe('9223090561878065152');
-  });
-});
-
-describe('EntityId from encoded id', () => {
-  test('0.0.0', () => {
-    expect(EntityId.fromEncodedId('0')).toEqual(EntityId.fromString('0.0.0'));
-  });
-
-  test('0.0.10', () => {
-    expect(EntityId.fromEncodedId('10')).toEqual(EntityId.fromString('0.0.10'));
-  });
-
-  test('0.0.4294967295', () => {
-    expect(EntityId.fromEncodedId('4294967295')).toEqual(EntityId.fromString('0.0.4294967295'));
-  });
-
-  test('10.10.10', () => {
-    expect(EntityId.fromEncodedId('2814792716779530')).toEqual(EntityId.fromString('10.10.10'));
-  });
-
-  test('32767.65535.4294967295', () => {
-    expect(EntityId.fromEncodedId('9223372036854775807')).toEqual(EntityId.fromString('32767.65535.4294967295'));
-  });
-
-  test('32767.0.0', () => {
-    expect(EntityId.fromEncodedId('9223090561878065152')).toEqual(EntityId.fromString('32767.0.0'));
   });
 });

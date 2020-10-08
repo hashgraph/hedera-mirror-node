@@ -497,10 +497,11 @@ To achieve the goals and for easy integration with existing users the REST API s
 ```
 
 Optional Filters
--   `/api/v1/tokens/<token_id>/balances?id=0.0.1000`
--   `/api/v1/tokens/<token_id>/balances?balance=gt:1000`
+-   `/api/v1/tokens/<token_id>/balances?order=asc`
+-   `/api/v1/tokens/<token_id>/balances?account.id=0.0.1000`
+-   `/api/v1/tokens/<token_id>/balances?account.balance=gt:1000`
 -   `/api/v1/tokens/<token_id>/balances?timestamp=1566562500.040961001`
--   `/api/v1/tokens/<token_id>/balances?publicKey=2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864`
+-   `/api/v1/tokens/<token_id>/balances?account.publickey=2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864`
 
 ### Token Discovery
 `/api/v1/tokens` this would return all tokens present on the network

@@ -17,7 +17,10 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
+
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
 const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
@@ -41,32 +44,56 @@ class EntityId {
   }
 }
 
-const of = function (shard, realm, num) {
+const of = (shard, realm, num) => {
   return new EntityId(shard, realm, num);
 };
 
-const fromString = function (entityStr) {
-  let tokens = entityStr.split('.');
-  return of(parseInt(tokens[0]), parseInt(tokens[1]), parseInt(tokens[2]));
-};
-
-// Javascript's precision limit is 2^53 - 1. Precision needed to handle encoded ids is 2^63 - 1 (highest +ve number
-// for java's long and postgres' bigint). Limit use of BigInt types to this function, everything returned by this
-// function should be normal JS number for compatibility.
 /**
- * @returns {EntityId} computed from decoding of given encodedId.
+ * Converts entity ID string to EntityId object. Supports both 'shard.realm.num' and encoded entity ID string.
+ *
+ * @param entityStr
+ * @return {EntityId}
  */
-const fromEncodedId = function (encodedIdStr) {
-  let encodedId = BigInt(encodedIdStr);
-  let shard = encodedId / shardOffset; // quotient is shard
-  encodedId = encodedId % shardOffset; // realm and num remains
-  let realm = encodedId / realmOffset;
-  let num = encodedId % realmOffset;
-  return of(parseInt(shard), parseInt(realm), parseInt(num)); // convert from BitInt to number
+const fromString = (entityStr) => {
+  if (entityStr.includes('.')) {
+    const parts = entityStr.split('.');
+    if (parts.length === 3) {
+      return of(
+        ...parts.map((part) => {
+          const num = Number(part);
+          if (Number.isNaN(num) || num < 0) {
+            throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
+          }
+          return num;
+        })
+      );
+    }
+  } else {
+    // Javascript's precision limit is 2^53 - 1. Precision needed to handle encoded ids is 2^63 - 1 (highest number
+    // for java's long and postgres' bigint). Limit use of BigInt types to this function, everything returned by this
+    // function should be normal JS number for compatibility.
+    let encodedId;
+    try {
+      encodedId = BigInt(entityStr);
+    } catch (err) {
+      throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
+    }
+
+    if (encodedId < 0n) {
+      throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
+    }
+
+    const shard = encodedId / shardOffset; // quotient is shard
+    const encodedRealmNum = encodedId % shardOffset; // realm and num remains
+    const realm = encodedRealmNum / realmOffset;
+    const num = encodedRealmNum % realmOffset;
+    return of(Number(shard), Number(realm), Number(num)); // convert from BigInt to number
+  }
+
+  throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
 };
 
 module.exports = {
   of,
-  fromEncodedId,
   fromString,
 };

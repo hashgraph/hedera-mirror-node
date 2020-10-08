@@ -31,9 +31,10 @@ const SERVICE_FEE = 4;
 
 let sqlConnection;
 
-const setUp = async function (testDataJson, sqlconn) {
+const setUp = async (testDataJson, sqlconn) => {
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson.accounts);
+  await loadTokens(testDataJson.tokens);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadTokenTransfers(testDataJson.tokentransfers);
@@ -41,17 +42,27 @@ const setUp = async function (testDataJson, sqlconn) {
   await loadTopicMessages(testDataJson.topicmessages);
 };
 
-const loadAccounts = async function (accounts) {
+const loadAccounts = async (accounts) => {
   if (accounts == null) {
     return;
   }
 
-  for (let i = 0; i < accounts.length; ++i) {
-    await addAccount(accounts[i]);
+  for (const account of accounts) {
+    await addAccount(account);
   }
 };
 
-const loadBalances = async function (balances) {
+const loadTokens = async (tokens) => {
+  if (!tokens) {
+    return;
+  }
+
+  for (const token of tokens) {
+    await addToken(token);
+  }
+};
+
+const loadBalances = async (balances) => {
   if (balances == null) {
     return;
   }
@@ -61,7 +72,7 @@ const loadBalances = async function (balances) {
   }
 };
 
-const loadCryptoTransfers = async function (cryptoTransfers) {
+const loadCryptoTransfers = async (cryptoTransfers) => {
   if (cryptoTransfers == null) {
     return;
   }
@@ -71,7 +82,7 @@ const loadCryptoTransfers = async function (cryptoTransfers) {
   }
 };
 
-const loadTokenTransfers = async function (tokenTransfers) {
+const loadTokenTransfers = async (tokenTransfers) => {
   if (tokenTransfers == null) {
     return;
   }
@@ -81,7 +92,7 @@ const loadTokenTransfers = async function (tokenTransfers) {
   }
 };
 
-const loadTransactions = async function (transactions) {
+const loadTransactions = async (transactions) => {
   if (transactions == null) {
     return;
   }
@@ -91,7 +102,7 @@ const loadTransactions = async function (transactions) {
   }
 };
 
-const loadTopicMessages = async function (messages) {
+const loadTopicMessages = async (messages) => {
   if (messages == null) {
     return;
   }
@@ -101,19 +112,18 @@ const loadTopicMessages = async function (messages) {
   }
 };
 
-const addAccount = async function (account) {
-  account = Object.assign(
-    {
-      entity_shard: 0,
-      entity_realm: 0,
-      exp_time_ns: null,
-      public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      entity_type: 1,
-      auto_renew_period: null,
-      key: null,
-    },
-    account
-  );
+const addEntity = async (defaults, entity) => {
+  entity = {
+    entity_shard: 0,
+    entity_realm: 0,
+    exp_time_ns: null,
+    public_key: null,
+    entity_type: 5,
+    auto_renew_period: null,
+    key: null,
+    ...defaults,
+    ...entity,
+  };
 
   await sqlConnection.query(
     `INSERT INTO t_entities (
@@ -121,21 +131,35 @@ const addAccount = async function (account) {
       auto_renew_period, key)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
     [
-      EntityId.of(account.entity_shard, account.entity_realm, account.entity_num).getEncodedId(),
-      account.entity_type,
-      account.entity_shard,
-      account.entity_realm,
-      account.entity_num,
-      account.exp_time_ns,
+      EntityId.of(entity.entity_shard, entity.entity_realm, entity.entity_num).getEncodedId(),
+      entity.entity_type,
+      entity.entity_shard,
+      entity.entity_realm,
+      entity.entity_num,
+      entity.exp_time_ns,
       false,
-      account.public_key,
-      account.auto_renew_period,
-      account.key,
+      entity.public_key,
+      entity.auto_renew_period,
+      entity.key,
     ]
   );
 };
 
-const setAccountBalance = async function (balance) {
+const addAccount = async (account) => {
+  await addEntity(
+    {
+      public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      entity_type: 1,
+    },
+    account
+  );
+};
+
+const addToken = async (token) => {
+  await addEntity({entity_type: 5}, token);
+};
+
+const setAccountBalance = async (balance) => {
   balance = Object.assign({timestamp: 0, id: null, balance: 0, realm_num: 0}, balance);
   const accountId = EntityId.of(config.shard, balance.realm_num, balance.id).getEncodedId().toString();
   await sqlConnection.query(
@@ -160,7 +184,7 @@ const setAccountBalance = async function (balance) {
   }
 };
 
-const addTransaction = async function (transaction) {
+const addTransaction = async (transaction) => {
   transaction = Object.assign(
     {
       type: 14,
@@ -202,7 +226,7 @@ const addTransaction = async function (transaction) {
   await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfer_list);
 };
 
-const insertTransfers = async function (tableName, consensusTimestamp, transfers) {
+const insertTransfers = async (tableName, consensusTimestamp, transfers) => {
   for (let i = 0; i < transfers.length; ++i) {
     const transfer = transfers[i];
     await sqlConnection.query(
@@ -212,7 +236,7 @@ const insertTransfers = async function (tableName, consensusTimestamp, transfers
   }
 };
 
-const insertTokenTransfers = async function (consensusTimestamp, transfers) {
+const insertTokenTransfers = async (consensusTimestamp, transfers) => {
   if (!transfers || transfers.length === 0) {
     return;
   }
@@ -231,7 +255,7 @@ const insertTokenTransfers = async function (consensusTimestamp, transfers) {
   );
 };
 
-const addCryptoTransaction = async function (cryptoTransfer) {
+const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
@@ -246,18 +270,18 @@ const addCryptoTransaction = async function (cryptoTransfer) {
   await addTransaction(cryptoTransfer);
 };
 
-const addTokenTransferTransaction = async function (tokenTransfer) {
+const addTokenTransferTransaction = async (tokenTransfer) => {
   // transaction fees
   tokenTransfer.transfers = [
     {account: tokenTransfer.payerAccountId, amount: -NETWORK_FEE - NODE_FEE},
     {account: tokenTransfer.treasuryAccountId, amount: NETWORK_FEE},
     {account: tokenTransfer.nodeAccountId, amount: NODE_FEE},
   ];
-  tokenTransfer.type = 30; // TOKENTRANSFER
+  tokenTransfer.type = 30; // TOKENTRANSFERS
   await addTransaction(tokenTransfer);
 };
 
-const addTopicMessage = async function (message) {
+const addTopicMessage = async (message) => {
   message = Object.assign(
     {
       realm_num: 0,

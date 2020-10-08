@@ -30,13 +30,14 @@ const log4js = require('log4js');
 const compression = require('compression');
 
 // local files
-const config = require('./config');
-const transactions = require('./transactions');
-const balances = require('./balances');
 const accounts = require('./accounts');
-const topicmessage = require('./topicmessage');
+const balances = require('./balances');
+const config = require('./config');
 const health = require('./health');
 const stateproof = require('./stateproof');
+const tokens = require('./tokens');
+const topicmessage = require('./topicmessage');
+const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
@@ -132,6 +133,9 @@ if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
 app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
 app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(`${apiPrefix}/topics?/messages?/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
+
+// tokens routes
+app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenSupplyDistribution);
 
 // response data handling middleware
 app.use(responseHandler);

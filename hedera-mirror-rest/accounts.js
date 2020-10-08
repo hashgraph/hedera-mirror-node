@@ -20,7 +20,6 @@
 
 'use strict';
 
-const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -37,7 +36,7 @@ const {DbError} = require('./errors/dbError');
 const processRow = (row) => {
   const accRecord = {};
   accRecord.balance = {};
-  accRecord.account = EntityId.fromEncodedId(row.entity_id).toString();
+  accRecord.account = EntityId.fromString(row.entity_id).toString();
   accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
   accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
   accRecord.balance.tokens = utils.parseTokenBalances(row.token_balances);
@@ -72,7 +71,7 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
          select
            json_agg(
              json_build_object(
-               'token_id', tb.token_id,
+               'token_id', tb.token_id::text,
                'balance', tb.balance
              ) order by tb.token_id ${order || ''}
            )
@@ -175,8 +174,10 @@ const getAccounts = async (req, res) => {
  */
 const getOneAccount = async (req, res) => {
   // Parse the filter parameters for account-numbers, balance, and pagination
-  const acc = utils.parseEntityId(req.params.id);
-  if (acc.num === 0) {
+  let accountId;
+  try {
+    accountId = EntityId.fromString(req.params.id);
+  } catch (err) {
     throw InvalidArgumentError.forParams('account.id');
   }
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 't.consensus_ns');
@@ -196,8 +197,8 @@ const getOneAccount = async (req, res) => {
           )
        )`);
 
-  const accountId = EntityId.of(acc.shard, acc.realm, acc.num).getEncodedId();
-  const entityParams = [accountId, accountId];
+  const encodedAccountId = accountId.getEncodedId();
+  const entityParams = [encodedAccountId, encodedAccountId];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
   if (logger.isTraceEnabled()) {
@@ -209,7 +210,7 @@ const getOneAccount = async (req, res) => {
 
   const [creditDebitQuery] = utils.parseCreditDebitParams(req.query, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
-  const accountParams = [EntityId.of(config.shard, acc.realm, acc.num).getEncodedId()];
+  const accountParams = [encodedAccountId];
 
   const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
