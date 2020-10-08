@@ -26,6 +26,9 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -55,6 +58,15 @@ public interface EntityListener {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+    }
+
+    default void onToken(Token token) throws ImporterException {
+    }
+
+    default void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+    }
+
+    default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
     }
 
     default void onTopicMessage(TopicMessage topicMessage) throws ImporterException {

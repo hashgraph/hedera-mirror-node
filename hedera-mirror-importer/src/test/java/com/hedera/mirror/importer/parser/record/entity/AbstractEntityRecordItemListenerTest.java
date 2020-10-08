@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -76,6 +77,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     protected static final AccountID PAYER =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build();
+    static final String TRANSACTION_MEMO = "transaction memo";
 
     @Resource
     protected TransactionRepository transactionRepository;
@@ -235,7 +237,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     private static Builder defaultTransactionBodyBuilder() {
         TransactionBody.Builder body = TransactionBody.newBuilder();
         body.setTransactionFee(100L);
-        body.setMemo("transaction memo");
+        body.setMemo(TRANSACTION_MEMO);
         body.setNodeAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build());
         body.setTransactionID(Utility.getTransactionId(PAYER));
         body.setTransactionValidDuration(Duration.newBuilder().setSeconds(120).build());
@@ -310,5 +312,43 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected TransactionBody getTransactionBody(com.hederahashgraph.api.proto.java.Transaction transaction) throws InvalidProtocolBufferException {
         return TransactionBody.parseFrom(
                 SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+    }
+
+    protected Entities createEntity(Entities entities, Long expirationTimeSeconds, Integer expirationTimeNanos,
+                                    Key adminKey, Key submitKey, String memo, Long autoRenewAccountNum,
+                                    Long autoRenewPeriod, EntityTypeEnum entityTypeEnum) {
+        if (autoRenewAccountNum != null) {
+            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
+            entityRepository.findById(autoRenewAccount.getId())
+                    .orElse(entityRepository.save(autoRenewAccount.toEntity()));
+            entities.setAutoRenewAccountId(autoRenewAccount);
+        }
+        if (autoRenewPeriod != null) {
+            entities.setAutoRenewPeriod(autoRenewPeriod);
+        }
+        if (expirationTimeSeconds != null && expirationTimeNanos != null) {
+            entities.setExpiryTimeNs(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
+        }
+        if (null != adminKey) {
+            entities.setKey(adminKey.toByteArray());
+        }
+        if (null != submitKey) {
+            entities.setSubmitKey(submitKey.toByteArray());
+        }
+        entities.setMemo(memo);
+        entities.setEntityTypeId(entityTypeEnum.getId());
+        return entities;
+    }
+
+    protected void assertTransactionInRepository(
+            ResponseCodeEnum responseCode, long consensusTimestamp, Long entityId) {
+        var transaction = transactionRepository.findById(consensusTimestamp).get();
+        assertThat(transaction)
+                .returns(responseCode.getNumber(), from(Transaction::getResult))
+                .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
+        if (entityId != null) {
+            assertThat(transaction)
+                    .returns(entityId, t -> t.getEntityId().getId());
+        }
     }
 }

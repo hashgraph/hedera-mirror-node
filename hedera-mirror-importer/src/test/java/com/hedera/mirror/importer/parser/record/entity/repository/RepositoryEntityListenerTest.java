@@ -22,7 +22,11 @@ package com.hedera.mirror.importer.parser.record.entity.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -34,14 +38,23 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -49,6 +62,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 public class RepositoryEntityListenerTest extends IntegrationTest {
 
     private static final EntityId ENTITY_ID = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+    private static final EntityId TOKEN_ID = EntityId.of("0.0.7", EntityTypeEnum.TOKEN);
 
     private final RepositoryProperties repositoryProperties;
     private final ContractResultRepository contractResultRepository;
@@ -57,6 +71,9 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
+    private final TokenRepository tokenRepository;
+    private final TokenAccountRepository tokenAccountRepository;
+    private final TokenTransferRepository tokenTransferRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
     private final RepositoryEntityListener repositoryEntityListener;
@@ -118,6 +135,49 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         nonFeeTransfer.setId(new NonFeeTransfer.Id(1L, ENTITY_ID));
         repositoryEntityListener.onNonFeeTransfer(nonFeeTransfer);
         assertThat(nonFeeTransferRepository.findAll()).contains(nonFeeTransfer);
+    }
+
+    @Test
+    void onToken() throws ImporterException, DecoderException {
+        var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
+        var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
+        Token token = new Token();
+        token.setCreatedTimestamp(1L);
+        token.setDecimals(1000);
+        token.setFreezeDefault(false);
+        token.setFreezeKey(input.toByteArray());
+        token.setInitialSupply(1_000_000_000L);
+        token.setKycKey(input.toByteArray());
+        token.setModifiedTimestamp(3L);
+        token.setName("FOO COIN TOKEN");
+        token.setSupplyKey(input.toByteArray());
+        token.setSymbol("FOOTOK");
+        token.setTokenId(new Token.Id(TOKEN_ID));
+        token.setTreasuryAccountId(ENTITY_ID);
+        token.setWipeKey(input.toByteArray());
+        repositoryEntityListener.onToken(token);
+        assertThat(tokenRepository.findAll()).contains(token);
+    }
+
+    @Test
+    void onTokenAccount() throws ImporterException {
+        TokenAccount tokenAccount = new TokenAccount(TOKEN_ID, ENTITY_ID);
+        tokenAccount.setAssociated(true);
+        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setCreatedTimestamp(1L);
+        tokenAccount.setModifiedTimestamp(2L);
+        repositoryEntityListener.onTokenAccount(tokenAccount);
+        assertThat(tokenAccountRepository.findAll()).contains(tokenAccount);
+    }
+
+    @Test
+    void onTokenTransfer() throws ImporterException {
+        TokenTransfer tokenTransfer = new TokenTransfer();
+        tokenTransfer.setAmount(1000);
+        tokenTransfer.setId(new TokenTransfer.Id(2L, TOKEN_ID, ENTITY_ID));
+        repositoryEntityListener.onTokenTransfer(tokenTransfer);
+        assertThat(tokenTransferRepository.findAll()).contains(tokenTransfer);
     }
 
     @Test

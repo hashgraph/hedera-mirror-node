@@ -30,9 +30,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.hedera.mirror.importer.domain.AccountBalance;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,12 +65,13 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     @Override
     protected Downloader getDownloader() {
         return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (BalanceDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry, accountBalanceFileRepository);
+                (BalanceDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
+                accountBalanceFileRepository);
     }
 
     @Override
     protected Path getTestDataDir() {
-        return Path.of("accountBalances");
+        return Path.of("accountBalances", "v1");
     }
 
     @Override
@@ -115,7 +113,8 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         AccountBalanceFile abf1 = AccountBalanceFile.builder()
                 .consensusTimestamp(timestamp)
                 .count(0L)
-                .fileHash("c1a6ffb5df216a1e8331f949f45cb9400fc474150d57d977c77f21318687eb18d407c780147d0435791a02743a0f7bfc")
+                .fileHash(
+                        "c1a6ffb5df216a1e8331f949f45cb9400fc474150d57d977c77f21318687eb18d407c780147d0435791a02743a0f7bfc")
                 .loadEnd(0L)
                 .loadStart(0L)
                 .name(file1)
@@ -127,7 +126,8 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         AccountBalanceFile abf2 = AccountBalanceFile.builder()
                 .consensusTimestamp(timestamp)
                 .count(0L)
-                .fileHash("c197898e485e92a85752d475b536e6dc09879a18d358b1e72a9a1160bb24c8bb7a4c58610383ac80fd1c7659214eccd4")
+                .fileHash(
+                        "c197898e485e92a85752d475b536e6dc09879a18d358b1e72a9a1160bb24c8bb7a4c58610383ac80fd1c7659214eccd4")
                 .loadEnd(0L)
                 .loadStart(0L)
                 .name(file2)
