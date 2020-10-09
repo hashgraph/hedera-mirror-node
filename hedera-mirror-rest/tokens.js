@@ -36,7 +36,7 @@ const sqlQueryColumns = {
 
 // query to column maps
 const filterColumnMap = {
-  'entity.publickey': sqlQueryColumns.PUBLIC_KEY,
+  publickey: sqlQueryColumns.PUBLIC_KEY,
   symbol: sqlQueryColumns.SYMBOL,
   'token.id': sqlQueryColumns.TOKEN_ID,
 };
@@ -51,7 +51,7 @@ const entityIdJoinQuery = ` join t_entities e on e.id = t.token_id`;
  */
 const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, filters) => {
   // add filters
-  let limit;
+  let limit = config.maxLimit;
   let order = 'asc';
   let applicableFilters = 0;
   for (const filter of filters) {
@@ -82,7 +82,6 @@ const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, fil
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
-  limit = limit === undefined ? config.maxLimit : limit;
   pgSqlParams.push(limit);
 
   // close query

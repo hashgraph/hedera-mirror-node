@@ -177,7 +177,7 @@ const filterValidityChecks = function (param, op, val) {
       ret = isValidTimestampParam(val);
       break;
     case constants.filterKeys.TOKEN_ID:
-      // Acceptable words: binary or text
+      // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
     case constants.filterKeys.TYPE:

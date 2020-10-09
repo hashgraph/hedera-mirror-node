@@ -48,7 +48,7 @@
     "cryptotransfers": [],
     "tokentransfers": []
   },
-  "url": "/api/v1/tokens?account.id=lte:0.1&token.id=abc&limit=2&entity.publickey=-2&order=any",
+  "url": "/api/v1/tokens?account.id=lte:0.1&token.id=abc&limit=2&publickey=-2&order=any",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -60,7 +60,7 @@
           "message": "Invalid parameter: token.id"
         },
         {
-          "message": "Invalid parameter: entity.publickey"
+          "message": "Invalid parameter: publickey"
         },
         {
           "message": "Invalid parameter: order"

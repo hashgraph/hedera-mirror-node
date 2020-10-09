@@ -25,7 +25,7 @@ const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
   ENCODING: 'encoding',
-  ENTITY_PUBLICKEY: 'entity.publickey',
+  ENTITY_PUBLICKEY: 'publickey',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
