@@ -21,16 +21,20 @@
 package account
 
 import (
-	"fmt"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
 	"github.com/jinzhu/gorm"
 )
 
 const (
-	balanceChangeBetween string = "select sum(amount::bigint) as value, count(consensus_timestamp) as number_of_transfers from %s where consensus_timestamp > %d and consensus_timestamp <= %d and entity_id = %d"
+	balanceChangeBetween string = `SELECT
+                                        SUM(amount::bigint) AS value,
+                                        COUNT(consensus_timestamp) AS number_of_transfers
+                                   FROM crypto_transfer
+                                   WHERE consensus_timestamp > ?
+                                        AND consensus_timestamp <= ?
+                                        AND entity_id = ?`
 )
 
 type accountBalance struct {
@@ -77,17 +81,16 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensus
 	// gets the most recent balance before block
 	ab := &accountBalance{}
 	if ar.dbClient.
-		Where(fmt.Sprintf(`account_realm_num=%d AND account_num=%d AND consensus_timestamp <= %d`, int16(acc.RealmNum), int32(acc.EntityNum), consensusEnd)).
+		Where("account_realm_num=? AND account_num=? AND consensus_timestamp <= ?", int16(acc.RealmNum), int32(acc.EntityNum), consensusEnd).
 		Order("consensus_timestamp desc").
 		Limit(1).
 		Find(&ab).RecordNotFound() {
 		ab.Balance = 0
 	}
 
-	ct := &dbTypes.CryptoTransfer{}
 	r := &balanceChange{}
 	// gets the balance change from the Balance snapshot until the target block
-	ar.dbClient.Raw(fmt.Sprintf(balanceChangeBetween, ct.TableName(), ab.ConsensusTimestamp, consensusEnd, entityID)).Scan(r)
+	ar.dbClient.Raw(balanceChangeBetween, ab.ConsensusTimestamp, consensusEnd, entityID).Scan(r)
 
 	return &types.Amount{
 		Value: ab.Balance + r.Value,

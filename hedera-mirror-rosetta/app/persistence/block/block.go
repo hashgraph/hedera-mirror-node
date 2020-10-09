@@ -21,7 +21,6 @@
 package block
 
 import (
-	"fmt"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -52,12 +51,12 @@ const (
                                            rcd.block_index
                                     FROM   (SELECT *
                                             FROM   record_file
-                                            WHERE  file_hash = '%[1]s') AS rd,
+                                            WHERE  file_hash = ?) AS rd,
                                            (SELECT Count(*) - 1 AS block_index
                                             FROM   record_file
                                             WHERE  consensus_end <= (SELECT consensus_end
                                                                      FROM   record_file
-                                                                     WHERE  file_hash = '%[1]s')) AS rcd`
+                                                                     WHERE  file_hash = ?)) AS rcd`
 )
 
 type recordFile struct {
@@ -146,7 +145,7 @@ func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 
 func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTypes.Error) {
 	rf := &recordFile{}
-	if br.dbClient.Raw(fmt.Sprintf(selectByHashWithIndex, hash)).Scan(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectByHashWithIndex, hash, hash).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 	return rf, nil
