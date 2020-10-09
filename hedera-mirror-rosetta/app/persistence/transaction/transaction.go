@@ -22,7 +22,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"fmt"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"log"
@@ -39,7 +38,7 @@ import (
 
 const (
 	whereClauseBetweenConsensus         string = "consensus_ns >= ? AND consensus_ns <= ?"
-	whereTimestampsInConsensusTimestamp string = "consensus_timestamp IN (%s)"
+	whereTimestampsInConsensusTimestamp string = "consensus_timestamp IN (?)"
 )
 
 type transaction struct {
@@ -185,7 +184,7 @@ func filterTransactionsForRange(transactions []transaction, consensusStart int64
 func (tr *TransactionRepository) findCryptoTransfers(timestamps []int64) []dbTypes.CryptoTransfer {
 	var cryptoTransfers []dbTypes.CryptoTransfer
 	timestampsStr := intsToString(timestamps)
-	tr.dbClient.Where(fmt.Sprintf(whereTimestampsInConsensusTimestamp, timestampsStr)).Find(&cryptoTransfers)
+	tr.dbClient.Where(whereTimestampsInConsensusTimestamp, timestampsStr).Find(&cryptoTransfers)
 	return cryptoTransfers
 }
 
