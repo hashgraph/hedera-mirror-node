@@ -18,10 +18,12 @@
  * ‍
  */
 
-package entity_id_codec
+package entityid
 
 import (
 	"fmt"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
+	"strings"
 )
 
 const (
@@ -33,8 +35,8 @@ const (
 	numberMask int64 = (int64(1) << numberBits) - 1
 )
 
-// DecodedData returns the decoded data from the DB ID
-type DecodedData struct {
+// EntityId returns the decoded data from the DB ID
+type EntityId struct {
 	ShardNum  int64
 	RealmNum  int64
 	EntityNum int64
@@ -53,14 +55,40 @@ func Encode(shardNum int64, realmNum int64, entityNum int64) (int64, error) {
 }
 
 // Decode - decodes the Entity DB id into Account struct
-func Decode(encodedID int64) (*DecodedData, error) {
+func Decode(encodedID int64) (*EntityId, error) {
 	if encodedID < 0 {
 		return nil, fmt.Errorf("encodedID cannot be negative: %d", encodedID)
 	}
 
-	return &DecodedData{
+	return &EntityId{
 		ShardNum:  encodedID >> (realmBits + numberBits),
 		RealmNum:  (encodedID >> numberBits) & realmMask,
 		EntityNum: encodedID & numberMask,
+	}, nil
+}
+
+func FromString(entityId string) (*EntityId, error) {
+	inputs := strings.Split(entityId, ".")
+	if len(inputs) != 3 {
+		return nil, fmt.Errorf("invalid entityId")
+	}
+
+	shardNum, err := parse.ToInt64(inputs[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid shard")
+	}
+	realmNum, err := parse.ToInt64(inputs[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid realm")
+	}
+	entityNum, err := parse.ToInt64(inputs[2])
+	if err != nil {
+		return nil, fmt.Errorf("invalid entity")
+	}
+
+	return &EntityId{
+		ShardNum:  shardNum,
+		RealmNum:  realmNum,
+		EntityNum: entityNum,
 	}, nil
 }

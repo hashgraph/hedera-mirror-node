@@ -33,8 +33,8 @@ type Operation struct {
 	Amount  *Amount
 }
 
-// ToRosettaOperation returns Rosetta type Operation from the current domain type Operation
-func (t *Operation) ToRosettaOperation() *rTypes.Operation {
+// ToRosetta returns Rosetta type Operation from the current domain type Operation
+func (t *Operation) ToRosetta() *rTypes.Operation {
 	rOperation := rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{
 			Index: t.Index,
@@ -42,8 +42,8 @@ func (t *Operation) ToRosettaOperation() *rTypes.Operation {
 		RelatedOperations: []*rTypes.OperationIdentifier{},
 		Type:              t.Type,
 		Status:            t.Status,
-		Account:           t.Account.ToRosettaAccount(),
-		Amount:            t.Amount.ToRosettaAmount(),
+		Account:           t.Account.ToRosetta(),
+		Amount:            t.Amount.ToRosetta(),
 	}
 	return &rOperation
 }

@@ -21,7 +21,6 @@
 package entry
 
 import (
-	"fmt"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -30,11 +29,13 @@ import (
 )
 
 const (
-	latestAddressBookEntries = "SELECT abe.* FROM %s AS abe JOIN %s AS ab ON ab.start_consensus_timestamp = abe.consensus_timestamp WHERE ab.end_consensus_timestamp IS NULL"
+	latestAddressBookEntries = `SELECT abe.* FROM address_book_entry AS abe
+		                        JOIN address_book AS ab
+                                ON ab.start_consensus_timestamp = abe.consensus_timestamp
+                                WHERE ab.end_consensus_timestamp IS NULL`
 )
 
 const (
-	tableNameAddressBook      = "address_book"
 	tableNameAddressBookEntry = "address_book_entry"
 )
 
@@ -93,7 +94,7 @@ func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
 
 func (aber *AddressBookEntryRepository) retrieveEntries() []addressBookEntry {
 	var entries []addressBookEntry
-	aber.dbClient.Raw(fmt.Sprintf(latestAddressBookEntries, tableNameAddressBookEntry, tableNameAddressBook)).Scan(&entries)
+	aber.dbClient.Raw(latestAddressBookEntries).Scan(&entries)
 	return entries
 }
 

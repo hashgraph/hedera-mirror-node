@@ -18,7 +18,7 @@
  * ‍
  */
 
-package entity_id_codec
+package entityid
 
 import (
 	"math"

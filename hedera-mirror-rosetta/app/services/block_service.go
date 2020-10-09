@@ -52,7 +52,7 @@ func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockReques
 	}
 
 	block.Transactions = transactions
-	rBlock := block.ToRosettaBlock()
+	rBlock := block.ToRosetta()
 	return &rTypes.BlockResponse{
 		Block: rBlock,
 	}, nil
@@ -73,7 +73,7 @@ func (s *BlockAPIService) BlockTransaction(
 	if err != nil {
 		return nil, err
 	}
-	rTransaction := transaction.ToRosettaTransaction()
+	rTransaction := transaction.ToRosetta()
 	return &rTypes.BlockTransactionResponse{
 		Transaction: rTransaction,
 	}, nil

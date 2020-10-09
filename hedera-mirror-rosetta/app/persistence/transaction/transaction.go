@@ -23,7 +23,7 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/postgres/common"
+	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"log"
 	"strconv"

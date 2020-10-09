@@ -25,7 +25,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/postgres/common"
+	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
 	"github.com/jinzhu/gorm"
 )
 
@@ -77,7 +77,7 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensus
 	// gets the most recent balance before block
 	ab := &accountBalance{}
 	if ar.dbClient.
-		Where(fmt.Sprintf(`account_realm_num=%d AND account_num=%d AND consensus_timestamp <= %d`, int16(acc.Realm), int32(acc.Number), consensusEnd)).
+		Where(fmt.Sprintf(`account_realm_num=%d AND account_num=%d AND consensus_timestamp <= %d`, int16(acc.RealmNum), int32(acc.EntityNum), consensusEnd)).
 		Order("consensus_timestamp desc").
 		Limit(1).
 		Find(&ab).RecordNotFound() {

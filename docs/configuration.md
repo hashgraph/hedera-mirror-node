@@ -265,7 +265,7 @@ The following table lists the available properties along with their default valu
 | `hedera.mirror.rosetta.db.password`                     | mirror_node_pass        | The database password the processor uses to connect. **Should be changed from default**        |
 | `hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.rosetta.db.username`                     | mirror_node             | The username the processor uses to connect to the database                                     |
-| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
+| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime                                              |
 | `hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface                                               |
 | `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port                                                                              |
