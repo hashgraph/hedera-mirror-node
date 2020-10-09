@@ -83,22 +83,12 @@ func (aber *AddressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 }
 
 func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
-	if abe.NodeId == nil {
-		acc, err := types.AccountFromString(abe.Memo)
-		if err != nil {
-			log.Printf(errors.CreateAccountDbIdFailed, abe.Memo)
-			return nil, errors.Errors[errors.InternalServerError]
-		}
-		return acc, nil
-	}
-
-	decoded, err := types.NewAccountFromEncodedID(*abe.NodeId)
+	acc, err := types.AccountFromString(abe.Memo)
 	if err != nil {
-		log.Printf(errors.CreateAccountDbIdFailed, abe.NodeId)
+		log.Printf(errors.CreateAccountDbIdFailed, abe.Memo)
 		return nil, errors.Errors[errors.InternalServerError]
 	}
-
-	return decoded, nil
+	return acc, nil
 }
 
 func (aber *AddressBookEntryRepository) retrieveEntries() []addressBookEntry {
