@@ -75,6 +75,35 @@ Run the unit tests using jest by using:
 npm test
 ```
 
+### Rosetta API
+
+#### Prerequisites
+``
+Go 1.13+
+``
+
+To start the Rosetta API ensure you have the necessary [configuration](configuration.md) populated and run:
+
+```console
+cd hedera-mirror-rosetta
+go run cmd/*
+```
+
+#### Rosetta CLI Validation
+
+After you have started the Rosetta API, in another terminal run:
+
+```console
+cd hedera-mirror-rosetta/validation
+./run-validation.sh
+```
+
+Currently, Rosetta CLI Validation supports only **DEMO** and **TESTNET**, where
+**DEMO** is default and **TESTNET** can be run via:
+```console
+./run-validation.sh testnet
+```
+
 ## Running via Docker Compose
 
 Docker Compose scripts are provided and run all the mirror node components:
