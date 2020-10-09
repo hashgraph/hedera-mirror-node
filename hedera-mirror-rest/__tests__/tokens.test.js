@@ -118,7 +118,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       {
         key: constants.filterKeys.ACCOUNT_ID,
         operator: ' = ',
-        value: '0.0.5',
+        value: '5',
       },
     ];
 
@@ -148,21 +148,21 @@ describe('token extractSqlFromTokenRequest tests', () => {
       {
         key: constants.filterKeys.ACCOUNT_ID,
         operator: ' = ',
-        value: '0.0.5',
+        value: '5',
       },
       {
         key: constants.filterKeys.ENTITY_PUBLICKEY,
         operator: ' = ',
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
-      {key: constants.filterKeys.TOKEN_ID, operator: ' > ', value: '0.0.2'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
       {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
       {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
     ];
 
     const expectedquery =
       'select t.token_id, symbol, e.key from token t join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id join t_entities e on e.id = t.token_id where e.ed25519_public_key_hex = $2 and t.token_id > $3 order by t.token_id desc limit $4;';
-    const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '0.0.2', '3'];
+    const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', '3'];
     const expectedorder = constants.orderFilterValues.DESC;
     const expectedlimit = 3;
 

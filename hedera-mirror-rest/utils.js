@@ -713,7 +713,7 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.TOKEN_ID:
         // Accepted forms: shard.realm.num or num
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = parseEntityIdEncodeId(comparator.value);
         break;
       // case 'type':
       //   // Acceptable words: credit or debit
@@ -751,6 +751,11 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
+const parseEntityIdEncodeId = (entityId) => {
+  const entity = parseEntityId(entityId);
+  return EntityId.of(entity.shard, entity.realm, entity.num).getEncodedId();
+};
+
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
@@ -772,6 +777,7 @@ module.exports = {
   isValidTimestampParam,
   parseCreditDebitParams,
   parseEntityId,
+  parseEntityIdEncodeId,
   parseLimitAndOrderParams,
   parseBalanceQueryParam,
   parsePublicKey,
