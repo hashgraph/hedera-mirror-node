@@ -24,7 +24,7 @@ global:
     password: redis_password
 
 hpa:
-  enabled: true
+  enabled: false
   maxReplicas: 3
   minReplicas: 1
   utilization: 80
@@ -64,7 +64,7 @@ livenessProbe:
   httpGet:
     path: /actuator/health/liveness
     port: http
-  initialDelaySeconds: 35
+  initialDelaySeconds: 50
   periodSeconds: 10
   timeoutSeconds: 2
 
