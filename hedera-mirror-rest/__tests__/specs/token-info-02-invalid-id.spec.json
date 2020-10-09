@@ -1,0 +1,54 @@
+{
+  "description": "Token info api call for a given token",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1
+      },
+      {
+        "entity_num": 1135
+      },
+      {
+        "entity_realm": 7,
+        "entity_num": 25301
+      },
+      {
+        "entity_realm": 23,
+        "entity_num": 45678
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.1",
+        "symbol": "FIRSTMOVERLPDJH"
+      },
+      {
+        "token_id": "0.0.1135",
+        "symbol": "ORIGINALRDKSE"
+      },
+      {
+        "token_id": "0.7.25301",
+        "symbol": "MIRRORTOKEN"
+      },
+      {
+        "token_id": "0.23.45678",
+        "symbol": "HEDERACOIN"
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "tokentransfers": []
+  },
+  "url": "/api/v1/tokens/abc",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: token.id"
+        }
+      ]
+    }
+  }
+}

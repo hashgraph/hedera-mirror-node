@@ -137,6 +137,7 @@ app.getAsync(`${apiPrefix}/topics?/messages?/:consensusTimestamp`, topicmessage.
 // tokens routes
 app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
 app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenBalances);
+app.getAsync(`${apiPrefix}/tokens/:id`, tokens.getTokenInfoRequest);
 
 // response data handling middleware
 app.use(responseHandler);

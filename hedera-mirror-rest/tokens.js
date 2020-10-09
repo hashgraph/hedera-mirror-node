@@ -25,6 +25,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
+const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 // select columns
@@ -42,10 +43,14 @@ const filterColumnMap = {
   'token.id': sqlQueryColumns.TOKEN_ID,
 };
 
-// sql queries
+// token discovery sql queries
 const tokensSelectQuery = `select t.token_id, symbol, e.key from token t`;
 const accountIdJoinQuery = ` join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id`;
 const entityIdJoinQuery = ` join t_entities e on e.id = t.token_id`;
+
+// token info sql queries
+const tokenInfoSelectQuery = `select symbol, token_id, name, decimals, initial_supply, total_supply, treasury_account_id, created_timestamp, freeze_default, e.key, kyc_key, freeze_key, wipe_key, supply_key, e.exp_time_ns, e.auto_renew_account_id, e.auto_renew_period from token t`;
+const tokenIdMatchQuery = ` where token_id = $1`;
 
 /**
  * Given top level select columns and filters from request query, extract filters and create final sql query with
@@ -103,6 +108,27 @@ const formatTokenRow = (row) => {
   };
 };
 
+const formatTokenInfoRow = (row) => {
+  return {
+    token_id: EntityId.fromEncodedId(row.token_id).toString(),
+    symbol: row.symbol,
+    treasury_account_id: EntityId.fromEncodedId(row.treasury_account_id).toString(),
+    freeze_default: row.freeze_default,
+    admin_key: utils.encodeKey(row.key),
+    kyc_key: utils.encodeKey(row.kyc_key),
+    freeze_key: utils.encodeKey(row.freeze_key),
+    supply_key: utils.encodeKey(row.supply_key),
+    wipe_key: utils.encodeKey(row.wipe_key),
+    created_timestamp: utils.nsToSecNs(row.created_timestamp),
+    decimals: row.decimals,
+    initial_supply: row.initial_supply,
+    total_supply: row.total_supply,
+    expiry_timestamp: row.exp_time_ns,
+    auto_renew_account: row.auto_renew_account_id,
+    auto_renew_period: row.auto_renew_period,
+  };
+};
+
 const getTokensRequest = async (req, res) => {
   // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
@@ -156,6 +182,26 @@ const getTokensRequest = async (req, res) => {
     );
 
     res.locals[constants.responseDataLabel] = tokensResponse;
+  });
+};
+
+const getTokenInfoRequest = async (req, res) => {
+  let tokenId = req.params.id;
+
+  if (!utils.isValidEntityNum(tokenId)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.TOKEN_ID);
+  }
+
+  // ensure encoded format is used
+  tokenId = utils.parseEntityIdEncodeId(tokenId);
+
+  // concatenate queries to produce final sql query
+  const pgSqlQuery = `${tokenInfoSelectQuery}${entityIdJoinQuery}${tokenIdMatchQuery};`;
+  const pgSqlParams = [tokenId];
+
+  return getToken(pgSqlQuery, pgSqlParams).then((tokenResponse) => {
+    const tokenInfo = formatTokenInfoRow(tokenResponse);
+    res.locals[constants.responseDataLabel] = tokenInfo;
   });
 };
 
@@ -336,7 +382,28 @@ const getTokenBalances = async (req, res) => {
     });
 };
 
+const getToken = async (pgSqlQuery, pgSqlParams) => {
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getTokenInfo query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  }
+
+  return pool
+    .query(pgSqlQuery, pgSqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      if (results.rowCount === 1) {
+        logger.debug('getToken returning single entry');
+        return results.rows[0];
+      } else {
+        throw new NotFoundError();
+      }
+    });
+};
+
 module.exports = {
+  getTokenInfoRequest,
   getTokensRequest,
   getTokenBalances,
 };
@@ -353,3 +420,4 @@ if (process.env.NODE_ENV === 'test') {
     formatTokenBalanceRow,
   });
 }
+
