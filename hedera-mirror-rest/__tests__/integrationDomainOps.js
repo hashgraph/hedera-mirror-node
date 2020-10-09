@@ -310,7 +310,7 @@ const addToken = async function (token) {
   // create token object
   token = Object.assign(
     {
-      token_id: 0,
+      token_id: '0.0.0',
       created_timestamp: 0,
       decimals: 1000,
       freeze_default: false,
@@ -324,7 +324,7 @@ const addToken = async function (token) {
       supply_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       symbol: 'YBTJBOAZ',
       total_supply: 1000000,
-      treasury_account_id: 98,
+      treasury_account_id: '0.0.98',
       wipe_key: null,
       wipe_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     },
@@ -337,7 +337,7 @@ const addToken = async function (token) {
       modified_timestamp, name, supply_key, supply_key_ed25519_hex, symbol, total_supply, treasury_account_id, wipe_key, wipe_key_ed25519_hex)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);`,
     [
-      token.token_id,
+      EntityId.fromString(token.token_id).getEncodedId(),
       token.created_timestamp,
       token.decimals,
       token.freeze_default,
@@ -351,7 +351,7 @@ const addToken = async function (token) {
       token.supply_key_ed25519_hex,
       token.symbol,
       token.total_supply,
-      token.treasury_account_id,
+      EntityId.fromString(token.treasury_account_id).getEncodedId(),
       token.wipe_key,
       token.wipe_key_ed25519_hex,
     ]
