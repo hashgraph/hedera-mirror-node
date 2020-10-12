@@ -35,6 +35,7 @@ const (
 	selectLatestWithIndex string = `SELECT rd.file_hash,
                                            rd.consensus_start,
                                            rd.consensus_end,
+                                           rd.prev_hash,
                                            rcd_index.block_index
                                     FROM   (SELECT *
                                             FROM   record_file
@@ -48,6 +49,7 @@ const (
 	selectByHashWithIndex string = `SELECT rd.file_hash,
                                            rd.consensus_start,
                                            rd.consensus_end,
+                                           rd.prev_hash,
                                            rcd.block_index
                                     FROM   (SELECT *
                                             FROM   record_file

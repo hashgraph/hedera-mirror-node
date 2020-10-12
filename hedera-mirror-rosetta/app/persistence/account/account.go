@@ -40,8 +40,7 @@ const (
 type accountBalance struct {
 	ConsensusTimestamp int64 `gorm:"type:bigint;primary_key"`
 	Balance            int64 `gorm:"type:bigint"`
-	AccountRealmNum    int16 `gorm:"type:smallint;primary_key"`
-	AccountNum         int32 `gorm:"type:integer;primary_key"`
+	AccountId          int64 `gorm:"type:bigint"`
 }
 
 type balanceChange struct {
@@ -81,7 +80,7 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensus
 	// gets the most recent balance before block
 	ab := &accountBalance{}
 	if ar.dbClient.
-		Where("account_realm_num=? AND account_num=? AND consensus_timestamp <= ?", int16(acc.RealmNum), int32(acc.EntityNum), consensusEnd).
+		Where("account_id=? AND consensus_timestamp <= ?", entityID, consensusEnd).
 		Order("consensus_timestamp desc").
 		Limit(1).
 		Find(&ab).RecordNotFound() {
