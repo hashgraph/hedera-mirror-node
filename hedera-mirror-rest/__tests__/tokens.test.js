@@ -21,7 +21,7 @@
 'use strict';
 
 const tokens = require('../tokens');
-const constants = require('../constants');
+const {filterKeys, orderFilterValues} = require('../constants');
 const {maxLimit} = require('../config');
 const EntityId = require('../entityId');
 const {opsMap} = require('../utils');
@@ -68,7 +68,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const expectedquery =
       'select t.token_id, symbol, e.key from token t join t_entities e on e.id = t.token_id order by t.token_id asc limit $1;';
     const expectedparams = [maxLimit];
-    const expectedorder = constants.orderFilterValues.ASC;
+    const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
 
     verifyExtractSqlFromTokenRequest(
@@ -89,7 +89,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const nextParamCount = 1;
     const filters = [
       {
-        key: constants.filterKeys.ENTITY_PUBLICKEY,
+        key: filterKeys.ENTITY_PUBLICKEY,
         operator: ' = ',
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
@@ -98,7 +98,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const expectedquery =
       'select t.token_id, symbol, e.key from token t join t_entities e on e.id = t.token_id where e.ed25519_public_key_hex = $1 order by t.token_id asc limit $2;';
     const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', maxLimit];
-    const expectedorder = constants.orderFilterValues.ASC;
+    const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
 
     verifyExtractSqlFromTokenRequest(
@@ -119,7 +119,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const nextParamCount = 2;
     const filters = [
       {
-        key: constants.filterKeys.ACCOUNT_ID,
+        key: filterKeys.ACCOUNT_ID,
         operator: ' = ',
         value: '5',
       },
@@ -128,7 +128,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const expectedquery =
       'select t.token_id, symbol, e.key from token t join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id join t_entities e on e.id = t.token_id order by t.token_id asc limit $2;';
     const expectedparams = [5, maxLimit];
-    const expectedorder = constants.orderFilterValues.ASC;
+    const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
 
     verifyExtractSqlFromTokenRequest(
@@ -149,24 +149,24 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const nextParamCount = 2;
     const filters = [
       {
-        key: constants.filterKeys.ACCOUNT_ID,
+        key: filterKeys.ACCOUNT_ID,
         operator: ' = ',
         value: '5',
       },
       {
-        key: constants.filterKeys.ENTITY_PUBLICKEY,
+        key: filterKeys.ENTITY_PUBLICKEY,
         operator: ' = ',
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
-      {key: constants.filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
-      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
-      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
+      {key: filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
+      {key: filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: filterKeys.ORDER, operator: ' = ', value: orderFilterValues.DESC},
     ];
 
     const expectedquery =
       'select t.token_id, symbol, e.key from token t join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id join t_entities e on e.id = t.token_id where e.ed25519_public_key_hex = $2 and t.token_id > $3 order by t.token_id desc limit $4;';
     const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', '3'];
-    const expectedorder = constants.orderFilterValues.DESC;
+    const expectedorder = orderFilterValues.DESC;
     const expectedlimit = 3;
 
     verifyExtractSqlFromTokenRequest(
@@ -230,9 +230,17 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       .replace(/\s+\)/g, ')')
       .replace(/\s+/g, ' ');
   };
+  const valueWithOp = (op, value) => (op !== '' ? `${op}:${value}` : value);
 
-  const tokenId = EntityId.fromString('1009');
-  const balanceOpsMap = {
+  const encodedTokenIdStr = '1009';
+  const tokenId = EntityId.fromString(encodedTokenIdStr);
+  const accountIdStr = '960';
+  const balance = '2000';
+  const publicKey = '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be';
+  const timestamp = '123456789';
+  const timestampNs = `${timestamp}000000000`;
+
+  const commonOpsMsp = {
     ...opsMap,
     '': '=',
   };
@@ -241,6 +249,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     '': '<=',
     eq: '<=',
   };
+
   const testSpecs = [
     {
       name: 'no query params',
@@ -262,19 +271,18 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               LIMIT 1
             ) AND tb.token_id = $1
            ORDER BY tb.account_id DESC
-           LIMIT $2
-        `,
-        pgSqlParams: ['1009', maxLimit],
-        order: 'desc',
+           LIMIT $2`,
+        pgSqlParams: [encodedTokenIdStr, maxLimit],
+        order: orderFilterValues.DESC,
         limit: maxLimit,
       },
     },
     ...Object.keys(timestampOpsMap).map((op) => {
       return {
-        name: `timestamp ${op} 123456789`,
+        name: `timestamp ${op} ${timestamp}`,
         req: {
           query: {
-            timestamp: `${op !== '' ? `${op}:123456789` : '123456789'}`,
+            timestamp: valueWithOp(op, timestamp),
           },
         },
         tokenId,
@@ -293,10 +301,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               LIMIT 1
             ) AND tb.token_id = $2
            ORDER BY tb.account_id DESC
-           LIMIT $3
-        `,
-          pgSqlParams: ['123456789000000000', '1009', maxLimit],
-          order: 'desc',
+           LIMIT $3`,
+          pgSqlParams: [timestampNs, encodedTokenIdStr, maxLimit],
+          order: orderFilterValues.DESC,
           limit: maxLimit,
         },
       };
@@ -325,24 +332,24 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             )
               AND tb.token_id = $1
             ORDER BY tb.account_id DESC
-            LIMIT $2
-          `,
-          pgSqlParams: ['1009', expectedLimit],
-          order: 'desc',
+            LIMIT $2`,
+          pgSqlParams: [encodedTokenIdStr, expectedLimit],
+          order: orderFilterValues.DESC,
           limit: expectedLimit,
         },
       };
     }),
-    {
-      name: 'account.id = 960',
-      req: {
-        query: {
-          'account.id': '960',
+    ...Object.keys(commonOpsMsp).map((op) => {
+      return {
+        name: `account.id ${op} ${accountIdStr}`,
+        req: {
+          query: {
+            'account.id': valueWithOp(op, accountIdStr),
+          },
         },
-      },
-      tokenId,
-      expected: {
-        pgSqlQuery: `
+        tokenId,
+        expected: {
+          pgSqlQuery: `
           SELECT
             tb.consensus_timestamp,
             tb.account_id,
@@ -354,21 +361,21 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               ORDER BY tb.consensus_timestamp DESC
               LIMIT 1
             ) AND tb.token_id = $1
-            AND tb.account_id = $2
+            AND tb.account_id ${commonOpsMsp[op]} $2
            ORDER BY tb.account_id DESC
-           LIMIT $3
-        `,
-        pgSqlParams: ['1009', '960', maxLimit],
-        order: 'desc',
-        limit: maxLimit,
-      },
-    },
-    ...Object.keys(balanceOpsMap).map((op) => {
+           LIMIT $3`,
+          pgSqlParams: [encodedTokenIdStr, accountIdStr, maxLimit],
+          order: orderFilterValues.DESC,
+          limit: maxLimit,
+        },
+      };
+    }),
+    ...Object.keys(commonOpsMsp).map((op) => {
       return {
-        name: `balance ${op} 2000`,
+        name: `balance ${op} ${balance}`,
         req: {
           query: {
-            'account.balance': `${op !== '' ? `${op}:2000` : '2000'}`,
+            'account.balance': valueWithOp(op, balance),
           },
         },
         tokenId,
@@ -385,17 +392,16 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             ORDER BY tb.consensus_timestamp DESC
             LIMIT 1
           ) AND tb.token_id = $1
-            AND tb.balance ${balanceOpsMap[op]} $2
+            AND tb.balance ${commonOpsMsp[op]} $2
           ORDER BY tb.account_id DESC
-          LIMIT $3
-        `,
-          pgSqlParams: ['1009', '2000', maxLimit],
-          order: 'desc',
+          LIMIT $3`,
+          pgSqlParams: [encodedTokenIdStr, balance, maxLimit],
+          order: orderFilterValues.DESC,
           limit: maxLimit,
         },
       };
     }),
-    ...['asc', 'desc'].map((order) => {
+    ...Object.values(orderFilterValues).map((order) => {
       return {
         name: `order ${order}`,
         req: {
@@ -418,19 +424,18 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               LIMIT 1
             ) AND tb.token_id = $1
            ORDER BY tb.account_id ${order}
-           LIMIT $2
-        `,
-          pgSqlParams: ['1009', maxLimit],
+           LIMIT $2`,
+          pgSqlParams: [encodedTokenIdStr, maxLimit],
           order,
           limit: maxLimit,
         },
       };
     }),
     {
-      name: 'account publickey "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be"',
+      name: `account publickey "${publicKey}"`,
       req: {
         query: {
-          'account.publickey': '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
+          'account.publickey': publicKey,
         },
       },
       tokenId,
@@ -452,10 +457,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               LIMIT 1
             ) AND tb.token_id = $2
            ORDER BY tb.account_id DESC
-           LIMIT $3
-        `,
-        pgSqlParams: ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '1009', maxLimit],
-        order: 'desc',
+           LIMIT $3`,
+        pgSqlParams: [publicKey, encodedTokenIdStr, maxLimit],
+        order: orderFilterValues.DESC,
         limit: maxLimit,
       },
     },
@@ -463,12 +467,12 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       name: 'all query params',
       req: {
         query: {
-          'account.balance': '2000',
-          'account.id': '960',
-          'account.publickey': '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
+          'account.balance': balance,
+          'account.id': accountIdStr,
+          'account.publickey': publicKey,
           limit: 1,
-          timestamp: '123456789',
-          order: 'asc',
+          timestamp,
+          order: orderFilterValues.ASC,
         },
       },
       tokenId,
@@ -494,17 +498,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             AND tb.account_id = $4
             AND tb.balance = $5
            ORDER BY tb.account_id ASC
-           LIMIT $6
-        `,
-        pgSqlParams: [
-          '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
-          '123456789000000000',
-          '1009',
-          '960',
-          '2000',
-          1,
-        ],
-        order: 'asc',
+           LIMIT $6`,
+        pgSqlParams: [publicKey, timestampNs, encodedTokenIdStr, accountIdStr, balance, 1],
+        order: orderFilterValues.ASC,
         limit: 1,
       },
     },
