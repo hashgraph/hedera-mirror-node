@@ -86,7 +86,7 @@ public class BalanceFileParserTest extends IntegrationTest {
         StreamType streamType = StreamType.BALANCE;
         fileCopier = FileCopier
                 .create(sourcePath, dataPath)
-                .from(streamType.getPath(), "balance0.0.3")
+                .from(streamType.getPath(), "v1", "balance0.0.3")
                 .filterFiles("*.csv")
                 .to(streamType.getPath(), streamType.getValid());
     }
@@ -192,7 +192,7 @@ public class BalanceFileParserTest extends IntegrationTest {
     }
 
     void insertAccountBalanceFiles(BalanceFile... balanceFiles) {
-        final EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         for (BalanceFile bf : balanceFiles) {
             AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder()
                     .consensusTimestamp(bf.getConsensusTimestamp() - 1)

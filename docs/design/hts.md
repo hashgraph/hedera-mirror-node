@@ -238,8 +238,8 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `accountId`
     -   `associated`
     -   `createdTimestamp`
-    -   `freeze_status` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
-    -   `kyc_status` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
+    -   `freezeStatus` (FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2)
+    -   `kycStatus` (KycNotApplicable = 0, Granted = 1, Revoked = 2)
     -   `modifiedTimestamp`
     -   `tokenId`
 

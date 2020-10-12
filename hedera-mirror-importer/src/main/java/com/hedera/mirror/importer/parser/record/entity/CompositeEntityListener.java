@@ -33,6 +33,9 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -80,6 +83,21 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
         onEach(EntityListener::onNonFeeTransfer, nonFeeTransfer);
+    }
+
+    @Override
+    public void onToken(Token token) throws ImporterException {
+        onEach(EntityListener::onToken, token);
+    }
+
+    @Override
+    public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        onEach(EntityListener::onTokenAccount, tokenAccount);
+    }
+
+    @Override
+    public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
+        onEach(EntityListener::onTokenTransfer, tokenTransfer);
     }
 
     @Override

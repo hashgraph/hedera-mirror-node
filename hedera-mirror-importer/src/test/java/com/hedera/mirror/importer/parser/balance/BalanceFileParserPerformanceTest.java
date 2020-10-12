@@ -24,7 +24,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Tag("performance")
 public class BalanceFileParserPerformanceTest extends IntegrationTest {
 
-    private static final String DATA_SOURCE_FOLDER = "performance";
+    private static final String DATA_SOURCE_FOLDER = "v1/performance";
 
     @TempDir
     static Path dataPath;
@@ -51,7 +51,7 @@ public class BalanceFileParserPerformanceTest extends IntegrationTest {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
 
-        final EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         Files.walk(Path.of(testPath.toString(), streamType.getPath(), DATA_SOURCE_FOLDER))
                 .filter(p -> p.toString().endsWith(".csv"))
                 .forEach(p -> {

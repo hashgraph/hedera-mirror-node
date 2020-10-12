@@ -38,15 +38,13 @@ import com.hedera.mirror.importer.util.Utility;
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
 
-    private static final Instant startUpInstant = Instant.now();
-
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 
     private Path initialAddressBook;
 
     @NotNull
-    private Instant verifyHashAfter = Instant.parse("1970-01-01T00:00:00Z");
+    private Instant verifyHashAfter = Instant.EPOCH;
 
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
@@ -64,10 +62,6 @@ public class MirrorProperties {
     public void setDataPath(Path dataPath) {
         Utility.ensureDirectory(dataPath);
         this.dataPath = dataPath;
-    }
-
-    public static Instant getStartUpInstant() {
-        return startUpInstant;
     }
 
     @Getter

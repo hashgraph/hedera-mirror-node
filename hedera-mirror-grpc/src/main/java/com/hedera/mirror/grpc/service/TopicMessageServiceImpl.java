@@ -34,6 +34,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 import reactor.retry.Repeat;
 
 import com.hedera.mirror.grpc.GrpcProperties;
@@ -79,10 +80,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                         .isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
-                .doOnCancel(topicContext::onCancel)
-                .doOnComplete(topicContext::onComplete))
                 .doOnSubscribe(s -> subscriberCount.incrementAndGet())
-                .doFinally(s -> subscriberCount.decrementAndGet());
+                .doFinally(s -> subscriberCount.decrementAndGet())
+                .doFinally(topicContext::finished));
     }
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
@@ -204,14 +204,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             return elapsed > 0 ? (int) (1000.0 * count.get() / elapsed) : 0;
         }
 
-        void onCancel() {
-            log.info("[{}] Topic {} cancelled with {} messages in {} ({}/s)",
-                    filter.getSubscriberId(), topicId, count, stopwatch, rate());
-        }
-
-        void onComplete() {
-            log.info("[{}] Topic {} completed with {} messages in {} ({}/s)",
-                    filter.getSubscriberId(), topicId, count, stopwatch, rate());
+        void finished(SignalType signalType) {
+            log.info("[{}] Topic {} {} with {} messages in {} ({}/s)",
+                    filter.getSubscriberId(), signalType, topicId, count, stopwatch, rate());
         }
 
         void onNext(TopicMessage topicMessage) {

@@ -3,6 +3,11 @@ version: 2.1
 references:
   workspace_root: &workspace_root /tmp/workspace
 
+  postgres_env: &postgres_env
+    POSTGRES_DB: mirror_node_integration
+    POSTGRES_PASSWORD: mirror_node_pass
+    POSTGRES_USER: mirror_node
+
   # Docker images
   docker_jdk11: &docker_jdk11
     image: adoptopenjdk:11-jdk-hotspot
@@ -10,7 +15,7 @@ references:
   docker_db: &docker_db
     image: postgres:9.6-alpine
     environment:
-      POSTGRES_PASSWORD: password
+      <<: *postgres_env
 
   docker_pubsub: &docker_pubsub
     image: google/cloud-sdk:290.0.1
@@ -21,7 +26,7 @@ references:
 
   machine_ubuntu: &machine_ubuntu
     machine:
-      image: ubuntu-1604:201903-01
+      image: ubuntu-2004:202008-01
 
   # Maven helpers
   maven_opts: &maven_opts
@@ -108,12 +113,11 @@ commands:
             cat >> ${WORKSPACE}/application.yml \<< EOF
             db: &db
               db:
-                # Postgres' default values
                 host: 127.0.0.1
                 port: 5432
-                name: postgres
-                username: postgres
-                password: password
+                name: mirror_node_integration
+                username: mirror_node
+                password: mirror_node_pass
             hedera:
               mirror:
                 importer:
@@ -275,13 +279,10 @@ jobs:
   build_rest:
     environment:
       WORKSPACE: *workspace_root
+      <<: *postgres_env
     docker:
       - image: node:12.10.0
-      - image: postgres:9.6-alpine
-        environment:
-          POSTGRES_DB: mirror_node_integration
-          POSTGRES_USER: mirror_node
-          POSTGRES_PASSWORD: mirror_node_pass
+      - *docker_db
       - image: localstack/localstack:0.11.3
         environment:
           SERVICES: s3
@@ -307,8 +308,6 @@ jobs:
           name: Run npm test
           command: npm test
           environment:
-            TEST_DB_HOST: "127.0.0.1"
-            TEST_DB_NAME: "mirror_node_integration"
             TEST_S3_HOST: "127.0.0.1"
       - store_artifacts:
           path: hedera-mirror-rest/target/jest-junit

@@ -21,6 +21,8 @@ fullnameOverride: ""
 
 global:
   namespaceOverride: ""
+  redis:
+    password: redis_password
 
 image:
   pullPolicy: IfNotPresent

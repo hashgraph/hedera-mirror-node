@@ -23,10 +23,16 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
+import java.util.List;
+import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinColumns;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -42,6 +48,13 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 public class AccountBalance implements Persistable<AccountBalance.Id> {
 
     private long balance;
+
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumns({
+            @JoinColumn(name = "accountId"),
+            @JoinColumn(name = "consensusTimestamp")
+    })
+    private List<TokenBalance> tokenBalances;
 
     @EmbeddedId
     @JsonUnwrapped

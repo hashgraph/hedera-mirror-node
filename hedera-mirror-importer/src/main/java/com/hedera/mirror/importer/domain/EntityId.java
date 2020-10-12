@@ -25,6 +25,7 @@ import com.google.common.base.Splitter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import java.io.Serializable;
 import java.util.List;
@@ -36,11 +37,11 @@ import lombok.Value;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 /**
- * Common encapsulation for accountID, fileID, contractID, and topicID.
+ * Common encapsulation for accountID, fileID, contractID, topicID and tokenID.
  * <p>
- * There is no valid entity in Hedera network with an id '0.0.0'. When AccountID/FileID/ContractID/TopicID are not set,
- * their values default to '0.0.0'. If such an unset (default) instance is used to create EntityId using one of the
- * of(..) functions, null is returned.
+ * There is no valid entity in Hedera network with an id '0.0.0'. When AccountID/FileID/ContractID/TopicID/TokenID are
+ * not set, their values default to '0.0.0'. If such an unset (default) instance is used to create EntityId using one of
+ * the of(..) functions, null is returned.
  */
 @Value
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -81,6 +82,10 @@ public class EntityId implements Serializable {
 
     public static EntityId of(TopicID topicID) {
         return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum(), EntityTypeEnum.TOPIC);
+    }
+
+    public static EntityId of(TokenID tokenID) {
+        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), EntityTypeEnum.TOKEN);
     }
 
     public static EntityId of(String entityId, EntityTypeEnum type) {
