@@ -222,7 +222,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
   let whereClause = `WHERE ${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`;
   let nextParamCount = 2;
   let tsQueryWhereClause = '';
-  const pgSqlParams = [tokenId.getEncodedId().toString()];
+  const pgSqlParams = [tokenId.getEncodedId()];
 
   for (const filter of filters) {
     switch (filter.key) {

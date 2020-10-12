@@ -145,7 +145,7 @@ describe('utils formatComparator tests', () => {
     const entityId = EntityId.fromString(entityIdStr);
     const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, entityIdStr);
     utils.formatComparator(filter);
-    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', entityId.getEncodedId().toString());
+    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', entityId.getEncodedId());
   });
 
   test('Verify formatComparator for timestamp=1234567890.000000004', () => {

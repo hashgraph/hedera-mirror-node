@@ -36,6 +36,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadAccounts(testDataJson.accounts);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
+  await loadEntities(testDataJson.entities);
   await loadTokenTransfers(testDataJson.tokentransfers);
   await loadTransactions(testDataJson.transactions);
   await loadTopicMessages(testDataJson.topicmessages);
@@ -70,6 +71,16 @@ const loadCryptoTransfers = async (cryptoTransfers) => {
 
   for (let i = 0; i < cryptoTransfers.length; ++i) {
     await addCryptoTransaction(cryptoTransfers[i]);
+  }
+};
+
+const loadEntities = async (entities) => {
+  if (entities == null) {
+    return;
+  }
+
+  for (const entity of entities) {
+    await addEntity({}, entity);
   }
 };
 
@@ -168,7 +179,7 @@ const addAccount = async (account) => {
 
 const setAccountBalance = async (balance) => {
   balance = Object.assign({timestamp: 0, id: null, balance: 0, realm_num: 0}, balance);
-  const accountId = EntityId.of(config.shard, balance.realm_num, balance.id).getEncodedId().toString();
+  const accountId = EntityId.of(config.shard, balance.realm_num, balance.id).getEncodedId();
   await sqlConnection.query(
     `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
     VALUES ($1, $2, $3);`,
@@ -180,7 +191,7 @@ const setAccountBalance = async (balance) => {
       balance.timestamp,
       accountId,
       tokenBalance.balance,
-      EntityId.of(config.shard, tokenBalance.token_realm, tokenBalance.token_num).getEncodedId().toString(),
+      EntityId.of(config.shard, tokenBalance.token_realm, tokenBalance.token_num).getEncodedId(),
     ]);
     await sqlConnection.query(
       pgformat(
@@ -251,8 +262,8 @@ const insertTokenTransfers = async (consensusTimestamp, transfers) => {
   const tokenTransfers = transfers.map((transfer) => {
     return [
       `${consensusTimestamp}`,
-      EntityId.fromString(transfer.token_id).getEncodedId().toString(),
-      EntityId.fromString(transfer.account).getEncodedId().toString(),
+      EntityId.fromString(transfer.token_id).getEncodedId(),
+      EntityId.fromString(transfer.account).getEncodedId(),
       transfer.amount,
     ];
   });
@@ -316,16 +327,6 @@ const addTopicMessage = async (message) => {
 };
 
 const addToken = async (token) => {
-  const tokenId = EntityId.fromString(token.token_id);
-  await addEntity(
-    {entity_type: 5},
-    {
-      entity_realm: tokenId.realm,
-      entity_num: tokenId.num,
-      ...token,
-    }
-  );
-
   // create token object and insert into 'token' table
   token = {
     token_id: '0.0.0',
@@ -370,7 +371,7 @@ const addToken = async (token) => {
                    )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);`,
     [
-      tokenId.getEncodedId(),
+      EntityId.fromString(token.token_id).getEncodedId(),
       token.created_timestamp,
       token.decimals,
       token.freeze_default,

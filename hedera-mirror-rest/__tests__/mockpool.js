@@ -174,21 +174,20 @@ class Pool {
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
       const row = {};
-      row.payer_account_id = EntityId.of(0, 0, i).getEncodedId().toString();
+      row.payer_account_id = EntityId.of(0, 0, i).getEncodedId();
       row.memo = Buffer.from(`Test memo ${i}`);
       row.consensus_ns = this.toNs(this.timeNow - i);
       row.valid_start_ns = this.toNs(this.timeNow - i - 1);
       row.result = 'SUCCESS';
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
-      row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId().toString();
+      row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
       row.ctl_entity_id = EntityId.of(
         0,
         0,
         Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
       )
-        .getEncodedId()
-        .toString();
+        .getEncodedId();
       row.amount = i * 1000;
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';

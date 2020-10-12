@@ -308,7 +308,7 @@ const parseParams = (paramValues, processOpAndValue) => {
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], (op, value) => {
     const accountId = EntityId.fromString(value);
-    return [`${columnName} ${op} ?`, [accountId.getEncodedId().toString()]];
+    return [`${columnName} ${op} ?`, [accountId.getEncodedId()]];
   });
 };
 
@@ -671,7 +671,7 @@ const formatComparator = (comparator) => {
     switch (comparator.key) {
       case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or encoded ID string
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId().toString();
+        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
