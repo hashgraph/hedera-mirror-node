@@ -670,13 +670,8 @@ const formatComparator = (comparator) => {
     // format value
     switch (comparator.key) {
       case constants.filterKeys.ACCOUNT_ID:
-        // Accepted forms: shard.realm.num or num
-        const entityId = EntityId.fromString(comparator.value);
-        comparator.value = {
-          shard: entityId.shard,
-          realm: entityId.realm,
-          num: entityId.num,
-        };
+        // Accepted forms: shard.realm.num or encoded ID string
+        comparator.value = EntityId.fromString(comparator.value).getEncodedId().toString();
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)

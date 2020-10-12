@@ -230,79 +230,73 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       .replace(/\s+\)/g, ')')
       .replace(/\s+/g, ' ');
   };
-  const valueWithOp = (op, value) => (op !== '' ? `${op}:${value}` : value);
 
+  const operators = Object.values(opsMap);
+  const initialQuery = tokens.tokenBalancesSelectQuery;
   const encodedTokenIdStr = '1009';
   const tokenId = EntityId.fromString(encodedTokenIdStr);
   const accountIdStr = '960';
   const balance = '2000';
   const publicKey = '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be';
-  const timestamp = '123456789';
-  const timestampNs = `${timestamp}000000000`;
-
-  const commonOpsMsp = {
-    ...opsMap,
-    '': '=',
-  };
-  const timestampOpsMap = {
-    ...opsMap,
-    '': '<=',
-    eq: '<=',
-  };
+  const timestampNs = '123456789000000000';
 
   const testSpecs = [
     {
-      name: 'no query params',
-      req: {
-        query: {},
-      },
+      name: 'no filters',
       tokenId,
+      initialQuery,
+      filters: [],
       expected: {
-        pgSqlQuery: `
+        query: `
           SELECT
             tb.consensus_timestamp,
             tb.account_id,
             tb.balance
           FROM token_balance tb
-          WHERE tb.consensus_timestamp = (
+          WHERE tb.token_id = $1
+            AND tb.consensus_timestamp = (
               SELECT tb.consensus_timestamp
               FROM token_balance tb
               ORDER BY tb.consensus_timestamp DESC
               LIMIT 1
-            ) AND tb.token_id = $1
+            )
            ORDER BY tb.account_id DESC
            LIMIT $2`,
-        pgSqlParams: [encodedTokenIdStr, maxLimit],
+        params: [encodedTokenIdStr, maxLimit],
         order: orderFilterValues.DESC,
         limit: maxLimit,
       },
     },
-    ...Object.keys(timestampOpsMap).map((op) => {
+    ...operators.map((op) => {
       return {
-        name: `timestamp ${op} ${timestamp}`,
-        req: {
-          query: {
-            timestamp: valueWithOp(op, timestamp),
-          },
-        },
+        name: `timestamp ${op} ${timestampNs}`,
         tokenId,
+        initialQuery,
+        filters: [
+          {
+            key: filterKeys.TIMESTAMP,
+            operator: op,
+            value: timestampNs,
+          },
+        ],
         expected: {
-          pgSqlQuery: `
+          query: `
           SELECT
             tb.consensus_timestamp,
             tb.account_id,
             tb.balance
           FROM token_balance tb
-          WHERE tb.consensus_timestamp = (
+          WHERE tb.token_id = $1
+            AND tb.consensus_timestamp = (
               SELECT tb.consensus_timestamp
               FROM token_balance tb
-              WHERE tb.consensus_timestamp ${timestampOpsMap[op]} $1
+              WHERE tb.consensus_timestamp ${op !== opsMap.eq ? op : '<='} $2
               ORDER BY tb.consensus_timestamp DESC
               LIMIT 1
-            ) AND tb.token_id = $2
+            )
            ORDER BY tb.account_id DESC
            LIMIT $3`,
-          pgSqlParams: [timestampNs, encodedTokenIdStr, maxLimit],
+          params: [encodedTokenIdStr, timestampNs, maxLimit],
           order: orderFilterValues.DESC,
           limit: maxLimit,
         },
@@ -312,90 +306,101 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       const expectedLimit = Math.min(limit, maxLimit);
       return {
         name: `limit = ${limit}, maxLimit = ${maxLimit}`,
-        req: {
-          query: {
-            limit,
-          },
-        },
         tokenId,
+        initialQuery,
+        filters: [
+          {
+            key: filterKeys.LIMIT,
+            operator: opsMap.eq,
+            value: expectedLimit,
+          },
+        ],
         expected: {
-          pgSqlQuery: `
+          query: `
             SELECT tb.consensus_timestamp,
                    tb.account_id,
                    tb.balance
             FROM token_balance tb
-            WHERE tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
-            )
-              AND tb.token_id = $1
+            WHERE tb.token_id = $1
+              AND tb.consensus_timestamp = (
+                SELECT tb.consensus_timestamp
+                FROM token_balance tb
+                ORDER BY tb.consensus_timestamp DESC
+                LIMIT 1
+              )
             ORDER BY tb.account_id DESC
             LIMIT $2`,
-          pgSqlParams: [encodedTokenIdStr, expectedLimit],
+          params: [encodedTokenIdStr, expectedLimit],
           order: orderFilterValues.DESC,
           limit: expectedLimit,
         },
       };
     }),
-    ...Object.keys(commonOpsMsp).map((op) => {
+    ...operators.map((op) => {
       return {
         name: `account.id ${op} ${accountIdStr}`,
-        req: {
-          query: {
-            'account.id': valueWithOp(op, accountIdStr),
-          },
-        },
         tokenId,
+        initialQuery,
+        filters: [
+          {
+            key: filterKeys.ACCOUNT_ID,
+            operator: op,
+            value: accountIdStr,
+          },
+        ],
         expected: {
-          pgSqlQuery: `
-          SELECT
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
-          FROM token_balance tb
-          WHERE tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
-            ) AND tb.token_id = $1
-            AND tb.account_id ${commonOpsMsp[op]} $2
+          query: `
+            SELECT
+              tb.consensus_timestamp,
+              tb.account_id,
+              tb.balance
+            FROM token_balance tb
+            WHERE  tb.token_id = $1
+              AND tb.account_id ${op} $2
+              AND tb.consensus_timestamp = (
+                SELECT tb.consensus_timestamp
+                FROM token_balance tb
+                ORDER BY tb.consensus_timestamp DESC
+                LIMIT 1
+              )
            ORDER BY tb.account_id DESC
            LIMIT $3`,
-          pgSqlParams: [encodedTokenIdStr, accountIdStr, maxLimit],
+          params: [encodedTokenIdStr, accountIdStr, maxLimit],
           order: orderFilterValues.DESC,
           limit: maxLimit,
         },
       };
     }),
-    ...Object.keys(commonOpsMsp).map((op) => {
+    ...operators.map((op) => {
       return {
         name: `balance ${op} ${balance}`,
-        req: {
-          query: {
-            'account.balance': valueWithOp(op, balance),
-          },
-        },
         tokenId,
+        initialQuery,
+        filters: [
+          {
+            key: filterKeys.ACCOUNT_BALANCE,
+            operator: op,
+            value: balance,
+          },
+        ],
         expected: {
-          pgSqlQuery: `
-          SELECT
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
-          FROM token_balance tb
-          WHERE tb.consensus_timestamp = (
-            SELECT tb.consensus_timestamp
+          query: `
+            SELECT
+              tb.consensus_timestamp,
+              tb.account_id,
+              tb.balance
             FROM token_balance tb
-            ORDER BY tb.consensus_timestamp DESC
-            LIMIT 1
-          ) AND tb.token_id = $1
-            AND tb.balance ${commonOpsMsp[op]} $2
-          ORDER BY tb.account_id DESC
-          LIMIT $3`,
-          pgSqlParams: [encodedTokenIdStr, balance, maxLimit],
+            WHERE tb.token_id = $1
+              AND tb.balance ${op} $2
+              AND tb.consensus_timestamp = (
+              SELECT tb.consensus_timestamp
+              FROM token_balance tb
+              ORDER BY tb.consensus_timestamp DESC
+              LIMIT 1
+            )
+            ORDER BY tb.account_id DESC
+            LIMIT $3`,
+          params: [encodedTokenIdStr, balance, maxLimit],
           order: orderFilterValues.DESC,
           limit: maxLimit,
         },
@@ -404,28 +409,32 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     ...Object.values(orderFilterValues).map((order) => {
       return {
         name: `order ${order}`,
-        req: {
-          query: {
-            order,
-          },
-        },
         tokenId,
+        initialQuery,
+        filters: [
+          {
+            key: filterKeys.ORDER,
+            operator: opsMap.eq,
+            value: order,
+          },
+        ],
         expected: {
-          pgSqlQuery: `
-          SELECT
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
-          FROM token_balance tb
-          WHERE tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
-            ) AND tb.token_id = $1
-           ORDER BY tb.account_id ${order}
-           LIMIT $2`,
-          pgSqlParams: [encodedTokenIdStr, maxLimit],
+          query: `
+            SELECT
+              tb.consensus_timestamp,
+              tb.account_id,
+              tb.balance
+            FROM token_balance tb
+            WHERE tb.token_id = $1
+              AND tb.consensus_timestamp = (
+                SELECT tb.consensus_timestamp
+                FROM token_balance tb
+                ORDER BY tb.consensus_timestamp DESC
+                LIMIT 1
+              )
+             ORDER BY tb.account_id ${order}
+             LIMIT $2`,
+          params: [encodedTokenIdStr, maxLimit],
           order,
           limit: maxLimit,
         },
@@ -433,14 +442,17 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     }),
     {
       name: `account publickey "${publicKey}"`,
-      req: {
-        query: {
-          'account.publickey': publicKey,
-        },
-      },
       tokenId,
+      initialQuery,
+      filters: [
+        {
+          key: filterKeys.ENTITY_PUBLICKEY,
+          operator: opsMap.eq,
+          value: publicKey,
+        },
+      ],
       expected: {
-        pgSqlQuery: `
+        query: `
           SELECT
             tb.consensus_timestamp,
             tb.account_id,
@@ -449,35 +461,59 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           JOIN t_entities e
             ON e.fk_entity_type_id = 1
             AND e.id = tb.account_id
-            AND e.ed25519_public_key_hex = $1
-          WHERE tb.consensus_timestamp = (
+            AND e.ed25519_public_key_hex = $2
+          WHERE tb.token_id = $1
+            AND tb.consensus_timestamp = (
               SELECT tb.consensus_timestamp
               FROM token_balance tb
               ORDER BY tb.consensus_timestamp DESC
               LIMIT 1
-            ) AND tb.token_id = $2
+            )
            ORDER BY tb.account_id DESC
            LIMIT $3`,
-        pgSqlParams: [publicKey, encodedTokenIdStr, maxLimit],
+        params: [encodedTokenIdStr, publicKey, maxLimit],
         order: orderFilterValues.DESC,
         limit: maxLimit,
       },
     },
     {
-      name: 'all query params',
-      req: {
-        query: {
-          'account.balance': balance,
-          'account.id': accountIdStr,
-          'account.publickey': publicKey,
-          limit: 1,
-          timestamp,
-          order: orderFilterValues.ASC,
-        },
-      },
+      name: 'all filters',
       tokenId,
+      initialQuery,
+      filters: [
+        {
+          key: filterKeys.ACCOUNT_ID,
+          operator: opsMap.eq,
+          value: accountIdStr,
+        },
+        {
+          key: filterKeys.ACCOUNT_BALANCE,
+          operator: opsMap.eq,
+          value: balance,
+        },
+        {
+          key: filterKeys.ENTITY_PUBLICKEY,
+          operator: opsMap.eq,
+          value: publicKey,
+        },
+        {
+          key: filterKeys.LIMIT,
+          operator: opsMap.eq,
+          value: 1,
+        },
+        {
+          key: filterKeys.ORDER,
+          operator: opsMap.eq,
+          value: orderFilterValues.ASC,
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.eq,
+          value: timestampNs,
+        },
+      ],
       expected: {
-        pgSqlQuery: `
+        query: `
           SELECT
             tb.consensus_timestamp,
             tb.account_id,
@@ -486,20 +522,20 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           JOIN t_entities e
             ON e.fk_entity_type_id = 1
             AND e.id = tb.account_id
-            AND e.ed25519_public_key_hex = $1
-          WHERE tb.consensus_timestamp = (
+            AND e.ed25519_public_key_hex = $4
+          WHERE tb.token_id = $1
+            AND tb.account_id = $2
+            AND tb.balance = $3
+            AND tb.consensus_timestamp = (
               SELECT tb.consensus_timestamp
               FROM token_balance tb
-              WHERE tb.consensus_timestamp <= $2
+              WHERE tb.consensus_timestamp <= $5
               ORDER BY tb.consensus_timestamp DESC
               LIMIT 1
             )
-            AND tb.token_id = $3
-            AND tb.account_id = $4
-            AND tb.balance = $5
            ORDER BY tb.account_id ASC
            LIMIT $6`,
-        pgSqlParams: [publicKey, timestampNs, encodedTokenIdStr, accountIdStr, balance, 1],
+        params: [encodedTokenIdStr, accountIdStr, balance, publicKey, timestampNs, 1],
         order: orderFilterValues.ASC,
         limit: 1,
       },
@@ -507,12 +543,12 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
   ];
 
   for (const spec of testSpecs) {
-    const {name, req, tokenId: testTokenId, expected} = spec;
+    const {name, tokenId, initialQuery, filters, expected} = spec;
     test(name, () => {
-      const actual = tokens.extractSqlFromTokenBalancesRequest(req, testTokenId);
+      const actual = tokens.extractSqlFromTokenBalancesRequest(tokenId, initialQuery, filters);
 
-      actual.pgSqlQuery = formatSqlQueryString(actual.pgSqlQuery);
-      expected.pgSqlQuery = formatSqlQueryString(expected.pgSqlQuery);
+      actual.query = formatSqlQueryString(actual.query);
+      expected.query = formatSqlQueryString(expected.query);
       expect(actual).toEqual(expected);
     });
   }

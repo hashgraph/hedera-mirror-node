@@ -182,61 +182,98 @@ const getTokens = async (pgSqlQuery, pgSqlParams) => {
     });
 };
 
-const extractSqlFromTokenBalancesRequest = (req, tokenId) => {
-  // transform the timestamp=xxxx or timestamp=eq:xxxx query in url to 'timestamp <= xxxx' SQL query condition
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'tb.consensus_timestamp', {
-    [utils.opsMap.eq]: utils.opsMap.lte,
-  });
-  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'tb.account_id');
-  const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'tb.balance');
-  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
+// token balances select columns
+const tokenBalancesSqlQueryColumns = {
+  ACCOUNT_BALANCE: 'tb.balance',
+  ACCOUNT_ID: 'tb.account_id',
+  CONSENSUS_TIMESTAMP: 'tb.consensus_timestamp',
+  PUBLIC_KEY: 'e.ed25519_public_key_hex',
+  TOKEN_ID: 'tb.token_id',
+};
 
-  // Use the inner query to find the latest snapshot timestamp from the table
-  const innerTsQuery = `
+// token balances query to column maps
+const tokenBalancesFilterColumnMap = {
+  'account.balance': tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE,
+  'account.id': tokenBalancesSqlQueryColumns.ACCOUNT_ID,
+  publickey: tokenBalancesSqlQueryColumns.PUBLIC_KEY,
+};
+
+const tokenBalancesSelectQuery = `
+  SELECT
+    tb.consensus_timestamp,
+    tb.account_id,
+    tb.balance
+  FROM token_balance tb`;
+
+/**
+ * Extracts SQL query, params, order, and limit
+ *
+ * @param {EntityId} tokenId token ID object
+ * @param {string} pgSqlQuery initial pg SQL query string
+ * @param {[]}filters parsed and validated filters
+ * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
+ */
+const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
+  const {opsMap} = utils;
+
+  let limit = config.maxLimit;
+  let order = 'desc';
+  let joinEntityClause = '';
+  let whereClause = `WHERE ${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`;
+  let nextParamCount = 2;
+  let tsQueryWhereClause = '';
+  const pgSqlParams = [tokenId.getEncodedId().toString()];
+
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.ENTITY_PUBLICKEY:
+        joinEntityClause = `JOIN t_entities e
+          ON e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
+          AND e.id = tb.account_id
+          AND e.ed25519_public_key_hex = $${nextParamCount++}`;
+        pgSqlParams.push(filter.value);
+        break;
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = filter.value;
+        break;
+      case constants.filterKeys.TIMESTAMP:
+        // transform '=' operator for timestamp to '<='
+        const op = filter.operator !== opsMap.eq ? filter.operator : opsMap.lte;
+        tsQueryWhereClause = `WHERE ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${nextParamCount++}`;
+        pgSqlParams.push(filter.value);
+        break;
+      default:
+        const columnKey = tokenBalancesFilterColumnMap[filter.key];
+        if (!columnKey) {
+          break;
+        }
+
+        whereClause = `${whereClause}
+          AND ${columnKey} ${filter.operator} $${nextParamCount++}`;
+        pgSqlParams.push(filter.value);
+        break;
+    }
+  }
+
+  whereClause = `${whereClause}
+    AND ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} = (
       SELECT
-        tb.consensus_timestamp
+        ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
       FROM token_balance tb
-      ${tsQuery && `WHERE ${tsQuery}`}
-      ORDER BY tb.consensus_timestamp DESC
-      LIMIT 1`;
-
-  const joinEntityClause =
-    pubKeyQuery !== ''
-      ? `JOIN t_entities e
-      ON e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
-        AND e.id = tb.account_id
-        AND ${pubKeyQuery}`
-      : '';
-
-  const whereConditions = [`tb.consensus_timestamp = (${innerTsQuery})`, 'tb.token_id = ?', accountQuery, balanceQuery];
-  const whereClause = `WHERE ${whereConditions.filter((q) => q !== '').join(' AND ')}`;
-
-  const sqlQuery = `
-    SELECT
-      tb.consensus_timestamp,
-      tb.account_id,
-      tb.balance
-    FROM token_balance tb
+      ${tsQueryWhereClause}
+      ORDER BY ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} DESC
+      LIMIT 1
+    )`;
+  const query = `${pgSqlQuery}
     ${joinEntityClause}
     ${whereClause}
-    ORDER BY tb.account_id ${order}
-    ${query}`;
-
-  const tokenIdParams = [tokenId.getEncodedId().toString()];
-  const pgSqlParams = pubKeyParams
-    .concat(tsParams)
-    .concat(tokenIdParams)
-    .concat(accountParams)
-    .concat(balanceParams)
-    .concat(params);
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, pgSqlParams);
-  return {
-    pgSqlQuery,
-    pgSqlParams,
-    order,
-    limit,
-  };
+    ORDER BY ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}
+    LIMIT $${nextParamCount}`;
+  pgSqlParams.push(limit);
+  return utils.buildPgSqlObject(query, pgSqlParams, order, limit);
 };
 
 const formatTokenBalanceRow = (row) => {
@@ -261,16 +298,17 @@ const getTokenBalances = async (req, res) => {
     throw InvalidArgumentError.forParams('token.id');
   }
 
-  // validate query parameters
-  utils.validateReq(req);
+  const filters = utils.buildFilterObject(req.query);
+  utils.validateAndParseFilters(filters);
 
-  const {pgSqlQuery, pgSqlParams, limit, order} = extractSqlFromTokenBalancesRequest(req, tokenId);
+  const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
+  logger.info(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenSupplyDistribution query: ${pgSqlQuery} ${JSON.stringify(pgSqlParams)}`);
+    logger.trace(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
   }
 
   return pool
-    .query(pgSqlQuery, pgSqlParams)
+    .query(query, params)
     .catch((err) => {
       throw new DbError(err.message);
     })
@@ -312,6 +350,7 @@ if (process.env.NODE_ENV === 'test') {
     tokensSelectQuery,
     accountIdJoinQuery,
     entityIdJoinQuery,
+    tokenBalancesSelectQuery,
     extractSqlFromTokenBalancesRequest,
     formatTokenBalanceRow,
   });
