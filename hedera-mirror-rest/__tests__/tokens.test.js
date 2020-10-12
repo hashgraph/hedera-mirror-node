@@ -301,35 +301,38 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         },
       };
     }),
-    {
-      name: 'limit = 1',
-      req: {
-        query: {
-          limit: 1,
+    ...[maxLimit - 1, maxLimit + 1].map((limit) => {
+      const expectedLimit = Math.min(limit, maxLimit);
+      return {
+        name: `limit = ${limit}, maxLimit = ${maxLimit}`,
+        req: {
+          query: {
+            limit,
+          },
         },
-      },
-      tokenId,
-      expected: {
-        pgSqlQuery: `
-          SELECT
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
-          FROM token_balance tb
-          WHERE tb.consensus_timestamp = (
+        tokenId,
+        expected: {
+          pgSqlQuery: `
+            SELECT tb.consensus_timestamp,
+                   tb.account_id,
+                   tb.balance
+            FROM token_balance tb
+            WHERE tb.consensus_timestamp = (
               SELECT tb.consensus_timestamp
               FROM token_balance tb
               ORDER BY tb.consensus_timestamp DESC
               LIMIT 1
-            ) AND tb.token_id = $1
-           ORDER BY tb.account_id DESC
-           LIMIT $2
-        `,
-        pgSqlParams: ['1009', 1],
-        order: 'desc',
-        limit: 1,
-      },
-    },
+            )
+              AND tb.token_id = $1
+            ORDER BY tb.account_id DESC
+            LIMIT $2
+          `,
+          pgSqlParams: ['1009', expectedLimit],
+          order: 'desc',
+          limit: expectedLimit,
+        },
+      };
+    }),
     {
       name: 'account.id = 960',
       req: {
