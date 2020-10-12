@@ -20,12 +20,12 @@
     ],
     "tokens": [
       {
-        "entity_num": 1,
-        "entity_realm": 20
+        "token_id": "0.20.1",
+        "symbol": "TOKEN1"
       },
       {
-        "entity_num": 2,
-        "entity_realm": 20
+        "token_id": "0.20.2",
+        "symbol": "TOKEN2"
       }
     ],
     "balances": [

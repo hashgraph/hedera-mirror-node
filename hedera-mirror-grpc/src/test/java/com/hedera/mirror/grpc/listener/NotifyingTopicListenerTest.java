@@ -108,7 +108,7 @@ public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest 
     @Override
     protected void publish(Flux<TopicMessage> publisher) {
         publisher.concatMap(t -> {
-            jdbcTemplate.execute("NOTIFY topic_message, '" + toJson(t) + "'");
+            jdbcTemplate.queryForMap("select pg_notify('topic_message', ?)", toJson(t));
             return Mono.just(t);
         }).blockLast();
     }

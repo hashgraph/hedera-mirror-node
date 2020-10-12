@@ -88,8 +88,6 @@ class Pool {
       case 'accounts':
         orderprefix = 'coalesce\\(ab.account_id, e.id\\)';
         break;
-      case 'tokens':
-        orderprefix = 'account_id';
       default:
         break;
     }
@@ -122,11 +120,9 @@ class Pool {
     if (callerFile === 'transactions') {
       rows = this.createMockTransactions(parsedparams);
     } else if (callerFile === 'balances') {
-      rows = this.createMockHbarOrTokenBalances(parsedparams);
+      rows = this.createMockBalances(parsedparams);
     } else if (callerFile === 'accounts') {
       rows = this.createMockAccounts(parsedparams);
-    } else if (callerFile === 'tokens') {
-      rows = this.createMockHbarOrTokenBalances(parsedparams);
     }
     return rows;
   }
@@ -206,12 +202,12 @@ class Pool {
   }
 
   /**
-   * Create mock data for /balances or /tokens/:id/balances query
+   * Create mock data for /balances query
    *
    * @param {Object} parsedparams Parsed parameters that were present in the SQL query
    * @return {Array} rows array filled with mock data
    */
-  createMockHbarOrTokenBalances(parsedparams) {
+  createMockBalances(parsedparams) {
     let accountNum = {
       low: 1,
       high: this.TEST_DATA_MAX_ACCOUNTS,

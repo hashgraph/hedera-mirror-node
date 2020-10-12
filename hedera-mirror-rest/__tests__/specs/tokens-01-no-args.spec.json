@@ -1,0 +1,56 @@
+{
+  "description": "Token api call for all tokens",
+  "setup": {
+    "tokens": [
+      {
+        "token_id": "0.0.1",
+        "symbol": "FIRSTMOVERLPDJH"
+      },
+      {
+        "token_id": "0.0.1135",
+        "symbol": "ORIGINALRDKSE"
+      },
+      {
+        "token_id": "0.7.25301",
+        "symbol": "MIRRORTOKEN"
+      },
+      {
+        "token_id": "0.23.45678",
+        "symbol": "HEDERACOIN"
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "tokentransfers": []
+  },
+  "url": "/api/v1/tokens",
+  "responseStatus": 200,
+  "responseJson": {
+    "tokens": [
+      {
+        "token_id": "0.0.1",
+        "symbol": "FIRSTMOVERLPDJH",
+        "admin_key": null
+      },
+      {
+        "token_id": "0.0.1135",
+        "symbol": "ORIGINALRDKSE",
+        "admin_key": null
+      },
+      {
+        "token_id": "0.7.25301",
+        "symbol": "MIRRORTOKEN",
+        "admin_key": null
+      },
+      {
+        "token_id": "0.23.45678",
+        "symbol": "HEDERACOIN",
+        "admin_key": null
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

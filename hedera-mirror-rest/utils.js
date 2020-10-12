@@ -45,11 +45,11 @@ const opsMap = {
  * @param {String} n Number to test
  * @return {Boolean} true if n is numeric, false otherwise
  */
-function isNumeric(n) {
+const isNumeric = (n) => {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-const isValidTimestampParam = function (timestamp) {
+const isValidTimestampParam = (timestamp) => {
   // Accepted forms: seconds or seconds.upto 9 digits
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
@@ -137,18 +137,23 @@ const filterValidityChecks = (param, op, val) => {
 
   // Validate the value
   switch (param) {
-    case constants.filterKeys.ACCOUNT_ID:
-      // Accepted forms: shard.realm.num or num
-      ret = isValidEntityNum(val);
-      break;
-    case constants.filterKeys.TIMESTAMP:
-      ret = isValidTimestampParam(val);
-      break;
     case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = isValidAccountBalanceQuery(val);
       break;
+    case constants.filterKeys.ACCOUNT_ID:
+      // Accepted forms: shard.realm.num or num
+      ret = isValidEntityNum(val);
+      break;
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
+      // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+      ret = isValidPublicKeyQuery(val);
+      break;
+    case constants.filterKeys.ENCODING:
+      // Acceptable words: binary or text
+      ret = isValidEncoding(val.toLowerCase());
+      break;
+    case constants.filterKeys.ENTITY_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
@@ -160,10 +165,6 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable words: asc or desc
       ret = Object.values(constants.orderFilterValues).includes(val.toLowerCase());
       break;
-    case constants.filterKeys.TYPE:
-      // Acceptable words: credit or debit
-      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
-      break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
       ret = Object.values(constants.transactionResultFilter).includes(val.toLowerCase());
@@ -172,9 +173,16 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
       break;
-    case constants.filterKeys.ENCODING:
-      // Acceptable words: binary or text
-      ret = isValidEncoding(val.toLowerCase());
+    case constants.filterKeys.TIMESTAMP:
+      ret = isValidTimestampParam(val);
+      break;
+    case constants.filterKeys.TOKEN_ID:
+      // Accepted forms: shard.realm.num or num
+      ret = isValidEntityNum(val);
+      break;
+    case constants.filterKeys.TYPE:
+      // Acceptable words: credit or debit
+      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -670,12 +678,20 @@ const formatComparator = (comparator) => {
           num: entityId.num,
         };
         break;
-      case constants.filterKeys.TIMESTAMP:
-        comparator.value = parseTimestampParam(comparator.value);
-        break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = ed25519.derToEd25519(comparator.value);
+        break;
+      case constants.filterKeys.ENTITY_PUBLICKEY:
+        // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+        comparator.value = parsePublicKey(comparator.value);
+        break;
+      case constants.filterKeys.TIMESTAMP:
+        comparator.value = parseTimestampParam(comparator.value);
+        break;
+      case constants.filterKeys.TOKEN_ID:
+        // Accepted forms: shard.realm.num or num
+        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
         break;
       // case 'type':
       //   // Acceptable words: credit or debit
@@ -708,6 +724,11 @@ const parseTokenBalances = (tokenBalances) => {
     : [];
 };
 
+const parsePublicKey = (publicKey) => {
+  const decodedKey = ed25519.derToEd25519(publicKey);
+  return decodedKey == null ? publicKey : decodedKey;
+};
+
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
@@ -731,6 +752,7 @@ module.exports = {
   parseCreditDebitParams,
   parseLimitAndOrderParams,
   parseBalanceQueryParam,
+  parsePublicKey,
   parsePublicKeyQueryParam,
   parseAccountIdQueryParam,
   parseTimestampQueryParam,

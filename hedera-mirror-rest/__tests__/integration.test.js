@@ -39,11 +39,6 @@
  *
  * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
  * in the specs/ dir.
- *
- * environment variables used:
- * TEST_DB_HOST (default: use testcontainers, examples: localhost, dbhost, 10.0.0.75)
- * TEST_DB_PORT (default: 5432)
- * TEST_DB_NAME (default: mirror_node_integration)
  */
 const path = require('path');
 const request = require('supertest');

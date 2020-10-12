@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,32 +20,171 @@
 
 'use strict';
 
+const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {DbError} = require('./errors/dbError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+
+// select columns
+const sqlQueryColumns = {
+  KEY: 'e.key',
+  SYMBOL: 't.symbol',
+  TOKEN_ID: 't.token_id',
+  PUBLIC_KEY: 'e.ed25519_public_key_hex',
+};
+
+// query to column maps
+const filterColumnMap = {
+  publickey: sqlQueryColumns.PUBLIC_KEY,
+  symbol: sqlQueryColumns.SYMBOL,
+  'token.id': sqlQueryColumns.TOKEN_ID,
+};
+
+// sql queries
+const tokensSelectQuery = `select t.token_id, symbol, e.key from token t`;
+const accountIdJoinQuery = ` join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id`;
+const entityIdJoinQuery = ` join t_entities e on e.id = t.token_id`;
 
 /**
- * Handler function for /tokens/:id/balances API.
- *
- * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @return {Promise} Promise for PostgreSQL query
+ * Given top level select columns and filters from request query, extract filters and create final sql query with
+ * appropriate where clauses.
  */
-const getTokenSupplyDistribution = async (req, res) => {
-  let tokenId;
-  try {
-    tokenId = EntityId.fromString(req.params.id);
-  } catch (err) {
-    throw InvalidArgumentError.forParams('token.id');
+const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, filters) => {
+  // add filters
+  let limit = config.maxLimit;
+  let order = 'asc';
+  let applicableFilters = 0;
+  for (const filter of filters) {
+    if (filter.key === constants.filterKeys.LIMIT) {
+      limit = filter.value;
+      continue;
+    }
+
+    // handle keys that do not require formatting first
+    if (filter.key === constants.filterKeys.ORDER) {
+      order = filter.value;
+      continue;
+    }
+
+    const columnKey = filterColumnMap[filter.key];
+    if (columnKey === undefined) {
+      continue;
+    }
+
+    pgSqlQuery += applicableFilters === 0 ? ` where ` : ` and `;
+    applicableFilters++;
+    pgSqlQuery += `${filterColumnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
+    pgSqlParams.push(filter.value);
   }
 
-  // validate query parameters
-  utils.validateReq(req);
+  // add order
+  pgSqlQuery += ` order by ${sqlQueryColumns.TOKEN_ID} ${order}`;
 
+  // add limit
+  pgSqlQuery += ` limit $${nextParamCount++}`;
+  pgSqlParams.push(limit);
+
+  // close query
+  pgSqlQuery += ';';
+
+  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
+};
+
+/**
+ * Format row in postgres query's result to object which is directly returned to user as json.
+ */
+const formatTokenRow = (row) => {
+  return {
+    token_id: EntityId.fromString(row.token_id).toString(),
+    symbol: row.symbol,
+    admin_key: utils.encodeKey(row.key),
+  };
+};
+
+const getTokensRequest = async (req, res) => {
+  // extract filters from query param
+  const filters = utils.buildFilterObject(req.query);
+
+  // validate filters
+  utils.validateAndParseFilters(filters);
+
+  let getTokensSqlQuery = tokensSelectQuery;
+  let getTokenSqlParams = [];
+  let nextParamCount = 1;
+
+  // if account.id filter is present join on token_account
+  const accountFilter = req.query[constants.filterKeys.ACCOUNT_ID];
+  if (accountFilter) {
+    getTokensSqlQuery += accountIdJoinQuery;
+    getTokenSqlParams.push(accountFilter);
+    nextParamCount++;
+  }
+
+  // add join with entities table to sql query
+  getTokensSqlQuery += entityIdJoinQuery;
+
+  // build final sql query
+  const {query, params, order, limit} = extractSqlFromTokenRequest(
+    getTokensSqlQuery,
+    getTokenSqlParams,
+    nextParamCount,
+    filters
+  );
+
+  const tokensResponse = {
+    tokens: [],
+    links: {
+      next: null,
+    },
+  };
+
+  return getTokens(query, params).then((tokens) => {
+    // format messages
+    tokensResponse.tokens = tokens.map((m) => formatTokenRow(m));
+
+    // populate next link
+    const lastTokenId =
+      tokensResponse.tokens.length > 0 ? tokensResponse.tokens[tokensResponse.tokens.length - 1].token_id : null;
+    tokensResponse.links.next = utils.getPaginationLink(
+      req,
+      tokens.length !== limit,
+      constants.filterKeys.TOKEN_ID,
+      lastTokenId,
+      order
+    );
+
+    res.locals[constants.responseDataLabel] = tokensResponse;
+  });
+};
+
+const getTokens = async (pgSqlQuery, pgSqlParams) => {
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getTokens query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  }
+
+  const tokens = [];
+
+  return pool
+    .query(pgSqlQuery, pgSqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      for (let i = 0; i < results.rowCount; i++) {
+        tokens.push(results.rows[i]);
+      }
+
+      logger.debug(`getTokens returning ${tokens.length} entries`);
+
+      return tokens;
+    });
+};
+
+const extractSqlFromTokenBalancesRequest = (req, tokenId) => {
   // transform the timestamp=xxxx or timestamp=eq:xxxx query in url to 'timestamp <= xxxx' SQL query condition
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'consensus_timestamp', {
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'tb.consensus_timestamp', {
     [utils.opsMap.eq]: utils.opsMap.lte,
   });
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'tb.account_id');
@@ -58,7 +197,7 @@ const getTokenSupplyDistribution = async (req, res) => {
       SELECT
         tb.consensus_timestamp
       FROM token_balance tb
-      WHERE ${tsQuery === '' ? '1=1' : tsQuery}
+      ${tsQuery && `WHERE ${tsQuery}`}
       ORDER BY tb.consensus_timestamp DESC
       LIMIT 1`;
 
@@ -85,59 +224,95 @@ const getTokenSupplyDistribution = async (req, res) => {
     ${query}`;
 
   const tokenIdParams = [tokenId.getEncodedId().toString()];
-  const sqlParams = pubKeyParams
+  const pgSqlParams = pubKeyParams
     .concat(tsParams)
     .concat(tokenIdParams)
     .concat(accountParams)
     .concat(balanceParams)
     .concat(params);
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, pgSqlParams);
+  return {
+    pgSqlQuery,
+    pgSqlParams,
+    order,
+    limit,
+  };
+};
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenSupplyDistribution query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);
-  }
+const formatTokenBalanceRow = (row) => {
+  return {
+    account: EntityId.fromString(row.account_id).toString(),
+    balance: Number(row.balance),
+  };
+};
 
-  let result;
+/**
+ * Handler function for /tokens/:id/balances API.
+ *
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @return {Promise} Promise for PostgreSQL query
+ */
+const getTokenBalances = async (req, res) => {
+  let tokenId;
   try {
-    result = await pool.query(pgSqlQuery, sqlParams);
+    tokenId = EntityId.fromString(req.params.id);
   } catch (err) {
-    throw new DbError(err.message);
+    throw InvalidArgumentError.forParams('token.id');
   }
 
-  const ret = {
-    timestamp: null,
-    balances: [],
-    links: {
-      next: null,
-    },
-  };
+  // validate query parameters
+  utils.validateReq(req);
 
-  if (result.rows.length > 0) {
-    ret.timestamp = utils.nsToSecNs(result.rows[0].consensus_timestamp);
+  const {pgSqlQuery, pgSqlParams, limit, order} = extractSqlFromTokenBalancesRequest(req, tokenId);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getTokenSupplyDistribution query: ${pgSqlQuery} ${JSON.stringify(pgSqlParams)}`);
   }
 
-  ret.balances = result.rows.map((row) => {
-    return {
-      account: EntityId.fromString(row.account_id).toString(),
-      balance: Number(row.balance),
-    };
-  });
+  return pool
+    .query(pgSqlQuery, pgSqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((result) => {
+      const {rows} = result;
+      const responseData = {
+        timestamp: rows.length > 0 ? utils.nsToSecNs(rows[0].consensus_timestamp) : null,
+        balances: rows.map((row) => formatTokenBalanceRow(row)),
+        links: {
+          next: null,
+        },
+      };
 
-  const anchorAccountId = ret.balances.length > 0 ? ret.balances[ret.balances.length - 1].account : 0;
+      const anchorAccountId =
+        responseData.balances.length > 0 ? responseData.balances[responseData.balances.length - 1].account : 0;
+      // Pagination links
+      responseData.links.next = utils.getPaginationLink(
+        req,
+        responseData.balances.length !== limit,
+        constants.filterKeys.ACCOUNT_ID,
+        anchorAccountId,
+        order
+      );
 
-  // Pagination links
-  ret.links = {
-    next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order),
-  };
-
-  if (process.env.NODE_ENV === 'test') {
-    ret.sqlQuery = result.sqlQuery;
-  }
-
-  logger.debug(`getTokenSupplyDistribution returning ${ret.balances.length} entries`);
-  res.locals[constants.responseDataLabel] = ret;
+      logger.debug(`getTokenBalances returning ${responseData.balances.length} entries`);
+      res.locals[constants.responseDataLabel] = responseData;
+    });
 };
 
 module.exports = {
-  getTokenSupplyDistribution,
+  getTokensRequest,
+  getTokenBalances,
 };
+
+if (process.env.NODE_ENV === 'test') {
+  module.exports = Object.assign(module.exports, {
+    extractSqlFromTokenRequest,
+    formatTokenRow,
+    tokensSelectQuery,
+    accountIdJoinQuery,
+    entityIdJoinQuery,
+    extractSqlFromTokenBalancesRequest,
+    formatTokenBalanceRow,
+  });
+}

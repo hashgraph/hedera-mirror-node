@@ -34,12 +34,13 @@ let sqlConnection;
 const setUp = async (testDataJson, sqlconn) => {
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson.accounts);
-  await loadTokens(testDataJson.tokens);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadTokenTransfers(testDataJson.tokentransfers);
   await loadTransactions(testDataJson.transactions);
   await loadTopicMessages(testDataJson.topicmessages);
+  await loadTokens(testDataJson.tokens);
+  await loadTokenAccounts(testDataJson.tokenaccounts);
 };
 
 const loadAccounts = async (accounts) => {
@@ -49,16 +50,6 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
-  }
-};
-
-const loadTokens = async (tokens) => {
-  if (!tokens) {
-    return;
-  }
-
-  for (const token of tokens) {
-    await addToken(token);
   }
 };
 
@@ -79,6 +70,26 @@ const loadCryptoTransfers = async (cryptoTransfers) => {
 
   for (let i = 0; i < cryptoTransfers.length; ++i) {
     await addCryptoTransaction(cryptoTransfers[i]);
+  }
+};
+
+const loadTokenAccounts = async (tokenAccounts) => {
+  if (tokenAccounts == null) {
+    return;
+  }
+
+  for (const tokenAccount of tokenAccounts) {
+    await addTokenAccount(tokenAccount);
+  }
+};
+
+const loadTokens = async (tokens) => {
+  if (tokens == null) {
+    return;
+  }
+
+  for (const token of tokens) {
+    await addToken(token);
   }
 };
 
@@ -153,10 +164,6 @@ const addAccount = async (account) => {
     },
     account
   );
-};
-
-const addToken = async (token) => {
-  await addEntity({entity_type: 5}, token);
 };
 
 const setAccountBalance = async (balance) => {
@@ -304,6 +311,111 @@ const addTopicMessage = async (message) => {
       message.running_hash,
       message.seq_num,
       message.running_hash_version,
+    ]
+  );
+};
+
+const addToken = async (token) => {
+  const tokenId = EntityId.fromString(token.token_id);
+  await addEntity(
+    {entity_type: 5},
+    {
+      entity_realm: tokenId.realm,
+      entity_num: tokenId.num,
+      ...token,
+    }
+  );
+
+  // create token object and insert into 'token' table
+  token = {
+    token_id: '0.0.0',
+    created_timestamp: 0,
+    decimals: 1000,
+    freeze_default: false,
+    freeze_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    initial_supply: 1000000,
+    kyc_key: null,
+    kyc_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    modified_timestamp: 0,
+    name: 'Token name',
+    supply_key: null,
+    supply_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    symbol: 'YBTJBOAZ',
+    total_supply: 1000000,
+    treasury_account_id: '0.0.98',
+    wipe_key: null,
+    wipe_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    ...token,
+  };
+
+  await sqlConnection.query(
+    `INSERT INTO token (
+                   token_id,
+                   created_timestamp,
+                   decimals,
+                   freeze_default,
+                   freeze_key_ed25519_hex,
+                   initial_supply,
+                   kyc_key,
+                   kyc_key_ed25519_hex,
+                   modified_timestamp,
+                   name,
+                   supply_key,
+                   supply_key_ed25519_hex,
+                   symbol,
+                   total_supply,
+                   treasury_account_id,
+                   wipe_key,
+                   wipe_key_ed25519_hex
+                   )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);`,
+    [
+      tokenId.getEncodedId(),
+      token.created_timestamp,
+      token.decimals,
+      token.freeze_default,
+      token.freeze_key_ed25519_hex,
+      token.initial_supply,
+      token.kyc_key,
+      token.kyc_key_ed25519_hex,
+      token.modified_timestamp,
+      token.name,
+      token.supply_key,
+      token.supply_key_ed25519_hex,
+      token.symbol,
+      token.total_supply,
+      EntityId.fromString(token.treasury_account_id).getEncodedId(),
+      token.wipe_key,
+      token.wipe_key_ed25519_hex,
+    ]
+  );
+};
+
+const addTokenAccount = async (tokenAccount) => {
+  // create token account object
+  tokenAccount = {
+    account_id: '0.0.0',
+    associated: true,
+    created_timestamp: 0,
+    freeze_status: 0,
+    kyc_status: 0,
+    modified_timestamp: 0,
+    token_id: '0.0.0',
+    ...tokenAccount,
+  };
+
+  await sqlConnection.query(
+    `INSERT INTO token_account (
+      account_id, associated, created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+    [
+      EntityId.fromString(tokenAccount.account_id).getEncodedId(),
+      tokenAccount.associated,
+      tokenAccount.created_timestamp,
+      tokenAccount.freeze_status,
+      tokenAccount.kyc_status,
+      tokenAccount.modified_timestamp,
+      EntityId.fromString(tokenAccount.token_id).getEncodedId(),
     ]
   );
 };

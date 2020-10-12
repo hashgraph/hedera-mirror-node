@@ -25,8 +25,8 @@
     ],
     "tokens": [
       {
-        "entity_num": 1,
-        "entity_realm": 20
+        "token_id": "0.20.1",
+        "symbol": "TOKEN1"
       }
     ],
     "balances": [

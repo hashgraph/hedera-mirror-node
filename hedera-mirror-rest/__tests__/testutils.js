@@ -162,9 +162,20 @@ const badParamsList = () => {
   ];
 };
 
+const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+const randomString = (length) => {
+  let result = '';
+  for (let i = length; i > 0; i--) {
+    result += characters[Math.floor(Math.random() * characters.length)];
+  }
+  return result;
+};
+
 module.exports = {
+  badParamsList,
   checkSql,
   parseSqlQueryAndParams,
+  randomString,
   testBadParams,
-  badParamsList,
 };
