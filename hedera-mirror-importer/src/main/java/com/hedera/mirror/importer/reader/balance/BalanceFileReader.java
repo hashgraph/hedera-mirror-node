@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.reader.balance;
 
 /*-
  * ‌
@@ -30,9 +30,10 @@ public interface BalanceFileReader {
     /**
      * Reads an account balance file, parses the header to get the consensus timestamp, and returns a stream of
      * <code>AccountBalance</code> objects, one such object per valid account balance line.
+     *
      * @param file The account balances file object
      * @return A stream of <code>AccountBalance</code> objects
-     * @exception InvalidDatasetException if a fatal parsing error occurs
+     * @throws InvalidDatasetException if a fatal parsing error occurs
      */
     Stream<AccountBalance> read(File file);
 }

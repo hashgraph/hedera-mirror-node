@@ -259,4 +259,21 @@ describe('utils encodeMessage tests', () => {
   test(`Verify encodeBinary on utf8 character encoding`, () => {
     expect(utils.encodeBinary(inputMessage, 'utf8')).toBe(utf8Message);
   });
+
+  describe('utils parsePublicKey tests', () => {
+    test(`Verify parsePublicKey on null publickey`, () => {
+      expect(utils.parsePublicKey(null)).toBe(null);
+    });
+
+    test(`Verify parsePublicKey on invalid decode publickey`, () => {
+      const key = '2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864;';
+      expect(utils.parsePublicKey(key)).toBe(key);
+    });
+
+    test(`Verify parsePublicKey on valid decode publickey`, () => {
+      const validDer = '302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
+      const validDecoded = '7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC';
+      expect(utils.parsePublicKey(validDer)).toBe(validDecoded);
+    });
+  });
 });

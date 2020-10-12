@@ -35,6 +35,7 @@ const transactions = require('./transactions');
 const balances = require('./balances');
 const accounts = require('./accounts');
 const topicmessage = require('./topicmessage');
+const tokens = require('./tokens');
 const health = require('./health');
 const stateproof = require('./stateproof');
 const {handleError} = require('./middleware/httpErrorHandler');
@@ -132,6 +133,9 @@ if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
 app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
 app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(`${apiPrefix}/topics?/messages?/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
+
+// tokens routes
+app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
 
 // response data handling middleware
 app.use(responseHandler);

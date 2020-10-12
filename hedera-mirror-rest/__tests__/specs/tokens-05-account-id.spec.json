@@ -1,0 +1,86 @@
+{
+  "description": "Token api call for all tokens associated with a given account id",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1
+      },
+      {
+        "entity_num": 2
+      },
+      {
+        "entity_num": 3,
+        "entity_type": 5
+      },
+      {
+        "entity_num": 4,
+        "entity_type": 5
+      },
+      {
+        "entity_realm": 7,
+        "entity_num": 25301,
+        "entity_type": 5
+      },
+      {
+        "entity_realm": 23,
+        "entity_num": 45678,
+        "entity_type": 5
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.3",
+        "symbol": "FIRSTMOVERLPDJH"
+      },
+      {
+        "token_id": "0.0.4",
+        "symbol": "ORIGINALRDKSE"
+      },
+      {
+        "token_id": "0.7.25301",
+        "symbol": "MIRRORTOKEN"
+      },
+      {
+        "token_id": "0.23.45678",
+        "symbol": "HEDERACOIN"
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": 3,
+        "account_id": 1
+      },
+      {
+        "token_id": 4,
+        "account_id": 1
+      },
+      {
+        "token_id": 30064796373,
+        "account_id": 2
+      },
+      {
+        "token_id": 98784293486,
+        "account_id": 2
+      }
+    ]
+  },
+  "url": "/api/v1/tokens?account.id=2",
+  "responseStatus": 200,
+  "responseJson": {
+    "tokens": [
+      {
+        "token_id": "0.7.25301",
+        "symbol": "MIRRORTOKEN",
+        "admin_key": null
+      },
+      {
+        "token_id": "0.23.45678",
+        "symbol": "HEDERACOIN",
+        "admin_key": null
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

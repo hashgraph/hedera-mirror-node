@@ -54,7 +54,6 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -696,18 +695,6 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
                         .toByteString())
                 .build();
-    }
-
-    private void assertTransactionInRepository(
-            ResponseCodeEnum responseCode, long consensusTimestamp, Long entityId) {
-        var transaction = transactionRepository.findById(consensusTimestamp).get();
-        assertThat(transaction)
-                .returns(responseCode.getNumber(), from(Transaction::getResult))
-                .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
-        if (entityId != null) {
-            assertThat(transaction)
-                    .returns(entityId, t -> t.getEntityId().getId());
-        }
     }
 
     private Entities getTopicEntity(TopicID topicId) {

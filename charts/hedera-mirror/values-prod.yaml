@@ -22,6 +22,12 @@ postgresql:
   postgresql:
     priorityClassName: critical
 
+redis:
+  metrics:
+    enabled: true
+  slave:
+    priorityClassName: critical
+
 rest:
   ingress:
     middleware:

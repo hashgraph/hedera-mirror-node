@@ -1,9 +1,9 @@
 chart-repos:
-  - stable=https://kubernetes-charts.storage.googleapis.com
   - bitnami=https://charts.bitnami.com/bitnami
   - fluxcd=https://charts.fluxcd.io
   - loki=https://grafana.github.io/loki/charts
-  - traefik=https://containous.github.io/traefik-helm-chart
+  - prometheus=https://prometheus-community.github.io/helm-charts
+  - traefik=https://helm.traefik.io/traefik
 check-version-increment: false
 charts:
   - charts/hedera-mirror

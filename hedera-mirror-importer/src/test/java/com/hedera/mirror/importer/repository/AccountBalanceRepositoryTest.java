@@ -22,29 +22,33 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.TokenBalance;
 
 public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private AccountBalanceRepository accountBalanceRepository;
-
+    
     @Test
     void findByConsensusTimestamp() {
-        AccountBalance accountBalance1 = create(1L, 1, 100);
-        AccountBalance accountBalance2 = create(1L, 2, 200);
-        create(2L, 1, 50);
+        AccountBalance accountBalance1 = create(1L, 1, 100, 0);
+        AccountBalance accountBalance2 = create(1L, 2, 200, 3);
+        create(2L, 1, 50, 1);
 
         assertThat(accountBalanceRepository.findByIdConsensusTimestamp(1L))
+                .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrder(accountBalance1, accountBalance2);
     }
 
-    private AccountBalance create(long consensusTimestamp, int accountNum, long balance) {
+    private AccountBalance create(long consensusTimestamp, int accountNum, long balance, int numberOfTokenBalances) {
         AccountBalance.Id id = new AccountBalance.Id();
         id.setConsensusTimestamp(consensusTimestamp);
         id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
@@ -52,6 +56,24 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(balance);
         accountBalance.setId(id);
+        accountBalance
+                .setTokenBalances(createTokenBalances(consensusTimestamp, accountNum, balance, numberOfTokenBalances));
         return accountBalanceRepository.save(accountBalance);
+    }
+
+    private List<TokenBalance> createTokenBalances(long consensusTimestamp, int accountNum, long balance,
+                                                   int numberOfBalances) {
+        List<TokenBalance> tokenBalanceList = new ArrayList<>();
+        for (int i = 1; i <= numberOfBalances; i++) {
+            TokenBalance tokenBalance = new TokenBalance();
+            TokenBalance.Id id = new TokenBalance.Id();
+            id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
+            id.setConsensusTimestamp(consensusTimestamp);
+            id.setTokenId(EntityId.of(0, 0, i, EntityTypeEnum.TOKEN));
+            tokenBalance.setBalance(balance);
+            tokenBalance.setId(id);
+            tokenBalanceList.add(tokenBalance);
+        }
+        return tokenBalanceList;
     }
 }

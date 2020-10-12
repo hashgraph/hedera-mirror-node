@@ -11,6 +11,12 @@ global:
   useReleaseForNameLabel: true
 
 grpc:
+  config:
+    hedera:
+      mirror:
+        grpc:
+          listener:
+            type: NOTIFY
   hpa:
     enabled: false
   ingress:
@@ -29,6 +35,13 @@ importer:
         importer:
           downloader:
             cloudProvider: GCP
+          parser:
+            record:
+              entity:
+                notify:
+                  enabled: true
+                redis:
+                  enabled: false
   rbac:
     enabled: false
   replicas: 1
@@ -40,6 +53,9 @@ postgresql:
     replicaCount: 0
   postgresql:
     replicaCount: 1
+
+redis:
+  enabled: false
 
 rest:
   config:

@@ -392,7 +392,8 @@ public abstract class AbstractDownloaderTest {
         Files.walk(downloaderProperties.getSignaturesPath())
                 .filter(this::isSigFile)
                 .forEach(AbstractDownloaderTest::corruptFile);
-        doReturn("").when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        doReturn("").when(applicationStatusRepository)
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         downloader.download();
         verifyForSuccess();
     }
@@ -435,7 +436,8 @@ public abstract class AbstractDownloaderTest {
         // the difference between file1 and file2.
         Duration interval = getCloseInterval().multipliedBy(2);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
-        String lastFileName = Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), lastFileInstant);
+        String lastFileName = Utility
+                .getStreamFilenameFromInstant(downloaderProperties.getStreamType(), lastFileInstant);
 
         doReturn(lastFileName).when(applicationStatusRepository)
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
@@ -450,8 +452,9 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), MirrorProperties.getStartUpInstant()))
-                .when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), Instant.now()))
+                .when(applicationStatusRepository)
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         fileCopier.copy();
         downloader.download();
         verifyForSuccess(List.of());
@@ -460,15 +463,16 @@ public abstract class AbstractDownloaderTest {
     @ParameterizedTest(name = "startDate set to {0}s after {1}")
     @CsvSource({
             "-1,file1",
-             "0,file1",
-             "1,file1",
-             "0,file2",
-             "1,file2"
+            "0,file1",
+            "1,file1",
+            "0,file2",
+            "1,file2"
     })
     void startDate(long seconds, String fileChoice) throws Exception {
-        final Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
+        Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
         doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), startDate))
-                .when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+                .when(applicationStatusRepository)
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
@@ -490,7 +494,8 @@ public abstract class AbstractDownloaderTest {
     void endDate(long seconds, String fileChoice) throws Exception {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
         setDownloaderBatchSize(downloaderProperties, 1);
-        configStatefulApplicationStatusRepositoryMock(downloaderProperties.getLastValidDownloadedFileKey(), downloaderProperties.getLastValidDownloadedFileHashKey());
+        configStatefulApplicationStatusRepositoryMock(downloaderProperties
+                .getLastValidDownloadedFileKey(), downloaderProperties.getLastValidDownloadedFileHashKey());
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> !Utility.getInstantFromFilename(name).isAfter(mirrorProperties.getEndDate()))
@@ -545,12 +550,14 @@ public abstract class AbstractDownloaderTest {
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
-        doReturn(file1).when(applicationStatusRepository).findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        doReturn(file1).when(applicationStatusRepository)
+                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
 
         downloader.download();
 
         // The file with the different timestamp than all other nodes should not be processed
-        verify(applicationStatusRepository).updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), file2);
+        verify(applicationStatusRepository)
+                .updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), file2);
         assertValidFiles(List.of(file2));
     }
 
@@ -572,7 +579,8 @@ public abstract class AbstractDownloaderTest {
         ApplicationStatusCode lastValidDownloadedFileKey = downloaderProperties.getLastValidDownloadedFileKey();
         ApplicationStatusCode lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
 
-        verify(applicationStatusRepository, times(files.size())).updateStatusValue(eq(lastValidDownloadedFileKey), any(String.class));
+        verify(applicationStatusRepository, times(files.size()))
+                .updateStatusValue(eq(lastValidDownloadedFileKey), any(String.class));
         for (String filename : files) {
             verify(applicationStatusRepository).updateStatusValue(lastValidDownloadedFileKey, filename);
         }

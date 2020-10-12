@@ -25,11 +25,13 @@ const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
   ENCODING: 'encoding',
+  ENTITY_PUBLICKEY: 'publickey',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
   SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
+  TOKEN_ID: 'token.id',
   TYPE: 'type',
 };
 
