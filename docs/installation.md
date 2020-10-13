@@ -89,6 +89,14 @@ cd hedera-mirror-rosetta
 go run cmd/*
 ```
 
+#### Unit Tests
+
+Run the unit tests by executing:
+```console
+cd hedera-mirror-rosetta
+go test ./...
+```
+
 #### Rosetta CLI Validation
 
 After you have started the Rosetta API, in another terminal run:
