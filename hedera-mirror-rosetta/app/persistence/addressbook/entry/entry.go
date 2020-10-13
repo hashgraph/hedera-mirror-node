@@ -46,7 +46,7 @@ type addressBookEntry struct {
 	Port               int32  `gorm:"type:integer"`
 	Memo               string `gorm:"size:128"`
 	PublicKey          string `gorm:"size:1024"`
-	NodeId             *int64 `gorm:"type:bigint"`
+	NodeId             int64  `gorm:"type:bigint"`
 	NodeAccountId      int64  `gorm:"type:bigint"`
 	NodeCertHash       []byte `gorm:"type:bytea"`
 }

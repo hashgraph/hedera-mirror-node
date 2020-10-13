@@ -154,8 +154,7 @@ func (tr *TransactionRepository) FindByHashInBlock(hashStr string, consensusStar
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
 	}
-	tr.dbClient.Where(&transaction{TransactionHash: transactionHash}).Find(&transactions)
-	transactions = filterTransactionsForRange(transactions, consensusStart, consensusEnd)
+	tr.dbClient.Where("transaction_hash = ? AND consensus_ns BETWEEN ? AND ?", transactionHash, consensusStart, consensusEnd).Find(&transactions)
 
 	if len(transactions) == 0 {
 		return nil, errors.Errors[errors.TransactionNotFound]
@@ -166,19 +165,6 @@ func (tr *TransactionRepository) FindByHashInBlock(hashStr string, consensusStar
 		return nil, err1
 	}
 	return transaction, nil
-}
-
-// filterTransactionsForRange - Filters the passed transactions. If the ConnsensusNS is not in the given [consensusStart; consensusEnd] range, the transaction is removed from the list
-func filterTransactionsForRange(transactions []transaction, consensusStart int64, consensusEnd int64) []transaction {
-	var length int
-	for _, t := range transactions {
-		if t.ConsensusNS < consensusStart || t.ConsensusNS > consensusEnd {
-			continue
-		}
-		transactions[length] = t
-		length++
-	}
-	return transactions[:length]
 }
 
 func (tr *TransactionRepository) findCryptoTransfers(timestamps []int64) []dbTypes.CryptoTransfer {
