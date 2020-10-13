@@ -30,11 +30,11 @@ type Transaction struct {
 	Operations []*Operation
 }
 
-// ToRosettaTransaction returns Rosetta type Transaction from the current domain type Transaction
-func (t *Transaction) ToRosettaTransaction() *rTypes.Transaction {
+// ToRosetta returns Rosetta type Transaction from the current domain type Transaction
+func (t *Transaction) ToRosetta() *rTypes.Transaction {
 	operations := make([]*rTypes.Operation, len(t.Operations))
 	for i, o := range t.Operations {
-		operations[i] = o.ToRosettaOperation()
+		operations[i] = o.ToRosetta()
 	}
 
 	rTransaction := &rTypes.Transaction{

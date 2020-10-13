@@ -1,0 +1,71 @@
+{
+  "description": "Token api call for all tokens utilizing all available but invalid query params",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1,
+        "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
+        "key": [1, 1, 1]
+      },
+      {
+        "entity_num": 1135,
+        "public_key": "2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864",
+        "key": [2, 2, 2]
+      },
+      {
+        "entity_realm": 7,
+        "entity_num": 25301,
+        "public_key": "2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864",
+        "key": [3, 3, 3]
+      },
+      {
+        "entity_realm": 23,
+        "entity_num": 45678,
+        "public_key": "2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864",
+        "key": [4, 4, 4]
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.1",
+        "symbol": "FIRSTMOVERLPDJH"
+      },
+      {
+        "token_id": "0.0.1135",
+        "symbol": "ORIGINALRDKSE"
+      },
+      {
+        "token_id": "0.7.25301",
+        "symbol": "MIRRORTOKEN"
+      },
+      {
+        "token_id": "0.23.45678",
+        "symbol": "HEDERACOIN"
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "tokentransfers": []
+  },
+  "url": "/api/v1/tokens?account.id=lte:0.1&token.id=abc&limit=2&publickey=-2&order=any",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: account.id"
+        },
+        {
+          "message": "Invalid parameter: token.id"
+        },
+        {
+          "message": "Invalid parameter: publickey"
+        },
+        {
+          "message": "Invalid parameter: order"
+        }
+      ]
+    }
+  }
+}

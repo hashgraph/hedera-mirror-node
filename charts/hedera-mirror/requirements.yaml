@@ -3,19 +3,24 @@ dependencies:
     condition: grpc.enabled
     name: hedera-mirror-grpc
     repository: file://../hedera-mirror-grpc
-    version: ">=0.5.0-0"
+    version: ">=0.7.0-0"
   - alias: importer
     condition: importer.enabled
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
-    version: ">=0.5.0-0"
+    version: ">=0.7.0-0"
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: ~3.4.3
+    version: ~3.8.0
+  - alias: redis
+    condition: redis.enabled
+    name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: ~11.0.6
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
-    version: ">=0.5.0-0"
+    version: ">=0.7.0-0"

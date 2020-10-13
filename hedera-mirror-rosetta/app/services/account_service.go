@@ -66,6 +66,6 @@ func (a *AccountAPIService) AccountBalance(ctx context.Context, request *rTypes.
 			Index: block.Index,
 			Hash:  hexUtils.SafeAddHexPrefix(block.Hash),
 		},
-		Balances: []*rTypes.Amount{balance.ToRosettaAmount()},
+		Balances: []*rTypes.Amount{balance.ToRosetta()},
 	}, nil
 }

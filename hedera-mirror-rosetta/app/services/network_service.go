@@ -97,7 +97,7 @@ func (n *NetworkAPIService) NetworkStatus(ctx context.Context, request *types.Ne
 			Index: genesisBlock.Index,
 			Hash:  hex.SafeAddHexPrefix(genesisBlock.Hash),
 		},
-		Peers: peers.ToRosettaPeers(),
+		Peers: peers.ToRosetta(),
 	}, nil
 }
 

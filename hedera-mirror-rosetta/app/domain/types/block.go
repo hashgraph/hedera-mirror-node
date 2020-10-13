@@ -37,11 +37,11 @@ type Block struct {
 	Transactions        []*Transaction
 }
 
-// ToRosettaBlock returns Rosetta type Block from the current domain type Block
-func (b *Block) ToRosettaBlock() *rTypes.Block {
+// ToRosetta returns Rosetta type Block from the current domain type Block
+func (b *Block) ToRosetta() *rTypes.Block {
 	transactions := make([]*rTypes.Transaction, len(b.Transactions))
 	for i, t := range b.Transactions {
-		transactions[i] = t.ToRosettaTransaction()
+		transactions[i] = t.ToRosetta()
 	}
 
 	return &rTypes.Block{

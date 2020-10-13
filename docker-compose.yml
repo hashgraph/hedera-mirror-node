@@ -17,7 +17,7 @@ services:
       - 5432:5432
 
   grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc:0.19.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-grpc:0.20.0-alpha1
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
@@ -28,7 +28,7 @@ services:
       - 5600:5600
 
   importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer:0.19.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-importer:0.20.0-alpha1
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_IMPORTER_DATAPATH: /var/lib/hedera-mirror-importer
@@ -39,7 +39,7 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 
   rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest:0.19.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-rest:0.20.0-alpha1
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
     restart: unless-stopped

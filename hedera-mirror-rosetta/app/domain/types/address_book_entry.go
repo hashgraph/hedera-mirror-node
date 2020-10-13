@@ -35,19 +35,14 @@ type AddressBookEntries struct {
 	Entries []*AddressBookEntry
 }
 
-// ToRosettaPeer returns Rosetta type Peer from the current domain type AddressBookEntry
-func (abe *AddressBookEntry) ToRosettaPeer() *rTypes.Peer {
-	return &rTypes.Peer{
-		PeerID:   abe.PeerId.String(),
-		Metadata: abe.Metadata,
-	}
-}
-
-// ToRosettaPeers returns an array of Rosetta type Peer
-func (abe *AddressBookEntries) ToRosettaPeers() []*rTypes.Peer {
+// ToRosetta returns an array of Rosetta type Peer
+func (abe *AddressBookEntries) ToRosetta() []*rTypes.Peer {
 	peers := make([]*rTypes.Peer, len(abe.Entries))
 	for i, e := range abe.Entries {
-		peers[i] = e.ToRosettaPeer()
+		peers[i] = &rTypes.Peer{
+			PeerID:   e.PeerId.String(),
+			Metadata: e.Metadata,
+		}
 	}
 
 	return peers

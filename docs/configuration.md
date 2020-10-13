@@ -72,7 +72,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
 | `hedera.mirror.importer.parser.record.frequency`                     | 100ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.importer.parser.record.keepFiles`                     | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
-| `hedera.mirror.importer.parser.record.entity.notify.enabled`                | true                    | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                    |
+| `hedera.mirror.importer.parser.record.entity.notify.enabled`                | false                   | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                    |
 | `hedera.mirror.importer.parser.record.entity.notify.maxJsonPayloadSize`     | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
 | `hedera.mirror.importer.parser.record.entity.persist.claims`                | false                   | Persist claim data to the database                                                             |
 | `hedera.mirror.importer.parser.record.entity.persist.contracts`             | true                    | Persist contract data to the database                                                          |
@@ -80,8 +80,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.files`                 | true                    | Persist all file data to the database                                                          |
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
+| `hedera.mirror.importer.parser.record.entity.persist.tokens`                | true                    | Persist token data to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
-| `hedera.mirror.importer.parser.record.entity.redis.enabled`                 | false                   | Whether to use Redis to send messages to the gRPC process                                      |
+| `hedera.mirror.importer.parser.record.entity.redis.enabled`                 | true                    | Whether to use Redis to send messages to the gRPC process. Requires `spring.redis.*` [properties](https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-application-properties.html#data-properties) |
 | `hedera.mirror.importer.parser.record.entity.repository.enabled`            | false                   | Whether to use Spring Data JPA repositories to insert into the database (experimental)         |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 20_000                  | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.entity.sql.bufferSize`                | 11441                   | The size of the byte buffer to allocate for each batch                                         |
@@ -161,7 +162,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.maxBufferSize`                 | 16384            | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
 | `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
-| `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL, REDIS or SHARED_POLL |
+| `hedera.mirror.grpc.listener.type`                          | REDIS            | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL, REDIS or SHARED_POLL |
 | `hedera.mirror.grpc.netty.executorCoreThreadCount`          | 10               | The number of core threads                                                                     |
 | `hedera.mirror.grpc.netty.executorMaxThreadCount`           | 1000             | The maximum allowed number of threads                                                          |
 | `hedera.mirror.grpc.netty.keepAliveTime`                    | 60               | The seconds limit for which threads may remain idle before being terminated                    |
@@ -265,7 +266,7 @@ The following table lists the available properties along with their default valu
 | `hedera.mirror.rosetta.db.password`                     | mirror_node_pass        | The database password the processor uses to connect. **Should be changed from default**        |
 | `hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.rosetta.db.username`                     | mirror_node             | The username the processor uses to connect to the database                                     |
-| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
+| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime                                              |
 | `hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface                                               |
 | `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port                                                                              |

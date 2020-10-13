@@ -46,6 +46,9 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -60,6 +63,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenRepository;
 
 @Log4j2
 @Named
@@ -73,6 +78,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
     private final ApplicationEventPublisher eventPublisher;
+    private final TokenRepository tokenRepository;
+    private final TokenAccountRepository tokenAccountRepository;
 
     // init schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
@@ -82,6 +89,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<ContractResult> contractResultPgCopy;
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
+    private final PgCopy<TokenTransfer> tokenTransferPgCopy;
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
@@ -94,12 +102,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<LiveHash> liveHashes;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<EntityId> entityIds;
+    private final Collection<TokenTransfer> tokenTransfers;
 
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
                              ApplicationStatusRepository applicationStatusRepository,
-                             EntityRepository entityRepository, ApplicationEventPublisher eventPublisher) {
+                             EntityRepository entityRepository, ApplicationEventPublisher eventPublisher,
+                             TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository) {
         this.dataSource = dataSource;
         this.applicationStatusRepository = applicationStatusRepository;
         this.entityRepository = entityRepository;
@@ -107,6 +117,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.sqlProperties = sqlProperties;
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
         this.eventPublisher = eventPublisher;
+        this.tokenRepository = tokenRepository;
+        this.tokenAccountRepository = tokenAccountRepository;
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
@@ -115,6 +127,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, sqlProperties);
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, sqlProperties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
+        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, sqlProperties);
 
         transactions = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -124,6 +137,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashes = new ArrayList<>();
         entityIds = new HashSet<>();
         topicMessages = new ArrayList<>();
+        tokenTransfers = new ArrayList<>();
     }
 
     @Override
@@ -162,6 +176,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
+        tokenTransfers.clear();
         eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
     }
 
@@ -178,6 +193,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractResultPgCopy.copy(contractResults, connection);
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
+            tokenTransferPgCopy.copy(tokenTransfers, connection);
             persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
@@ -237,6 +253,21 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
+    }
+
+    @Override
+    public void onToken(Token token) throws ImporterException {
+        tokenRepository.save(token);
+    }
+
+    @Override
+    public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        tokenAccountRepository.save(tokenAccount);
+    }
+
+    @Override
+    public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
+        tokenTransfers.add(tokenTransfer);
     }
 
     private void persistEntities() {

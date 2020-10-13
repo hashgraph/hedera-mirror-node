@@ -69,6 +69,19 @@ Namespace
 {{- end -}}
 
 {{/*
+Redis host
+*/}}
+{{- define "hedera-mirror-grpc.redis-host" -}}
+{{- $host := "RELEASE-NAME-redis" -}}
+{{- if .Values.global.redis.host -}}
+{{- $host = .Values.global.redis.host -}}
+{{- else if .Values.config.spring }}
+{{- $host = .Values.config.spring.redis.host -}}
+{{- end -}}
+{{- replace "RELEASE-NAME" .Release.Name $host -}}
+{{- end -}}
+
+{{/*
 Selector labels
 */}}
 {{- define "hedera-mirror-grpc.selectorLabels" -}}

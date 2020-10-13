@@ -1,0 +1,19 @@
+{
+  "description": "Token api call for all tokens with no applicable tokens",
+  "setup": {
+    "accounts": [],
+    "tokens": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "tokentransfers": []
+  },
+  "url": "/api/v1/tokens",
+  "responseStatus": 200,
+  "responseJson": {
+    "tokens": [],
+    "links": {
+      "next": null
+    }
+  }
+}

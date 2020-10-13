@@ -8,6 +8,9 @@ global:
   db:
     host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts
   namespaceOverride: ""
+  redis:
+    host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
+    password: redis_password
   rest:
     username: mirror_api
     password: mirror_api_pass
@@ -66,7 +69,7 @@ postgresql:
               labelSelector:
                 matchLabels:
                   app.kubernetes.io/component: pgpool
-    initdbScriptsSecret: '{{ printf "%s-pgpool-init" .Release.Name }}'
+    customUsersSecret: '{{ printf "%s-pgpool-init" .Release.Name }}'
     podLabels:
       role: db
     pdb:
@@ -83,7 +86,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 12.3.0-debian-10-r59
+    tag: 12.4.0-debian-10-r49
   postgresql:
     affinity:
       podAntiAffinity:
@@ -105,6 +108,53 @@ postgresql:
         cpu: 250m
         memory: 500Mi
     repmgrLogLevel: DEBUG
+
+redis:
+  enabled: true
+  metrics:
+    resources:
+      limits:
+        cpu: 50m
+        memory: 50Mi
+      requests:
+        cpu: 20m
+        memory: 25Mi
+    serviceMonitor:
+      enabled: true
+  podDisruptionBudget:
+    enabled: true
+  sentinel:
+    enabled: true
+    masterSet: mirror
+    resources:
+      limits:
+        cpu: 50m
+        memory: 50Mi
+      requests:
+        cpu: 20m
+        memory: 25Mi
+  serviceAccount:
+    create: true
+  slave:  # Both master and slave are configured via slave property when sentinel is enabled
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: redis
+    resources:
+      limits:
+        cpu: 1500m
+        memory: 1000Mi
+      requests:
+        cpu: 250m
+        memory: 500Mi
+    statefulset:
+      updateStrategy: RollingUpdate
+  usePasswordFile: true
 
 rest:
   enabled: true
