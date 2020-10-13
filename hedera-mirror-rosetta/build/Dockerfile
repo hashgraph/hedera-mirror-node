@@ -36,13 +36,6 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" > /etc
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6 supervisor git openjdk-11-jdk-headless curl
 
-# ---------------------------- Install yq ----------------------------- #
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository ppa:rmescandon/yq
-RUN apt update
-RUN apt install yq -y
-
 USER root
 
 # Create Volume PostgreSQL directory and Change default PostgreSQL directory
