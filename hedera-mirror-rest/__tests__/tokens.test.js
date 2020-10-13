@@ -446,7 +446,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       initialQuery,
       filters: [
         {
-          key: filterKeys.ENTITY_PUBLICKEY,
+          key: filterKeys.ACCOUNT_PUBLICKEY,
           operator: opsMap.eq,
           value: publicKey,
         },
@@ -492,7 +492,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           value: balance,
         },
         {
-          key: filterKeys.ENTITY_PUBLICKEY,
+          key: filterKeys.ACCOUNT_PUBLICKEY,
           operator: opsMap.eq,
           value: publicKey,
         },

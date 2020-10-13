@@ -85,7 +85,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/tokens/0.20.1/balances?publickey=519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+  "url": "/api/v1/tokens/0.20.1/balances?account.publickey=519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
   "responseStatus": 200,
   "responseJson": {
     "timestamp": "0.000002345",

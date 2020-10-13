@@ -187,7 +187,7 @@ const tokenBalancesSqlQueryColumns = {
   ACCOUNT_BALANCE: 'tb.balance',
   ACCOUNT_ID: 'tb.account_id',
   CONSENSUS_TIMESTAMP: 'tb.consensus_timestamp',
-  PUBLIC_KEY: 'e.ed25519_public_key_hex',
+  ACCOUNT_PUBLICKEY: 'e.ed25519_public_key_hex',
   TOKEN_ID: 'tb.token_id',
 };
 
@@ -210,7 +210,7 @@ const tokenBalancesSelectQuery = `
  *
  * @param {EntityId} tokenId token ID object
  * @param {string} pgSqlQuery initial pg SQL query string
- * @param {[]}filters parsed and validated filters
+ * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
@@ -226,11 +226,11 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
 
   for (const filter of filters) {
     switch (filter.key) {
-      case constants.filterKeys.ENTITY_PUBLICKEY:
+      case constants.filterKeys.ACCOUNT_PUBLICKEY:
         joinEntityClause = `JOIN t_entities e
           ON e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
-          AND e.id = tb.account_id
-          AND e.ed25519_public_key_hex = $${nextParamCount++}`;
+          AND e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
+          AND ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${nextParamCount++}`;
         pgSqlParams.push(filter.value);
         break;
       case constants.filterKeys.LIMIT:
@@ -295,14 +295,13 @@ const getTokenBalances = async (req, res) => {
   try {
     tokenId = EntityId.fromString(req.params.id);
   } catch (err) {
-    throw InvalidArgumentError.forParams('token.id');
+    throw InvalidArgumentError.forParams('tokenId');
   }
 
   const filters = utils.buildFilterObject(req.query);
   utils.validateAndParseFilters(filters);
 
   const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
-  logger.info(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
   }

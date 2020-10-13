@@ -675,7 +675,7 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
-        comparator.value = ed25519.derToEd25519(comparator.value);
+        comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
