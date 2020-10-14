@@ -82,7 +82,7 @@ npm test
 Go 1.13+
 ``
 
-To start the Rosetta API ensure you have the necessary [configuration](configuration.md) populated and run:
+To start the Rosetta API ensure you have the necessary [configuration](configuration.md#rosetta-api) populated and run:
 
 ```console
 cd hedera-mirror-rosetta
@@ -106,18 +106,18 @@ cd hedera-mirror-rosetta/validation
 ./run-validation.sh
 ```
 
-Currently, Rosetta CLI Validation supports only **DEMO** and **TESTNET**, where
-**DEMO** is default and **TESTNET** can be run via:
+Currently, Rosetta CLI Validation supports only `DEMO` and `TESTNET`, where
+`DEMO` is default and `TESTNET` can be run via:
 ```console
 ./run-validation.sh testnet
 ```
 
 #### Rosetta All-in-One Dockerfile configuration
 
-The **All-in-One** configuration aggregates the **PostgreSQL**, **Importer** and **Rosetta** services in a single Dockerfile configuration.
+The `All-in-One` configuration aggregates the PostgreSQL, Importer and Rosetta services in a single Dockerfile configuration.
 Configuration is based on Rosetta specification, found [here](https://www.rosetta-api.org/docs/node_deployment.html).
 Data Persistence is based on Rosetta specification as well, found [here](https://www.rosetta-api.org/docs/standard_storage_location.html).
-Exposed ports are **5432** (PostgreSQL) and **5700** (Rosetta).
+Exposed ports are `5432` (PostgreSQL) and `5700` (Rosetta).
 
 To build the Dockerfile, run:
 ```console
@@ -135,24 +135,24 @@ With a mounted volume:
 docker run -v <volume>:/data <image>
 ```
 
-The built Docker image can be run in **online** (default) and **offline** mode.
-**Online** mode runs all the above specified services, where in **offline** - only the **Rosetta** service.
+The built Docker image can be run in `online` (default) and `offline` mode.
+The `online` mode runs all the above specified services, where in `offline` - only the Rosetta service.
 
-To run in **offline** mode:
+To run in `offline` mode:
 ```console
 docker run -e MODE=offline <image>
 ```
 
-You can override **Importer** and **Rosetta** services default configuration by passing
-**environment variables**, specified [here](./configuration.md).
+You can override Importer and Rosetta services default configuration by passing
+`environment variables`, specified [here](./configuration.md).
 
-For ease, an additional environment variable, called **NETWORK** is added, where you can both override
-the **Importer** and **Rosetta** default network configuration:
+For ease, an additional environment variable, called `NETWORK` is added, where you can both override
+the Importer and Rosetta default network configuration:
 ```console
 docker run -e NETWORK=TESTNET <image>
 ```
 
-In order **Importer** to sync data, different from default,
+In order Importer to sync data, different from default,
 the following environment variables need to be overridden:
 ```console
 HEDERA_MIRROR_IMPORTER_DOWNLOADER_ACCESSKEY=
@@ -162,9 +162,9 @@ HEDERA_MIRROR_IMPORTER_DOWNLOADER_GCPPROJECTID=
 HEDERA_MIRROR_IMPORTER_DOWNLOADER_SECRETKEY=
 HEDERA_MIRROR_IMPORTER_START_DATE=
 ```
-regardless of specified **NETWORK**.
+regardless of specified `NETWORK`.
 
-A full example for **testnet** network in **online** mode:
+A full example for `testnet` network in `online` mode:
 ```console
 docker run -e NETWORK=TESTNET \
 -e HEDERA_MIRROR_IMPORTER_DOWNLOADER_ACCESSKEY= \
@@ -186,6 +186,7 @@ Docker Compose scripts are provided and run all the mirror node components:
 -   Importer
 -   REST API
 -   GRPC API
+-   Rosetta API
 
 Containers use the following persisted volumes:
 
