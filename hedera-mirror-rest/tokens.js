@@ -195,15 +195,14 @@ const tokenBalancesSqlQueryColumns = {
 const tokenBalancesFilterColumnMap = {
   'account.balance': tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE,
   'account.id': tokenBalancesSqlQueryColumns.ACCOUNT_ID,
-  publickey: tokenBalancesSqlQueryColumns.PUBLIC_KEY,
 };
 
 const tokenBalancesSelectQuery = `
-  SELECT
+  select
     tb.consensus_timestamp,
     tb.account_id,
     tb.balance
-  FROM token_balance tb`;
+  from token_balance tb`;
 
 /**
  * Extracts SQL query, params, order, and limit
@@ -219,7 +218,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
   let limit = config.maxLimit;
   let order = 'desc';
   let joinEntityClause = '';
-  let whereClause = `WHERE ${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`;
+  let whereClause = `where ${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`;
   let nextParamCount = 2;
   let tsQueryWhereClause = '';
   const pgSqlParams = [tokenId.getEncodedId()];
@@ -227,10 +226,10 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
-        joinEntityClause = `JOIN t_entities e
-          ON e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
-          AND e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
-          AND ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${nextParamCount++}`;
+        joinEntityClause = `join t_entities e
+          on e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
+          and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
+          and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${nextParamCount++}`;
         pgSqlParams.push(filter.value);
         break;
       case constants.filterKeys.LIMIT:
@@ -242,7 +241,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
       case constants.filterKeys.TIMESTAMP:
         // transform '=' operator for timestamp to '<='
         const op = filter.operator !== opsMap.eq ? filter.operator : opsMap.lte;
-        tsQueryWhereClause = `WHERE ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${nextParamCount++}`;
+        tsQueryWhereClause = `where ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${nextParamCount++}`;
         pgSqlParams.push(filter.value);
         break;
       default:
@@ -252,26 +251,26 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
         }
 
         whereClause = `${whereClause}
-          AND ${columnKey} ${filter.operator} $${nextParamCount++}`;
+          and ${columnKey} ${filter.operator} $${nextParamCount++}`;
         pgSqlParams.push(filter.value);
         break;
     }
   }
 
   whereClause = `${whereClause}
-    AND ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} = (
-      SELECT
+    and ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} = (
+      select
         ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
-      FROM token_balance tb
+      from token_balance tb
       ${tsQueryWhereClause}
-      ORDER BY ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} DESC
-      LIMIT 1
+      order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
+      limit 1
     )`;
   const query = `${pgSqlQuery}
     ${joinEntityClause}
     ${whereClause}
-    ORDER BY ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}
-    LIMIT $${nextParamCount}`;
+    order by ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}
+    limit $${nextParamCount}`;
   pgSqlParams.push(limit);
   return utils.buildPgSqlObject(query, pgSqlParams, order, limit);
 };

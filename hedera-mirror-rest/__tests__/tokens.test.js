@@ -222,13 +222,7 @@ describe('token formatTokenBalanceRow tests', () => {
 
 describe('token extractSqlFromTokenBalancesRequest tests', () => {
   const formatSqlQueryString = (query) => {
-    return query
-      .trim()
-      .toLowerCase()
-      .replace(/\n/g, ' ')
-      .replace(/\(\s+/g, '(')
-      .replace(/\s+\)/g, ')')
-      .replace(/\s+/g, ' ');
+    return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
   };
 
   const operators = Object.values(opsMap);
@@ -248,20 +242,20 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       filters: [],
       expected: {
         query: `
-          SELECT
+          select
             tb.consensus_timestamp,
             tb.account_id,
             tb.balance
-          FROM token_balance tb
-          WHERE tb.token_id = $1
-            AND tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
+          from token_balance tb
+          where tb.token_id = $1
+            and tb.consensus_timestamp = (
+              select tb.consensus_timestamp
+              from token_balance tb
+              order by tb.consensus_timestamp desc
+              limit 1
             )
-           ORDER BY tb.account_id DESC
-           LIMIT $2`,
+          order by tb.account_id desc
+          limit $2`,
         params: [encodedTokenIdStr, maxLimit],
         order: orderFilterValues.DESC,
         limit: maxLimit,
@@ -281,21 +275,21 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-          SELECT
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
-          FROM token_balance tb
-          WHERE tb.token_id = $1
-            AND tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              WHERE tb.consensus_timestamp ${op !== opsMap.eq ? op : '<='} $2
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
-            )
-           ORDER BY tb.account_id DESC
-           LIMIT $3`,
+            select
+              tb.consensus_timestamp,
+              tb.account_id,
+              tb.balance
+            from token_balance tb
+            where tb.token_id = $1
+              and tb.consensus_timestamp = (
+                select tb.consensus_timestamp
+                from token_balance tb
+                where tb.consensus_timestamp ${op !== opsMap.eq ? op : '<='} $2
+                order by tb.consensus_timestamp desc
+                limit 1
+              )
+            order by tb.account_id desc
+            limit $3`,
           params: [encodedTokenIdStr, timestampNs, maxLimit],
           order: orderFilterValues.DESC,
           limit: maxLimit,
@@ -317,19 +311,19 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            SELECT tb.consensus_timestamp,
+            select tb.consensus_timestamp,
                    tb.account_id,
                    tb.balance
-            FROM token_balance tb
-            WHERE tb.token_id = $1
-              AND tb.consensus_timestamp = (
-                SELECT tb.consensus_timestamp
-                FROM token_balance tb
-                ORDER BY tb.consensus_timestamp DESC
-                LIMIT 1
+            from token_balance tb
+            where tb.token_id = $1
+              and tb.consensus_timestamp = (
+                select tb.consensus_timestamp
+                from token_balance tb
+                order by tb.consensus_timestamp desc
+                limit 1
               )
-            ORDER BY tb.account_id DESC
-            LIMIT $2`,
+            order by tb.account_id desc
+            limit $2`,
           params: [encodedTokenIdStr, expectedLimit],
           order: orderFilterValues.DESC,
           limit: expectedLimit,
@@ -350,21 +344,21 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            SELECT
+            select
               tb.consensus_timestamp,
               tb.account_id,
               tb.balance
-            FROM token_balance tb
-            WHERE  tb.token_id = $1
-              AND tb.account_id ${op} $2
-              AND tb.consensus_timestamp = (
-                SELECT tb.consensus_timestamp
-                FROM token_balance tb
-                ORDER BY tb.consensus_timestamp DESC
-                LIMIT 1
+            from token_balance tb
+            where  tb.token_id = $1
+              and tb.account_id ${op} $2
+              and tb.consensus_timestamp = (
+                select tb.consensus_timestamp
+                from token_balance tb
+                order by tb.consensus_timestamp desc
+                limit 1
               )
-           ORDER BY tb.account_id DESC
-           LIMIT $3`,
+            order by tb.account_id desc
+            limit $3`,
           params: [encodedTokenIdStr, accountIdStr, maxLimit],
           order: orderFilterValues.DESC,
           limit: maxLimit,
@@ -385,21 +379,21 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            SELECT
+            select
               tb.consensus_timestamp,
               tb.account_id,
               tb.balance
-            FROM token_balance tb
-            WHERE tb.token_id = $1
-              AND tb.balance ${op} $2
-              AND tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
-            )
-            ORDER BY tb.account_id DESC
-            LIMIT $3`,
+            from token_balance tb
+            where tb.token_id = $1
+              and tb.balance ${op} $2
+              and tb.consensus_timestamp = (
+                select tb.consensus_timestamp
+                from token_balance tb
+                order by tb.consensus_timestamp desc
+                limit 1
+              )
+            order by tb.account_id desc
+            limit $3`,
           params: [encodedTokenIdStr, balance, maxLimit],
           order: orderFilterValues.DESC,
           limit: maxLimit,
@@ -420,20 +414,20 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            SELECT
+            select
               tb.consensus_timestamp,
               tb.account_id,
               tb.balance
-            FROM token_balance tb
-            WHERE tb.token_id = $1
-              AND tb.consensus_timestamp = (
-                SELECT tb.consensus_timestamp
-                FROM token_balance tb
-                ORDER BY tb.consensus_timestamp DESC
-                LIMIT 1
+            from token_balance tb
+            where tb.token_id = $1
+              and tb.consensus_timestamp = (
+                select tb.consensus_timestamp
+                from token_balance tb
+                order by tb.consensus_timestamp desc
+                limit 1
               )
-             ORDER BY tb.account_id ${order}
-             LIMIT $2`,
+            order by tb.account_id ${order}
+            limit $2`,
           params: [encodedTokenIdStr, maxLimit],
           order,
           limit: maxLimit,
@@ -453,24 +447,24 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-          SELECT
+          select
             tb.consensus_timestamp,
             tb.account_id,
             tb.balance
-          FROM token_balance tb
-          JOIN t_entities e
-            ON e.fk_entity_type_id = 1
-            AND e.id = tb.account_id
-            AND e.ed25519_public_key_hex = $2
-          WHERE tb.token_id = $1
-            AND tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
+          from token_balance tb
+          join t_entities e
+            on e.fk_entity_type_id = 1
+            and e.id = tb.account_id
+            and e.ed25519_public_key_hex = $2
+          where tb.token_id = $1
+            and tb.consensus_timestamp = (
+              select tb.consensus_timestamp
+              from token_balance tb
+              order by tb.consensus_timestamp desc
+              limit 1
             )
-           ORDER BY tb.account_id DESC
-           LIMIT $3`,
+          order by tb.account_id desc
+          limit $3`,
         params: [encodedTokenIdStr, publicKey, maxLimit],
         order: orderFilterValues.DESC,
         limit: maxLimit,
@@ -514,27 +508,27 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-          SELECT
+          select
             tb.consensus_timestamp,
             tb.account_id,
             tb.balance
-          FROM token_balance tb
-          JOIN t_entities e
-            ON e.fk_entity_type_id = 1
-            AND e.id = tb.account_id
-            AND e.ed25519_public_key_hex = $4
-          WHERE tb.token_id = $1
-            AND tb.account_id = $2
-            AND tb.balance = $3
-            AND tb.consensus_timestamp = (
-              SELECT tb.consensus_timestamp
-              FROM token_balance tb
-              WHERE tb.consensus_timestamp <= $5
-              ORDER BY tb.consensus_timestamp DESC
-              LIMIT 1
+          from token_balance tb
+          join t_entities e
+            on e.fk_entity_type_id = 1
+            and e.id = tb.account_id
+            and e.ed25519_public_key_hex = $4
+          where tb.token_id = $1
+            and tb.account_id = $2
+            and tb.balance = $3
+            and tb.consensus_timestamp = (
+              select tb.consensus_timestamp
+              from token_balance tb
+              where tb.consensus_timestamp <= $5
+              order by tb.consensus_timestamp desc
+              limit 1
             )
-           ORDER BY tb.account_id ASC
-           LIMIT $6`,
+          order by tb.account_id asc
+          limit $6`,
         params: [encodedTokenIdStr, accountIdStr, balance, publicKey, timestampNs, 1],
         order: orderFilterValues.ASC,
         limit: 1,
