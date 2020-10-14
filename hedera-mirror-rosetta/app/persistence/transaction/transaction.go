@@ -27,6 +27,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -90,8 +91,8 @@ func (t *transaction) getHashString() string {
 // TransactionRepository struct that has connection to the Database
 type TransactionRepository struct {
 	dbClient *gorm.DB
-	statuses map[int]string
-	types    map[int]string
+	statuses *sync.Map
+	types    *sync.Map
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
@@ -100,7 +101,7 @@ func NewTransactionRepository(dbClient *gorm.DB) *TransactionRepository {
 }
 
 // Types returns map of all Transaction Types
-func (tr *TransactionRepository) Types() (map[int]string, *rTypes.Error) {
+func (tr *TransactionRepository) Types() (*sync.Map, *rTypes.Error) {
 	if tr.types != nil {
 		return tr.types, nil
 	}
@@ -111,15 +112,16 @@ func (tr *TransactionRepository) Types() (map[int]string, *rTypes.Error) {
 		return nil, errors.Errors[errors.OperationTypesNotFound]
 	}
 
-	tr.types = make(map[int]string)
+	tr.types = new(sync.Map)
 	for _, t := range typesArray {
-		tr.types[t.ProtoID] = t.Name
+		tr.types.Store(t.ProtoID, t.Name)
 	}
+
 	return tr.types, nil
 }
 
 // Statuses returns map of all Transaction Results
-func (tr *TransactionRepository) Statuses() (map[int]string, *rTypes.Error) {
+func (tr *TransactionRepository) Statuses() (*sync.Map, *rTypes.Error) {
 	if tr.statuses != nil {
 		return tr.statuses, nil
 	}
@@ -130,10 +132,11 @@ func (tr *TransactionRepository) Statuses() (map[int]string, *rTypes.Error) {
 		return nil, errors.Errors[errors.OperationStatusesNotFound]
 	}
 
-	tr.statuses = make(map[int]string)
+	tr.statuses = new(sync.Map)
 	for _, s := range rArray {
-		tr.statuses[s.ProtoID] = s.Result
+		tr.statuses.Store(s.ProtoID, s.Result)
 	}
+
 	return tr.statuses, nil
 }
 
@@ -244,9 +247,9 @@ func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.C
 		if err != nil {
 			return nil, err
 		}
-		operationType := transactionTypes[transactionsMap[ct.ConsensusTimestamp].Type]
-		operationStatus := transactionStatuses[transactionsMap[ct.ConsensusTimestamp].Result]
-		operations[i] = &types.Operation{Index: int64(i), Type: operationType, Status: operationStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
+		operationType, _ := transactionTypes.Load(transactionsMap[ct.ConsensusTimestamp].Type)
+		operationStatus, _ := transactionStatuses.Load(transactionsMap[ct.ConsensusTimestamp].Result)
+		operations[i] = &types.Operation{Index: int64(i), Type: operationType.(string), Status: operationStatus.(string), Account: a, Amount: &types.Amount{Value: ct.Amount}}
 	}
 	return operations, nil
 }
