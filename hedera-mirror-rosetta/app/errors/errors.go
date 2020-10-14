@@ -38,14 +38,16 @@ var Errors = map[string]*types.Error{
 	MultipleOperationTypesPresent:  New(MultipleOperationTypesPresent, 109, false),
 	MultipleSignaturesPresent:      New(MultipleSignaturesPresent, 110, false),
 	NotImplemented:                 New(NotImplemented, 111, false),
-	StartMustNotBeAfterEnd:         New(StartMustNotBeAfterEnd, 112, false),
-	TransactionBuildFailed:         New(TransactionBuildFailed, 113, false),
-	TransactionDecodeFailed:        New(TransactionDecodeFailed, 114, false),
-	TransactionRecordFetchFailed:   New(TransactionRecordFetchFailed, 115, false),
-	TransactionMarshallingFailed:   New(TransactionMarshallingFailed, 116, false),
-	TransactionUnmarshallingFailed: New(TransactionUnmarshallingFailed, 117, false),
-	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 118, false),
-	TransactionNotFound:            New(TransactionNotFound, 119, true),
+	OperationStatusesNotFound:      New(OperationStatusesNotFound, 112, true),
+	OperationTypesNotFound:         New(OperationTypesNotFound, 113, true),
+	StartMustNotBeAfterEnd:         New(StartMustNotBeAfterEnd, 114, false),
+	TransactionBuildFailed:         New(TransactionBuildFailed, 115, false),
+	TransactionDecodeFailed:        New(TransactionDecodeFailed, 116, false),
+	TransactionRecordFetchFailed:   New(TransactionRecordFetchFailed, 117, false),
+	TransactionMarshallingFailed:   New(TransactionMarshallingFailed, 118, false),
+	TransactionUnmarshallingFailed: New(TransactionUnmarshallingFailed, 119, false),
+	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 120, false),
+	TransactionNotFound:            New(TransactionNotFound, 121, true),
 	InternalServerError:            New(InternalServerError, 500, true),
 }
 
@@ -63,6 +65,8 @@ const (
 	MultipleOperationTypesPresent  string = "Only one Operation Type must be present"
 	MultipleSignaturesPresent      string = "Only one signature must be present"
 	NotImplemented                 string = "Not implemented"
+	OperationStatusesNotFound      string = "Operation Statuses not found"
+	OperationTypesNotFound         string = "Operation Types not found"
 	StartMustNotBeAfterEnd         string = "Start must not be after end"
 	TransactionBuildFailed         string = "Transaction build failed"
 	TransactionDecodeFailed        string = "Transaction Decode failed"

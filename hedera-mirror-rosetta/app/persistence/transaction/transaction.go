@@ -90,6 +90,8 @@ func (t *transaction) getHashString() string {
 // TransactionRepository struct that has connection to the Database
 type TransactionRepository struct {
 	dbClient *gorm.DB
+	statuses map[int]string
+	types    map[int]string
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
@@ -98,29 +100,49 @@ func NewTransactionRepository(dbClient *gorm.DB) *TransactionRepository {
 }
 
 // Types returns map of all Transaction Types
-// TODO implement cache instead of retrieving this everytime form DB
-func (tr *TransactionRepository) Types() map[int]string {
-	typesArray := tr.retrieveTransactionTypes()
-	tMap := make(map[int]string)
-	for _, t := range typesArray {
-		tMap[t.ProtoID] = t.Name
+func (tr *TransactionRepository) Types() (map[int]string, *rTypes.Error) {
+	if tr.types != nil {
+		return tr.types, nil
 	}
-	return tMap
+
+	typesArray := tr.retrieveTransactionTypes()
+	if len(typesArray) == 0 {
+		log.Println("No Transaction Types were found in the database.")
+		return nil, errors.Errors[errors.OperationTypesNotFound]
+	}
+
+	tr.types = make(map[int]string)
+	for _, t := range typesArray {
+		tr.types[t.ProtoID] = t.Name
+	}
+	return tr.types, nil
 }
 
 // Statuses returns map of all Transaction Results
-// TODO implement cache instead of retrieving this everytime form DB
-func (tr *TransactionRepository) Statuses() map[int]string {
-	rArray := tr.retrieveTransactionResults()
-	rMap := make(map[int]string)
-	for _, s := range rArray {
-		rMap[s.ProtoID] = s.Result
+func (tr *TransactionRepository) Statuses() (map[int]string, *rTypes.Error) {
+	if tr.statuses != nil {
+		return tr.statuses, nil
 	}
-	return rMap
+
+	rArray := tr.retrieveTransactionResults()
+	if len(rArray) == 0 {
+		log.Println("No Transaction Results were found in the database.")
+		return nil, errors.Errors[errors.OperationStatusesNotFound]
+	}
+
+	tr.statuses = make(map[int]string)
+	for _, s := range rArray {
+		tr.statuses[s.ProtoID] = s.Result
+	}
+	return tr.statuses, nil
 }
 
-func (tr *TransactionRepository) TypesAsArray() []string {
-	return maphelper.GetStringValuesFromIntStringMap(tr.Types())
+func (tr *TransactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
+	transactionTypes, err := tr.Types()
+	if err != nil {
+		return nil, err
+	}
+	return maphelper.GetStringValuesFromIntStringMap(transactionTypes), nil
 }
 
 // FindBetween retrieves all Transactions between the provided start and end timestamp
@@ -206,8 +228,15 @@ func (tr *TransactionRepository) constructTransaction(sameHashTransactions []tra
 }
 
 func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.CryptoTransfer, transactionsMap map[int64]transaction) ([]*types.Operation, *rTypes.Error) {
-	transactionTypes := tr.Types()
-	transactionStatuses := tr.Statuses()
+	transactionTypes, err := tr.Types()
+	if err != nil {
+		return nil, err
+	}
+
+	transactionStatuses, err := tr.Statuses()
+	if err != nil {
+		return nil, err
+	}
 
 	operations := make([]*types.Operation, len(cryptoTransfers))
 	for i, ct := range cryptoTransfers {
