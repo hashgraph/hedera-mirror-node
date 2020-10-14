@@ -36,7 +36,6 @@ case $network in
     ;;
     *)
         network="demo"
-        echo $network
         run_demo
     ;;
 esac
