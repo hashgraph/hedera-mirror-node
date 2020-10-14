@@ -90,9 +90,11 @@ func (t *transaction) getHashString() string {
 
 // TransactionRepository struct that has connection to the Database
 type TransactionRepository struct {
-	dbClient *gorm.DB
-	statuses *sync.Map
-	types    *sync.Map
+	dbClient        *gorm.DB
+	statuses        sync.Map
+	statusesFetched bool
+	types           sync.Map
+	typesFetched    bool
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
@@ -102,8 +104,8 @@ func NewTransactionRepository(dbClient *gorm.DB) *TransactionRepository {
 
 // Types returns map of all Transaction Types
 func (tr *TransactionRepository) Types() (*sync.Map, *rTypes.Error) {
-	if tr.types != nil {
-		return tr.types, nil
+	if tr.typesFetched {
+		return &tr.types, nil
 	}
 
 	typesArray := tr.retrieveTransactionTypes()
@@ -112,18 +114,18 @@ func (tr *TransactionRepository) Types() (*sync.Map, *rTypes.Error) {
 		return nil, errors.Errors[errors.OperationTypesNotFound]
 	}
 
-	tr.types = new(sync.Map)
 	for _, t := range typesArray {
 		tr.types.Store(t.ProtoID, t.Name)
 	}
+	tr.typesFetched = true
 
-	return tr.types, nil
+	return &tr.types, nil
 }
 
 // Statuses returns map of all Transaction Results
 func (tr *TransactionRepository) Statuses() (*sync.Map, *rTypes.Error) {
-	if tr.statuses != nil {
-		return tr.statuses, nil
+	if tr.statusesFetched {
+		return &tr.statuses, nil
 	}
 
 	rArray := tr.retrieveTransactionResults()
@@ -132,12 +134,12 @@ func (tr *TransactionRepository) Statuses() (*sync.Map, *rTypes.Error) {
 		return nil, errors.Errors[errors.OperationStatusesNotFound]
 	}
 
-	tr.statuses = new(sync.Map)
 	for _, s := range rArray {
 		tr.statuses.Store(s.ProtoID, s.Result)
 	}
+	tr.statusesFetched = true
 
-	return tr.statuses, nil
+	return &tr.statuses, nil
 }
 
 func (tr *TransactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
