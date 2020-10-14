@@ -110,28 +110,33 @@ postgresql:
     repmgrLogLevel: DEBUG
 
 redis:
+  cluster:
+    slaveCount: 3
   enabled: true
   metrics:
     resources:
       limits:
-        cpu: 50m
+        cpu: 100m
         memory: 50Mi
       requests:
-        cpu: 20m
+        cpu: 50m
         memory: 25Mi
     serviceMonitor:
       enabled: true
   podDisruptionBudget:
     enabled: true
+  securityContext:
+    runAsGroup: 1001
+    runAsUser: 1001
   sentinel:
     enabled: true
     masterSet: mirror
     resources:
       limits:
-        cpu: 50m
+        cpu: 100m
         memory: 50Mi
       requests:
-        cpu: 20m
+        cpu: 50m
         memory: 25Mi
   serviceAccount:
     create: true
