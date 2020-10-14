@@ -3,13 +3,15 @@
   "setup": {
     "accounts": [
       {
+        "entity_num": 2
+      }
+    ],
+    "entities": [
+      {
         "entity_num": 1,
         "entity_type": 5,
         "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [1, 1, 1]
-      },
-      {
-        "entity_num": 2
       },
       {
         "entity_num": 1135,
@@ -52,12 +54,12 @@
     ],
     "tokenaccounts": [
       {
-        "token_id": 30064796373,
-        "account_id": 2
+        "token_id": "0.7.25301",
+        "account_id": "0.0.2"
       },
       {
-        "token_id": 98784293486,
-        "account_id": 2
+        "token_id": "0.23.45678",
+        "account_id": "0.0.2"
       }
     ]
   },

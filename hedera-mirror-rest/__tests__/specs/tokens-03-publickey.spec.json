@@ -1,7 +1,7 @@
 {
   "description": "Token api call for all tokens with a given admin public key",
   "setup": {
-    "accounts": [
+    "entities": [
       {
         "entity_num": 1,
         "entity_type": 5,

@@ -1,0 +1,177 @@
+{
+  "description": "Token balances api calls for all accounts",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 2,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 3,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 4,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 5,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 6,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 7,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 8,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 9,
+        "entity_realm": 15,
+        "exp_time_ns": "-9223372036854775808"
+      },
+      {
+        "entity_num": 10,
+        "entity_realm": 15,
+        "exp_time_ns": "9223372036854775807"
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.20.1",
+        "symbol": "TOKEN1"
+      },
+      {
+        "token_id": "0.20.2",
+        "symbol": "TOKEN2"
+      },
+      {
+        "token_id": "0.20.3",
+        "symbol": "TOKEN3"
+      },
+      {
+        "token_id": "0.20.4",
+        "symbol": "TOKEN4"
+      },
+      {
+        "token_id": "0.20.5",
+        "symbol": "TOKEN5"
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2000,
+        "id": 1,
+        "realm_num": 15,
+        "balance": 10,
+        "tokens": [
+          {
+            "token_realm": 20,
+            "token_num": 1,
+            "balance": 80
+          },
+          {
+            "token_realm": 20,
+            "token_num": 2,
+            "balance": 180
+          }
+        ]
+      },
+      {
+        "timestamp": 2000,
+        "id": 2,
+        "realm_num": 15,
+        "balance": 20,
+        "tokens": [
+          {
+            "token_realm": 20,
+            "token_num": 1,
+            "balance": 1000
+          },
+          {
+            "token_realm": 20,
+            "token_num": 2,
+            "balance": 1890
+          }
+        ]
+      },
+      {
+        "timestamp": 2000,
+        "id": 3,
+        "realm_num": 15,
+        "balance": 30
+      },
+      {
+        "timestamp": 2000,
+        "id": 4,
+        "realm_num": 15,
+        "balance": 40
+      },
+      {
+        "timestamp": 2000,
+        "id": 5,
+        "realm_num": 15,
+        "balance": 50
+      },
+      {
+        "timestamp": 2000,
+        "id": 6,
+        "realm_num": 15,
+        "balance": 60
+      },
+      {
+        "timestamp": 2000,
+        "id": 7,
+        "realm_num": 15,
+        "balance": 70
+      },
+      {
+        "timestamp": 2000,
+        "id": 8,
+        "realm_num": 15,
+        "balance": 80
+      },
+      {
+        "timestamp": 2000,
+        "id": 9,
+        "realm_num": 15,
+        "balance": 90
+      },
+      {
+        "timestamp": 2000,
+        "id": 10,
+        "realm_num": 15,
+        "balance": 100
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/tokens/0.20.1/balances",
+  "responseStatus": 200,
+  "responseJson": {
+    "timestamp": "0.000002000",
+    "balances": [
+      {
+        "account": "0.15.2",
+        "balance": 1000
+      },
+      {
+        "account": "0.15.1",
+        "balance": 80
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

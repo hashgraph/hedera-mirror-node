@@ -149,7 +149,7 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  */
 function mapTransactionResults(rows) {
   return rows.map(function (v) {
-    return v['consensus_ns'] + ', ' + EntityId.fromEncodedId(v['ctl_entity_id']).toString() + ', ' + v['amount'];
+    return v['consensus_ns'] + ', ' + EntityId.fromString(v['ctl_entity_id']).toString() + ', ' + v['amount'];
   });
 }
 

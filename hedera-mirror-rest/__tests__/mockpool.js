@@ -17,13 +17,13 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
-const EntityId = require('../entityId');
-const testutils = require('./testutils.js');
-const config = require('../config.js');
 const math = require('mathjs');
-const maxLimit = config.maxLimit;
+const EntityId = require('../entityId');
+const testutils = require('./testutils');
+const {maxLimit} = require('../config');
 
 /**
  * This is a mock database for unit testing.
@@ -43,8 +43,7 @@ class Pool {
     this.TEST_DATA_MAX_BALANCE = 1000000;
     this.NUM_NODES = 39;
 
-    this.timeNow = parseInt(new Date().getTime() / 1000);
-    this.timeNowNs = this.timeNow + '000000000';
+    this.timeNow = Math.floor(new Date().getTime() / 1000);
   }
 
   /**
@@ -53,7 +52,7 @@ class Pool {
    * @return {String} String representing nanosecond string
    */
   toNs(sec) {
-    return sec + '000000000';
+    return `${sec}000000000`;
   }
 
   /**
@@ -94,17 +93,15 @@ class Pool {
     }
 
     // Parse the SQL query
-    let parsedparams = testutils.parseSqlQueryAndParams(sqlquery, sqlparams, orderprefix);
-
-    let rows = this.createMockData(callerFile, parsedparams);
-
-    let promise = new Promise(function (resolve, reject) {
+    const parsedparams = testutils.parseSqlQueryAndParams(sqlquery, sqlparams, orderprefix);
+    const rows = this.createMockData(callerFile, parsedparams);
+    const promise = new Promise(function (resolve, reject) {
       resolve({
-        rows: rows,
+        rows,
         sqlQuery: {
           query: sqlquery,
           params: sqlparams,
-          parsedparams: parsedparams,
+          parsedparams,
         },
       });
     });
@@ -176,7 +173,7 @@ class Pool {
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      let row = {};
+      const row = {};
       row.payer_account_id = EntityId.of(0, 0, i).getEncodedId();
       row.memo = Buffer.from(`Test memo ${i}`);
       row.consensus_ns = this.toNs(this.timeNow - i);
@@ -189,7 +186,8 @@ class Pool {
         0,
         0,
         Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
-      ).getEncodedId();
+      )
+        .getEncodedId();
       row.amount = i * 1000;
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';
@@ -204,6 +202,7 @@ class Pool {
 
   /**
    * Create mock data for /balances query
+   *
    * @param {Object} parsedparams Parsed parameters that were present in the SQL query
    * @return {Array} rows array filled with mock data
    */
@@ -259,10 +258,10 @@ class Pool {
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      let row = {};
+      const row = {};
       row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
       row.account_id =
-        Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));
+        `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
       row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
 
       rows.push(row);
@@ -326,7 +325,7 @@ class Pool {
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
       row.entity_id =
-        Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));
+        `${Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
       row.exp_time_ns = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;
       row.key = Buffer.from(`Key for row ${i}`);

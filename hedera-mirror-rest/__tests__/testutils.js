@@ -19,7 +19,7 @@
  */
 'use strict';
 
-const checkSql = function (parsedparams, condition) {
+const checkSql = (parsedparams, condition) => {
   for (const p of parsedparams) {
     if (p.field == condition.field && p.operator == condition.operator && p.value == condition.value) {
       return true;
@@ -42,7 +42,7 @@ const checkSql = function (parsedparams, condition) {
  * @return {Array} parsedparams An array with extracted filter
  *                          with parsed query parameters.
  */
-const parseSqlQueryAndParams = function (sqlquery, sqlparams, orderprefix = '') {
+const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
   try {
     // The SQL query is of general form: "select p1, p2 ... pn from table_x limit l"
     // Extract the parameters (p1, p2, ..., pn) and the limit values
@@ -120,7 +120,7 @@ const parseSqlQueryAndParams = function (sqlquery, sqlparams, orderprefix = '') 
   }
 };
 
-const testBadParams = function (request, server, url, param, badValues) {
+const testBadParams = (request, server, url, param, badValues) => {
   const opList = ['', 'eq:', 'lt:', 'gt:', 'lte:', 'gte:', 'ne:'];
   let opListIndex = 0;
   for (const opt of badValues) {
@@ -145,7 +145,7 @@ const testBadParams = function (request, server, url, param, badValues) {
   }
 };
 
-const badParamsList = function () {
+const badParamsList = () => {
   return [
     '',
     '"',

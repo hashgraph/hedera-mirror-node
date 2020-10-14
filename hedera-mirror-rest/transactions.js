@@ -47,8 +47,8 @@ const getSelectClauseWithTokenTransferOrder = (order) => {
        ctl.amount AS amount,
        json_agg(
          json_build_object(
-           'token_id', ttl.token_id,
-           'account_id', ttl.account_id,
+           'token_id', ttl.token_id::text,
+           'account_id', ttl.account_id::text,
            'amount', ttl.amount
          ) ORDER BY
              ttl.token_id ${order || ''},
@@ -61,10 +61,10 @@ const getSelectClauseWithTokenTransferOrder = (order) => {
 };
 
 /**
- * Creates token transfer list from aggregated ',' separated string in the query result
+ * Creates token transfer list from aggregated array of JSON objects in the query result
  *
  * @param tokenTransferList token transfer list string
- * @return {*[]|{amount: Number, account: string, token_id: string}[]}
+ * @return {undefined|{amount: Number, account: string, token_id: string}[]}
  */
 const createTokenTransferList = (tokenTransferList) => {
   if (!tokenTransferList) {
@@ -74,8 +74,8 @@ const createTokenTransferList = (tokenTransferList) => {
   return tokenTransferList.map((transfer) => {
     const {token_id: tokenId, account_id: accountId, amount} = transfer;
     return {
-      token_id: EntityId.fromEncodedId(tokenId).toString(),
-      account: EntityId.fromEncodedId(accountId).toString(),
+      token_id: EntityId.fromString(tokenId).toString(),
+      account: EntityId.fromString(accountId).toString(),
       amount,
     };
   });
@@ -109,9 +109,9 @@ const createTransferLists = (rows) => {
         name: row.name,
         max_fee: utils.getNullableNumber(row.max_fee),
         valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
-        node: EntityId.fromEncodedId(row.node_account_id).toString(),
+        node: EntityId.fromString(row.node_account_id).toString(),
         transaction_id: utils.createTransactionId(
-          EntityId.fromEncodedId(row.payer_account_id).toString(),
+          EntityId.fromString(row.payer_account_id).toString(),
           validStartTimestamp
         ),
         transfers: [],
@@ -120,7 +120,7 @@ const createTransferLists = (rows) => {
     }
 
     transactions[row.consensus_ns].transfers.push({
-      account: EntityId.fromEncodedId(row.ctl_entity_id).toString(),
+      account: EntityId.fromString(row.ctl_entity_id).toString(),
       amount: Number(row.amount),
     });
   }

@@ -30,7 +30,7 @@ beforeAll(async () => {
 
 afterAll(() => {});
 
-const timeNow = parseInt(new Date().getTime() / 1000);
+const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
 
 // Validation functions

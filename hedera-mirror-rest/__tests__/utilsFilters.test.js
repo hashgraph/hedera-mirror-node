@@ -19,6 +19,7 @@
  */
 'use strict';
 
+const EntityId = require('../entityId');
 const utils = require('../utils.js');
 const constants = require('../constants.js');
 
@@ -136,7 +137,15 @@ describe('utils formatComparator tests', () => {
   test('Verify formatComparator for account.id=5', () => {
     const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, '5');
     utils.formatComparator(filter);
-    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', {num: '5', realm: 0, shard: 0});
+    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', '5');
+  });
+
+  test('Verify formatComparator for account.id=0.2.5', () => {
+    const entityIdStr = '0.2.5';
+    const entityId = EntityId.fromString(entityIdStr);
+    const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, entityIdStr);
+    utils.formatComparator(filter);
+    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', entityId.getEncodedId());
   });
 
   test('Verify formatComparator for timestamp=1234567890.000000004', () => {
@@ -148,7 +157,7 @@ describe('utils formatComparator tests', () => {
   test('Verify formatComparator for account.id=gte:6', () => {
     const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'gte:6');
     utils.formatComparator(filter);
-    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' >= ', {num: '6', realm: 0, shard: 0});
+    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' >= ', '6');
   });
 
   test('Verify formatComparator for timestamp=lte:1234567890.000000004', () => {

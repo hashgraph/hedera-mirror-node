@@ -207,7 +207,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
       const lastRow = _.last(queryResult.rows);
       if (lastRow.node_account_ids) {
         expectedNodeAccountIds = _.map(lastRow.node_account_ids.split(','), (id) =>
-          EntityId.fromEncodedId(id).toString()
+          EntityId.fromString(id).toString()
         );
       } else {
         expectedNodeAccountIds = lastRow.memos.split(',');

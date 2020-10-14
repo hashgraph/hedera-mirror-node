@@ -1,12 +1,14 @@
 {
   "description": "Token api call for all tokens",
   "setup": {
-    "accounts": [
+    "entities": [
       {
-        "entity_num": 1
+        "entity_num": 1,
+        "entity_type": 5
       },
       {
-        "entity_num": 1135
+        "entity_num": 1135,
+        "entity_type": 5
       },
       {
         "entity_realm": 7,

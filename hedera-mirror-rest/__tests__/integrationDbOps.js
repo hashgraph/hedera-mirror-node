@@ -106,7 +106,7 @@ const flywayMigrate = function () {
 }
 `;
 
-  fs.mkdirSync(flywayDataPath);
+  fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
 
   return new Promise((resolve, reject) => {

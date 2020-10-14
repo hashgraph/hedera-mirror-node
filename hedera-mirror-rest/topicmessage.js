@@ -83,11 +83,12 @@ const validateGetTopicMessagesParams = (topicId) => {
 /**
  * Verify topicId exists and is a topic id
  *
- * @param topicId
+ * @param {EntityId} topicId the topic ID object
+ * @param {string} origTopicIdStr the original topic ID string
  * @return {Promise<void>}
  */
-const validateTopicId = async (topicId) => {
-  const encodedId = topicId.indexOf('.') !== -1 ? EntityId.fromString(topicId).getEncodedId().toString() : topicId;
+const validateTopicId = async (topicId, origTopicIdStr) => {
+  const encodedId = topicId.getEncodedId();
   const pgSqlQuery = `SELECT tet.name
             FROM t_entities te
             JOIN t_entity_types tet
@@ -104,11 +105,11 @@ const validateTopicId = async (topicId) => {
 
   const {rows} = result;
   if (_.isEmpty(rows)) {
-    throw new NotFoundError(`No such topic id - ${topicId}`);
+    throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
   }
 
   if (rows[0].name !== 'topic') {
-    throw new InvalidArgumentError(`${topicId} is not a topic id`);
+    throw new InvalidArgumentError(`${origTopicIdStr} is not a topic id`);
   }
 };
 
@@ -154,19 +155,26 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 
 /**
  * Handler function for /:id/messages/:sequencenumber API.
- * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get message
+ * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get
+ * message
+ *
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByTopicAndSequenceRequest = async (req, res) => {
-  const topicId = req.params.id;
+  const topicIdStr = req.params.id;
   const seqNum = req.params.sequencenumber;
-  validateGetSequenceMessageParams(topicId, seqNum);
-  await validateTopicId(topicId);
+  validateGetSequenceMessageParams(topicIdStr, seqNum);
+  const topicId = EntityId.fromString(topicIdStr);
+  await validateTopicId(topicId, topicIdStr);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
-  const entity = utils.parseEntityId(topicId);
-  const pgSqlQuery = `select * from topic_message where realm_num = $1 and topic_num = $2 and sequence_number = $3 limit 1`;
-  const pgSqlParams = [entity.realm, entity.num, seqNum];
+  const pgSqlQuery = `select *
+    from topic_message
+    where realm_num = $1
+      and topic_num = $2
+      and sequence_number = $3
+    limit 1`;
+  const pgSqlParams = [topicId.realm, topicId.num, seqNum];
 
   return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
     res.locals[constants.responseDataLabel] = message;
@@ -179,13 +187,13 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
  */
 const getTopicMessages = async (req, res) => {
   // retrieve param and filters from request
-  const topicId = req.params.id;
+  const topicIdStr = req.params.id;
   const filters = utils.buildFilterObject(req.query);
 
   // validate params
-  validateGetTopicMessagesRequest(topicId, filters);
-
-  await validateTopicId(topicId);
+  validateGetTopicMessagesRequest(topicIdStr, filters);
+  const topicId = EntityId.fromString(topicIdStr);
+  await validateTopicId(topicId, topicIdStr);
 
   // build sql query validated param and filters
   const {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
@@ -225,10 +233,9 @@ const getTopicMessages = async (req, res) => {
 };
 
 const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
-  const entity = utils.parseEntityId(topicId);
   let pgSqlQuery = `select * from topic_message where realm_num = $1 and topic_num = $2`;
   let nextParamCount = 3;
-  const pgSqlParams = [entity.realm, entity.num];
+  const pgSqlParams = [topicId.realm, topicId.num];
 
   // add filters
   let limit;

@@ -27,6 +27,7 @@ const config = require('./config');
 const ed25519 = require('./ed25519');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
+const ENTITY_TYPE_ACCOUNT = 1;
 const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
 
@@ -44,17 +45,17 @@ const opsMap = {
  * @param {String} n Number to test
  * @return {Boolean} true if n is numeric, false otherwise
  */
-function isNumeric(n) {
+const isNumeric = (n) => {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-const isValidTimestampParam = function (timestamp) {
+const isValidTimestampParam = (timestamp) => {
   // Accepted forms: seconds or seconds.upto 9 digits
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
-const isValidEntityNum = (entity_num) => {
-  return /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(entity_num) || /^\d{1,10}$/.test(entity_num);
+const isValidEntityNum = (entityNum) => {
+  return /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(entityNum) || /^\d{1,10}$/.test(entityNum);
 };
 
 const isValidLimitNum = (limit) => {
@@ -78,15 +79,14 @@ const isValidPublicKeyQuery = (query) => {
 };
 
 const isValidUtf8Encoding = (query) => {
-  if (undefined == query) {
+  if (!query) {
     return false;
   }
-  query = query.toLowerCase();
-  return /^(utf-?8)$/.test(query);
+  return /^(utf-?8)$/.test(query.toLowerCase());
 };
 
 const isValidEncoding = (query) => {
-  if (undefined == query) {
+  if (query === undefined) {
     return false;
   }
   query = query.toLowerCase();
@@ -99,7 +99,7 @@ const isValidEncoding = (query) => {
  * @param {String} opAndVal operator:value to be validated
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
-const paramValidityChecks = function (param, opAndVal) {
+const paramValidityChecks = (param, opAndVal) => {
   let ret = false;
   let val = null;
   let op = null;
@@ -110,10 +110,10 @@ const paramValidityChecks = function (param, opAndVal) {
 
   const splitVal = opAndVal.split(':');
 
-  if (splitVal.length == 1) {
+  if (splitVal.length === 1) {
     op = 'eq';
     val = splitVal[0];
-  } else if (splitVal.length == 2) {
+  } else if (splitVal.length === 2) {
     op = splitVal[0];
     val = splitVal[1];
   } else {
@@ -123,7 +123,7 @@ const paramValidityChecks = function (param, opAndVal) {
   return filterValidityChecks(param, op, val);
 };
 
-const filterValidityChecks = function (param, op, val) {
+const filterValidityChecks = (param, op, val) => {
   let ret = false;
 
   if (op === undefined || val === undefined) {
@@ -197,8 +197,8 @@ const filterValidityChecks = function (param, op, val) {
  * @param {HTTPRequest} req HTTP request object
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = function (req) {
-  let badParams = [];
+const validateReq = (req) => {
+  const badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
@@ -219,34 +219,7 @@ const validateReq = function (req) {
   }
 };
 
-/**
- * Split the account number into shard, realm and num fields.
- * @param {String} acc Either 0.0.1234 or just 1234
- * @return {Object} {accShard, accRealm, accNum} Parsed account number
- */
-const parseEntityId = function (acc) {
-  let ret = {
-    shard: 0,
-    realm: 0,
-    num: 0,
-  };
-
-  const aSplit = acc.split('.');
-  if (aSplit.length == 3) {
-    if (isNumeric(aSplit[0]) && isNumeric(aSplit[1]) && isNumeric(aSplit[2])) {
-      ret.shard = aSplit[0];
-      ret.realm = aSplit[1];
-      ret.num = aSplit[2];
-    }
-  } else if (aSplit.length == 1) {
-    if (isNumeric(acc)) {
-      ret.num = acc;
-    }
-  }
-  return ret;
-};
-
-const parseTimestampParam = function (timestampParam) {
+const parseTimestampParam = (timestampParam) => {
   // Expect timestamp input as (a) just seconds,
   // (b) seconds.mmm (3-digit milliseconds),
   // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
@@ -255,24 +228,24 @@ const parseTimestampParam = function (timestampParam) {
   if (!timestampParam) {
     return '';
   }
-  let tsSplit = timestampParam.split('.');
+  const tsSplit = timestampParam.split('.');
   if (tsSplit.length <= 0 || tsSplit.length > 2) {
     return '';
   }
-  let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
-  let nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
+  const seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
+  const nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
   return '' + seconds + (nanos + '000000000').substring(0, 9);
 };
 
 /**
  * @returns {Object} null if paramValue has invalid operator, or not correctly formatted.
  */
-const parseOperatorAndValueFromQueryParam = function (paramValue) {
+const parseOperatorAndValueFromQueryParam = (paramValue) => {
   // Split the op:value into operation and value and create a SQL query string
-  let splitItem = paramValue.split(':');
+  const splitItem = paramValue.split(':');
   if (splitItem.length === 1) {
     // No operator specified. Just use "eq:"
-    return {op: opsMap['eq'], value: splitItem[0]};
+    return {op: opsMap.eq, value: splitItem[0]};
   } else if (splitItem.length === 2) {
     if (!(splitItem[0] in opsMap)) {
       return null;
@@ -289,8 +262,8 @@ const parseOperatorAndValueFromQueryParam = function (paramValue) {
  * @param {Integer} limit Optional- max value
  * @return {String} Param value
  */
-const getIntegerParam = function (param, limit = undefined) {
-  if (param !== undefined && !isNaN(Number(param))) {
+const getIntegerParam = (param, limit = undefined) => {
+  if (param !== undefined && !Number.isNaN(Number(param))) {
     if (limit !== undefined && param > limit) {
       param = limit;
     }
@@ -306,7 +279,7 @@ const getIntegerParam = function (param, limit = undefined) {
  *          in the query param.
  * @return {Array} [query, params] Constructed SQL query fragment and corresponding values
  */
-const parseParams = function (paramValues, processOpAndValue) {
+const parseParams = (paramValues, processOpAndValue) => {
   if (paramValues === undefined) {
     return ['', []];
   }
@@ -315,15 +288,15 @@ const parseParams = function (paramValues, processOpAndValue) {
   if (!Array.isArray(paramValues)) {
     paramValues = [paramValues];
   }
-  let partialQueries = [];
+  const partialQueries = [];
   let values = [];
   // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
-  for (let paramValue of paramValues) {
-    let opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
+  for (const paramValue of paramValues) {
+    const opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
     if (opAndValue === null) {
       continue;
     }
-    let queryAndValues = processOpAndValue(opAndValue.op, opAndValue.value);
+    const queryAndValues = processOpAndValue(opAndValue.op, opAndValue.value);
     if (queryAndValues !== null) {
       partialQueries.push(queryAndValues[0]);
       values = values.concat(queryAndValues[1]);
@@ -332,20 +305,20 @@ const parseParams = function (paramValues, processOpAndValue) {
   return [partialQueries.join(' and '), values];
 };
 
-const parseAccountIdQueryParam = function (parsedQueryParams, columnName) {
+const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], (op, value) => {
-    const entity = parseEntityId(value);
-    return [`${columnName} ${op} ?`, [EntityId.of(entity.shard, entity.realm, entity.num).getEncodedId()]];
+    const accountId = EntityId.fromString(value);
+    return [`${columnName} ${op} ?`, [accountId.getEncodedId()]];
   });
 };
 
-const parseTimestampQueryParam = function (parsedQueryParams, columnName) {
+const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
   return parseParams(parsedQueryParams[constants.filterKeys.TIMESTAMP], (op, value) => {
-    return [`${columnName} ${op} ?`, [parseTimestampParam(value)]];
+    return [`${columnName} ${op in opOverride ? opOverride[op] : op} ?`, [parseTimestampParam(value)]];
   });
 };
 
-const parseBalanceQueryParam = function (parsedQueryParams, columnName) {
+const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE], (op, value) => {
     if (isNumeric(value)) {
       return [`${columnName} ${op} ?`, [value]];
@@ -354,7 +327,7 @@ const parseBalanceQueryParam = function (parsedQueryParams, columnName) {
   });
 };
 
-const parsePublicKeyQueryParam = function (parsedQueryParams, columnName) {
+const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY], (op, value) => {
     let key = value.toLowerCase();
     // If the supplied key is DER encoded, decode it
@@ -369,11 +342,11 @@ const parsePublicKeyQueryParam = function (parsedQueryParams, columnName) {
 /**
  * Parse the type=[credit | debit | creditDebit] parameter
  */
-const parseCreditDebitParams = function (parsedQueryParams, columnName) {
+const parseCreditDebitParams = (parsedQueryParams, columnName) => {
   return parseParams(parsedQueryParams[constants.filterKeys.TYPE], (op, value) => {
-    if ('credit' === value) {
+    if (value === 'credit') {
       return [`${columnName} > 0`, []];
-    } else if ('debit' === value) {
+    } else if (value === 'debit') {
       return [`${columnName} < 0`, []];
     }
   });
@@ -384,8 +357,8 @@ const parseCreditDebitParams = function (parsedQueryParams, columnName) {
  * @param {HTTPRequest} req HTTP query request object
  * @return {String} Value of the resultType parameter
  */
-const parseResultParams = function (req) {
-  let resultType = req.query.result;
+const parseResultParams = (req) => {
+  const resultType = req.query.result;
   let query = '';
 
   if (resultType === constants.transactionResultFilter.SUCCESS) {
@@ -402,12 +375,12 @@ const parseResultParams = function (req) {
  * @param {String} defaultOrder Order of sorting (defaults to descending)
  * @return {Object} {query, params, order} SQL query, values and order
  */
-const parseLimitAndOrderParams = function (req, defaultOrder = constants.orderFilterValues.DESC) {
+const parseLimitAndOrderParams = (req, defaultOrder = constants.orderFilterValues.DESC) => {
   // Parse the limit parameter
   let limitQuery = '';
-  let limitParams = [];
-  let lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.maxLimit);
-  let limitValue = lVal === '' ? config.maxLimit : lVal;
+  const limitParams = [];
+  const lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.maxLimit);
+  const limitValue = lVal === '' ? config.maxLimit : lVal;
   limitQuery = `${constants.filterKeys.LIMIT} ? `;
   limitParams.push(limitValue);
 
@@ -422,9 +395,9 @@ const parseLimitAndOrderParams = function (req, defaultOrder = constants.orderFi
 
 const buildPgSqlObject = (query, params, order, limit) => {
   return {
-    query: query,
-    params: params,
-    order: order,
+    query,
+    params,
+    order,
     limit: Number(limit),
   };
 };
@@ -436,9 +409,9 @@ const buildPgSqlObject = (query, params, order, limit) => {
  * @param {Array of values} sqlParams Values of positional parameters
  * @return {String} SQL query with Postgres style positional parameters
  */
-const convertMySqlStyleQueryToPostgres = function (sqlQuery, sqlParams) {
+const convertMySqlStyleQueryToPostgres = (sqlQuery, sqlParams) => {
   let paramsCount = 0;
-  let sqlQueryNonInject = sqlQuery.replace(/\?/g, function () {
+  let sqlQueryNonInject = sqlQuery.replace(/\?/g, () => {
     return '$' + ++paramsCount;
   });
 
@@ -454,9 +427,9 @@ const convertMySqlStyleQueryToPostgres = function (sqlQuery, sqlParams) {
  * @param {String} order Order of sorting the results
  * @return {String} next Fully formed link to the next page
  */
-const getPaginationLink = function (req, isEnd, field, lastValue, order) {
+const getPaginationLink = (req, isEnd, field, lastValue, order) => {
   let urlPrefix;
-  if (config.port != undefined && config.includeHostInLink == 1) {
+  if (config.port !== undefined && config.includeHostInLink === 1) {
     urlPrefix = req.protocol + '://' + req.hostname + ':' + config.port;
   } else {
     urlPrefix = '';
@@ -513,7 +486,7 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
  * @param {String} ns Nanoseconds since epoch
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
-const nsToSecNs = function (ns) {
+const nsToSecNs = (ns) => {
   return math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString();
 };
 
@@ -522,7 +495,7 @@ const nsToSecNs = function (ns) {
  * @param {String} ns Nanoseconds since epoch
  * @return {String} Seconds since epoch (seconds-nnnnnnnnn format)
  */
-const nsToSecNsWithHyphen = function (ns) {
+const nsToSecNsWithHyphen = (ns) => {
   return nsToSecNs(ns).replace('.', '-');
 };
 
@@ -531,11 +504,11 @@ const nsToSecNsWithHyphen = function (ns) {
  * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
  * @return {String} ns Nanoseconds since epoch
  */
-const secNsToNs = function (secNs) {
+const secNsToNs = (secNs) => {
   return math.multiply(math.bignumber(secNs), math.bignumber(1e9)).toString();
 };
 
-const secNsToSeconds = function (secNs) {
+const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
 };
 
@@ -544,7 +517,7 @@ const secNsToSeconds = function (secNs) {
  * @param {String} type of API (e.g. transactions, balances, etc.). Currently unused.
  * @return {Number} limit Max # entries to be returned.
  */
-const returnEntriesLimit = function (type) {
+const returnEntriesLimit = (type) => {
   return config.maxLimit;
 };
 
@@ -553,7 +526,7 @@ const returnEntriesLimit = function (type) {
  * @param {ByteArray} byteArray Array of bytes to be converted to hex string
  * @return {hexString} Converted hex string
  */
-const toHexString = function (byteArray) {
+const toHexString = (byteArray) => {
   return byteArray === null
     ? null
     : byteArray.reduce((output, elem) => output + ('0' + elem.toString(16)).slice(-2), '');
@@ -564,7 +537,7 @@ const toHexString = function (byteArray) {
  * @param {Array} key Byte array representing the key
  * @return {Object} Key object - with type decoration for ED25519, if detected
  */
-const encodeKey = function (key) {
+const encodeKey = (key) => {
   let ret;
 
   if (key === null) {
@@ -593,7 +566,7 @@ const encodeKey = function (key) {
  * @param {Array} key Byte array to be encoded
  * @return {String} base64 encoded string
  */
-const encodeBase64 = function (buffer) {
+const encodeBase64 = (buffer) => {
   return encodeBinary(buffer, constants.characterEncoding.BASE64);
 };
 
@@ -602,11 +575,11 @@ const encodeBase64 = function (buffer) {
  * @param {Array} key Byte array to be encoded
  * @return {String} utf-8 encoded string
  */
-const encodeUtf8 = function (buffer) {
+const encodeUtf8 = (buffer) => {
   return encodeBinary(buffer, constants.characterEncoding.UTF8);
 };
 
-const encodeBinary = function (buffer, encoding) {
+const encodeBinary = (buffer, encoding) => {
   // default to base64 encoding
   let charEncoding = constants.characterEncoding.BASE64;
   if (isValidUtf8Encoding(encoding)) {
@@ -621,14 +594,14 @@ const encodeBinary = function (buffer, encoding) {
  * @param {String} num Nullable number
  * @returns {Any} representation of math.bignumber value of parameter or null if null
  */
-const getNullableNumber = function (num) {
+const getNullableNumber = (num) => {
   return num == null ? null : math.bignumber(num).toString();
 };
 
 /**
  * @returns {String} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
  */
-const createTransactionId = function (entityStr, validStartTimestamp) {
+const createTransactionId = (entityStr, validStartTimestamp) => {
   return entityStr + '-' + nsToSecNsWithHyphen(validStartTimestamp);
 };
 
@@ -697,12 +670,12 @@ const formatComparator = (comparator) => {
     // format value
     switch (comparator.key) {
       case constants.filterKeys.ACCOUNT_ID:
-        // Accepted forms: shard.realm.num or num
-        comparator.value = parseEntityId(comparator.value);
+        // Accepted forms: shard.realm.num or encoded ID string
+        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
-        comparator.value = ed25519.derToEd25519(comparator.value);
+        comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
@@ -713,7 +686,7 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.TOKEN_ID:
         // Accepted forms: shard.realm.num or num
-        comparator.value = parseEntityIdEncodeId(comparator.value);
+        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
         break;
       // case 'type':
       //   // Acceptable words: credit or debit
@@ -731,7 +704,7 @@ const formatComparator = (comparator) => {
 /**
  * Parses tokenBalances into an array of {token_id: string, balance: Number} objects
  *
- * @param {{token_id: Number, balance: Number}[]} tokenBalances array of token balance objects
+ * @param {{token_id: string, balance: Number}[]} tokenBalances array of token balance objects
  * @return {[]|{token_id: string, balance: Number}[]}
  */
 const parseTokenBalances = (tokenBalances) => {
@@ -739,7 +712,7 @@ const parseTokenBalances = (tokenBalances) => {
     ? tokenBalances.map((tokenBalance) => {
         const {token_id: tokenId, balance} = tokenBalance;
         return {
-          token_id: EntityId.fromEncodedId(tokenId).toString(),
+          token_id: EntityId.fromString(tokenId).toString(),
           balance,
         };
       })
@@ -749,11 +722,6 @@ const parseTokenBalances = (tokenBalances) => {
 const parsePublicKey = (publicKey) => {
   const decodedKey = ed25519.derToEd25519(publicKey);
   return decodedKey == null ? publicKey : decodedKey;
-};
-
-const parseEntityIdEncodeId = (entityId) => {
-  const entity = parseEntityId(entityId);
-  return EntityId.of(entity.shard, entity.realm, entity.num).getEncodedId();
 };
 
 module.exports = {
@@ -766,6 +734,7 @@ module.exports = {
   encodeBinary,
   encodeUtf8,
   encodeKey,
+  ENTITY_TYPE_ACCOUNT,
   ENTITY_TYPE_FILE,
   filterValidityChecks,
   formatComparator,
@@ -776,8 +745,6 @@ module.exports = {
   isValidNum,
   isValidTimestampParam,
   parseCreditDebitParams,
-  parseEntityId,
-  parseEntityIdEncodeId,
   parseLimitAndOrderParams,
   parseBalanceQueryParam,
   parsePublicKey,
@@ -796,4 +763,5 @@ module.exports = {
   validateAndParseFilters,
   validateReq,
   parseTokenBalances,
+  opsMap,
 };

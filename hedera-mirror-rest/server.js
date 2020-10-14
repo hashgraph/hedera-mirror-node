@@ -30,14 +30,14 @@ const log4js = require('log4js');
 const compression = require('compression');
 
 // local files
-const config = require('./config');
-const transactions = require('./transactions');
-const balances = require('./balances');
 const accounts = require('./accounts');
-const topicmessage = require('./topicmessage');
-const tokens = require('./tokens');
+const balances = require('./balances');
+const config = require('./config');
 const health = require('./health');
 const stateproof = require('./stateproof');
+const tokens = require('./tokens');
+const topicmessage = require('./topicmessage');
+const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
@@ -136,6 +136,7 @@ app.getAsync(`${apiPrefix}/topics?/messages?/:consensusTimestamp`, topicmessage.
 
 // tokens routes
 app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
+app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenBalances);
 
 // response data handling middleware
 app.use(responseHandler);

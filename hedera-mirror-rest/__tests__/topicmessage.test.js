@@ -17,11 +17,13 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const topicmessage = require('../topicmessage.js');
 const constants = require('../constants.js');
 const config = require('../config.js');
+const EntityId = require('../entityId');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
@@ -133,12 +135,15 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
     {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
   ];
 
-  let {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest('7', filters);
+  const {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest(
+    EntityId.fromString('7'),
+    filters
+  );
 
   expect(query).toStrictEqual(
     'select * from topic_message where realm_num = $1 and topic_num = $2 and sequence_number > $3 and consensus_timestamp <= $4 order by consensus_timestamp desc limit $5;'
   );
-  expect(params).toStrictEqual([0, '7', '2', '1234567890.000000006', '3']);
+  expect(params).toStrictEqual([0, 7, '2', '1234567890.000000006', '3']);
   expect(order).toStrictEqual(constants.orderFilterValues.DESC);
   expect(limit).toStrictEqual(3);
 });
