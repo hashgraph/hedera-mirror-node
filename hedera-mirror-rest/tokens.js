@@ -124,7 +124,8 @@ const formatTokenInfoRow = (row) => {
     initial_supply: row.initial_supply,
     total_supply: row.total_supply,
     expiry_timestamp: row.exp_time_ns,
-    auto_renew_account: EntityId.fromString(row.auto_renew_account_id).toString(),
+    auto_renew_account:
+      row.auto_renew_account_id === null ? null : EntityId.fromString(row.auto_renew_account_id.toString()).toString(),
     auto_renew_period: row.auto_renew_period,
   };
 };
