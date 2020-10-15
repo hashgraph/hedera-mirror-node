@@ -224,12 +224,12 @@ func (tr *TransactionRepository) retrieveTransactionTypesAndStatuses() {
 
 		if len(typesArray) == 0 {
 			log.Println("No Transaction Types were found in the database.")
-			panic(errors.Errors[errors.OperationTypesNotFound])
+			panic(errors.OperationTypesNotFound)
 		}
 
 		if len(rArray) == 0 {
 			log.Println("No Transaction Results were found in the database.")
-			panic(errors.Errors[errors.OperationStatusesNotFound])
+			panic(errors.OperationStatusesNotFound)
 		}
 
 		tr.types = make(map[int]string)
