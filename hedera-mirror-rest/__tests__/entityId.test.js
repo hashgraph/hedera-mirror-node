@@ -139,4 +139,79 @@ describe('EntityId encoding', () => {
   test('32767.0.0', () => {
     expect(EntityId.fromString('32767.0.0').getEncodedId()).toBe('9223090561878065152');
   });
+
+  test('nullable', () => {
+    expect(EntityId.fromString(null, true).getEncodedId()).toBeNull();
+  });
+});
+
+describe('EntityId fromInt', () => {
+  const specs = [
+    {
+      encodedId: 0,
+      expected: EntityId.of(0, 0, 0),
+    },
+    {
+      encodedId: 4294967295,
+      expected: EntityId.of(0, 0, 4294967295),
+    },
+    {
+      encodedId: 2814792716779530,
+      expected: EntityId.of(10, 10, 10),
+    },
+    {
+      encodedId: BigInt(0),
+      expected: EntityId.of(0, 0, 0),
+    },
+    {
+      encodedId: BigInt(4294967295),
+      expected: EntityId.of(0, 0, 4294967295),
+    },
+    {
+      encodedId: BigInt(2814792716779530),
+      expected: EntityId.of(10, 10, 10),
+    },
+    {
+      encodedId: BigInt('9223372036854775807'),
+      expected: EntityId.of(32767, 65535, 4294967295),
+    },
+    {
+      encodedId: 9223090561878065152,
+      expected: EntityId.of(32767, 0, 0),
+    },
+    {
+      encodedId: 'a',
+      expectErr: true,
+    },
+    {
+      encodedId: true,
+      expectErr: true,
+    },
+    {
+      encodedId: '4294967295',
+      expectErr: true,
+    },
+    {
+      encodedId: null,
+      isNullable: true,
+      expected: EntityId.of(null, null, null),
+    },
+    {
+      encodedId: null,
+      expectErr: true,
+    },
+  ];
+
+  for (const spec of specs) {
+    const {encodedId, isNullable, expectErr, expected} = spec;
+    test(`${encodedId}`, () => {
+      if (!expectErr) {
+        expect(EntityId.fromInt(encodedId, isNullable)).toEqual(expected);
+      } else {
+        expect(() => {
+          EntityId.fromInt(encodedId);
+        }).toThrowError(InvalidArgumentError);
+      }
+    });
+  }
 });

@@ -1,20 +1,24 @@
 {
   "description": "Token info api call for a given token",
   "setup": {
-    "accounts": [
+    "entities": [
       {
-        "entity_num": 1
+        "entity_num": 1,
+        "entity_type": 5
       },
       {
-        "entity_num": 1135
+        "entity_num": 1135,
+        "entity_type": 5
       },
       {
         "entity_realm": 7,
-        "entity_num": 25301
+        "entity_num": 25301,
+        "entity_type": 5
       },
       {
         "entity_realm": 23,
-        "entity_num": 45678
+        "entity_num": 45678,
+        "entity_type": 5
       }
     ],
     "tokens": [

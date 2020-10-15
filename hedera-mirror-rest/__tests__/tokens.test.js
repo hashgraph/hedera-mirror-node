@@ -564,42 +564,42 @@ describe('token formatTokenInfoRow tests', () => {
     initial_supply: 1000000,
     total_supply: 2000000,
     exp_time_ns: 1594431063696143000,
-    auto_renew_account_id: 98,
+    auto_renew_account_id: '98',
     auto_renew_period: 7890000,
   };
 
   const expectedFormat = {
-    token_id: '0.0.7',
-    symbol: 'YBTJBOAZ',
-    treasury_account_id: '0.0.3',
-    freeze_default: true,
     admin_key: {
       _type: 'ProtobufEncoded',
       key: '010101',
     },
-    kyc_key: {
-      _type: 'ProtobufEncoded',
-      key: '020202',
-    },
+    auto_renew_account: '0.0.98',
+    auto_renew_period: 7890000,
+    created_timestamp: '0.000000010',
+    decimals: 10,
+    expiry_timestamp: 1594431063696143000,
+    freeze_default: true,
     freeze_key: {
       _type: 'ProtobufEncoded',
       key: '030303',
+    },
+    initial_supply: 1000000,
+    kyc_key: {
+      _type: 'ProtobufEncoded',
+      key: '020202',
     },
     supply_key: {
       _type: 'ProtobufEncoded',
       key: '040404',
     },
+    symbol: 'YBTJBOAZ',
+    token_id: '0.0.7',
+    total_supply: 2000000,
+    treasury_account_id: '0.0.3',
     wipe_key: {
       _type: 'ProtobufEncoded',
       key: '050505',
     },
-    created_timestamp: '0.000000010',
-    decimals: 10,
-    initial_supply: 1000000,
-    total_supply: 2000000,
-    expiry_timestamp: 1594431063696143000,
-    auto_renew_account: '0.0.98',
-    auto_renew_period: 7890000,
   };
 
   test('Verify formatTokenRow', () => {

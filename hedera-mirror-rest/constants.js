@@ -31,6 +31,7 @@ const filterKeys = {
   RESULT: 'result',
   SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
+  TOKENID: 'tokenId',
   TOKEN_ID: 'token.id',
   TYPE: 'type',
 };

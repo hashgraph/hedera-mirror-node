@@ -110,23 +110,22 @@ const formatTokenRow = (row) => {
 
 const formatTokenInfoRow = (row) => {
   return {
-    token_id: EntityId.fromString(row.token_id).toString(),
-    symbol: row.symbol,
-    treasury_account_id: EntityId.fromString(row.treasury_account_id).toString(),
-    freeze_default: row.freeze_default,
     admin_key: utils.encodeKey(row.key),
-    kyc_key: utils.encodeKey(row.kyc_key),
-    freeze_key: utils.encodeKey(row.freeze_key),
-    supply_key: utils.encodeKey(row.supply_key),
-    wipe_key: utils.encodeKey(row.wipe_key),
+    auto_renew_account: EntityId.fromString(row.auto_renew_account_id, true).toString(),
+    auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
     decimals: row.decimals,
-    initial_supply: row.initial_supply,
-    total_supply: row.total_supply,
     expiry_timestamp: row.exp_time_ns,
-    auto_renew_account:
-      row.auto_renew_account_id === null ? null : EntityId.fromString(row.auto_renew_account_id.toString()).toString(),
-    auto_renew_period: row.auto_renew_period,
+    freeze_default: row.freeze_default,
+    freeze_key: utils.encodeKey(row.freeze_key),
+    initial_supply: row.initial_supply,
+    kyc_key: utils.encodeKey(row.kyc_key),
+    supply_key: utils.encodeKey(row.supply_key),
+    symbol: row.symbol,
+    token_id: EntityId.fromString(row.token_id).toString(),
+    total_supply: row.total_supply,
+    treasury_account_id: EntityId.fromString(row.treasury_account_id).toString(),
+    wipe_key: utils.encodeKey(row.wipe_key),
   };
 };
 
@@ -190,7 +189,7 @@ const getTokenInfoRequest = async (req, res) => {
   let tokenId = req.params.id;
 
   if (!utils.isValidEntityNum(tokenId)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.TOKEN_ID);
+    throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
   }
 
   // ensure encoded format is used
@@ -394,12 +393,12 @@ const getToken = async (pgSqlQuery, pgSqlParams) => {
       throw new DbError(err.message);
     })
     .then((results) => {
-      if (results.rowCount === 1) {
-        logger.debug('getToken returning single entry');
-        return results.rows[0];
-      } else {
+      if (results.rows.length !== 1) {
         throw new NotFoundError();
       }
+
+      logger.debug('getToken returning single entry');
+      return results.rows[0];
     });
 };
 
