@@ -15,10 +15,11 @@ jobs:
 
       - name: Helm lint
         id: lint
-        uses: helm/chart-testing-action@v1.0.0
+        uses: helm/chart-testing-action@v1.1.0
         with:
           command: lint
           config: .github/ct-lint.yaml
+          image: quay.io/helmpack/chart-testing:v3.0.0
 
       - name: Create Kubernetes cluster
         id: k8s
@@ -28,9 +29,10 @@ jobs:
           version: v1.17.4-k3s1
 
       - name: Helm install
-        uses: helm/chart-testing-action@v1.0.0
+        uses: helm/chart-testing-action@v1.1.0
         if: steps.lint.outputs.changed == 'true'
         with:
           command: install
           config: .github/ct-install.yaml
+          image: quay.io/helmpack/chart-testing:v3.0.0
           kubeconfig: ${{ steps.k8s.outputs.kubeconfig }}
