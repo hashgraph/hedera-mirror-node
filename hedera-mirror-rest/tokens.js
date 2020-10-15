@@ -110,9 +110,9 @@ const formatTokenRow = (row) => {
 
 const formatTokenInfoRow = (row) => {
   return {
-    token_id: EntityId.fromEncodedId(row.token_id).toString(),
+    token_id: EntityId.fromString(row.token_id).toString(),
     symbol: row.symbol,
-    treasury_account_id: EntityId.fromEncodedId(row.treasury_account_id).toString(),
+    treasury_account_id: EntityId.fromString(row.treasury_account_id).toString(),
     freeze_default: row.freeze_default,
     admin_key: utils.encodeKey(row.key),
     kyc_key: utils.encodeKey(row.kyc_key),
@@ -124,7 +124,7 @@ const formatTokenInfoRow = (row) => {
     initial_supply: row.initial_supply,
     total_supply: row.total_supply,
     expiry_timestamp: row.exp_time_ns,
-    auto_renew_account: row.auto_renew_account_id,
+    auto_renew_account: EntityId.fromString(row.auto_renew_account_id).toString(),
     auto_renew_period: row.auto_renew_period,
   };
 };
@@ -193,7 +193,7 @@ const getTokenInfoRequest = async (req, res) => {
   }
 
   // ensure encoded format is used
-  tokenId = utils.parseEntityIdEncodeId(tokenId);
+  tokenId = EntityId.fromString(tokenId).getEncodedId();
 
   // concatenate queries to produce final sql query
   const pgSqlQuery = `${tokenInfoSelectQuery}${entityIdJoinQuery}${tokenIdMatchQuery};`;
@@ -412,6 +412,7 @@ if (process.env.NODE_ENV === 'test') {
   module.exports = Object.assign(module.exports, {
     extractSqlFromTokenRequest,
     formatTokenRow,
+    formatTokenInfoRow,
     tokensSelectQuery,
     accountIdJoinQuery,
     entityIdJoinQuery,
@@ -420,4 +421,3 @@ if (process.env.NODE_ENV === 'test') {
     formatTokenBalanceRow,
   });
 }
-
