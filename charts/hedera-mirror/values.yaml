@@ -74,7 +74,6 @@ postgresql:
       role: db
     pdb:
       create: true
-    replicaCount: 2
     resources:
       limits:
         cpu: 200m
@@ -86,7 +85,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 12.4.0-debian-10-r49
+    tag: 12.4.0-debian-10-r61
   postgresql:
     affinity:
       podAntiAffinity:

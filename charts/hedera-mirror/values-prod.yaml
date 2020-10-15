@@ -19,8 +19,10 @@ postgresql:
       enabled: true
   pgpool:
     priorityClassName: critical
+    replicaCount: 2
   postgresql:
     priorityClassName: critical
+    replicaCount: 2
 
 redis:
   cluster:
