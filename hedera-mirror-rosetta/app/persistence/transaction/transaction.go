@@ -102,13 +102,13 @@ func NewTransactionRepository(dbClient *gorm.DB) *TransactionRepository {
 
 // Types returns map of all Transaction Types
 func (tr *TransactionRepository) Types() map[int]string {
-	tr.retrieveTransactionResults()
+	tr.retrieveTransactionTypesAndStatuses()
 	return tr.types
 }
 
 // Statuses returns map of all Transaction Results
 func (tr *TransactionRepository) Statuses() map[int]string {
-	tr.retrieveTransactionResults()
+	tr.retrieveTransactionTypesAndStatuses()
 	return tr.statuses
 }
 
@@ -217,7 +217,7 @@ func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.C
 	return operations, nil
 }
 
-func (tr *TransactionRepository) retrieveTypesAndStatuses() {
+func (tr *TransactionRepository) retrieveTransactionTypesAndStatuses() {
 	tr.once.Do(func() {
 		typesArray := tr.retrieveTransactionTypes()
 		rArray := tr.retrieveTransactionResults()
