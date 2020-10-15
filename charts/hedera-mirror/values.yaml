@@ -99,6 +99,7 @@ postgresql:
                   app.kubernetes.io/component: postgresql
     initdbScriptsSecret: '{{ printf "%s-postgresql-init" .Release.Name }}'
     password: password
+    replicaCount: 1
     repmgrPassword: password
     resources:
       limits:
@@ -111,7 +112,7 @@ postgresql:
 
 redis:
   cluster:
-    slaveCount: 3
+    slaveCount: 1
   enabled: true
   metrics:
     resources:

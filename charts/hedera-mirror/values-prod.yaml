@@ -23,6 +23,8 @@ postgresql:
     priorityClassName: critical
 
 redis:
+  cluster:
+    slaveCount: 3
   metrics:
     enabled: true
   slave:
