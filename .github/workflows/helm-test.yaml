@@ -35,3 +35,4 @@ jobs:
           command: install
           config: .github/ct-install.yaml
           image: quay.io/helmpack/chart-testing:v3.1.1
+          kubeconfig: ${{ steps.k8s.outputs.kubeconfig }}
