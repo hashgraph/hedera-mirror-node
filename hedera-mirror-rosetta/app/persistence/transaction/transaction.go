@@ -101,20 +101,33 @@ func NewTransactionRepository(dbClient *gorm.DB) *TransactionRepository {
 }
 
 // Types returns map of all Transaction Types
-func (tr *TransactionRepository) Types() map[int]string {
-	tr.retrieveTransactionTypesAndStatuses()
-	return tr.types
+func (tr *TransactionRepository) Types() (map[int]string, *rTypes.Error) {
+	if tr.types == nil {
+		err := tr.retrieveTransactionTypesAndStatuses()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tr.types, nil
 }
 
 // Statuses returns map of all Transaction Results
-func (tr *TransactionRepository) Statuses() map[int]string {
-	tr.retrieveTransactionTypesAndStatuses()
-	return tr.statuses
+func (tr *TransactionRepository) Statuses() (map[int]string, *rTypes.Error) {
+	if tr.statuses == nil {
+		err := tr.retrieveTransactionTypesAndStatuses()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tr.statuses, nil
 }
 
-func (tr *TransactionRepository) TypesAsArray() []string {
-	transactionTypes := tr.Types()
-	return maphelper.GetStringValuesFromIntStringMap(transactionTypes)
+func (tr *TransactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
+	transactionTypes, err := tr.Types()
+	if err != nil {
+		return nil, err
+	}
+	return maphelper.GetStringValuesFromIntStringMap(transactionTypes), nil
 }
 
 // FindBetween retrieves all Transactions between the provided start and end timestamp
@@ -200,9 +213,15 @@ func (tr *TransactionRepository) constructTransaction(sameHashTransactions []tra
 }
 
 func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.CryptoTransfer, transactionsMap map[int64]transaction) ([]*types.Operation, *rTypes.Error) {
-	transactionTypes := tr.Types()
+	transactionTypes, err := tr.Types()
+	if err != nil {
+		return nil, err
+	}
 
-	transactionStatuses := tr.Statuses()
+	transactionStatuses, err := tr.Statuses()
+	if err != nil {
+		return nil, err
+	}
 
 	operations := make([]*types.Operation, len(cryptoTransfers))
 	for i, ct := range cryptoTransfers {
@@ -217,21 +236,21 @@ func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.C
 	return operations, nil
 }
 
-func (tr *TransactionRepository) retrieveTransactionTypesAndStatuses() {
+func (tr *TransactionRepository) retrieveTransactionTypesAndStatuses() *rTypes.Error {
+	typesArray := tr.retrieveTransactionTypes()
+	rArray := tr.retrieveTransactionResults()
+
+	if len(typesArray) == 0 {
+		log.Println("No Transaction Types were found in the database.")
+		return errors.Errors[errors.OperationTypesNotFound]
+	}
+
+	if len(rArray) == 0 {
+		log.Println("No Transaction Results were found in the database.")
+		return errors.Errors[errors.OperationStatusesNotFound]
+	}
+
 	tr.once.Do(func() {
-		typesArray := tr.retrieveTransactionTypes()
-		rArray := tr.retrieveTransactionResults()
-
-		if len(typesArray) == 0 {
-			log.Println("No Transaction Types were found in the database.")
-			panic(errors.OperationTypesNotFound)
-		}
-
-		if len(rArray) == 0 {
-			log.Println("No Transaction Results were found in the database.")
-			panic(errors.OperationStatusesNotFound)
-		}
-
 		tr.types = make(map[int]string)
 		for _, t := range typesArray {
 			tr.types[t.ProtoID] = t.Name
@@ -242,6 +261,8 @@ func (tr *TransactionRepository) retrieveTransactionTypesAndStatuses() {
 			tr.statuses[s.ProtoID] = s.Result
 		}
 	})
+
+	return nil
 }
 
 func constructAccount(encodedID int64) (*types.Account, *rTypes.Error) {
