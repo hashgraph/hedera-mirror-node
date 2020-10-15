@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.jmeter.handler;
  */
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,8 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
+import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 import com.hedera.mirror.grpc.jmeter.props.NodeInfo;
 
 @Log4j2
@@ -118,6 +121,18 @@ public class SDKClientHandler {
                 .execute(client);
 
         return transactionId;
+    }
+
+    public List<TransactionId> submitTokenTransfer(TokenId tokenId, AccountId operatorId, AccountId recipientId,
+                                                   long amount) throws HederaStatusException {
+        TransactionId transactionId = new TokenTransferTransaction()
+                .addSender(tokenId, operatorId, amount)
+                .addRecipient(tokenId, recipientId, amount)
+                .setMaxTransactionFee(1_000_000)
+                .setTransactionMemo("Token Transfer_" + Instant.now())
+                .execute(client);
+
+        return Arrays.asList(transactionId);
     }
 
     public int getValidTransactionsCount(List<TransactionId> transactionIds) {
