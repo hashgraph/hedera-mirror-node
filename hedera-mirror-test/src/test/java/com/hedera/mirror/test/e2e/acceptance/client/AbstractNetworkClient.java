@@ -33,6 +33,7 @@ import com.hedera.hashgraph.sdk.TransactionList;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.crypto.PrivateKey;
+import com.hedera.mirror.test.e2e.acceptance.props.NetworkTransactionResponse;
 
 @Log4j2
 @Data
@@ -59,13 +60,13 @@ public abstract class AbstractNetworkClient {
         return transactionId;
     }
 
-    public TransactionReceipt executeTransactionAndRetrieveReceipt(TransactionBuilder transactionBuilder,
-                                                                   PrivateKey key) throws HederaStatusException {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(TransactionBuilder transactionBuilder,
+                                                                           PrivateKey key) throws HederaStatusException {
         long startBalance = getBalance();
         TransactionId transactionId = executeTransaction(transactionBuilder, key);
         TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
-        return transactionReceipt;
+        return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 
     public List<TransactionId> executeTransactionList(TransactionBuilder transactionBuilder, PrivateKey key) throws HederaStatusException {

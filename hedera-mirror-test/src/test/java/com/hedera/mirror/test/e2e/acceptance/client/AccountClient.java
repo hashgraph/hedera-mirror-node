@@ -73,7 +73,8 @@ public class AccountClient extends AbstractNetworkClient {
                 .addRecipient(recipient, amount)
                 .setTransactionMemo("transfer test");
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null);
+        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null)
+                .getReceipt();
 
         log.debug("Sent CryptoTransfer");
 

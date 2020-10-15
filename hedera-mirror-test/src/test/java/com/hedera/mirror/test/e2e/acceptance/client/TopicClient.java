@@ -71,7 +71,7 @@ public class TopicClient extends AbstractNetworkClient {
         }
 
         TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction,
-                null);
+                null).getReceipt();
 
         ConsensusTopicId topicId = transactionReceipt.getConsensusTopicId();
         log.debug("Created new topic {}", topicId);
@@ -92,7 +92,7 @@ public class TopicClient extends AbstractNetworkClient {
                 .clearAutoRenewAccountId();
 
         TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction,
-                null);
+                null).getReceipt();
 
         log.debug("Updated topic '{}'.", topicId);
         return transactionReceipt;
@@ -103,7 +103,7 @@ public class TopicClient extends AbstractNetworkClient {
                 .setTopicId(topicId);
 
         TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction,
-                null);
+                null).getReceipt();
 
         log.debug("Deleted topic : '{}'.", topicId);
 

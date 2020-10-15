@@ -22,14 +22,24 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.tcp.TcpClient;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
@@ -106,6 +116,50 @@ public class MirrorNodeClient {
         }
 
         return subscriptionResponse;
+    }
+
+    public ClientResponse verifyAccountRestEndpoint(String accountId, int lastCount) {
+        log.debug("Verify account {} is returned by Mirror Node", accountId);
+        String endpoint = String.format("/api/v1/accounts/%s?order=desc&limit=%d", accountId, lastCount);
+        return verifyRestEndpoint(endpoint);
+    }
+
+    public ClientResponse verifyAccountBalanceRestEndpoint(String accountId) {
+        log.debug("Verify balance {} is returned by Mirror Node", accountId);
+        String endpoint = String.format("/api/v1/balances?account.id=%s", accountId);
+        return verifyRestEndpoint(endpoint);
+    }
+
+    public ClientResponse verifyTransactionRestEntity(String transactionId) {
+        log.debug("Verify transaction {} is returned by Mirror Node", transactionId);
+        String endpoint = "/api/v1/transactions/" + transactionId;
+        return verifyRestEndpoint(endpoint);
+    }
+
+    public ClientResponse verifyRestEndpoint(String apiEndpoint) {
+        TcpClient tcpClient = TcpClient
+                .create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+                .doOnConnected(connection -> {
+                    connection.addHandlerLast(new ReadTimeoutHandler(5000, TimeUnit.MILLISECONDS));
+                    connection.addHandlerLast(new WriteTimeoutHandler(5000, TimeUnit.MILLISECONDS));
+                });
+
+        WebClient client = WebClient.builder()
+                .baseUrl("http://" + acceptanceProps.getMirrorRestAddress())
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
+                .build();
+
+        ClientResponse response = client.get()
+                .uri(apiEndpoint)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .block();
+
+        log.debug("Endpoint {} returned {}", apiEndpoint, response.statusCode());
+
+        return response;
     }
 
     public void unSubscribeFromTopic(MirrorSubscriptionHandle subscription) {

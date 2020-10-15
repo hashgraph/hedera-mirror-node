@@ -27,7 +27,6 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.HederaStatusException;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
@@ -41,6 +40,7 @@ import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
 import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.NetworkTransactionResponse;
 
 @Log4j2
 @Value
@@ -52,7 +52,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     // Cost 8578318 tℏ
-    public TransactionReceipt createToken(Ed25519PublicKey adminKey, String symbol, int freezeStatus, int kycStatus) throws HederaStatusException {
+    public NetworkTransactionResponse createToken(Ed25519PublicKey adminKey, String symbol, int freezeStatus,
+                                                  int kycStatus) throws HederaStatusException {
 
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
@@ -85,14 +86,15 @@ public class TokenClient extends AbstractNetworkClient {
                     .setKycKey(adminKey);
         }
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, null);
-        TokenId tokenId = transactionReceipt.getTokenId();
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenCreateTransaction, null);
+        TokenId tokenId = networkTransactionResponse.getReceipt().getTokenId();
         log.debug("Created new token {}", tokenId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt asssociate(ExpandedAccountId accountId, TokenId token) throws HederaStatusException {
+    public NetworkTransactionResponse asssociate(ExpandedAccountId accountId, TokenId token) throws HederaStatusException {
 
         log.debug("Associate account {} with token {}", accountId.getAccountId(), token);
         Instant refInstant = Instant.now();
@@ -102,15 +104,16 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(1_000_000_000)
                 .setTransactionMemo("Associate token_" + refInstant);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
                 accountId.getPrivateKey());
 
         log.debug("Associated {} with token {}", accountId, token);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt mint(TokenId tokenId, long amount) throws HederaStatusException {
+    public NetworkTransactionResponse mint(TokenId tokenId, long amount) throws HederaStatusException {
 
         log.debug("Mint {} with {}", tokenId, amount);
         Instant refInstant = Instant.now();
@@ -120,14 +123,15 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(1_000_000_000)
                 .setTransactionMemo("Associate token_" + refInstant);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenMintTransaction, null);
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenMintTransaction, null);
 
         log.debug("Minted {} extra tokens for token {}", amount, tokenId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt freeze(TokenId tokenId, AccountId accountId, Ed25519PrivateKey freezeKey) throws HederaStatusException {
+    public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId, Ed25519PrivateKey freezeKey) throws HederaStatusException {
 
         Instant refInstant = Instant.now();
         TokenFreezeAccountTransaction tokenFreezeAccountTransaction = new TokenFreezeAccountTransaction()
@@ -136,15 +140,16 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTransactionMemo("Freeze account_" + refInstant);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction,
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction,
                 freezeKey);
 
         log.debug("Freeze account {} with token {}", accountId, tokenId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt unfreeze(TokenId tokenId, AccountId accountId, Ed25519PrivateKey freezeKey) throws HederaStatusException {
+    public NetworkTransactionResponse unfreeze(TokenId tokenId, AccountId accountId, Ed25519PrivateKey freezeKey) throws HederaStatusException {
 
         Instant refInstant = Instant.now();
         TokenUnfreezeTransaction tokenUnfreezeTransaction = new TokenUnfreezeTransaction()
@@ -153,15 +158,16 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTransactionMemo("Unfreeze account_" + refInstant);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction,
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction,
                 freezeKey);
 
         log.debug("Unfreeze account {} with token {}", accountId, tokenId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt grantKyc(TokenId tokenId, AccountId accountId, Ed25519PrivateKey kycKey) throws HederaStatusException {
+    public NetworkTransactionResponse grantKyc(TokenId tokenId, AccountId accountId, Ed25519PrivateKey kycKey) throws HederaStatusException {
 
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         Instant refInstant = Instant.now();
@@ -171,14 +177,15 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(1_000_000_000)
                 .setTransactionMemo("Grant kyc for token_" + refInstant);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenGrantKycTransaction, kycKey);
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenGrantKycTransaction, kycKey);
 
         log.debug("Granted Kyc for account {} with token {}", accountId, tokenId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt revokeKyc(TokenId tokenId, AccountId accountId, Ed25519PrivateKey kycKey) throws HederaStatusException {
+    public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId, Ed25519PrivateKey kycKey) throws HederaStatusException {
 
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         Instant refInstant = Instant.now();
@@ -188,14 +195,16 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(1_000_000_000)
                 .setTransactionMemo("Revoke kyc for token_" + refInstant);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenRevokeKycTransaction, kycKey);
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenRevokeKycTransaction, kycKey);
 
         log.debug("Revoked Kyc for account {} with token {}", accountId, tokenId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt transferToken(TokenId tokenId, AccountId sender, AccountId recipient, long amount) throws HederaStatusException {
+    public NetworkTransactionResponse transferToken(TokenId tokenId, AccountId sender, AccountId recipient,
+                                                    long amount) throws HederaStatusException {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
         Instant refInstant = Instant.now();
@@ -205,11 +214,12 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(1_000_000)
                 .setTransactionMemo("Transfer token_" + refInstant);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(tokenTransferTransaction, null);
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenTransferTransaction, null);
 
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender,
                 recipient);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 }

@@ -20,31 +20,40 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import io.grpc.StatusRuntimeException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.web.reactive.function.client.ClientResponse;
 
 import com.hedera.hashgraph.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.proto.TokenKycStatus;
 import com.hedera.hashgraph.sdk.HederaStatusException;
+import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.NetworkTransactionResponse;
 
 @Log4j2
 @Cucumber
@@ -55,11 +64,15 @@ public class TokenFeature {
     private TokenClient tokenClient;
     @Autowired
     private AccountClient accountClient;
+    @Autowired
+    private MirrorNodeClient mirrorClient;
     private Instant testInstantReference;
     private Ed25519PrivateKey tokenKey;
     private String symbol;
     private TokenId tokenId;
     private ExpandedAccountId recipient;
+    private NetworkTransactionResponse networkTransactionResponse;
+    private List<TransactionId> transactionIdList;
 
     @Given("I successfully create a new token")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
@@ -90,11 +103,12 @@ public class TokenFeature {
         Ed25519PublicKey tokenPublicKey = tokenKey.publicKey;
         log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
 
-        TransactionReceipt receipt = tokenClient
+        networkTransactionResponse = tokenClient
                 .createToken(tokenClient.getSdkClient()
                         .getPayerPublicKey(), symbol, freezeStatus, kycStatus);
-        assertNotNull(receipt);
-        tokenId = receipt.getTokenId();
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        tokenId = networkTransactionResponse.getReceipt().getTokenId();
         assertNotNull(tokenId);
     }
 
@@ -112,9 +126,10 @@ public class TokenFeature {
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void associateWithToken() throws HederaStatusException {
 
-        TransactionReceipt receipt = tokenClient
+        networkTransactionResponse = tokenClient
                 .asssociate(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
-        assertNotNull(receipt);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I associate a new account with token")
@@ -123,49 +138,54 @@ public class TokenFeature {
     public void associateNewAccountWithToken() throws HederaStatusException {
 
         recipient = accountClient.createNewAccount(10_000_000);
-        TransactionReceipt receipt = tokenClient
+        networkTransactionResponse = tokenClient
                 .asssociate(recipient, tokenId);
-        assertNotNull(receipt);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I set new account freeze status to {int}")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void setFreezeStatus(int freezeStatus) throws HederaStatusException {
-        TransactionReceipt receipt = null;
         if (freezeStatus == TokenFreezeStatus.Frozen_VALUE) {
-            receipt = tokenClient.freeze(tokenId, recipient.getAccountId(), tokenKey);
+            networkTransactionResponse = tokenClient.freeze(tokenId, recipient.getAccountId(), tokenKey);
         } else if (freezeStatus == TokenFreezeStatus.Unfrozen_VALUE) {
-            receipt = tokenClient.unfreeze(tokenId, recipient.getAccountId(), tokenKey);
+            networkTransactionResponse = tokenClient.unfreeze(tokenId, recipient.getAccountId(), tokenKey);
         } else {
             log.warn("Freeze Status must be set to 1 (Frozen) or 2 (Unfrozen)");
         }
 
-        assertNotNull(receipt);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I set new account kyc status to {int}")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void setKycStatus(int kycStatus) throws HederaStatusException {
-        TransactionReceipt receipt = null;
         if (kycStatus == TokenKycStatus.Granted_VALUE) {
-            receipt = tokenClient.grantKyc(tokenId, recipient.getAccountId(), tokenKey);
+            networkTransactionResponse = tokenClient.grantKyc(tokenId, recipient.getAccountId(), tokenKey);
         } else if (kycStatus == TokenKycStatus.Revoked_VALUE) {
-            receipt = tokenClient.revokeKyc(tokenId, recipient.getAccountId(), tokenKey);
+            networkTransactionResponse = tokenClient.revokeKyc(tokenId, recipient.getAccountId(), tokenKey);
         } else {
             log.warn("Kyc Status must be set to 1 (Granted) or 2 (Revoked)");
         }
 
-        assertNotNull(receipt);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Then("I transfer {int} tokens to recipient")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void transferTokensToRecipient(int amount) throws HederaStatusException {
         transferTokens(tokenId, amount, tokenClient.getSdkClient().getOperatorId(), recipient.getAccountId());
     }
 
     @Then("I transfer {int} tokens of {int} to {int}")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void transferTokens(int amount, int token, int recipient) throws HederaStatusException {
         transferTokens(new TokenId(token), amount, tokenClient.getSdkClient()
                 .getOperatorId(), new AccountId(recipient));
@@ -174,18 +194,112 @@ public class TokenFeature {
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void transferTokens(TokenId tokenId, int amount, AccountId sender, AccountId receiver) throws HederaStatusException {
-        TransactionReceipt receipt = tokenClient.transferToken(tokenId, sender, receiver, amount);
-        assertNotNull(receipt);
+        networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Then("the mirror node REST API should return status {int}")
+    @Retryable(value = {AssertionError.class})
+    public void verifyMirrorAPIResponses(int status) throws Throwable {
+        verifyAccounts(status);
+        verifyBalances(status);
+        verifyTransactions(status);
+    }
+
+    private void verifyAccounts(int status) {
+        ClientResponse response = mirrorClient
+                .verifyAccountRestEndpoint(tokenClient.getSdkClient().getOperatorId().toString(), 5);
+
+        List<String> stringsToVerify = new ArrayList<>();
+        stringsToVerify.add(tokenClient.getSdkClient().getOperatorId().toString());
+        stringsToVerify.add(tokenId.toString());
+
+        assertNotNull(response, "httpStatus null");
+        assertNotNull(response.statusCode(), "httpStatus null");
+        assertEquals(status, response.statusCode().value(), "mirrorResponse matched");
+
+        // verify transaction json contains strings, to be replaced with domain mapping comparisons
+        String json = response.bodyToMono(JsonNode.class).block().toString();
+        stringsToVerify.stream().forEach(term -> {
+            assertThat(json).contains(term);
+        });
+    }
+
+    private void verifyBalances(int status) {
+        String sender = tokenClient.getSdkClient().getOperatorId().toString();
+        ClientResponse response = mirrorClient.verifyAccountBalanceRestEndpoint(sender);
+
+        // verify balances response contains sender, recipient and new token id
+        List<String> stringsToVerify = new ArrayList<>();
+        stringsToVerify.add(sender);
+
+        assertNotNull(response, "httpStatus null");
+        assertNotNull(response.statusCode(), "httpStatus null");
+        assertEquals(status, response.statusCode().value(), "mirrorResponse matched");
+
+        // verify transaction json contains strings, to be replaced with domain mapping comparisons
+        String json = response.bodyToMono(JsonNode.class).block().toString();
+        stringsToVerify.stream().forEach(term -> {
+            assertThat(json).contains(term);
+        });
+    }
+
+    private void verifyTransactions(int status) {
+        TransactionId transactionId = networkTransactionResponse.getTransactionId();
+
+        String transactionIdString = transactionId.accountId.toString() + "-" + transactionId.validStart
+                .getEpochSecond() + "-" + transactionId.validStart.getNano();
+        ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionIdString);
+
+        List<String> stringsToVerify = new ArrayList<>();
+        stringsToVerify.add(transactionId.validStart.getEpochSecond() + "." + transactionId.validStart.getNano());
+        stringsToVerify.add(transactionIdString);
+
+        stringsToVerify.add(tokenId.toString());
+
+        assertNotNull(response, "httpStatus null");
+        assertNotNull(response.statusCode(), "httpStatus null");
+        assertEquals(status, response.statusCode().value(), "mirrorResponse matched");
+
+        // verify transaction json contains strings, to be replaced with domain mapping comparisons
+        String json = response.bodyToMono(JsonNode.class).block().toString();
+        stringsToVerify.stream().forEach(term -> {
+            assertThat(json).contains(term);
+        });
+    }
+
+    @Then("the mirror node {string}} REST API should return status {int}")
+    public void verifyMirrorTransactionAPIResponse(String endpoint, int status) throws Throwable {
+        if (endpoint.equalsIgnoreCase("accounts")) {
+            verifyAccounts(status);
+        } else if (endpoint.equalsIgnoreCase("balances")) {
+            verifyBalances(status);
+        } else if (endpoint.equalsIgnoreCase("transaction")) {
+            verifyTransactions(status);
+        }
+
+        // to-do add token/topic endpoints
+    }
+
+    @Then("the mirror node REST API should return status {int} for transaction {string}")
+    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) throws Throwable {
+        ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionIdString);
+        assertNotNull(response, "httpStatus null");
+        assertNotNull(response.statusCode(), "httpStatus null");
+        assertEquals(status, response.statusCode().value(), "mirrorResponse matched");
     }
 
     @Then("the network should observe an error creating a token {string}")
     public void verifyTokenCreation(String errorCode) throws Throwable {
         try {
-            TransactionReceipt receipt = tokenClient.createToken(tokenClient.getSdkClient()
+            networkTransactionResponse = tokenClient.createToken(tokenClient.getSdkClient()
                             .getPayerPublicKey(), symbol, TokenFreezeStatus.FreezeNotApplicable_VALUE,
                     TokenKycStatus.KycNotApplicable_VALUE);
-            assertTrue(errorCode.isEmpty());
+            assertNotNull(networkTransactionResponse.getTransactionId());
+            TransactionReceipt receipt = networkTransactionResponse.getReceipt();
             assertNotNull(receipt);
+            assertTrue(errorCode.isEmpty());
             TokenId tokenId = receipt.getTokenId();
             assertNotNull(tokenId);
         } catch (Exception ex) {
@@ -203,9 +317,10 @@ public class TokenFeature {
         try {
             ExpandedAccountId accountToAssociate = recipient == null ? tokenClient.getSdkClient()
                     .getExpandedOperatorAccountId() : recipient;
-            TransactionReceipt receipt = tokenClient
+            networkTransactionResponse = tokenClient
                     .asssociate(accountToAssociate, tokenId);
-            assertNotNull(receipt);
+            assertNotNull(networkTransactionResponse.getTransactionId());
+            assertNotNull(networkTransactionResponse.getReceipt());
             assertTrue(errorCode.isEmpty());
         } catch (Exception ex) {
             if (!ex.getMessage().contains(errorCode)) {
@@ -215,5 +330,18 @@ public class TokenFeature {
                 log.warn("Expected error found");
             }
         }
+    }
+
+    /**
+     * Recover method for REST verify operations. Method parameters of retry method must match this method after
+     * exception parameter
+     *
+     * @param t
+     */
+    @Recover
+    public void recover(AssertionError t, int status) {
+        log.error("REST API response did not contain expected string, failed after retries w: {}", t
+                .getMessage());
+        throw t;
     }
 }
