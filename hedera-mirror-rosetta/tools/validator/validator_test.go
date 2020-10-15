@@ -30,37 +30,29 @@ import (
 func TestValidateOperationsSum(t *testing.T) {
 	// given:
 	operationDummy := newOperationDummy("100")
-	operationDummy2 := newOperationDummy("-100")
+	operationDummyNegative := newOperationDummy("-100")
 	invalidOperationDummy := newOperationDummy("-100H")
 
-	testData := []*types.Operation{
-		operationDummy,
-		operationDummy2,
+	var testData = []struct {
+		operations []*types.Operation
+		expected   *types.Error
+	}{
+		{[]*types.Operation{
+			operationDummy,
+			operationDummyNegative,
+		}, nil},
+		{[]*types.Operation{
+			operationDummyNegative,
+		}, errors.Errors[errors.InvalidOperationsTotalAmount]},
+		{[]*types.Operation{
+			invalidOperationDummy,
+		}, errors.Errors[errors.InvalidAmount]},
 	}
 
-	var nil *types.Error = nil
-	expectedInvalidOperationsTotalAmountError := errors.Errors[errors.InvalidOperationsTotalAmount]
-	expectedInvalidAmountError := errors.Errors[errors.InvalidAmount]
-
-	// when:
-	result := ValidateOperationsSum(testData)
-
-	// then:
-	assert.Equal(t, nil, result)
-
-	// and:
-	testData = append(testData, operationDummy2)
-
-	// then:
-	result = ValidateOperationsSum(testData)
-	assert.Equal(t, expectedInvalidOperationsTotalAmountError, result)
-
-	// and:
-	testData = append(testData, invalidOperationDummy)
-
-	// then:
-	result = ValidateOperationsSum(testData)
-	assert.Equal(t, expectedInvalidAmountError, result)
+	for _, tt := range testData {
+		result := ValidateOperationsSum(tt.operations)
+		assert.Equal(t, tt.expected, result)
+	}
 }
 
 func newOperationDummy(amount string) *types.Operation {

@@ -30,32 +30,50 @@ import (
 
 func TestGetsCorrectStringValuesFromMap(t *testing.T) {
 	// given:
-	testData := map[int]string{
+	inputData := map[int]string{
 		1: "abc",
+		2: "asd",
+		3: "aaaa",
+		4: "1",
 	}
-
 	// when:
-	result := GetStringValuesFromIntStringMap(testData)
-
+	result := GetStringValuesFromIntStringMap(inputData)
 	// then:
-	assert.Equal(t, 1, len(result))
-	assert.Equal(t, "abc", result[0])
+	assert.Equal(t, len(inputData), len(result))
+	for _, v := range inputData {
+		found := false
+		for _, e := range result {
+			if e == v {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found)
+	}
 }
 
 func TestGetsCorrectErrorValuesFromMap(t *testing.T) {
 	// given:
-	error := newErrorDummy(32, true)
-
-	testData := map[string]*types.Error{
-		"error": error,
+	inputData := map[string]*types.Error{
+		"error1":  newErrorDummy(32, true),
+		"error2":  newErrorDummy(64, false),
+		"error3":  newErrorDummy(128, true),
+		"error64": newErrorDummy(12341, false),
 	}
-
 	// when:
-	result := GetErrorValuesFromStringErrorMap(testData)
-
+	result := GetErrorValuesFromStringErrorMap(inputData)
 	// then:
-	assert.Equal(t, 1, len(result))
-	assert.Equal(t, error, result[0])
+	assert.Equal(t, len(inputData), len(result))
+	for _, v := range inputData {
+		found := false
+		for _, e := range result {
+			if e == v {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found)
+	}
 }
 
 func newErrorDummy(code int32, retryable bool) *types.Error {

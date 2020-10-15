@@ -54,7 +54,7 @@ func TestAddsPrefixCorrectly(t *testing.T) {
 		result := SafeAddHexPrefix(tt.string)
 
 		// then:
-		assert.Equal(t, result, expectedData[i].result)
+		assert.Equal(t, expectedData[i].result, result)
 	}
 }
 
@@ -66,7 +66,6 @@ func TestRemovesPrefixCorrectly(t *testing.T) {
 		{"0xaddprefix"},
 		{"0x"},
 		{"0x123"},
-		{"0x"},
 		{"0x "},
 		{"0x123aasd"},
 		{"0xaasd"},
@@ -79,7 +78,6 @@ func TestRemovesPrefixCorrectly(t *testing.T) {
 		{"addprefix"},
 		{""},
 		{"123"},
-		{""},
 		{" "},
 		{"123aasd"},
 		{"aasd"},
@@ -90,6 +88,6 @@ func TestRemovesPrefixCorrectly(t *testing.T) {
 		// when:
 		result := SafeRemoveHexPrefix(tt.string)
 		// then:
-		assert.Equal(t, result, expectedData[i].result)
+		assert.Equal(t, expectedData[i].result, result)
 	}
 }

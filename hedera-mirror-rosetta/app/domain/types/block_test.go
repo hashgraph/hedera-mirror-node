@@ -75,7 +75,6 @@ func TestToRosettaBlock(t *testing.T) {
 func TestGetTimestampMillis(t *testing.T) {
 	// given:
 	exampleBlock := exampleBlock()
-	exampleBlock.ConsensusStartNanos = 10000000
 
 	// when:
 	resultMillis := exampleBlock.GetTimestampMillis()
