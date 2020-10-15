@@ -31,19 +31,21 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 @Log4j2
 @Value
 public class SDKClient {
     private final Client client;
     private final Ed25519PublicKey payerPublicKey;
+    private final Ed25519PrivateKey operatorKey;
     private final AccountId operatorId;
 
     public SDKClient(AcceptanceTestProperties acceptanceTestProperties) {
 
         // Grab configuration variables from the .env file
         operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
-        var operatorKey = Ed25519PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
+        operatorKey = Ed25519PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
         payerPublicKey = operatorKey.publicKey;
 
         Client client;
@@ -65,6 +67,10 @@ public class SDKClient {
         client.setOperator(operatorId, operatorKey);
 
         this.client = client;
+    }
+
+    public ExpandedAccountId getExpandedOperatorAccountId() {
+        return new ExpandedAccountId(operatorId, operatorKey, payerPublicKey);
     }
 
     public void close() throws TimeoutException, InterruptedException {

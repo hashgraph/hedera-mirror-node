@@ -32,10 +32,8 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
 
-import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionList;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
@@ -48,15 +46,11 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Log4j2
 @Value
-public class TopicClient {
-
-    private final SDKClient sdkClient;
-    private final Client client;
+public class TopicClient extends AbstractNetworkClient {
     private final Map<Long, Instant> recordPublishInstants;
 
     public TopicClient(SDKClient sdkClient) {
-        this.sdkClient = sdkClient;
-        client = sdkClient.getClient();
+        super(sdkClient);
         recordPublishInstants = new HashMap<>();
         log.debug("Creating Topic Client");
     }
@@ -76,19 +70,18 @@ public class TopicClient {
             consensusTopicCreateTransaction.setSubmitKey(submitKey);
         }
 
-        TransactionReceipt transactionReceipt = consensusTopicCreateTransaction
-                .execute(client)
-                .getReceipt(client);
+        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction,
+                null);
 
         ConsensusTopicId topicId = transactionReceipt.getConsensusTopicId();
-        log.debug("Created new topic {}, with TransactionReceipt : {}", topicId, transactionReceipt);
+        log.debug("Created new topic {}", topicId);
 
         return transactionReceipt;
     }
 
     public TransactionReceipt updateTopic(ConsensusTopicId topicId) throws HederaStatusException {
         String newMemo = "HCS UpdatedTopic__" + Instant.now().getNano();
-        TransactionReceipt transactionReceipt = new ConsensusTopicUpdateTransaction()
+        ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
                 .setTopicId(topicId)
                 .setTopicMemo(newMemo)
                 .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
@@ -96,23 +89,23 @@ public class TopicClient {
                 .clearAdminKey()
                 .clearSubmitKey()
                 .clearTopicMemo()
-                .clearAutoRenewAccountId()
-//                .setAutoRenewAccountId()
-                .build(client)
-                .execute(client)
-                .getReceipt(client);
+                .clearAutoRenewAccountId();
 
-        log.debug("Updated topic '{}'. Received transactionReceipt : {} ", topicId, transactionReceipt);
+        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction,
+                null);
+
+        log.debug("Updated topic '{}'.", topicId);
         return transactionReceipt;
     }
 
     public TransactionReceipt deleteTopic(ConsensusTopicId topicId) throws HederaStatusException {
-        TransactionReceipt transactionReceipt = new ConsensusTopicDeleteTransaction()
-                .setTopicId(topicId)
-                .execute(client)
-                .getReceipt(client);
+        ConsensusTopicDeleteTransaction consensusTopicDeleteTransaction = new ConsensusTopicDeleteTransaction()
+                .setTopicId(topicId);
 
-        log.debug("Deleted topic : '{}'. Obtained receipt : {}", topicId, transactionReceipt);
+        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction,
+                null);
+
+        log.debug("Deleted topic : '{}'.", topicId);
 
         return transactionReceipt;
     }
@@ -139,18 +132,11 @@ public class TopicClient {
 
     public List<TransactionId> publishMessageToTopic(ConsensusTopicId topicId, String message,
                                                      Ed25519PrivateKey submitKey) throws HederaStatusException {
-        TransactionList transactionList = new ConsensusMessageSubmitTransaction()
+        ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction = new ConsensusMessageSubmitTransaction()
                 .setTopicId(topicId)
-                .setMessage(message)
-                .build(client);
+                .setMessage(message);
 
-        if (submitKey != null) {
-            // The transaction is automatically signed by the payer.
-            // Due to the topic having a submitKey requirement, additionally sign the transaction with that key.
-            transactionList.sign(submitKey);
-        }
-
-        List<TransactionId> transactionIdList = transactionList.executeAll(client);
+        List<TransactionId> transactionIdList = executeTransactionList(consensusMessageSubmitTransaction, submitKey);
 
         TransactionRecord transactionRecord = transactionIdList.get(0).getRecord(client);
         // get only the 1st sequence number
