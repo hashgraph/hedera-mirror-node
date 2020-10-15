@@ -22,16 +22,14 @@ package maphelper
 
 import (
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"sync"
 )
 
-func GetStringValuesFromIntStringMap(mapping *sync.Map) []string {
+func GetStringValuesFromIntStringMap(mapping map[int]string) []string {
 	var values []string
 
-	mapping.Range(func(key, value interface{}) bool {
-		values = append(values, value.(string))
-		return true
-	})
+	for _, v := range mapping {
+		values = append(values, v)
+	}
 
 	return values
 }

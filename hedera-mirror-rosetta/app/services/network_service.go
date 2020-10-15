@@ -49,15 +49,8 @@ func (n *NetworkAPIService) NetworkList(ctx context.Context, request *types.Meta
 
 // NetworkOptions implements the /network/options endpoint.
 func (n *NetworkAPIService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
-	operationTypes, err := n.transactionRepo.TypesAsArray()
-	if err != nil {
-		return nil, err
-	}
-
-	statuses, err := n.transactionRepo.Statuses()
-	if err != nil {
-		return nil, err
-	}
+	operationTypes := n.transactionRepo.TypesAsArray()
+	statuses := n.transactionRepo.Statuses()
 
 	statusesArray := maphelper.GetStringValuesFromIntStringMap(statuses)
 	operationStatuses := make([]*types.OperationStatus, 0, len(statusesArray))
