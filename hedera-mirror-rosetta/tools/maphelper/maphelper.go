@@ -20,10 +20,12 @@
 
 package maphelper
 
-import "github.com/coinbase/rosetta-sdk-go/types"
+import (
+	"github.com/coinbase/rosetta-sdk-go/types"
+)
 
 func GetStringValuesFromIntStringMap(mapping map[int]string) []string {
-	values := make([]string, 0, len(mapping))
+	var values []string
 
 	for _, v := range mapping {
 		values = append(values, v)
