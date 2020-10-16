@@ -78,6 +78,15 @@ const sampleBalanceValues = (n) => {
 };
 
 /**
+ * Gets 'n' randomly sampled token_id from token table.
+ */
+const sampleTokenIds = (n) => {
+  return pool.query(`select token_id as value from token order by RANDOM() limit ${n};`, null).then((result) => {
+    return result.rows.map(getRowValueAsInt);
+  });
+};
+
+/**
  * Converts integer timestamp format accepted by query param. For eg. 1577904152141445600 -> '1577904152.141445600'
  */
 const timestampToParamValue = (timestamp) => {
@@ -125,6 +134,11 @@ const makeQuerySet = async (test) => {
   } else if (test.filterAxis === 'ACCOUNTID') {
     paramName = 'account.id';
     paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, (sample) => {
+      return '' + sample;
+    });
+  } else if (test.filterAxis === 'TOKENID') {
+    paramName = 'token.id';
+    paramValues = await populateParamValues(test, 'token.id', 'rangeNumTokens', sampleTokenIds, (sample) => {
       return '' + sample;
     });
   } else {
