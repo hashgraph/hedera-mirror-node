@@ -566,10 +566,12 @@ Optional Filters
         "key": "9c2233222c2233222c2233227d"
       },
       "freeze_default": false,
-      "kyc_default": false,
       "expiry_timestamp": null,
       "auto_renew_account": "0.0.6",
-      "auto_renew_period": null
+      "auto_renew_period": null,
+      "initial_supply": "1000000",
+      "total_supply": "1000000",
+      "decimals": "1000"
     }
 ```
 
