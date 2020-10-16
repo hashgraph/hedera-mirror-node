@@ -70,7 +70,7 @@
         <msgpack.version>0.8.20</msgpack.version>
         <protobuf.version>3.13.0</protobuf.version>
         <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.6.0-rc1</release.chartVersion>
+        <release.chartVersion>0.7.0-rc1</release.chartVersion>
         <embedded.testcontainers.version>1.82</embedded.testcontainers.version>
     </properties>
 
