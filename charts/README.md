@@ -47,12 +47,12 @@ To access the GRPC API (using [grpcurl](https://github.com/fullstorydev/grpcurl)
 
 To access the REST API:
 ```shell script
-  curl -s "http://${SERVICE_IP}:80/api/v1/transactions?limit=1"
+  curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
 ```
 
 To view the Grafana dashboard:
 ```shell script
-  open "http://${SERVICE_IP}:80/grafana"
+  open "http://${SERVICE_IP}/grafana"
 ```
 
 ## Uninstall
@@ -90,14 +90,23 @@ $ echo "logging.level.com.hedera.mirror.grpc=TRACE" > application.properties
 $ kubectl create configmap hedera-mirror-grpc --from-file=application.properties
 ```
 
-Dashboard and metrics can be viewed via [Grafana](https://grafana.com). To access, get the external IP and open it in a browser:
-
-```shell script
-$ open "http://$(kubectl get service "${RELEASE}-grafana" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-```
+Dashboard, metrics and alerts can be viewed via [Grafana](https://grafana.com). See the [Using](#using) section for how
+to connect to Grafana.
 
 To connect to the database and run queries:
 
 ```shell script
 $ kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d mirror_node -U mirror_node
+```
+
+### Alerts
+
+Prometheus AlertManager is used to monitor and alert for ongoing issues in the cluster. If an alert is received via
+a notification mechanism like Slack or PagerDuty, it should contain enough details to know where to start the
+investigation. Active alerts can be viewed via the `AlertManager` dashboard in Grafana that is exposed by the load
+balancer. To see further details or to silence or suppress the alert it will need to be done via the AlertManager UI.
+To access the AlertManager UI, expose it via kubectl:
+
+```shell script
+kubectl port-forward service/${RELEASE}-prometheus-alertmanager 9093:9093
 ```
