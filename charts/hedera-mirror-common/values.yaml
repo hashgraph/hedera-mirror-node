@@ -50,7 +50,7 @@ prometheus-adapter:
   enabled: true
   priorityClassName: low
   prometheus:
-    url: http://prometheus-prometheus
+    url: http://common-mirror-prometheus-prometheus
   resources:
     limits:
       cpu: 50m
@@ -72,17 +72,53 @@ prometheus:
         requests:
           cpu: 30m
           memory: 30Mi
+    config:
+      receivers:
+        - name: 'null'
+      route:
+        group_by:
+          - namespace
+          - alertname
+        group_wait: 30s
+        receiver: 'null'
+        repeat_interval: 30m
+        routes: []
+      templates:
+        - '/etc/alertmanager/config/slack.tmpl'
+    enabled: true
+    templateFiles:
+      slack.tmpl: |-
+        {{- define "slack.title" -}}
+        {{- .Status | title }} {{ .CommonLabels.alertname }}{{ if .CommonLabels.namespace }} in {{ .CommonLabels.namespace }}{{ end }}
+        {{- end -}}
+
+        {{- define "slack.text" -}}
+        {{ range .Alerts -}}
+        *Summary:* {{ if .Annotations.summary }}{{ .Annotations.summary }}{{ else }}{{ .Annotations.message }}{{ end }}{{"\n"}}
+        {{- if .Annotations.description }} *Description:* {{ .Annotations.description }}{{"\n"}}{{ end }}
+        *Prometheus:* *<{{ .GeneratorURL }}|:fire:>* {{- if .Annotations.dashboard_url }}     *Grafana:* *<{{ .Annotations.dashboard_url }}|:chart_with_upwards_trend:>*{{ end }}{{- if .Annotations.runbook_url }}      *Runbook:* *<{{ .Annotations.runbook_url }}|:notebook:>*{{ end }}
+
+        *Labels:*
+          {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+          {{ end }}
+        {{ end }}
+        {{- end -}}
+  coreDns:
     enabled: false
   enabled: true
   grafana:
     additionalDataSources:
+      - name: AlertManager
+        type: camptocamp-prometheus-alertmanager-datasource
+        access: proxy
+        url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
       - name: Loki
         type: loki
         access: proxy
         url: http://{{ .Release.Name }}-loki:3100
         jsonData:
           maxLines: 500
-    adminPassword: password
+    adminPassword: ""
     defaultDashboardsEnabled: true
     grafana.ini:
       server:
@@ -102,6 +138,8 @@ prometheus:
           average: 50
           burst: 100
       path: "/grafana"
+    plugins:
+      - camptocamp-prometheus-alertmanager-datasource
     rbac:
       pspEnabled: false
     resources:
@@ -121,17 +159,27 @@ prometheus:
       requests:
         cpu: 5m
         memory: 16Mi
+  kubeApiserver:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  kubeDns:
+    enabled: true
+  kubeScheduler:
+    enabled: false
   prometheus-node-exporter:
     hostNetwork: false
     rbac:
       pspEnabled: false
     resources:
       limits:
-        cpu: 50m
-        memory: 30Mi
+        cpu: 100m
+        memory: 50Mi
       requests:
-        cpu: 20m
-        memory: 10Mi
+        cpu: 50m
+        memory: 20Mi
   prometheus:
     additionalPodMonitors:
       - name: traefik

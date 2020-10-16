@@ -74,7 +74,6 @@ postgresql:
       role: db
     pdb:
       create: true
-    replicaCount: 2
     resources:
       limits:
         cpu: 200m
@@ -86,7 +85,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 12.4.0-debian-10-r49
+    tag: 12.4.0-debian-10-r61
   postgresql:
     affinity:
       podAntiAffinity:
@@ -99,6 +98,7 @@ postgresql:
                   app.kubernetes.io/component: postgresql
     initdbScriptsSecret: '{{ printf "%s-postgresql-init" .Release.Name }}'
     password: password
+    replicaCount: 1
     repmgrPassword: password
     resources:
       limits:
@@ -110,28 +110,33 @@ postgresql:
     repmgrLogLevel: DEBUG
 
 redis:
+  cluster:
+    slaveCount: 1
   enabled: true
   metrics:
     resources:
       limits:
-        cpu: 50m
+        cpu: 100m
         memory: 50Mi
       requests:
-        cpu: 20m
+        cpu: 50m
         memory: 25Mi
     serviceMonitor:
       enabled: true
   podDisruptionBudget:
     enabled: true
+  securityContext:
+    runAsGroup: 1001
+    runAsUser: 1001
   sentinel:
     enabled: true
     masterSet: mirror
     resources:
       limits:
-        cpu: 50m
+        cpu: 100m
         memory: 50Mi
       requests:
-        cpu: 20m
+        cpu: 50m
         memory: 25Mi
   serviceAccount:
     create: true

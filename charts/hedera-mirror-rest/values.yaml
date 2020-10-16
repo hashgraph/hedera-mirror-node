@@ -17,8 +17,7 @@ config:
         db: {}
         metrics:
           config:
-            authentication:
-              enabled: false
+            authentication: false
 
 fullnameOverride: ""
 
