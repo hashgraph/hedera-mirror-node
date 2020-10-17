@@ -20,6 +20,7 @@
 
 'use strict';
 
+const _ = require('lodash');
 const math = require('mathjs');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -47,7 +48,7 @@ const opsMap = {
  */
 const isNumeric = (n) => {
   return !isNaN(parseFloat(n)) && isFinite(n);
-}
+};
 
 const isValidTimestampParam = (timestamp) => {
   // Accepted forms: seconds or seconds.upto 9 digits
@@ -91,6 +92,10 @@ const isValidEncoding = (query) => {
   }
   query = query.toLowerCase();
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
+};
+
+const isValidTransactionType = (transactionType) => {
+  return _.isString(transactionType) && constants.transactionTypes[transactionType.toUpperCase()] !== undefined;
 };
 
 /**
@@ -180,9 +185,13 @@ const filterValidityChecks = (param, op, val) => {
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
-    case constants.filterKeys.TYPE:
+    case constants.filterKeys.CREDIT_TYPE:
       // Acceptable words: credit or debit
       ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
+      break;
+    case constants.filterKeys.TRANSACTION_TYPE:
+      // Accepted forms: valid transaction type string
+      ret = isValidTransactionType(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -343,7 +352,7 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
  * Parse the type=[credit | debit | creditDebit] parameter
  */
 const parseCreditDebitParams = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.TYPE], (op, value) => {
+  return parseParams(parsedQueryParams[constants.filterKeys.CREDIT_TYPE], (op, value) => {
     if (value === 'credit') {
       return [`${columnName} > 0`, []];
     } else if (value === 'debit') {
@@ -724,6 +733,20 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
+const getTransactionTypeQuery = (parsedQueryParams, columnName) => {
+  if (parsedQueryParams === null || parsedQueryParams.length === 0) {
+    return '';
+  }
+
+  const transactionType = parsedQueryParams[constants.filterKeys.TRANSACTION_TYPE];
+
+  if (isValidTransactionType(transactionType)) {
+    return `${columnName}${opsMap.eq}${constants.transactionTypes[transactionType.toUpperCase()]}`;
+  }
+
+  return '';
+};
+
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
@@ -740,10 +763,12 @@ module.exports = {
   formatComparator,
   getNullableNumber,
   getPaginationLink,
+  getTransactionTypeQuery,
   isValidEntityNum,
   isValidLimitNum,
   isValidNum,
   isValidTimestampParam,
+  isValidTransactionType,
   parseCreditDebitParams,
   parseLimitAndOrderParams,
   parseBalanceQueryParam,

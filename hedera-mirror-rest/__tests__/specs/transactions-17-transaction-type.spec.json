@@ -1,0 +1,103 @@
+{
+  "description": "Transaction api calls for a specific transaction type",
+  "setup": {
+    "entities": [
+      {
+        "entity_num": 3
+      },
+      {
+        "entity_num": 9
+      },
+      {
+        "entity_num": 10
+      },
+      {
+        "entity_num": 98
+      },
+      {
+        "entity_num": 90000,
+        "entity_type": 5
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [
+      {
+        "consensus_timestamp": "1234567890000000001",
+        "payerAccountId": "0.0.10",
+        "recipientAccountId": "0.0.9",
+        "amount": 10,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ],
+    "tokentransfers": [
+      {
+        "consensus_timestamp": "1565779555711927002",
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98",
+        "token_transfer_list": [
+          {
+            "token_id": "0.0.90000",
+            "account": "0.0.9",
+            "amount": -1200
+          },
+          {
+            "token_id": "0.0.90000",
+            "account": "0.0.10",
+            "amount": 1200
+          }
+        ]
+      }
+    ]
+  },
+  "url": "/api/v1/transactions?transactiontype=tokentransfers",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [
+      {
+        "consensus_timestamp": "1565779555.711927002",
+        "valid_start_timestamp": "1565779555.711927001",
+        "charged_tx_fee": 7,
+        "memo_base64": null,
+        "result": "SUCCESS",
+        "transaction_hash": "aGFzaA==",
+        "name": "TOKENTRANSFERS",
+        "node": "0.0.3",
+        "transaction_id": "0.0.9-1565779555-711927001",
+        "valid_duration_seconds": "11",
+        "max_fee": "33",
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 2
+          },
+          {
+            "account": "0.0.9",
+            "amount": -3
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "token_transfers": [
+          {
+            "account": "0.0.10",
+            "amount": 1200,
+            "token_id": "0.0.90000"
+          },
+          {
+            "account": "0.0.9",
+            "amount": -1200,
+            "token_id": "0.0.90000"
+          }
+        ]
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}
