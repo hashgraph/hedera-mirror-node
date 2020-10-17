@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.jmeter.handler;
  */
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -154,5 +155,28 @@ public class SDKClientHandler {
 
         log.debug("{} out of {} transactions returned a Success status", counter.get(), transactionIds.size());
         return counter.get();
+    }
+
+    public List<TransactionId> getValidTransactions(List<TransactionId> transactionIds) {
+        log.debug("Verify Transactions {}", transactionIds.size());
+//        AtomicInteger counter = new AtomicInteger(0);
+        List<TransactionId> validTransactions = new ArrayList<>();
+        transactionIds.forEach(x -> {
+            TransactionReceipt receipt = null;
+            try {
+                receipt = x.getReceipt(client);
+            } catch (HederaStatusException e) {
+                log.debug("Error pulling {} receipt {}", x, e.getMessage());
+            }
+            if (receipt.status == Status.Success) {
+                validTransactions.add(x);
+            } else {
+                log.warn("Transaction {} had an unexpected status of {}", x, receipt.status);
+            }
+        });
+
+        log.debug("{} out of {} transactions returned a Success status", validTransactions.size(), transactionIds
+                .size());
+        return validTransactions;
     }
 }

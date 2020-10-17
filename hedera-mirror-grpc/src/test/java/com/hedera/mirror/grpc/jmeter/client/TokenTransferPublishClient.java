@@ -1,12 +1,13 @@
 package com.hedera.mirror.grpc.jmeter.client;
 
 import com.google.common.base.Stopwatch;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
@@ -14,6 +15,7 @@ import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
+import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
@@ -71,6 +73,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
     @Override
     public SampleResult runTest(JavaSamplerContext javaSamplerContext) {
         boolean success = false;
+        List<TransactionId> transactions = Collections.synchronizedList(new ArrayList<>());
         SampleResult result = new SampleResult();
         result.sampleStart();
 
@@ -92,7 +95,6 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
 
         try {
             log.info("Schedule client tasks every publishInterval: {} ms", publishInterval);
-            AtomicInteger counter = new AtomicInteger(0);
             Stopwatch totalStopwatch = Stopwatch.createStarted();
             clientList.forEach(x -> {
                 executor.scheduleAtFixedRate(
@@ -100,7 +102,9 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
                             TokenTransfersPublishSampler topicMessagesPublishSampler =
                                     new TokenTransfersPublishSampler(tokenTransferPublishRequest, x,
                                             verifyTransactions);
-                            counter.addAndGet(topicMessagesPublishSampler
+                            topicMessagesPublishSampler
+                                    .submitTokenTransferTransactions();
+                            transactions.addAll(topicMessagesPublishSampler
                                     .submitTokenTransferTransactions());
                         },
                         0,
@@ -110,14 +114,14 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
 
             // log progress every minute
             loggerScheduler.scheduleAtFixedRate(() -> {
-                printStatus(counter.get(), totalStopwatch);
+                printStatus(transactions.size(), totalStopwatch);
             }, 0, printStatusInterval, TimeUnit.MINUTES);
 
             log.info("Executor await termination publishTimeout: {} secs", publishTimeout);
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);
-            printStatus(counter.get(), totalStopwatch);
+            printStatus(transactions.size(), totalStopwatch);
             success = true;
-            result.setResponseMessage(String.valueOf(counter.get()));
+            result.setResponseMessage(String.valueOf(transactions.size()));
             result.setResponseCodeOK();
         } catch (Exception e) {
             log.error("Error publishing HTS messages", e);
@@ -125,7 +129,8 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
             result.setResponseCode("500");
         } finally {
             result.sampleEnd();
-            result.setResponseData(tokenTransferPublishRequest.toString().getBytes());
+//            result.setResponseData(transactions.toString().getBytes());
+            javaSamplerContext.getJMeterVariables().putObject("", transactions);
             result.setSuccessful(success);
 
             if (!executor.isShutdown()) {

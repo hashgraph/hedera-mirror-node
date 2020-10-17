@@ -30,7 +30,7 @@ public class TokenTransfersPublishSampler {
     private Stopwatch publishStopwatch;
 
     @SneakyThrows
-    public int submitTokenTransferTransactions() {
+    public List<TransactionId> submitTokenTransferTransactions() {
         TransactionSubmissionResult result = new TransactionSubmissionResult();
         Stopwatch totalStopwatch = Stopwatch.createStarted();
         AtomicInteger networkFailures = new AtomicInteger();
@@ -72,15 +72,16 @@ public class TokenTransfersPublishSampler {
                 StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
         printPublishStats();
 
-        int transactionCount = result.getCounter().get();
         result.onComplete();
 
         // verify transactions
         if (verifyTransactions) {
-            transactionCount = sdkClient.getValidTransactionsCount(result.getTransactionIdList());
+            return sdkClient.getValidTransactions(result.getTransactionIdList());
+//            result.getTransactionIdList().clear();
+//            result.getTransactionIdList().addAll(verifiedTransactions);
         }
 
-        return transactionCount;
+        return result.getTransactionIdList();
     }
 
     private void printPublishStats() {
