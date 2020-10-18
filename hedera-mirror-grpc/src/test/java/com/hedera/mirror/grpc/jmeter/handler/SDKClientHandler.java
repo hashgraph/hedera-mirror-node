@@ -22,7 +22,6 @@ package com.hedera.mirror.grpc.jmeter.handler;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -124,8 +123,8 @@ public class SDKClientHandler {
         return transactionId;
     }
 
-    public List<TransactionId> submitTokenTransfer(TokenId tokenId, AccountId operatorId, AccountId recipientId,
-                                                   long amount) throws HederaStatusException {
+    public TransactionId submitTokenTransfer(TokenId tokenId, AccountId operatorId, AccountId recipientId,
+                                             long amount) throws HederaStatusException {
         TransactionId transactionId = new TokenTransferTransaction()
                 .addSender(tokenId, operatorId, amount)
                 .addRecipient(tokenId, recipientId, amount)
@@ -133,7 +132,7 @@ public class SDKClientHandler {
                 .setTransactionMemo("Token Transfer_" + Instant.now())
                 .execute(client);
 
-        return Arrays.asList(transactionId);
+        return transactionId;
     }
 
     public int getValidTransactionsCount(List<TransactionId> transactionIds) {

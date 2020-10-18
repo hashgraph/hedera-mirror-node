@@ -2,6 +2,8 @@ package com.hedera.mirror.grpc.jmeter.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -10,12 +12,15 @@ import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
-import com.hedera.mirror.grpc.jmeter.sampler.HTSRESTSampler;
+import com.hedera.mirror.grpc.jmeter.props.hts.RESTEntityRequest;
+import com.hedera.mirror.grpc.jmeter.sampler.hts.HTSRESTSampler;
 
 @Log4j2
 public class HTSRESTClient extends AbstractJavaSamplerClient {
     private PropertiesHandler propHandler;
     private HTSRESTSampler htsrestSampler;
+    private List<String> formattedTransactionIds;
+    private int expectedTransactionCount;
 
     @Override
     public void setupTest(JavaSamplerContext javaSamplerContext) {
@@ -23,11 +28,12 @@ public class HTSRESTClient extends AbstractJavaSamplerClient {
 
         // read in nodes list, topic id, number of messages, message size
         String restBaseUrl = propHandler.getTestParam("restBaseUrl", "localhost:5551");
+        expectedTransactionCount = propHandler.getIntClientTestParam("expectedTransactionCount", 0, "0");
 
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
         List<TransactionId> transactionIds = (List<TransactionId>) javaSamplerContext.getJMeterVariables()
                 .getObject("");
-        List<String> formattedTransactionIds = new ArrayList<>();
+        formattedTransactionIds = new ArrayList<>();
         for (TransactionId transactionId : transactionIds) {
             //TODO There has to be a better way to do this
             String transactionIdString = transactionId.toString();
@@ -38,7 +44,7 @@ public class HTSRESTClient extends AbstractJavaSamplerClient {
             );
         }
 
-        htsrestSampler = new HTSRESTSampler(restBaseUrl, formattedTransactionIds);
+        htsrestSampler = new HTSRESTSampler(restBaseUrl);
     }
 
     @Override
@@ -50,7 +56,18 @@ public class HTSRESTClient extends AbstractJavaSamplerClient {
 
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
-        htsrestSampler.retrieveTokenTransactions();
-        return null;
+        SampleResult result = new SampleResult();
+        ScheduledExecutorService executor = Executors
+                .newSingleThreadScheduledExecutor();
+
+        RESTEntityRequest restEntityRequest = RESTEntityRequest.builder()
+                .ids(formattedTransactionIds)
+                .retryInterval(5)
+                .retryLimit(5)
+                .build();
+        int transactionsCount = htsrestSampler.retrieveTransaction(formattedTransactionIds);
+        result.sampleEnd();
+        result.setSuccessful(transactionsCount >= expectedTransactionCount);
+        return result;
     }
 }

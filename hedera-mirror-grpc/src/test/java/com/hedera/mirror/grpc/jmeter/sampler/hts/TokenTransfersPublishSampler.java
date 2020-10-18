@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.jmeter.sampler;
+package com.hedera.mirror.grpc.jmeter.sampler.hts;
 
 import com.google.common.base.Stopwatch;
 import java.util.HashMap;
@@ -17,7 +17,8 @@ import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.TokenTransferPublishRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishRequest;
+import com.hedera.mirror.grpc.jmeter.sampler.result.HTSSamplerResult;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
@@ -32,9 +33,11 @@ public class TokenTransfersPublishSampler {
     @SneakyThrows
     public List<TransactionId> submitTokenTransferTransactions() {
         TransactionSubmissionResult result = new TransactionSubmissionResult();
+        HTSSamplerResult restResult = new HTSSamplerResult();
         Stopwatch totalStopwatch = Stopwatch.createStarted();
         AtomicInteger networkFailures = new AtomicInteger();
         AtomicInteger unknownFailures = new AtomicInteger();
+        AtomicInteger fetchFailures = new AtomicInteger();
         Map<Status, Integer> hederaResponseCodeEx = new HashMap<>();
 
         // publish MessagesPerBatchCount number of messages to the noted topic id
@@ -45,21 +48,21 @@ public class TokenTransfersPublishSampler {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
-                List<TransactionId> transactionIdList = sdkClient.submitTokenTransfer(
+                TransactionId transactionId = sdkClient.submitTokenTransfer(
                         tokenTransferPublishRequest.getTokenId(),
                         tokenTransferPublishRequest.getOperatorId(),
                         tokenTransferPublishRequest.getRecipientId(),
                         tokenTransferPublishRequest.getTokenAmount());
                 publishTokenTransferLatencyStats.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
-                transactionIdList.forEach((transactionId -> result.onNext(transactionId)));
+                result.onNext(transactionId);
             } catch (HederaPrecheckStatusException preEx) {
                 hederaResponseCodeEx.compute(preEx.status, (key, val) -> (val == null) ? 1 : val + 1);
             } catch (HederaNetworkException preEx) {
                 networkFailures.incrementAndGet();
             } catch (Exception ex) {
                 unknownFailures.incrementAndGet();
-                log.error("Unexpected exception publishing message {} to {}: {}", i,
-                        sdkClient.getNodeInfo().getNodeId(), ex);
+//                log.error("Unexpected exception publishing message {} to {}: {}", i,
+//                        sdkClient.getNodeInfo().getNodeId(), ex);
             }
         }
 
@@ -68,17 +71,14 @@ public class TokenTransfersPublishSampler {
                         .getMessagesPerBatchCount(), tokenTransferPublishRequest.getTokenId(),
                 tokenTransferPublishRequest
                         .getOperatorId(), tokenTransferPublishRequest.getRecipientId(), totalStopwatch,
-                tokenTransferPublishRequest.getTokenId(), sdkClient.getNodeInfo().getNodeId(),
+                sdkClient.getNodeInfo().getNodeId(),
                 StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
         printPublishStats();
-
         result.onComplete();
 
         // verify transactions
         if (verifyTransactions) {
             return sdkClient.getValidTransactions(result.getTransactionIdList());
-//            result.getTransactionIdList().clear();
-//            result.getTransactionIdList().addAll(verifiedTransactions);
         }
 
         return result.getTransactionIdList();
