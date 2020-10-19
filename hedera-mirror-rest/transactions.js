@@ -27,15 +27,6 @@ const TransactionId = require('./transactionId');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 
-const sqlQueryColumns = {
-  TYPE: 'type',
-};
-
-// query to column maps
-const filterColumnMap = {
-  [constants.filterKeys.TRANSACTION_TYPE]: sqlQueryColumns.TYPE,
-};
-
 /**
  * Gets the select clause with token transfers sorted by token_id and account_id in the specified order
  *
@@ -212,7 +203,7 @@ const reqToSql = function (req) {
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams, sqlQueryColumns.TYPE);
+  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(params);
 
