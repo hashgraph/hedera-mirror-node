@@ -98,6 +98,10 @@ const isValidTransactionType = (transactionType) => {
   return _.isString(transactionType) && constants.transactionTypes[transactionType.toUpperCase()] !== undefined;
 };
 
+const isValidFilterKey = (filterKey) => {
+  return _.isString(filterKey) && constants.filterKeys[filterKey.toUpperCase()] !== undefined;
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -733,15 +737,17 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
-const getTransactionTypeQuery = (parsedQueryParams, columnName) => {
-  if (parsedQueryParams === null || parsedQueryParams.length === 0) {
+const getTransactionTypeQuery = (parsedQueryParams) => {
+  if (_.isNil(parsedQueryParams)) {
     return '';
   }
 
   const transactionType = parsedQueryParams[constants.filterKeys.TRANSACTION_TYPE];
 
   if (isValidTransactionType(transactionType)) {
-    return `${columnName}${opsMap.eq}${constants.transactionTypes[transactionType.toUpperCase()]}`;
+    return `${constants.transactionColumns.TYPE}${opsMap.eq}${
+      constants.transactionTypes[transactionType.toUpperCase()]
+    }`;
   }
 
   return '';

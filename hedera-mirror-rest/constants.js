@@ -20,6 +20,7 @@
 
 'use strict';
 
+// url query filer keys
 const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
@@ -37,11 +38,16 @@ const filterKeys = {
   TRANSACTION_TYPE: 'transactiontype',
 };
 
+// sql table columns
 const entityColumns = {
   ENTITY_NUM: 'entity_num',
   ENTITY_REALM: 'entity_realm',
   ENTITY_SHARD: 'entity_shard',
   PUBLIC_KEY: 'ed25519_public_key_hex',
+};
+
+const transactionColumns = {
+  TYPE: 'type',
 };
 
 const responseDataLabel = 'mirrorRestData';
@@ -146,6 +152,7 @@ module.exports = {
   orderFilterValues,
   recordStreamPrefix,
   responseDataLabel,
+  transactionColumns,
   transactionResultFilter,
   transactionTypes,
 };

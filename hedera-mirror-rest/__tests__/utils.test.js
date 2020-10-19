@@ -309,6 +309,9 @@ describe('Utils getTransactionTypeQuery tests', () => {
   test('Verify null query params', () => {
     expect(utils.getTransactionTypeQuery(null)).toBe('');
   });
+  test('Verify undefined query params', () => {
+    expect(utils.getTransactionTypeQuery(undefined)).toBe('');
+  });
   test('Verify empty query params', () => {
     expect(utils.getTransactionTypeQuery({})).toBe('');
   });
