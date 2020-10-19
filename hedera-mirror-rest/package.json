@@ -71,7 +71,7 @@
     "jest-junit": "^11.1.0",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.3",
-    "nodemon": "^2.0.4",
+    "nodemon": "^2.0.5",
     "prettier": "^2.1.2",
     "pg-format": "^1.0.4",
     "pretty-quick": "^3.0.2",
