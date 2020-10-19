@@ -74,7 +74,7 @@
     "nodemon": "^2.0.5",
     "prettier": "^2.1.2",
     "pg-format": "^1.0.4",
-    "pretty-quick": "^3.0.2",
+    "pretty-quick": "^3.1.0",
     "rewire": "^5.0.0",
     "sinon": "^9.2.0",
     "supertest": "^5.0.0",
