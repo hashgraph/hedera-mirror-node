@@ -36,19 +36,9 @@
               </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.TokenTransferPublishClient</stringProp>
+          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.hts.TokenTransferPublishClient</stringProp>
         </JavaSampler>
-        <hashTree>
-          <RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="Token Ids Exctractor" enabled="true">
-            <stringProp name="RegexExtractor.useHeaders">false</stringProp>
-            <stringProp name="RegexExtractor.refname">data</stringProp>
-            <stringProp name="RegexExtractor.regex">(.*)</stringProp>
-            <stringProp name="RegexExtractor.template">$1$</stringProp>
-            <stringProp name="RegexExtractor.default"></stringProp>
-            <stringProp name="RegexExtractor.match_number">1</stringProp>
-          </RegexExtractor>
-          <hashTree/>
-        </hashTree>
+        <hashTree/>
         <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Java Request" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
             <collectionProp name="Arguments.arguments">
@@ -59,7 +49,7 @@
               </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.HTSRESTClient</stringProp>
+          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.hts.TokenTransferRESTBatchClient</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>

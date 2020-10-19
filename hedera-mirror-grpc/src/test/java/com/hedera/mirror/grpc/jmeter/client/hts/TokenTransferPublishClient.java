@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.jmeter.client;
+package com.hedera.mirror.grpc.jmeter.client.hts;
 
 import com.google.common.base.Stopwatch;
 import java.util.ArrayList;
@@ -21,12 +21,13 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransfersPublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
 public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
+    public static final String TRANSACTION_IDS_PROPERTY = "transactionIds";
     private PropertiesHandler propHandler;
     private List<SDKClientHandler> clientList;
     private TokenId tokenId;
@@ -34,7 +35,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
     private AccountId operatorId;
     private Ed25519PrivateKey operatorPrivateKey;
     private AccountId recipientId;
-    private long tokenAmount;
+    private long transferAmount;
     private long publishTimeout;
     private long publishInterval;
     private boolean verifyTransactions;
@@ -54,7 +55,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
         operatorId = AccountId.fromString(propHandler.getTestParam("operatorId", "0"));
         operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getTestParam("operatorKey", "0"));
         recipientId = AccountId.fromString(propHandler.getTestParam("recipientId", "1"));
-        tokenAmount = propHandler.getLongTestParam("tokenAmount", 1L);
+        transferAmount = propHandler.getLongTestParam("transferAmount", 1L);
 
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
         String[] nodeList = propHandler.getTestParam("networkNodes", "localhost:0.0.3:50211").split(",");
@@ -78,12 +79,12 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
         result.sampleStart();
 
         // kick off batched message publish
-        TokenTransferPublishRequest tokenTransferPublishRequest = TokenTransferPublishRequest.builder()
+        TokenTransferRequest tokenTransferRequest = TokenTransferRequest.builder()
                 .messagesPerBatchCount(messagesPerBatchCount)
                 .operatorId(operatorId)
                 .recipientId(recipientId)
                 .tokenId(tokenId)
-                .tokenAmount(tokenAmount)
+                .transferAmount(transferAmount)
                 .build();
 
         // publish message executor service
@@ -100,7 +101,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
                 executor.scheduleAtFixedRate(
                         () -> {
                             TokenTransfersPublishSampler topicMessagesPublishSampler =
-                                    new TokenTransfersPublishSampler(tokenTransferPublishRequest, x,
+                                    new TokenTransfersPublishSampler(tokenTransferRequest, x,
                                             verifyTransactions);
                             transactions.addAll(topicMessagesPublishSampler
                                     .submitTokenTransferTransactions());
@@ -127,7 +128,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
             result.setResponseCode("500");
         } finally {
             result.sampleEnd();
-            javaSamplerContext.getJMeterVariables().putObject("", transactions);
+            javaSamplerContext.getJMeterVariables().putObject(TRANSACTION_IDS_PROPERTY, transactions);
             result.setSuccessful(success);
 
             if (!executor.isShutdown()) {

@@ -8,46 +8,45 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferGetRequest;
+
 @Log4j2
-public class HTSRESTSampler {
+public class TokenTransferRESTBatchSampler {
+    private final TokenTransferGetRequest tokenTransferGetRequest;
     private final WebClient webClient;
     private Stopwatch stopwatch;
+    private static final String REST_PATH = "/api/v1/transactions/";
 
-    public HTSRESTSampler(String restBaseUrl) {
-        webClient = WebClient.create(restBaseUrl);
+    public TokenTransferRESTBatchSampler(TokenTransferGetRequest tokenTransferGetRequest) {
+        this.tokenTransferGetRequest = tokenTransferGetRequest;
+        webClient = WebClient.create(tokenTransferGetRequest.getRestBaseUrl());
     }
 
-    public int retrieveTransaction(List<String> formattedTransactionIds) {
+    public int retrieveTransaction() {
         stopwatch = Stopwatch.createStarted();
-        List<String> transactions = Flux.fromIterable(formattedTransactionIds)
-//                .parallel()
-//                .runOn(Schedulers.parallel())
-                //TODO the first GET is much longer because it's doing the time since subscription, I have this to
-                // reset the timer, probably a better way.
-                .elapsed()
-                .flatMap(transactionId -> getTransaction(transactionId.getT2()).onErrorResume(ex -> {
-                    log.info("Failed to retrieve transaction {}", transactionId);
+        List<String> transactions = Flux.fromIterable(tokenTransferGetRequest.getTransactionIds())
+                //TODO this may be overkill.
+                .parallel()
+                .runOn(Schedulers.parallel())
+                .flatMap(transactionId -> getTransaction(transactionId).onErrorResume(ex -> {
+                    log.info("Failed to retrieve transaction {}: {}", transactionId, ex);
                     return Mono.empty();
                 }))
-//                .elapsed()
-//                .doOnNext(tuple -> log.info("It took me {} ms to retrieve {}", tuple.getT1(), tuple.getT2()))
-////                .elap
-//                .doOnNext(tuple -> {
-//                    publishTokenTransferLatencyStats.addValue(tuple.getT1());
-//                })
+                .sequential()
                 .collectList()
                 .block();
 
-        log.info("Total time for REST validation: {}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
-//        printPublishStats();
+        log.info("Retrieved {} transactions in {} ms", transactions.size(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return transactions.size();
     }
 
     private Mono<String> getTransaction(String transactionId) {
-        return webClient.get().uri("/api/v1/transactions/" + transactionId).retrieve()
+        return webClient.get().uri(REST_PATH + transactionId).retrieve()
                 .bodyToMono(String.class)
-                .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(1)));
+                .retryWhen(Retry.fixedDelay(tokenTransferGetRequest.getRestRetryMax(), Duration
+                        .ofMillis(tokenTransferGetRequest.getRestRetryBackoffMs())));
     }
 }

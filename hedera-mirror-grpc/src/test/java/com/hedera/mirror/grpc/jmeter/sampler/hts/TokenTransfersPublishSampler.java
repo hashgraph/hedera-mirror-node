@@ -17,14 +17,13 @@ import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishRequest;
-import com.hedera.mirror.grpc.jmeter.sampler.result.HTSSamplerResult;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
 @RequiredArgsConstructor
 public class TokenTransfersPublishSampler {
-    private final TokenTransferPublishRequest tokenTransferPublishRequest;
+    private final TokenTransferRequest tokenTransferRequest;
     private final SDKClientHandler sdkClient;
     private final boolean verifyTransactions;
     private final DescriptiveStatistics publishTokenTransferLatencyStats = new DescriptiveStatistics();
@@ -33,26 +32,23 @@ public class TokenTransfersPublishSampler {
     @SneakyThrows
     public List<TransactionId> submitTokenTransferTransactions() {
         TransactionSubmissionResult result = new TransactionSubmissionResult();
-        HTSSamplerResult restResult = new HTSSamplerResult();
         Stopwatch totalStopwatch = Stopwatch.createStarted();
         AtomicInteger networkFailures = new AtomicInteger();
         AtomicInteger unknownFailures = new AtomicInteger();
-        AtomicInteger fetchFailures = new AtomicInteger();
         Map<Status, Integer> hederaResponseCodeEx = new HashMap<>();
 
         // publish MessagesPerBatchCount number of messages to the noted topic id
         log.trace("Submit transaction to {}, tokenTransferPublisher: {}", sdkClient
-                .getNodeInfo(), tokenTransferPublishRequest);
+                .getNodeInfo(), tokenTransferRequest);
 
-        for (int i = 0; i < tokenTransferPublishRequest.getMessagesPerBatchCount(); i++) {
+        for (int i = 0; i < tokenTransferRequest.getMessagesPerBatchCount(); i++) {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
-                TransactionId transactionId = sdkClient.submitTokenTransfer(
-                        tokenTransferPublishRequest.getTokenId(),
-                        tokenTransferPublishRequest.getOperatorId(),
-                        tokenTransferPublishRequest.getRecipientId(),
-                        tokenTransferPublishRequest.getTokenAmount());
+                TransactionId transactionId = sdkClient
+                        .submitTokenTransfer(tokenTransferRequest.getTokenId(), tokenTransferRequest
+                                .getOperatorId(), tokenTransferRequest
+                                .getRecipientId(), tokenTransferRequest.getTransferAmount());
                 publishTokenTransferLatencyStats.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
                 result.onNext(transactionId);
             } catch (HederaPrecheckStatusException preEx) {
@@ -61,16 +57,16 @@ public class TokenTransfersPublishSampler {
                 networkFailures.incrementAndGet();
             } catch (Exception ex) {
                 unknownFailures.incrementAndGet();
-//                log.error("Unexpected exception publishing message {} to {}: {}", i,
-//                        sdkClient.getNodeInfo().getNodeId(), ex);
+                log.error("Unexpected exception publishing message {} to {}: {}", i,
+                        sdkClient.getNodeInfo().getNodeId(), ex);
             }
         }
 
         log.info("Submitted {} token transfers for token {} from {} to {} in {} on node {}. {} preCheckErrors, {} " +
-                        "networkErrors, {} unknown errors", tokenTransferPublishRequest
-                        .getMessagesPerBatchCount(), tokenTransferPublishRequest.getTokenId(),
-                tokenTransferPublishRequest
-                        .getOperatorId(), tokenTransferPublishRequest.getRecipientId(), totalStopwatch,
+                        "networkErrors, {} unknown errors", tokenTransferRequest
+                        .getMessagesPerBatchCount(), tokenTransferRequest.getTokenId(),
+                tokenTransferRequest
+                        .getOperatorId(), tokenTransferRequest.getRecipientId(), totalStopwatch,
                 sdkClient.getNodeInfo().getNodeId(),
                 StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
         printPublishStats();
