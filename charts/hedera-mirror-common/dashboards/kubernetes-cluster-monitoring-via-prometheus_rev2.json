@@ -16,8 +16,8 @@
   "editable": true,
   "gnetId": 3119,
   "graphTooltip": 0,
-  "id": 28,
-  "iteration": 1586272639061,
+  "id": 20,
+  "iteration": 1602616214182,
   "links": [],
   "panels": [
     {
@@ -47,6 +47,12 @@
       "datasource": "$datasource",
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "percent",
       "gauge": {
         "maxValue": 100,
@@ -79,7 +85,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -134,6 +139,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "percent",
       "gauge": {
         "maxValue": 100,
@@ -166,7 +177,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -222,6 +232,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "percent",
       "gauge": {
         "maxValue": 100,
@@ -254,7 +270,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -311,6 +326,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "bytes",
       "gauge": {
         "maxValue": 100,
@@ -343,7 +364,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": "",
       "postfixFontSize": "20%",
       "prefix": "",
@@ -398,6 +418,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "bytes",
       "gauge": {
         "maxValue": 100,
@@ -430,7 +456,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -485,6 +510,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -517,7 +548,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": " cores",
       "postfixFontSize": "30%",
       "prefix": "",
@@ -573,6 +603,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -605,7 +641,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": " cores",
       "postfixFontSize": "30%",
       "prefix": "",
@@ -660,6 +695,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "bytes",
       "gauge": {
         "maxValue": 100,
@@ -692,7 +733,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -748,6 +788,12 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "format": "bytes",
       "gauge": {
         "maxValue": 100,
@@ -780,7 +826,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -832,21 +877,6 @@
         "x": 0,
         "y": 9
       },
-      "id": 33,
-      "panels": [],
-      "repeat": null,
-      "title": "Network I/O pressure",
-      "type": "row"
-    },
-    {
-      "collapsed": false,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 10
-      },
       "id": 35,
       "panels": [],
       "repeat": null,
@@ -862,6 +892,13 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 5,
       "grid": {},
@@ -869,7 +906,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 10
       },
       "height": "",
       "hiddenSeries": false,
@@ -892,9 +929,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -904,7 +942,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (pod)",
+          "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -966,6 +1004,13 @@
       "description": "",
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 5,
       "grid": {},
@@ -973,7 +1018,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 17
       },
       "height": "",
       "hiddenSeries": false,
@@ -988,7 +1033,7 @@
         "rightSide": true,
         "show": true,
         "sideWidth": null,
-        "sort": "current",
+        "sort": "avg",
         "sortDesc": true,
         "total": false,
         "values": true
@@ -998,9 +1043,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1065,9 +1111,17 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "$datasource",
-      "decimals": 2,
+      "decimals": 0,
+      "description": "",
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 5,
       "grid": {},
@@ -1075,7 +1129,117 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 24
+      },
+      "height": "",
+      "hiddenSeries": false,
+      "id": 46,
+      "interval": "",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": null,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.0",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_cfs_throttled_seconds_total{kubernetes_io_hostname=~\"^$Node$\", container!=\"\"}[$interval])) by (container, pod)",
+          "interval": "10s",
+          "legendFormat": "{{ pod }}/{{container}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Container CPU Utilization",
+      "tooltip": {
+        "msResolution": true,
+        "shared": true,
+        "sort": 2,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 1,
+          "format": "percentunit",
+          "label": "Utilization",
+          "logBase": 1,
+          "max": "1",
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "$datasource",
+      "decimals": 2,
+      "editable": true,
+      "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 5,
+      "grid": {},
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 31
       },
       "height": "",
       "hiddenSeries": false,
@@ -1091,7 +1255,7 @@
         "rightSide": true,
         "show": true,
         "sideWidth": null,
-        "sort": "current",
+        "sort": "avg",
         "sortDesc": true,
         "total": false,
         "values": true
@@ -1101,9 +1265,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1113,7 +1278,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (container, pod)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{image!=\"\",container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (container, pod)",
           "format": "time_series",
           "hide": false,
           "interval": "10s",
@@ -1173,7 +1338,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 38
       },
       "id": 39,
       "panels": [],
@@ -1190,6 +1355,13 @@
       "decimals": 0,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "grid": {},
@@ -1197,7 +1369,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 25,
@@ -1220,9 +1392,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1232,7 +1405,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (container_memory_working_set_bytes{image!=\"\",name=~\"^k8s_.*\",kubernetes_io_hostname=~\"^$Node$\"}) by (pod)",
+          "expr": "sum (container_memory_working_set_bytes{image!=\"\",kubernetes_io_hostname=~\"^$Node$\"}) by (pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1294,6 +1467,13 @@
       "description": "",
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 5,
       "grid": {},
@@ -1301,7 +1481,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 46
       },
       "height": "",
       "hiddenSeries": false,
@@ -1316,7 +1496,7 @@
         "rightSide": true,
         "show": true,
         "sideWidth": null,
-        "sort": "current",
+        "sort": "avg",
         "sortDesc": true,
         "total": false,
         "values": true
@@ -1326,9 +1506,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1396,6 +1577,13 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "grid": {},
@@ -1403,7 +1591,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 53
       },
       "hiddenSeries": false,
       "id": 27,
@@ -1426,9 +1614,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1438,7 +1627,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (container_memory_working_set_bytes{image!=\"\",name=~\"^k8s_.*\",container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\"}) by (container, pod)",
+          "expr": "sum (container_memory_working_set_bytes{image!=\"\",container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\"}) by (container, pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1497,7 +1686,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 60
       },
       "id": 43,
       "panels": [],
@@ -1514,6 +1703,13 @@
       "decimals": 2,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "grid": {},
@@ -1521,7 +1717,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 61
       },
       "height": "200px",
       "hiddenSeries": false,
@@ -1545,9 +1741,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1628,6 +1825,13 @@
       "decimals": 0,
       "editable": true,
       "error": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "grid": {},
@@ -1635,7 +1839,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 67
       },
       "hiddenSeries": false,
       "id": 16,
@@ -1658,9 +1862,10 @@
       "links": [],
       "nullPointMode": "connected",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "7.2.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1670,7 +1875,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (rate (container_network_receive_bytes_total{image!=\"\",name=~\"^k8s_.*\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (pod)",
+          "expr": "sum (rate (container_network_receive_bytes_total{image!=\"\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1680,7 +1885,7 @@
           "step": 10
         },
         {
-          "expr": "- sum (rate (container_network_transmit_bytes_total{image!=\"\",name=~\"^k8s_.*\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (pod)",
+          "expr": "- sum (rate (container_network_transmit_bytes_total{image!=\"\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) by (pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1734,7 +1939,7 @@
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 22,
+  "schemaVersion": 26,
   "style": "dark",
   "tags": [
     "kubernetes"
@@ -1817,6 +2022,7 @@
       },
       {
         "current": {
+          "selected": true,
           "text": "default",
           "value": "default"
         },
@@ -1827,6 +2033,7 @@
         "name": "datasource",
         "options": [],
         "query": "prometheus",
+        "queryValue": "",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1835,7 +2042,7 @@
       {
         "allValue": ".*",
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "All",
           "value": "$__all"
         },
@@ -1892,5 +2099,5 @@
   "timezone": "browser",
   "title": "Kubernetes / Pods / USE",
   "uid": "oAjYZcCZz",
-  "version": 5
+  "version": 1
 }

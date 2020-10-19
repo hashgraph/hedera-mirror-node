@@ -41,6 +41,8 @@ public class AcceptanceTestProperties {
     @NotBlank
     private String mirrorNodeAddress;
     @NotBlank
+    private String mirrorRestAddress;
+    @NotBlank
     private String operatorId;
     @NotBlank
     private String operatorKey;
@@ -55,5 +57,5 @@ public class AcceptanceTestProperties {
     private int subscribeRetries = 3;
 
     @NotNull
-    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(2000);
+    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(3000);
 }

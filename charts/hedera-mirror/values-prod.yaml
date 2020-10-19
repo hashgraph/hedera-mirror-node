@@ -19,10 +19,14 @@ postgresql:
       enabled: true
   pgpool:
     priorityClassName: critical
+    replicaCount: 2
   postgresql:
     priorityClassName: critical
+    replicaCount: 2
 
 redis:
+  cluster:
+    slaveCount: 3
   metrics:
     enabled: true
   slave:

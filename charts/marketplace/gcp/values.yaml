@@ -51,8 +51,6 @@ importer:
 postgresql:
   pgpool:
     replicaCount: 0
-  postgresql:
-    replicaCount: 1
 
 redis:
   enabled: false
