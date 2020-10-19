@@ -34,8 +34,6 @@ target/
 
 # Application specific
 hedera-mirror-importer/data/
-hedera-mirror-rosetta/rosetta
-code-cov-report.txt
 application*.yaml
 application*.yml
 /data/
