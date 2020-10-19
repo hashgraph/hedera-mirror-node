@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.jmeter.client;
+package com.hedera.mirror.grpc.jmeter.client.hts;
 
 import com.google.common.base.Stopwatch;
 import java.util.Arrays;
@@ -13,14 +13,13 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishAndRetrieveRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransfersPublishAndRetrieveSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
@@ -33,16 +32,13 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
     private AccountId operatorId;
     private Ed25519PrivateKey operatorPrivateKey;
     private AccountId recipientId;
-    private long tokenAmount;
+    private long transferAmount;
     private long publishTimeout;
     private long publishInterval;
-    private boolean verifyTransactions;
-    private long printStatusInterval;
     private long expectedTransactionCount;
     private String restBaseUrl;
     private int restMaxRetry;
     private int restRetryBackoffMs;
-    private WebClient webClient;
     private int statusPrintIntervalMinutes;
 
     @Override
@@ -54,15 +50,14 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
         messagesPerBatchCount = propHandler.getIntTestParam("messagesPerBatchCount", 0);
         publishInterval = propHandler.getIntTestParam("publishInterval", 20000);
         publishTimeout = propHandler.getIntTestParam("publishTimeout", 60);
-        verifyTransactions = Boolean.valueOf(propHandler.getTestParam("verifyTransactions", "true"));
-        printStatusInterval = propHandler.getLongTestParam("statusPrintIntervalMinutes", 1L);
         operatorId = AccountId.fromString(propHandler.getTestParam("operatorId", "0"));
         operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getTestParam("operatorKey", "0"));
         recipientId = AccountId.fromString(propHandler.getTestParam("recipientId", "1"));
-        tokenAmount = propHandler.getLongTestParam("tokenAmount", 1L);
+        transferAmount = propHandler.getLongTestParam("transferAmount", 1L);
         expectedTransactionCount = propHandler.getLongTestParam("expectedTransactionCount", 0L);
         restBaseUrl = propHandler.getTestParam("restBaseUrl", "localhost:5551");
-        restMaxRetry = propHandler.getIntTestParam("restMaxRetry", 20);
+        //TODO These two may be a little aggressive, they've worked so far but may need to pull down the default.
+        restMaxRetry = propHandler.getIntTestParam("restMaxRetry", 1000);
         restRetryBackoffMs = propHandler.getIntTestParam("restRetryBackoffMs", 50);
         statusPrintIntervalMinutes = (propHandler.getIntTestParam("statusPrintIntervalMinutes", 1));
 
@@ -88,12 +83,12 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
         result.sampleStart();
 
         // kick off batched message publish
-        TokenTransferPublishAndRetrieveRequest request = TokenTransferPublishAndRetrieveRequest.builder()
+        TokenTransferRequest request = TokenTransferRequest.builder()
                 .messagesPerBatchCount(messagesPerBatchCount)
                 .operatorId(operatorId)
                 .recipientId(recipientId)
                 .tokenId(tokenId)
-                .tokenAmount(tokenAmount)
+                .transferAmount(transferAmount)
                 .restBaseUrl(restBaseUrl)
                 .statusPrintIntervalMinutes(statusPrintIntervalMinutes)
                 .restRetryMax(restMaxRetry)
@@ -123,16 +118,14 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
                         TimeUnit.MILLISECONDS);
             });
 
-            // log progress every minute
-            loggerScheduler.scheduleAtFixedRate(() -> {
-                printStatus(transactionTotal.get(), totalStopwatch);
-            }, 0, printStatusInterval, TimeUnit.MINUTES);
-
             log.info("Executor await termination publishTimeout: {} secs", publishTimeout);
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);
             printStatus(transactionTotal.get(), totalStopwatch);
             if (transactionTotal.get() >= expectedTransactionCount) {
+                log.info("Successfully retrieved at least {} messages", expectedTransactionCount);
                 success = true;
+            } else {
+                log.info("Failed to retrieve at least {} messages", expectedTransactionCount);
             }
             result.setResponseMessage(String.valueOf(transactionTotal.get()));
             result.setResponseCodeOK();
@@ -144,6 +137,7 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
             result.sampleEnd();
             result.setSuccessful(success);
 
+            //TODO This is killing threads when things are slow and blowing up the logs, investigate graceful handling
             if (!executor.isShutdown()) {
                 executor.shutdownNow();
             }

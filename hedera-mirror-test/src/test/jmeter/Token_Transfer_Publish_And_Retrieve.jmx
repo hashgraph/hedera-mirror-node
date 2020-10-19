@@ -36,7 +36,7 @@
               </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.TokenTransferPublishAndRetrieveClient</stringProp>
+          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.hts.TokenTransferPublishAndRetrieveClient</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>

@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.jmeter.sampler.result;
+package com.hedera.mirror.grpc.jmeter.sampler.result.hts;
 
 /*-
  * ‌
@@ -25,12 +25,16 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
+import com.hedera.hashgraph.sdk.account.AccountId;
+
 @Data
 @Log4j2
-public class HTSSamplerResult {
+@RequiredArgsConstructor
+public class TokenTransferPublishAndRetrieveResult {
     private final Stopwatch totalStopwatch = Stopwatch.createStarted();
     private Stopwatch lastMessage = Stopwatch.createUnstarted();
     private long transactionCount = 0L;
@@ -38,6 +42,7 @@ public class HTSSamplerResult {
     private final SummaryStatistics e2eLatencyTotalStats = new SummaryStatistics();
     private final SummaryStatistics publishToConsensusLatencyTotalStats = new SummaryStatistics();
     private final SummaryStatistics consensusToDeliveryLatencyTotalStats = new SummaryStatistics();
+    private final AccountId nodeId;
 
     public Instant getConsensusInstant(String consensus) {
         String[] instantSegment = consensus.split(Pattern.quote("."));
@@ -68,9 +73,9 @@ public class HTSSamplerResult {
         double e2eSeconds = publishMillis == 0 ? 0 : (receiptMillis - publishMillis) / 1000.0;
         double publishToConsensus = publishMillis == 0 ? 0 : (consensusMillis - publishMillis) / 1000.0;
         double consensusToDelivery = (receiptMillis - consensusMillis) / 1000.0;
-        log.trace("Observed message, e2eSeconds: {}s, publishToConsensus: {}s, consensusToDelivery: {}s, publish " +
-                        "timestamp: {}, consensus timestamp: {}, receipt time: {}",
-                String.format("%.03f", e2eSeconds), String.format("%.03f", publishToConsensus), String
+        log.trace("Node {}: Observed message, e2eSeconds: {}s, publishToConsensus: {}s, consensusToDelivery: {}s, " +
+                        "publish timestamp: {}, consensus timestamp: {}, receipt time: {}",
+                nodeId, String.format("%.03f", e2eSeconds), String.format("%.03f", publishToConsensus), String
                         .format("%.03f", consensusToDelivery), publishInstant, currentConsensusInstant,
                 received);
 
@@ -83,7 +88,6 @@ public class HTSSamplerResult {
 
     private void updateE2ELatencyStats(SummaryStatistics total, double latency) {
         if (latency > 0) {
-
             // update total stats
             total.addValue(latency);
         }
@@ -92,8 +96,8 @@ public class HTSSamplerResult {
     private void printTotalStats() {
         String totalRate = String.format("%.02f", getMessageRate(getTransactionCount(), totalStopwatch,
                 lastMessage));
-        log.info("Observed {} total messages in {} ({}/s). Last message received {} ago.",
-                transactionCount, totalStopwatch, totalRate, lastMessage);
+        log.info("Node {}:Observed {} total messages in {} ({}/s). Last message received {} ago.",
+                nodeId, transactionCount, totalStopwatch, totalRate, lastMessage);
 
         printIndividualStat(e2eLatencyTotalStats, "Total E2E Latency");
         printIndividualStat(publishToConsensusLatencyTotalStats, "Total PublishToConsensus Latency");
@@ -107,8 +111,9 @@ public class HTSSamplerResult {
             double max = stats.getMax();
             double mean = stats.getMean();
 
-            log.info("{} stats, min: {}s, max: {}s, avg: {}s",
-                    name, String.format("%.03f", min), String.format("%.03f", max), String.format("%.03f", mean));
+            log.info("Node {}: {} stats, min: {}s, max: {}s, avg: {}s",
+                    nodeId, name, String.format("%.03f", min), String.format("%.03f", max), String
+                            .format("%.03f", mean));
         }
     }
 

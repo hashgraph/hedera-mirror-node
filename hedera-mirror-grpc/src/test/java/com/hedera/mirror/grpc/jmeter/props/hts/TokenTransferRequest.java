@@ -10,13 +10,12 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Data
 @Builder
 @Log4j2
-//TODO Tried to extend, caused issues with the builder, look into
-public class TokenTransferPublishAndRetrieveRequest {
+public class TokenTransferRequest {
     private final int messagesPerBatchCount;
     private final TokenId tokenId;
     private final AccountId operatorId;
     private final AccountId recipientId;
-    private final long tokenAmount;
+    private final long transferAmount;
 
     private String restBaseUrl;
     private int restRetryMax;

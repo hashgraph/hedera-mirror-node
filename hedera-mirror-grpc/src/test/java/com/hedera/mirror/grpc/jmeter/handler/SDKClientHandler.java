@@ -124,10 +124,10 @@ public class SDKClientHandler {
     }
 
     public TransactionId submitTokenTransfer(TokenId tokenId, AccountId operatorId, AccountId recipientId,
-                                             long amount) throws HederaStatusException {
+                                             long transferAmount) throws HederaStatusException {
         TransactionId transactionId = new TokenTransferTransaction()
-                .addSender(tokenId, operatorId, amount)
-                .addRecipient(tokenId, recipientId, amount)
+                .addSender(tokenId, operatorId, transferAmount)
+                .addRecipient(tokenId, recipientId, transferAmount)
                 .setMaxTransactionFee(1_000_000)
                 .setTransactionMemo("Token Transfer_" + Instant.now())
                 .execute(client);

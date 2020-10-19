@@ -1,5 +1,7 @@
 package com.hedera.mirror.grpc.jmeter.client;
 
+import static com.hedera.mirror.grpc.jmeter.client.hts.TokenTransferPublishClient.TRANSACTION_IDS_PROPERTY;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -13,12 +15,12 @@ import org.apache.jmeter.samplers.SampleResult;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.props.hts.RESTEntityRequest;
-import com.hedera.mirror.grpc.jmeter.sampler.hts.HTSRESTSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransferRESTBatchSampler;
 
 @Log4j2
 public class HTSRESTClient extends AbstractJavaSamplerClient {
     private PropertiesHandler propHandler;
-    private HTSRESTSampler htsrestSampler;
+    private TokenTransferRESTBatchSampler tokenTransferRESTBatchSampler;
     private List<String> formattedTransactionIds;
     private int expectedTransactionCount;
 
@@ -32,7 +34,7 @@ public class HTSRESTClient extends AbstractJavaSamplerClient {
 
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
         List<TransactionId> transactionIds = (List<TransactionId>) javaSamplerContext.getJMeterVariables()
-                .getObject("");
+                .getObject(TRANSACTION_IDS_PROPERTY);
         formattedTransactionIds = new ArrayList<>();
         for (TransactionId transactionId : transactionIds) {
             //TODO There has to be a better way to do this
@@ -44,7 +46,7 @@ public class HTSRESTClient extends AbstractJavaSamplerClient {
             );
         }
 
-        htsrestSampler = new HTSRESTSampler(restBaseUrl);
+        tokenTransferRESTBatchSampler = new TokenTransferRESTBatchSampler(restBaseUrl);
     }
 
     @Override

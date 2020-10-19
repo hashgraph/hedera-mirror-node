@@ -19,19 +19,19 @@ import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishAndRetrieveRequest;
-import com.hedera.mirror.grpc.jmeter.sampler.result.HTSSamplerResult;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
+import com.hedera.mirror.grpc.jmeter.sampler.result.hts.TokenTransferPublishAndRetrieveResult;
 
 @Log4j2
 public class TokenTransfersPublishAndRetrieveSampler {
-    private final TokenTransferPublishAndRetrieveRequest request;
+    private final TokenTransferRequest request;
     private final SDKClientHandler sdkClient;
     private final DescriptiveStatistics publishTokenTransferLatencyStats = new DescriptiveStatistics();
     private Stopwatch publishStopwatch;
     private final WebClient webClient;
-    private static final String path = "/api/v1/transactions/";
+    private static final String REST_PATH = "/api/v1/transactions/";
 
-    public TokenTransfersPublishAndRetrieveSampler(TokenTransferPublishAndRetrieveRequest request,
+    public TokenTransfersPublishAndRetrieveSampler(TokenTransferRequest request,
                                                    SDKClientHandler sdkClient) {
         this.request = request;
         this.sdkClient = sdkClient;
@@ -40,8 +40,8 @@ public class TokenTransfersPublishAndRetrieveSampler {
 
     @SneakyThrows
     public long submitTokenTransferTransactions() {
-        HTSSamplerResult result = new HTSSamplerResult();
-        Stopwatch totalStopwatch = Stopwatch.createStarted();
+        TokenTransferPublishAndRetrieveResult result = new TokenTransferPublishAndRetrieveResult(sdkClient.getNodeInfo()
+                .getNodeId());
         AtomicInteger networkFailures = new AtomicInteger();
         AtomicInteger unknownFailures = new AtomicInteger();
         Map<Status, Integer> hederaResponseCodeEx = new HashMap<>();
@@ -54,11 +54,9 @@ public class TokenTransfersPublishAndRetrieveSampler {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
-                TransactionId transactionId = sdkClient.submitTokenTransfer(
-                        request.getTokenId(),
-                        request.getOperatorId(),
-                        request.getRecipientId(),
-                        request.getTokenAmount());
+                TransactionId transactionId = sdkClient
+                        .submitTokenTransfer(request.getTokenId(), request.getOperatorId(), request
+                                .getRecipientId(), request.getTransferAmount());
                 publishTokenTransferLatencyStats.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
                 String retrievedTransaction = getTransaction(convertTransactionId(transactionId.toString()));
                 Instant received = Instant.now();
@@ -77,18 +75,9 @@ public class TokenTransfersPublishAndRetrieveSampler {
                 log.error("Unexpected exception publishing message {} to {}: {}", i,
                         sdkClient.getNodeInfo().getNodeId(), ex);
             }
-            //TODO handle fetching error separately
         }
-
-//        log.info("Submitted {} token transfers for token {} from {} to {} in {} on node {}. {} preCheckErrors, {} " +
-//                        "networkErrors, {} unknown errors", request
-//                        .getMessagesPerBatchCount(), request.getTokenId(),
-//                request.getOperatorId(), request.getRecipientId(), totalStopwatch,
-//                sdkClient.getNodeInfo().getNodeId(),
-//                StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
         printPublishStats();
         result.onComplete();
-
         return result.getTransactionCount();
     }
 
@@ -101,7 +90,7 @@ public class TokenTransfersPublishAndRetrieveSampler {
         double seventyFifthPercentile = publishTokenTransferLatencyStats.getPercentile(75);
         double ninetyFifthPercentile = publishTokenTransferLatencyStats.getPercentile(95);
 
-        log.info("Token Transfer and retrieve node {}: stats, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th" +
+        log.info("Token Transfer publish node {}: stats, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th" +
                         " percentile: {} ms," +
                         " 95th percentile: {} ms", sdkClient.getNodeInfo().getNodeId(), String.format("%.03f", min),
                 String.format("%.03f", max), String.format("%.03f", mean), String.format("%.03f", median),
@@ -118,7 +107,7 @@ public class TokenTransfersPublishAndRetrieveSampler {
     }
 
     private String getTransaction(String transactionId) {
-        return webClient.get().uri(path + transactionId).retrieve()
+        return webClient.get().uri(REST_PATH + transactionId).retrieve()
                 .bodyToMono(String.class)
                 .retryWhen(Retry
                         .fixedDelay(request.getRestRetryMax(), Duration.ofMillis(request.getRestRetryBackoffMs())))
