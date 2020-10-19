@@ -98,10 +98,6 @@ const isValidTransactionType = (transactionType) => {
   return _.isString(transactionType) && constants.transactionTypes[transactionType.toUpperCase()] !== undefined;
 };
 
-const isValidFilterKey = (filterKey) => {
-  return _.isString(filterKey) && constants.filterKeys[filterKey.toUpperCase()] !== undefined;
-};
-
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
