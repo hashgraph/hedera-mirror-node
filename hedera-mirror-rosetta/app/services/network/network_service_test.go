@@ -145,7 +145,28 @@ func TestNetworkOptions(t *testing.T) {
 	assert.Equal(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
 	assert.Equal(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
 	assert.Equal(t, len(expectedResult.Allow.Errors), len(res.Allow.Errors))
+	assert.True(t, compareErrors(expectedResult.Allow.Errors, res.Allow.Errors))
 	assert.Nil(t, e)
+}
+
+func compareErrors(e1, e2 []*rTypes.Error) bool {
+	if len(e1) != len(e2) {
+		return false
+	}
+	for _, error1 := range e1 {
+		contains := false
+		for j, error2 := range e2 {
+			if error1 == error2 {
+				e2 = append(e2[:j], e2[j+1:]...)
+				contains = true
+				continue
+			}
+		}
+		if !contains {
+			return false
+		}
+	}
+	return true
 }
 
 func TestNetworkOptionsThrowsWhenStatusesFails(t *testing.T) {
