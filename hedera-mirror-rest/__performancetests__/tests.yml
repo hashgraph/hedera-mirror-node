@@ -82,3 +82,9 @@ tests:
     filterAxis: TOKENID
     count: 5
     rangeNumTokens: 100
+    # Tests for /tokens/{id}/balances
+  - name: 'token balances - tokenid point lookup'
+    query: '/tokens/%d/balances'
+    filterAxis: NA
+    idAxis: TOKENID
+    count: 100
