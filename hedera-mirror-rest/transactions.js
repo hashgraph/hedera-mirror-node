@@ -180,9 +180,12 @@ const getTransactionsInnerQuery = function (
   resultTypeQuery,
   limitQuery,
   creditDebitQuery,
+  transactionTypeQuery,
   order
 ) {
-  let whereClause = [accountQuery, tsQuery, resultTypeQuery, creditDebitQuery].filter((q) => q !== '').join(' AND ');
+  let whereClause = [accountQuery, tsQuery, resultTypeQuery, creditDebitQuery, transactionTypeQuery]
+    .filter((q) => q !== '')
+    .join(' AND ');
   whereClause = whereClause === '' ? '' : `WHERE ${whereClause}`;
   return `
     SELECT DISTINCT ctl.consensus_timestamp
@@ -195,14 +198,24 @@ const getTransactionsInnerQuery = function (
 
 const reqToSql = function (req) {
   // Parse the filter parameters for credit/debit, account-numbers, timestamp, and pagination (limit)
-  const [creditDebitQuery] = utils.parseCreditDebitParams(req.query, 'ctl.amount');
-  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ctl.entity_id');
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 't.consensus_ns');
+  const parsedQueryParams = req.query;
+  const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
+  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
+  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(params);
 
-  const innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, query, creditDebitQuery, order);
+  const innerQuery = getTransactionsInnerQuery(
+    accountQuery,
+    tsQuery,
+    resultTypeQuery,
+    query,
+    creditDebitQuery,
+    transactionTypeQuery,
+    order
+  );
   const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
 
   return {

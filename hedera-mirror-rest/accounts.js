@@ -180,7 +180,8 @@ const getOneAccount = async (req, res) => {
   } catch (err) {
     throw InvalidArgumentError.forParams('account.id');
   }
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 't.consensus_ns');
+  const parsedQueryParams = req.query;
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
@@ -208,9 +209,10 @@ const getOneAccount = async (req, res) => {
   // Execute query & get a promise
   const entityPromise = pool.query(pgEntityQuery, entityParams);
 
-  const [creditDebitQuery] = utils.parseCreditDebitParams(req.query, 'ctl.amount');
+  const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [encodedAccountId];
+  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
 
   const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
@@ -218,6 +220,7 @@ const getOneAccount = async (req, res) => {
     resultTypeQuery,
     query,
     creditDebitQuery,
+    transactionTypeQuery,
     order
   );
 
