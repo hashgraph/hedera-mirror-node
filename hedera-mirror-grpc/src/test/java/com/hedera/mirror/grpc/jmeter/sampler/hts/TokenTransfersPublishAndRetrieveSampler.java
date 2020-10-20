@@ -38,24 +38,28 @@ import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.RESTGetByIdsRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishAndRetrieveRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.PublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.hts.TokenTransferPublishAndRetrieveResult;
 import com.hedera.mirror.grpc.util.Utility;
 
 @Log4j2
 public class TokenTransfersPublishAndRetrieveSampler extends PublishSampler {
-    private final TokenTransferRequest request;
+    private final TokenTransferPublishRequest tokenTransferPublishRequest;
+    private final RESTGetByIdsRequest restGetByIdsRequest;
     private final SDKClientHandler sdkClient;
     private Stopwatch publishStopwatch;
     private final WebClient webClient;
     private static final String REST_PATH = "/api/v1/transactions/{id}";
 
-    public TokenTransfersPublishAndRetrieveSampler(TokenTransferRequest request,
+    public TokenTransfersPublishAndRetrieveSampler(TokenTransferPublishAndRetrieveRequest request,
                                                    SDKClientHandler sdkClient) {
-        this.request = request;
+        this.tokenTransferPublishRequest = request.getTokenTransferPublishRequest();
+        this.restGetByIdsRequest = request.getRestGetByIdsRequest();
         this.sdkClient = sdkClient;
-        this.webClient = WebClient.create(request.getRestBaseUrl());
+        this.webClient = WebClient.create(request.getRestGetByIdsRequest().getRestBaseUrl());
     }
 
     @SneakyThrows
@@ -68,15 +72,16 @@ public class TokenTransfersPublishAndRetrieveSampler extends PublishSampler {
 
         // publish TransactionsPerBatchCount number of transactions to the node
         log.trace("Submit transaction to {}, tokenTransferPublisher: {}", sdkClient
-                .getNodeInfo(), request);
+                .getNodeInfo(), tokenTransferPublishRequest);
 
-        for (int i = 0; i < request.getTransactionsPerBatchCount(); i++) {
+        for (int i = 0; i < tokenTransferPublishRequest.getTransactionsPerBatchCount(); i++) {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
                 TransactionId transactionId = sdkClient
-                        .submitTokenTransfer(request.getTokenId(), request.getOperatorId(), request
-                                .getRecipientId(), request.getTransferAmount());
+                        .submitTokenTransfer(tokenTransferPublishRequest.getTokenId(), tokenTransferPublishRequest
+                                .getOperatorId(), tokenTransferPublishRequest
+                                .getRecipientId(), tokenTransferPublishRequest.getTransferAmount());
                 publishLatencyStatistics.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
                 //Convert the transaction id to be REST compliant, and retrieve the transaction
                 String retrievedTransaction = getTransaction(Utility
@@ -109,7 +114,8 @@ public class TokenTransfersPublishAndRetrieveSampler extends PublishSampler {
                 .retrieve()
                 .bodyToMono(String.class)
                 .retryWhen(Retry
-                        .fixedDelay(request.getRestRetryMax(), Duration.ofMillis(request.getRestRetryBackoffMs())))
+                        .fixedDelay(restGetByIdsRequest.getRestRetryMax(), Duration
+                                .ofMillis(restGetByIdsRequest.getRestRetryBackoffMs())))
                 .block();
     }
 }

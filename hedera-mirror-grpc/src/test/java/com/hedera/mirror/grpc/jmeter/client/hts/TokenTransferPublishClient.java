@@ -41,7 +41,7 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransfersPublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 import com.hedera.mirror.grpc.util.Utility;
@@ -102,7 +102,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
         result.sampleStart();
 
         // kick off batched transaction publish
-        TokenTransferRequest tokenTransferRequest = TokenTransferRequest.builder()
+        TokenTransferPublishRequest tokenTransferPublishRequest = TokenTransferPublishRequest.builder()
                 .transactionsPerBatchCount(transactionsPerBatchCount)
                 .operatorId(operatorId)
                 .recipientId(recipientId)
@@ -124,7 +124,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
                 executor.scheduleAtFixedRate(
                         () -> {
                             TokenTransfersPublishSampler tokenTransfersPublishSampler =
-                                    new TokenTransfersPublishSampler(tokenTransferRequest, x,
+                                    new TokenTransfersPublishSampler(tokenTransferPublishRequest, x,
                                             verifyTransactions);
                             transactions.addAll(tokenTransfersPublishSampler
                                     .submitTokenTransferTransactions());

@@ -20,16 +20,21 @@ package com.hedera.mirror.grpc.jmeter.props.hts;
  * ‍
  */
 
-import java.util.List;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 
-@Value
+import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.hashgraph.sdk.token.TokenId;
+
+@Data
 @Builder
-public class TokenTransferGetRequest {
-    private String restBaseUrl;
-    private List<String> transactionIds;
-    private int restRetryMax;
-    private int restRetryBackoffMs;
-    private int expectedMessages;
+@Log4j2
+public class TokenTransferPublishRequest {
+    private final int transactionsPerBatchCount;
+    private final TokenId tokenId;
+    private final AccountId operatorId;
+    private final AccountId recipientId;
+    private final long transferAmount;
+    private final int statusPrintIntervalMinutes;
 }

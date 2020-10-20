@@ -39,7 +39,9 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.RESTGetByIdsRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishAndRetrieveRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransfersPublishAndRetrieveSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
@@ -108,16 +110,19 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
         result.sampleStart();
 
         // kick off batched transaction publish
-        TokenTransferRequest request = TokenTransferRequest.builder()
-                .transactionsPerBatchCount(transactionsPerBatchCount)
-                .operatorId(operatorId)
-                .recipientId(recipientId)
-                .tokenId(tokenId)
-                .transferAmount(transferAmount)
-                .restBaseUrl(restBaseUrl)
-                .statusPrintIntervalMinutes(statusPrintIntervalMinutes)
-                .restRetryMax(restMaxRetry)
-                .restRetryBackoffMs(restRetryBackoffMs)
+        TokenTransferPublishAndRetrieveRequest request = TokenTransferPublishAndRetrieveRequest.builder()
+                .tokenTransferPublishRequest(TokenTransferPublishRequest.builder()
+                        .transactionsPerBatchCount(transactionsPerBatchCount)
+                        .operatorId(operatorId)
+                        .recipientId(recipientId)
+                        .tokenId(tokenId)
+                        .transferAmount(transferAmount)
+                        .statusPrintIntervalMinutes(statusPrintIntervalMinutes)
+                        .build())
+                .restGetByIdsRequest(RESTGetByIdsRequest.builder()
+                        .restBaseUrl(restBaseUrl)
+                        .restRetryMax(restMaxRetry)
+                        .restRetryBackoffMs(restRetryBackoffMs).build())
                 .build();
 
         // publish and retrieve transaction executor service

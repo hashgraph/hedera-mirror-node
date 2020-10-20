@@ -34,7 +34,7 @@ import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferGetRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.RESTGetByIdsRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransferRESTBatchSampler;
 
 @Log4j2
@@ -80,9 +80,9 @@ public class TokenTransferRESTBatchClient extends AbstractJavaSamplerClient {
                 .newSingleThreadExecutor();
         try {
             result.sampleStart();
-            TokenTransferGetRequest restEntityRequest = TokenTransferGetRequest.builder()
+            RESTGetByIdsRequest restEntityRequest = RESTGetByIdsRequest.builder()
                     .restBaseUrl(restBaseUrl)
-                    .transactionIds(formattedTransactionIds)
+                    .ids(formattedTransactionIds)
                     .restRetryBackoffMs(restRetryBackoffMs)
                     .restRetryMax(restMaxRetry)
                     .build();

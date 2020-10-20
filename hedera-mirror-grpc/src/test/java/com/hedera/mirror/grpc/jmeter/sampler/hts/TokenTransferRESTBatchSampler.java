@@ -31,23 +31,23 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
-import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferGetRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.RESTGetByIdsRequest;
 
 @Log4j2
 public class TokenTransferRESTBatchSampler {
-    private final TokenTransferGetRequest tokenTransferGetRequest;
+    private final RESTGetByIdsRequest restGetByIdsRequest;
     private final WebClient webClient;
     private Stopwatch stopwatch;
     private static final String REST_PATH = "/api/v1/transactions/{id}";
 
-    public TokenTransferRESTBatchSampler(TokenTransferGetRequest tokenTransferGetRequest) {
-        this.tokenTransferGetRequest = tokenTransferGetRequest;
-        webClient = WebClient.create(tokenTransferGetRequest.getRestBaseUrl());
+    public TokenTransferRESTBatchSampler(RESTGetByIdsRequest restGetByIdsRequest) {
+        this.restGetByIdsRequest = restGetByIdsRequest;
+        webClient = WebClient.create(restGetByIdsRequest.getRestBaseUrl());
     }
 
     public int retrieveTransaction() {
         stopwatch = Stopwatch.createStarted();
-        List<String> transactions = Flux.fromIterable(tokenTransferGetRequest.getTransactionIds())
+        List<String> transactions = Flux.fromIterable(restGetByIdsRequest.getIds())
                 .parallel()
                 .runOn(Schedulers.parallel())
                 .flatMap(transactionId -> getTransaction(transactionId)
@@ -70,7 +70,7 @@ public class TokenTransferRESTBatchSampler {
                 .retrieve()
                 .bodyToMono(String.class)
                 //IF a 404 (or other error) is retrieved, keep trying periodically
-                .retryWhen(Retry.fixedDelay(tokenTransferGetRequest.getRestRetryMax(), Duration
-                        .ofMillis(tokenTransferGetRequest.getRestRetryBackoffMs())));
+                .retryWhen(Retry.fixedDelay(restGetByIdsRequest.getRestRetryMax(), Duration
+                        .ofMillis(restGetByIdsRequest.getRestRetryBackoffMs())));
     }
 }
