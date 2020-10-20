@@ -35,6 +35,7 @@ import org.springframework.retry.support.RetryTemplate;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 
 @Configuration
@@ -67,6 +68,12 @@ public class ClientConfiguration {
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public AccountClient accountClient() {
         return new AccountClient(sdkClient());
+    }
+
+    @Bean
+    @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public TokenClient tokenClient() {
+        return new TokenClient(sdkClient());
     }
 
     @Bean

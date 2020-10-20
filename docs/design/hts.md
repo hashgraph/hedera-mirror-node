@@ -445,24 +445,19 @@ To achieve the goals and for easy integration with existing users the REST API s
           ],
           "token_transfers": [
             {
-              "token_id": "0.15.3",
-              "account": "0.0.1111",
-              "amount": -10
+              "account": "0.0.200",
+              "amount": 200,
+              "token_id": "0.0.90000"
             },
             {
-              "token_id": "0.15.3",
-              "account": "0.0.2222",
-              "amount": -10
+              "account": "0.0.300",
+              "amount": -1200,
+              "token_id": "0.0.90000"
             },
             {
-              "token_id": "0.2.4",
-              "account": "0.0.3333",
-              "amount": -10
-            },
-            {
-              "token_id": "0.2.4",
-              "account": "0.0.4444",
-              "amount": -10
+              "account": "0.0.400",
+              "amount": 1000,
+              "token_id": "0.0.90000"
             }
           ]
         }
@@ -510,20 +505,20 @@ Optional Filters
     {
         "tokens": [
           {
-            "symbol": "FOOBAR",
-            "token_id": "0.15.10",
             "admin_key": {
               "_type": "ProtobufEncoded",
               "key": "7b2233222c2233222c2233227d"
-            }
+            },
+            "symbol": "FOOBAR",
+            "token_id": "0.15.10"
           },
           {
-            "symbol": "FOOCOIN",
-            "tokenId": "0.15.11",
             "admin_key": {
               "_type": "ProtobufEncoded",
               "key": "9c2233222c2233222c2233227d"
-            }
+            },
+            "symbol": "FOOCOIN",
+            "tokenId": "0.15.11"
           }
         ],
         "links": {
@@ -536,40 +531,44 @@ Optional Filters
 -   `/api/v1/tokens?publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be` - All tokens with matching admin key
 -   `/api/v1/tokens?account.id=0.0.8` - All tokens for matching account
 -   `/api/v1/tokens?token.id=gt:0.0.1001` - All tokens in range
+-   `/api/v1/tokens?order=desc` - All tokens in descending order of `token.id`
+-   `/api/v1/tokens?limit=x` - All tokens taking the first `x` number of tokens
 
 ### Token Info
 `/api/v1/tokens/<tokenId>` this would return the info for a single token present on the network
 ```json
     {
-      "symbol": "FOOCOIN",
-      "token_id": "0.15.3",
-      "name": "FOO COIN TOKEN",
-      "treasury_account": "0.15.10",
       "admin_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "kyc_key": {
-        "_type": "ProtobufEncoded",
-        "key": "9c2233222c2233222c2233227d"
-      },
+      "auto_renew_account": "0.0.6",
+      "auto_renew_period": null,
+      "decimals": "1000",
+      "expiry_timestamp": null,
+      "freeze_default": false,
       "freeze_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "wipe_key": {
+      "initial_supply": "1000000",
+      "kyc_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
+      "name": "FOO COIN TOKEN",
       "supply_key": {
         "_type": "ProtobufEncoded",
         "key": "9c2233222c2233222c2233227d"
       },
-      "freeze_default": false,
-      "kyc_default": false,
-      "expiry_timestamp": null,
-      "auto_renew_account": "0.0.6",
-      "auto_renew_period": null
+      "symbol": "FOOCOIN",
+      "token_id": "0.15.3",
+      "total_supply": "1000000",
+      "treasury_account": "0.15.10",
+      "wipe_key": {
+        "_type": "ProtobufEncoded",
+        "key": "9c2233222c2233222c2233227d"
+      }
     }
 ```
 

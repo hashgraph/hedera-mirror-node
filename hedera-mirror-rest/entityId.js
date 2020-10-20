@@ -20,6 +20,7 @@
 
 'use strict';
 
+const _ = require('lodash');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
@@ -36,11 +37,13 @@ class EntityId {
    * @returns {string} encoded id corresponding to this EntityId.
    */
   getEncodedId() {
-    return (BigInt(this.num) + BigInt(this.realm) * realmOffset + BigInt(this.shard) * shardOffset).toString();
+    return this.num === null
+      ? null
+      : (BigInt(this.num) + BigInt(this.realm) * realmOffset + BigInt(this.shard) * shardOffset).toString();
   }
 
   toString() {
-    return `${this.shard}.${this.realm}.${this.num}`;
+    return this.num === null ? null : `${this.shard}.${this.realm}.${this.num}`;
   }
 }
 
@@ -49,12 +52,60 @@ const of = (shard, realm, num) => {
 };
 
 /**
+ * Converts encoded entity ID BigInt to EntityId object.
+ *
+ * @param encodedId
+ * @return {EntityId}
+ */
+const fromInt = (id, isNullable) => {
+  if (_.isNull(id)) {
+    if (isNullable) {
+      return of(null, null, null);
+    }
+
+    throw new InvalidArgumentError(`Null entity ID"`);
+  }
+
+  let encodedId;
+  // support int or bigint types provided for precision
+  if (typeof id === 'bigint') {
+    encodedId = id;
+  } else if (_.isInteger(id)) {
+    try {
+      encodedId = BigInt(id);
+    } catch (err) {
+      throw new InvalidArgumentError(`invalid entity ID "${id}"`);
+    }
+  } else {
+    throw new InvalidArgumentError(`invalid entity ID "${id}"`);
+  }
+
+  if (encodedId < 0n) {
+    throw new InvalidArgumentError(`invalid entity ID int "${encodedId}"`);
+  }
+
+  const shard = encodedId / shardOffset; // quotient is shard
+  const encodedRealmNum = encodedId % shardOffset; // realm and num remains
+  const realm = encodedRealmNum / realmOffset;
+  const num = encodedRealmNum % realmOffset;
+  return of(Number(shard), Number(realm), Number(num)); // convert from BigInt to number
+};
+
+/**
  * Converts entity ID string to EntityId object. Supports both 'shard.realm.num' and encoded entity ID string.
  *
  * @param entityStr
  * @return {EntityId}
  */
-const fromString = (entityStr) => {
+const fromString = (entityStr, isNullable) => {
+  if (_.isNull(entityStr)) {
+    if (isNullable) {
+      return of(null, null, null);
+    }
+
+    throw new InvalidArgumentError(`Null entity ID"`);
+  }
+
   if (entityStr.includes('.')) {
     const parts = entityStr.split('.');
     if (parts.length === 3) {
@@ -79,15 +130,7 @@ const fromString = (entityStr) => {
       throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
     }
 
-    if (encodedId < 0n) {
-      throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
-    }
-
-    const shard = encodedId / shardOffset; // quotient is shard
-    const encodedRealmNum = encodedId % shardOffset; // realm and num remains
-    const realm = encodedRealmNum / realmOffset;
-    const num = encodedRealmNum % realmOffset;
-    return of(Number(shard), Number(realm), Number(num)); // convert from BigInt to number
+    return fromInt(encodedId);
   }
 
   throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
@@ -95,5 +138,6 @@ const fromString = (entityStr) => {
 
 module.exports = {
   of,
+  fromInt,
   fromString,
 };

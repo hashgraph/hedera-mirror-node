@@ -32,19 +32,17 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.account.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 @Log4j2
 @Value
-public class AccountClient {
-
-    private final SDKClient sdkClient;
-    private final Client client;
+public class AccountClient extends AbstractNetworkClient {
 
     public AccountClient(SDKClient sdkClient) {
-        this.sdkClient = sdkClient;
-        client = sdkClient.getClient();
+        super(sdkClient);
         log.debug("Creating Account Client");
     }
 
@@ -52,13 +50,14 @@ public class AccountClient {
         return getBalance(client, accountIdString);
     }
 
+    @Override
     public long getBalance() throws HederaStatusException {
         return getBalance(sdkClient.getOperatorId());
     }
 
     public long getBalance(AccountId accountId) throws HederaStatusException {
         Hbar balance = new AccountBalanceQuery()
-                .setAccountId(sdkClient.getOperatorId())
+                .setAccountId(accountId)
                 .execute(client);
 
         log.debug("{} balance is {}", accountId, balance);
@@ -66,28 +65,42 @@ public class AccountClient {
         return balance.asTinybar();
     }
 
-    public AccountId createNewAccount() throws HederaStatusException {
-        // 1. Generate a Ed25519 private, public key pair
-        Ed25519PrivateKey newKey = Ed25519PrivateKey.generate();
-        Ed25519PublicKey newPublicKey = newKey.publicKey;
+    public TransactionReceipt sendCryptoTransfer(AccountId recipient, long amount) throws HederaStatusException {
+        log.debug("Send CryptoTransfer of {} tℏ from {} to {}", amount, sdkClient.getOperatorId(), recipient);
 
-        log.info("Private key = {}", newKey);
-        log.info("Public key = {}", newPublicKey);
+        CryptoTransferTransaction cryptoTransferTransaction = new CryptoTransferTransaction()
+                .addSender(sdkClient.getOperatorId(), amount)
+                .addRecipient(recipient, amount)
+                .setTransactionMemo("transfer test");
+
+        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null)
+                .getReceipt();
+
+        log.debug("Sent CryptoTransfer");
+
+        return transactionReceipt;
+    }
+
+    public ExpandedAccountId createNewAccount(long initialBalance) throws HederaStatusException {
+        // 1. Generate a Ed25519 private, public key pair
+        Ed25519PrivateKey privateKey = Ed25519PrivateKey.generate();
+        Ed25519PublicKey publicKey = privateKey.publicKey;
+
+        log.debug("Private key = {}", privateKey);
+        log.debug("Public key = {}", publicKey);
 
         Transaction tx = new AccountCreateTransaction()
                 // The only _required_ property here is `key`
-                .setKey(newKey.publicKey)
-                .setInitialBalance(Hbar.from(1, HbarUnit.Tinybar))
+                .setKey(publicKey)
+                .setInitialBalance(Hbar.from(initialBalance, HbarUnit.Tinybar))
                 .build(client);
 
-        tx.execute(client);
-
         // This will wait for the receipt to become available
-        TransactionReceipt receipt = tx.getReceipt(client);
+        TransactionReceipt receipt = tx.execute(client).getReceipt(client);
 
         AccountId newAccountId = receipt.getAccountId();
 
-        log.trace("account = {}", newAccountId);
-        return newAccountId;
+        log.debug("Created new account {}", newAccountId);
+        return new ExpandedAccountId(newAccountId, privateKey, publicKey);
     }
 }
