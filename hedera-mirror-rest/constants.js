@@ -35,7 +35,7 @@ const filterKeys = {
   TOKENID: 'tokenId',
   TOKEN_ID: 'token.id',
   CREDIT_TYPE: 'type',
-  TRANSACTION_TYPE: 'transactiontype',
+  TRANSACTION_TYPE: 'transactionType',
 };
 
 // sql table columns

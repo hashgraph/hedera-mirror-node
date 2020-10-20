@@ -141,7 +141,7 @@ const filterValidityChecks = (param, op, val) => {
   }
 
   // Validate the value
-  switch (param.toLowerCase()) {
+  switch (param) {
     case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = isValidAccountBalanceQuery(val);
@@ -677,7 +677,7 @@ const formatComparator = (comparator) => {
     comparator.operator = opsMap[comparator.operator];
 
     // format value
-    switch (comparator.key.toLowerCase()) {
+    switch (comparator.key) {
       case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.fromString(comparator.value).getEncodedId();

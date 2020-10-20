@@ -99,7 +99,7 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.8?transactiontype=TOKENTRANSFERS",
+  "url": "/api/v1/accounts/0.0.8?transactionType=TOKENTRANSFERS",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [

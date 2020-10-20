@@ -52,7 +52,7 @@
       }
     ]
   },
-  "url": "/api/v1/transactions?transactiontype=tokentransfers",
+  "url": "/api/v1/transactions?transactionType=tokentransfers",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
