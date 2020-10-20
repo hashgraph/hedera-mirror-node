@@ -30,7 +30,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import com.hedera.hashgraph.sdk.HederaNetworkException;
 import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
@@ -38,15 +37,15 @@ import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
 import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
+import com.hedera.mirror.grpc.jmeter.sampler.PublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
 @RequiredArgsConstructor
-public class TokenTransfersPublishSampler {
+public class TokenTransfersPublishSampler extends PublishSampler {
     private final TokenTransferRequest tokenTransferRequest;
     private final SDKClientHandler sdkClient;
     private final boolean verifyTransactions;
-    private final SummaryStatistics publishTokenTransferLatencyStats = new SummaryStatistics();
     private Stopwatch publishStopwatch;
 
     @SneakyThrows
@@ -69,7 +68,7 @@ public class TokenTransfersPublishSampler {
                         .submitTokenTransfer(tokenTransferRequest.getTokenId(), tokenTransferRequest
                                 .getOperatorId(), tokenTransferRequest
                                 .getRecipientId(), tokenTransferRequest.getTransferAmount());
-                publishTokenTransferLatencyStats.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
+                publishLatencyStatistics.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
                 result.onNext(transactionId);
             } catch (HederaPrecheckStatusException preEx) {
                 hederaResponseCodeEx.compute(preEx.status, (key, val) -> (val == null) ? 1 : val + 1);
@@ -89,7 +88,7 @@ public class TokenTransfersPublishSampler {
                         .getOperatorId(), tokenTransferRequest.getRecipientId(), totalStopwatch,
                 sdkClient.getNodeInfo().getNodeId(),
                 StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
-        printPublishStats();
+        printPublishStats("Token Transfer publish node " + sdkClient.getNodeInfo().getNodeId().toString());
         result.onComplete();
 
         // verify transactions
@@ -98,16 +97,6 @@ public class TokenTransfersPublishSampler {
         }
 
         return result.getTransactionIdList();
-    }
-
-    private void printPublishStats() {
-        // Compute some statistics
-        double min = publishTokenTransferLatencyStats.getMin();
-        double max = publishTokenTransferLatencyStats.getMax();
-        double mean = publishTokenTransferLatencyStats.getMean();
-
-        log.info("Token Transfer publish node {}: min: {} ms, max: {} ms, avg: {} ms", sdkClient.getNodeInfo()
-                .getNodeId(), String.format("%.03f", min), String.format("%.03f", max), String.format("%.03f", mean));
     }
 }
 
