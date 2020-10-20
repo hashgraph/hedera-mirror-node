@@ -24,15 +24,10 @@ import lombok.Data;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenId;
-
 @Data
 @SuperBuilder
 @Log4j2
-public class TokenTransferPublishRequest extends PublishRequest {
-    private final TokenId tokenId;
-    private final AccountId operatorId;
-    private final AccountId recipientId;
-    private final long transferAmount;
+public class PublishRequest {
+    private final int transactionsPerBatchCount;
+    private final int statusPrintIntervalMinutes;
 }
