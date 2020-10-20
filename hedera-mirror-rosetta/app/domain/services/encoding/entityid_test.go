@@ -22,6 +22,7 @@ package entityid
 
 import (
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -58,6 +59,55 @@ func TestEntityIdEncodeThrows(t *testing.T) {
 
 	for _, tt := range testData {
 		_, err := Encode(tt.shard, tt.realm, tt.number)
+		if err == nil {
+			t.Errorf("Expected error when providing invalid encoding parameters")
+		}
+	}
+}
+
+func TestEntityIdFromString(t *testing.T) {
+	var testData = []struct {
+		expected *EntityId
+		entity   string
+	}{
+		{&EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 0,
+		}, "0.0.0"},
+		{&EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 10,
+		}, "0.0.10"},
+		{&EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 4294967295,
+		}, "0.0.4294967295"},
+	}
+
+	for _, tt := range testData {
+		res, _ := FromString(tt.entity)
+		if !reflect.DeepEqual(tt.expected, res) {
+			t.Errorf("Got %d, expected %d", res, tt.expected)
+		}
+	}
+}
+
+func TestEntityIdFromStringThrows(t *testing.T) {
+	var testData = []string{
+		"abc",
+		"a.0.0",
+		"0.b.0",
+		"0.0.c",
+		"-1.0.0",
+		"0.-1.0",
+		"0.0.-1",
+	}
+
+	for _, tt := range testData {
+		_, err := FromString(tt)
 		if err == nil {
 			t.Errorf("Expected error when providing invalid encoding parameters")
 		}

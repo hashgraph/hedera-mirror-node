@@ -35,6 +35,13 @@ const (
 	numberMask int64 = (int64(1) << numberBits) - 1
 )
 
+var (
+	errorEntity   = fmt.Errorf("invalid entity")
+	errorEntityId = fmt.Errorf("invalid entityId")
+	errorShardId  = fmt.Errorf("invalid shardId")
+	errorRealmId  = fmt.Errorf("invalid realmId")
+)
+
 // EntityId returns the decoded data from the DB ID
 type EntityId struct {
 	ShardNum  int64
@@ -70,20 +77,27 @@ func Decode(encodedID int64) (*EntityId, error) {
 func FromString(entityId string) (*EntityId, error) {
 	inputs := strings.Split(entityId, ".")
 	if len(inputs) != 3 {
-		return nil, fmt.Errorf("invalid entityId")
+		return nil, errorEntity
 	}
 
 	shardNum, err := parse.ToInt64(inputs[0])
 	if err != nil {
-		return nil, fmt.Errorf("invalid shard")
+		return nil, errorShardId
 	}
+
 	realmNum, err := parse.ToInt64(inputs[1])
 	if err != nil {
-		return nil, fmt.Errorf("invalid realm")
+		return nil, errorRealmId
 	}
+
 	entityNum, err := parse.ToInt64(inputs[2])
 	if err != nil {
-		return nil, fmt.Errorf("invalid entity")
+		return nil, errorEntityId
+	}
+
+	_, err = Encode(shardNum, realmNum, entityNum)
+	if err != nil {
+		return nil, err
 	}
 
 	return &EntityId{

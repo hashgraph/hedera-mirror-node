@@ -30,6 +30,10 @@ import (
 const genesisPreviousHash = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
 const (
+	tableNameRecordFile = "record_file"
+)
+
+const (
 	// selectLatestWithIndex - Selects row with the latest consensus_end and adds additional info about the position of that row using count.
 	// The information about the position is used as Block Index
 	selectLatestWithIndex string = `SELECT rd.file_hash,
@@ -75,7 +79,7 @@ type recordFile struct {
 
 // TableName - Set table name to be `record_file`
 func (recordFile) TableName() string {
-	return "record_file"
+	return tableNameRecordFile
 }
 
 // BlockRepository struct that has connection to the Database
