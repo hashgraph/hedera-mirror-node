@@ -29,6 +29,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tests/mocks/repository"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -155,7 +156,7 @@ func compareErrors(e1, e2 []*rTypes.Error) bool {
 	for _, error1 := range e1 {
 		contains := false
 		for j, error2 := range e2 {
-			if error1 == error2 {
+			if reflect.DeepEqual(error1, error2) {
 				e2 = append(e2[:j], e2[j+1:]...)
 				contains = true
 				continue
