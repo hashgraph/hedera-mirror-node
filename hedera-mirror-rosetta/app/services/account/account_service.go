@@ -18,26 +18,27 @@
  * ‍
  */
 
-package services
+package account
 
 import (
 	"context"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
 
 // AccountAPIService implements the server.AccountAPIServicer interface.
 type AccountAPIService struct {
-	Commons
+	base.BaseService
 	accountRepo repositories.AccountRepository
 }
 
 // NewAccountAPIService creates a new instance of a AccountAPIService.
-func NewAccountAPIService(commons Commons, accountRepo repositories.AccountRepository) *AccountAPIService {
+func NewAccountAPIService(base base.BaseService, accountRepo repositories.AccountRepository) *AccountAPIService {
 	return &AccountAPIService{
-		Commons:     commons,
+		BaseService: base,
 		accountRepo: accountRepo,
 	}
 }
@@ -50,7 +51,7 @@ func (a *AccountAPIService) AccountBalance(ctx context.Context, request *rTypes.
 	if request.BlockIdentifier != nil {
 		block, err = a.RetrieveBlock(request.BlockIdentifier)
 	} else {
-		block, err = a.blockRepo.RetrieveLatest()
+		block, err = a.RetrieveLatest()
 	}
 	if err != nil {
 		return nil, err

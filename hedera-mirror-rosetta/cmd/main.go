@@ -22,6 +22,12 @@ package main
 
 import (
 	"fmt"
+	accountService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/account"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
+	blockService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/block"
+	constructionService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
+	mempoolService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/mempool"
+	networkService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/network"
 	"log"
 	"net/http"
 	"strings"
@@ -33,7 +39,6 @@ import (
 	addressBookEntry "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/addressbook/entry"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/block"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/transaction"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/jinzhu/gorm"
 )
@@ -47,21 +52,21 @@ func NewBlockchainOnlineRouter(network *types.NetworkIdentifier, asserter *asser
 	accountRepo := account.NewAccountRepository(dbClient)
 	addressBookEntryRepo := addressBookEntry.NewAddressBookEntryRepository(dbClient)
 
-	commons := services.NewCommons(blockRepo, transactionRepo)
+	baseService := base.NewBaseService(blockRepo, transactionRepo)
 
-	networkAPIService := services.NewNetworkAPIService(commons, addressBookEntryRepo, network, version)
+	networkAPIService := networkService.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockAPIService := services.NewBlockAPIService(commons)
+	blockAPIService := blockService.NewBlockAPIService(baseService)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
-	mempoolAPIService := services.NewMempoolAPIService()
+	mempoolAPIService := mempoolService.NewMempoolAPIService()
 	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
-	constructionAPIService := services.NewConstructionAPIService()
+	constructionAPIService := constructionService.NewConstructionAPIService()
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 
-	accountAPIService := services.NewAccountAPIService(commons, accountRepo)
+	accountAPIService := accountService.NewAccountAPIService(baseService, accountRepo)
 	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
 
 	return server.NewRouter(networkAPIController, blockAPIController, mempoolAPIController, constructionAPIController, accountAPIController)
@@ -71,7 +76,7 @@ func NewBlockchainOnlineRouter(network *types.NetworkIdentifier, asserter *asser
 // of server controllers, serving "offline" mode.
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#offline-mode-endpoints
 func NewBlockchainOfflineRouter(asserter *asserter.Asserter) http.Handler {
-	constructionAPIService := services.NewConstructionAPIService()
+	constructionAPIService := constructionService.NewConstructionAPIService()
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 
 	return server.NewRouter(constructionAPIController)

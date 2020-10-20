@@ -18,24 +18,25 @@
  * ‍
  */
 
-package services
+package block
 
 import (
 	"context"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
 
 // BlockAPIService implements the server.BlockAPIServicer interface.
 type BlockAPIService struct {
-	Commons
+	base.BaseService
 }
 
 // NewBlockAPIService creates a new instance of a BlockAPIService.
-func NewBlockAPIService(commons Commons) server.BlockAPIServicer {
+func NewBlockAPIService(base base.BaseService) server.BlockAPIServicer {
 	return &BlockAPIService{
-		Commons: commons,
+		BaseService: base,
 	}
 }
 
@@ -46,7 +47,7 @@ func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockReques
 		return nil, err
 	}
 
-	transactions, err := s.transactionRepo.FindBetween(block.ConsensusStartNanos, block.ConsensusEndNanos)
+	transactions, err := s.FindBetween(block.ConsensusStartNanos, block.ConsensusEndNanos)
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +65,12 @@ func (s *BlockAPIService) BlockTransaction(
 	request *rTypes.BlockTransactionRequest,
 ) (*rTypes.BlockTransactionResponse, *rTypes.Error) {
 	h := hex.SafeRemoveHexPrefix(request.BlockIdentifier.Hash)
-	block, err := s.blockRepo.FindByIdentifier(request.BlockIdentifier.Index, h)
+	block, err := s.FindByIdentifier(request.BlockIdentifier.Index, h)
 	if err != nil {
 		return nil, err
 	}
 
-	transaction, err := s.transactionRepo.FindByHashInBlock(request.TransactionIdentifier.Hash, block.ConsensusStartNanos, block.ConsensusEndNanos)
+	transaction, err := s.FindByHashInBlock(request.TransactionIdentifier.Hash, block.ConsensusStartNanos, block.ConsensusEndNanos)
 	if err != nil {
 		return nil, err
 	}
