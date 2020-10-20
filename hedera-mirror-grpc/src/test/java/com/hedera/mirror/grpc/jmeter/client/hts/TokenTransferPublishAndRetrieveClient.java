@@ -48,7 +48,7 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
     private PropertiesHandler propHandler;
     private List<SDKClientHandler> clientList;
     private TokenId tokenId;
-    private int messagesPerBatchCount;
+    private int transactionsPerBatchCount;
     private AccountId operatorId;
     private Ed25519PrivateKey operatorPrivateKey;
     private AccountId recipientId;
@@ -65,21 +65,26 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
     public void setupTest(JavaSamplerContext javaSamplerContext) {
         propHandler = new PropertiesHandler(javaSamplerContext);
 
-        // read in nodes list, topic id, number of messages, message size
+        // read in properties for publishing a Token Transfer
         tokenId = TokenId.fromString(propHandler.getTestParam("tokenId", "0"));
-        messagesPerBatchCount = propHandler.getIntTestParam("messagesPerBatchCount", 0);
-        publishInterval = propHandler.getIntTestParam("publishInterval", 20000);
-        publishTimeout = propHandler.getIntTestParam("publishTimeout", 60);
         operatorId = AccountId.fromString(propHandler.getTestParam("operatorId", "0"));
         operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getTestParam("operatorKey", "0"));
         recipientId = AccountId.fromString(propHandler.getTestParam("recipientId", "1"));
         transferAmount = propHandler.getLongTestParam("transferAmount", 1L);
-        expectedTransactionCount = propHandler.getLongTestParam("expectedTransactionCount", 0L);
+
+        // read in properties related to batch publishing and printing
+        transactionsPerBatchCount = propHandler.getIntTestParam("messagesPerBatchCount", 0);
+        publishInterval = propHandler.getIntTestParam("publishInterval", 20000);
+        publishTimeout = propHandler.getIntTestParam("publishTimeout", 60);
+        statusPrintIntervalMinutes = (propHandler.getIntTestParam("statusPrintIntervalMinutes", 1));
+
+        // read in properties related to retrieving transactions via REST
         restBaseUrl = propHandler.getTestParam("restBaseUrl", "localhost:5551");
-        //TODO These two may be a little aggressive, they've worked so far but may need to pull down the default.
         restMaxRetry = propHandler.getIntTestParam("restMaxRetry", 1000);
         restRetryBackoffMs = propHandler.getIntTestParam("restRetryBackoffMs", 50);
-        statusPrintIntervalMinutes = (propHandler.getIntTestParam("statusPrintIntervalMinutes", 1));
+
+        //The expected number of transactions to receive, determines success
+        expectedTransactionCount = propHandler.getLongTestParam("expectedTransactionCount", 0L);
 
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
         String[] nodeList = propHandler.getTestParam("networkNodes", "localhost:0.0.3:50211").split(",");
@@ -102,9 +107,9 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
         SampleResult result = new SampleResult();
         result.sampleStart();
 
-        // kick off batched message publish
+        // kick off batched transaction publish
         TokenTransferRequest request = TokenTransferRequest.builder()
-                .messagesPerBatchCount(messagesPerBatchCount)
+                .transactionsPerBatchCount(transactionsPerBatchCount)
                 .operatorId(operatorId)
                 .recipientId(recipientId)
                 .tokenId(tokenId)
@@ -115,7 +120,7 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
                 .restRetryBackoffMs(restRetryBackoffMs)
                 .build();
 
-        // publish message executor service
+        // publish and retrieve transaction executor service
         ScheduledExecutorService executor = Executors
                 .newScheduledThreadPool(clientList.size() * Runtime.getRuntime().availableProcessors());
 
@@ -128,9 +133,9 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
             clientList.forEach(x -> {
                 executor.scheduleAtFixedRate(
                         () -> {
-                            TokenTransfersPublishAndRetrieveSampler topicMessagesPublishSampler =
+                            TokenTransfersPublishAndRetrieveSampler tokenTransfersPublishAndRetrieveSampler =
                                     new TokenTransfersPublishAndRetrieveSampler(request, x);
-                            transactionTotal.addAndGet(topicMessagesPublishSampler
+                            transactionTotal.addAndGet(tokenTransfersPublishAndRetrieveSampler
                                     .submitTokenTransferTransactions());
                         },
                         0,
@@ -142,15 +147,15 @@ public class TokenTransferPublishAndRetrieveClient extends AbstractJavaSamplerCl
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);
             printStatus(transactionTotal.get(), totalStopwatch);
             if (transactionTotal.get() >= expectedTransactionCount) {
-                log.info("Successfully retrieved at least {} messages", expectedTransactionCount);
+                log.info("Successfully retrieved at least {} transactions", expectedTransactionCount);
                 success = true;
             } else {
-                log.info("Failed to retrieve at least {} messages", expectedTransactionCount);
+                log.info("Failed to retrieve at least {} transactions", expectedTransactionCount);
             }
             result.setResponseMessage(String.valueOf(transactionTotal.get()));
             result.setResponseCodeOK();
         } catch (Exception e) {
-            log.error("Error publishing HTS messages", e);
+            log.error("Error publishing HTS transactions", e);
             result.setResponseMessage("Exception: " + e);
             result.setResponseCode("500");
         } finally {

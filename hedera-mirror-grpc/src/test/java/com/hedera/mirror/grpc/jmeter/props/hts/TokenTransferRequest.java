@@ -31,7 +31,7 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Builder
 @Log4j2
 public class TokenTransferRequest {
-    private final int messagesPerBatchCount;
+    private final int transactionsPerBatchCount;
     private final TokenId tokenId;
     private final AccountId operatorId;
     private final AccountId recipientId;

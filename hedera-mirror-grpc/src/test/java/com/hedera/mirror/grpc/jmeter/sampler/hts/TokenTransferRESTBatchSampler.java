@@ -38,7 +38,7 @@ public class TokenTransferRESTBatchSampler {
     private final TokenTransferGetRequest tokenTransferGetRequest;
     private final WebClient webClient;
     private Stopwatch stopwatch;
-    private static final String REST_PATH = "/api/v1/transactions/";
+    private static final String REST_PATH = "/api/v1/transactions/{id}";
 
     public TokenTransferRESTBatchSampler(TokenTransferGetRequest tokenTransferGetRequest) {
         this.tokenTransferGetRequest = tokenTransferGetRequest;
@@ -48,13 +48,14 @@ public class TokenTransferRESTBatchSampler {
     public int retrieveTransaction() {
         stopwatch = Stopwatch.createStarted();
         List<String> transactions = Flux.fromIterable(tokenTransferGetRequest.getTransactionIds())
-                //TODO this may be overkill.
                 .parallel()
                 .runOn(Schedulers.parallel())
-                .flatMap(transactionId -> getTransaction(transactionId).onErrorResume(ex -> {
-                    log.info("Failed to retrieve transaction {}: {}", transactionId, ex);
-                    return Mono.empty();
-                }))
+                .flatMap(transactionId -> getTransaction(transactionId)
+                        //If errors bubble up, log and move on.
+                        .onErrorResume(ex -> {
+                            log.info("Failed to retrieve transaction {}: {}", transactionId, ex);
+                            return Mono.empty();
+                        }))
                 .sequential()
                 .collectList()
                 .block();
@@ -64,8 +65,11 @@ public class TokenTransferRESTBatchSampler {
     }
 
     private Mono<String> getTransaction(String transactionId) {
-        return webClient.get().uri(REST_PATH + transactionId).retrieve()
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder.path(REST_PATH).build(transactionId))
+                .retrieve()
                 .bodyToMono(String.class)
+                //IF a 404 (or other error) is retrieved, keep trying periodically
                 .retryWhen(Retry.fixedDelay(tokenTransferGetRequest.getRestRetryMax(), Duration
                         .ofMillis(tokenTransferGetRequest.getRestRetryBackoffMs())));
     }

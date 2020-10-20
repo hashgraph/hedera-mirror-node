@@ -22,7 +22,6 @@ package com.hedera.mirror.grpc.jmeter.client.hts;
 
 import static com.hedera.mirror.grpc.jmeter.client.hts.TokenTransferPublishClient.TRANSACTION_IDS_PROPERTY;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,7 +33,6 @@ import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
-import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferGetRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransferRESTBatchSampler;
@@ -53,26 +51,18 @@ public class TokenTransferRESTBatchClient extends AbstractJavaSamplerClient {
     public void setupTest(JavaSamplerContext javaSamplerContext) {
         propHandler = new PropertiesHandler(javaSamplerContext);
 
-        // read in nodes list, topic id, number of messages, message size
+        // read in properties related to retrieving transactions via REST
         restBaseUrl = propHandler.getTestParam("restBaseUrl", "localhost:5551");
-        expectedTransactionCount = propHandler.getIntTestParam("expectedTransactionCount", 0);
         restMaxRetry = propHandler.getIntTestParam("restMaxRetry", 1000);
         restRetryBackoffMs = propHandler.getIntTestParam("restRetryBackoffMs", 50);
         batchRestTimeoutSeconds = propHandler.getIntTestParam("batchRestTimeoutSeconds", 10);
 
-        // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
-        List<TransactionId> transactionIds = (List<TransactionId>) javaSamplerContext.getJMeterVariables()
+        //The expected number of transactions to receive, determines success
+        expectedTransactionCount = propHandler.getIntTestParam("expectedTransactionCount", 0);
+
+        //The list of transactions ids to retrieve, should be REST compliant already
+        formattedTransactionIds = (List<String>) javaSamplerContext.getJMeterVariables()
                 .getObject(TRANSACTION_IDS_PROPERTY);
-        formattedTransactionIds = new ArrayList<>();
-        for (TransactionId transactionId : transactionIds) {
-            //TODO There has to be a better way to do this
-            String transactionIdString = transactionId.toString();
-            int indexOfBadPeriod = transactionIdString.lastIndexOf(".");
-            formattedTransactionIds.add(new StringBuilder().append(transactionIdString.replaceFirst("@", "-")
-                    .substring(0, indexOfBadPeriod)).append("-")
-                    .append(transactionIdString.substring(indexOfBadPeriod + 1)).toString()
-            );
-        }
     }
 
     @Override
@@ -101,6 +91,7 @@ public class TokenTransferRESTBatchClient extends AbstractJavaSamplerClient {
             TokenTransferRESTBatchSampler tokenTransferRESTBatchSampler =
                     new TokenTransferRESTBatchSampler(restEntityRequest);
             AtomicInteger retrievedTransactions = new AtomicInteger(0);
+            //Run in the executor to control runtime
             executor.execute(() -> {
                 retrievedTransactions.addAndGet(tokenTransferRESTBatchSampler.retrieveTransaction());
             });

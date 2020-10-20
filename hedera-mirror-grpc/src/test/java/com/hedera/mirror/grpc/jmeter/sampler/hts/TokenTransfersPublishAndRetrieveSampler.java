@@ -41,6 +41,7 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
 import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.result.hts.TokenTransferPublishAndRetrieveResult;
+import com.hedera.mirror.grpc.util.Utility;
 
 @Log4j2
 public class TokenTransfersPublishAndRetrieveSampler {
@@ -49,7 +50,7 @@ public class TokenTransfersPublishAndRetrieveSampler {
     private final DescriptiveStatistics publishTokenTransferLatencyStats = new DescriptiveStatistics();
     private Stopwatch publishStopwatch;
     private final WebClient webClient;
-    private static final String REST_PATH = "/api/v1/transactions/";
+    private static final String REST_PATH = "/api/v1/transactions/{id}";
 
     public TokenTransfersPublishAndRetrieveSampler(TokenTransferRequest request,
                                                    SDKClientHandler sdkClient) {
@@ -66,11 +67,11 @@ public class TokenTransfersPublishAndRetrieveSampler {
         AtomicInteger unknownFailures = new AtomicInteger();
         Map<Status, Integer> hederaResponseCodeEx = new HashMap<>();
 
-        // publish MessagesPerBatchCount number of messages to the noted topic id
+        // publish TransactionsPerBatchCount number of transactions to the node
         log.trace("Submit transaction to {}, tokenTransferPublisher: {}", sdkClient
                 .getNodeInfo(), request);
 
-        for (int i = 0; i < request.getMessagesPerBatchCount(); i++) {
+        for (int i = 0; i < request.getTransactionsPerBatchCount(); i++) {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
@@ -78,12 +79,14 @@ public class TokenTransfersPublishAndRetrieveSampler {
                         .submitTokenTransfer(request.getTokenId(), request.getOperatorId(), request
                                 .getRecipientId(), request.getTransferAmount());
                 publishTokenTransferLatencyStats.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
-                String retrievedTransaction = getTransaction(convertTransactionId(transactionId.toString()));
+                //Convert the transaction id to be REST compliant, and retrieve the transaction
+                String retrievedTransaction = getTransaction(Utility
+                        .getRESTCompliantTransactionIdString(transactionId));
                 Instant received = Instant.now();
                 //TODO Having trouble wrangling the result object into a POJO, this is a workaround.
                 JSONObject obj = new JSONObject(retrievedTransaction).getJSONArray("transactions")
                         .getJSONObject(0);
-                //TODO Make sure the valid start time is equivalent of publish time for metrics
+                //Submit the needed metrics to the result.
                 result.onNext(obj.getString("consensus_timestamp"),
                         obj.getString("valid_start_timestamp"), received);
             } catch (HederaPrecheckStatusException preEx) {
@@ -92,7 +95,7 @@ public class TokenTransfersPublishAndRetrieveSampler {
                 networkFailures.incrementAndGet();
             } catch (Exception ex) {
                 unknownFailures.incrementAndGet();
-                log.error("Unexpected exception publishing message {} to {}: {}", i,
+                log.error("Unexpected exception publishing transactions {} to {}: {}", i,
                         sdkClient.getNodeInfo().getNodeId(), ex);
             }
         }
@@ -117,17 +120,10 @@ public class TokenTransfersPublishAndRetrieveSampler {
                 String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
     }
 
-    //TODO Is there a better way of doing this?
-    private String convertTransactionId(String transactionId) {
-        int indexOfBadPeriod = transactionId.lastIndexOf(".");
-        String realTransaction = new StringBuilder().append(transactionId.replaceFirst("@", "-")
-                .substring(0, indexOfBadPeriod)).append("-")
-                .append(transactionId.substring(indexOfBadPeriod + 1)).toString();
-        return realTransaction;
-    }
-
     private String getTransaction(String transactionId) {
-        return webClient.get().uri(REST_PATH + transactionId).retrieve()
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder.path(REST_PATH).build(transactionId))
+                .retrieve()
                 .bodyToMono(String.class)
                 .retryWhen(Retry
                         .fixedDelay(request.getRestRetryMax(), Duration.ofMillis(request.getRestRetryBackoffMs())))

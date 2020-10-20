@@ -57,11 +57,11 @@ public class TokenTransfersPublishSampler {
         AtomicInteger unknownFailures = new AtomicInteger();
         Map<Status, Integer> hederaResponseCodeEx = new HashMap<>();
 
-        // publish MessagesPerBatchCount number of messages to the noted topic id
+        // publish TransactionsPerBatchCount number of transactions to the node
         log.trace("Submit transaction to {}, tokenTransferPublisher: {}", sdkClient
                 .getNodeInfo(), tokenTransferRequest);
 
-        for (int i = 0; i < tokenTransferRequest.getMessagesPerBatchCount(); i++) {
+        for (int i = 0; i < tokenTransferRequest.getTransactionsPerBatchCount(); i++) {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
@@ -77,14 +77,14 @@ public class TokenTransfersPublishSampler {
                 networkFailures.incrementAndGet();
             } catch (Exception ex) {
                 unknownFailures.incrementAndGet();
-                log.error("Unexpected exception publishing message {} to {}: {}", i,
+                log.error("Unexpected exception publishing transactions {} to {}: {}", i,
                         sdkClient.getNodeInfo().getNodeId(), ex);
             }
         }
 
         log.info("Submitted {} token transfers for token {} from {} to {} in {} on node {}. {} preCheckErrors, {} " +
                         "networkErrors, {} unknown errors", tokenTransferRequest
-                        .getMessagesPerBatchCount(), tokenTransferRequest.getTokenId(),
+                        .getTransactionsPerBatchCount(), tokenTransferRequest.getTokenId(),
                 tokenTransferRequest
                         .getOperatorId(), tokenTransferRequest.getRecipientId(), totalStopwatch,
                 sdkClient.getNodeInfo().getNodeId(),

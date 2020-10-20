@@ -44,6 +44,7 @@ import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
 import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.hts.TokenTransfersPublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
+import com.hedera.mirror.grpc.util.Utility;
 
 @Log4j2
 public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
@@ -51,7 +52,7 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
     private PropertiesHandler propHandler;
     private List<SDKClientHandler> clientList;
     private TokenId tokenId;
-    private int messagesPerBatchCount;
+    private int transactionsPerBatchCount;
     private AccountId operatorId;
     private Ed25519PrivateKey operatorPrivateKey;
     private AccountId recipientId;
@@ -65,17 +66,19 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
     public void setupTest(JavaSamplerContext javaSamplerContext) {
         propHandler = new PropertiesHandler(javaSamplerContext);
 
-        // read in nodes list, topic id, number of messages, message size
+        // read in properties for publishing a Token Transfer
         tokenId = TokenId.fromString(propHandler.getTestParam("tokenId", "0"));
-        messagesPerBatchCount = propHandler.getIntTestParam("messagesPerBatchCount", 0);
-        publishInterval = propHandler.getIntTestParam("publishInterval", 20000);
-        publishTimeout = propHandler.getIntTestParam("publishTimeout", 60);
-        verifyTransactions = Boolean.valueOf(propHandler.getTestParam("verifyTransactions", "true"));
-        printStatusInterval = propHandler.getLongTestParam("statusPrintIntervalMinutes", 1L);
         operatorId = AccountId.fromString(propHandler.getTestParam("operatorId", "0"));
         operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getTestParam("operatorKey", "0"));
         recipientId = AccountId.fromString(propHandler.getTestParam("recipientId", "1"));
         transferAmount = propHandler.getLongTestParam("transferAmount", 1L);
+
+        // read in properties related to batch publishing and printing
+        transactionsPerBatchCount = propHandler.getIntTestParam("messagesPerBatchCount", 0);
+        publishInterval = propHandler.getIntTestParam("publishInterval", 20000);
+        publishTimeout = propHandler.getIntTestParam("publishTimeout", 60);
+        verifyTransactions = Boolean.valueOf(propHandler.getTestParam("verifyTransactions", "true"));
+        printStatusInterval = propHandler.getLongTestParam("statusPrintIntervalMinutes", 1L);
 
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
         String[] nodeList = propHandler.getTestParam("networkNodes", "localhost:0.0.3:50211").split(",");
@@ -98,16 +101,16 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
         SampleResult result = new SampleResult();
         result.sampleStart();
 
-        // kick off batched message publish
+        // kick off batched transaction publish
         TokenTransferRequest tokenTransferRequest = TokenTransferRequest.builder()
-                .messagesPerBatchCount(messagesPerBatchCount)
+                .transactionsPerBatchCount(transactionsPerBatchCount)
                 .operatorId(operatorId)
                 .recipientId(recipientId)
                 .tokenId(tokenId)
                 .transferAmount(transferAmount)
                 .build();
 
-        // publish message executor service
+        // publish transaction executor service
         ScheduledExecutorService executor = Executors
                 .newScheduledThreadPool(clientList.size() * Runtime.getRuntime().availableProcessors());
 
@@ -120,10 +123,10 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
             clientList.forEach(x -> {
                 executor.scheduleAtFixedRate(
                         () -> {
-                            TokenTransfersPublishSampler topicMessagesPublishSampler =
+                            TokenTransfersPublishSampler tokenTransfersPublishSampler =
                                     new TokenTransfersPublishSampler(tokenTransferRequest, x,
                                             verifyTransactions);
-                            transactions.addAll(topicMessagesPublishSampler
+                            transactions.addAll(tokenTransfersPublishSampler
                                     .submitTokenTransferTransactions());
                         },
                         0,
@@ -143,12 +146,17 @@ public class TokenTransferPublishClient extends AbstractJavaSamplerClient {
             result.setResponseMessage(String.valueOf(transactions.size()));
             result.setResponseCodeOK();
         } catch (Exception e) {
-            log.error("Error publishing HTS messages", e);
+            log.error("Error publishing HTS transactions", e);
             result.setResponseMessage("Exception: " + e);
             result.setResponseCode("500");
         } finally {
             result.sampleEnd();
-            javaSamplerContext.getJMeterVariables().putObject(TRANSACTION_IDS_PROPERTY, transactions);
+
+            //Convert the transaction ids to be REST compliant and set the property for the REST client
+            javaSamplerContext.getJMeterVariables().putObject(TRANSACTION_IDS_PROPERTY, transactions.stream()
+                    .map(transactionId -> Utility.getRESTCompliantTransactionIdString(transactionId))
+                    .collect(Collectors.toList()));
+
             result.setSuccessful(success);
 
             if (!executor.isShutdown()) {
