@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -45,7 +46,10 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
  */
 @Value
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class EntityId implements Serializable {
+public class EntityId implements Serializable, Comparable<EntityId> {
+
+    private static final Comparator<EntityId> COMPARATOR = Comparator
+            .nullsFirst(Comparator.comparingLong(EntityId::getId));
 
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
     private static final long serialVersionUID = 1427649605832330197L;
@@ -121,5 +125,10 @@ public class EntityId implements Serializable {
         entity.setEntityNum(entityNum);
         entity.setEntityTypeId(type);
         return entity;
+    }
+
+    @Override
+    public int compareTo(EntityId other) {
+        return COMPARATOR.compare(this, other);
     }
 }
