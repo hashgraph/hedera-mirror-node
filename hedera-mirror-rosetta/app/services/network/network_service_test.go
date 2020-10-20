@@ -149,36 +149,6 @@ func TestNetworkOptions(t *testing.T) {
 	assert.Nil(t, e)
 }
 
-func TestCompareErrorsScrambledArrays(t *testing.T) {
-	sample1 := []*rTypes.Error{
-		{
-			Code:      1,
-			Message:   "Some1",
-			Retriable: true,
-		},
-		{
-			Code:      2,
-			Message:   "Some2",
-			Retriable: false,
-		},
-	}
-
-	sample2 := []*rTypes.Error{
-		{
-			Code:      2,
-			Message:   "Some2",
-			Retriable: false,
-		},
-		{
-			Code:      1,
-			Message:   "Some1",
-			Retriable: true,
-		},
-	}
-
-	assert.True(t, compareErrors(sample1, sample2))
-}
-
 func compareErrors(e1, e2 []*rTypes.Error) bool {
 	if len(e1) != len(e2) {
 		return false
