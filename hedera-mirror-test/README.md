@@ -264,12 +264,17 @@ The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml` prov
     - `hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[x]` - as described in [performance](#performance-test-execution)
     - `hedera.mirror.test.performance.clientUseMAPI[x]` - as described in [performance](#performance-test-execution)
 
-### HTS Performance Publish And Retrieve
+### HTS Performance Tests
 The `hedera-mirror-test/src/test/resources/k8s/hts-perf-publish-and-retrieve.yml` provides a mostly pre-configured Job and ConfigsMap to run the performance tests `Token_Transfer_Publish_And_Retrieve.jmx` test plan.
 
     kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hts-perf-publish-and-retrieve.yml
 
-The following properties must be specified prior to deploying this specs
+The `hedera-mirror-test/src/test/resources/k8s/hts-perf-batch-publish-batch-validate.yml` provides a mostly pre-configured Job and ConfigsMap to run the performance tests `Token_Transfer_Publish_Batch_Validate_Batch.jmx` test plan.
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hts-perf-batch-publish-batch-validate.yml
+
+
+The following properties must be specified prior to deploying these specs
 
 - `operatorid` - as described in [acceptance tests section](#acceptance-test-execution)
 - `operatorkey` - as described in [acceptance tests section](#acceptance-test-execution)
