@@ -141,7 +141,7 @@ const filterValidityChecks = (param, op, val) => {
   }
 
   // Validate the value
-  switch (param) {
+  switch (param.toLowerCase()) {
     case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = isValidAccountBalanceQuery(val);
@@ -677,7 +677,7 @@ const formatComparator = (comparator) => {
     comparator.operator = opsMap[comparator.operator];
 
     // format value
-    switch (comparator.key) {
+    switch (comparator.key.toLowerCase()) {
       case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.fromString(comparator.value).getEncodedId();
@@ -739,6 +739,9 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
   }
 
   const transactionType = parsedQueryParams[constants.filterKeys.TRANSACTION_TYPE];
+  if (_.isNil(transactionType)) {
+    return '';
+  }
 
   if (isValidTransactionType(transactionType)) {
     return `${constants.transactionColumns.TYPE}${opsMap.eq}${
@@ -746,7 +749,8 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
     }`;
   }
 
-  return '';
+  // throw error if transactionType filter was provided but invalid
+  throw new InvalidArgumentError(`Invalid transactionType value '${transactionType}'`);
 };
 
 module.exports = {

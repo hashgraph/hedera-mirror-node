@@ -22,6 +22,7 @@
 const utils = require('../utils.js');
 const config = require('../config.js');
 const constants = require('../constants.js');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -316,19 +317,28 @@ describe('Utils getTransactionTypeQuery tests', () => {
     expect(utils.getTransactionTypeQuery({})).toBe('');
   });
   test('Verify empty transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toBe('');
+    expect(() => utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
+      InvalidArgumentError
+    );
   });
   test('Verify non applicable transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})).toBe('');
+    expect(() =>
+      utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+    ).toThrowError(InvalidArgumentError);
   });
   test('Verify applicable TOKENCREATION transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'}, 'type')).toBe(
+    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
       `type = ${constants.transactionTypes.TOKENCREATION}`
     );
   });
   test('Verify applicable TOKENASSOCIATE transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'}, 'type')).toBe(
+    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
       `type = ${constants.transactionTypes.TOKENASSOCIATE}`
+    );
+  });
+  test('Verify applicable consensussubmitmessage transaction type query', () => {
+    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
+      `type = ${constants.transactionTypes.CONSENSUSSUBMITMESSAGE}`
     );
   });
 });
