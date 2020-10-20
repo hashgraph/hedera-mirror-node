@@ -52,4 +52,4 @@ jobs:
         working-directory: ${{env.working-directory}}/scripts
       - name: Run CLI Validation
         run: bash ./validation/run-validation.sh
-        working-directory: ${{env.working-directory}}
+        working-directory: ${{env.working-directory}}/scripts

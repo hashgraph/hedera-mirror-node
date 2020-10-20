@@ -9,7 +9,7 @@ do
     http_code=$(tail -n1 <<< "$response")
     if [ "$http_code" = "200" ]
     then
-        echo Mirror Node has started
+        echo Mirror Node has started initialising
         network_identifier=$(tail -n2 <<< "$response" | head -n1 | jq '.network_identifiers[0]')
         break
     fi
@@ -32,8 +32,14 @@ do
 
     if [ "$http_code" = "200" ]
     then
-        echo Mirror Node syncing has started
-        exit 0
+        current_block_index=$(tail -n2 <<< "$response" | head -n1 | jq '.current_block_identifier.index')
+        if [ "$current_block_index" != "0" ]
+        then
+            echo Mirror Node syncing has started
+            exit 0
+        else
+            echo Mirror Node syncing has not started yet...
+        fi
     else
         echo Mirror Node syncing has not started yet...
 
