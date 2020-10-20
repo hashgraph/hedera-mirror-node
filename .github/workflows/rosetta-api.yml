@@ -47,7 +47,7 @@ jobs:
         working-directory: ${{env.working-directory}}/build
       - name: Run Mirror Node
         run: docker run -d -p 5700:5700 ${{env.image-tag}}
-      - name: Wait for Mirror Node to start
+      - name: Wait for Mirror Node to start syncing
         run: bash ./wait-for-mirror-node.sh
         working-directory: ${{env.working-directory}}/scripts
       - name: Run CLI Validation
