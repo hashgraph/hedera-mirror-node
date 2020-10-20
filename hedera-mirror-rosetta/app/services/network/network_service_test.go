@@ -144,7 +144,6 @@ func TestNetworkOptions(t *testing.T) {
 	assert.Equal(t, expectedResult.Allow.HistoricalBalanceLookup, res.Allow.HistoricalBalanceLookup)
 	assert.Equal(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
 	assert.Equal(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
-	assert.Equal(t, len(expectedResult.Allow.Errors), len(res.Allow.Errors))
 	assert.True(t, compareErrors(expectedResult.Allow.Errors, res.Allow.Errors))
 	assert.Nil(t, e)
 }
