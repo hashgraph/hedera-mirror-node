@@ -418,11 +418,11 @@ func TestShouldSuccessFindCryptoTransfers(t *testing.T) {
 		WillReturnRows(rows)
 
 	// when
-	res := tr.findCryptoTransfers([]int64{consensusTimestamp})
+	result := tr.findCryptoTransfers([]int64{consensusTimestamp})
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, dbCryptoTransfers, res)
+	assert.Equal(t, dbCryptoTransfers, result)
 }
 
 func TestShouldSuccessReturnStatuses(t *testing.T) {
@@ -674,17 +674,17 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 
 func TestShouldSuccessGetHashString(t *testing.T) {
 	// given
-	txStr := "967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507"
-	bytesTx, _ := hex.DecodeString(txStr)
+	txStr := "0x967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507"
+	bytesTx, _ := hex.DecodeString(hexutils.SafeRemoveHexPrefix(txStr))
 	givenTx := transaction{
 		TransactionHash: bytesTx,
 	}
 
 	// when
-	res := givenTx.getHashString()
+	result := givenTx.getHashString()
 
 	// then
-	assert.Equal(t, "0x"+txStr, res)
+	assert.Equal(t, txStr, result)
 }
 
 func TestShouldSuccessIntsToString(t *testing.T) {
