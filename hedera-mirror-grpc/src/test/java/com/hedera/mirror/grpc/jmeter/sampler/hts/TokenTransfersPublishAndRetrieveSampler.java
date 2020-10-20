@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.json.JSONObject;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
@@ -47,7 +47,7 @@ import com.hedera.mirror.grpc.util.Utility;
 public class TokenTransfersPublishAndRetrieveSampler {
     private final TokenTransferRequest request;
     private final SDKClientHandler sdkClient;
-    private final DescriptiveStatistics publishTokenTransferLatencyStats = new DescriptiveStatistics();
+    private final SummaryStatistics publishTokenTransferLatencyStats = new SummaryStatistics();
     private Stopwatch publishStopwatch;
     private final WebClient webClient;
     private static final String REST_PATH = "/api/v1/transactions/{id}";
@@ -109,15 +109,10 @@ public class TokenTransfersPublishAndRetrieveSampler {
         double min = publishTokenTransferLatencyStats.getMin();
         double max = publishTokenTransferLatencyStats.getMax();
         double mean = publishTokenTransferLatencyStats.getMean();
-        double median = publishTokenTransferLatencyStats.getPercentile(50);
-        double seventyFifthPercentile = publishTokenTransferLatencyStats.getPercentile(75);
-        double ninetyFifthPercentile = publishTokenTransferLatencyStats.getPercentile(95);
 
-        log.info("Token Transfer publish node {}: stats, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th" +
-                        " percentile: {} ms," +
-                        " 95th percentile: {} ms", sdkClient.getNodeInfo().getNodeId(), String.format("%.03f", min),
-                String.format("%.03f", max), String.format("%.03f", mean), String.format("%.03f", median),
-                String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
+        log.info("Token Transfer publish node {}: stats, min: {} ms, max: {} ms, avg: {} ms",
+                sdkClient.getNodeInfo().getNodeId(), String.format("%.03f", min), String.format("%.03f", max),
+                String.format("%.03f", mean));
     }
 
     private String getTransaction(String transactionId) {

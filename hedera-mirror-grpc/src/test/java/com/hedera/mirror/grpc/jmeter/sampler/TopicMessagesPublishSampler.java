@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import com.hedera.hashgraph.sdk.HederaNetworkException;
 import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
@@ -46,7 +46,7 @@ public class TopicMessagesPublishSampler {
     private final TopicMessagePublishRequest topicMessagePublishRequest;
     private final SDKClientHandler sdkClient;
     private final boolean verifyTransactions;
-    private final DescriptiveStatistics publishToConsensusLatencyStats = new DescriptiveStatistics();
+    private final SummaryStatistics publishToConsensusLatencyStats = new SummaryStatistics();
     private Stopwatch publishStopwatch;
 
     @SneakyThrows
@@ -103,13 +103,9 @@ public class TopicMessagesPublishSampler {
         double min = publishToConsensusLatencyStats.getMin();
         double max = publishToConsensusLatencyStats.getMax();
         double mean = publishToConsensusLatencyStats.getMean();
-        double median = publishToConsensusLatencyStats.getPercentile(50);
-        double seventyFifthPercentile = publishToConsensusLatencyStats.getPercentile(75);
-        double ninetyFifthPercentile = publishToConsensusLatencyStats.getPercentile(95);
 
-        log.info("Publish2Consensus stats, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th percentile: {} ms," +
+        log.info("Publish2Consensus stats, min: {} ms, max: {} ms, avg: {} ms" +
                         " 95th percentile: {} ms", String.format("%.03f", min), String.format("%.03f", max),
-                String.format("%.03f", mean), String.format("%.03f", median),
-                String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
+                String.format("%.03f", mean));
     }
 }
