@@ -158,7 +158,6 @@ public class SDKClientHandler {
 
     public List<TransactionId> getValidTransactions(List<TransactionId> transactionIds) {
         log.debug("Verify Transactions {}", transactionIds.size());
-//        AtomicInteger counter = new AtomicInteger(0);
         List<TransactionId> validTransactions = new ArrayList<>();
         transactionIds.forEach(x -> {
             TransactionReceipt receipt = null;
