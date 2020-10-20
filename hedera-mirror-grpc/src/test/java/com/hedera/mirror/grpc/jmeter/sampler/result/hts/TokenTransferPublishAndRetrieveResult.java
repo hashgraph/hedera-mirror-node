@@ -96,7 +96,7 @@ public class TokenTransferPublishAndRetrieveResult {
     private void printTotalStats() {
         String totalRate = String.format("%.02f", getMessageRate(getTransactionCount(), totalStopwatch,
                 lastMessage));
-        log.info("Node {}:Observed {} total messages in {} ({}/s). Last message received {} ago.",
+        log.info("Node {}: Observed {} total messages in {} ({}/s). Last message received {} ago.",
                 nodeId, transactionCount, totalStopwatch, totalRate, lastMessage);
 
         printIndividualStat(e2eLatencyTotalStats, "Total E2E Latency");
