@@ -3,8 +3,8 @@ name: Rosetta API
 on: pull_request
 
 env:
-    working-directory: ./hedera-mirror-rosetta
-    image-tag: mirror-node
+  working-directory: ./hedera-mirror-rosetta
+  image-tag: mirror-node
 
 jobs:
   build:
