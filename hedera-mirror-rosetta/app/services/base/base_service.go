@@ -18,7 +18,7 @@
  * ‍
  */
 
-package services
+package base
 
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -29,22 +29,22 @@ import (
 	"log"
 )
 
-// Commons - Struct implementing common functionalities used by more than 1 service
-type Commons struct {
+// BaseService - Struct implementing common functionalities used by more than 1 service
+type BaseService struct {
 	blockRepo       repositories.BlockRepository
 	transactionRepo repositories.TransactionRepository
 }
 
-// NewCommons - Service containing common functions that are shared between other services
-func NewCommons(blockRepo repositories.BlockRepository, transactionRepo repositories.TransactionRepository) Commons {
-	return Commons{
+// NewBaseService - Service containing common functions that are shared between other services
+func NewBaseService(blockRepo repositories.BlockRepository, transactionRepo repositories.TransactionRepository) BaseService {
+	return BaseService{
 		blockRepo:       blockRepo,
 		transactionRepo: transactionRepo,
 	}
 }
 
 // RetrieveBlock - Retrieves Block by a given PartialBlockIdentifier
-func (c *Commons) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) (*types.Block, *rTypes.Error) {
+func (c *BaseService) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) (*types.Block, *rTypes.Error) {
 	if bIdentifier.Hash != nil && bIdentifier.Index != nil {
 		h := hex.SafeRemoveHexPrefix(*bIdentifier.Hash)
 		return c.blockRepo.FindByIdentifier(*bIdentifier.Index, h)
@@ -57,4 +57,32 @@ func (c *Commons) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) (*ty
 		log.Printf(`An error occurred while retrieving Block with Index [%d] and Hash [%v]. Should not happen.`, bIdentifier.Index, bIdentifier.Hash)
 		return nil, errors.Errors[errors.InternalServerError]
 	}
+}
+
+func (c *BaseService) RetrieveLatest() (*types.Block, *rTypes.Error) {
+	return c.blockRepo.RetrieveLatest()
+}
+
+func (c *BaseService) RetrieveGenesis() (*types.Block, *rTypes.Error) {
+	return c.blockRepo.RetrieveGenesis()
+}
+
+func (c *BaseService) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
+	return c.blockRepo.FindByIdentifier(index, hash)
+}
+
+func (c *BaseService) FindByHashInBlock(identifier string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error) {
+	return c.transactionRepo.FindByHashInBlock(identifier, consensusStart, consensusEnd)
+}
+
+func (c *BaseService) FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
+	return c.transactionRepo.FindBetween(start, end)
+}
+
+func (c *BaseService) Statuses() (map[int]string, *rTypes.Error) {
+	return c.transactionRepo.Statuses()
+}
+
+func (c *BaseService) TypesAsArray() ([]string, *rTypes.Error) {
+	return c.transactionRepo.TypesAsArray()
 }
