@@ -29,9 +29,9 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.Id> {
 
     @Override
-    @EntityGraph(attributePaths = {"tokenBalances"})
+    @EntityGraph("AccountBalance.tokenBalances")
     List<AccountBalance> findAll();
 
-    @EntityGraph(attributePaths = {"tokenBalances"})
+    @EntityGraph("AccountBalance.tokenBalances")
     List<AccountBalance> findByIdConsensusTimestamp(long consensusTimestamp);
 }

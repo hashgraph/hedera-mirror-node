@@ -72,7 +72,7 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
             TokenBalance.Id id = new TokenBalance.Id();
             id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
             id.setConsensusTimestamp(consensusTimestamp);
-            id.setTokenId(EntityId.of(0, 0, i, EntityTypeEnum.TOKEN));
+            id.setTokenId(EntityId.of(0, 1, i, EntityTypeEnum.TOKEN));
             tokenBalance.setBalance(balance);
             tokenBalance.setId(id);
             tokenBalanceList.add(tokenBalance);
