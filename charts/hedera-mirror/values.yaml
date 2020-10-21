@@ -33,7 +33,6 @@ importer:
         importer:
           db:
             name: mirror_node
-            noLoadBalancing: true
             password: mirror_node_pass
             username: mirror_node
   enabled: true

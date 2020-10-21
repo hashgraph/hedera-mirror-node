@@ -15,7 +15,8 @@ config:
     mirror:
       importer:
         dataPath: /var/lib/hedera-mirror-importer
-        db: {}
+        db:
+          loadBalance: false
 
 fullnameOverride: ""
 

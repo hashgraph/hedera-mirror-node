@@ -37,10 +37,10 @@ public class DBProperties {
     @NotBlank
     private String host = "";
 
+    private boolean loadBalance = true;
+
     @NotBlank
     private String name = "";
-
-    private boolean noLoadBalancing = false;
 
     @NotBlank
     private String password = "";

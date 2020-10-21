@@ -22,12 +22,13 @@ package com.hedera.mirror.importer.config;
 
 import java.util.Map;
 import org.hibernate.EmptyInterceptor;
+import org.hibernate.Interceptor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@ConditionalOnProperty(prefix = "hedera.mirror.importer.db", name = "noLoadBalancing", havingValue = "true")
+@ConditionalOnProperty(prefix = "hedera.mirror.importer.db", name = "loadBalance", havingValue = "false")
 @Configuration
 public class HibernateConfiguration implements HibernatePropertiesCustomizer {
     @Override
@@ -36,7 +37,10 @@ public class HibernateConfiguration implements HibernatePropertiesCustomizer {
     }
 
     @Bean
-    public EmptyInterceptor hibernateInterceptor() {
+    public Interceptor hibernateInterceptor() {
+        // https://www.pgpool.net/docs/latest/en/html/runtime-config-load-balancing.html
+        // pgpool disables load balancing for SQL statements beginning with an arbitrary comment and sends them to the
+        // master / primary node. This is used to prevent the stale read-after-write issue.
         return new EmptyInterceptor() {
             @Override
             public String onPrepareStatement(final String sql) {
