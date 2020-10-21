@@ -6,6 +6,7 @@ This section covers the E2E testing strategy employed by the mirror node for key
 
 In an effort to quickly confirm product capability during deployment windows, we desired to have E2E tests that would allow us to confirm functionality on core scenarios that spanned the main and mirror networks interactions.
 HCS specifically is a key scenario where transactions are submitted to the main network, the mirror node parser ingests these to the DB and the mirror node GRCP endpoint is subscribed to to obtain messages verifying transactions.
+HTS is another key scenerio where transactions are submitted to the main network, the mirror node parser ingests these to the DB, and the mirror node REST transaction endpoint is periodically hit to verify transactions.
 This E2E suite gives us the ability to execute scenarios as external users would and gain the required confidence during development cycles.
 
 To achieve this the tests utilize the Hedera Java SDK under the hood - https://github.com/hashgraph/hedera-sdk-java
@@ -175,6 +176,16 @@ The test properties file is located at `hedera-mirror-test/src/test/jmeter/user.
 - `hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[x]` - The wait time a client will hold on for to receive expected message counts
 - `hedera.mirror.test.performance.clientUseMAPI[x]` - Toggle to use the Mirror API (MAPI) endpoints under the [Hedera Java SDK](https://github.com/hashgraph/hedera-sdk-java)
 
+HTS tests require additional properties to execute, including
+-   `hedera.mirror.test.performance.recipientId` - account id on network 'x.y.z' format to receive tokens
+-   `hedera.mirror.test.performance.tokenId` - token id on network 'x.y.z' format to transfer
+-   `hedera.mirror.test.performance.transferAmount` - number of tokens to transfer between accounts
+-   `hedera.mirror.test.performance.restBaseUrl` - the url for the REST service to request from
+-   `hedera.mirror.test.performance.restMaxRetry` - the number of retries used to acquire a transaction from the REST service
+-   `hedera.mirror.test.performance.restRetryBackoffMs` - the interval (in milliseconds) between retry attempts when requesting a tranasction from the REST service
+-   `hedera.mirror.test.performance.expectedTransactionCount` - the minimum number of transactions needed to mark the test successful
+-   `hedera.mirror.test.performance.batchRestTimeoutSeconds` - the number of seconds given to the REST sampler to receive all of the transactions from the REST service.
+
 > **_Note:_** currently only the `E2E_Multi_Client_Subscribe_Only.jmx` test plan uses multiple clients. All others use a single client. So in most cases only hedera.mirror.test.performance.clientProperty[0]
 
 ## JMX Test Plan Structure
@@ -218,7 +229,7 @@ The hedera-mirror-test module offers a containerized distribution of the [accept
 
 ## Kubernetes Cluster Run
 
-The repo provides 2 pre-configured Kubernetes [Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/) specs : `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml` and `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml`
+The repo provides 4 pre-configured Kubernetes [Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/) specs : `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml`, `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml`, `hedera-mirror-test/src/test/resources/k8s/hcs-perf-message-submit.yml`, and `hedera-mirror-test/src/test/resources/k8s/hts-perf-publish-and-retrieve.yml`
 These utilize [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/) and [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/) to hold the configuration values
 
 ### HCS Performance Publish
@@ -252,6 +263,23 @@ The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml` prov
     - `hedera.mirror.test.performance.clientIncomingMessageCount[x]` - as described in [performance](#performance-test-execution)
     - `hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[x]` - as described in [performance](#performance-test-execution)
     - `hedera.mirror.test.performance.clientUseMAPI[x]` - as described in [performance](#performance-test-execution)
+
+### HTS Performance Tests
+The `hedera-mirror-test/src/test/resources/k8s/hts-perf-publish-and-retrieve.yml` provides a mostly pre-configured Job and ConfigsMap to run the performance tests `Token_Transfer_Publish_And_Retrieve.jmx` test plan.
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hts-perf-publish-and-retrieve.yml
+
+The `hedera-mirror-test/src/test/resources/k8s/hts-perf-batch-publish-batch-validate.yml` provides a mostly pre-configured Job and ConfigsMap to run the performance tests `Token_Transfer_Publish_Batch_Validate_Batch.jmx` test plan.
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hts-perf-batch-publish-batch-validate.yml
+
+
+The following properties must be specified prior to deploying these specs
+
+- `operatorid` - as described in [acceptance tests section](#acceptance-test-execution)
+- `operatorkey` - as described in [acceptance tests section](#acceptance-test-execution)
+- `recipientId` - as described in [acceptance tests section](#acceptance-test-execution)
+- `tokenId` - as described in [acceptance tests section](#acceptance-test-execution)
 
 
 > **_Note_** based on your test case you may need to specify more than one environment variable under `spec.template.spec.containers.env`
