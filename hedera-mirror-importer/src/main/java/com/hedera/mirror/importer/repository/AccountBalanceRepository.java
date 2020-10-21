@@ -21,11 +21,17 @@ package com.hedera.mirror.importer.repository;
  */
 
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 
 public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.Id> {
 
+    @Override
+    @EntityGraph(attributePaths = {"tokenBalances"})
+    List<AccountBalance> findAll();
+
+    @EntityGraph(attributePaths = {"tokenBalances"})
     List<AccountBalance> findByIdConsensusTimestamp(long consensusTimestamp);
 }
