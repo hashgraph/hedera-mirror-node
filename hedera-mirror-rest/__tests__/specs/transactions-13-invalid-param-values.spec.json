@@ -6,7 +6,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/transactions?timestamp=-1&account.id=0.x&type=good&result=best",
+  "url": "/api/v1/transactions?timestamp=-1&account.id=0.x&type=good&result=best&transactionType=invalid",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -22,6 +22,9 @@
         },
         {
           "message": "Invalid parameter: result"
+        },
+        {
+          "message": "Invalid parameter: transactionType"
         }
       ]
     }

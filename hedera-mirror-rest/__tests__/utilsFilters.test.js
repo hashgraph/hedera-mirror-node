@@ -186,7 +186,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '-1'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_PUBLICKEY, 'key'),
       utils.buildComparatorFilter(constants.filterKeys.RESULT, 'good'),
-      utils.buildComparatorFilter(constants.filterKeys.TYPE, 'all'),
+      utils.buildComparatorFilter(constants.filterKeys.CREDIT_TYPE, 'all'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '-1'),
       utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'encrypt'),
     ];
@@ -220,8 +220,8 @@ describe('utils validateAndParseFilters tests', () => {
       ),
       utils.buildComparatorFilter(constants.filterKeys.RESULT, 'success'),
       utils.buildComparatorFilter(constants.filterKeys.RESULT, 'fail'),
-      utils.buildComparatorFilter(constants.filterKeys.TYPE, 'credit'),
-      utils.buildComparatorFilter(constants.filterKeys.TYPE, 'debit'),
+      utils.buildComparatorFilter(constants.filterKeys.CREDIT_TYPE, 'credit'),
+      utils.buildComparatorFilter(constants.filterKeys.CREDIT_TYPE, 'debit'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '45000'),
       utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'utf-8'),
     ];
