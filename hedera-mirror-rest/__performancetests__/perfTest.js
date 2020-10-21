@@ -54,29 +54,6 @@ const executeQuerySet = async (querySet) => {
     url = 'http://' + url;
   }
   let querySetResult = {elapsedTimesMs: [], responseSizes: []};
-  if (querySet.idValues) {
-    for (let i = 0; i < querySet.idValues.length; i++) {
-      let query = vsprintf(url, querySet.idValues[i]);
-      let hrstart = process.hrtime();
-      let response = await fetch(query)
-        .then((response) => {
-          return response.text();
-        })
-        .catch((error) => {
-          console.log(`Error when querying ${query} : ${error}`);
-        });
-      let hrend = process.hrtime(hrstart);
-      querySetResult.elapsedTimesMs.push(hrend[0] * 1000 + hrend[1] / 1000000);
-      querySetResult.responseSizes.push(response.length);
-    }
-    return {
-      name: querySet.name,
-      query: querySet.query,
-      count: querySet.idValues.length,
-      timeTakeMs: getAvgAndStdDev(querySetResult.elapsedTimesMs),
-      responseSize: getAvgAndStdDev(querySetResult.responseSizes),
-    };
-  }
   for (let i = 0; i < querySet.paramValues.length; i++) {
     // TODO: support concurrent requests. That will make it possible to test throughput vs latency for system.
     let query = vsprintf(url, querySet.paramValues[i]);

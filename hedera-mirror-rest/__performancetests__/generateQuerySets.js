@@ -117,74 +117,84 @@ const populateIdValues = async (test, getSamples, convertToParam) => {
   return idValues;
 };
 
+const makeQueryParamsQuerySet = async (test) => {
+  let paramValues = [];
+  let paramName;
+  let querySuffix;
+  let isRangeQuery = false;
+  let query = test.query;
+  if (test.filterAxis === 'BALANCE') {
+    paramName = 'account.balance';
+    paramValues = await populateParamValues(test, paramName, 'rangeTinyHbars', sampleBalanceValues, (sample) => {
+      return '' + sample;
+    });
+  } else if (test.filterAxis === 'CONSENSUS_TIMESTAMP') {
+    paramName = 'timestamp';
+    paramValues = await populateParamValues(
+      test,
+      paramName,
+      'rangeDurationNanos',
+      sampleConsensusTimestamps,
+      (sample) => {
+        return timestampToParamValue(sample);
+      }
+    );
+  } else if (test.filterAxis === 'ACCOUNTID') {
+    paramName = 'account.id';
+    paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, (sample) => {
+      return '' + sample;
+    });
+  } else if (test.filterAxis === 'TOKENID') {
+    paramName = 'token.id';
+    paramValues = await populateParamValues(test, 'token.id', 'rangeNumTokens', sampleTokenIds, (sample) => {
+      return '' + sample;
+    });
+  } else if (test.filterAxis === 'NA') {
+  } else {
+    throw `Unexpected filterAxis '${test.filterAxis}'`;
+  }
+  if (isRangeQuery) {
+    querySuffix = paramName + '=gt:%s&' + paramName + '=lt:%s';
+  } else {
+    querySuffix = paramName + '=%d';
+  }
+  if (query.lastIndexOf('?') === -1) {
+    query += '?' + querySuffix;
+  } else {
+    query += '&' + querySuffix;
+  }
+  return {
+    name: test.name,
+    query: query,
+    paramValues: paramValues,
+  };
+};
+
+const makeIdsQuerySet = async (test) => {
+  let idValues;
+  if (test.idAxis === 'TOKENID') {
+    idValues = await populateIdValues(test, sampleTokenIds, (sample) => {
+      return '' + sample;
+    });
+  }
+  console.log('Here there be ' + idValues);
+  return {
+    name: test.name,
+    query: test.query,
+    paramValues: idValues,
+  };
+};
+
 /**
  * Given a test, generates and returns query set which contains query, values for url params, etc.
  */
 const makeQuerySet = async (test) => {
-  let paramValues = [];
-  let paramName;
-  let idValues;
-  let querySuffix;
-  let query = test.query;
-  if (test.filterAxis != 'NA') {
-    let isRangeQuery = false;
-    if (test.filterAxis === 'BALANCE') {
-      paramName = 'account.balance';
-      paramValues = await populateParamValues(test, paramName, 'rangeTinyHbars', sampleBalanceValues, (sample) => {
-        return '' + sample;
-      });
-    } else if (test.filterAxis === 'CONSENSUS_TIMESTAMP') {
-      paramName = 'timestamp';
-      paramValues = await populateParamValues(
-        test,
-        paramName,
-        'rangeDurationNanos',
-        sampleConsensusTimestamps,
-        (sample) => {
-          return timestampToParamValue(sample);
-        }
-      );
-    } else if (test.filterAxis === 'ACCOUNTID') {
-      paramName = 'account.id';
-      paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, (sample) => {
-        return '' + sample;
-      });
-    } else if (test.filterAxis === 'TOKENID') {
-      paramName = 'token.id';
-      paramValues = await populateParamValues(test, 'token.id', 'rangeNumTokens', sampleTokenIds, (sample) => {
-        return '' + sample;
-      });
-    } else if (test.filterAxis === 'NA') {
-    } else {
-      throw `Unexpected filterAxis '${test.filterAxis}'`;
-    }
-    if (isRangeQuery) {
-      querySuffix = paramName + '=gt:%s&' + paramName + '=lt:%s';
-    } else {
-      querySuffix = paramName + '=%d';
-    }
-    if (query.lastIndexOf('?') === -1) {
-      query += '?' + querySuffix;
-    } else {
-      query += '&' + querySuffix;
-    }
-    return {
-      name: test.name,
-      query: query,
-      paramValues: paramValues,
-    };
-  }
-  if (test.idAxis) {
-    if (test.idAxis === 'TOKENID') {
-      idValues = await populateIdValues(test, sampleTokenIds, (sample) => {
-        return '' + sample;
-      });
-    }
-    return {
-      name: test.name,
-      query: query,
-      idValues: idValues,
-    };
+  if (test.filterAxis) {
+    return await makeQueryParamsQuerySet(test);
+  } else if (test.idAxis) {
+    return await makeIdsQuerySet(test);
+  } else {
+    throw `Neither filterAxis nor idAxis specified, test requires one of these.'`;
   }
 };
 
