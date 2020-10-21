@@ -25,6 +25,22 @@ const requestLogger = function (req, res, next) {
   return next();
 };
 
+/**
+ * Support case insensitive retrieval from request parameters
+ * @param req
+ * @param res
+ * @param next
+ * @returns Query param value
+ */
+const requestQueryKeyFormatter = function (req, res, next) {
+  req.query = new Proxy(req.query, {
+    get: (target, name) => target[Object.keys(target).find((key) => key.toLowerCase() === name.toLowerCase())],
+  });
+
+  return next();
+};
+
 module.exports = {
   requestLogger,
+  requestQueryKeyFormatter,
 };

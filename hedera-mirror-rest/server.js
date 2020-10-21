@@ -41,7 +41,7 @@ const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
-const {requestLogger} = require('./middleware/requestLogger');
+const {requestLogger, requestQueryKeyFormatter} = require('./middleware/requestHandler');
 
 // Logger
 const logger = log4js.getLogger();
@@ -102,6 +102,7 @@ app.use(cors());
 
 // logging middleware
 app.use(requestLogger);
+app.use(requestQueryKeyFormatter);
 
 // metrics middleware
 if (config.metrics.enabled) {

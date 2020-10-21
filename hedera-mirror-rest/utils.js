@@ -141,7 +141,7 @@ const filterValidityChecks = (param, op, val) => {
   }
 
   // Validate the value
-  switch (param) {
+  switch (param.toLowerCase()) {
     case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = isValidAccountBalanceQuery(val);
@@ -643,7 +643,7 @@ const buildComparatorFilter = (name, filter) => {
   let opVal = splitVal.length === 1 ? ['eq', filter] : splitVal;
 
   return {
-    key: name,
+    key: name.toLowerCase(),
     operator: opVal[0],
     value: opVal[1],
   };
