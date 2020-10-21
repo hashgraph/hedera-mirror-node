@@ -1,24 +1,29 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: hcs-perf-message-submit-secret
+  name: hts-perf-publish-and-retrieve-secret
 stringData:
   user.properties: |-
-    hedera.mirror.test.performance.topicId=
     hedera.mirror.test.performance.networkNodes=localhost:0.0.3:50211
-    hedera.mirror.test.performance.publishInterval=20000
-    hedera.mirror.test.performance.publishTimeout=60
+    hedera.mirror.test.performance.publishInterval=30000
+    hedera.mirror.test.performance.publishTimeout=80
     hedera.mirror.test.performance.messagesPerBatchCount=5
-    hedera.mirror.test.performance.messagesByteSize=5
     hedera.mirror.test.performance.operatorId=
     hedera.mirror.test.performance.operatorKey=
     hedera.mirror.test.performance.statusPrintIntervalMinutes=1
     hedera.mirror.test.performance.verifyTransactions=false
+    hedera.mirror.test.performance.recipientId=
+    hedera.mirror.test.performance.tokenId=
+    hedera.mirror.test.performance.transferAmount=1
+    hedera.mirror.test.performance.restBaseUrl=http://localhost:5551
+    hedera.mirror.test.performance.restMaxRetry=1000
+    hedera.mirror.test.performance.restRetryBackoffMs=50
+    hedera.mirror.test.performance.expectedTransactionCount=40
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: hcs-perf-message-submit
+  name: hts-perf-publish-and-retrieve
   labels:
     app.kubernetes.io/name: test
 spec:
@@ -26,7 +31,7 @@ spec:
   parallelism: 1
   template:
     metadata:
-      name: hcs-perf-message-submit
+      name: hts-perf-publish-and-retrieve
       labels:
         app.kubernetes.io/name: test
     spec:
@@ -47,16 +52,14 @@ spec:
             - name: testProfile
               value: "performance"
             - name: jmeterTestPlan
-              value: "Topic_Message_Publish_Only.jmx"
+              value: "Token_Transfer_Publish_And_Retrieve.jmx"
             - name: jmeterPropsDirectory
               value: "/usr/etc/hedera-mirror-test"
-            - name: publishThreadCount
-              value: "1"
           volumeMounts:
-            - name: message-submit-config-volume
+            - name: hts-publish-and-retrieve-volume
               mountPath: /usr/etc/hedera-mirror-test
       volumes:
-        - name: message-submit-config-volume
+        - name: hts-publish-and-retrieve-volume
           secret:
             defaultMode: 420
-            secretName: hcs-perf-message-submit-secret
+            secretName: hts-perf-publish-and-retrieve-secret

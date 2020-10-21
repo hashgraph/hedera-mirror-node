@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.jmeter.sampler;
+package com.hedera.mirror.grpc.jmeter.sampler.hts;
 
 /*-
  * ‌
@@ -36,63 +36,67 @@ import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
-import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublishRequest;
+import com.hedera.mirror.grpc.jmeter.props.hts.TokenTransferPublishRequest;
+import com.hedera.mirror.grpc.jmeter.sampler.PublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
 @RequiredArgsConstructor
-public class TopicMessagesPublishSampler extends PublishSampler {
-    private final TopicMessagePublishRequest topicMessagePublishRequest;
+public class TokenTransfersPublishSampler extends PublishSampler {
+    private final TokenTransferPublishRequest tokenTransferPublishRequest;
     private final SDKClientHandler sdkClient;
     private final boolean verifyTransactions;
     private Stopwatch publishStopwatch;
 
     @SneakyThrows
-    public int submitConsensusMessageTransactions() {
+    public List<TransactionId> submitTokenTransferTransactions() {
         TransactionSubmissionResult result = new TransactionSubmissionResult();
         Stopwatch totalStopwatch = Stopwatch.createStarted();
         AtomicInteger networkFailures = new AtomicInteger();
         AtomicInteger unknownFailures = new AtomicInteger();
         Map<Status, Integer> hederaResponseCodeEx = new HashMap<>();
 
-        // publish MessagesPerBatchCount number of messages to the noted topic id
-        log.trace("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
-                .getNodeInfo(), topicMessagePublishRequest);
+        // publish TransactionsPerBatchCount number of transactions to the node
+        log.trace("Submit transaction to {}, tokenTransferPublisher: {}", sdkClient
+                .getNodeInfo(), tokenTransferPublishRequest);
 
-        for (int i = 0; i < topicMessagePublishRequest.getMessagesPerBatchCount(); i++) {
+        for (int i = 0; i < tokenTransferPublishRequest.getTransactionsPerBatchCount(); i++) {
 
             try {
                 publishStopwatch = Stopwatch.createStarted();
-                List<TransactionId> transactionIdList = sdkClient.submitTopicMessage(
-                        topicMessagePublishRequest.getConsensusTopicId(),
-                        topicMessagePublishRequest.getMessage());
+                TransactionId transactionId = sdkClient
+                        .submitTokenTransfer(tokenTransferPublishRequest.getTokenId(), tokenTransferPublishRequest
+                                .getOperatorId(), tokenTransferPublishRequest
+                                .getRecipientId(), tokenTransferPublishRequest.getTransferAmount());
                 publishLatencyStatistics.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
-                transactionIdList.forEach((transactionId -> result.onNext(transactionId)));
+                result.onNext(transactionId);
             } catch (HederaPrecheckStatusException preEx) {
                 hederaResponseCodeEx.compute(preEx.status, (key, val) -> (val == null) ? 1 : val + 1);
             } catch (HederaNetworkException preEx) {
                 networkFailures.incrementAndGet();
             } catch (Exception ex) {
                 unknownFailures.incrementAndGet();
-                log.error("Unexpected exception publishing message {} to {}: {}", i,
+                log.error("Unexpected exception publishing transactions {} to {}: {}", i,
                         sdkClient.getNodeInfo().getNodeId(), ex);
             }
         }
 
-        log.info("Submitted {} messages in {} to topic {} on node {}. {} preCheckErrors, {} networkErrors, " +
-                        "{} unknown errors", topicMessagePublishRequest.getMessagesPerBatchCount(), totalStopwatch,
-                topicMessagePublishRequest.getConsensusTopicId(), sdkClient.getNodeInfo().getNodeId(),
+        log.info("Submitted {} token transfers for token {} from {} to {} in {} on node {}. {} preCheckErrors, {} " +
+                        "networkErrors, {} unknown errors", tokenTransferPublishRequest
+                        .getTransactionsPerBatchCount(), tokenTransferPublishRequest.getTokenId(),
+                tokenTransferPublishRequest
+                        .getOperatorId(), tokenTransferPublishRequest.getRecipientId(), totalStopwatch,
+                sdkClient.getNodeInfo().getNodeId(),
                 StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
-        printPublishStats("Publish2Consensus stats");
-
-        int transactionCount = result.getCounter().get();
+        printPublishStats("Token Transfer publish node " + sdkClient.getNodeInfo().getNodeId().toString());
         result.onComplete();
 
         // verify transactions
         if (verifyTransactions) {
-            transactionCount = sdkClient.getValidTransactionsCount(result.getTransactionIdList());
+            return sdkClient.getValidTransactions(result.getTransactionIdList());
         }
 
-        return transactionCount;
+        return result.getTransactionIdList();
     }
 }
+
