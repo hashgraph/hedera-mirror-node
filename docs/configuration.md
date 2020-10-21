@@ -24,6 +24,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.restUsername`                             | mirror_api              | The username the API uses to connect to the database                                           |
 | `hedera.mirror.importer.db.host`                                     | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.importer.db.name`                                     | mirror_node             | The name of the database                                                                       |
+| `hedera.mirror.importer.db.noLoadBalancing`                          | false                   | Whether to disable pgpool load balancing. If true, load balancing is disabled by prepending a comment to sql statements. |
 | `hedera.mirror.importer.db.password`                                 | mirror_node_pass        | The database password the processor uses to connect. **Should be changed from default**        |
 | `hedera.mirror.importer.db.port`                                     | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.importer.db.username`                                 | mirror_node             | The username the processor uses to connect to the database                                     |

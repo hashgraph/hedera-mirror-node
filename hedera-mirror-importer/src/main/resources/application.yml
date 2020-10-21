@@ -4,6 +4,7 @@ hedera:
       db:
         host: 127.0.0.1
         name: mirror_node
+        noLoadBalancing: false
         password: mirror_node_pass
         port: 5432
         restPassword: mirror_api_pass

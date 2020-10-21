@@ -40,6 +40,8 @@ public class DBProperties {
     @NotBlank
     private String name = "";
 
+    private boolean noLoadBalancing = false;
+
     @NotBlank
     private String password = "";
 
@@ -54,4 +56,5 @@ public class DBProperties {
 
     @NotBlank
     private String username = "";
+
 }
