@@ -145,28 +145,8 @@ func TestNetworkOptions(t *testing.T) {
 	assert.Equal(t, expectedResult.Allow.HistoricalBalanceLookup, res.Allow.HistoricalBalanceLookup)
 	assert.Equal(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
 	assert.Equal(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
-	assert.True(t, errorsAreEqual(expectedResult.Allow.Errors, res.Allow.Errors))
+	assert.ElementsMatch(t, expectedResult.Allow.Errors, res.Allow.Errors)
 	assert.Nil(t, e)
-}
-
-func errorsAreEqual(e1, e2 []*rTypes.Error) bool {
-	if len(e1) != len(e2) {
-		return false
-	}
-	for _, error1 := range e1 {
-		contains := false
-		for j, error2 := range e2 {
-			if reflect.DeepEqual(error1, error2) {
-				e2 = append(e2[:j], e2[j+1:]...)
-				contains = true
-				break
-			}
-		}
-		if !contains {
-			return false
-		}
-	}
-	return true
 }
 
 func TestNetworkOptionsThrowsWhenStatusesFails(t *testing.T) {
