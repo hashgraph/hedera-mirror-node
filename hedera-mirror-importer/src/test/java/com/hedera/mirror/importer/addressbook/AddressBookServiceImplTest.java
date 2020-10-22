@@ -35,12 +35,10 @@ import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
 
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.ResetCacheTestExecutionListener;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -51,11 +49,8 @@ import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
-@SpringBootTest
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
-        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
-class AddressBookServiceImplTest {
+class AddressBookServiceImplTest extends IntegrationTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10);
     private static final NodeAddressBook FINAL = addressBook(15);
