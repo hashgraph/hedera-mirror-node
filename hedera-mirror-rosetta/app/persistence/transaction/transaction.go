@@ -37,8 +37,21 @@ import (
 )
 
 const (
-	whereClauseBetweenConsensus         string = "consensus_ns >= ? AND consensus_ns <= ?"
-	whereTimestampsInConsensusTimestamp string = "consensus_timestamp IN (?)"
+	tableNameTransaction        = "transaction"
+	tableNameTransactionResults = "t_transaction_results"
+	tableNameTransactionTypes   = "t_transaction_types"
+)
+
+const (
+	whereClauseBetweenConsensus string = `SELECT * FROM transaction
+                                          WHERE consensus_ns >= $1 AND consensus_ns <= $2`
+	whereTimestampsInConsensusTimestamp string = `SELECT * FROM crypto_transfer
+                                                  WHERE consensus_timestamp IN ($1)`
+	whereTransactionsByHashAndConsensusTimestamps string = `SELECT * FROM transaction
+                                                            WHERE transaction_hash = $1
+                                                            AND consensus_ns BETWEEN $2 AND $3`
+	selectTransactionResults string = "SELECT * FROM t_transaction_results"
+	selectTransactionTypes   string = "SELECT * FROM t_transaction_types"
 )
 
 type transaction struct {
@@ -70,17 +83,17 @@ type transactionResult struct {
 
 // TableName - Set table name of the Transactions to be `record_file`
 func (transaction) TableName() string {
-	return "transaction"
+	return tableNameTransaction
 }
 
 // TableName - Set table name of the Transaction Types to be `t_transaction_types`
 func (transactionType) TableName() string {
-	return "t_transaction_types"
+	return tableNameTransactionTypes
 }
 
 // TableName - Set table name of the Transaction Results to be `t_transaction_results`
 func (transactionResult) TableName() string {
-	return "t_transaction_results"
+	return tableNameTransactionResults
 }
 
 func (t *transaction) getHashString() string {
@@ -136,7 +149,7 @@ func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.T
 		return nil, errors.Errors[errors.StartMustNotBeAfterEnd]
 	}
 	var transactions []transaction
-	tr.dbClient.Where(whereClauseBetweenConsensus, start, end).Find(&transactions)
+	tr.dbClient.Raw(whereClauseBetweenConsensus, start, end).Find(&transactions)
 
 	sameHashMap := make(map[string][]transaction)
 	for _, t := range transactions {
@@ -161,7 +174,7 @@ func (tr *TransactionRepository) FindByHashInBlock(hashStr string, consensusStar
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
 	}
-	tr.dbClient.Where("transaction_hash = ? AND consensus_ns BETWEEN ? AND ?", transactionHash, consensusStart, consensusEnd).Find(&transactions)
+	tr.dbClient.Raw(whereTransactionsByHashAndConsensusTimestamps, transactionHash, consensusStart, consensusEnd).Find(&transactions)
 
 	if len(transactions) == 0 {
 		return nil, errors.Errors[errors.TransactionNotFound]
@@ -177,19 +190,19 @@ func (tr *TransactionRepository) FindByHashInBlock(hashStr string, consensusStar
 func (tr *TransactionRepository) findCryptoTransfers(timestamps []int64) []dbTypes.CryptoTransfer {
 	var cryptoTransfers []dbTypes.CryptoTransfer
 	timestampsStr := intsToString(timestamps)
-	tr.dbClient.Where(whereTimestampsInConsensusTimestamp, timestampsStr).Find(&cryptoTransfers)
+	tr.dbClient.Raw(whereTimestampsInConsensusTimestamp, timestampsStr).Find(&cryptoTransfers)
 	return cryptoTransfers
 }
 
 func (tr *TransactionRepository) retrieveTransactionTypes() []transactionType {
 	var transactionTypes []transactionType
-	tr.dbClient.Find(&transactionTypes)
+	tr.dbClient.Raw(selectTransactionTypes).Find(&transactionTypes)
 	return transactionTypes
 }
 
 func (tr *TransactionRepository) retrieveTransactionResults() []transactionResult {
 	var tResults []transactionResult
-	tr.dbClient.Find(&tResults)
+	tr.dbClient.Raw(selectTransactionResults).Find(&tResults)
 	return tResults
 }
 
@@ -218,10 +231,7 @@ func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.C
 		return nil, err
 	}
 
-	transactionStatuses, err := tr.Statuses()
-	if err != nil {
-		return nil, err
-	}
+	transactionStatuses, _ := tr.Statuses()
 
 	operations := make([]*types.Operation, len(cryptoTransfers))
 	for i, ct := range cryptoTransfers {

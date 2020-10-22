@@ -21,6 +21,7 @@
 package entityid
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
 )
@@ -37,10 +38,10 @@ func TestEntityIdEncoding(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		res, _ := Encode(tt.shard, tt.realm, tt.number)
-		if res != tt.expected {
-			t.Errorf("Got %d, expected %d", res, tt.expected)
-		}
+		res, err := Encode(tt.shard, tt.realm, tt.number)
+
+		assert.NoError(t, err)
+		assert.Equal(t, tt.expected, res)
 	}
 }
 
@@ -57,38 +58,106 @@ func TestEntityIdEncodeThrows(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		_, err := Encode(tt.shard, tt.realm, tt.number)
-		if err == nil {
-			t.Errorf("Expected error when providing invalid encoding parameters")
-		}
+		res, err := Encode(tt.shard, tt.realm, tt.number)
+		assert.Error(t, err)
+		assert.Equal(t, int64(0), res)
+	}
+}
+
+func TestEntityIdFromString(t *testing.T) {
+	var testData = []struct {
+		expected *EntityId
+		entity   string
+	}{
+		{&EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 0,
+		}, "0.0.0"},
+		{&EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 10,
+		}, "0.0.10"},
+		{&EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 4294967295,
+		}, "0.0.4294967295"},
+	}
+
+	for _, tt := range testData {
+		res, err := FromString(tt.entity)
+		assert.Nil(t, err)
+		assert.Equal(t, tt.expected, res)
+	}
+}
+
+func TestEntityIdFromStringThrows(t *testing.T) {
+	var testData = []string{
+		"abc",
+		"a.0.0",
+		"0.b.0",
+		"0.0.c",
+		"-1.0.0",
+		"0.-1.0",
+		"0.0.-1",
+	}
+
+	for _, tt := range testData {
+		res, err := FromString(tt)
+		assert.Nil(t, res)
+		assert.Error(t, err)
 	}
 }
 
 func TestEntityIdDecoding(t *testing.T) {
 	var testData = []struct {
-		input, shard, realm, number int64
+		input    int64
+		expected *EntityId
 	}{
-		{0, 0, 0, 0},
-		{10, 0, 0, 10},
-		{4294967295, 0, 0, 4294967295},
-		{2814792716779530, 10, 10, 10},
-		{9223372036854775807, 32767, 65535, 4294967295},
-		{9223090561878065152, 32767, 0, 0},
+		{0, &EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 0,
+		}},
+		{10, &EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 10,
+		}},
+		{4294967295, &EntityId{
+			ShardNum:  0,
+			RealmNum:  0,
+			EntityNum: 4294967295,
+		}},
+		{2814792716779530, &EntityId{
+			ShardNum:  10,
+			RealmNum:  10,
+			EntityNum: 10,
+		}},
+		{9223372036854775807, &EntityId{
+			ShardNum:  32767,
+			RealmNum:  65535,
+			EntityNum: 4294967295,
+		}},
+		{9223090561878065152, &EntityId{
+			ShardNum:  32767,
+			RealmNum:  0,
+			EntityNum: 0,
+		}},
 	}
 
 	for _, tt := range testData {
-		res, _ := Decode(tt.input)
-		if res.ShardNum != tt.shard ||
-			res.RealmNum != tt.realm ||
-			res.EntityNum != tt.number {
-			t.Errorf("Got %d.%d.%d, expected %d.%d.%d", res.ShardNum, res.RealmNum, res.EntityNum, tt.shard, tt.realm, tt.number)
-		}
+		res, err := Decode(tt.input)
+
+		assert.Nil(t, err)
+		assert.Equal(t, tt.expected, res)
 	}
 }
 
 func TestEntityIdDecodeThrows(t *testing.T) {
-	_, err := Decode(-1)
-	if err == nil {
-		t.Errorf("Expected error when providing invalid encoding parameters")
-	}
+	res, err := Decode(-1)
+	assert.Nil(t, res)
+	assert.Error(t, err)
 }
