@@ -96,7 +96,7 @@ resources:
 revisionHistoryLimit: 3
 
 prometheusRules:
-  enabled: true
+  enabled: false
   ImporterNoTransactions:
     annotations:
       description: "Record stream TPS has dropped to {{ $value }} for {{ $labels.namespace }}/{{ $labels.pod }}. This may be because importer is down, can't connect to cloud storage, main nodes are not uploading, error parsing the streams, no traffic, etc."

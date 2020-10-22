@@ -76,7 +76,7 @@ podSecurityContext:
 priorityClassName: ""
 
 prometheusRules:
-  enabled: true
+  enabled: false
   GrpcNoSubscribers:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} has {{ $value }} subscribers for {{ $labels.type }}"

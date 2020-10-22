@@ -74,7 +74,7 @@ podSecurityContext:
 priorityClassName: ""
 
 prometheusRules:
-  enabled: true
+  enabled: false
   RestErrors:
     annotations:
       description: "REST API 5xx error rate for {{ $labels.namespace }}/{{ $labels.pod }} is {{ $value | humanizePercentage }}%"
