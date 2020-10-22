@@ -29,9 +29,10 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
+import javax.persistence.NamedAttributeNode;
+import javax.persistence.NamedEntityGraph;
 import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -45,11 +46,12 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@NamedEntityGraph(name = "AccountBalance.tokenBalances", attributeNodes = @NamedAttributeNode("tokenBalances"))
 public class AccountBalance implements Persistable<AccountBalance.Id> {
 
     private long balance;
 
-    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
     @JoinColumns({
             @JoinColumn(name = "accountId"),
             @JoinColumn(name = "consensusTimestamp")
