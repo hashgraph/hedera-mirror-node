@@ -25,6 +25,7 @@ import io.grpc.StatusRuntimeException;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -38,6 +39,7 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
@@ -50,6 +52,17 @@ import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 public class MirrorNodeClient {
     private final MirrorClient mirrorClient;
     private final AcceptanceTestProperties acceptanceProps;
+
+    // REST ENDPOINTS
+    private static final String API_V1 = "/api/v1";
+    private static final String ACCOUNTS_ENDPOINT = "accounts";
+    private static final String BALANCES_ENDPOINT = "balances";
+    private static final String TOKENS_ENDPOINT = "tokens";
+    private static final String TOPICS_ENDPOINT = "topics";
+    private static final String TRANSACTIONS_ENDPOINT = "transactions";
+
+    // FILTER QUERIES
+    private static final String ACCOUNTS_ID_QUERY = "account.id";
 
     public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties) {
         String mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
@@ -119,24 +132,76 @@ public class MirrorNodeClient {
     }
 
     public ClientResponse verifyAccountRestEndpoint(String accountId, int lastCount) {
-        log.debug("Verify account {} is returned by Mirror Node", accountId);
-        String endpoint = String.format("/api/v1/accounts/%s?order=desc&limit=%d", accountId, lastCount);
-        return verifyRestEndpoint(endpoint);
+        log.debug("Verify account '{}' is returned by Mirror Node", accountId);
+        // build <host>/api/v1/accounts/<accountId>?order=desc&limit=50
+        URI uri = UriComponentsBuilder
+                .fromUriString("http://" + acceptanceProps.getMirrorRestAddress())
+                .path(API_V1)
+                .pathSegment(ACCOUNTS_ENDPOINT)
+                .pathSegment("{accountId}")
+                .queryParam("order", "desc")
+                .queryParam("limit", lastCount)
+                .buildAndExpand(accountId)
+                .toUri();
+        return verifyRestEndpoint(uri);
     }
 
     public ClientResponse verifyAccountBalanceRestEndpoint(String accountId) {
-        log.debug("Verify balance {} is returned by Mirror Node", accountId);
-        String endpoint = String.format("/api/v1/balances?account.id=%s", accountId);
-        return verifyRestEndpoint(endpoint);
+        log.debug("Verify balance for account '{}' is returned by Mirror Node", accountId);
+        // build <host>/api/v1/balances?account.id=<accountId>
+        URI uri = UriComponentsBuilder
+                .fromUriString("http://" + acceptanceProps.getMirrorRestAddress())
+                .path(API_V1)
+                .pathSegment(BALANCES_ENDPOINT)
+                .queryParam(ACCOUNTS_ID_QUERY, accountId)
+                .buildAndExpand(accountId)
+                .toUri();
+        return verifyRestEndpoint(uri);
     }
 
     public ClientResponse verifyTransactionRestEntity(String transactionId) {
-        log.debug("Verify transaction {} is returned by Mirror Node", transactionId);
-        String endpoint = "/api/v1/transactions/" + transactionId;
-        return verifyRestEndpoint(endpoint);
+        log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
+        // build <host>/api/v1/transactions?<transactionId>
+        URI uri = UriComponentsBuilder
+                .fromUriString("http://" + acceptanceProps.getMirrorRestAddress())
+                .path(API_V1)
+                .pathSegment(TRANSACTIONS_ENDPOINT)
+                .pathSegment("{transactionId}")
+                .buildAndExpand(transactionId)
+                .toUri();
+        return verifyRestEndpoint(uri);
     }
 
-    public ClientResponse verifyRestEndpoint(String apiEndpoint) {
+    public ClientResponse verifyTokenInfoEndpoint(String tokenId) {
+        log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
+        // build <host>/api/v1/tokens/<tokenId>
+        URI uri = UriComponentsBuilder
+                .fromUriString("http://" + acceptanceProps.getMirrorRestAddress())
+                .path(API_V1)
+                .pathSegment(TOKENS_ENDPOINT)
+                .pathSegment("{tokenId}")
+                .buildAndExpand(tokenId)
+                .toUri();
+        return verifyRestEndpoint(uri);
+    }
+
+    public ClientResponse verifyTokenBalanceEndpoint(String tokenId, String accountId) {
+        log.debug("Verify token balance for token '{}' and account '{}' is returned by Mirror Node", tokenId,
+                accountId);
+        // build <host>/api/v1/tokens/<tokenId>/balances?account.id=<accountId>
+        URI uri = UriComponentsBuilder
+                .fromUriString("http://" + acceptanceProps.getMirrorRestAddress())
+                .path(API_V1)
+                .pathSegment(TOKENS_ENDPOINT)
+                .pathSegment("{tokenId}")
+                .pathSegment(BALANCES_ENDPOINT)
+                .queryParam(ACCOUNTS_ID_QUERY, accountId)
+                .buildAndExpand(tokenId)
+                .toUri();
+        return verifyRestEndpoint(uri);
+    }
+
+    public ClientResponse verifyRestEndpoint(URI apiEndpoint) {
         TcpClient tcpClient = TcpClient
                 .create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)

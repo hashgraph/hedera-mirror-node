@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import com.hedera.hashgraph.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.HederaStatusException;
@@ -31,7 +32,10 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenAssociateTransaction;
+import com.hedera.hashgraph.sdk.token.TokenBurnTransaction;
 import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
+import com.hedera.hashgraph.sdk.token.TokenDeleteTransaction;
+import com.hedera.hashgraph.sdk.token.TokenDissociateTransaction;
 import com.hedera.hashgraph.sdk.token.TokenFreezeAccountTransaction;
 import com.hedera.hashgraph.sdk.token.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
@@ -39,8 +43,10 @@ import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
 import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
+import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
+import com.hedera.hashgraph.sdk.token.TokenWipeAccountTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
 @Value
@@ -51,13 +57,14 @@ public class TokenClient extends AbstractNetworkClient {
         log.debug("Creating Token Client");
     }
 
-    // Cost 8578318 tℏ
-    public NetworkTransactionResponse createToken(Ed25519PublicKey adminKey, String symbol, int freezeStatus,
+    public NetworkTransactionResponse createToken(ExpandedAccountId expandedAccountId, String symbol, int freezeStatus,
                                                   int kycStatus) throws HederaStatusException {
 
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
+        Ed25519PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
+                .setAutoRenewAccount(expandedAccountId.getAccountId())
                 .setDecimals(10)
                 .setFreezeDefault(false)
                 .setInitialSupply(1000000000)
@@ -106,7 +113,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
-                accountId.getPrivateKey());
+                        accountId.getPrivateKey());
 
         log.debug("Associated {} with token {}", accountId, token);
 
@@ -115,7 +122,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse mint(TokenId tokenId, long amount) throws HederaStatusException {
 
-        log.debug("Mint {} with {}", tokenId, amount);
+        log.debug("Mint {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
         TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
                 .setTokenId(tokenId)
@@ -142,7 +149,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction,
-                freezeKey);
+                        freezeKey);
 
         log.debug("Freeze account {} with token {}", accountId, tokenId);
 
@@ -160,7 +167,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction,
-                freezeKey);
+                        freezeKey);
 
         log.debug("Unfreeze account {} with token {}", accountId, tokenId);
 
@@ -219,6 +226,102 @@ public class TokenClient extends AbstractNetworkClient {
 
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender,
                 recipient);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) throws HederaStatusException {
+        Ed25519PublicKey publicKey = expandedAccountId.getPublicKey();
+        String newSymbol = RandomStringUtils.randomAlphabetic(4).toUpperCase();
+        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
+                .setAdminKey(publicKey)
+                .setAutoRenewAccount(expandedAccountId.getAccountId())
+                .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
+                .setName(newSymbol + "_name")
+                .setSupplyKey(publicKey)
+                .setSybmol(newSymbol)
+                .setTokenId(tokenId)
+                .setTreasury(client.getOperatorId())
+                .setWipeKey(publicKey);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, null);
+
+        log.debug("Updated token {}.", tokenId);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse burn(TokenId tokenId, long amount) throws HederaStatusException {
+
+        log.debug("Burn {} tokens from {}", amount, tokenId);
+        Instant refInstant = Instant.now();
+        TokenBurnTransaction tokenBurnTransaction = new TokenBurnTransaction()
+                .setTokenId(tokenId)
+                .setAmount(amount)
+                .setMaxTransactionFee(1_000_000_000)
+                .setTransactionMemo("Burn token_" + refInstant);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenBurnTransaction, null);
+
+        log.debug("Burned {} extra tokens for token {}", amount, tokenId);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse wipe(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) throws HederaStatusException {
+
+        log.debug("Wipe {} tokens from {}", amount, tokenId);
+        Instant refInstant = Instant.now();
+        TokenWipeAccountTransaction tokenWipeAccountTransaction = new TokenWipeAccountTransaction()
+                .setAccount(expandedAccountId.getAccountId())
+                .setTokenId(tokenId)
+                .setAmount(amount)
+                .setMaxTransactionFee(1_000_000_000)
+                .setTransactionMemo("Wipe token_" + refInstant);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenWipeAccountTransaction, null);
+
+        log.debug("Wiped {} tokens from account {}", amount, expandedAccountId.getAccountId());
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse disssociate(ExpandedAccountId accountId, TokenId token) throws HederaStatusException {
+
+        log.debug("Dissociate account {} with token {}", accountId.getAccountId(), token);
+        Instant refInstant = Instant.now();
+        TokenDissociateTransaction tokenDissociateTransaction = new TokenDissociateTransaction()
+                .setAccountId(accountId.getAccountId())
+                .addTokenId(token)
+                .setMaxTransactionFee(1_000_000_000)
+                .setTransactionMemo("Dissociate token_" + refInstant);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
+                        accountId.getPrivateKey());
+
+        log.debug("Dissociated {} with token {}", accountId, token);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) throws HederaStatusException {
+
+        log.debug("Delete token {}", token);
+        Instant refInstant = Instant.now();
+        TokenDeleteTransaction tokenDissociateTransaction = new TokenDeleteTransaction()
+                .setTokenId(token)
+                .setMaxTransactionFee(1_000_000_000)
+                .setTransactionMemo("Delete token_" + refInstant);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
+                        accountId.getPrivateKey());
+
+        log.debug("Deleted token {}", accountId, token);
 
         return networkTransactionResponse;
     }

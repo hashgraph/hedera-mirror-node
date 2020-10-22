@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance;
+package com.hedera.mirror.test.e2e.acceptance.response;
 
 /*-
  * ‌
@@ -20,20 +20,16 @@ package com.hedera.mirror.test.e2e.acceptance;
  * ‍
  */
 
-import io.cucumber.junit.Cucumber;
-import io.cucumber.junit.CucumberOptions;
-import io.cucumber.spring.CucumberContextConfiguration;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+import lombok.Data;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(
-        features = "src/test/resources",
-        glue = "com.hedera.mirror.test.e2e.acceptance",
-        plugin = {"pretty", "de.monochromata.cucumber.report.PrettyReports:target/cucumber"},
-        tags = "@Sanity"
-)
-@SpringBootTest
-@CucumberContextConfiguration
-public class AcceptanceTest {
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoBalance;
+
+@Data
+public class MirrorBalancesResponse {
+    @JsonProperty("timestamp")
+    private String timestamp;
+
+    List<MirrorCryptoBalance> balances;
 }

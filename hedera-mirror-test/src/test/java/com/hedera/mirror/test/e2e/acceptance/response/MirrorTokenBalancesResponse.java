@@ -1,4 +1,9 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.test.e2e.acceptance.response;
+
+import java.util.List;
+import lombok.Data;
+
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
 
 /*-
  * ‌
@@ -20,15 +25,8 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import lombok.Data;
-import lombok.extern.log4j.Log4j2;
-
-import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
-
 @Data
-@Log4j2
-public class NetworkTransactionResponse {
-    private final TransactionId transactionId;
-    private final TransactionReceipt receipt;
+public class MirrorTokenBalancesResponse {
+    private String timestamp;
+    List<MirrorAccountBalance> balances;
 }
