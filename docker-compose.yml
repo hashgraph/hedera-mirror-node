@@ -22,6 +22,7 @@ services:
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-grpc/
+      SPRING_REDIS_HOST: redis
     volumes:
       - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
     ports:
@@ -34,9 +35,19 @@ services:
       HEDERA_MIRROR_IMPORTER_DATAPATH: /var/lib/hedera-mirror-importer
       HEDERA_MIRROR_IMPORTER_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
+      SPRING_REDIS_HOST: redis
     volumes:
       - ./data:/var/lib/hedera-mirror-importer
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
+
+  redis:
+    image: redis:5.0.9-alpine
+    restart: unless-stopped
+    stop_grace_period: 2m
+    stop_signal: SIGTERM
+    tty: true
+    ports:
+      - 6379:6379
 
   rest:
     image: gcr.io/mirrornode/hedera-mirror-rest:0.21.0-rc1
