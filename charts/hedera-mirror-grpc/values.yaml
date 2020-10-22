@@ -75,6 +75,88 @@ podSecurityContext:
 
 priorityClassName: ""
 
+prometheusRules:
+  enabled: true
+  GrpcNoSubscribers:
+    annotations:
+      description: "{{ $labels.pod }} has {{ $value }} subscribers for {{ $labels.type }}"
+      summary: "Mirror gRPC API has no subscribers"
+    enabled: true
+    expr: sum(hedera_mirror_subscribers{application="hedera-mirror-grpc"}) by (type) <= 0
+    for: 5m
+    labels:
+      severity: warning
+
+  GrpcErrors:
+    annotations:
+      description: '{{ $value | humanizePercentage }}% gRPC {{ $labels.statusCode }} error rate for {{ $labels.pod }}'
+      summary: "Mirror gRPC API error rate exceeds 5%"
+    enabled: true
+    expr: sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc", statusCode!~"DEADLINE_EXCEEDED|INVALID_ARGUMENT|NOT_FOUND|OK|RESOURCE_EXHAUSTED"}[5m])) by (pod, statusCode) / sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc"}[5m])) by (pod, statusCode) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+
+  GrpcHighLatency:
+    annotations:
+      description: 'High latency of {{ $value }}s between the main nodes and {{ $labels.pod }}'
+      summary: "Mirror gRPC API consensus to delivery (C2MD) latency exceeds 15s"
+    enabled: true
+    expr: sum(rate(hedera_mirror_publish_latency_seconds_sum{application="hedera-mirror-grpc"}[5m])) by (pod) / sum(rate(hedera_mirror_publish_latency_seconds_count{application="hedera-mirror-grpc"}[5m])) by (pod) > 15
+    for: 1m
+    labels:
+      severity: critical
+
+  GrpcHighCPU:
+    annotations:
+      description: "{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror gRPC API CPU usage exceeds 80%"
+    enabled: true
+    expr: sum(process_cpu_usage{application="hedera-mirror-grpc"}) by (pod) / sum(system_cpu_count{application="hedera-mirror-grpc"}) by (pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  GrpcHighDBConnections:
+    annotations:
+      description: "{{ $labels.pod }} is using {{ $value | humanizePercentage }}% of available database connections"
+      summary: "Mirror gRPC API database connection utilization exceeds 75%"
+    enabled: true
+    expr: sum(hikaricp_connections_active{application="hedera-mirror-grpc"}) by (pod) / sum(hikaricp_connections_max{application="hedera-mirror-grpc"}) by (pod) > 0.75
+    for: 5m
+    labels:
+      severity: critical
+
+  GrpcHighFileDescriptors:
+    annotations:
+      description: "{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror gRPC API file descriptor usage exceeds 80%"
+    enabled: true
+    expr:  sum(process_files_open_files{application="hedera-mirror-grpc"}) by (pod) / sum(process_files_max_files{application="hedera-mirror-grpc"}) by (pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  GrpcHighMemory:
+    annotations:
+      description: "{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror gRPC API memory usage exceeds 80%"
+    enabled: true
+    expr: sum(jvm_memory_used_bytes{application="hedera-mirror-grpc"}) by (pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-grpc"}) by (pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  GrpcLog4j2Errors:
+    annotations:
+      description: "{{ $labels.pod }} encountered {{ $value }} exceptions in a 2m period"
+      summary: "High rate of log4j2 errors"
+    enabled: true
+    expr: sum(increase(log4j2_events_total{application="hedera-mirror-grpc", level="error"}[2m])) by (pod) >= 2
+    for: 3m
+    labels:
+      severity: critical
+
 rbac:
   enabled: true
 

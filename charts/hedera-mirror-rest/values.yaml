@@ -73,6 +73,48 @@ podSecurityContext:
 
 priorityClassName: ""
 
+prometheusRules:
+  enabled: true
+  RestErrors:
+    annotations:
+      description: "REST API 5xx error rate for {{ $labels.pod }} is {{ $value | humanizePercentage }}%"
+      summary: "Mirror REST API error rate exceeds 5%"
+    enabled: true
+    expr: sum(rate(api_request_total{container="rest",code=~"^5.."}[5m])) by (pod) / sum(rate(api_request_total{container="rest"}[5m])) by (pod) > 0.05
+    for: 1m
+    labels:
+      severity: critical
+
+  RestHighCPU:
+    annotations:
+      description: "{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror REST API CPU usage exceeds 80%"
+    enabled: true
+    expr: sum(nodejs_process_cpu_usage_percentage{container="rest"}) by (pod) > 80
+    for: 5m
+    labels:
+      severity: critical
+
+  RestNoRequests:
+    annotations:
+      description: "REST API has not seen any requests to {{ $labels.pod }} for 5m"
+      summary: "No Mirror REST API requests seen for awhile"
+    enabled: true
+    expr: sum(rate(api_all_request_total{container="rest"}[3m])) by (pod) <= 0
+    for: 5m
+    labels:
+      severity: warning
+
+  RestSlowResponse:
+    annotations:
+      description: "{{ $labels.pod }} is taking {{ $value }}s to generate a response"
+      summary: "Mirror REST API is taking too long to respond"
+    enabled: true
+    expr: sum(rate(api_request_duration_milliseconds_sum{container="rest"}[5m])) by (pod) / sum(rate(api_request_duration_milliseconds_count{container="rest"}[5m])) by (pod) > 2000
+    for: 1m
+    labels:
+      severity: warning
+
 readinessProbe:
   httpGet:
     path: /health/readiness
