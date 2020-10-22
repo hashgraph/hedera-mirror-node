@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -36,14 +37,16 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private AccountBalanceRepository accountBalanceRepository;
-    
+
     @Test
     void findByConsensusTimestamp() {
         AccountBalance accountBalance1 = create(1L, 1, 100, 0);
         AccountBalance accountBalance2 = create(1L, 2, 200, 3);
         create(2L, 1, 50, 1);
 
-        assertThat(accountBalanceRepository.findByIdConsensusTimestamp(1L))
+        List<AccountBalance> result = accountBalanceRepository.findByIdConsensusTimestamp(1);
+        result.forEach(ab -> ab.getTokenBalances().sort(Comparator.comparing(o -> o.getId().getTokenId())));
+        assertThat(result)
                 .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrder(accountBalance1, accountBalance2);
     }
@@ -69,7 +72,7 @@ public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
             TokenBalance.Id id = new TokenBalance.Id();
             id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
             id.setConsensusTimestamp(consensusTimestamp);
-            id.setTokenId(EntityId.of(0, 0, i, EntityTypeEnum.TOKEN));
+            id.setTokenId(EntityId.of(0, 1, i, EntityTypeEnum.TOKEN));
             tokenBalance.setBalance(balance);
             tokenBalance.setId(id);
             tokenBalanceList.add(tokenBalance);
