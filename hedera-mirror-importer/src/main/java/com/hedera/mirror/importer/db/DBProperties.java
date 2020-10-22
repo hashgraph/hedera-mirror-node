@@ -37,6 +37,8 @@ public class DBProperties {
     @NotBlank
     private String host = "";
 
+    private boolean loadBalance = true;
+
     @NotBlank
     private String name = "";
 
@@ -54,4 +56,5 @@ public class DBProperties {
 
     @NotBlank
     private String username = "";
+
 }
