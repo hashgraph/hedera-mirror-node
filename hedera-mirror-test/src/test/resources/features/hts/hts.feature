@@ -14,7 +14,7 @@ Feature: HTS Base Coverage Feature
             | 2350   | 200            |
 
 #    @Acceptance
-    Scenario Outline: Validate Freeze and KYC Flow - Create, Unfreeze, GrantKyc, Transfer
+    Scenario Outline: Validate Freeze and KYC Flow - Create, Unfreeze, GrantKyc
         Given I successfully create a new token with freeze status <initialFreezeStatus> and kyc status <initialKycStatus>
         When I associate a new account with token
         And I set new account freeze status to <newFreezeStatus>

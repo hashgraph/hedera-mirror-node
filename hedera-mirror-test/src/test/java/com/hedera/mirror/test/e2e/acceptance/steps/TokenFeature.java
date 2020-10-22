@@ -298,10 +298,8 @@ public class TokenFeature {
     }
 
     @Then("the mirror node {string} REST API should return status {int}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, exceptionExpression = "#{message.contains" +
-            "('Expecting') || " +
-            "message.contains('to contain')}", backoff = @Backoff(delay = 2000))
-    public void verifyMirrorTransactionAPIResponse(String endpoint, int status) throws Throwable {
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
+    public void verifyMirrorTransactionAPIResponse(String endpoint, int status) {
         if (endpoint.equalsIgnoreCase("balances")) {
             verifyBalances(status);
         } else if (endpoint.equalsIgnoreCase("transaction")) {
@@ -313,12 +311,13 @@ public class TokenFeature {
         } else if (endpoint.equalsIgnoreCase("tokenTransfer")) {
             verifyTokenTransfers(status);
         } else if (endpoint.equalsIgnoreCase("tokenUpdate")) {
-//            verifyTokenTransfers(status);
+            verifyTokenUpdate(status);
         }
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
-    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) throws Throwable {
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
+    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
         ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionIdString);
 
         verifyRESTResponse(status, response);

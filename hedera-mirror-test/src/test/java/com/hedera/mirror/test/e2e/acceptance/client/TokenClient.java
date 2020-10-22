@@ -36,7 +36,7 @@ import com.hedera.hashgraph.sdk.token.TokenBurnTransaction;
 import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 import com.hedera.hashgraph.sdk.token.TokenDeleteTransaction;
 import com.hedera.hashgraph.sdk.token.TokenDissociateTransaction;
-import com.hedera.hashgraph.sdk.token.TokenFreezeAccountTransaction;
+import com.hedera.hashgraph.sdk.token.TokenFreezeTransaction;
 import com.hedera.hashgraph.sdk.token.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
@@ -44,7 +44,7 @@ import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
 import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
 import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
-import com.hedera.hashgraph.sdk.token.TokenWipeAccountTransaction;
+import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -141,7 +141,7 @@ public class TokenClient extends AbstractNetworkClient {
     public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId, Ed25519PrivateKey freezeKey) throws HederaStatusException {
 
         Instant refInstant = Instant.now();
-        TokenFreezeAccountTransaction tokenFreezeAccountTransaction = new TokenFreezeAccountTransaction()
+        TokenFreezeTransaction tokenFreezeAccountTransaction = new TokenFreezeTransaction()
                 .setAccountId(accountId)
                 .setMaxTransactionFee(1_000_000_000)
                 .setTokenId(tokenId)
@@ -274,8 +274,8 @@ public class TokenClient extends AbstractNetworkClient {
 
         log.debug("Wipe {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
-        TokenWipeAccountTransaction tokenWipeAccountTransaction = new TokenWipeAccountTransaction()
-                .setAccount(expandedAccountId.getAccountId())
+        TokenWipeTransaction tokenWipeAccountTransaction = new TokenWipeTransaction()
+                .setAccountId(expandedAccountId.getAccountId())
                 .setTokenId(tokenId)
                 .setAmount(amount)
                 .setMaxTransactionFee(1_000_000_000)
