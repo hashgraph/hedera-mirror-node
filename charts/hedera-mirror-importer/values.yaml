@@ -212,7 +212,7 @@ prometheusRules:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}%"
       summary: "Mirror Importer file descriptor usage exceeds 80%"
     enabled: true
-    expr:  sum(process_files_open_files{application="hedera-mirror-importer"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
+    expr: sum(process_files_open_files{application="hedera-mirror-importer"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
     for: 5m
     labels:
       severity: critical
