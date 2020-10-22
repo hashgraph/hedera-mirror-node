@@ -59,6 +59,8 @@
     "freeze_key": null,
     "initial_supply": "1000000",
     "kyc_key": null,
+    "modified_timestamp": "0.000000000",
+    "name": "Token name",
     "supply_key": null,
     "total_supply": "1000000",
     "treasury_account_id": "0.0.98",
