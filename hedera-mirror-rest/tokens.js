@@ -49,7 +49,7 @@ const accountIdJoinQuery = ` join token_account ta on ta.account_id = $1 and t.t
 const entityIdJoinQuery = ` join t_entities e on e.id = t.token_id`;
 
 // token info sql queries
-const tokenInfoSelectQuery = `select symbol, token_id, name, decimals, initial_supply, total_supply, treasury_account_id, created_timestamp, freeze_default, e.key, kyc_key, freeze_key, wipe_key, supply_key, e.exp_time_ns, e.auto_renew_account_id, e.auto_renew_period, modified_timestamp, name from token t`;
+const tokenInfoSelectQuery = `select symbol, token_id, name, decimals, initial_supply, total_supply, treasury_account_id, created_timestamp, freeze_default, e.key, kyc_key, freeze_key, wipe_key, supply_key, e.exp_time_ns, e.auto_renew_account_id, e.auto_renew_period, modified_timestamp from token t`;
 const tokenIdMatchQuery = ` where token_id = $1`;
 
 /**
