@@ -28,6 +28,7 @@ import org.springframework.test.context.jdbc.Sql;
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 // Same database is used for all tests, so clean it up before each test.
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
 public class IntegrationTest {
 }
