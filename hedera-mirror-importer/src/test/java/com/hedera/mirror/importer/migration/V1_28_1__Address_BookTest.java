@@ -48,7 +48,7 @@ import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
 @TestPropertySource(properties = "spring.flyway.target=1.28.0")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_V1.28.1.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_V1.28.1.sql")
 public class V1_28_1__Address_BookTest extends IntegrationTest {
     @Resource
     private V1_28_1__Address_Book migration;
