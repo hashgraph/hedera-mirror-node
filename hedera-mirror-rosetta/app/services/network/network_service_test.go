@@ -29,7 +29,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tests/mocks/repository"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
