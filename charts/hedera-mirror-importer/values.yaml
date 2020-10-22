@@ -188,24 +188,24 @@ prometheusRules:
       severity: critical
 
   ImporterBalanceAge:
-     annotations:
-       description: Averaging {{ $value | humanizeDuration }} trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
-       summary: Record stream backlogged, stream file older than 16m
-     enabled: true
-     expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 960
-     for: 1m
-     labels:
-       severity: critical
+    annotations:
+      description: Last processed balance file for {{ $labels.namespace }}/{{ $labels.pod }} was {{ $value | humanizeDuration }} ago
+      summary: Mirror Importer hasn't processed a balance file in more than 16m
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 960
+    for: 1m
+    labels:
+      severity: critical
 
   ImporterRecordAge:
-     annotations:
-       description: Last processed record file for {{ $labels.namespace }}/{{ $labels.pod }} was {{ $value | humanizeDuration }} ago
-       summary: Mirror Importer hasn't processed a record file in more than 15s
-     enabled: true
-     expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 15
-     for: 1m
-     labels:
-       severity: critical
+    annotations:
+      description: Last processed record file for {{ $labels.namespace }}/{{ $labels.pod }} was {{ $value | humanizeDuration }} ago
+      summary: Mirror Importer hasn't processed a record file in more than 15s
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 15
+    for: 1m
+    labels:
+      severity: critical
 
   ImporterHighCPU:
     annotations:
