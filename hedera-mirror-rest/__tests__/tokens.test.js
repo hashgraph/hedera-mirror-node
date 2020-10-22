@@ -566,6 +566,8 @@ describe('token formatTokenInfoRow tests', () => {
     exp_time_ns: 1594431063696143000,
     auto_renew_account_id: '98',
     auto_renew_period: 7890000,
+    modified_timestamp: 1603394416676293000,
+    name: 'Token name',
   };
 
   const expectedFormat = {
@@ -588,6 +590,8 @@ describe('token formatTokenInfoRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '020202',
     },
+    modified_timestamp: '1603394416.676293000',
+    name: 'Token name',
     supply_key: {
       _type: 'ProtobufEncoded',
       key: '040404',
