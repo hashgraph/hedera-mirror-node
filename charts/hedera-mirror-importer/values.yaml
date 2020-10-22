@@ -119,7 +119,7 @@ prometheusRules:
 
   ImporterCloudStorageLatency:
     annotations:
-      description: Cloud storage latency exceeded {{ $value }}s trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
+      description: Cloud storage latency exceeded {{ $value | humanizeDuration }} trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
       summary: Cloud storage latency exceeds 1s
     enabled: true
     expr: sum(rate(hedera_mirror_download_request_seconds_sum{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) > 1
@@ -149,7 +149,7 @@ prometheusRules:
 
   ImporterStreamCloseInterval:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} file stream should close every 2s but is actually {{ $value }}s. This could just be due to the lack of traffic in the environment, but it could potentially be something more serious to look into."
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} file stream should close every 2s but is actually {{ $value | humanizeDuration }}. This could just be due to the lack of traffic in the environment, but it could potentially be something more serious to look into."
       summary: Record stream close interval exceeds 10s
     enabled: true
     expr: sum(rate(hedera_mirror_stream_close_latency_seconds_sum{application="hedera-mirror-importer", type="RECORD"}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_stream_close_latency_seconds_count{application="hedera-mirror-importer", type="RECORD"}[5m])) by (namespace, pod) > 10
@@ -169,7 +169,7 @@ prometheusRules:
 
   ImporterParseLatency:
     annotations:
-      description: Averaging {{ $value }}s trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+      description: Averaging {{ $value | humanizeDuration }} trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
       summary: Took longer than 2s to parse {{ $labels.type }} stream files
     enabled: true
     expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 2
@@ -179,13 +179,33 @@ prometheusRules:
 
   ImporterPublishLatency:
     annotations:
-      description: Took {{ $value }}s to publish {{ $labels.entity }}s to {{ $labels.type }} for {{ $labels.namespace }}/{{ $labels.pod }}
+      description: Took {{ $value | humanizeDuration }} to publish {{ $labels.entity }}s to {{ $labels.type }} for {{ $labels.namespace }}/{{ $labels.pod }}
       summary: Slow {{ $labels.type }} publishing
     enabled: true
     expr: sum(rate(hedera_mirror_importer_publish_duration_seconds_sum{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type, entity) / sum(rate(hedera_mirror_importer_publish_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type, entity) > 1
     for: 1m
     labels:
       severity: critical
+
+  ImporterBalanceAge:
+     annotations:
+       description: Averaging {{ $value | humanizeDuration }} trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+       summary: Record stream backlogged, stream file older than 16m
+     enabled: true
+     expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 960
+     for: 1m
+     labels:
+       severity: critical
+
+  ImporterRecordAge:
+     annotations:
+       description: Last processed record file for {{ $labels.namespace }}/{{ $labels.pod }} was {{ $value | humanizeDuration }} ago
+       summary: Mirror Importer hasn't processed a record file in more than 15s
+     enabled: true
+     expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 15
+     for: 1m
+     labels:
+       severity: critical
 
   ImporterHighCPU:
     annotations:

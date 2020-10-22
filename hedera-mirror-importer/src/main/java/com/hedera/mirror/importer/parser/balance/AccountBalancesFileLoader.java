@@ -33,6 +33,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.sql.DataSource;
@@ -103,6 +104,7 @@ public class AccountBalancesFileLoader {
     private final CompositeBalanceFileReader balanceFileReader;
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
+    private final Timer parseLatencyMetric;
 
     public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
                                      CompositeBalanceFileReader balanceFileReader, MeterRegistry meterRegistry) {
@@ -115,6 +117,12 @@ public class AccountBalancesFileLoader {
                 .tag("type", balanceParserProperties.getStreamType().toString());
         parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
         parseDurationMetricSuccess = parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
+
+        parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
+                .description("The difference in ms between the consensus time of the last transaction in the file " +
+                        "and the time at which the file was processed successfully")
+                .tag("type", balanceParserProperties.getStreamType().toString())
+                .register(meterRegistry);
     }
 
     /**
@@ -278,5 +286,9 @@ public class AccountBalancesFileLoader {
         if (statement.executeUpdate() != 1) {
             throw new MissingFileException("File " + filename + " not in the database, thus not updated");
         }
+
+        long loadEndMillis = loadEnd * 1_000; // s -> ms
+        long consensusEndMillis = consensusTimestamp / 1_000_000; // ns -> ms
+        parseLatencyMetric.record(loadEndMillis - consensusEndMillis, TimeUnit.MILLISECONDS);
     }
 }

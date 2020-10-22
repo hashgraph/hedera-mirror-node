@@ -107,7 +107,7 @@ prometheusRules:
 
   RestSlowResponse:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} is taking {{ $value }}s to generate a response"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} is taking {{ $value | humanizeDuration }} to generate a response"
       summary: "Mirror REST API is taking too long to respond"
     enabled: true
     expr: sum(rate(api_request_duration_milliseconds_sum{container="rest"}[5m])) by (namespace, pod) / sum(rate(api_request_duration_milliseconds_count{container="rest"}[5m])) by (namespace, pod) > 2000

@@ -99,7 +99,7 @@ prometheusRules:
 
   GrpcHighLatency:
     annotations:
-      description: 'High latency of {{ $value }}s between the main nodes and {{ $labels.namespace }}/{{ $labels.pod }}'
+      description: 'High latency of {{ $value | humanizeDuration }} between the main nodes and {{ $labels.namespace }}/{{ $labels.pod }}'
       summary: "Mirror gRPC API consensus to delivery (C2MD) latency exceeds 15s"
     enabled: true
     expr: sum(rate(hedera_mirror_publish_latency_seconds_sum{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_publish_latency_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) > 15
