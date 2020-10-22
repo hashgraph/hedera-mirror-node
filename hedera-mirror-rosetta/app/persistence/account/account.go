@@ -28,13 +28,22 @@ import (
 )
 
 const (
+	tableNameAccountBalance = "account_balance"
+)
+
+const (
 	balanceChangeBetween string = `SELECT
                                         SUM(amount::bigint) AS value,
                                         COUNT(consensus_timestamp) AS number_of_transfers
                                    FROM crypto_transfer
-                                   WHERE consensus_timestamp > ?
-                                        AND consensus_timestamp <= ?
-                                        AND entity_id = ?`
+                                   WHERE consensus_timestamp > $1
+                                        AND consensus_timestamp <= $2
+                                        AND entity_id = $3`
+	latestBalanceBeforeConsensus string = `SELECT *
+                                           FROM account_balance
+                                           WHERE (account_id = $1 AND consensus_timestamp <= $2)
+                                           ORDER BY consensus_timestamp DESC
+                                           LIMIT 1`
 )
 
 type accountBalance struct {
@@ -50,7 +59,7 @@ type balanceChange struct {
 
 // TableName - Set table name of the accountBalance to be `account_balance`
 func (accountBalance) TableName() string {
-	return "account_balance"
+	return tableNameAccountBalance
 }
 
 // AccountRepository struct that has connection to the Database
@@ -79,11 +88,7 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensus
 
 	// gets the most recent balance before block
 	ab := &accountBalance{}
-	if ar.dbClient.
-		Where("account_id=? AND consensus_timestamp <= ?", entityID, consensusEnd).
-		Order("consensus_timestamp desc").
-		Limit(1).
-		Find(&ab).RecordNotFound() {
+	if ar.dbClient.Raw(latestBalanceBeforeConsensus, entityID, consensusEnd).Find(&ab).RecordNotFound() {
 		ab.Balance = 0
 	}
 

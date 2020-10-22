@@ -20,13 +20,11 @@
 
 package common
 
-type CryptoTransfer struct {
-	EntityID           int64 `gorm:"type:bigint"`
-	ConsensusTimestamp int64 `gorm:"type:bigint"`
-	Amount             int64 `gorm:"type:bigint"`
-}
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
-// TableName - Set table name of the CryptoTransfers to be `crypto_transfer`
-func (CryptoTransfer) TableName() string {
-	return "crypto_transfer"
+func TestShouldSuccessReturnCryptoTransferTableName(t *testing.T) {
+	assert.Equal(t, tableNameCryptoTransfer, CryptoTransfer{}.TableName())
 }
