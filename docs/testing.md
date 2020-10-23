@@ -55,7 +55,7 @@ Where
     -   `BALANCE`: Sets `account.balance` param. Values for this param are sampled from `balance` column in
         `account_balance`.
     -   `TOKENID`: Sets `token.id` param. Values for this param are sampled from `token_id` column in `token`.
--   `idAxis` is the primary axis to filter results based on ids (e.g. `/tokens/{id}`).  It can have one of two values.
+-   `idAxis` is the primary axis to filter results based on ids in the query path (e.g. `/tokens/{id}`).  It can have one of two values.
     Either it or `filterAxis` are required.
     -   `ACCOUNTID`: id values will be sampled from `entity_num` column in `t_entities`.
     -   `TOKENID`: id values will be sampled from `token_id` column in `token`.
