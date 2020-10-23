@@ -24,7 +24,6 @@ jobs:
       - name: Create Kubernetes cluster
         id: k8s
         uses: debianmaster/actions-k3s@master
-        if: steps.lint.outputs.changed == 'true' # Only create cluster if there are chart changes
         with:
           version: v1.17.4-k3s1
 
@@ -33,7 +32,6 @@ jobs:
 
       - name: Helm install
         uses: helm/chart-testing-action@v1.1.0
-        if: steps.lint.outputs.changed == 'true'
         with:
           command: install
           config: .github/ct-install.yaml
