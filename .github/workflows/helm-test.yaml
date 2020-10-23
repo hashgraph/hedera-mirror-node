@@ -28,8 +28,11 @@ jobs:
         with:
           version: v1.17.4-k3s1
 
+      - name: List dir
+        run: ls -la "${{ steps.k8s.outputs.kubeconfig }}"
+
       - name: Helm install
-        uses: helm/chart-testing-action@v1.0.0
+        uses: helm/chart-testing-action@v1.1.0
         if: steps.lint.outputs.changed == 'true'
         with:
           command: install
