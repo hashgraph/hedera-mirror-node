@@ -13,7 +13,9 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 
 Set environment variables that will be used for the remainder of the document:
 
+```shell script
 export RELEASE="mirror1"
+```
 
 ## Install
 

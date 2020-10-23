@@ -96,6 +96,168 @@ resources:
 
 revisionHistoryLimit: 3
 
+prometheusRules:
+  enabled: false
+  ImporterNoTransactions:
+    annotations:
+      description: "Record stream TPS has dropped to {{ $value }} for {{ $labels.namespace }}/{{ $labels.pod }}. This may be because importer is down, can't connect to cloud storage, main nodes are not uploading, error parsing the streams, no traffic, etc."
+      summary: "No transactions seen for 2m"
+    enabled: true
+    expr: sum(rate(hedera_mirror_transaction_latency_seconds_count{application="hedera-mirror-importer"}[5m])) by (namespace, pod) <= 0
+    for: 2m
+    labels:
+      severity: critical
+
+  ImporterCloudStorageErrors:
+    annotations:
+      description: '{{ $value | humanizePercentage }}% Error rate trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}'
+      summary: "Cloud storage error rate exceeds 5%"
+    enabled: true
+    expr: (sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status!~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer"}[2m])) by (namespace, pod, type, action)) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+
+  ImporterCloudStorageLatency:
+    annotations:
+      description: Cloud storage latency exceeded {{ $value | humanizeDuration }} trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Cloud storage latency exceeds 1s
+    enabled: true
+    expr: sum(rate(hedera_mirror_download_request_seconds_sum{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) > 1
+    for: 1m
+    labels:
+      severity: critical
+
+  ImporterNoConsensus:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} only able to achieve {{ $value | humanizePercentage }}% consensus during {{ $labels.type }} stream signature verification"
+      summary: Unable to verify {{ $labels.type }} stream signatures
+    enabled: true
+    expr: sum(rate(hedera_mirror_download_signature_verification_total{application="hedera-mirror-importer", status="CONSENSUS_REACHED"}[2m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_signature_verification_total{application="hedera-mirror-importer"}[2m])) by (namespace, pod, type) < 0.33
+    for: 2m
+    labels:
+      severity: critical
+
+  ImporterFileVerificationErrors:
+    annotations:
+      description: "Error rate of {{ $value | humanizePercentage }}% trying to download and verify {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "{{ $labels.type }} file verification error rate exceeds 5%"
+    enabled: true
+    expr: sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer", success="false"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer"[3m])) by (namespace, pod, type) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+
+  ImporterStreamCloseInterval:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} file stream should close every 2s but is actually {{ $value | humanizeDuration }}. This could just be due to the lack of traffic in the environment, but it could potentially be something more serious to look into."
+      summary: Record stream close interval exceeds 10s
+    enabled: true
+    expr: sum(rate(hedera_mirror_stream_close_latency_seconds_sum{application="hedera-mirror-importer", type="RECORD"}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_stream_close_latency_seconds_count{application="hedera-mirror-importer", type="RECORD"}[5m])) by (namespace, pod) > 10
+    for: 1m
+    labels:
+      severity: warning
+
+  ImporterParseErrors:
+    annotations:
+      description: "Encountered {{ $value | humanizePercentage }}% errors trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Error rate parsing {{ $labels.type }} exceeds 5%"
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer", success="false"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+
+  ImporterParseLatency:
+    annotations:
+      description: Averaging {{ $value | humanizeDuration }} trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Took longer than 2s to parse {{ $labels.type }} stream files
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 2
+    for: 1m
+    labels:
+      severity: critical
+
+  ImporterPublishLatency:
+    annotations:
+      description: Took {{ $value | humanizeDuration }} to publish {{ $labels.entity }}s to {{ $labels.type }} for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Slow {{ $labels.type }} publishing
+    enabled: true
+    expr: sum(rate(hedera_mirror_importer_publish_duration_seconds_sum{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type, entity) / sum(rate(hedera_mirror_importer_publish_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type, entity) > 1
+    for: 1m
+    labels:
+      severity: critical
+
+  ImporterBalanceStreamFallenBehind:
+    annotations:
+      description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Mirror Importer balance stream processing has fallen behind
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 960
+    for: 1m
+    labels:
+      severity: critical
+
+  ImporterRecordStreamFallenBehind:
+    annotations:
+      description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Mirror Importer record stream processing has fallen behind
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 20
+    for: 1m
+    labels:
+      severity: critical
+
+  ImporterHighCPU:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror Importer CPU usage exceeds 80%"
+    enabled: true
+    expr: sum(process_cpu_usage{application="hedera-mirror-importer"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  ImporterHighDBConnections:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }}% of available database connections"
+      summary: "Mirror Importer database connection utilization exceeds 75%"
+    enabled: true
+    expr: sum(hikaricp_connections_active{application="hedera-mirror-importer"}) by (namespace, pod) / sum(hikaricp_connections_max{application="hedera-mirror-importer"}) by (namespace, pod) > 0.75
+    for: 5m
+    labels:
+      severity: critical
+
+  ImporterHighFileDescriptors:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror Importer file descriptor usage exceeds 80%"
+    enabled: true
+    expr: sum(process_files_open_files{application="hedera-mirror-importer"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  ImporterHighMemory:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror Importer memory usage exceeds 80%"
+    enabled: true
+    expr: sum(jvm_memory_used_bytes{application="hedera-mirror-importer"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  ImporterLog4j2Errors:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} encountered {{ $value }} exceptions in a 2m period"
+      summary: High rate of log4j2 errors
+    enabled: true
+    expr: sum(increase(log4j2_events_total{application="hedera-mirror-importer", level="error"}[2m])) by (namespace, pod) >= 2
+    for: 3m
+    labels:
+      severity: critical
+
 securityContext:
   capabilities:
     drop: [ALL]
@@ -108,7 +270,6 @@ serviceAccount:
   create: true
   # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name:
-
 
 terminationGracePeriodSeconds: 30
 

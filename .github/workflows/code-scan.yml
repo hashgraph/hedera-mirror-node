@@ -2,9 +2,9 @@ name: "Code scan"
 
 on:
   push:
-    branches: [ master, release/**, rosetta ]
+    branches: [ master, release/** ]
   pull_request:
-    branches: [ master, release/**, rosetta ]
+    branches: [ master, release/** ]
 
 jobs:
   analyze:
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'go', 'java', 'javascript' ]
+        language: [ 'java', 'javascript' ]
 
     steps:
       - name: Checkout repository

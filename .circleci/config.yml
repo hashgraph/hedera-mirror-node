@@ -22,7 +22,7 @@ references:
     command: [ "/bin/sh", "-c", "gcloud beta emulators pubsub start" ]
 
   docker_redis: &docker_redis
-    image: redis:6.0.8-alpine
+    image: redis:5.0.9-alpine
 
   machine_ubuntu: &machine_ubuntu
     machine:

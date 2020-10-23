@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <grpc-spring-boot.version>2.7.0.RELEASE</grpc-spring-boot.version>
+        <grpc-spring-boot.version>2.10.1.RELEASE</grpc-spring-boot.version>
         <vertx.version>3.9.2</vertx.version>
     </properties>
 

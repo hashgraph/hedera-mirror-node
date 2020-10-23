@@ -81,7 +81,7 @@ prometheus:
           - alertname
         group_wait: 30s
         receiver: 'null'
-        repeat_interval: 30m
+        repeat_interval: 7d
         routes: []
       templates:
         - '/etc/alertmanager/config/slack.tmpl'
@@ -163,10 +163,12 @@ prometheus:
     enabled: false
   kubeControllerManager:
     enabled: false
-  kubeEtcd:
-    enabled: false
   kubeDns:
     enabled: true
+  kubeEtcd:
+    enabled: false
+  kubelet:
+    enabled: false
   kubeScheduler:
     enabled: false
   prometheus-node-exporter:
@@ -203,6 +205,7 @@ prometheus:
           cpu: 250m
           memory: 250Mi
       retention: 30d
+      ruleSelectorNilUsesHelmValues: false
       scrapeInterval: 30s
       serviceMonitorSelectorNilUsesHelmValues: false
       storageSpec:

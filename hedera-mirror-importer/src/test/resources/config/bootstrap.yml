@@ -7,3 +7,5 @@ embedded:
       # Adding embedded containers' dependencies enables them by default. However, only few tests needs pubsub emulator,
       # so it is enabled only for those tests.
       enabled: false
+  redis:
+    docker-image: redis:5.0.9-alpine

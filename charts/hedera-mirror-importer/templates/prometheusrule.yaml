@@ -1,0 +1,19 @@
+{{- if .Values.prometheusRules.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    {{- include "hedera-mirror-importer.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-importer.fullname" . }}
+  namespace: {{ include "hedera-mirror-importer.namespace" . }}
+spec:
+  groups:
+    - name: {{ include "hedera-mirror-importer.fullname" . }}
+      rules:
+      {{- range $name, $rule := omit .Values.prometheusRules "enabled" }}
+        {{- if $rule.enabled }}
+        - alert: {{ $name }}
+          {{- omit $rule "enabled" | toYaml | nindent 10 }}
+        {{- end }}
+      {{- end }}
+{{- end -}}
