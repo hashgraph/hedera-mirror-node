@@ -19,7 +19,7 @@ spec:
     prometheus:
       prometheusOperator:
         namespaces:
-          additional: ["kube-system", "common", "dev"]
+          additional: ["kube-system", "common", "dev", "pre-oa"]
   valuesFrom:
     - secretKeyRef:
         name: mirror
