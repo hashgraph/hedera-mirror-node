@@ -177,7 +177,11 @@ const makeIdsQuerySet = async (test) => {
       return '' + sample;
     });
   }
-  console.log('Here there be ' + idValues);
+  if (test.idAxis === 'ACCOUNTID') {
+    idValues = await populateIdValues(test, sampleEntityIds, (sample) => {
+      return '' + sample;
+    });
+  }
   return {
     name: test.name,
     query: test.query,
