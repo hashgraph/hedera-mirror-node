@@ -25,15 +25,14 @@ const math = require('mathjs');
 const config = require('./config');
 const {
   checkAPIResponseError,
+  checkElementsOrder,
   checkRespObjDefined,
   checkRespArrayLength,
   checkMandatoryParams,
   checkResourceFreshness,
-  checkConsensusTimestampOrder,
   getAPIResponse,
   getUrl,
   testRunner,
-  toAccNum,
   CheckRunner,
 } = require('./utils');
 
@@ -54,9 +53,9 @@ const mandatoryParams = [
 ];
 
 const checkTransactionTransfers = (transactions, option) => {
-  const {accountNumber, message} = option;
+  const {accountId, message} = option;
   const {transfers} = transactions[0];
-  if (!transfers || !transfers.some((xfer) => toAccNum(xfer.account) === accountNumber)) {
+  if (!transfers || !transfers.some((xfer) => xfer.account === accountId)) {
     return {
       passed: false,
       message,
@@ -91,14 +90,14 @@ const getTransactionsWithAccountCheck = async (server) => {
     return {url, ...result};
   }
 
-  const highestAcc = _.max(
+  const highestAccount = _.max(
     _.map(
       _.filter(transactions[0].transfers, (xfer) => xfer.amount > 0),
-      (xfer) => toAccNum(xfer.account)
+      (xfer) => xfer.account
     )
   );
 
-  if (highestAcc === undefined) {
+  if (highestAccount === undefined) {
     return {
       url,
       passed: false,
@@ -107,7 +106,7 @@ const getTransactionsWithAccountCheck = async (server) => {
   }
 
   url = getUrl(server, transactionsPath, {
-    'account.id': highestAcc,
+    'account.id': highestAccount,
     type: 'credit',
     limit: 1,
   });
@@ -125,7 +124,7 @@ const getTransactionsWithAccountCheck = async (server) => {
       message: 'transaction object is missing some mandatory fields',
     })
     .withCheckSpec(checkTransactionTransfers, {
-      accountNumber: highestAcc,
+      accountId: highestAccount,
       message: 'Highest acc check was not found',
     })
     .run(accTransactions);
@@ -159,7 +158,7 @@ const getTransactionsWithOrderParam = async (server) => {
       params: mandatoryParams,
       message: 'transaction object is missing some mandatory fields',
     })
-    .withCheckSpec(checkConsensusTimestampOrder, {asc: true})
+    .withCheckSpec(checkElementsOrder, {asc: true, key: 'consensus_timestamp', name: 'consensus timestamp'})
     .run(transactions);
   if (!result.passed) {
     return {url, ...result};

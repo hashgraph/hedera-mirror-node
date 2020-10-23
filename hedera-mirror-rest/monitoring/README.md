@@ -51,38 +51,55 @@ nano config/serverlist.json // Insert the mirror node deployments you want to mo
 
 To customize per-resource configuration:
 
-- `freshnessThreshold` (in seconds) for `balance`, `transaction`, and `topic` can be adjusted independently if needed.
-   Set to 0 to disable freshness check for a resource
+- set `enabled` to `true` or `false` to enable / disable tests for a resource
+- `freshnessThreshold` (in seconds) for `balance`, `transaction`, `topic`, and `token` (balances of a token) can be
+   adjusted independently if needed. Set to 0 to disable freshness check for a resource
 - `intervalMultiplier` for all resources. The tests for a resource will run every `interval * intervalMultiplier` seconds.
    For `stateproof`, it defaults to 10, so the tests run at a lower frequency to reduce cost
 - `limit` threshold for `account`, `balance`, `transatcion`, and `topic` can be adjusted independently if needed, e.g.,
   for environments with lower traffic volume
 - set `topic.topicId` to an existing topic ID of the target environment. If not set, topic message tests will be skipped
+- set `token.tokenId` to an existing tokenId of the target environment in case it's needed to pass certain token tests,
+  e.g., the number of minimum balance entries for the token. If not set, the tests will use the first token from the
+  token discovery API.
 
 ```json
 {
   "account": {
+    "enabled": true,
     "intervalMultiplier": 1,
     "limit": 1000
   },
   "balance": {
+    "enabled": true,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
     "limit": 1000
   },
   "stateproof": {
+    "enabled": true,
     "intervalMultiplier": 10
   },
   "transaction": {
+    "enabled": true,
     "freshnessThreshold": 50,
     "intervalMultiplier": 1,
     "limit": 1000
   },
   "topic": {
+    "enabled": true,
     "freshnessThreshold": 100,
     "intervalMultiplier": 1,
     "limit": 1000,
-    "topicId": "0.0.1930"
+    "topicId": "sample topic id"
+  },
+  "token": {
+    "enabled": false,
+    "freshnessThreshold": 1000,
+    "intervalMultiplier": 1,
+    "tokenBalancesLimit": 10,
+    "tokenId": "sample token id",
+    "tokensLimit": 10
   }
 }
 ```

@@ -23,10 +23,10 @@
 const config = require('./config');
 const {
   checkAPIResponseError,
+  checkElementsOrder,
   checkRespObjDefined,
   checkRespArrayLength,
   checkMandatoryParams,
-  checkConsensusTimestampOrder,
   checkResourceFreshness,
   getAPIResponse,
   getUrl,
@@ -113,7 +113,7 @@ const getTopicMessages = async (server) => {
       params: mandatoryParams,
       message: 'topic message object is missing some mandatory fields',
     })
-    .withCheckSpec(checkConsensusTimestampOrder, {asc: true})
+    .withCheckSpec(checkElementsOrder, {asc: true, key: 'consensus_timestamp', name: 'consensus timestamp'})
     .withCheckSpec(checkSequenceNumberOrder, {asc: true});
   let result = checkRunner.run(messages);
   if (!result.passed) {
@@ -124,7 +124,7 @@ const getTopicMessages = async (server) => {
   messages = await getAPIResponse(url, jsonRespKey);
 
   result = checkRunner
-    .resetCheckSpec(checkConsensusTimestampOrder, {asc: false})
+    .resetCheckSpec(checkElementsOrder, {asc: false, key: 'consensus_timestamp', name: 'consensus timestamp'})
     .resetCheckSpec(checkSequenceNumberOrder, {asc: false})
     .run(messages);
   if (!result.passed) {
