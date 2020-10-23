@@ -187,22 +187,22 @@ prometheusRules:
     labels:
       severity: critical
 
-  ImporterBalanceAge:
+  ImporterBalanceStreamFallenBehind:
     annotations:
-      description: Last processed balance file for {{ $labels.namespace }}/{{ $labels.pod }} was {{ $value | humanizeDuration }} ago
-      summary: Mirror Importer hasn't processed a balance file in more than 16m
+      description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Mirror Importer balance stream processing has fallen behind
     enabled: true
     expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 960
     for: 1m
     labels:
       severity: critical
 
-  ImporterRecordAge:
+  ImporterRecordStreamFallenBehind:
     annotations:
-      description: Last processed record file for {{ $labels.namespace }}/{{ $labels.pod }} was {{ $value | humanizeDuration }} ago
-      summary: Mirror Importer hasn't processed a record file in more than 15s
+      description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Mirror Importer record stream processing has fallen behind
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 15
+    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 20
     for: 1m
     labels:
       severity: critical
