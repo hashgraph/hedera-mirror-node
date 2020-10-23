@@ -176,8 +176,7 @@ const makeIdsQuerySet = async (test) => {
     idValues = await populateIdValues(test, sampleTokenIds, (sample) => {
       return '' + sample;
     });
-  }
-  if (test.idAxis === 'ACCOUNTID') {
+  } else if (test.idAxis === 'ACCOUNTID') {
     idValues = await populateIdValues(test, sampleEntityIds, (sample) => {
       return '' + sample;
     });
