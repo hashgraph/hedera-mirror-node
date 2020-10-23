@@ -1,6 +1,5 @@
 package com.hedera.mirror.test.e2e.acceptance.props;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /*-
@@ -24,9 +23,7 @@ import lombok.Data;
  */
 
 @Data
-public class MirrorKey {
-    @JsonProperty("_type")
-    private String type;
-
-    private String key;
+public class MirrorTokenAccountBalance {
+    private String tokenId;
+    private long balance;
 }

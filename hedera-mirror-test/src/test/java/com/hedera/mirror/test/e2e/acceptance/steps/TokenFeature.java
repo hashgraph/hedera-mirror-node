@@ -35,6 +35,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -54,13 +55,11 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoBalance;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenBalance;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAccountBalance;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorBalancesResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenBalancesResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -289,30 +288,13 @@ public class TokenFeature {
         verifyBalances(status);
         verifyTransactions(status);
         verifyToken(status);
+        verifyTokenTransfers(status);
     }
 
     @Then("the mirror node REST API should return status {int} for token update")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
     public void verifyMirrorTokenUpdateFlow(int status) {
         verifyTokenUpdate(status);
-    }
-
-    @Then("the mirror node {string} REST API should return status {int}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
-    public void verifyMirrorTransactionAPIResponse(String endpoint, int status) {
-        if (endpoint.equalsIgnoreCase("balances")) {
-            verifyBalances(status);
-        } else if (endpoint.equalsIgnoreCase("transaction")) {
-            verifyTransactions(status);
-        } else if (endpoint.equalsIgnoreCase("token")) {
-            verifyToken(status);
-        } else if (endpoint.equalsIgnoreCase("tokenBalance")) {
-            verifyTokenBalance(status);
-        } else if (endpoint.equalsIgnoreCase("tokenTransfer")) {
-            verifyTokenTransfers(status);
-        } else if (endpoint.equalsIgnoreCase("tokenUpdate")) {
-            verifyTokenUpdate(status);
-        }
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
@@ -329,6 +311,10 @@ public class TokenFeature {
         assertThat(transactions).isNotEmpty();
         MirrorTransaction mirrorTransaction = transactions.get(0);
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionIdString);
+
+        if (status == 200) {
+            assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
+        }
     }
 
     @Then("the network should observe an error creating a token {string}")
@@ -396,21 +382,21 @@ public class TokenFeature {
 
         // verify sender is present
         assertThat(mirrorCryptoBalance.getAccount()).isEqualTo(sender);
+        assertThat(mirrorCryptoBalance.getBalance()).isGreaterThan(0);
 
         // verify valid set of token balances
-        List<MirrorTokenBalance> tokenBalances = mirrorCryptoBalance.getTokens();
+        List<MirrorTokenAccountBalance> tokenBalances = mirrorCryptoBalance.getTokens();
         assertNotNull(tokenBalances);
         assertThat(tokenBalances).isNotEmpty();
-
-        // to:do when account balances are update with transactions verify new token is present in balance set
     }
 
-    private void verifyTransactions(int status) {
+    private MirrorTransaction verifyTransactions(int status) {
         String transactionId = networkTransactionResponse.getTransactionIdString();
         ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionId);
 
         verifyRESTResponse(status, response);
-        MirrorTransactionsResponse mirrorTransactionsResponse = response.bodyToMono(MirrorTransactionsResponse.class)
+        MirrorTransactionsResponse mirrorTransactionsResponse = response
+                .bodyToMono(MirrorTransactionsResponse.class)
                 .block();
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
@@ -418,8 +404,14 @@ public class TokenFeature {
         assertThat(transactions).isNotEmpty();
         MirrorTransaction mirrorTransaction = transactions.get(0);
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
-        assertThat(mirrorTransaction.getValidStartTime())
+        assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
+
+        if (status == HttpStatus.OK.value()) {
+            assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
+        }
+
+        return mirrorTransaction;
     }
 
     private MirrorTokenResponse verifyToken(int status) {
@@ -439,54 +431,13 @@ public class TokenFeature {
         return mirrorToken;
     }
 
-    private void verifyTokenBalance(int status) {
-        String recipientString = recipient.getAccountId().toString();
-        String sender = tokenClient.getSdkClient().getOperatorId().toString();
-        ClientResponse response = mirrorClient
-                .verifyTokenBalanceEndpoint(tokenId.toString(), recipientString);
-
-        List<String> stringsToVerify = new ArrayList<>();
-        stringsToVerify.add(recipientString);
-
-        verifyRESTResponse(status, response);
-
-        MirrorTokenBalancesResponse mirrorTokenBalancesResponse = response.bodyToMono(MirrorTokenBalancesResponse.class)
-                .block();
-
-        assertNotNull(mirrorTokenBalancesResponse);
-        List<MirrorAccountBalance> balances = mirrorTokenBalancesResponse.getBalances();
-        assertNotNull(balances);
-        assertThat(balances).isNotEmpty();
-
-        boolean recipientFound = false;
-        boolean senderFound = false;
-
-        for (MirrorAccountBalance balance : balances) {
-            if (recipientFound && senderFound) {
-                break;
-            }
-
-            if (balance.getAccount().equalsIgnoreCase(recipientString)) {
-                recipientFound = true;
-                continue;
-            }
-
-            if (balance.getAccount().equalsIgnoreCase(sender)) {
-                senderFound = true;
-                continue;
-            }
-        }
-
-        assertTrue(recipientFound);
-        assertTrue(senderFound);
-    }
-
     private void verifyTokenTransfers(int status) {
         String transactionId = networkTransactionResponse.getTransactionIdString();
         ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionId);
 
         verifyRESTResponse(status, response);
-        MirrorTransactionsResponse mirrorTransactionsResponse = response.bodyToMono(MirrorTransactionsResponse.class)
+        MirrorTransactionsResponse mirrorTransactionsResponse = response
+                .bodyToMono(MirrorTransactionsResponse.class)
                 .block();
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
@@ -494,8 +445,9 @@ public class TokenFeature {
         assertThat(transactions).isNotEmpty();
         MirrorTransaction mirrorTransaction = transactions.get(0);
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
-        assertThat(mirrorTransaction.getValidStartTime())
+        assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
+        assertThat(mirrorTransaction.getName()).isEqualTo("TOKENTRANSFERS");
 
         boolean tokenIdFound = false;
 

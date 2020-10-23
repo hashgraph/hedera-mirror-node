@@ -20,44 +20,20 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import lombok.Data;
 
 @Data
 public class MirrorTransaction {
-    @JsonProperty("consensus_timestamp")
-    private String consensusTimestamp;
-
-    @JsonProperty("transaction_hash")
-    private String transactionHash;
-
-    @JsonProperty("valid_start_timestamp")
-    private String validStartTime;
-
-    @JsonProperty("charged_tx_fee")
-    private int chargedTxFee;
-
-    @JsonProperty("memo_base64")
-    private String memo;
+    private String name;
 
     private String result;
 
-    private String name;
+    List<MirrorTokenTransfer> tokenTransfers;
 
-    @JsonProperty("max_fee")
-    private int maxFee;
-
-    @JsonProperty("valid_duration_seconds")
-    private String validDurationSeconds;
-
-    private String node;
-
-    @JsonProperty("transaction_id")
     private String transactionId;
 
     List<MirrorTransfer> transfers;
 
-    @JsonProperty("token_transfers")
-    List<MirrorTokenTransfer> tokenTransfers;
+    private String validStartTimestamp;
 }

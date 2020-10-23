@@ -20,61 +20,13 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorKey;
 
 @Data
 public class MirrorTokenResponse {
-    @JsonProperty("admin_key")
-    private MirrorKey adminKey;
-
-    @JsonProperty("auto_renew_account")
-    private String autoRenewAccount;
-
-    @JsonProperty("auto_renew_period")
-    private String autoRenewPeriod;
-
-    @JsonProperty("created_timestamp")
     private String createdTimestamp;
 
-    private String decimals;
-
-    @JsonProperty("expiry_timestamp")
-    private String expiry_timestamp;
-
-    @JsonProperty("freeze_default")
-    private boolean freezeDefault;
-
-    @JsonProperty("freeze_key")
-    private MirrorKey freezeKey;
-
-    @JsonProperty("initial_supply")
-    private String initialSupply;
-
-    @JsonProperty("modified_timestamp")
     private String modifiedTimestamp;
 
-    private String name;
-
-    @JsonProperty("kyc_key")
-    private MirrorKey kycKey;
-
-    @JsonProperty("supply_key")
-    private MirrorKey supplyKey;
-
-    private String symbol;
-
-    @JsonProperty("token_id")
     private String tokenId;
-
-    @JsonProperty("total_supply")
-    private String totalSupply;
-
-    @JsonProperty("treasury_account_id")
-    private String treasuryAccountId;
-
-    @JsonProperty("wipe_key")
-    private MirrorKey wipeKey;
 }

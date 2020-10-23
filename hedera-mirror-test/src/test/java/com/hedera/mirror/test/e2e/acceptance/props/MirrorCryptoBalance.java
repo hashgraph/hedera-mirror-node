@@ -29,5 +29,5 @@ public class MirrorCryptoBalance {
 
     private long balance;
 
-    List<MirrorTokenBalance> tokens;
+    List<MirrorTokenAccountBalance> tokens;
 }

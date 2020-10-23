@@ -20,7 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import lombok.Data;
 
@@ -28,8 +27,5 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoBalance;
 
 @Data
 public class MirrorBalancesResponse {
-    @JsonProperty("timestamp")
-    private String timestamp;
-
     List<MirrorCryptoBalance> balances;
 }

@@ -20,11 +20,9 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
 public class MirrorTokenTransfer extends MirrorTransfer {
-    @JsonProperty("token_id")
     private String tokenId;
 }

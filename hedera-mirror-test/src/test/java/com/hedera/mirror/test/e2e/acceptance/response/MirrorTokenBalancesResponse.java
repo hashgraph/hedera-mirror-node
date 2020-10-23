@@ -27,6 +27,5 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
 
 @Data
 public class MirrorTokenBalancesResponse {
-    private String timestamp;
     List<MirrorAccountBalance> balances;
 }
