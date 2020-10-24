@@ -1,0 +1,85 @@
+{
+  "description": "Account api calls for specific account using query param with no balance",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 7
+      },
+      {
+        "entity_num": 8
+      },
+      {
+        "entity_num": 9
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 123,
+        "id": 7,
+        "balance": 20,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 100001,
+            "balance": 2
+          },
+          {
+            "token_realm": 0,
+            "token_num": 100002,
+            "balance": 7
+          }
+        ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 7,
+        "balance": 70,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 100001,
+            "balance": 7
+          },
+          {
+            "token_realm": 0,
+            "token_num": 100002,
+            "balance": 77
+          }
+        ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 9,
+        "balance": 90
+      },
+      {
+        "timestamp": 12,
+        "id": 9,
+        "balance": 45
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/accounts?account.id=0.0.8",
+  "responseStatus": 200,
+  "responseJson": {
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": null,
+          "balance": null,
+          "tokens": []
+        },
+        "account": "0.0.8",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}
