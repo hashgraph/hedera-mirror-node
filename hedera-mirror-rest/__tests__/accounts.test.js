@@ -154,7 +154,7 @@ const validateOrder = function (accounts, order) {
 const singletests = {
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
-    checks: [{field: 'account_id', operator: '>=', value: 1111}],
+    checks: [{field: 'id', operator: '>=', value: 1111}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -162,7 +162,7 @@ const singletests = {
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
-    checks: [{field: 'account_id', operator: '<', value: 2222}],
+    checks: [{field: 'id', operator: '<', value: 2222}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
       {func: validateFields, args: []},
@@ -170,7 +170,7 @@ const singletests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'account_id', operator: '=', value: 3333}],
+    checks: [{field: 'id', operator: '=', value: 3333}],
     checkFunctions: [
       {func: validateAccNumRange, args: [3333, 3333]},
       {func: validateFields, args: []},

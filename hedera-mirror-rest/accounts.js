@@ -64,7 +64,7 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
   return `
     select ab.balance as account_balance,
        ab.consensus_timestamp as consensus_timestamp,
-       coalesce(ab.account_id, e.id) as entity_id,
+       e.id as entity_id,
        e.exp_time_ns,
        e.auto_renew_period,
        e.key,
@@ -110,7 +110,7 @@ const getAccounts = async (req, res) => {
 
   const entitySql = getAccountQuery(
     `${[entityAccountQuery, balanceQuery, pubKeyQuery].filter((x) => !!x).join(' and ')}`,
-    `order by coalesce(ab.account_id, e.id) ${order}`,
+    `order by e.id ${order}`,
     order,
     query
   );
