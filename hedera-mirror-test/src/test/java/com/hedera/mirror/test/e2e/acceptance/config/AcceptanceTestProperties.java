@@ -54,8 +54,8 @@ public class AcceptanceTestProperties {
     private boolean emitBackgroundMessages = false;
 
     @Max(5)
-    private int subscribeRetries = 3;
+    private int subscribeRetries = 5;
 
     @NotNull
-    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(3000);
+    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
 }

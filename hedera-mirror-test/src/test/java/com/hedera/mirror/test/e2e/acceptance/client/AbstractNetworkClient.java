@@ -33,7 +33,7 @@ import com.hedera.hashgraph.sdk.TransactionList;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.crypto.PrivateKey;
-import com.hedera.mirror.test.e2e.acceptance.props.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
 @Data

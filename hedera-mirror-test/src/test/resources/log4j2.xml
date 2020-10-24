@@ -18,6 +18,9 @@
         <Logger name="org.springframework.retry.listener" level="debug" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
+        <Logger name="reactor.netty.http.client" level="debug" additivity="false">
+            <AppenderRef ref="console"/>
+        </Logger>
         <Root level="warn">
             <AppenderRef ref="console"/>
         </Root>

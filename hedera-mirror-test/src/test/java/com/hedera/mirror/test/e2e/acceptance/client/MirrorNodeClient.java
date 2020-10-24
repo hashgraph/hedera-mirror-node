@@ -22,34 +22,44 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
-import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.HttpHeaders;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
-import reactor.netty.tcp.TcpClient;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorBalancesResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
 public class MirrorNodeClient {
     private final MirrorClient mirrorClient;
     private final AcceptanceTestProperties acceptanceProps;
+
+    @Autowired
+    private WebClient webClient;
+
+    // REST ENDPOINTS
+    private static final String ACCOUNTS_ENDPOINT = "accounts";
+    private static final String BALANCES_ENDPOINT = "balances";
+    private static final String TOKENS_ENDPOINT = "tokens";
+    private static final String TOPICS_ENDPOINT = "topics";
+    private static final String TRANSACTIONS_ENDPOINT = "transactions";
+
+    // FILTER QUERIES
+    private static final String ACCOUNTS_ID_QUERY = "account.id";
 
     public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties) {
         String mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
@@ -118,46 +128,61 @@ public class MirrorNodeClient {
         return subscriptionResponse;
     }
 
-    public ClientResponse verifyAccountRestEndpoint(String accountId, int lastCount) {
-        log.debug("Verify account {} is returned by Mirror Node", accountId);
-        String endpoint = String.format("/api/v1/accounts/%s?order=desc&limit=%d", accountId, lastCount);
-        return verifyRestEndpoint(endpoint);
+    public ClientResponse getAccount(String accountId) {
+        log.debug("Verify account '{}' is returned by Mirror Node", accountId);
+        // build /accounts?account.id=<accountId>
+        return callRestEndpoint("/{endpoint}?{key}={accountId}", ACCOUNTS_ENDPOINT, ACCOUNTS_ID_QUERY, accountId);
     }
 
-    public ClientResponse verifyAccountBalanceRestEndpoint(String accountId) {
-        log.debug("Verify balance {} is returned by Mirror Node", accountId);
-        String endpoint = String.format("/api/v1/balances?account.id=%s", accountId);
-        return verifyRestEndpoint(endpoint);
+    public ClientResponse getAccountTransactions(String accountId, int lastCount) {
+        log.debug("Verify account '{}' is returned by Mirror Node", accountId);
+        // build /accounts/<accountId>?order=desc&limit=50
+        return callRestEndpoint("/{endpoint}/{accountId}?order=desc&limit={limit}", ACCOUNTS_ENDPOINT, accountId,
+                lastCount);
     }
 
-    public ClientResponse verifyTransactionRestEntity(String transactionId) {
-        log.debug("Verify transaction {} is returned by Mirror Node", transactionId);
-        String endpoint = "/api/v1/transactions/" + transactionId;
-        return verifyRestEndpoint(endpoint);
+    public MirrorBalancesResponse getAccountBalances(String accountId) {
+        log.debug("Verify balance for account '{}' is returned by Mirror Node", accountId);
+        // build /balances?account.id=<accountId>
+        ClientResponse clientResponse = callRestEndpoint("/{endpoint}?{key}={accountId}", BALANCES_ENDPOINT,
+                ACCOUNTS_ID_QUERY, accountId);
+        return clientResponse.bodyToMono(MirrorBalancesResponse.class)
+                .block();
     }
 
-    public ClientResponse verifyRestEndpoint(String apiEndpoint) {
-        TcpClient tcpClient = TcpClient
-                .create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                .doOnConnected(connection -> {
-                    connection.addHandlerLast(new ReadTimeoutHandler(5000, TimeUnit.MILLISECONDS));
-                    connection.addHandlerLast(new WriteTimeoutHandler(5000, TimeUnit.MILLISECONDS));
-                });
+    public MirrorTransactionsResponse getTransactions(String transactionId) {
+        log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
+        // build /transactions/<transactionId>
+        ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{transactionId}", TRANSACTIONS_ENDPOINT,
+                transactionId);
+        return clientResponse.bodyToMono(MirrorTransactionsResponse.class)
+                .block();
+    }
 
-        WebClient client = WebClient.builder()
-                .baseUrl("http://" + acceptanceProps.getMirrorRestAddress())
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
-                .build();
+    public MirrorTokenResponse getTokenInfo(String tokenId) {
+        log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
+        // build /tokens/<tokenId>
+        ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{tokenId}", TOKENS_ENDPOINT, tokenId);
+        return clientResponse.bodyToMono(MirrorTokenResponse.class)
+                .block();
+    }
 
-        ClientResponse response = client.get()
-                .uri(apiEndpoint)
+    public ClientResponse getTokenBalances(String tokenId, String accountId) {
+        log.debug("Verify token balance for token '{}' and account '{}' is returned by Mirror Node", tokenId,
+                accountId);
+        // build /tokens/<tokenId>/balances?account.id=<accountId>
+        return callRestEndpoint("/{endpoint}/{tokenId}/{path}?{key}={accountId}", TOKENS_ENDPOINT, tokenId,
+                BALANCES_ENDPOINT, ACCOUNTS_ID_QUERY, accountId);
+    }
+
+    public ClientResponse callRestEndpoint(String uri, Object... uriVariables) {
+        ClientResponse response = webClient.get()
+                .uri(uri, uriVariables)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .block();
 
-        log.debug("Endpoint {} returned {}", apiEndpoint, response.statusCode());
+        log.debug("Endpoint {} returned {}", uri, response.statusCode());
 
         return response;
     }
