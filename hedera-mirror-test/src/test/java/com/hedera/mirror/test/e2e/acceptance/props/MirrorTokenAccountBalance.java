@@ -1,7 +1,5 @@
 package com.hedera.mirror.test.e2e.acceptance.props;
 
-import lombok.Data;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -21,6 +19,8 @@ import lombok.Data;
  * limitations under the License.
  * ‍
  */
+
+import lombok.Data;
 
 @Data
 public class MirrorTokenAccountBalance {

@@ -29,7 +29,6 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import io.grpc.StatusRuntimeException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -39,7 +38,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.ClientResponse;
 
 import com.hedera.hashgraph.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.proto.TokenKycStatus;
@@ -285,26 +283,22 @@ public class TokenFeature {
     @Then("the mirror node REST API should return status {int} for token fund flow")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
     public void verifyMirrorTokenFundFlow(int status) {
-        verifyBalances(status);
+        verifyBalances();
         verifyTransactions(status);
-        verifyToken(status);
-        verifyTokenTransfers(status);
+        verifyToken();
+        verifyTokenTransfers();
     }
 
-    @Then("the mirror node REST API should return status {int} for token update")
+    @Then("the mirror node REST API should confirm token update")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
-    public void verifyMirrorTokenUpdateFlow(int status) {
-        verifyTokenUpdate(status);
+    public void verifyMirrorTokenUpdateFlow() {
+        verifyTokenUpdate();
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
     public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
-        ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionIdString);
-
-        verifyRESTResponse(status, response);
-        MirrorTransactionsResponse mirrorTransactionsResponse = response.bodyToMono(MirrorTransactionsResponse.class)
-                .block();
+        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionIdString);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
@@ -312,7 +306,7 @@ public class TokenFeature {
         MirrorTransaction mirrorTransaction = transactions.get(0);
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionIdString);
 
-        if (status == 200) {
+        if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
         }
     }
@@ -359,14 +353,11 @@ public class TokenFeature {
         }
     }
 
-    private void verifyBalances(int status) {
+    private void verifyBalances() {
         String sender = tokenClient.getSdkClient().getOperatorId().toString();
-        ClientResponse response = mirrorClient.verifyAccountBalanceRestEndpoint(sender);
 
         // verify balances response contains sender, recipient and new token id
-        verifyRESTResponse(status, response);
-        MirrorBalancesResponse mirrorBalancesResponse = response.bodyToMono(MirrorBalancesResponse.class)
-                .block();
+        MirrorBalancesResponse mirrorBalancesResponse = mirrorClient.getAccountBalances(sender);
 
         // verify response is not null
         assertNotNull(mirrorBalancesResponse);
@@ -392,12 +383,7 @@ public class TokenFeature {
 
     private MirrorTransaction verifyTransactions(int status) {
         String transactionId = networkTransactionResponse.getTransactionIdString();
-        ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionId);
-
-        verifyRESTResponse(status, response);
-        MirrorTransactionsResponse mirrorTransactionsResponse = response
-                .bodyToMono(MirrorTransactionsResponse.class)
-                .block();
+        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
@@ -414,16 +400,8 @@ public class TokenFeature {
         return mirrorTransaction;
     }
 
-    private MirrorTokenResponse verifyToken(int status) {
-        ClientResponse response = mirrorClient.verifyTokenInfoEndpoint(tokenId.toString());
-
-        List<String> stringsToVerify = new ArrayList<>();
-        stringsToVerify.add(tokenId.toString());
-
-        verifyRESTResponse(status, response);
-
-        MirrorTokenResponse mirrorToken = response.bodyToMono(MirrorTokenResponse.class)
-                .block();
+    private MirrorTokenResponse verifyToken() {
+        MirrorTokenResponse mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
 
         assertNotNull(mirrorToken);
         assertThat(mirrorToken.getTokenId()).isEqualTo(tokenId.toString());
@@ -431,14 +409,9 @@ public class TokenFeature {
         return mirrorToken;
     }
 
-    private void verifyTokenTransfers(int status) {
+    private void verifyTokenTransfers() {
         String transactionId = networkTransactionResponse.getTransactionIdString();
-        ClientResponse response = mirrorClient.verifyTransactionRestEntity(transactionId);
-
-        verifyRESTResponse(status, response);
-        MirrorTransactionsResponse mirrorTransactionsResponse = response
-                .bodyToMono(MirrorTransactionsResponse.class)
-                .block();
+        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
@@ -462,16 +435,10 @@ public class TokenFeature {
         assertTrue(tokenIdFound);
     }
 
-    private void verifyTokenUpdate(int status) {
-        MirrorTokenResponse mirrorToken = verifyToken(status);
+    private void verifyTokenUpdate() {
+        MirrorTokenResponse mirrorToken = verifyToken();
 
         assertThat(mirrorToken.getCreatedTimestamp()).isNotEqualTo(mirrorToken.getModifiedTimestamp());
-    }
-
-    private void verifyRESTResponse(int status, ClientResponse response) {
-        assertNotNull(response, "httpStatus null");
-        assertNotNull(response.statusCode(), "httpStatus null");
-        assertEquals(status, response.statusCode().value(), "mirrorResponse matched");
     }
 
     /**

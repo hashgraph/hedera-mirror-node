@@ -26,13 +26,13 @@ Feature: HTS Base Coverage Feature
             | 1                   | 2                | 2               | 1            | 200            |
 
 #    @Acceptance
-    Scenario Outline: Validate Token Modification Flow - Create, Associate, Update, Burn, Mint and Wipe
+    Scenario Outline: Validate Token Modification Flow - Create, Associate, Transfer, Update, Burn, Mint and Wipe
         Given I successfully create a new token
         When I associate a new account with token
         And I transfer <amount> tokens to recipient
         Then the mirror node REST API should return status <httpStatusCode> for token fund flow
         Then I update the token
-        And the mirror node REST API should return status <httpStatusCode> for token update
+        And the mirror node REST API should confirm token update
         Then I burn <modifySupplyAmount> from the token
         And the mirror node REST API should return status <httpStatusCode>
         Then I mint <modifySupplyAmount> from the token

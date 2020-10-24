@@ -8,7 +8,7 @@ hedera:
         # grpc endpoint
         mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         # REST endpoint
-        mirrorRestAddress: testnet.mirrornode.hedera.com
+        mirrorRestAddress: http://testnet.mirrornode.hedera.com/api/v1
         nodeAddress: testnet
         nodeId: 0.0.3
         # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
