@@ -30,6 +30,9 @@ spec:
               startDate: 1970-01-01T00:00:00Z
       image:
         tag: master-d79ba49fb7dcd64e6621ae5587f5dbc8c556fd79
+      prometheusRules:
+        ImporterFileVerificationErrors:
+          expr: sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer", success="false"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 0.05
     postgresql:
       enabled: false
     rest:
