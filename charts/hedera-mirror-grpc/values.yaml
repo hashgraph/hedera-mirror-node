@@ -77,16 +77,6 @@ priorityClassName: ""
 
 prometheusRules:
   enabled: false
-  GrpcNoSubscribers:
-    annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} has {{ $value }} subscribers for {{ $labels.type }}"
-      summary: "Mirror gRPC API has no subscribers"
-    enabled: true
-    expr: sum(hedera_mirror_subscribers{application="hedera-mirror-grpc"}) by (namespace, pod, type) <= 0
-    for: 5m
-    labels:
-      severity: warning
-
   GrpcErrors:
     annotations:
       description: '{{ $value | humanizePercentage }}% gRPC {{ $labels.statusCode }} error rate for {{ $labels.namespace }}/{{ $labels.pod }}'
@@ -94,16 +84,6 @@ prometheusRules:
     enabled: true
     expr: sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc", statusCode!~"DEADLINE_EXCEEDED|INVALID_ARGUMENT|NOT_FOUND|OK|RESOURCE_EXHAUSTED"}[5m])) by (namespace, pod, statusCode) / sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod, statusCode) > 0.05
     for: 2m
-    labels:
-      severity: critical
-
-  GrpcHighLatency:
-    annotations:
-      description: 'High latency of {{ $value | humanizeDuration }} between the main nodes and {{ $labels.namespace }}/{{ $labels.pod }}'
-      summary: "Mirror gRPC API consensus to delivery (C2MD) latency exceeds 15s"
-    enabled: true
-    expr: sum(rate(hedera_mirror_publish_latency_seconds_sum{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_publish_latency_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) > 15
-    for: 1m
     labels:
       severity: critical
 
@@ -137,6 +117,16 @@ prometheusRules:
     labels:
       severity: critical
 
+  GrpcHighLatency:
+    annotations:
+      description: 'High latency of {{ $value | humanizeDuration }} between the main nodes and {{ $labels.namespace }}/{{ $labels.pod }}'
+      summary: "Mirror gRPC API consensus to delivery (C2MD) latency exceeds 15s"
+    enabled: true
+    expr: sum(rate(hedera_mirror_publish_latency_seconds_sum{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_publish_latency_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) > 15
+    for: 1m
+    labels:
+      severity: critical
+
   GrpcHighMemory:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}%"
@@ -156,6 +146,16 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+
+  GrpcNoSubscribers:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} has {{ $value }} subscribers for {{ $labels.type }}"
+      summary: "Mirror gRPC API has no subscribers"
+    enabled: true
+    expr: sum(hedera_mirror_subscribers{application="hedera-mirror-grpc"}) by (namespace, pod, type) <= 0
+    for: 5m
+    labels:
+      severity: warning
 
 rbac:
   enabled: true
