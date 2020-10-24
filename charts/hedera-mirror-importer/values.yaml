@@ -104,7 +104,7 @@ prometheusRules:
       summary: Mirror Importer balance stream processing has fallen behind
     enabled: true
     expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 960
-    for: 1m
+    for: 3m
     labels:
       severity: critical
 
@@ -244,7 +244,7 @@ prometheusRules:
       summary: Mirror Importer record stream processing has fallen behind
     enabled: true
     expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 20
-    for: 1m
+    for: 3m
     labels:
       severity: critical
 
