@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 30,
-  "iteration": 1603327299848,
+  "id": 29,
+  "iteration": 1603512133948,
   "links": [],
   "panels": [
     {
@@ -280,16 +280,12 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
-                "value": 2
-              },
-              {
                 "color": "green",
-                "value": 4
+                "value": 0.1
               }
             ]
           },
-          "unit": "none"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -2760,7 +2756,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -2786,7 +2782,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "All",
           "value": "$__all"
         },
@@ -2831,5 +2827,5 @@
   "timezone": "",
   "title": "Hedera / Mirror / gRPC API",
   "uid": "ZfFsO33Wl3",
-  "version": 7
+  "version": 1
 }

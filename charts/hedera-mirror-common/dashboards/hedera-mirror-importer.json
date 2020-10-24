@@ -1164,392 +1164,28 @@
       }
     },
     {
-      "collapsed": false,
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": null,
+      "decimals": 1,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 1,
-        "w": 24,
+        "h": 8,
+        "w": 12,
         "x": 0,
         "y": 47
-      },
-      "id": 23,
-      "panels": [],
-      "title": "Database",
-      "type": "row"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 0,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 48
-      },
-      "hiddenSeries": false,
-      "id": 17,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "current",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "avg(db_table_size_rows{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (table)",
-          "interval": "1m",
-          "legendFormat": "{{ table }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Database Rows",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "idle": "super-light-orange"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 48
-      },
-      "hiddenSeries": false,
-      "id": 15,
-      "interval": "1m",
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": null,
-        "sortDesc": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(hikaricp_connections_active{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "interval": "1m",
-          "legendFormat": "active",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(hikaricp_connections_idle{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "interval": "1m",
-          "legendFormat": "idle",
-          "refId": "B"
-        },
-        {
-          "expr": "sum(hikaricp_connections_max{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "max",
-          "refId": "C"
-        },
-        {
-          "expr": "sum(hikaricp_connections_pending{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "pending",
-          "refId": "E"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Database Connections",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "idle": "super-light-orange"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 56
-      },
-      "hiddenSeries": false,
-      "id": 19,
-      "interval": "1m",
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": true,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(postgres_rows_fetched_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "fetched",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(postgres_rows_inserted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "inserted",
-          "refId": "B"
-        },
-        {
-          "expr": "sum(rate(postgres_rows_deleted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "deleted",
-          "refId": "C"
-        },
-        {
-          "expr": "sum(rate(postgres_rows_updated_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "updated",
-          "refId": "E"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Database Operations",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "idle": "super-light-orange"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 56
       },
       "hiddenSeries": false,
       "id": 73,
@@ -1646,7 +1282,492 @@
         "h": 1,
         "w": 24,
         "x": 0,
+        "y": 55
+      },
+      "id": 23,
+      "panels": [],
+      "title": "Database",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "decimals": 0,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "hiddenSeries": false,
+      "id": 17,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "current",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "avg(db_table_size_rows{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (table)",
+          "interval": "1m",
+          "legendFormat": "{{ table }}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Database Rows",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "decimals": 1,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "hiddenSeries": false,
+      "id": 19,
+      "interval": "1m",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(postgres_rows_fetched_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "fetched",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(postgres_rows_inserted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "inserted",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(postgres_rows_deleted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "deleted",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(postgres_rows_updated_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "updated",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Database Operations",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
         "y": 64
+      },
+      "hiddenSeries": false,
+      "id": 15,
+      "interval": "1m",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "sort": null,
+        "sortDesc": null,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(hikaricp_connections_active{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(hikaricp_connections_idle{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(hikaricp_connections_max{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "max",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(hikaricp_connections_pending{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "pending",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Connection Pool",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "hiddenSeries": false,
+      "id": 110,
+      "interval": "1m",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(jdbc_connections_active{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(jdbc_connections_idle{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(jdbc_connections_max{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "max",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(jdbc_connections_min{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "min",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "JDBC Connections",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 72
       },
       "id": 35,
       "panels": [],
@@ -1679,7 +1800,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 73
       },
       "hiddenSeries": false,
       "id": 5,
@@ -1771,7 +1892,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 73
+        "y": 81
       },
       "id": 54,
       "options": {
@@ -1798,7 +1919,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 83
+        "y": 91
       },
       "id": 37,
       "panels": [
@@ -1823,7 +1944,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 84
+            "y": 92
           },
           "hiddenSeries": false,
           "id": 39,
@@ -1940,7 +2061,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 84
+            "y": 92
           },
           "hiddenSeries": false,
           "id": 44,
@@ -2050,7 +2171,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 92
+            "y": 100
           },
           "hiddenSeries": false,
           "id": 45,
@@ -2160,7 +2281,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 92
+            "y": 100
           },
           "hiddenSeries": false,
           "id": 46,
@@ -2270,7 +2391,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 100
+            "y": 108
           },
           "hiddenSeries": false,
           "id": 40,
@@ -2381,7 +2502,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 100
+            "y": 108
           },
           "hiddenSeries": false,
           "id": 43,
@@ -2491,7 +2612,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 108
+            "y": 116
           },
           "hiddenSeries": false,
           "id": 47,
@@ -2601,7 +2722,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 108
+            "y": 116
           },
           "hiddenSeries": false,
           "id": 41,
@@ -2711,7 +2832,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 116
+            "y": 124
           },
           "hiddenSeries": false,
           "id": 48,
@@ -2821,7 +2942,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 116
+            "y": 124
           },
           "hiddenSeries": false,
           "id": 49,
@@ -2932,7 +3053,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 124
+            "y": 132
           },
           "hiddenSeries": false,
           "id": 50,
@@ -3042,7 +3163,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 124
+            "y": 132
           },
           "hiddenSeries": false,
           "id": 51,
@@ -3152,7 +3273,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 132
+            "y": 140
           },
           "hiddenSeries": false,
           "id": 52,
@@ -3265,7 +3386,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 132
+            "y": 140
           },
           "hiddenSeries": false,
           "id": 55,
@@ -3379,7 +3500,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 11,
@@ -3490,7 +3611,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 90,
@@ -3599,7 +3720,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 92
       },
       "id": 93,
       "panels": [
