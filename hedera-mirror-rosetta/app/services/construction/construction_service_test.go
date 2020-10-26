@@ -29,11 +29,11 @@ import (
 )
 
 var (
-	validUnsignedTxHash = "0x1a00223d0a140a0c0891d0fef905109688f3a701120418d8c307120218061880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
-	validSignedTxHash   = "0x1a660a640a20d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade1a40967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507223c0a130a0b08c7af94fa0510f7d9fc76120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
-	invalidTxHash       = "InvalidTxHash"
-	unmarshableTxHash   = "0x6767"
-	publicKeyBytes      = "d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade"
+	validUnsignedTx   = "0x1a00223d0a140a0c0891d0fef905109688f3a701120418d8c307120218061880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
+	validSignedTx     = "0x1a660a640a20d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade1a40967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507223c0a130a0b08c7af94fa0510f7d9fc76120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
+	invalidTxHexStr   = "InvalidTxHexString"
+	corruptedTxHexStr = "0x6767"
+	publicKeyBytes    = "d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade"
 )
 
 func dummyConstructionCombineRequest() *types.ConstructionCombineRequest {
@@ -132,10 +132,10 @@ func networkIdentifier() *types.NetworkIdentifier {
 	}
 }
 
-func dummyConstructionHashRequest(txHash string) *types.ConstructionHashRequest {
+func dummyConstructionHashRequest(signedTx string) *types.ConstructionHashRequest {
 	return &types.ConstructionHashRequest{
 		NetworkIdentifier: networkIdentifier(),
-		SignedTransaction: txHash,
+		SignedTransaction: signedTx,
 	}
 }
 
@@ -160,7 +160,7 @@ func TestNewConstructionAPIService(t *testing.T) {
 func TestConstructionCombine(t *testing.T) {
 	// given:
 	expectedConstructionCombineResponse := &types.ConstructionCombineResponse{
-		SignedTransaction: validSignedTxHash,
+		SignedTransaction: validSignedTx,
 	}
 
 	// when:
@@ -188,11 +188,11 @@ func TestConstructionCombineThrowsWithMultipleSignatures(t *testing.T) {
 
 func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
 	// given:
-	exampleInvalidTxHashConstructionCombineRequest := dummyConstructionCombineRequest()
-	exampleInvalidTxHashConstructionCombineRequest.UnsignedTransaction = invalidTxHash
+	exampleCorruptedTxHexStrConstructionCombineRequest := dummyConstructionCombineRequest()
+	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = invalidTxHexStr
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleInvalidTxHashConstructionCombineRequest)
+	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -201,11 +201,11 @@ func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
 
 func TestConstructionCombineThrowsWhenUnmarshallFails(t *testing.T) {
 	// given:
-	exampleInvalidTxHashConstructionCombineRequest := dummyConstructionCombineRequest()
-	exampleInvalidTxHashConstructionCombineRequest.UnsignedTransaction = unmarshableTxHash
+	exampleCorruptedTxHexStrConstructionCombineRequest := dummyConstructionCombineRequest()
+	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = corruptedTxHexStr
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleInvalidTxHashConstructionCombineRequest)
+	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -249,10 +249,10 @@ func TestConstructionDerive(t *testing.T) {
 
 func TestConstructionHash(t *testing.T) {
 	// given:
-	txIdentifierHash := "0x9768d458c755befcda5c6fca07e9f7693b94c429f9c414b0cea07163c402ddd44d1108f89b190d0dcabc423a3d45696d"
-	exampleConstructionHashRequest := dummyConstructionHashRequest(validSignedTxHash)
+	validSignedTransaction := "0x9768d458c755befcda5c6fca07e9f7693b94c429f9c414b0cea07163c402ddd44d1108f89b190d0dcabc423a3d45696d"
+	exampleConstructionHashRequest := dummyConstructionHashRequest(validSignedTx)
 	expectedConstructHashResponse := &types.TransactionIdentifierResponse{
-		TransactionIdentifier: &types.TransactionIdentifier{Hash: txIdentifierHash},
+		TransactionIdentifier: &types.TransactionIdentifier{Hash: validSignedTransaction},
 	}
 
 	// when:
@@ -265,7 +265,7 @@ func TestConstructionHash(t *testing.T) {
 
 func TestConstructionHashThrowsWhenDecodeStringFails(t *testing.T) {
 	// given:
-	exampleConstructionHashRequest := dummyConstructionHashRequest(invalidTxHash)
+	exampleConstructionHashRequest := dummyConstructionHashRequest(invalidTxHexStr)
 
 	// when:
 	res, e := NewConstructionAPIService().ConstructionHash(nil, exampleConstructionHashRequest)
@@ -291,7 +291,7 @@ func TestConstructionMetadata(t *testing.T) {
 
 func TestConstructionParse(t *testing.T) {
 	// given:
-	exampleConstructionParseRequest := dummyConstructionParseRequest(validUnsignedTxHash, false)
+	exampleConstructionParseRequest := dummyConstructionParseRequest(validUnsignedTx, false)
 	expectedConstructionParseResponse := &types.ConstructionParseResponse{
 		Operations: []*types.Operation{
 			dummyOperation(0, "CRYPTOTRANSFER", "0.0.123352", "-1000"),
@@ -309,7 +309,7 @@ func TestConstructionParse(t *testing.T) {
 
 func TestConstructionParseSigned(t *testing.T) {
 	// given:
-	exampleConstructionParseRequest := dummyConstructionParseRequest(validSignedTxHash, true)
+	exampleConstructionParseRequest := dummyConstructionParseRequest(validSignedTx, true)
 	expectedConstructionParseResponse := &types.ConstructionParseResponse{
 		Operations: []*types.Operation{
 			dummyOperation(0, "CRYPTOTRANSFER", "0.0.123352", "-1000"),
@@ -332,7 +332,7 @@ func TestConstructionParseSigned(t *testing.T) {
 
 func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 	// when:
-	res, e := NewConstructionAPIService().ConstructionParse(nil, dummyConstructionParseRequest(invalidTxHash, false))
+	res, e := NewConstructionAPIService().ConstructionParse(nil, dummyConstructionParseRequest(invalidTxHexStr, false))
 
 	// then:
 	assert.Nil(t, res)
@@ -341,7 +341,7 @@ func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 
 func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 	// when:
-	res, e := NewConstructionAPIService().ConstructionParse(nil, dummyConstructionParseRequest(unmarshableTxHash, false))
+	res, e := NewConstructionAPIService().ConstructionParse(nil, dummyConstructionParseRequest(corruptedTxHexStr, false))
 
 	// then:
 	assert.Nil(t, res)
@@ -350,7 +350,7 @@ func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 
 func TestConstructionPayloads(t *testing.T) {
 	// given:
-	expectedDecodedBytes, _ := hex.DecodeString(unmarshableTxHash)
+	var expectedNilBytes []byte
 	operations := []*types.Operation{
 		dummyOperation(0, "CRYPTOTRANSFER", "0.0.123352", "-1000"),
 		dummyOperation(1, "CRYPTOTRANSFER", "0.0.123518", "1000"),
@@ -362,7 +362,7 @@ func TestConstructionPayloads(t *testing.T) {
 				AccountIdentifier: &types.AccountIdentifier{
 					Address: "0.0.123352",
 				},
-				Bytes: expectedDecodedBytes,
+				Bytes: expectedNilBytes,
 			},
 		},
 	}
@@ -409,7 +409,7 @@ func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
 	// given:
 	exampleConstructionSubmitRequest := &types.ConstructionSubmitRequest{
 		NetworkIdentifier: networkIdentifier(),
-		SignedTransaction: invalidTxHash,
+		SignedTransaction: invalidTxHexStr,
 	}
 
 	// when:
@@ -421,12 +421,12 @@ func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
 }
 
 func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
-	constructionSubmitTxHash := "0xfc2267c53ef8a27e2ab65f0a6b5e5607ba33b9c8c8f7304d8cb4a77aee19107d"
+	constructionSubmitSignedTransaction := "0xfc2267c53ef8a27e2ab65f0a6b5e5607ba33b9c8c8f7304d8cb4a77aee19107d"
 
 	// given:
 	exampleConstructionSubmitRequest := &types.ConstructionSubmitRequest{
 		NetworkIdentifier: networkIdentifier(),
-		SignedTransaction: constructionSubmitTxHash,
+		SignedTransaction: constructionSubmitSignedTransaction,
 	}
 
 	// when:
