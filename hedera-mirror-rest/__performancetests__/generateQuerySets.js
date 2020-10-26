@@ -78,6 +78,15 @@ const sampleBalanceValues = (n) => {
 };
 
 /**
+ * Gets 'n' randomly sampled token_id from token table.
+ */
+const sampleTokenIds = (n) => {
+  return pool.query(`select token_id as value from token order by RANDOM() limit ${n};`, null).then((result) => {
+    return result.rows.map(getRowValueAsInt);
+  });
+};
+
+/**
  * Converts integer timestamp format accepted by query param. For eg. 1577904152141445600 -> '1577904152.141445600'
  */
 const timestampToParamValue = (timestamp) => {
@@ -99,13 +108,21 @@ const populateParamValues = async (test, paramName, rangeFieldName, getSamples, 
   return paramValues;
 };
 
-/**
- * Given a test, generates and returns query set which contains query, values for url params, etc.
- */
-const makeQuerySet = async (test) => {
+const populateIdValues = async (test, getSamples, convertToParam) => {
+  let idValues = [];
+  let samples = await getSamples(test.count);
+  samples.forEach((sample) => {
+    idValues.push([convertToParam(sample)]);
+  });
+  return idValues;
+};
+
+const makeQueryParamsQuerySet = async (test) => {
   let paramValues = [];
   let paramName;
+  let querySuffix;
   let isRangeQuery = false;
+  let query = test.query;
   if (test.filterAxis === 'BALANCE') {
     paramName = 'account.balance';
     paramValues = await populateParamValues(test, paramName, 'rangeTinyHbars', sampleBalanceValues, (sample) => {
@@ -127,18 +144,20 @@ const makeQuerySet = async (test) => {
     paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, (sample) => {
       return '' + sample;
     });
+  } else if (test.filterAxis === 'TOKENID') {
+    paramName = 'token.id';
+    paramValues = await populateParamValues(test, 'token.id', 'rangeNumTokens', sampleTokenIds, (sample) => {
+      return '' + sample;
+    });
+  } else if (test.filterAxis === 'NA') {
   } else {
     throw `Unexpected filterAxis '${test.filterAxis}'`;
   }
-
-  let querySuffix;
   if (isRangeQuery) {
     querySuffix = paramName + '=gt:%s&' + paramName + '=lt:%s';
   } else {
     querySuffix = paramName + '=%d';
   }
-
-  let query = test.query;
   if (query.lastIndexOf('?') === -1) {
     query += '?' + querySuffix;
   } else {
@@ -149,6 +168,37 @@ const makeQuerySet = async (test) => {
     query: query,
     paramValues: paramValues,
   };
+};
+
+const makeIdsQuerySet = async (test) => {
+  let idValues;
+  if (test.idAxis === 'TOKENID') {
+    idValues = await populateIdValues(test, sampleTokenIds, (sample) => {
+      return '' + sample;
+    });
+  } else if (test.idAxis === 'ACCOUNTID') {
+    idValues = await populateIdValues(test, sampleEntityIds, (sample) => {
+      return '' + sample;
+    });
+  }
+  return {
+    name: test.name,
+    query: test.query,
+    paramValues: idValues,
+  };
+};
+
+/**
+ * Given a test, generates and returns query set which contains query, values for url params, etc.
+ */
+const makeQuerySet = async (test) => {
+  if (test.filterAxis) {
+    return await makeQueryParamsQuerySet(test);
+  } else if (test.idAxis) {
+    return await makeIdsQuerySet(test);
+  } else {
+    throw `Neither filterAxis nor idAxis specified, test requires one of these.'`;
+  }
 };
 
 const generateQuerySets = () => {

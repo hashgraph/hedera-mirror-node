@@ -72,3 +72,27 @@ tests:
     filterAxis: BALANCE
     count: 100
     rangeTinyHbars: 1000_00_000_000 # 1000ℏ
+  - name: 'account transactions - accountid point lookup'
+    query: '/accounts/%d'
+    idAxis: ACCOUNTID
+    count: 100
+    # Tests for /tokens
+  - name: 'tokens - tokenid point lookup'
+    query: '/tokens'
+    filterAxis: TOKENID
+    count: 100
+  - name: 'tokens - token ids range (100)'
+    query: '/tokens'
+    filterAxis: TOKENID
+    count: 5
+    rangeNumTokens: 100
+    # Tests for /tokens/{id}
+  - name: 'token info - tokenid point lookup'
+    query: '/tokens/%d'
+    idAxis: TOKENID
+    count: 100
+    # Tests for /tokens/{id}/balances
+  - name: 'token balances - tokenid point lookup'
+    query: '/tokens/%d/balances'
+    idAxis: TOKENID
+    count: 100
