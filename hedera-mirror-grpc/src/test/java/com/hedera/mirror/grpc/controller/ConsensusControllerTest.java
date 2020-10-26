@@ -249,13 +249,11 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 // mapper doesn't handle null values so replace with 0's
                 .map(x -> x.hasChunkInfo() ? x.getChunkInfo().getNumber() : 0)
-                .doOnNext(x -> log.info("received {}", x))
                 .as(StepVerifier::create)
-//                .thenAwait(Duration.ofMillis(100))
+                .thenAwait(Duration.ofMillis(100))
                 .expectNext(0, 1, 2, 0, 1)
                 .then(generator::blockLast)
-//                .thenAwait(Duration.ofMillis(100))
-                .expectNext(2, 3, 0)
+                .expectNext(2, 3, 0) // incoming messages
                 .thenCancel()
                 .verify(Duration.ofMillis(800));
     }
