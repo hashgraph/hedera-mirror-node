@@ -3,7 +3,7 @@ name: Deploy Development
 on:
   push:
     branches:
-      - master
+      - fix-grpc-test
 
 jobs:
   build:
@@ -22,29 +22,5 @@ jobs:
           key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/pom.xml') }}
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
-      - name: Login to Google Container Registry
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCR_KEY }}
-      - name: Configure Docker
-        run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
       - name: Build and push images
-        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -Ddocker.tag.version=master-${GITHUB_SHA} -Djib.to.tags=master-${GITHUB_SHA}
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: deploy
-      - name: Update dev tag
-        run: |-
-          sed -i "s/ref: .*/ref: ${GITHUB_SHA}/" ./common/helmrelease.yaml
-          sed -i "s/ref: .*/ref: ${GITHUB_SHA}/" ./dev/helmrelease.yaml
-          sed -i "s/tag: .*/tag: master-${GITHUB_SHA}/" ./dev/helmrelease.yaml
-        shell: bash
-      - uses: stefanzweifel/git-auto-commit-action@v4.5.1
-        with:
-          commit_message: Upgrade dev to master-${{ github.sha }}
+        run: ./mvnw ${MAVEN_CLI_OPTS} package -Ddocker.tag.version=master-${GITHUB_SHA} -Djib.to.tags=master-${GITHUB_SHA} -pl hedera-mirror-protobuf,hedera-mirror-grpc
