@@ -15,6 +15,13 @@ jobs:
         name: Setup GO Env
         with:
           go-version: '1.13'
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Build hedera-mirror-rosetta
         run: go build -i -o rosetta cmd/*
         working-directory: ${{env.working-directory}}
@@ -32,6 +39,13 @@ jobs:
         name: Setup GO Env
         with:
           go-version: '1.13'
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-test-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-test-
       - name: Run Unit Tests with Coverage
         run: go test ./... -coverpkg=./... -race -coverprofile=coverage.txt -covermode=atomic
         working-directory: ${{env.working-directory}}
@@ -42,9 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build Mirror Node
-        run: docker build --tag=${{env.image-tag}} .
-        working-directory: ${{env.working-directory}}/build
+      - name: Build Mirror Node All-in-One
+        run: docker build --tag=${{env.image-tag}} -f hedera-mirror-rosetta/scripts/validation/Dockerfile .
       - name: Run Mirror Node
         run: docker run -d -p 5700:5700 ${{env.image-tag}}
       - name: Wait for Mirror Node to start syncing
