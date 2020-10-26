@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.parser.balance;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
 import com.google.common.base.Stopwatch;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,6 +33,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.sql.DataSource;
@@ -99,12 +102,27 @@ public class AccountBalancesFileLoader {
     private final int insertBatchSize;
     private final DataSource dataSource;
     private final CompositeBalanceFileReader balanceFileReader;
+    private final Timer parseDurationMetricFailure;
+    private final Timer parseDurationMetricSuccess;
+    private final Timer parseLatencyMetric;
 
     public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
-                                     CompositeBalanceFileReader balanceFileReader) {
+                                     CompositeBalanceFileReader balanceFileReader, MeterRegistry meterRegistry) {
         insertBatchSize = balanceParserProperties.getBatchSize();
         this.dataSource = dataSource;
         this.balanceFileReader = balanceFileReader;
+
+        Timer.Builder parseDurationTimerBuilder = Timer.builder("hedera.mirror.parse.duration")
+                .description("The duration in seconds it took to parse the file and store it in the database")
+                .tag("type", balanceParserProperties.getStreamType().toString());
+        parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
+        parseDurationMetricSuccess = parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
+
+        parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
+                .description("The difference in ms between the consensus time of the last transaction in the file " +
+                        "and the time at which the file was processed successfully")
+                .tag("type", balanceParserProperties.getStreamType().toString())
+                .register(meterRegistry);
     }
 
     /**
@@ -116,6 +134,7 @@ public class AccountBalancesFileLoader {
         String fileName = balanceFile.getName();
         Stopwatch stopwatch = Stopwatch.createStarted();
         Instant startTime = Instant.now();
+        boolean success = false;
 
         Connection connection = DataSourceUtils.getConnection(dataSource);
         try (PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
@@ -179,10 +198,14 @@ public class AccountBalancesFileLoader {
                 log.info("Successfully processed account balances file {}, {} records inserted in {}",
                         fileName, validCount, stopwatch);
             }
+
+            success = true;
         } catch (SQLException ex) {
             throw new ParserSQLException("Error processing account balance file " + fileName, ex);
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
+            Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
+            timer.record(stopwatch.elapsed());
         }
     }
 
@@ -263,5 +286,9 @@ public class AccountBalancesFileLoader {
         if (statement.executeUpdate() != 1) {
             throw new MissingFileException("File " + filename + " not in the database, thus not updated");
         }
+
+        long loadEndMillis = loadEnd * 1_000; // s -> ms
+        long consensusEndMillis = consensusTimestamp / 1_000_000; // ns -> ms
+        parseLatencyMetric.record(loadEndMillis - consensusEndMillis, TimeUnit.MILLISECONDS);
     }
 }

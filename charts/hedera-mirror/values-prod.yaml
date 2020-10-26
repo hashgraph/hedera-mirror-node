@@ -4,6 +4,8 @@ grpc:
     middleware:
       enabled: true
   priorityClassName: medium
+  prometheusRules:
+    enabled: true
   serviceMonitor:
     enabled: true
 
@@ -11,6 +13,8 @@ importer:
   podMonitor:
     enabled: true
   priorityClassName: high
+  prometheusRules:
+    enabled: true
 
 postgresql:
   metrics:
@@ -37,5 +41,7 @@ rest:
     middleware:
       enabled: true
   priorityClassName: medium
+  prometheusRules:
+    enabled: true
   serviceMonitor:
     enabled: true

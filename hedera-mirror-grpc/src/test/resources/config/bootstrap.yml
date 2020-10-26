@@ -2,3 +2,5 @@ embedded:
   postgresql:
     enabled: true
     docker-image: postgres:9.6-alpine
+  redis:
+    docker-image: redis:5.0.9-alpine
