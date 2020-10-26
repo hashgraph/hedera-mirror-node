@@ -37,17 +37,18 @@ var Errors = map[string]*types.Error{
 	InvalidTransactionIdentifier:   New(InvalidTransactionIdentifier, 108, false),
 	MultipleOperationTypesPresent:  New(MultipleOperationTypesPresent, 109, false),
 	MultipleSignaturesPresent:      New(MultipleSignaturesPresent, 110, false),
-	NotImplemented:                 New(NotImplemented, 111, false),
-	OperationStatusesNotFound:      New(OperationStatusesNotFound, 112, true),
-	OperationTypesNotFound:         New(OperationTypesNotFound, 113, true),
-	StartMustNotBeAfterEnd:         New(StartMustNotBeAfterEnd, 114, false),
-	TransactionBuildFailed:         New(TransactionBuildFailed, 115, false),
-	TransactionDecodeFailed:        New(TransactionDecodeFailed, 116, false),
-	TransactionRecordFetchFailed:   New(TransactionRecordFetchFailed, 117, false),
-	TransactionMarshallingFailed:   New(TransactionMarshallingFailed, 118, false),
-	TransactionUnmarshallingFailed: New(TransactionUnmarshallingFailed, 119, false),
-	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 120, false),
-	TransactionNotFound:            New(TransactionNotFound, 121, true),
+	NodeIsStarting:                 New(NodeIsStarting, 111, true),
+	NotImplemented:                 New(NotImplemented, 112, false),
+	OperationStatusesNotFound:      New(OperationStatusesNotFound, 113, true),
+	OperationTypesNotFound:         New(OperationTypesNotFound, 114, true),
+	StartMustNotBeAfterEnd:         New(StartMustNotBeAfterEnd, 115, false),
+	TransactionBuildFailed:         New(TransactionBuildFailed, 116, false),
+	TransactionDecodeFailed:        New(TransactionDecodeFailed, 117, false),
+	TransactionRecordFetchFailed:   New(TransactionRecordFetchFailed, 118, false),
+	TransactionMarshallingFailed:   New(TransactionMarshallingFailed, 119, false),
+	TransactionUnmarshallingFailed: New(TransactionUnmarshallingFailed, 120, false),
+	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 121, false),
+	TransactionNotFound:            New(TransactionNotFound, 122, true),
 	InternalServerError:            New(InternalServerError, 500, true),
 }
 
@@ -64,6 +65,7 @@ const (
 	InvalidTransactionIdentifier   string = "Invalid Transaction Identifier provided"
 	MultipleOperationTypesPresent  string = "Only one Operation Type must be present"
 	MultipleSignaturesPresent      string = "Only one signature must be present"
+	NodeIsStarting                 string = "Node is starting"
 	NotImplemented                 string = "Not implemented"
 	OperationStatusesNotFound      string = "Operation Statuses not found"
 	OperationTypesNotFound         string = "Operation Types not found"

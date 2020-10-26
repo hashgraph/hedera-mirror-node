@@ -20,11 +20,6 @@ function run_from_genesis() {
 function run_demo() {
     echo Running DEMO Validation
     run_from_genesis
-    echo Running Rosetta Data API Validation \#2
-    if ! ./rosetta-cli check:data --configuration-file=./$network/validate-from-block-10.json; then
-        echo Failed to Pass API Validation \#2
-        exit 1
-    fi
 }
 function run_testnet() {
     echo Running TESTNET Validation
