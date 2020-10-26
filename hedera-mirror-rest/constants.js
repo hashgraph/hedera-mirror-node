@@ -32,7 +32,7 @@ const filterKeys = {
   RESULT: 'result',
   SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
-  TOKENID: 'tokenId',
+  TOKENID: 'tokenid',
   TOKEN_ID: 'token.id',
   CREDIT_TYPE: 'type',
   TRANSACTION_TYPE: 'transactiontype',
