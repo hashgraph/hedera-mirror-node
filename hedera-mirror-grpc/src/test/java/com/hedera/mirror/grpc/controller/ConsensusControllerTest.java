@@ -251,13 +251,13 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .map(x -> x.hasChunkInfo() ? x.getChunkInfo().getNumber() : 0)
                 .doOnNext(x -> log.info("received {}", x))
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+//                .thenAwait(Duration.ofMillis(100))
                 .expectNext(0, 1, 2, 0, 1)
                 .then(generator::blockLast)
-                .thenAwait(Duration.ofMillis(100))
+//                .thenAwait(Duration.ofMillis(100))
                 .expectNext(2, 3, 0)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofMillis(800));
     }
 
     void assertException(Throwable t, Status.Code status, String message) {
