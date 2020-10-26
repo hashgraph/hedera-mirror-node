@@ -252,8 +252,10 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .doOnNext(x -> log.info("received {}", x))
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
+                .expectNext(0, 1, 2, 0, 1)
                 .then(generator::blockLast)
-                .expectNext(0, 1, 2, 0, 1, 2, 3, 0)
+                .thenAwait(Duration.ofMillis(100))
+                .expectNext(2, 3, 0)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
     }
