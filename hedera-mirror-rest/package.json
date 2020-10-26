@@ -60,7 +60,7 @@
     "axios": "^0.21.0",
     "codecov": "^3.8.0",
     "eslint-config-airbnb-base": "^14.2.0",
-    "eslint-config-prettier": "^6.12.0",
+    "eslint-config-prettier": "^6.14.0",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jest": "^24.1.0",
     "eslint-plugin-node": "^11.1.0",
