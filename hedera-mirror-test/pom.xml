@@ -34,8 +34,8 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <!-- grpc v 1.30.2 is the last known version that supports acceptance test running  -->
-            <version>1.30.2</version>
+            <!-- grpc v 1.33.0 is the last known version that supports acceptance test running  -->
+            <version>1.33.0</version>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
