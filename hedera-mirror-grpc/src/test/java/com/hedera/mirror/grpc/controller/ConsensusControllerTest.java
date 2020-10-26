@@ -28,7 +28,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -221,44 +220,39 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     @Test
     void fragmentedMessagesGroupAcrossHistoricAndIncoming() {
         Instant now = Instant.now();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(1)).block();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(2).chunkNum(1).chunkTotal(2)
+                .validStartTimestamp(now).payerAccountId(1L).consensusTimestamp(now.plusNanos(1))).block();
+        domainBuilder
+                .topicMessage(t -> t.sequenceNumber(3).chunkNum(2).chunkTotal(2).validStartTimestamp(now.plusNanos(1))
+                        .payerAccountId(1L).consensusTimestamp(now.plusNanos(2))).block();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(4).consensusTimestamp(now.plusNanos(3))).block();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(5).chunkNum(1).chunkTotal(3)
+                .validStartTimestamp(now.plusNanos(3)).payerAccountId(1L).consensusTimestamp(now.plusNanos(4))).block();
 
         // fragment message split across historic and incoming
-        final AtomicReference<Flux<TopicMessage>> generator = new AtomicReference<>();
+        Flux<TopicMessage> generator = Flux.concat(
+                domainBuilder.topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3)
+                        .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L)
+                        .consensusTimestamp(now.plusSeconds(5))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3)
+                        .validStartTimestamp(now.plusNanos(5)).payerAccountId(1L)
+                        .consensusTimestamp(now.plusSeconds(6))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusSeconds(7)))
+        );
 
-        StepVerifier
-                .withVirtualTime(() -> {
-                    domainBuilder.topicMessage(t -> t.sequenceNumber(1)).block();
-                    domainBuilder.topicMessage(t -> t.sequenceNumber(2).chunkNum(1).chunkTotal(2)
-                            .validStartTimestamp(now).payerAccountId(1L).consensusTimestamp(now.plusNanos(1))).block();
-                    domainBuilder
-                            .topicMessage(t -> t.sequenceNumber(3).chunkNum(2).chunkTotal(2).validStartTimestamp(now.plusNanos(1))
-                                    .payerAccountId(1L).consensusTimestamp(now.plusNanos(2))).block();
-                    domainBuilder.topicMessage(t -> t.sequenceNumber(4).consensusTimestamp(now.plusNanos(3))).block();
-                    domainBuilder.topicMessage(t -> t.sequenceNumber(5).chunkNum(1).chunkTotal(3)
-                            .validStartTimestamp(now.plusNanos(3)).payerAccountId(1L).consensusTimestamp(now.plusNanos(4))).block();
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .build();
 
-                    generator.set(Flux.concat(
-                            domainBuilder.topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3)
-                                    .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L)
-                                    .consensusTimestamp(now.plusSeconds(5))),
-                            domainBuilder.topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3)
-                                    .validStartTimestamp(now.plusNanos(5)).payerAccountId(1L)
-                                    .consensusTimestamp(now.plusSeconds(6))),
-                            domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusSeconds(7)))
-                    ));
-
-                    ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
-                            .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
-                            .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
-                            .build();
-                    return grpcConsensusService
-                            .subscribeTopic(Mono.just(query))
-                            .map(x -> x.hasChunkInfo() ? x.getChunkInfo().getNumber() : 0)
-                            .doOnNext(x -> log.info("received {}", x));
-                })
-                .expectSubscription()
+        grpcConsensusService.subscribeTopic(Mono.just(query))
+                // mapper doesn't handle null values so replace with 0's
+                .map(x -> x.hasChunkInfo() ? x.getChunkInfo().getNumber() : 0)
+                .doOnNext(x -> log.info("received {}", x))
+                .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.get().blockLast())
+                .then(generator::blockLast)
                 .expectNext(0, 1, 2, 0, 1, 2, 3, 0)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
