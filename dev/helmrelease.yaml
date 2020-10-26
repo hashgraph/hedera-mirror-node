@@ -7,7 +7,7 @@ spec:
   chart:
     git: https://github.com/hashgraph/hedera-mirror-node.git
     path: charts/hedera-mirror
-    ref: e521e6731f63a7616e911e7560543fce2e154ef5
+    ref: d9425abf200c24784a928b766f651944792147ad
   rollback:
     enable: true
     force: true
@@ -18,7 +18,7 @@ spec:
   values:
     grpc:
       image:
-        tag: master-e521e6731f63a7616e911e7560543fce2e154ef5
+        tag: master-d9425abf200c24784a928b766f651944792147ad
     importer:
       config:
         hedera:
@@ -29,7 +29,7 @@ spec:
               network: TESTNET
               startDate: 1970-01-01T00:00:00Z
       image:
-        tag: master-e521e6731f63a7616e911e7560543fce2e154ef5
+        tag: master-d9425abf200c24784a928b766f651944792147ad
       prometheusRules:
         ImporterFileVerificationErrors:
           expr: sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer", success="false"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 0.05
@@ -37,7 +37,7 @@ spec:
       enabled: false
     rest:
       image:
-        tag: master-e521e6731f63a7616e911e7560543fce2e154ef5
+        tag: master-d9425abf200c24784a928b766f651944792147ad
   valuesFrom:
     - chartFileRef:
         path: values-prod.yaml
