@@ -76,7 +76,7 @@ const getTokensCheck = async (server) => {
   };
 };
 
-const getOneTokenWithCheckResult = async (server) => {
+const getFirstTokenIdWithCheckResult = async (server) => {
   const url = getUrl(server, tokensPath, {limit: 1});
   const tokens = await getAPIResponse(url, tokensJsonRespKey);
 
@@ -93,7 +93,7 @@ const getOneTokenWithCheckResult = async (server) => {
     })
     .run(tokens);
   return {
-    tokens,
+    tokenId: result.passed ? tokens[0].token_id : null,
     result: {
       url,
       ...result,
@@ -108,7 +108,7 @@ const getOneTokenWithCheckResult = async (server) => {
  * @return {Promise<{message: String, passed: boolean, url: String}>}
  */
 const getTokensWithLimitParam = async (server) => {
-  const {result} = await getOneTokenWithCheckResult(server);
+  const {result} = await getFirstTokenIdWithCheckResult(server);
   if (!result.passed) {
     return result;
   }
@@ -190,12 +190,12 @@ const tokenInfoMandatoryParams = [
 const getTokenInfoCheck = async (server) => {
   let tokenId = tokenIdFromConfig;
   if (!tokenId) {
-    const {tokens, result} = await getOneTokenWithCheckResult(server);
+    const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdWithCheckResult(server);
     if (!result.passed) {
       return result;
     }
 
-    tokenId = tokens[0].token_id;
+    tokenId = tokenIdFromAPI;
   }
 
   const url = getUrl(server, tokenInfoPath(tokenId));
@@ -234,12 +234,12 @@ const tokenBalancesPath = (tokenId) => `${tokensPath}/${tokenId}/balances`;
 const getTokenBalancesCheck = async (server) => {
   let tokenId = tokenIdFromConfig;
   if (!tokenId) {
-    const {tokens, result} = await getOneTokenWithCheckResult(server);
+    const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdWithCheckResult(server);
     if (!result.passed) {
       return result;
     }
 
-    tokenId = tokens[0].token_id;
+    tokenId = tokenIdFromAPI;
   }
 
   const url = getUrl(server, tokenBalancesPath(tokenId), {limit: tokenBalancesLimit});
@@ -277,12 +277,12 @@ const getTokenBalancesCheck = async (server) => {
 const getTokenBalancesWithLimitParam = async (server) => {
   let tokenId = tokenIdFromConfig;
   if (!tokenId) {
-    const {tokens, result} = await getOneTokenWithCheckResult(server);
+    const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdWithCheckResult(server);
     if (!result.passed) {
       return result;
     }
 
-    tokenId = tokens[0].token_id;
+    tokenId = tokenIdFromAPI;
   }
 
   const url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
@@ -320,12 +320,12 @@ const getTokenBalancesWithLimitParam = async (server) => {
 const getTokenBalancesWithTimestampParam = async (server) => {
   let tokenId = tokenIdFromConfig;
   if (!tokenId) {
-    const {tokens, result} = await getOneTokenWithCheckResult(server);
+    const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdWithCheckResult(server);
     if (!result.passed) {
       return result;
     }
 
-    tokenId = tokens[0].token_id;
+    tokenId = tokenIdFromAPI;
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
@@ -374,12 +374,12 @@ const getTokenBalancesWithTimestampParam = async (server) => {
 const getTokenBalancesForAccount = async (server) => {
   let tokenId = tokenIdFromConfig;
   if (!tokenId) {
-    const {tokens, result} = await getOneTokenWithCheckResult(server);
+    const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdWithCheckResult(server);
     if (!result.passed) {
       return result;
     }
 
-    tokenId = tokens[0].token_id;
+    tokenId = tokenIdFromAPI;
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
@@ -424,12 +424,12 @@ const getTokenBalancesForAccount = async (server) => {
 const checkTokenBalanceFreshness = async (server) => {
   let tokenId = tokenIdFromConfig;
   if (!tokenId) {
-    const {tokens, result} = await getOneTokenWithCheckResult(server);
+    const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdWithCheckResult(server);
     if (!result.passed) {
       return result;
     }
 
-    tokenId = tokens[0].token_id;
+    tokenId = tokenIdFromAPI;
   }
 
   return checkResourceFreshness(server, tokenBalancesPath(tokenId), resource, (data) => data.timestamp);
