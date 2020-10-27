@@ -33,7 +33,6 @@ import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -218,7 +217,6 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .verify(Duration.ofMillis(1000));
     }
 
-    @Disabled("This test fails in GitHub Action 'Deploy Development'")
     @Test
     void fragmentedMessagesGroupAcrossHistoricAndIncoming() {
         Instant now = Instant.now();
@@ -253,10 +251,11 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .map(x -> x.hasChunkInfo() ? x.getChunkInfo().getNumber() : 0)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
+                .expectNext(0, 1, 2, 0, 1)
                 .then(generator::blockLast)
-                .expectNext(0, 1, 2, 0, 1, 2, 3, 0)
+                .expectNext(2, 3, 0) // incoming messages
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofMillis(800));
     }
 
     void assertException(Throwable t, Status.Code status, String message) {
