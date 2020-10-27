@@ -47,6 +47,10 @@ func TestValidateOperationsSum(t *testing.T) {
 		{[]*types.Operation{
 			invalidOperationDummy,
 		}, errors.Errors[errors.InvalidAmount]},
+		{[]*types.Operation{}, errors.Errors[errors.EmptyOperations]},
+		{[]*types.Operation{
+			newOperationDummy("0"),
+		}, errors.Errors[errors.InvalidAmount]},
 	}
 
 	for _, tt := range testData {
