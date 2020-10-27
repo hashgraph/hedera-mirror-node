@@ -19,7 +19,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build hedera-mirror-rosetta
@@ -43,7 +43,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-test-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-test-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-test-
       - name: Run Unit Tests with Coverage
@@ -57,7 +57,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build Mirror Node All-in-One
-        run: docker build --tag=${{env.image-tag}} -f hedera-mirror-rosetta/scripts/validation/Dockerfile .
+        run: docker build --tag=${{env.image-tag}} --build-arg GIT_BRANCH=${GITHUB_REF##*/} .
+        working-directory: ${{env.working-directory}}/build
       - name: Run Mirror Node
         run: docker run -d -p 5700:5700 ${{env.image-tag}}
       - name: Wait for Mirror Node to start syncing
