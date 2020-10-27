@@ -29,11 +29,11 @@ import (
 )
 
 var (
-	validUnsignedTx   = "0x1a00223d0a140a0c0891d0fef905109688f3a701120418d8c307120218061880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
-	validSignedTx     = "0x1a660a640a20d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade1a40967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507223c0a130a0b08c7af94fa0510f7d9fc76120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
-	invalidTxHexStr   = "InvalidTxHexString"
-	corruptedTxHexStr = "0x6767"
-	publicKeyBytes    = "d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade"
+	validTxHexStr       = "0x1a00223d0a140a0c0891d0fef905109688f3a701120418d8c307120218061880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
+	validSignedTxHexStr = "0x1a660a640a20d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade1a40967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507223c0a130a0b08c7af94fa0510f7d9fc76120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
+	invalidTxHexStr     = "InvalidTxHexString"
+	corruptedTxHexStr   = "0x6767"
+	publicKeyBytes      = "d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade"
 )
 
 func dummyConstructionCombineRequest() *types.ConstructionCombineRequest {
@@ -160,7 +160,7 @@ func TestNewConstructionAPIService(t *testing.T) {
 func TestConstructionCombine(t *testing.T) {
 	// given:
 	expectedConstructionCombineResponse := &types.ConstructionCombineResponse{
-		SignedTransaction: validSignedTx,
+		SignedTransaction: validSignedTxHexStr,
 	}
 
 	// when:
@@ -250,7 +250,7 @@ func TestConstructionDerive(t *testing.T) {
 func TestConstructionHash(t *testing.T) {
 	// given:
 	validSignedTransaction := "0x9768d458c755befcda5c6fca07e9f7693b94c429f9c414b0cea07163c402ddd44d1108f89b190d0dcabc423a3d45696d"
-	exampleConstructionHashRequest := dummyConstructionHashRequest(validSignedTx)
+	exampleConstructionHashRequest := dummyConstructionHashRequest(validSignedTxHexStr)
 	expectedConstructHashResponse := &types.TransactionIdentifierResponse{
 		TransactionIdentifier: &types.TransactionIdentifier{Hash: validSignedTransaction},
 	}
@@ -291,7 +291,7 @@ func TestConstructionMetadata(t *testing.T) {
 
 func TestConstructionParse(t *testing.T) {
 	// given:
-	exampleConstructionParseRequest := dummyConstructionParseRequest(validUnsignedTx, false)
+	exampleConstructionParseRequest := dummyConstructionParseRequest(validTxHexStr, false)
 	expectedConstructionParseResponse := &types.ConstructionParseResponse{
 		Operations: []*types.Operation{
 			dummyOperation(0, "CRYPTOTRANSFER", "0.0.123352", "-1000"),
@@ -309,7 +309,7 @@ func TestConstructionParse(t *testing.T) {
 
 func TestConstructionParseSigned(t *testing.T) {
 	// given:
-	exampleConstructionParseRequest := dummyConstructionParseRequest(validSignedTx, true)
+	exampleConstructionParseRequest := dummyConstructionParseRequest(validSignedTxHexStr, true)
 	expectedConstructionParseResponse := &types.ConstructionParseResponse{
 		Operations: []*types.Operation{
 			dummyOperation(0, "CRYPTOTRANSFER", "0.0.123352", "-1000"),
