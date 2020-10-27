@@ -80,9 +80,9 @@ const (
 
 	// selectLatestConsensusTimestampAccountBalances - Selects the latest consensus_timestamp from account_balance table
 	selectLatestConsensusTimestampAccountBalances string = `SELECT consensus_timestamp
-                                         FROM account_balance
-                                         ORDER BY consensus_timestamp DESC
-                                         LIMIT 1`
+                                                            FROM account_balance
+                                                            ORDER BY consensus_timestamp DESC
+                                                            LIMIT 1`
 
 	// selectFirstRecordFileOrderedByConsensusEndWithOffset - Selects the first record_file
 	// ordered by consensus_end and given offset
