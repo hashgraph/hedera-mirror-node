@@ -1,6 +1,5 @@
 #!/bin/bash
-
-set -eu -o pipefail
+set -euo pipefail
 
 network_identifier=""
 
