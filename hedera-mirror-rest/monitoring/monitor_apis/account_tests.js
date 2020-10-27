@@ -27,13 +27,11 @@ const {
   checkAPIResponseError,
   checkRespObjDefined,
   checkRespArrayLength,
-  checkAccountNumber,
+  checkAccountId,
   checkMandatoryParams,
   getAPIResponse,
   getUrl,
-  fromAccNum,
   testRunner,
-  toAccNum,
   CheckRunner,
 } = require('./utils');
 
@@ -78,9 +76,9 @@ const getAccountsWithAccountCheck = async (server) => {
     return {url, ...result};
   }
 
-  const highestAcc = _.max(_.map(accounts, (acct) => toAccNum(acct.account)));
+  const highestAccount = _.max(_.map(accounts, (acct) => acct.account));
   url = getUrl(server, accountsPath, {
-    'account.id': highestAcc,
+    'account.id': highestAccount,
     type: 'credit',
     limit: 1,
   });
@@ -89,7 +87,7 @@ const getAccountsWithAccountCheck = async (server) => {
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'singleAccount is undefined'})
-    .withCheckSpec(checkAccountNumber, {accountNumber: highestAcc, message: 'Highest acc check was not found'})
+    .withCheckSpec(checkAccountId, {accountId: highestAccount, message: 'Highest acc check was not found'})
     .run(singleAccount);
   if (!result.passed) {
     return {url, ...result};
@@ -166,14 +164,14 @@ const getSingleAccount = async (server) => {
     return {url, ...result};
   }
 
-  const highestAcc = _.max(_.map(accounts, (acct) => toAccNum(acct.account)));
-  url = getUrl(server, `${accountsPath}/${fromAccNum(highestAcc)}`);
+  const highestAccount = _.max(_.map(accounts, (acct) => acct.account));
+  url = getUrl(server, `${accountsPath}/${highestAccount}`);
   const singleAccount = await getAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
-    .withCheckSpec(checkAccountNumber, {accountNumber: highestAcc, message: 'Highest account number was not found'})
+    .withCheckSpec(checkAccountId, {accountId: highestAccount, message: 'Highest account number was not found'})
     .run(singleAccount);
   if (!result.passed) {
     return {url, ...result};

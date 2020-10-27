@@ -232,7 +232,8 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
   const accountIdStr = '960';
   const balance = '2000';
   const publicKey = '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be';
-  const timestampNs = '123456789000000000';
+  const timestampNsLow = '123456789000000000';
+  const timestampNsHigh = '123456999000000000';
 
   const testSpecs = [
     {
@@ -261,16 +262,54 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         limit: maxLimit,
       },
     },
+    {
+      name: `timestamp > ${timestampNsLow} and timestamp < ${timestampNsHigh}`,
+      tokenId,
+      initialQuery,
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: '>',
+          value: timestampNsLow,
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: '<',
+          value: timestampNsHigh,
+        },
+      ],
+      expected: {
+        query: `
+          select tb.consensus_timestamp,
+                 tb.account_id,
+                 tb.balance
+          from token_balance tb
+          where tb.token_id = $1
+            and tb.consensus_timestamp = (
+            select tb.consensus_timestamp
+            from token_balance tb
+            where tb.consensus_timestamp > $2
+              and tb.consensus_timestamp < $3
+            order by tb.consensus_timestamp desc
+            limit 1
+          )
+          order by tb.account_id desc
+          limit $4`,
+        params: [encodedTokenIdStr, timestampNsLow, timestampNsHigh, maxLimit],
+        order: orderFilterValues.DESC,
+        limit: maxLimit,
+      }
+    },
     ...operators.map((op) => {
       return {
-        name: `timestamp ${op} ${timestampNs}`,
+        name: `timestamp ${op} ${timestampNsLow}`,
         tokenId,
         initialQuery,
         filters: [
           {
             key: filterKeys.TIMESTAMP,
             operator: op,
-            value: timestampNs,
+            value: timestampNsLow,
           },
         ],
         expected: {
@@ -290,7 +329,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               )
             order by tb.account_id desc
             limit $3`,
-          params: [encodedTokenIdStr, timestampNs, maxLimit],
+          params: [encodedTokenIdStr, timestampNsLow, maxLimit],
           order: orderFilterValues.DESC,
           limit: maxLimit,
         },
@@ -503,7 +542,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         {
           key: filterKeys.TIMESTAMP,
           operator: opsMap.eq,
-          value: timestampNs,
+          value: timestampNsLow,
         },
       ],
       expected: {
@@ -529,7 +568,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             )
           order by tb.account_id asc
           limit $6`,
-        params: [encodedTokenIdStr, accountIdStr, balance, publicKey, timestampNs, 1],
+        params: [encodedTokenIdStr, accountIdStr, balance, publicKey, timestampNsLow, 1],
         order: orderFilterValues.ASC,
         limit: 1,
       },
