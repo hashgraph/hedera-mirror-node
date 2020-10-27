@@ -28,7 +28,7 @@ import (
 
 func ValidateOperationsSum(operations []*types.Operation) *types.Error {
 	var sum int64 = 0
-	if len(operations) < 1 {
+	if len(operations) == 0 {
 		return errors.Errors[errors.EmptyOperations]
 	}
 
