@@ -86,7 +86,7 @@ class Pool {
         orderprefix = 'account_id';
         break;
       case 'accounts':
-        orderprefix = 'e.id';
+        orderprefix = 'coalesce\\(ab.account_id, e.id\\)';
         break;
       default:
         break;
@@ -297,7 +297,7 @@ class Pool {
     // Adjust the low/high values based on the SQL query parameters
     for (const param of parsedparams) {
       switch (param.field) {
-        case 'id':
+        case 'account_id':
           accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
           break;
         case 'balance':
