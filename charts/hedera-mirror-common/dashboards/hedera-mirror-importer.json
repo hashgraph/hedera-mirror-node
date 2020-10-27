@@ -15,24 +15,10 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 34,
-  "iteration": 1603404129404,
+  "id": 1,
+  "iteration": 1603503714352,
   "links": [],
   "panels": [
-    {
-      "collapsed": false,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 21,
-      "panels": [],
-      "title": "Transactions",
-      "type": "row"
-    },
     {
       "cacheTimeout": null,
       "datasource": null,
@@ -79,7 +65,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 1
+        "y": 0
       },
       "id": 13,
       "links": [],
@@ -90,7 +76,7 @@
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
-            "mean"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
@@ -108,85 +94,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Average TPS",
-      "type": "stat"
-    },
-    {
-      "cacheTimeout": null,
-      "datasource": null,
-      "description": "The max number of overall transactions per second",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "mappings": [
-            {
-              "id": 0,
-              "op": "=",
-              "text": "0",
-              "type": 1,
-              "value": "null"
-            }
-          ],
-          "nullValueMode": "connected",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "#EAB839",
-                "value": 2
-              },
-              {
-                "color": "green",
-                "value": 4
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 3,
-        "y": 1
-      },
-      "id": 31,
-      "links": [],
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "mean"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.2.1",
-      "targets": [
-        {
-          "expr": "max(sum(rate(hedera_mirror_transaction_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])))",
-          "interval": "1m",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Max TPS",
+      "title": "TPS",
       "type": "stat"
     },
     {
@@ -234,8 +142,8 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 6,
-        "y": 1
+        "x": 3,
+        "y": 0
       },
       "id": 30,
       "links": [],
@@ -309,8 +217,8 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 9,
-        "y": 1
+        "x": 6,
+        "y": 0
       },
       "id": 18,
       "links": [],
@@ -384,8 +292,8 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 12,
-        "y": 1
+        "x": 9,
+        "y": 0
       },
       "id": 91,
       "links": [],
@@ -406,7 +314,7 @@
       "pluginVersion": "7.2.1",
       "targets": [
         {
-          "expr": "rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"RECORD\"}[$__rate_interval]) / rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"RECORD\"}[$__rate_interval])",
+          "expr": "sum(rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"RECORD\"}[$__rate_interval])) / sum(rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"RECORD\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -458,8 +366,8 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 15,
-        "y": 1
+        "x": 12,
+        "y": 0
       },
       "id": 92,
       "links": [],
@@ -480,7 +388,7 @@
       "pluginVersion": "7.2.1",
       "targets": [
         {
-          "expr": "rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=\"BALANCE\"}[$__rate_interval]) / rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=\"BALANCE\"}[$__rate_interval])",
+          "expr": "sum(rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=\"BALANCE\"}[$__rate_interval])) / sum(rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=\"BALANCE\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -490,6 +398,20 @@
       "timeShift": null,
       "title": "Balance File Age",
       "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 21,
+      "panels": [],
+      "title": "Transactions",
+      "type": "row"
     },
     {
       "aliasColors": {
@@ -521,15 +443,15 @@
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": true,
+        "current": false,
         "max": true,
-        "min": false,
+        "min": true,
         "rightSide": true,
         "show": true,
         "sideWidth": null,
         "sort": "avg",
         "sortDesc": true,
-        "total": true,
+        "total": false,
         "values": true
       },
       "lines": true,
@@ -624,9 +546,9 @@
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": true,
+        "current": false,
         "max": true,
-        "min": false,
+        "min": true,
         "rightSide": true,
         "show": true,
         "sort": "avg",
@@ -1242,392 +1164,28 @@
       }
     },
     {
-      "collapsed": false,
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": null,
+      "decimals": 1,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 1,
-        "w": 24,
+        "h": 8,
+        "w": 12,
         "x": 0,
         "y": 47
-      },
-      "id": 23,
-      "panels": [],
-      "title": "Database",
-      "type": "row"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 0,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 48
-      },
-      "hiddenSeries": false,
-      "id": 17,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "current",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "avg(db_table_size_rows{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (table)",
-          "interval": "1m",
-          "legendFormat": "{{ table }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Database Rows",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "idle": "super-light-orange"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 48
-      },
-      "hiddenSeries": false,
-      "id": 15,
-      "interval": "1m",
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": null,
-        "sortDesc": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(hikaricp_connections_active{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "interval": "1m",
-          "legendFormat": "active",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(hikaricp_connections_idle{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "interval": "1m",
-          "legendFormat": "idle",
-          "refId": "B"
-        },
-        {
-          "expr": "sum(hikaricp_connections_max{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "max",
-          "refId": "C"
-        },
-        {
-          "expr": "sum(hikaricp_connections_pending{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "pending",
-          "refId": "E"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Database Connections",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "idle": "super-light-orange"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 56
-      },
-      "hiddenSeries": false,
-      "id": 19,
-      "interval": "1m",
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": true,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(postgres_rows_fetched_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "fetched",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(postgres_rows_inserted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "inserted",
-          "refId": "B"
-        },
-        {
-          "expr": "sum(rate(postgres_rows_deleted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "deleted",
-          "refId": "C"
-        },
-        {
-          "expr": "sum(rate(postgres_rows_updated_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "1m",
-          "legendFormat": "updated",
-          "refId": "E"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Database Operations",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "idle": "super-light-orange"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 56
       },
       "hiddenSeries": false,
       "id": 73,
@@ -1724,7 +1282,492 @@
         "h": 1,
         "w": 24,
         "x": 0,
+        "y": 55
+      },
+      "id": 23,
+      "panels": [],
+      "title": "Database",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "decimals": 0,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "hiddenSeries": false,
+      "id": 17,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "current",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "avg(db_table_size_rows{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (table)",
+          "interval": "1m",
+          "legendFormat": "{{ table }}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Database Rows",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "decimals": 1,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "hiddenSeries": false,
+      "id": 19,
+      "interval": "1m",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(postgres_rows_fetched_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "fetched",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(postgres_rows_inserted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "inserted",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(postgres_rows_deleted_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "deleted",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(postgres_rows_updated_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "updated",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Database Operations",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
         "y": 64
+      },
+      "hiddenSeries": false,
+      "id": 15,
+      "interval": "1m",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "sort": null,
+        "sortDesc": null,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(hikaricp_connections_active{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(hikaricp_connections_idle{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(hikaricp_connections_max{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "max",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(hikaricp_connections_pending{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "pending",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Connection Pool",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "hiddenSeries": false,
+      "id": 110,
+      "interval": "1m",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(jdbc_connections_active{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(jdbc_connections_idle{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(jdbc_connections_max{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "max",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(jdbc_connections_min{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "min",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "JDBC Connections",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 72
       },
       "id": 35,
       "panels": [],
@@ -1757,7 +1800,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 73
       },
       "hiddenSeries": false,
       "id": 5,
@@ -1849,7 +1892,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 73
+        "y": 81
       },
       "id": 54,
       "options": {
@@ -1876,7 +1919,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 83
+        "y": 91
       },
       "id": 37,
       "panels": [
@@ -1901,7 +1944,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 84
+            "y": 92
           },
           "hiddenSeries": false,
           "id": 39,
@@ -2018,7 +2061,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 84
+            "y": 92
           },
           "hiddenSeries": false,
           "id": 44,
@@ -2128,7 +2171,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 92
+            "y": 100
           },
           "hiddenSeries": false,
           "id": 45,
@@ -2238,7 +2281,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 92
+            "y": 100
           },
           "hiddenSeries": false,
           "id": 46,
@@ -2348,7 +2391,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 100
+            "y": 108
           },
           "hiddenSeries": false,
           "id": 40,
@@ -2459,7 +2502,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 100
+            "y": 108
           },
           "hiddenSeries": false,
           "id": 43,
@@ -2569,7 +2612,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 108
+            "y": 116
           },
           "hiddenSeries": false,
           "id": 47,
@@ -2679,7 +2722,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 108
+            "y": 116
           },
           "hiddenSeries": false,
           "id": 41,
@@ -2789,7 +2832,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 116
+            "y": 124
           },
           "hiddenSeries": false,
           "id": 48,
@@ -2899,7 +2942,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 116
+            "y": 124
           },
           "hiddenSeries": false,
           "id": 49,
@@ -3010,7 +3053,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 124
+            "y": 132
           },
           "hiddenSeries": false,
           "id": 50,
@@ -3120,7 +3163,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 124
+            "y": 132
           },
           "hiddenSeries": false,
           "id": 51,
@@ -3230,7 +3273,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 132
+            "y": 140
           },
           "hiddenSeries": false,
           "id": 52,
@@ -3343,7 +3386,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 132
+            "y": 140
           },
           "hiddenSeries": false,
           "id": 55,
@@ -3457,7 +3500,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 11,
@@ -3568,7 +3611,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 90,
@@ -3610,7 +3653,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]) / rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])",
+              "expr": "sum(rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) / sum(rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]))",
               "interval": "1m",
               "legendFormat": "  ",
               "refId": "A"
@@ -3671,17 +3714,1844 @@
       "type": "row"
     },
     {
-      "collapsed": false,
+      "collapsed": true,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 92
       },
       "id": 93,
-      "panels": [],
-      "repeatIteration": 1603404129404,
+      "panels": [
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The rate at which it the importer polls cloud storage for stream files",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 85
+          },
+          "hiddenSeries": false,
+          "id": 94,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "hideEmpty": false,
+            "hideZero": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 39,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [
+            {}
+          ],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\"}[$__rate_interval])) by (status)",
+              "instant": false,
+              "interval": "1m",
+              "legendFormat": "{{status}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Stream List Rate",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Requests per second",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "How long it took to search for new stream files from cloud storage",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 85
+          },
+          "hiddenSeries": false,
+          "id": 95,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 44,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=~\"^2.*\"}[$__rate_interval])) by (action) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=~\"^2.*\"}[$__rate_interval])) by (action)",
+              "interval": "4m",
+              "legendFormat": "{{action}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Stream Download Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Seconds",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The rate at which it the importer downloads stream file signatures from cloud storage",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 93
+          },
+          "hiddenSeries": false,
+          "id": 96,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 45,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Download Stream Signature Rate",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Request per second",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "How long it took to download the signature file from cloud storage",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 93
+          },
+          "hiddenSeries": false,
+          "id": 97,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 46,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Download Stream Signature Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Seconds",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The rate at which it the importer downloads stream files from cloud storage",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 101
+          },
+          "hiddenSeries": false,
+          "id": 98,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 40,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Download Stream File Rate",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Request per second",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "How long it took to download stream files from cloud storage",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 101
+          },
+          "hiddenSeries": false,
+          "id": 99,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 43,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Download Stream File Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Seconds",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "The average stream file size",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 109
+          },
+          "hiddenSeries": false,
+          "id": 100,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 47,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Download Stream File Size",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "bytes",
+              "label": "bytes",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "The average stream signature file size",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 109
+          },
+          "hiddenSeries": false,
+          "id": 101,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 41,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Download Signature File Size",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "bytes",
+              "label": "bytes",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "The average file size of the stream list response from cloud storage",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 117
+          },
+          "hiddenSeries": false,
+          "id": 102,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 48,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Stream List Size",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "bytes",
+              "label": "bytes",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The rate at which different node's signatures reach consensus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 117
+          },
+          "hiddenSeries": false,
+          "id": 103,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 49,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_signature_verification_total{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=\"CONSENSUS_REACHED\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "interval": "4m",
+              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Signature Verification Rate",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The rate at which the stream file reaches consensus, hash chain verified (if applicable) and hash matches signature",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 125
+          },
+          "hiddenSeries": false,
+          "id": 104,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 50,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_stream_verification_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\"}[$__rate_interval])) by (success)",
+              "interval": "4m",
+              "legendFormat": "success={{success}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Stream File Verification Rate",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "The duration in seconds it took to reach consensus,  verify hash chain (if applicable) and hash matches the signature.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 125
+          },
+          "hiddenSeries": false,
+          "id": 105,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 51,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_stream_verification_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=\"$stream\"}[$__rate_interval])) by (success) / sum(rate(hedera_mirror_download_stream_verification_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=\"$stream\"}[$__rate_interval])) by (success)",
+              "interval": "4m",
+              "legendFormat": "success={{success}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Stream File Verification Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Seconds",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "HTTP errors interacting with cloud storage",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 133
+          },
+          "hiddenSeries": false,
+          "id": 106,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": true,
+            "hideEmpty": false,
+            "hideZero": false,
+            "max": true,
+            "min": false,
+            "rightSide": true,
+            "show": false,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 52,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status!~\"^2.*\"}[$__rate_interval])) by (status, action)",
+              "interval": "4m",
+              "legendFormat": "{{action}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Cloud Storage Error Rate",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "short",
+              "label": "Errors per second",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The difference between the consensus time of the last and first transaction in the stream file",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 133
+          },
+          "hiddenSeries": false,
+          "id": 107,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 55,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "rate(hedera_mirror_stream_close_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]) / rate(hedera_mirror_stream_close_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])",
+              "interval": "1m",
+              "legendFormat": "  ",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Stream File Close Interval",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {
+            "success=false": "semi-dark-red",
+            "success=true": "green"
+          },
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 1,
+          "description": "The duration in seconds it took to parse the file and store it in the database",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 2,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 141
+          },
+          "hiddenSeries": false,
+          "id": 108,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 11,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_parse_duration_seconds_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) by (success) / sum(rate(hedera_mirror_parse_duration_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",type=\"$stream\"}[$__rate_interval])) by (success)",
+              "interval": "1m",
+              "legendFormat": "success: {{success}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Stream Parse Duration",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The difference in the consensus time of the last transaction in the file and the time at which the file was processed successfully",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 141
+          },
+          "hiddenSeries": false,
+          "id": 109,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": true,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.2.1",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1603503714352,
+          "repeatPanelId": 90,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) / sum(rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]))",
+              "interval": "1m",
+              "legendFormat": "  ",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Consensus to Parsed Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        }
+      ],
+      "repeatIteration": 1603503714352,
       "repeatPanelId": 37,
       "scopedVars": {
         "stream": {
@@ -3692,1832 +5562,6 @@
       },
       "title": "$stream Stream",
       "type": "row"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 2,
-      "description": "The rate at which it the importer polls cloud storage for stream files",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 85
-      },
-      "hiddenSeries": false,
-      "id": 94,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "hideEmpty": false,
-        "hideZero": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 39,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [
-        {}
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\"}[$__rate_interval])) by (status)",
-          "instant": false,
-          "interval": "1m",
-          "legendFormat": "{{status}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Stream List Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Requests per second",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "How long it took to search for new stream files from cloud storage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 85
-      },
-      "hiddenSeries": false,
-      "id": 95,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 44,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=~\"^2.*\"}[$__rate_interval])) by (action) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=~\"^2.*\"}[$__rate_interval])) by (action)",
-          "interval": "4m",
-          "legendFormat": "{{action}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Stream Download Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Seconds",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 2,
-      "description": "The rate at which it the importer downloads stream file signatures from cloud storage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 93
-      },
-      "hiddenSeries": false,
-      "id": 96,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 45,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Download Stream Signature Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Request per second",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "How long it took to download the signature file from cloud storage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 93
-      },
-      "hiddenSeries": false,
-      "id": 97,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 46,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Download Stream Signature Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Seconds",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 2,
-      "description": "The rate at which it the importer downloads stream files from cloud storage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 101
-      },
-      "hiddenSeries": false,
-      "id": 98,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 40,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Download Stream File Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Request per second",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "How long it took to download stream files from cloud storage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 101
-      },
-      "hiddenSeries": false,
-      "id": 99,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 43,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Download Stream File Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Seconds",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "The average stream file size",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 109
-      },
-      "hiddenSeries": false,
-      "id": 100,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 47,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Download Stream File Size",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "bytes",
-          "label": "bytes",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "The average stream signature file size",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 109
-      },
-      "hiddenSeries": false,
-      "id": 101,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 41,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Download Signature File Size",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "bytes",
-          "label": "bytes",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "The average file size of the stream list response from cloud storage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 117
-      },
-      "hiddenSeries": false,
-      "id": 102,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 48,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Stream List Size",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "bytes",
-          "label": "bytes",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 2,
-      "description": "The rate at which different node's signatures reach consensus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 117
-      },
-      "hiddenSeries": false,
-      "id": 103,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 49,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_signature_verification_total{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=\"CONSENSUS_REACHED\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
-          "interval": "4m",
-          "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Signature Verification Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 2,
-      "description": "The rate at which the stream file reaches consensus, hash chain verified (if applicable) and hash matches signature",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 125
-      },
-      "hiddenSeries": false,
-      "id": 104,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 50,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_stream_verification_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\"}[$__rate_interval])) by (success)",
-          "interval": "4m",
-          "legendFormat": "success={{success}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Stream File Verification Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "The duration in seconds it took to reach consensus,  verify hash chain (if applicable) and hash matches the signature.",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 125
-      },
-      "hiddenSeries": false,
-      "id": 105,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 51,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_stream_verification_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=\"$stream\"}[$__rate_interval])) by (success) / sum(rate(hedera_mirror_download_stream_verification_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=\"$stream\"}[$__rate_interval])) by (success)",
-          "interval": "4m",
-          "legendFormat": "success={{success}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Stream File Verification Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Seconds",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "HTTP errors interacting with cloud storage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 133
-      },
-      "hiddenSeries": false,
-      "id": 106,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "hideEmpty": false,
-        "hideZero": false,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": false,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 52,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status!~\"^2.*\"}[$__rate_interval])) by (status, action)",
-          "interval": "4m",
-          "legendFormat": "{{action}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Cloud Storage Error Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Errors per second",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 2,
-      "description": "The difference between the consensus time of the last and first transaction in the stream file",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 133
-      },
-      "hiddenSeries": false,
-      "id": 107,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 55,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "rate(hedera_mirror_stream_close_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]) / rate(hedera_mirror_stream_close_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])",
-          "interval": "1m",
-          "legendFormat": "  ",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Stream File Close Interval",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "success=false": "semi-dark-red",
-        "success=true": "green"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 1,
-      "description": "The duration in seconds it took to parse the file and store it in the database",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 2,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 141
-      },
-      "hiddenSeries": false,
-      "id": 108,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 11,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_parse_duration_seconds_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) by (success) / sum(rate(hedera_mirror_parse_duration_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",type=\"$stream\"}[$__rate_interval])) by (success)",
-          "interval": "1m",
-          "legendFormat": "success: {{success}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Stream Parse Duration",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 2,
-      "description": "The difference in the consensus time of the last transaction in the file and the time at which the file was processed successfully",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 141
-      },
-      "hiddenSeries": false,
-      "id": 109,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": true,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.2.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeatIteration": 1603404129404,
-      "repeatPanelId": 90,
-      "repeatedByRow": true,
-      "scopedVars": {
-        "stream": {
-          "selected": false,
-          "text": "RECORD",
-          "value": "RECORD"
-        }
-      },
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]) / rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])",
-          "interval": "1m",
-          "legendFormat": "  ",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Consensus to Parsed Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
     }
   ],
   "refresh": "1m",
@@ -5651,5 +5695,5 @@
   "timezone": "",
   "title": "Hedera / Mirror / Importer",
   "uid": "ZfFsO33Wl",
-  "version": 4
+  "version": 1
 }
