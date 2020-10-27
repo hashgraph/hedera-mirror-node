@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build Mirror Node All-in-One
+      - name: Build Mirror Node All-in-One on branch ${GITHUB_REF##*/}
         run: docker build --tag=${{env.image-tag}} --build-arg GIT_BRANCH=${GITHUB_REF##*/} .
         working-directory: ${{env.working-directory}}/build
       - name: Run Mirror Node
