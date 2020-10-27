@@ -98,6 +98,16 @@ revisionHistoryLimit: 3
 
 prometheusRules:
   enabled: false
+  ImporterBalanceParseLatency:
+    annotations:
+      description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Took longer than 4s to parse balance stream files
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 4
+    for: 1m
+    labels:
+      severity: critical
+
   ImporterBalanceStreamFallenBehind:
     annotations:
       description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
@@ -218,22 +228,22 @@ prometheusRules:
     labels:
       severity: critical
 
-  ImporterParseLatency:
-    annotations:
-      description: Averaging {{ $value | humanizeDuration }} trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Took longer than 2s to parse {{ $labels.type }} stream files
-    enabled: true
-    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 2
-    for: 1m
-    labels:
-      severity: critical
-
   ImporterPublishLatency:
     annotations:
       description: Took {{ $value | humanizeDuration }} to publish {{ $labels.entity }}s to {{ $labels.type }} for {{ $labels.namespace }}/{{ $labels.pod }}
       summary: Slow {{ $labels.type }} publishing
     enabled: true
     expr: sum(rate(hedera_mirror_importer_publish_duration_seconds_sum{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type, entity) / sum(rate(hedera_mirror_importer_publish_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type, entity) > 1
+    for: 1m
+    labels:
+      severity: critical
+
+  ImporterRecordParseLatency:
+    annotations:
+      description: Averaging {{ $value | humanizeDuration }} trying to parse record stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+      summary: Took longer than 2s to parse record stream files
+    enabled: true
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="RECORD"}[3m])) by (namespace, pod) > 2
     for: 1m
     labels:
       severity: critical
