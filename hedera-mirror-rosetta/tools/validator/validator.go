@@ -27,10 +27,10 @@ import (
 )
 
 func ValidateOperationsSum(operations []*types.Operation) *types.Error {
-	var sum int64 = 0
 	if len(operations) == 0 {
 		return errors.Errors[errors.EmptyOperations]
 	}
+	var sum int64 = 0
 
 	for _, operation := range operations {
 		amount, err := parse.ToInt64(operation.Amount.Value)
