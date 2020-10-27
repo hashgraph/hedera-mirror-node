@@ -124,7 +124,7 @@ go test ./...
 After you have started the Rosetta API, in another terminal run:
 
 ```console
-cd hedera-mirror-rosetta/validation
+cd hedera-mirror-rosetta/scripts/validation
 ./run-validation.sh
 ```
 
