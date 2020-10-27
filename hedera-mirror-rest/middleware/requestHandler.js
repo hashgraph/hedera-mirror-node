@@ -20,27 +20,44 @@
 
 'use strict';
 
+const qs = require('qs');
+
 const requestLogger = function (req, res, next) {
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
   return next();
 };
 
 /**
- * Support case insensitive retrieval from request parameters
- * @param req
- * @param res
- * @param next
- * @returns Query param value
+ * Manage request query params to support case insensitive keys
+ * Express default query parer uses qs, other option is querystring, both are case sensitive
+ * Parse using default qs logic and use to populate a new map in which all keys are lowercased
+ * @param queryString
+ * @returns Query string map object
  */
-const requestQueryKeyFormatter = function (req, res, next) {
-  req.query = new Proxy(req.query, {
-    get: (target, name) => target[Object.keys(target).find((key) => key.toLowerCase() === name.toLowerCase())],
-  });
+const requestQueryParser = (queryString) => {
+  // parse first to benefit from qs query handling
+  const parsedQueryString = qs.parse(queryString);
 
-  return next();
+  const caseInsensitiveQueryString = {};
+  for (const key of Object.keys(parsedQueryString)) {
+    const lowerKey = key.toLowerCase();
+    const currentValue = caseInsensitiveQueryString[lowerKey];
+    if (currentValue) {
+      // handle repeated values. Add to array if applicable of convert to array
+      if (Array.isArray(currentValue)) {
+        caseInsensitiveQueryString[lowerKey].push(parsedQueryString[key]);
+      } else {
+        caseInsensitiveQueryString[lowerKey] = [currentValue, parsedQueryString[key]];
+      }
+    } else {
+      caseInsensitiveQueryString[lowerKey] = parsedQueryString[key];
+    }
+  }
+
+  return caseInsensitiveQueryString;
 };
 
 module.exports = {
   requestLogger,
-  requestQueryKeyFormatter,
+  requestQueryParser,
 };

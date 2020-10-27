@@ -41,7 +41,7 @@ const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
-const {requestLogger, requestQueryKeyFormatter} = require('./middleware/requestHandler');
+const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 
 // Logger
 const logger = log4js.getLogger();
@@ -87,10 +87,13 @@ const pool = new Pool({
 });
 global.pool = pool;
 
-// Express configuration
+// Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
 app.set('trust proxy', true);
 app.set('port', port);
+app.set('query parser', requestQueryParser);
+
+// middleware functions, Prior to v0.5 define after sets
 app.use(
   bodyParser.urlencoded({
     extended: false,
@@ -102,7 +105,6 @@ app.use(cors());
 
 // logging middleware
 app.use(requestLogger);
-app.use(requestQueryKeyFormatter);
 
 // metrics middleware
 if (config.metrics.enabled) {

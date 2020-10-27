@@ -17,13 +17,13 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.6.1",
+    "@godaddy/terminus": "^4.4.1",
     "asn1js": "^2.0.26",
     "aws-sdk": "^2.773.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "@godaddy/terminus": "^4.4.1",
     "extend": "^3.0.2",
     "js-yaml": "^3.14.0",
     "lodash": "^4.17.20",
@@ -33,6 +33,7 @@
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
     "pg": "~8.4.1",
+    "qs": "^6.9.4",
     "swagger-stats": "^0.95.17"
   },
   "bundledDependencies": [
@@ -53,6 +54,7 @@
     "node-cache",
     "node-fetch",
     "pg",
+    "qs",
     "swagger-stats"
   ],
   "devDependencies": {

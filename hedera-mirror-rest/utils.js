@@ -141,7 +141,7 @@ const filterValidityChecks = (param, op, val) => {
   }
 
   // Validate the value
-  switch (param.toLowerCase()) {
+  switch (param) {
     case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = isValidAccountBalanceQuery(val);
@@ -624,7 +624,8 @@ const buildFilterObject = (filters) => {
     return null;
   }
 
-  for (const [key, values] of Object.entries(filters)) {
+  for (const key in filters) {
+    const values = filters[key];
     // for repeated params val will be an array
     if (Array.isArray(values)) {
       for (const val of values) {
@@ -643,7 +644,7 @@ const buildComparatorFilter = (name, filter) => {
   let opVal = splitVal.length === 1 ? ['eq', filter] : splitVal;
 
   return {
-    key: name.toLowerCase(),
+    key: name,
     operator: opVal[0],
     value: opVal[1],
   };
