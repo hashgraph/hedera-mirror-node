@@ -65,18 +65,24 @@ const (
                                             FROM   record_file
                                             WHERE  consensus_end <= (SELECT consensus_end
                                                                      FROM   record_file
-                                                                     WHERE  file_hash = $3)) AS rcd`
+                                                                     WHERE  file_hash = $1)) AS rcd`
 	// selectSkippedRecordFilesCount - Selects the count of rows from the record_file table,
-	// where each one's consensus_end is before the MIN consensus_end of address_book table (the first one added).
+	// where each one's consensus_end is before the MIN consensus_timestamp of account_balance table (the first one added).
 	// This way, record files before that timestamp are considered non-existent,
 	// and the first record_file (block) will be considered equal or bigger
 	// than the consensus_timestamp of the first account_balance
 	selectSkippedRecordFilesCount string = `SELECT COUNT(*)
                                             FROM record_file
-                                            WHERE consensus_end < (SELECT MIN(consensus_timestamp) FROM account_balance)`
+                                            WHERE consensus_end <= (SELECT consensus_timestamp
+                                                                    FROM account_balance_file
+                                                                    ORDER BY consensus_timestamp ASC
+                                                                    LIMIT 1)`
 
-	// selectAccountBalancesCount - Selects the count of rows from account_balance table
-	selectAccountBalancesCount string = `SELECT COUNT(*) FROM account_balance`
+	// selectLatestConsensusTimestampAccountBalances - Selects the latest consensus_timestamp from account_balance table
+	selectLatestConsensusTimestampAccountBalances string = `SELECT consensus_timestamp
+                                         FROM account_balance
+                                         ORDER BY consensus_timestamp DESC
+                                         LIMIT 1`
 
 	// selectFirstRecordFileOrderedByConsensusEndWithOffset - Selects the first record_file
 	// ordered by consensus_end and given offset
@@ -123,7 +129,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectFirstRecordFileOrderedByConsensusEndWithOffset, index+*startingIndex).Find(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectFirstRecordFileOrderedByConsensusEndWithOffset, index+startingIndex).Find(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -180,7 +186,7 @@ func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectLatestWithIndex, *startingIndex).Scan(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectLatestWithIndex, startingIndex).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 	if rf.FileHash == "" {
@@ -197,7 +203,7 @@ func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTyp
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectByHashWithIndex, hash, *startingIndex, hash).Scan(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectByHashWithIndex, hash, startingIndex).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -228,16 +234,16 @@ func (br *BlockRepository) constructBlockResponse(rf *recordFile, blockIndex int
 	}
 }
 
-func (br *BlockRepository) getRecordFilesStartingIndex() (*int64, *rTypes.Error) {
+func (br *BlockRepository) getRecordFilesStartingIndex() (int64, *rTypes.Error) {
 	if br.recordFileStartingIndex != nil {
-		return br.recordFileStartingIndex, nil
+		return *br.recordFileStartingIndex, nil
 	}
 
-	var accountBalancesCount int64
+	var latestConsensusTimeStampAccountBalances int64
 
-	br.dbClient.Raw(selectAccountBalancesCount).Count(&accountBalancesCount)
-	if accountBalancesCount == 0 {
-		return nil, errors.Errors[errors.NodeIsStarting]
+	br.dbClient.Raw(selectLatestConsensusTimestampAccountBalances).Count(&latestConsensusTimeStampAccountBalances)
+	if latestConsensusTimeStampAccountBalances == 0 {
+		return 0, errors.Errors[errors.NodeIsStarting]
 	}
 
 	var startingIndex int64
@@ -249,5 +255,5 @@ func (br *BlockRepository) getRecordFilesStartingIndex() (*int64, *rTypes.Error)
 
 	log.Printf(`Fetched Record Files starting index: %d`, *br.recordFileStartingIndex)
 
-	return br.recordFileStartingIndex, nil
+	return *br.recordFileStartingIndex, nil
 }
