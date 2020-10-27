@@ -48,6 +48,7 @@ var Errors = map[string]*types.Error{
 	TransactionUnmarshallingFailed: New(TransactionUnmarshallingFailed, 119, false),
 	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 120, false),
 	TransactionNotFound:            New(TransactionNotFound, 121, true),
+	EmptyOperations:                New(EmptyOperations, 122, true),
 	InternalServerError:            New(InternalServerError, 500, true),
 }
 
@@ -59,6 +60,7 @@ const (
 	InvalidAmount                  string = "Invalid Amount provided"
 	InvalidOperationsAmount        string = "Invalid Operations amount provided"
 	InvalidOperationsTotalAmount   string = "Operations total amount must be 0"
+	EmptyOperations                string = "Empty operations provided"
 	InvalidPublicKey               string = "Invalid Public Key provided"
 	InvalidSignatureVerification   string = "Invalid signature verification"
 	InvalidTransactionIdentifier   string = "Invalid Transaction Identifier provided"

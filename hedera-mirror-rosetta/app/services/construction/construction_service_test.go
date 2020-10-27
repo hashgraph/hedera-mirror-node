@@ -376,7 +376,7 @@ func TestConstructionPayloads(t *testing.T) {
 	assert.Nil(t, e)
 }
 
-func TestConstructionPayloadsThrowsWhenInvalidOperationsSum(t *testing.T) {
+func TestConstructionPayloadsThrowsWithInvalidOperationsSum(t *testing.T) {
 	// given:
 	operations := []*types.Operation{
 		dummyOperation(0, "CRYPTOTRANSFER", "0.0.123321", "1000"),
@@ -388,6 +388,32 @@ func TestConstructionPayloadsThrowsWhenInvalidOperationsSum(t *testing.T) {
 	// then:
 	assert.Nil(t, res)
 	assert.IsType(t, &types.Error{}, e)
+}
+
+func TestConstructionPayloadsThrowsWithEmptyOperations(t *testing.T) {
+	// given:
+	operations := []*types.Operation{}
+
+	// when:
+	res, e := NewConstructionAPIService().ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+
+	// then:
+	assert.Nil(t, res)
+	assert.Equal(t, errors.Errors[errors.EmptyOperations], e)
+}
+
+func TestConstructionPayloadsThrowsWithInvalidOperationAmounts(t *testing.T) {
+	// given:
+	operations := []*types.Operation{
+		dummyOperation(0, "CRYPTOTRANSFER", "0.0.123321", "0"),
+	}
+
+	// when:
+	res, e := NewConstructionAPIService().ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+
+	// then:
+	assert.Nil(t, res)
+	assert.Equal(t, errors.Errors[errors.InvalidAmount], e)
 }
 
 func TestConstructionPayloadsThrowsWhenInvalidAccount(t *testing.T) {
