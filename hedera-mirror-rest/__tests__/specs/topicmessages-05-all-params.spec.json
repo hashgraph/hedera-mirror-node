@@ -43,7 +43,7 @@
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages?sequencenumber=gt:3&timestamp=lte:1234567890.000000005&encoding=base64",
+  "url": "/api/v1/topics/7/messages?sequenceNumber=gt:3&timestamp=lte:1234567890.000000005&encoding=base64",
   "responseStatus": 200,
   "responseJson": {
     "messages": [

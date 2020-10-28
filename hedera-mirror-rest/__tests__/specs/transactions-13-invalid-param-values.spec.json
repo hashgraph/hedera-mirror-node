@@ -24,7 +24,7 @@
           "message": "Invalid parameter: result"
         },
         {
-          "message": "Invalid parameter: transactionType"
+          "message": "Invalid parameter: transactiontype"
         }
       ]
     }
