@@ -25,7 +25,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tests/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
