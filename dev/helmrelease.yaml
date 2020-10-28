@@ -19,6 +19,9 @@ spec:
     grpc:
       image:
         tag: master-f041a2c60f35dc16e6ddfb415693bbcb31a8f9ca
+      prometheusRules:
+        GrpcNoSubscribers:
+          enabled: false
     importer:
       config:
         hedera:
@@ -30,14 +33,14 @@ spec:
               startDate: 1970-01-01T00:00:00Z
       image:
         tag: master-f041a2c60f35dc16e6ddfb415693bbcb31a8f9ca
-      prometheusRules:
-        ImporterFileVerificationErrors:
-          expr: sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer", success="false"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 0.05
     postgresql:
       enabled: false
     rest:
       image:
         tag: master-f041a2c60f35dc16e6ddfb415693bbcb31a8f9ca
+      prometheusRules:
+        RestNoRequests:
+          enabled: false
   valuesFrom:
     - chartFileRef:
         path: values-prod.yaml
