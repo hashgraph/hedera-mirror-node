@@ -529,7 +529,7 @@ func TestShouldSuccessReturnTypesAsArray(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, err)
 
-	assert.Equal(t, tRepoTypesAsArray, result)
+	assert.ElementsMatch(t, tRepoTypesAsArray, result)
 }
 
 func TestShouldSuccessReturnTypes(t *testing.T) {
