@@ -163,6 +163,8 @@ func TestShouldFailFindBetweenNoTypes(t *testing.T) {
 		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
 	mock.ExpectQuery(regexp.QuoteMeta(selectTransactionTypes)).
 		WillReturnRows(willReturnRows(transactionTypeColumns))
+	mock.ExpectQuery(regexp.QuoteMeta(selectTransactionResults)).
+		WillReturnRows(willReturnRows(transactionResultColumns))
 
 	// when
 	result, err := tr.FindBetween(1, 2)
@@ -227,6 +229,8 @@ func TestShouldFailFindHashInBlockNoTypes(t *testing.T) {
 		WillReturnRows(rows)
 	mock.ExpectQuery(regexp.QuoteMeta(selectTransactionTypes)).
 		WillReturnRows(willReturnRows(transactionTypeColumns))
+	mock.ExpectQuery(regexp.QuoteMeta(selectTransactionResults)).
+		WillReturnRows(willReturnRows(transactionResultColumns))
 
 	// when
 	result, err := tr.FindByHashInBlock(hashString, 1, 2)
@@ -397,6 +401,8 @@ func TestShouldFailConstructionOperationsDueToTypesError(t *testing.T) {
 
 	mock.ExpectQuery(regexp.QuoteMeta(selectTransactionTypes)).
 		WillReturnRows(willReturnRows(transactionTypeColumns))
+	mock.ExpectQuery(regexp.QuoteMeta(selectTransactionResults)).
+		WillReturnRows(willReturnRows(transactionResultColumns))
 
 	// when
 	result, err := tr.constructOperations(dbCryptoTransfers, nil)
