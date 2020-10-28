@@ -5,7 +5,7 @@ hedera:
       apiVersion: 1.4.4
       db:
         host: 127.0.0.1
-        name: mirror_rosetta
+        name: mirror_node
         password: mirror_rosetta_pass
         port: 5432
         username: mirror_rosetta
