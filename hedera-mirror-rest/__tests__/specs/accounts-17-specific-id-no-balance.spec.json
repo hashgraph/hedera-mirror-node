@@ -58,8 +58,20 @@
         "balance": 45
       }
     ],
-    "transactions": [],
-    "cryptotransfers": []
+    "entities": [
+      {
+        "entity_num": 10,
+        "entity_type": 3
+      },
+      {
+        "entity_num": 11,
+        "entity_type": 4
+      },
+      {
+        "entity_num": 12,
+        "entity_type": 5
+      }
+    ]
   },
   "url": "/api/v1/accounts?account.id=0.0.8",
   "responseStatus": 200,

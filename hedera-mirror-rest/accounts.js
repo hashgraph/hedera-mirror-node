@@ -84,9 +84,8 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
        ) as token_balances
     from account_balance ab
     inner join (select max(consensus_timestamp) as time_stamp_max from account_balance) as abm on ab.consensus_timestamp = abm.time_stamp_max
-    full outer join t_entities e on (
+    full outer join (select id, exp_time_ns, auto_renew_period, key, deleted, fk_entity_type_id, ed25519_public_key_hex from t_entities where fk_entity_type_id < 3) e on (
         ab.account_id = e.id
-        and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
     )
     ${whereClause}
     ${orderClause || ''}
@@ -109,10 +108,7 @@ const getAccounts = async (req, res) => {
   // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
   const [balancesAccountQuery, balancesAccountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
   const [entityAccountQuery, entityAccountParams] = utils.parseAccountIdQueryParam(req.query, 'e.id');
-  const accountQuery =
-    balancesAccountQuery === ''
-      ? ''
-      : `(${balancesAccountQuery} or (${entityAccountQuery} and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}))`;
+  const accountQuery = balancesAccountQuery === '' ? '' : `(${balancesAccountQuery} or ${entityAccountQuery})`;
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
   const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'asc');
@@ -192,9 +188,7 @@ const getOneAccount = async (req, res) => {
 
   // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
   // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
-  const entitySql = getAccountQuery(
-    ` (ab.account_id = ? or (e.id = ? and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}))`
-  );
+  const entitySql = getAccountQuery(` (ab.account_id = ? or e.id = ?)`);
   const encodedAccountId = accountId.getEncodedId();
   const entityParams = [encodedAccountId, encodedAccountId];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);

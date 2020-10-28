@@ -105,8 +105,20 @@
         ]
       }
     ],
-    "transactions": [],
-    "cryptotransfers": []
+    "entities": [
+      {
+        "entity_num": 6,
+        "entity_type": 3
+      },
+      {
+        "entity_num": 7,
+        "entity_type": 4
+      },
+      {
+        "entity_num": 8,
+        "entity_type": 5
+      }
+    ]
   },
   "url": "/api/v1/accounts",
   "responseStatus": 200,

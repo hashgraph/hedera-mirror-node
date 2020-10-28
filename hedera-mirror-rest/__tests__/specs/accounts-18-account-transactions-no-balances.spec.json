@@ -64,7 +64,6 @@
         "balance": 90
       }
     ],
-    "transactions": [],
     "cryptotransfers": [
       {
         "consensus_timestamp": "1234567890000000001",
@@ -81,6 +80,20 @@
         "amount": 10,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98"
+      }
+    ],
+    "entities": [
+      {
+        "entity_num": 10,
+        "entity_type": 3
+      },
+      {
+        "entity_num": 11,
+        "entity_type": 4
+      },
+      {
+        "entity_num": 12,
+        "entity_type": 5
       }
     ]
   },
