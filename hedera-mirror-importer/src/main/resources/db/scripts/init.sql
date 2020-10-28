@@ -17,7 +17,7 @@ create user :grpc_user with login password :'grpc_password';
 
 grant connect on database :db_name to :grpc_user;
 
-create user :rosetta_user with login password :'mirror_rosetta_pass';
+create user :rosetta_user with login password :'rosetta_password';
 
 grant connect on database :db_name to :rosetta_user;
 
