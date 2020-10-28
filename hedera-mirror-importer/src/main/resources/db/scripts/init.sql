@@ -9,15 +9,15 @@
 \set rosetta_user 'mirror_rosetta'
 \set rosetta_password 'mirror_rosetta_pass'
 
-create user :db_user with login createrole password :'db_password';
+create user if not exists :db_user with login createrole password :'db_password';
 
 create database :db_name with owner :db_owner;
 
-create user :grpc_user with login password :'grpc_password';
+create user if not exists :grpc_user with login password :'grpc_password';
 
 grant connect on database :db_name to :grpc_user;
 
-create user :rosetta_user with login password :'rosetta_password';
+create user if not exists :rosetta_user with login password :'rosetta_password';
 
 grant connect on database :db_name to :rosetta_user;
 
