@@ -56,7 +56,6 @@ func (c *ConstructionAPIService) ConstructionCombine(ctx context.Context, reques
 
 	var transaction hedera.Transaction
 	err = transaction.UnmarshalBinary(bytesTransaction)
-
 	if err != nil {
 		return nil, errors.Errors[errors.TransactionUnmarshallingFailed]
 	}

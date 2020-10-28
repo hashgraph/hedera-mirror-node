@@ -49,6 +49,7 @@ var Errors = map[string]*types.Error{
 	TransactionUnmarshallingFailed: New(TransactionUnmarshallingFailed, 120, false),
 	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 121, false),
 	TransactionNotFound:            New(TransactionNotFound, 122, true),
+	EmptyOperations:                New(EmptyOperations, 123, true),
 	InternalServerError:            New(InternalServerError, 500, true),
 }
 
@@ -56,6 +57,7 @@ const (
 	AccountNotFound                string = "Account not found"
 	BlockNotFound                  string = "Block not found"
 	CreateAccountDbIdFailed        string = "An error occurred while creating Account ID from encoded DB ID: %x"
+	EmptyOperations                string = "Empty operations provided"
 	InvalidAccount                 string = "Invalid Account provided"
 	InvalidAmount                  string = "Invalid Amount provided"
 	InvalidOperationsAmount        string = "Invalid Operations amount provided"
