@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+sleep 5
 network_identifier=""
 
 echo Waiting for Mirror Node to start syncing
