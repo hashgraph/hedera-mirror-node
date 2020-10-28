@@ -41,14 +41,16 @@ const requestQueryParser = (queryString) => {
   const caseInsensitiveQueryString = {};
   for (const key of Object.keys(parsedQueryString)) {
     const lowerKey = key.toLowerCase();
-    const currentValue = caseInsensitiveQueryString[lowerKey];
+    let currentValue = caseInsensitiveQueryString[lowerKey];
     if (currentValue) {
-      // handle repeated values. Add to array if applicable of convert to array
-      if (Array.isArray(currentValue)) {
-        caseInsensitiveQueryString[lowerKey].push(parsedQueryString[key]);
-      } else {
-        caseInsensitiveQueryString[lowerKey] = [currentValue, parsedQueryString[key]];
+      // handle repeated values. Add to array if applicable or convert to array
+      if (!Array.isArray(currentValue)) {
+        // create a new array of current value
+        currentValue = [currentValue];
       }
+
+      // assign value as concat of current value array and new value which may also be an array
+      caseInsensitiveQueryString[lowerKey] = currentValue.concat(parsedQueryString[key]);
     } else {
       caseInsensitiveQueryString[lowerKey] = parsedQueryString[key];
     }
