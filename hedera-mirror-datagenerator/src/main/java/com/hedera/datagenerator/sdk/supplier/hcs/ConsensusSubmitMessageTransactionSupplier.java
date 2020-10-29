@@ -22,7 +22,6 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     private final String message;
     @Builder.Default
     private final int messageSize = 256;
-    //TODO is it worthwhile to add Chunk data?
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
 

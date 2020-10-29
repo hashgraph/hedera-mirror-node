@@ -2,6 +2,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -18,12 +19,14 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
     //Required
     private final AccountId accountId;
-    private final Ed25519PublicKey newPublicKey;
+    private final Ed25519PublicKey publicKey;
 
     //Optional
-    private final Instant expirationTime;
-    private final Duration autoRenewPeriod;
     private final AccountId proxyAccountId;
+    @Builder.Default
+    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    @Builder.Default
+    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
     @Builder.Default
     private final boolean receiverSignatureRequired = false;
     @Builder.Default
@@ -33,17 +36,13 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     public AccountUpdateTransaction get() {
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(accountId)
-                .setKey(newPublicKey)
+                .setKey(publicKey)
                 .setReceiverSignatureRequired(receiverSignatureRequired)
+                .setExpirationTime(expirationTime)
+                .setAutoRenewPeriod(autoRenewPeriod)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Supplier update account_" + Instant.now());
 
-        if (autoRenewPeriod != null) {
-            transaction.setAutoRenewPeriod(autoRenewPeriod);
-        }
-        if (expirationTime != null) {
-            transaction.setExpirationTime(expirationTime);
-        }
         if (proxyAccountId != null) {
             transaction.setProxyAccountId(proxyAccountId);
         }

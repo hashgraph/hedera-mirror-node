@@ -15,12 +15,10 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicCreateTransaction> {
 
     //Optional
-    //TODO Do we care about having this much customization?
     private final Ed25519PublicKey adminKey;
-    private final Ed25519PublicKey submitKey;
     private final AccountId autoRenewAccountId;
-    private final Duration autoRenewPeriod;
-
+    @Builder.Default
+    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
@@ -30,17 +28,15 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTopicMemo("Supplier HCS Topic Create_" + Instant.now());
 
-        if (submitKey != null) {
-            consensusTopicCreateTransaction.setSubmitKey(submitKey);
-        }
         if (adminKey != null) {
-            consensusTopicCreateTransaction.setAdminKey(adminKey);
+            consensusTopicCreateTransaction
+                    .setAdminKey(adminKey)
+                    .setSubmitKey(adminKey);
         }
         if (autoRenewAccountId != null) {
-            consensusTopicCreateTransaction.setAutoRenewAccountId(autoRenewAccountId);
-        }
-        if (autoRenewPeriod != null) {
-            consensusTopicCreateTransaction.setAutoRenewPeriod(autoRenewPeriod);
+            consensusTopicCreateTransaction
+                    .setAutoRenewAccountId(autoRenewAccountId)
+                    .setAutoRenewPeriod(autoRenewPeriod);
         }
         return consensusTopicCreateTransaction;
     }

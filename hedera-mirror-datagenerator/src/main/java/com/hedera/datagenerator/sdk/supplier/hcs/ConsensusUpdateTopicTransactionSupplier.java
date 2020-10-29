@@ -21,7 +21,6 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
 
     //Optional
     private final Ed25519PublicKey adminKey;
-    private final Ed25519PublicKey submitKey;
     private final AccountId autoRenewAccountId;
     @Builder.Default
     private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
@@ -36,24 +35,17 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
                 .setTopicId(topicId)
                 .setTopicMemo("Supplier HCS Topic Update_" + Instant.now())
-                .setExpirationTime(expirationTime)
-                .setAutoRenewPeriod(autoRenewPeriod)
-                .clearTopicMemo()
-                .clearAutoRenewAccountId();
-        if (submitKey != null) {
-            consensusTopicUpdateTransaction.setSubmitKey(submitKey);
-        } else {
-            consensusTopicUpdateTransaction.clearSubmitKey();
-        }
+                .setExpirationTime(expirationTime);
+
         if (adminKey != null) {
-            consensusTopicUpdateTransaction.setAdminKey(adminKey);
-        } else {
-            consensusTopicUpdateTransaction.clearAdminKey();
+            consensusTopicUpdateTransaction
+                    .setAdminKey(adminKey)
+                    .setSubmitKey(adminKey);
         }
         if (autoRenewAccountId != null) {
-            consensusTopicUpdateTransaction.setAutoRenewAccountId(autoRenewAccountId);
-        } else {
-            consensusTopicUpdateTransaction.clearAutoRenewAccountId();
+            consensusTopicUpdateTransaction
+                    .setAutoRenewAccountId(autoRenewAccountId)
+                    .setAutoRenewPeriod(autoRenewPeriod);
         }
         return consensusTopicUpdateTransaction;
     }
