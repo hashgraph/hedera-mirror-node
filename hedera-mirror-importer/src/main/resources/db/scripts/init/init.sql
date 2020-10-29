@@ -9,9 +9,20 @@
 \set rosetta_user 'mirror_rosetta'
 \set rosetta_password 'mirror_rosetta_pass'
 
--- create user :db_user with login createrole password :'db_password';
---
--- create database :db_name with owner :db_owner;
+select 'CREATE DATABASE mirror_node'
+where not exists (select from pg_database where datname = :'db_name')\gexec
+
+do
+$do$
+begin
+   if not exists (
+      select from pg_catalog.pg_roles
+      where  rolname = 'mirror_node') then
+
+      create user mirror_node with login createrole PASSWORD 'mirror_node_pass';
+   end if;
+end
+$do$;
 
 create user :grpc_user with login password :'grpc_password';
 
