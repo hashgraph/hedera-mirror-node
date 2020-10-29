@@ -26,6 +26,7 @@ import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
@@ -41,7 +42,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     //Optional
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
-    private final String message;
+    private final String message = StringUtils.EMPTY;
 
     @Builder.Default
     private final int messageSize = 256;
@@ -50,13 +51,18 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     public ConsensusMessageSubmitTransaction get() {
         return new ConsensusMessageSubmitTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
-                .setMessage(message != null ? message : getMessage())
+                .setMessage(getMessage())
                 .setTopicId(ConsensusTopicId.fromString(topicId))
                 .setTransactionMemo("Mirror node submitted test message at " + Instant.now());
     }
 
     private String getMessage() {
         byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
+        //If a custom message is entered, append the timestamp to the front and leave the message unaltered
+        if (StringUtils.isNotBlank(message)) {
+            return Base64.encodeBase64String(timeRefBytes) + "_" + message;
+        }
+        //Generate a message from the timestamp and a random alphanumeric String
         int additionalBytes = messageSize <= timeRefBytes.length ? 0 : messageSize - timeRefBytes.length;
         String randomAlphanumeric = RandomStringUtils.randomAlphanumeric(additionalBytes);
         return Base64.encodeBase64String(timeRefBytes) + randomAlphanumeric;
