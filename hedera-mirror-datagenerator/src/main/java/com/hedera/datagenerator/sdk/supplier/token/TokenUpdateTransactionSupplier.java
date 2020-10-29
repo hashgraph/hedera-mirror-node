@@ -43,10 +43,10 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     private final String adminKey;
 
     @Builder.Default
-    private final long autoRenewPeriodSeconds = 8000000;
+    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
     @Builder.Default
-    private final long expirationTime = 120;
+    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
 
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
@@ -57,8 +57,8 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     @Override
     public TokenUpdateTransaction get() {
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
-                .setAutoRenewPeriod(Duration.ofSeconds(autoRenewPeriodSeconds))
-                .setExpirationTime(Instant.now().plus(expirationTime, ChronoUnit.DAYS))
+                .setAutoRenewPeriod(autoRenewPeriod)
+                .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setName(symbol + "_name")
                 .setSybmol(symbol)

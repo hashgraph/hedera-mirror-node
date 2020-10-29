@@ -42,10 +42,10 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
     //Optional
     @Builder.Default
-    private final long autoRenewPeriodSeconds = 8000000;
+    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
     @Builder.Default
-    private final long expirationTimeDays = 120;
+    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
 
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
@@ -59,8 +59,8 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     public AccountUpdateTransaction get() {
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(AccountId.fromString(accountId))
-                .setAutoRenewPeriod(Duration.ofSeconds(autoRenewPeriodSeconds))
-                .setExpirationTime(Instant.now().plus(expirationTimeDays, ChronoUnit.DAYS))
+                .setAutoRenewPeriod(autoRenewPeriod)
+                .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setTransactionMemo("Mirror node updated test account at " + Instant.now());

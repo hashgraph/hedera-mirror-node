@@ -44,10 +44,10 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     private final String autoRenewAccountId;
 
     @Builder.Default
-    private final long autoRenewPeriodSeconds = 8000000;
+    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
     @Builder.Default
-    private final long expirationTimeDays = 120;
+    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
 
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
@@ -55,7 +55,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     @Override
     public ConsensusTopicUpdateTransaction get() {
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
-                .setExpirationTime(Instant.now().plus(expirationTimeDays, ChronoUnit.DAYS))
+                .setExpirationTime(expirationTime)
                 .setTopicId(ConsensusTopicId.fromString(topicId))
                 .setTopicMemo("Mirror node updated test topic at " + Instant.now());
 
@@ -68,7 +68,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
         if (autoRenewAccountId != null) {
             consensusTopicUpdateTransaction
                     .setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId))
-                    .setAutoRenewPeriod(Duration.ofSeconds(autoRenewPeriodSeconds));
+                    .setAutoRenewPeriod(autoRenewPeriod);
         }
         return consensusTopicUpdateTransaction;
     }
