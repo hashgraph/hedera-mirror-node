@@ -59,6 +59,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setAutoRenewAccount(treasuryAccount)
                 .setDecimals(decimals)
                 .setInitialSupply(initialSupply)
+                .setFreezeDefault(freezeDefault)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setName(symbol + "_name")
                 .setSymbol(symbol)
