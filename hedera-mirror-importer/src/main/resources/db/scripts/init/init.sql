@@ -9,20 +9,16 @@
 \set rosetta_user 'mirror_rosetta'
 \set rosetta_password 'mirror_rosetta_pass'
 
-select 'CREATE DATABASE mirror_node'
+select 'create database mirror_node'
 where not exists (select from pg_database where datname = :'db_name')\gexec
 
-do
-$do$
+do $$
 begin
-   if not exists (
-      select from pg_catalog.pg_roles
-      where  rolname = 'mirror_node') then
-
-      create user mirror_node with login createrole PASSWORD 'mirror_node_pass';
-   end if;
+  create user mirror_node with login createrole password 'mirror_node_pass';
+  exception when duplicate_object then
+  raise notice 'not creating user mirror_node -- it already exists';
 end
-$do$;
+$$;
 
 create user :grpc_user with login password :'grpc_password';
 
