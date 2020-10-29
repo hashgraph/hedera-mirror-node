@@ -2,18 +2,25 @@
 # Importer, Rosetta and PostgreSQL into one image
 # and run the services using supervisord
 
+# --------------------------  Clone Repository  -------------------------- #
+FROM ubuntu:18.04 as cloner
+RUN apt-get update && apt-get install -y git
+ARG GIT_BRANCH=master
+RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
+
 # ------------------------------  Rosetta  ------------------------------- #
 FROM golang:1.13 as rosetta-builder
 WORKDIR /tmp
-RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
 WORKDIR /tmp/hedera-mirror-node/hedera-mirror-rosetta
 RUN go build -o rosetta-executable ./cmd
 
 # ---------------------------- Importer/GRPC ----------------------------- #
 FROM openjdk:11.0 as java-builder
 
-RUN apt-get update && apt-get install -y git
-RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+RUN apt-get update
+COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
 RUN cd hedera-mirror-node && ./mvnw clean package -DskipTests
 
 # ######################################################################## #
@@ -34,7 +41,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" > /etc
 
 # Install PostgreSQL 9.6, supervisor, git and openjdk-11
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6 supervisor git openjdk-11-jdk-headless curl
+RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6 supervisor openjdk-11-jdk-headless curl
 
 USER root
 
@@ -47,9 +54,8 @@ RUN ln -s /data/db/main /var/lib/postgresql/9.6/main
 
 # ---------------------------  Supervisord  --------------------------- #
 
-# Clone the Repo
-RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
-
+# Copy the repository from the Cloner stage
+COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
 USER postgres
 
 # Init db script

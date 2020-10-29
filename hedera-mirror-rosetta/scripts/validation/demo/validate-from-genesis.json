@@ -9,15 +9,15 @@
   "retry_elapsed_time": 5,
   "online_url": "http://localhost:5700",
   "data_directory": "",
-  "http_timeout": 20,
+  "http_timeout": 10,
   "tip_delay": 300,
   "data": {
     "reconciliation_disabled": false,
     "inactive_discrepency_search_disabled": false,
     "balance_tracking_disabled": false,
-    "start_index": 10,
+    "bootstrap_balances": "./data_genesis_balances.json",
     "end_conditions": {
-      "index": 1029
+      "index": 1020
     }
   }
 }
