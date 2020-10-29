@@ -1,6 +1,5 @@
 package com.hedera.datagenerator.sdk.supplier.hts;
 
-import java.time.Duration;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
@@ -13,7 +12,6 @@ import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 @Builder
 @Value
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
-
     //Required
     private final AccountId treasuryAccount;
 
@@ -28,8 +26,6 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     @Builder.Default
     private int decimals = 10;
     @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
-    @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
     @Override
@@ -40,7 +36,6 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setDecimals(decimals)
                 .setInitialSupply(initialSupply)
                 .setAutoRenewAccount(treasuryAccount)
-                .setAutoRenewPeriod(autoRenewPeriod)
                 .setTreasury(treasuryAccount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Supplier Create token_" + Instant.now());

@@ -1,6 +1,5 @@
 package com.hedera.datagenerator.sdk.supplier.hcs;
 
-import java.time.Duration;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
@@ -18,8 +17,6 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
     private final Ed25519PublicKey adminKey;
     private final AccountId autoRenewAccountId;
     @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
-    @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
     @Override
@@ -35,8 +32,7 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
         }
         if (autoRenewAccountId != null) {
             consensusTopicCreateTransaction
-                    .setAutoRenewAccountId(autoRenewAccountId)
-                    .setAutoRenewPeriod(autoRenewPeriod);
+                    .setAutoRenewAccountId(autoRenewAccountId);
         }
         return consensusTopicCreateTransaction;
     }

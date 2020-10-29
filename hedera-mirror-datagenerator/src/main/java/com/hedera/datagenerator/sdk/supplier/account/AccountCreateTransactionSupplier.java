@@ -15,10 +15,8 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Log4j2
 public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
 
-    //Required
-    private final Ed25519PublicKey publicKey;
-
     //Optional
+    private final Ed25519PublicKey publicKey;
     @Builder.Default
     private final long initialBalance = 10_000_000;
     @Builder.Default

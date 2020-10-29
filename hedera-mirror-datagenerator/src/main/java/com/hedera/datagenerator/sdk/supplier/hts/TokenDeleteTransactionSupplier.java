@@ -11,8 +11,10 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Builder
 @Value
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
+    //Required
     private final TokenId tokenId;
 
+    //Optional
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
