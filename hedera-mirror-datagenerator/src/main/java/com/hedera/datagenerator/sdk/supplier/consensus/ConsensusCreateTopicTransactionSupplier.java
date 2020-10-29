@@ -36,6 +36,7 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
     //Optional
     private final Ed25519PublicKey adminKey;
     private final AccountId autoRenewAccountId;
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 

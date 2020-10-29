@@ -41,8 +41,8 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
     @Override
     public TokenDeleteTransaction get() {
         return new TokenDeleteTransaction()
-                .setTokenId(tokenId)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setTokenId(tokenId)
                 .setTransactionMemo("Supplier Delete token_" + Instant.now());
     }
 }

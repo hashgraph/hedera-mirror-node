@@ -42,8 +42,8 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
     @Override
     public ConsensusTopicDeleteTransaction get() {
         return new ConsensusTopicDeleteTransaction()
-                .setTopicId(topicId)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setTopicId(topicId)
                 .setTransactionMemo("Supplier HCS Topic Create_" + Instant.now());
     }
 }

@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
 @Value
 public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<TokenUnfreezeTransaction> {
     //Required
-    private final TokenId tokenId;
     private final AccountId accountId;
+    private final TokenId tokenId;
 
     //Optional
     @Builder.Default
@@ -44,8 +44,8 @@ public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<Tok
     public TokenUnfreezeTransaction get() {
         return new TokenUnfreezeTransaction()
                 .setAccountId(accountId)
-                .setTokenId(tokenId)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setTokenId(tokenId)
                 .setTransactionMemo("Supplier Unfreeze token account_" + Instant.now());
     }
 }

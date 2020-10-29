@@ -41,25 +41,28 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     private final AccountId accountId;
 
     //Optional
-    private final Ed25519PublicKey publicKey;
-    private final AccountId proxyAccountId;
-    @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
     @Builder.Default
     private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+
     @Builder.Default
-    private final boolean receiverSignatureRequired = false;
+    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
+    private final AccountId proxyAccountId;
+    private final Ed25519PublicKey publicKey;
+
+    @Builder.Default
+    private final boolean receiverSignatureRequired = false;
 
     @Override
     public AccountUpdateTransaction get() {
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(accountId)
-                .setReceiverSignatureRequired(receiverSignatureRequired)
-                .setExpirationTime(expirationTime)
                 .setAutoRenewPeriod(autoRenewPeriod)
+                .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setTransactionMemo("Supplier update account_" + Instant.now());
 
         if (proxyAccountId != null) {

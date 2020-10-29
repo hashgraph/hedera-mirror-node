@@ -42,19 +42,22 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     //Optional
     private final Ed25519PublicKey adminKey;
     private final AccountId autoRenewAccountId;
+
     @Builder.Default
     private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+
     @Builder.Default
     private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
     @Override
     public ConsensusTopicUpdateTransaction get() {
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
+                .setExpirationTime(expirationTime)
                 .setTopicId(topicId)
-                .setTopicMemo("Supplier HCS Topic Update_" + Instant.now())
-                .setExpirationTime(expirationTime);
+                .setTopicMemo("Supplier HCS Topic Update_" + Instant.now());
 
         if (adminKey != null) {
             consensusTopicUpdateTransaction

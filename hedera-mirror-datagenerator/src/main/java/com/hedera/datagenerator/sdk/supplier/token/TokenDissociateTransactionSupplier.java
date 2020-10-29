@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenDissociateTransactionSupplier implements TransactionSupplier<TokenDissociateTransaction> {
     //Required
-    private final TokenId tokenId;
     private final AccountId accountId;
+    private final TokenId tokenId;
 
     //Optional
     @Builder.Default
@@ -43,8 +43,8 @@ public class TokenDissociateTransactionSupplier implements TransactionSupplier<T
     @Override
     public TokenDissociateTransaction get() {
         return new TokenDissociateTransaction()
-                .setAccountId(accountId)
                 .addTokenId(tokenId)
+                .setAccountId(accountId)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Supplier Dissociate token_" + Instant.now());
     }

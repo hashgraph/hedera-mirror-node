@@ -32,22 +32,23 @@ import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
 @Builder
 @Value
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
+    private final AccountId accountId;
     private final TokenId tokenId;
-    private final AccountId operatorId;
 
     //Optional
     @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-    @Builder.Default
     private final long amount = 1;
+
+    @Builder.Default
+    private final long maxTransactionFee = 1_000_000_000;
 
     @Override
     public TokenWipeTransaction get() {
         return new TokenWipeTransaction()
-                .setAccountId(operatorId)
-                .setTokenId(tokenId)
+                .setAccountId(accountId)
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setTokenId(tokenId)
                 .setTransactionMemo("Supplier Wipe token_" + Instant.now());
     }
 }

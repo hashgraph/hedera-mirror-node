@@ -39,19 +39,20 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     private final ConsensusTopicId topicId;
 
     //Optional
-    private final String message;
-    @Builder.Default
-    private final int messageSize = 256;
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
+    private final String message;
+
+    @Builder.Default
+    private final int messageSize = 256;
 
     @Override
     public ConsensusMessageSubmitTransaction get() {
         return new ConsensusMessageSubmitTransaction()
-                .setTopicId(topicId)
+                .setMaxTransactionFee(maxTransactionFee)
                 .setMessage(message != null ? message : getMessage())
-                .setTransactionMemo("Supplier HCS Topic Message_" + Instant.now())
-                .setMaxTransactionFee(maxTransactionFee);
+                .setTopicId(topicId)
+                .setTransactionMemo("Supplier HCS Topic Message_" + Instant.now());
     }
 
     private String getMessage() {

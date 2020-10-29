@@ -37,15 +37,16 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     //Optional
     @Builder.Default
     private final long amount = 1;
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
     @Override
     public TokenMintTransaction get() {
         return new TokenMintTransaction()
-                .setTokenId(tokenId)
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setTokenId(tokenId)
                 .setTransactionMemo("Supplier Associate token_" + Instant.now());
     }
 }

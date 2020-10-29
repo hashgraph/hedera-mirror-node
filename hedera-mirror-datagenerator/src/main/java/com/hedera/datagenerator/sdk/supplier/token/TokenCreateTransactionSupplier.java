@@ -37,36 +37,41 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     //Optional
     private final Ed25519PublicKey adminKey;
-    @Builder.Default
-    private final String symbol = "HMNT";
-    @Builder.Default
-    private final int initialSupply = 1000000000;
-    @Builder.Default
-    private boolean freezeDefault = false;
+
     @Builder.Default
     private int decimals = 10;
+
+    @Builder.Default
+    private boolean freezeDefault = false;
+
+    @Builder.Default
+    private final int initialSupply = 1000000000;
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
+
+    @Builder.Default
+    private final String symbol = "HMNT";
 
     @Override
     public TokenCreateTransaction get() {
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
-                .setSymbol(symbol)
-                .setName(symbol + "_name")
+                .setAutoRenewAccount(treasuryAccount)
                 .setDecimals(decimals)
                 .setInitialSupply(initialSupply)
-                .setAutoRenewAccount(treasuryAccount)
-                .setTreasury(treasuryAccount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Supplier Create token_" + Instant.now());
+                .setName(symbol + "_name")
+                .setSymbol(symbol)
+                .setTransactionMemo("Supplier Create token_" + Instant.now())
+                .setTreasury(treasuryAccount);
 
         if (adminKey != null) {
             tokenCreateTransaction
                     .setAdminKey(adminKey)
-                    .setSupplyKey(adminKey)
-                    .setWipeKey(adminKey)
                     .setFreezeKey(adminKey)
-                    .setKycKey(adminKey);
+                    .setKycKey(adminKey)
+                    .setSupplyKey(adminKey)
+                    .setWipeKey(adminKey);
         }
 
         return tokenCreateTransaction;

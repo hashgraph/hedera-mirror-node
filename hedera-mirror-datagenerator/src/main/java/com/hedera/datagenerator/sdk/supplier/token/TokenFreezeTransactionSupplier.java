@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenFreezeTransactionSupplier implements TransactionSupplier<TokenFreezeTransaction> {
     //Required
-    private final TokenId tokenId;
     private final AccountId accountId;
+    private final TokenId tokenId;
 
     //Optional
     @Builder.Default

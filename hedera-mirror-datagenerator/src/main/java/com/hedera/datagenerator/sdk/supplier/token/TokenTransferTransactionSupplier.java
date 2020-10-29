@@ -33,21 +33,22 @@ import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 @Value
 public class TokenTransferTransactionSupplier implements TransactionSupplier<TokenTransferTransaction> {
     //Required
-    private final TokenId tokenId;
-    private final AccountId senderId;
     private final AccountId recipientId;
+    private final AccountId senderId;
+    private final TokenId tokenId;
 
     //Optional
     @Builder.Default
     private final int amount = 1;
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
 
     @Override
     public TokenTransferTransaction get() {
         return new TokenTransferTransaction()
-                .addSender(tokenId, senderId, amount)
                 .addRecipient(tokenId, recipientId, amount)
+                .addSender(tokenId, senderId, amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Supplier Transfer token_" + Instant.now());
     }

@@ -9,9 +9,9 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,21 +33,21 @@ import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<CryptoTransferTransaction> {
 
     //Required
-    private final AccountId senderId;
     private final AccountId recipientId;
+    private final AccountId senderId;
 
     //Optional
     @Builder.Default
     private final long amount = 1;
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
 
     @Override
     public CryptoTransferTransaction get() {
         return new CryptoTransferTransaction()
-                .addSender(senderId, amount)
                 .addRecipient(recipientId, amount)
-                .setTransactionMemo("transfer test")
+                .addSender(senderId, amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Supplier crypto transfer_" + Instant.now());
     }

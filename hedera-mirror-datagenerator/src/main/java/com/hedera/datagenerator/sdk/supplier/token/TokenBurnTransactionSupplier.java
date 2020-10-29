@@ -37,15 +37,16 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
     //Optional
     @Builder.Default
     private final long amount = 1;
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
     @Override
     public TokenBurnTransaction get() {
         return new TokenBurnTransaction()
-                .setTokenId(tokenId)
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setTokenId(tokenId)
                 .setTransactionMemo("Supplier Burn token_" + Instant.now());
     }
 }

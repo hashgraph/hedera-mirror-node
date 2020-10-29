@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenGrantKYCTransactionSupplier implements TransactionSupplier<TokenGrantKycTransaction> {
     //Required
-    private final TokenId tokenId;
     private final AccountId accountId;
+    private final TokenId tokenId;
 
     //Optional
     @Builder.Default
@@ -44,8 +44,8 @@ public class TokenGrantKYCTransactionSupplier implements TransactionSupplier<Tok
     public TokenGrantKycTransaction get() {
         return new TokenGrantKycTransaction()
                 .setAccountId(accountId)
-                .setTokenId(tokenId)
                 .setMaxTransactionFee(maxTransactionFee)
+                .setTokenId(tokenId)
                 .setTransactionMemo("Supplier Grant kyc for token_" + Instant.now());
     }
 }

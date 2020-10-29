@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
 @Value
 public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<TokenRevokeKycTransaction> {
     //Required
-    private final TokenId tokenId;
     private final AccountId accountId;
+    private final TokenId tokenId;
 
     //Optional
     @Builder.Default
@@ -44,8 +44,8 @@ public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<To
     public TokenRevokeKycTransaction get() {
         return new TokenRevokeKycTransaction()
                 .setAccountId(accountId)
-                .setTokenId(tokenId)
                 .setMaxTransactionFee(1_000_000_000)
+                .setTokenId(tokenId)
                 .setTransactionMemo("Revoke kyc for token_" + Instant.now());
     }
 }

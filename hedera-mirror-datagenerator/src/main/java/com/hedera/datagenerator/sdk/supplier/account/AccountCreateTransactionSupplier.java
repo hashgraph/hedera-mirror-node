@@ -36,17 +36,18 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
 
     //Optional
-    private final Ed25519PublicKey publicKey;
     @Builder.Default
     private final long initialBalance = 10_000_000;
+
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
+    private final String publicKey;
 
     @Override
     public AccountCreateTransaction get() {
         return new AccountCreateTransaction()
-                .setKey(publicKey != null ? publicKey : generateKeys())
                 .setInitialBalance(initialBalance)
+                .setKey(publicKey != null ? Ed25519PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Supplier create account_" + Instant.now());
     }
