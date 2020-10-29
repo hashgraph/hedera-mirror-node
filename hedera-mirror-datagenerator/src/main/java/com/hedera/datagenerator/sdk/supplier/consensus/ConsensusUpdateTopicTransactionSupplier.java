@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -57,7 +58,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
                 .setExpirationTime(expirationTime)
                 .setTopicId(ConsensusTopicId.fromString(topicId))
-                .setTopicMemo("Mirror node updated test topic at " + Instant.now());
+                .setTopicMemo(Utility.getEncodedTimestamp() + "_Mirror node updated test topic at " + Instant.now());
 
         if (adminKey != null) {
             Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);

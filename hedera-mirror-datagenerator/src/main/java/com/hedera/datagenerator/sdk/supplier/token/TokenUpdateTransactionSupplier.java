@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
@@ -63,7 +64,8 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
                 .setName(symbol + "_name")
                 .setSybmol(symbol)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo("Mirror node updated test token at " + Instant.now());
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node updated test token at " + Instant
+                        .now());
 
         if (adminKey != null) {
             Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);

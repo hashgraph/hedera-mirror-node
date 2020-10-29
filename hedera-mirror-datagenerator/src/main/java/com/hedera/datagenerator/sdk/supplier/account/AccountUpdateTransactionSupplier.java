@@ -27,6 +27,7 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
@@ -63,7 +64,8 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
                 .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setReceiverSignatureRequired(receiverSignatureRequired)
-                .setTransactionMemo("Mirror node updated test account at " + Instant.now());
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node updated test account at " + Instant
+                        .now());
 
         if (proxyAccountId != null) {
             transaction.setProxyAccountId(AccountId.fromString(proxyAccountId));

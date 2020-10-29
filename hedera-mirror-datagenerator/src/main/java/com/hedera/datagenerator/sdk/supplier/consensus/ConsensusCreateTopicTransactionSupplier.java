@@ -24,6 +24,7 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
@@ -44,7 +45,7 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
     public ConsensusTopicCreateTransaction get() {
         ConsensusTopicCreateTransaction consensusTopicCreateTransaction = new ConsensusTopicCreateTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTopicMemo("Mirror node created test topic at " + Instant.now());
+                .setTopicMemo(Utility.getEncodedTimestamp() + "_Mirror node created test topic at " + Instant.now());
 
         if (adminKey != null) {
             Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);

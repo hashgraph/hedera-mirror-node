@@ -28,6 +28,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -53,16 +54,17 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
                 .setMaxTransactionFee(maxTransactionFee)
                 .setMessage(getMessage())
                 .setTopicId(ConsensusTopicId.fromString(topicId))
-                .setTransactionMemo("Mirror node submitted test message at " + Instant.now());
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node submitted test message at " + Instant
+                        .now());
     }
 
     private String getMessage() {
-        byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
         //If a custom message is entered, append the timestamp to the front and leave the message unaltered
         if (StringUtils.isNotBlank(message)) {
-            return Base64.encodeBase64String(timeRefBytes) + "_" + message;
+            return Utility.getEncodedTimestamp() + "_" + message;
         }
         //Generate a message from the timestamp and a random alphanumeric String
+        byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
         int additionalBytes = messageSize <= timeRefBytes.length ? 0 : messageSize - timeRefBytes.length;
         String randomAlphanumeric = RandomStringUtils.randomAlphanumeric(additionalBytes);
         return Base64.encodeBase64String(timeRefBytes) + randomAlphanumeric;

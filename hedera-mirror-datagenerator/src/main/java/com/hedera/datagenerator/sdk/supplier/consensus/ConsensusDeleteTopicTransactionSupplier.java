@@ -24,6 +24,7 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicDeleteTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -44,6 +45,7 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
         return new ConsensusTopicDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTopicId(ConsensusTopicId.fromString(topicId))
-                .setTransactionMemo("Mirror node deleted test topic at " + Instant.now());
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node deleted test topic at " + Instant
+                        .now());
     }
 }

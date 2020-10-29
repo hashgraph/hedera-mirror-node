@@ -24,6 +24,7 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenId;
@@ -46,6 +47,7 @@ public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<To
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo("Mirror node revoked kyc for test token at " + Instant.now());
+                .setTransactionMemo(Utility
+                        .getEncodedTimestamp() + "_Mirror node revoked kyc for test token at " + Instant.now());
     }
 }

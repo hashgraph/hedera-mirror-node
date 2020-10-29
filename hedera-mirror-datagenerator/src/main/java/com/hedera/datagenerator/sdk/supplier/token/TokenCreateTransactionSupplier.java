@@ -24,6 +24,7 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
@@ -64,7 +65,8 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setMaxTransactionFee(maxTransactionFee)
                 .setName(symbol + "_name")
                 .setSymbol(symbol)
-                .setTransactionMemo("Mirror node created test token at " + Instant.now())
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node created test token at " + Instant
+                        .now())
                 .setTreasury(treasuryAccoundId);
 
         if (adminKey != null) {

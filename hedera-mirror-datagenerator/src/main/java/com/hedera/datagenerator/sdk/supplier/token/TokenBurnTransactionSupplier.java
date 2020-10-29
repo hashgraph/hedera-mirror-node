@@ -24,6 +24,7 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.token.TokenBurnTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
@@ -47,6 +48,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo("Mirror node burned test token at " + Instant.now());
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node burned test token at " + Instant
+                        .now());
     }
 }

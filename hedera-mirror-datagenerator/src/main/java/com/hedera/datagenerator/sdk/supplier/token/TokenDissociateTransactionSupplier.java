@@ -24,6 +24,7 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenDissociateTransaction;
@@ -46,6 +47,7 @@ public class TokenDissociateTransactionSupplier implements TransactionSupplier<T
                 .addTokenId(TokenId.fromString(tokenId))
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Mirror node dissociated test token at " + Instant.now());
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node dissociated test token at " + Instant
+                        .now());
     }
 }

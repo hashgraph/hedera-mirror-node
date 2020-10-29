@@ -25,6 +25,7 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
@@ -49,7 +50,8 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
                 .setInitialBalance(initialBalance)
                 .setKey(publicKey != null ? Ed25519PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Mirror node created test account at " + Instant.now());
+                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node created test account at " + Instant
+                        .now());
     }
 
     private Ed25519PublicKey generateKeys() {
