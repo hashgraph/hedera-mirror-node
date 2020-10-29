@@ -50,7 +50,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: tokenId"
+          "message": "Invalid parameter: tokenid"
         }
       ]
     }

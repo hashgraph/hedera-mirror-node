@@ -30,6 +30,7 @@ const allTestModules = [
   require('./transaction_tests'),
   require('./stateproof_tests'),
   require('./topicmessage_tests'),
+  require('./token_tests'),
 ];
 
 const counters = {};
@@ -46,7 +47,11 @@ const counters = {};
 const runTests = (name, address) => {
   const counter = name in counters ? counters[name] : 0;
   const skippedResource = [];
-  const testModules = allTestModules.filter((testModule) => {
+  const enabledTestModules = allTestModules.filter((testModule) => {
+    const {enabled} = config[testModule.resource];
+    return enabled == null || enabled;
+  });
+  const testModules = enabledTestModules.filter((testModule) => {
     const {intervalMultiplier} = config[testModule.resource];
     if (counter % intervalMultiplier === 0) {
       return true;

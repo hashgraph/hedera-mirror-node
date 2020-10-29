@@ -30,20 +30,6 @@ const config = require('./config');
 const apiPrefix = '/api/v1';
 
 /**
- * Converts shard.realm.accountNumber to accountNumber
- * @param {String} shard.realm.accountNumber
- * @return {Number} accountNumber
- */
-const toAccNum = (accId) => Number(accId.split('.')[2]);
-
-/**
- * Converts accountNumber to shard.realm.accountNumber string
- * @param {Number} accountNumber
- * @return {String} shard.realm.accountNumber
- */
-const fromAccNum = (accNum) => `${config.shard}.0.${accNum}`;
-
-/**
  * Create and return the url for a rest api call
  * If running on a local server http is employed over https
  * @param {Object} server
@@ -240,10 +226,10 @@ const checkRespArrayLength = (elements, option) => {
   return {passed: true};
 };
 
-const checkAccountNumber = (elements, option) => {
-  const {accountNumber, message} = option;
+const checkAccountId = (elements, option) => {
+  const {accountId, message} = option;
   const element = Array.isArray(elements) ? elements[0] : elements;
-  if (element.account !== fromAccNum(accountNumber)) {
+  if (element.account !== accountId) {
     return {
       passed: false,
       message,
@@ -283,18 +269,37 @@ const checkRespDataFreshness = (resp, option) => {
   return {passed: true};
 };
 
-const checkConsensusTimestampOrder = (elements, option) => {
-  const {asc} = option;
-  let previous = asc ? '0' : 'A';
-  for (const element of elements) {
-    const timestamp = element.consensus_timestamp;
-    if (asc && timestamp <= previous) {
-      return {passed: false, message: 'consensus timestamps are not in ascending order'};
+const checkElementsOrder = (elements, option) => {
+  if (elements.length < 2) {
+    return {passed: true};
+  }
+
+  const {asc, compare, key, name} = option;
+  const getValue = (element) => (key ? element[key] : element);
+  const message = `${name} is not in ${asc ? 'ascending' : 'descending'} order`;
+
+  let comparator;
+  if (asc) {
+    if (compare) {
+      comparator = (cur, prev) => compare(cur, prev) === 1;
+    } else {
+      comparator = (cur, prev) => cur > prev;
     }
-    if (!asc && timestamp >= previous) {
-      return {passed: false, message: 'consensus timestamps are not in descending order'};
+  } else {
+    if (compare) {
+      comparator = (cur, prev) => compare(cur, prev) === -1;
+    } else {
+      comparator = (cur, prev) => cur < prev;
     }
-    previous = timestamp;
+  }
+
+  let previous = getValue(elements[0]);
+  for (const element of elements.slice(1)) {
+    const current = getValue(element);
+    if (!comparator(current, previous)) {
+      return {passed: false, message};
+    }
+    previous = current;
   }
 
   return {passed: true};
@@ -378,9 +383,30 @@ class CheckRunner {
   }
 }
 
+const accountIdCompare = (first, second) => {
+  const parseAccountId = (accountId) => accountId.split('.').map((part) => Number(part));
+
+  const firstParts = parseAccountId(first);
+  const secondParts = parseAccountId(second);
+
+  for (let i = 0; i < firstParts.length; i += 1) {
+    const firstPart = firstParts[i];
+    const secondPart = secondParts[i];
+
+    if (firstPart > secondPart) {
+      return 1;
+    }
+
+    if (firstPart < secondPart) {
+      return -1;
+    }
+  }
+
+  return 0;
+};
+
 module.exports = {
-  toAccNum,
-  fromAccNum,
+  accountIdCompare,
   getUrl,
   getAPIResponse,
   createFailedResultJson,
@@ -388,9 +414,9 @@ module.exports = {
   checkAPIResponseError,
   checkRespObjDefined,
   checkRespArrayLength,
-  checkAccountNumber,
+  checkAccountId,
   checkMandatoryParams,
-  checkConsensusTimestampOrder,
+  checkElementsOrder,
   checkResourceFreshness,
   CheckRunner,
   ServerTestResult,

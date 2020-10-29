@@ -27,14 +27,12 @@ const {
   checkAPIResponseError,
   checkRespObjDefined,
   checkRespArrayLength,
-  checkAccountNumber,
+  checkAccountId,
   checkMandatoryParams,
   checkResourceFreshness,
   getAPIResponse,
   getUrl,
-  fromAccNum,
   testRunner,
-  toAccNum,
   CheckRunner,
 } = require('./utils');
 
@@ -141,8 +139,8 @@ const getSingleBalanceById = async (server) => {
     return {url, ...result};
   }
 
-  const highestAcc = _.max(_.map(balances, (balance) => toAccNum(balance.account)));
-  url = getUrl(server, balancesPath, {'account.id': fromAccNum(highestAcc)});
+  const highestAccount = _.max(_.map(balances, (balance) => balance.account));
+  url = getUrl(server, balancesPath, {'account.id': highestAccount});
   const singleBalance = await getAPIResponse(url, jsonRespKey);
 
   result = new CheckRunner()
@@ -152,7 +150,7 @@ const getSingleBalanceById = async (server) => {
       limit: 1,
       message: (elements) => `balances.length of ${elements.length} was expected to be 1`,
     })
-    .withCheckSpec(checkAccountNumber, {accountNumber: highestAcc, message: 'Highest acc check was not found'})
+    .withCheckSpec(checkAccountId, {accountId: highestAccount, message: 'Highest acc check was not found'})
     .run(singleBalance);
   if (!result.passed) {
     return {url, ...result};

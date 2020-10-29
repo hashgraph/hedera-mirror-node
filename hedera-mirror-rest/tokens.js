@@ -268,8 +268,8 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
   let joinEntityClause = '';
   let whereClause = `where ${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`;
   let nextParamCount = 2;
-  let tsQueryWhereClause = '';
   const pgSqlParams = [tokenId.getEncodedId()];
+  const tsQueryWhereConditions = [];
 
   for (const filter of filters) {
     switch (filter.key) {
@@ -289,7 +289,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
       case constants.filterKeys.TIMESTAMP:
         // transform '=' operator for timestamp to '<='
         const op = filter.operator !== opsMap.eq ? filter.operator : opsMap.lte;
-        tsQueryWhereClause = `where ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${nextParamCount++}`;
+        tsQueryWhereConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${nextParamCount++}`);
         pgSqlParams.push(filter.value);
         break;
       default:
@@ -305,6 +305,8 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
     }
   }
 
+  const tsQueryWhereClause =
+    tsQueryWhereConditions.length === 0 ? '' : `where ${tsQueryWhereConditions.join(' and ')}`;
   whereClause = `${whereClause}
     and ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} = (
       select
