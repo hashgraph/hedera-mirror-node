@@ -35,6 +35,7 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Builder
 @Value
 public class TokenDissociateTransactionSupplier implements TransactionSupplier<TokenDissociateTransaction> {
+
     //Required
     private final String accountId;
     private final String tokenId;

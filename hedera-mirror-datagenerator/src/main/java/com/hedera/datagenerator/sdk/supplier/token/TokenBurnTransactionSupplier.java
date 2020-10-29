@@ -34,6 +34,7 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Builder
 @Value
 public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBurnTransaction> {
+
     //Required
     private final String tokenId;
 

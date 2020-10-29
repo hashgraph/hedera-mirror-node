@@ -35,6 +35,7 @@ import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 @Builder
 @Value
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
+
     //Required
     private final String treasuryAccountId;
 

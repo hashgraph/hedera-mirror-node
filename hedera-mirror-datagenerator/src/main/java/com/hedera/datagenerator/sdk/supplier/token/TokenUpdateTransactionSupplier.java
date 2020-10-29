@@ -38,6 +38,7 @@ import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 @Builder
 @Value
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
+
     //Required
     private final String tokenId;
 

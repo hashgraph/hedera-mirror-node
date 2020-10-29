@@ -34,6 +34,7 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Builder
 @Value
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
+
     //Required
     private final String tokenId;
 

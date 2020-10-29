@@ -35,6 +35,8 @@ import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
 @Builder
 @Value
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
+
+    //Required
     private final String accountId;
     private final String tokenId;
 

@@ -35,6 +35,7 @@ import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 @Builder
 @Value
 public class TokenTransferTransactionSupplier implements TransactionSupplier<TokenTransferTransaction> {
+
     //Required
     private final String recipientId;
     private final String senderId;

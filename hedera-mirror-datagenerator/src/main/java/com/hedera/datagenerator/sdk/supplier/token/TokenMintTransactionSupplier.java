@@ -34,6 +34,7 @@ import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 @Builder
 @Value
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
+
     //Required
     private final String tokenId;
 

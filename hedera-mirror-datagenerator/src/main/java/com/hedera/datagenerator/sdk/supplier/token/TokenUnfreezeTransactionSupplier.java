@@ -35,6 +35,7 @@ import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
 @Builder
 @Value
 public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<TokenUnfreezeTransaction> {
+
     //Required
     private final String accountId;
     private final String tokenId;

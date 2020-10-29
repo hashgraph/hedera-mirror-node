@@ -35,6 +35,7 @@ import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
 @Builder
 @Value
 public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<TokenRevokeKycTransaction> {
+
     //Required
     private final String accountId;
     private final String tokenId;
