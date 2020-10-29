@@ -44,7 +44,7 @@ public class TokenFreezeTransactionSupplier implements TransactionSupplier<Token
     public TokenFreezeTransaction get() {
         return new TokenFreezeTransaction()
                 .setAccountId(accountId)
-                .setMaxTransactionFee(1_000_000_000)
+                .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
                 .setTransactionMemo("Supplier Freeze token account_" + Instant.now());
     }

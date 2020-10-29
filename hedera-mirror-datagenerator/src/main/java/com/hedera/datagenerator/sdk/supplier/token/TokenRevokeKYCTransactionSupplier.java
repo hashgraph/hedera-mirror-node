@@ -44,7 +44,7 @@ public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<To
     public TokenRevokeKycTransaction get() {
         return new TokenRevokeKycTransaction()
                 .setAccountId(accountId)
-                .setMaxTransactionFee(1_000_000_000)
+                .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
                 .setTransactionMemo("Revoke kyc for token_" + Instant.now());
     }
