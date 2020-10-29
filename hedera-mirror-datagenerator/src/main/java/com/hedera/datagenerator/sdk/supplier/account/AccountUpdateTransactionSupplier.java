@@ -9,9 +9,9 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,9 +39,9 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
     //Required
     private final AccountId accountId;
-    private final Ed25519PublicKey publicKey;
 
     //Optional
+    private final Ed25519PublicKey publicKey;
     private final AccountId proxyAccountId;
     @Builder.Default
     private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
@@ -56,7 +56,6 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     public AccountUpdateTransaction get() {
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(accountId)
-                .setKey(publicKey)
                 .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setExpirationTime(expirationTime)
                 .setAutoRenewPeriod(autoRenewPeriod)
@@ -65,6 +64,9 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
         if (proxyAccountId != null) {
             transaction.setProxyAccountId(proxyAccountId);
+        }
+        if (publicKey != null) {
+            transaction.setKey(publicKey);
         }
         return transaction;
     }
