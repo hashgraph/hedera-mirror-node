@@ -32,7 +32,7 @@ import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 @Value
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
     //Required
-    private final TokenId tokenId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -46,7 +46,7 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
         return new TokenMintTransaction()
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(tokenId)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo("Mirror node minted test token at " + Instant.now());
     }
 }

@@ -34,8 +34,8 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicCreateTransaction> {
 
     //Optional
-    private final Ed25519PublicKey adminKey;
-    private final AccountId autoRenewAccountId;
+    private final String adminKey;
+    private final String autoRenewAccountId;
 
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
@@ -47,13 +47,14 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
                 .setTopicMemo("Mirror node created test topic at " + Instant.now());
 
         if (adminKey != null) {
+            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
             consensusTopicCreateTransaction
-                    .setAdminKey(adminKey)
-                    .setSubmitKey(adminKey);
+                    .setAdminKey(key)
+                    .setSubmitKey(key);
         }
         if (autoRenewAccountId != null) {
             consensusTopicCreateTransaction
-                    .setAutoRenewAccountId(autoRenewAccountId);
+                    .setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId));
         }
         return consensusTopicCreateTransaction;
     }

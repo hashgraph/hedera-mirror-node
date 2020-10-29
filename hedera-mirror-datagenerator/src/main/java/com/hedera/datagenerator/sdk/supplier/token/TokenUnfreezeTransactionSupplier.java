@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
 @Value
 public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<TokenUnfreezeTransaction> {
     //Required
-    private final AccountId accountId;
-    private final TokenId tokenId;
+    private final String accountId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -43,9 +43,9 @@ public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<Tok
     @Override
     public TokenUnfreezeTransaction get() {
         return new TokenUnfreezeTransaction()
-                .setAccountId(accountId)
+                .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(tokenId)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo("Mirror node unfroze test token at " + Instant.now());
     }
 }

@@ -35,21 +35,21 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
 
     //Required
-    private final AccountId accountId;
+    private final String accountId;
 
     //Optional
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
     @Builder.Default
-    private final AccountId transferAccountId = AccountId.fromString("0.0.2");
+    private final String transferAccountId = "0.0.2";
 
     @Override
     public AccountDeleteTransaction get() {
         return new AccountDeleteTransaction()
-                .setDeleteAccountId(accountId)
+                .setDeleteAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Mirror node deleted test account at " + Instant.now())
-                .setTransferAccountId(transferAccountId);
+                .setTransferAccountId(AccountId.fromString(transferAccountId));
     }
 }

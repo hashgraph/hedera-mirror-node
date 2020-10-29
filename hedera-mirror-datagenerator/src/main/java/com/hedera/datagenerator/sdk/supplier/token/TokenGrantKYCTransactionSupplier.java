@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenGrantKYCTransactionSupplier implements TransactionSupplier<TokenGrantKycTransaction> {
     //Required
-    private final AccountId accountId;
-    private final TokenId tokenId;
+    private final String accountId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -43,9 +43,9 @@ public class TokenGrantKYCTransactionSupplier implements TransactionSupplier<Tok
     @Override
     public TokenGrantKycTransaction get() {
         return new TokenGrantKycTransaction()
-                .setAccountId(accountId)
+                .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(tokenId)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo("Mirror node granted kyc to test token at " + Instant.now());
     }
 }

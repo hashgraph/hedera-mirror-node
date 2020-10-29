@@ -32,7 +32,7 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBurnTransaction> {
     //Required
-    private final TokenId tokenId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -46,7 +46,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
         return new TokenBurnTransaction()
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(tokenId)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo("Mirror node burned test token at " + Instant.now());
     }
 }

@@ -32,8 +32,8 @@ import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
 @Builder
 @Value
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
-    private final AccountId accountId;
-    private final TokenId tokenId;
+    private final String accountId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -45,10 +45,10 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
     @Override
     public TokenWipeTransaction get() {
         return new TokenWipeTransaction()
-                .setAccountId(accountId)
+                .setAccountId(AccountId.fromString(accountId))
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(tokenId)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo("Mirror node wiped test token at " + Instant.now());
     }
 }

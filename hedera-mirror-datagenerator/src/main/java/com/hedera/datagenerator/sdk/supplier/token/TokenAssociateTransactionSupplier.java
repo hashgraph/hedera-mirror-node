@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenAssociateTransactionSupplier implements TransactionSupplier<TokenAssociateTransaction> {
     //Required
-    private final AccountId accountId;
-    private final TokenId tokenId;
+    private final String accountId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -43,8 +43,8 @@ public class TokenAssociateTransactionSupplier implements TransactionSupplier<To
     @Override
     public TokenAssociateTransaction get() {
         return new TokenAssociateTransaction()
-                .addTokenId(tokenId)
-                .setAccountId(accountId)
+                .addTokenId(TokenId.fromString(tokenId))
+                .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Mirror node associated test token at " + Instant.now());
     }

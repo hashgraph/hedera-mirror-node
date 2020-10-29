@@ -37,17 +37,17 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicUpdateTransaction> {
 
     //Required
-    private final ConsensusTopicId topicId;
+    private final String topicId;
 
     //Optional
-    private final Ed25519PublicKey adminKey;
-    private final AccountId autoRenewAccountId;
+    private final String adminKey;
+    private final String autoRenewAccountId;
 
     @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    private final long autoRenewPeriodSeconds = 8000000;
 
     @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    private final long expirationTimeDays = 120;
 
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
@@ -55,19 +55,20 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     @Override
     public ConsensusTopicUpdateTransaction get() {
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
-                .setExpirationTime(expirationTime)
-                .setTopicId(topicId)
+                .setExpirationTime(Instant.now().plus(expirationTimeDays, ChronoUnit.DAYS))
+                .setTopicId(ConsensusTopicId.fromString(topicId))
                 .setTopicMemo("Mirror node updated test topic at " + Instant.now());
 
         if (adminKey != null) {
+            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
             consensusTopicUpdateTransaction
-                    .setAdminKey(adminKey)
-                    .setSubmitKey(adminKey);
+                    .setAdminKey(key)
+                    .setSubmitKey(key);
         }
         if (autoRenewAccountId != null) {
             consensusTopicUpdateTransaction
-                    .setAutoRenewAccountId(autoRenewAccountId)
-                    .setAutoRenewPeriod(autoRenewPeriod);
+                    .setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId))
+                    .setAutoRenewPeriod(Duration.ofSeconds(autoRenewPeriodSeconds));
         }
         return consensusTopicUpdateTransaction;
     }

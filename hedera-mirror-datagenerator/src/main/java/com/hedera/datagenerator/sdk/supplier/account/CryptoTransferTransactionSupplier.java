@@ -33,8 +33,8 @@ import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<CryptoTransferTransaction> {
 
     //Required
-    private final AccountId recipientId;
-    private final AccountId senderId;
+    private final String recipientId;
+    private final String senderId;
 
     //Optional
     @Builder.Default
@@ -46,8 +46,8 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Cr
     @Override
     public CryptoTransferTransaction get() {
         return new CryptoTransferTransaction()
-                .addRecipient(recipientId, amount)
-                .addSender(senderId, amount)
+                .addRecipient(AccountId.fromString(recipientId), amount)
+                .addSender(AccountId.fromString(senderId), amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Mirror node created test crypto transfer at " + Instant.now());
     }

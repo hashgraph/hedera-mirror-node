@@ -36,17 +36,17 @@ import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 @Value
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
     //Required
-    private final TokenId tokenId;
-    private final AccountId treasuryAccountId;
+    private final String tokenId;
+    private final String treasuryAccountId;
 
     //Optional
-    private final Ed25519PublicKey adminKey;
+    private final String adminKey;
 
     @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    private final long autoRenewPeriodSeconds = 8000000;
 
     @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    private final long expirationTime = 120;
 
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
@@ -57,26 +57,28 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     @Override
     public TokenUpdateTransaction get() {
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
-                .setAutoRenewPeriod(autoRenewPeriod)
-                .setExpirationTime(expirationTime)
+                .setAutoRenewPeriod(Duration.ofSeconds(autoRenewPeriodSeconds))
+                .setExpirationTime(Instant.now().plus(expirationTime, ChronoUnit.DAYS))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setName(symbol + "_name")
                 .setSybmol(symbol)
-                .setTokenId(tokenId)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo("Mirror node updated test token at " + Instant.now());
 
         if (adminKey != null) {
+            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
             tokenUpdateTransaction
-                    .setAdminKey(adminKey)
-                    .setFreezeKey(adminKey)
-                    .setKycKey(adminKey)
-                    .setSupplyKey(adminKey)
-                    .setWipeKey(adminKey);
+                    .setAdminKey(key)
+                    .setFreezeKey(key)
+                    .setKycKey(key)
+                    .setSupplyKey(key)
+                    .setWipeKey(key);
         }
         if (treasuryAccountId != null) {
+            AccountId treastury = AccountId.fromString(treasuryAccountId);
             tokenUpdateTransaction
-                    .setAutoRenewAccount(treasuryAccountId)
-                    .setTreasury(treasuryAccountId);
+                    .setAutoRenewAccount(treastury)
+                    .setTreasury(treastury);
         }
         return tokenUpdateTransaction;
     }

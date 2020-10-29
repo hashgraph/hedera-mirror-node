@@ -38,19 +38,19 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
 
     //Required
-    private final AccountId accountId;
+    private final String accountId;
 
     //Optional
     @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    private final long autoRenewPeriodSeconds = 8000000;
 
     @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    private final long expirationTimeDays = 120;
 
     @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
-    private final AccountId proxyAccountId;
-    private final Ed25519PublicKey publicKey;
+    private final String proxyAccountId;
+    private final String publicKey;
 
     @Builder.Default
     private final boolean receiverSignatureRequired = false;
@@ -58,18 +58,18 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     @Override
     public AccountUpdateTransaction get() {
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
-                .setAccountId(accountId)
-                .setAutoRenewPeriod(autoRenewPeriod)
-                .setExpirationTime(expirationTime)
+                .setAccountId(AccountId.fromString(accountId))
+                .setAutoRenewPeriod(Duration.ofSeconds(autoRenewPeriodSeconds))
+                .setExpirationTime(Instant.now().plus(expirationTimeDays, ChronoUnit.DAYS))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setTransactionMemo("Mirror node updated test account at " + Instant.now());
 
         if (proxyAccountId != null) {
-            transaction.setProxyAccountId(proxyAccountId);
+            transaction.setProxyAccountId(AccountId.fromString(proxyAccountId));
         }
         if (publicKey != null) {
-            transaction.setKey(publicKey);
+            transaction.setKey(Ed25519PublicKey.fromString(publicKey));
         }
         return transaction;
     }

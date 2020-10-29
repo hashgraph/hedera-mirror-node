@@ -33,9 +33,9 @@ import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 @Value
 public class TokenTransferTransactionSupplier implements TransactionSupplier<TokenTransferTransaction> {
     //Required
-    private final AccountId recipientId;
-    private final AccountId senderId;
-    private final TokenId tokenId;
+    private final String recipientId;
+    private final String senderId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -46,9 +46,10 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
 
     @Override
     public TokenTransferTransaction get() {
+        TokenId token = TokenId.fromString(tokenId);
         return new TokenTransferTransaction()
-                .addRecipient(tokenId, recipientId, amount)
-                .addSender(tokenId, senderId, amount)
+                .addRecipient(token, AccountId.fromString(recipientId), amount)
+                .addSender(token, AccountId.fromString(senderId), amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo("Mirror node transferred test token at " + Instant.now());
     }

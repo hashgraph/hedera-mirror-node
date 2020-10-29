@@ -33,7 +33,7 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 public class ConsensusDeleteTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicDeleteTransaction> {
 
     //Required
-    private final ConsensusTopicId topicId;
+    private final String topicId;
 
     //Optional
     @Builder.Default
@@ -43,7 +43,7 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
     public ConsensusTopicDeleteTransaction get() {
         return new ConsensusTopicDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTopicId(topicId)
+                .setTopicId(ConsensusTopicId.fromString(topicId))
                 .setTransactionMemo("Mirror node deleted test topic at " + Instant.now());
     }
 }

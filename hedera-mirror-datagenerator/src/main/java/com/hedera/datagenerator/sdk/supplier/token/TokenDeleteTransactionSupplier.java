@@ -32,7 +32,7 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
     //Required
-    private final TokenId tokenId;
+    private final String tokenId;
 
     //Optional
     @Builder.Default
@@ -42,7 +42,7 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
     public TokenDeleteTransaction get() {
         return new TokenDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(tokenId)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo("Mirror node deleted test token at " + Instant.now());
     }
 }

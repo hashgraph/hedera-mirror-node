@@ -36,7 +36,7 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
 
     //Required
-    private final ConsensusTopicId topicId;
+    private final String topicId;
 
     //Optional
     @Builder.Default
@@ -51,7 +51,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
         return new ConsensusMessageSubmitTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
                 .setMessage(message != null ? message : getMessage())
-                .setTopicId(topicId)
+                .setTopicId(ConsensusTopicId.fromString(topicId))
                 .setTransactionMemo("Mirror node submitted test message at " + Instant.now());
     }
 

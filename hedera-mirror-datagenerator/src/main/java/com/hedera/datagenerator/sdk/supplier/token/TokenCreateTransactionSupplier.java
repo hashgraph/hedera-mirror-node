@@ -33,10 +33,10 @@ import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 @Value
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
     //Required
-    private final AccountId treasuryAccount;
+    private final String treasuryAccount;
 
     //Optional
-    private final Ed25519PublicKey adminKey;
+    private final String adminKey;
 
     @Builder.Default
     private int decimals = 10;
@@ -55,8 +55,9 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     @Override
     public TokenCreateTransaction get() {
+        AccountId treasuryAccoundId = AccountId.fromString(treasuryAccount);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
-                .setAutoRenewAccount(treasuryAccount)
+                .setAutoRenewAccount(treasuryAccoundId)
                 .setDecimals(decimals)
                 .setInitialSupply(initialSupply)
                 .setFreezeDefault(freezeDefault)
@@ -64,15 +65,16 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setName(symbol + "_name")
                 .setSymbol(symbol)
                 .setTransactionMemo("Mirror node created test token at " + Instant.now())
-                .setTreasury(treasuryAccount);
+                .setTreasury(treasuryAccoundId);
 
         if (adminKey != null) {
+            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
             tokenCreateTransaction
-                    .setAdminKey(adminKey)
-                    .setFreezeKey(adminKey)
-                    .setKycKey(adminKey)
-                    .setSupplyKey(adminKey)
-                    .setWipeKey(adminKey);
+                    .setAdminKey(key)
+                    .setFreezeKey(key)
+                    .setKycKey(key)
+                    .setSupplyKey(key)
+                    .setWipeKey(key);
         }
 
         return tokenCreateTransaction;
