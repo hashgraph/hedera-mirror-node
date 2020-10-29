@@ -23,9 +23,11 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 
@@ -44,6 +46,12 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
 
     @Override
     public TokenMintTransaction get() {
+
+        if (StringUtils.isBlank(tokenId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires a tokenId be provided");
+        }
+
         return new TokenMintTransaction()
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)

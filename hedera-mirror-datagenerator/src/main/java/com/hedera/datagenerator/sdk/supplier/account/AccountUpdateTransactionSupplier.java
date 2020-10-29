@@ -26,9 +26,11 @@ import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
@@ -58,6 +60,12 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountUpdateTransaction get() {
+
+        if (StringUtils.isBlank(accountId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires an accountId be provided");
+        }
+
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setAutoRenewPeriod(autoRenewPeriod)

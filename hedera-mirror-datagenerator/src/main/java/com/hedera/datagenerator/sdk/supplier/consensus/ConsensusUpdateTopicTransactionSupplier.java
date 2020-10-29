@@ -25,9 +25,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicUpdateTransaction;
@@ -55,6 +57,12 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
 
     @Override
     public ConsensusTopicUpdateTransaction get() {
+
+        if (StringUtils.isBlank(topicId) || StringUtils.isBlank(autoRenewAccountId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires a topicId be provided");
+        }
+
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
                 .setExpirationTime(expirationTime)
                 .setTopicId(ConsensusTopicId.fromString(topicId))

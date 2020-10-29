@@ -23,9 +23,11 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
@@ -43,6 +45,12 @@ public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<To
 
     @Override
     public TokenRevokeKycTransaction get() {
+
+        if (StringUtils.isBlank(accountId) || StringUtils.isBlank(tokenId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires an accountId and a tokenId be provided");
+        }
+
         return new TokenRevokeKycTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)

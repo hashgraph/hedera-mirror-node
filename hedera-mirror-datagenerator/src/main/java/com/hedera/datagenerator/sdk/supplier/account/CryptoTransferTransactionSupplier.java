@@ -23,9 +23,11 @@ package com.hedera.datagenerator.sdk.supplier.account;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
 
@@ -46,6 +48,12 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Cr
 
     @Override
     public CryptoTransferTransaction get() {
+
+        if (StringUtils.isBlank(recipientId) || StringUtils.isBlank(senderId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires a recipientId and a senderId be provided");
+        }
+
         return new CryptoTransferTransaction()
                 .addRecipient(AccountId.fromString(recipientId), amount)
                 .addSender(AccountId.fromString(senderId), amount)

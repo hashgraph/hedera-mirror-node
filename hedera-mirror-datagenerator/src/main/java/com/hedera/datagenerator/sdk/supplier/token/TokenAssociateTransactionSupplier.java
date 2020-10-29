@@ -23,9 +23,11 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenAssociateTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
@@ -43,6 +45,12 @@ public class TokenAssociateTransactionSupplier implements TransactionSupplier<To
 
     @Override
     public TokenAssociateTransaction get() {
+
+        if (StringUtils.isBlank(accountId) || StringUtils.isBlank(tokenId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires an accountId and a tokenId be provided");
+        }
+
         return new TokenAssociateTransaction()
                 .addTokenId(TokenId.fromString(tokenId))
                 .setAccountId(AccountId.fromString(accountId))

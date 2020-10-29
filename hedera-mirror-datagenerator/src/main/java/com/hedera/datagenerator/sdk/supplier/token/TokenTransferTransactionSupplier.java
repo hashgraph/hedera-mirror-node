@@ -23,9 +23,11 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
@@ -47,6 +49,12 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
 
     @Override
     public TokenTransferTransaction get() {
+
+        if (StringUtils.isBlank(recipientId) || StringUtils.isBlank(senderId) || StringUtils.isBlank(tokenId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " has required attributes that have not been set");
+        }
+
         TokenId token = TokenId.fromString(tokenId);
         return new TokenTransferTransaction()
                 .addRecipient(token, AccountId.fromString(recipientId), amount)

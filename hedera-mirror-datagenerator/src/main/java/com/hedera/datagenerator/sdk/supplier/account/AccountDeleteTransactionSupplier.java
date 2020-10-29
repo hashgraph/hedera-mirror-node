@@ -24,9 +24,11 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.account.AccountId;
 
@@ -47,6 +49,12 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountDeleteTransaction get() {
+
+        if (StringUtils.isBlank(accountId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires an accountId be provided");
+        }
+
         return new AccountDeleteTransaction()
                 .setDeleteAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)

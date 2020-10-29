@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 
@@ -50,6 +51,12 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
     @Override
     public ConsensusMessageSubmitTransaction get() {
+
+        if (StringUtils.isBlank(topicId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires a topicId be provided");
+        }
+
         return new ConsensusMessageSubmitTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
                 .setMessage(getMessage())

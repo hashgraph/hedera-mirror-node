@@ -23,9 +23,11 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
@@ -34,7 +36,7 @@ import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 @Value
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
     //Required
-    private final String treasuryAccount;
+    private final String treasuryAccountId;
 
     //Optional
     private final String adminKey;
@@ -56,7 +58,13 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     @Override
     public TokenCreateTransaction get() {
-        AccountId treasuryAccoundId = AccountId.fromString(treasuryAccount);
+
+        if (StringUtils.isBlank(treasuryAccountId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires a treasuryAccountId be provided");
+        }
+
+        AccountId treasuryAccoundId = AccountId.fromString(treasuryAccountId);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
                 .setAutoRenewAccount(treasuryAccoundId)
                 .setDecimals(decimals)

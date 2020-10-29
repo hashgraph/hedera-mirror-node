@@ -25,9 +25,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
@@ -38,7 +40,6 @@ import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
     //Required
     private final String tokenId;
-    private final String treasuryAccountId;
 
     //Optional
     private final String adminKey;
@@ -54,9 +55,16 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
 
     @Builder.Default
     private final String symbol = "HMNT";
+    private final String treasuryAccountId;
 
     @Override
     public TokenUpdateTransaction get() {
+
+        if (StringUtils.isBlank(tokenId)) {
+            throw new TransactionSupplierException(this.getClass()
+                    .getName() + " requires a tokenId be provided");
+        }
+
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .setExpirationTime(expirationTime)
