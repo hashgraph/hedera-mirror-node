@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.sdk.supplier.hcs;
+package com.hedera.datagenerator.sdk.supplier.consensus;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.datagenerator.sdk.supplier.hcs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,52 +20,40 @@ package com.hedera.datagenerator.sdk.supplier.hcs;
  * ‍
  */
 
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Value;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicUpdateTransaction;
+import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Builder
 @Value
-public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicUpdateTransaction> {
-
-    //Required
-    private final ConsensusTopicId topicId;
+public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicCreateTransaction> {
 
     //Optional
     private final Ed25519PublicKey adminKey;
     private final AccountId autoRenewAccountId;
     @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
-    @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
-    @Builder.Default
     private final long maxTransactionFee = 1_000_000_000;
 
     @Override
-    public ConsensusTopicUpdateTransaction get() {
-        ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
-                .setTopicId(topicId)
-                .setTopicMemo("Supplier HCS Topic Update_" + Instant.now())
-                .setExpirationTime(expirationTime);
+    public ConsensusTopicCreateTransaction get() {
+        ConsensusTopicCreateTransaction consensusTopicCreateTransaction = new ConsensusTopicCreateTransaction()
+                .setMaxTransactionFee(maxTransactionFee)
+                .setTopicMemo("Supplier HCS Topic Create_" + Instant.now());
 
         if (adminKey != null) {
-            consensusTopicUpdateTransaction
+            consensusTopicCreateTransaction
                     .setAdminKey(adminKey)
                     .setSubmitKey(adminKey);
         }
         if (autoRenewAccountId != null) {
-            consensusTopicUpdateTransaction
-                    .setAutoRenewAccountId(autoRenewAccountId)
-                    .setAutoRenewPeriod(autoRenewPeriod);
+            consensusTopicCreateTransaction
+                    .setAutoRenewAccountId(autoRenewAccountId);
         }
-        return consensusTopicUpdateTransaction;
+        return consensusTopicCreateTransaction;
     }
 }
