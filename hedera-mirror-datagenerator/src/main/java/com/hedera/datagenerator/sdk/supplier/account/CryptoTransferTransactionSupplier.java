@@ -10,7 +10,7 @@ import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
 
 @Builder
 @Value
-public class AccountCryptoTransferTransactionSupplier implements TransactionSupplier<CryptoTransferTransaction> {
+public class CryptoTransferTransactionSupplier implements TransactionSupplier<CryptoTransferTransaction> {
 
     //Required
     private final AccountId senderId;
