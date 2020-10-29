@@ -46,6 +46,6 @@ public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<Tok
                 .setAccountId(accountId)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Supplier Unfreeze token account_" + Instant.now());
+                .setTransactionMemo("Mirror node unfroze test token at " + Instant.now());
     }
 }

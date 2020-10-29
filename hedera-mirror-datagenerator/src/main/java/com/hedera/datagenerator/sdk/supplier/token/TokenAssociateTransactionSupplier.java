@@ -46,6 +46,6 @@ public class TokenAssociateTransactionSupplier implements TransactionSupplier<To
                 .addTokenId(tokenId)
                 .setAccountId(accountId)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Associate token_" + Instant.now());
+                .setTransactionMemo("Mirror node associated test token at " + Instant.now());
     }
 }

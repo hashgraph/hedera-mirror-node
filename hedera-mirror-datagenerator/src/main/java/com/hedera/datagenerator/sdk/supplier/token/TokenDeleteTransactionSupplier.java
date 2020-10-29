@@ -43,6 +43,6 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
         return new TokenDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Supplier Delete token_" + Instant.now());
+                .setTransactionMemo("Mirror node deleted test token at " + Instant.now());
     }
 }

@@ -46,6 +46,6 @@ public class TokenDissociateTransactionSupplier implements TransactionSupplier<T
                 .addTokenId(tokenId)
                 .setAccountId(accountId)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Supplier Dissociate token_" + Instant.now());
+                .setTransactionMemo("Mirror node dissociated test token at " + Instant.now());
     }
 }

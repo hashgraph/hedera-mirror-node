@@ -49,7 +49,7 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
         return new AccountDeleteTransaction()
                 .setDeleteAccountId(accountId)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Supplier delete account_" + Instant.now())
+                .setTransactionMemo("Mirror node deleted test account at " + Instant.now())
                 .setTransferAccountId(transferAccountId);
     }
 }

@@ -47,6 +47,6 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Supplier Burn token_" + Instant.now());
+                .setTransactionMemo("Mirror node burned test token at " + Instant.now());
     }
 }

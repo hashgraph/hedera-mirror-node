@@ -52,7 +52,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
                 .setMaxTransactionFee(maxTransactionFee)
                 .setMessage(message != null ? message : getMessage())
                 .setTopicId(topicId)
-                .setTransactionMemo("Supplier HCS Topic Message_" + Instant.now());
+                .setTransactionMemo("Mirror node submitted test message at " + Instant.now());
     }
 
     private String getMessage() {

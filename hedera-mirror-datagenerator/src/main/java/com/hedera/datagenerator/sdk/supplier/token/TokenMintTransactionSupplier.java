@@ -47,6 +47,6 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Supplier Associate token_" + Instant.now());
+                .setTransactionMemo("Mirror node minted test token at " + Instant.now());
     }
 }

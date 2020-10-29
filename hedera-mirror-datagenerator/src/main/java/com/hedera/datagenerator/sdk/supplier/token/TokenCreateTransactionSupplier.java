@@ -63,7 +63,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setMaxTransactionFee(maxTransactionFee)
                 .setName(symbol + "_name")
                 .setSymbol(symbol)
-                .setTransactionMemo("Supplier Create token_" + Instant.now())
+                .setTransactionMemo("Mirror node created test token at " + Instant.now())
                 .setTreasury(treasuryAccount);
 
         if (adminKey != null) {

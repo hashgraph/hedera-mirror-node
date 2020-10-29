@@ -44,7 +44,7 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
     public ConsensusTopicCreateTransaction get() {
         ConsensusTopicCreateTransaction consensusTopicCreateTransaction = new ConsensusTopicCreateTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTopicMemo("Supplier HCS Topic Create_" + Instant.now());
+                .setTopicMemo("Mirror node created test topic at " + Instant.now());
 
         if (adminKey != null) {
             consensusTopicCreateTransaction

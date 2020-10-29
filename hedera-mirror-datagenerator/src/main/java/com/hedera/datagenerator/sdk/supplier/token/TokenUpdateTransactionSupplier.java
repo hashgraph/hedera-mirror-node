@@ -63,7 +63,7 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
                 .setName(symbol + "_name")
                 .setSybmol(symbol)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Supplier Update token_" + Instant.now());
+                .setTransactionMemo("Mirror node updated test token at " + Instant.now());
 
         if (adminKey != null) {
             tokenUpdateTransaction

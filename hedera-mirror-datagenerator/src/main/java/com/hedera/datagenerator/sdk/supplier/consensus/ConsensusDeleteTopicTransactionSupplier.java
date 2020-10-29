@@ -44,6 +44,6 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
         return new ConsensusTopicDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTopicId(topicId)
-                .setTransactionMemo("Supplier HCS Topic Create_" + Instant.now());
+                .setTransactionMemo("Mirror node deleted test topic at " + Instant.now());
     }
 }

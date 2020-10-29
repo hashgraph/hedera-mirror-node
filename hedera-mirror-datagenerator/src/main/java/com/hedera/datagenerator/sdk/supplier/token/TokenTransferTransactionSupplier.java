@@ -50,6 +50,6 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
                 .addRecipient(tokenId, recipientId, amount)
                 .addSender(tokenId, senderId, amount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Supplier Transfer token_" + Instant.now());
+                .setTransactionMemo("Mirror node transferred test token at " + Instant.now());
     }
 }

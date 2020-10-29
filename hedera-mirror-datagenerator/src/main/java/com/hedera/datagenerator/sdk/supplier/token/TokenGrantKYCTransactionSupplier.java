@@ -46,6 +46,6 @@ public class TokenGrantKYCTransactionSupplier implements TransactionSupplier<Tok
                 .setAccountId(accountId)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Supplier Grant kyc for token_" + Instant.now());
+                .setTransactionMemo("Mirror node granted kyc to test token at " + Instant.now());
     }
 }

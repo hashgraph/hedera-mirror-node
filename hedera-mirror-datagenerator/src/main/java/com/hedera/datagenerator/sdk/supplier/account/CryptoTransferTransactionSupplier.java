@@ -49,6 +49,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Cr
                 .addRecipient(recipientId, amount)
                 .addSender(senderId, amount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Supplier crypto transfer_" + Instant.now());
+                .setTransactionMemo("Mirror node created test crypto transfer at " + Instant.now());
     }
 }

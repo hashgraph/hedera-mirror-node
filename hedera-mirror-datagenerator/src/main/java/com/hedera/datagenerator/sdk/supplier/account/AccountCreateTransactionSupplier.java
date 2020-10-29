@@ -49,7 +49,7 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
                 .setInitialBalance(initialBalance)
                 .setKey(publicKey != null ? Ed25519PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo("Supplier create account_" + Instant.now());
+                .setTransactionMemo("Mirror node created test account at " + Instant.now());
     }
 
     private Ed25519PublicKey generateKeys() {

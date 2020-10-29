@@ -49,6 +49,6 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
                 .setAmount(amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Supplier Wipe token_" + Instant.now());
+                .setTransactionMemo("Mirror node wiped test token at " + Instant.now());
     }
 }

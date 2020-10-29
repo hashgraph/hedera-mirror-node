@@ -46,6 +46,6 @@ public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<To
                 .setAccountId(accountId)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(tokenId)
-                .setTransactionMemo("Revoke kyc for token_" + Instant.now());
+                .setTransactionMemo("Mirror node revoked kyc for test token at " + Instant.now());
     }
 }

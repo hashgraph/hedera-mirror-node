@@ -57,7 +57,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
                 .setExpirationTime(expirationTime)
                 .setTopicId(topicId)
-                .setTopicMemo("Supplier HCS Topic Update_" + Instant.now());
+                .setTopicMemo("Mirror node updated test topic at " + Instant.now());
 
         if (adminKey != null) {
             consensusTopicUpdateTransaction
