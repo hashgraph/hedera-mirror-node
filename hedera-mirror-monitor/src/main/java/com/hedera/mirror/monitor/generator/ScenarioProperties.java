@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.scenario;
+package com.hedera.mirror.monitor.generator;
 
 /*-
  * ‌

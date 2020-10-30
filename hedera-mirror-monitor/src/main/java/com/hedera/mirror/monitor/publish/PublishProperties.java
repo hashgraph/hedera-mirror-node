@@ -28,7 +28,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.monitor.scenario.ScenarioProperties;
+import com.hedera.mirror.monitor.generator.ScenarioProperties;
 
 @Data
 @Validated

@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.scenario;
+package com.hedera.mirror.monitor.generator;
 
 /*-
  * ‌
@@ -20,9 +20,11 @@ package com.hedera.mirror.monitor.scenario;
  * ‍
  */
 
-import com.hedera.mirror.monitor.publish.PublishRequest;
+public class ScenarioException extends RuntimeException {
 
-public interface Scenario {
+    private static final long serialVersionUID = 3538325614384119370L;
 
-    PublishRequest sample();
+    public ScenarioException(String message) {
+        super(message);
+    }
 }

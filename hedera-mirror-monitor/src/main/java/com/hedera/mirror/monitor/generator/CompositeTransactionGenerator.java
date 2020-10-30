@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.scenario;
+package com.hedera.mirror.monitor.generator;
 
 /*-
  * ‌
@@ -32,12 +32,12 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
 @Named
-public class CompositeScenario implements Scenario {
+public class CompositeTransactionGenerator implements TransactionGenerator {
 
-    private final EnumeratedDistribution<Scenario> distribution;
+    private final EnumeratedDistribution<TransactionGenerator> distribution;
 
-    public CompositeScenario(PublishProperties properties) {
-        List<Pair<Scenario, Double>> pairs = new ArrayList<>();
+    public CompositeTransactionGenerator(PublishProperties properties) {
+        List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
 
         double total = properties.getScenarios()
                 .stream()
@@ -48,7 +48,7 @@ public class CompositeScenario implements Scenario {
         for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
             if (scenarioProperties.isEnabled()) {
                 double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
-                pairs.add(Pair.create(new ConfigurableScenario(scenarioProperties), weight));
+                pairs.add(Pair.create(new ConfigurableTransactionGenerator(scenarioProperties), weight));
             }
         }
 
@@ -56,9 +56,9 @@ public class CompositeScenario implements Scenario {
     }
 
     @Override
-    public PublishRequest sample() {
+    public PublishRequest next() {
         try {
-            return distribution.sample().sample(); // TODO: Remove child supplier when limit or duration is reached
+            return distribution.sample().next(); // TODO: Remove child supplier when limit or duration is reached
         } catch (Exception e) {
             log.error("Unable to generate a transaction", e);
             throw e;

@@ -20,7 +20,6 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
@@ -28,39 +27,33 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.endpoint.MessageProducerSupport;
 import org.springframework.integration.endpoint.ReactiveMessageSourceProducer;
 import org.springframework.messaging.support.GenericMessage;
 
+import com.hedera.mirror.monitor.generator.TransactionGenerator;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
-import com.hedera.mirror.monitor.scenario.Scenario;
 
 @Log4j2
 @Configuration
 class MonitorConfiguration {
 
     @Resource
-    private TransactionPublisher transactionPublisher;
-
-    @Resource
-    private Scenario scenario;
-
-    @Resource
     private PublishProperties publishProperties;
+
+    @Resource
+    private TransactionGenerator transactionGenerator;
+
+    @Resource
+    private TransactionPublisher transactionPublisher;
 
     @Bean
     IntegrationFlow publishFlow() {
-        return IntegrationFlows.from(dataGenerator())
+        return IntegrationFlows
+                .from(new ReactiveMessageSourceProducer(() -> new GenericMessage<>(transactionGenerator.next())))
                 .channel(c -> c.executor(Executors.newFixedThreadPool(publishProperties.getConnections())))
                 .handle(PublishRequest.class, (p, h) -> transactionPublisher.publish(p))
-                .filter(Objects::nonNull)
                 .nullChannel();
-    }
-
-    @Bean
-    MessageProducerSupport dataGenerator() {
-        return new ReactiveMessageSourceProducer(() -> new GenericMessage<>(scenario.sample()));
     }
 }

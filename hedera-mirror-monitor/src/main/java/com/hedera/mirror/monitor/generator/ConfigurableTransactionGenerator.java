@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.scenario;
+package com.hedera.mirror.monitor.generator;
 
 /*-
  * ‌
@@ -29,7 +29,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
-public class ConfigurableScenario implements Scenario {
+public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     private final ScenarioProperties properties;
     private final TransactionSupplier<?> transactionSupplier;
@@ -38,7 +38,7 @@ public class ConfigurableScenario implements Scenario {
     private final long stopTime;
     private final PublishRequest.PublishRequestBuilder builder;
 
-    public ConfigurableScenario(ScenarioProperties properties) {
+    public ConfigurableTransactionGenerator(ScenarioProperties properties) {
         this.properties = properties;
         this.transactionSupplier = convert(properties);
         this.rateLimiter = RateLimiter.create(properties.getTps());
@@ -51,7 +51,7 @@ public class ConfigurableScenario implements Scenario {
     }
 
     @Override
-    public PublishRequest sample() {
+    public PublishRequest next() {
         if (remaining.get() <= 0) {
             throw new ScenarioException("Reached publish limit of " + properties.getLimit());
         }
