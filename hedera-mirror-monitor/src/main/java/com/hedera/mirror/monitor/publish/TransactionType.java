@@ -23,14 +23,14 @@ package com.hedera.mirror.monitor.publish;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.monitor.supplier.ConsensusSubmitMessageSupplier;
-import com.hedera.mirror.monitor.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.consensus.ConsensusSubmitMessageTransactionSupplier;
 
 @Getter
 @RequiredArgsConstructor
 public enum TransactionType {
 
-    CONSENSUS_SUBMIT_MESSAGE(ConsensusSubmitMessageSupplier.class);
+    CONSENSUS_SUBMIT_MESSAGE(ConsensusSubmitMessageTransactionSupplier.class);
 
     private final Class<? extends TransactionSupplier<?>> supplier;
 }

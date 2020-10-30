@@ -25,8 +25,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.publish.PublishRequest;
-import com.hedera.mirror.monitor.supplier.TransactionSupplier;
 
 @Log4j2
 public class ConfigurableScenario implements Scenario {
