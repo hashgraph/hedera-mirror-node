@@ -28,16 +28,17 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.util.Precision;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.LocalValidationException;
 
@@ -51,15 +52,22 @@ public class PublisherMetrics {
     private final AtomicLong counter = new AtomicLong(0L);
     private final Multiset<String> errors = ConcurrentHashMultiset.create();
     private final Stopwatch stopwatch = Stopwatch.createStarted();
-    private final Map<String, Timer> timers = new ConcurrentHashMap<>();
+    private final Map<Tags, Timer> timers = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
 
-    public PublishResponse record(Callable<PublishResponse> callable) {
+    @FunctionalInterface
+    public interface CheckedFunction<T, R> {
+        R apply(T t) throws Exception;
+    }
+
+    public PublishResponse record(PublishRequest publishRequest,
+                                  CheckedFunction<PublishRequest, PublishResponse> function) {
         long startTime = System.currentTimeMillis();
         String status = SUCCESS;
+        TransactionType type = publishRequest.getType();
 
         try {
-            PublishResponse response = callable.call();
+            PublishResponse response = function.apply(publishRequest);
             counter.incrementAndGet();
             return response;
         } catch (LocalValidationException e) {
@@ -68,17 +76,18 @@ public class PublisherMetrics {
         } catch (StatusRuntimeException e) {
             StatusRuntimeException sre = (StatusRuntimeException) e.getCause();
             String code = sre.getStatus().getCode().name();
-            log.debug("Network error {} submitting transaction: {}", code, sre.getStatus().getDescription());
+            log.debug("Network error {} submitting {} transaction: {}", code, type, sre.getStatus().getDescription());
             status = code;
         } catch (HederaStatusException e) {
-            log.debug("Hedera status error submitting transaction: {}", e.getMessage());
+            log.debug("Hedera status error submitting {} transaction: {}", type, e.getMessage());
             status = e.status.name();
         } catch (Exception e) {
-            log.debug("Unknown error submitting transaction: {}", e.getMessage());
+            log.debug("Unknown error submitting {} transaction: {}", type, e.getMessage());
             status = e.getClass().getSimpleName();
         } finally {
             long endTime = System.currentTimeMillis();
-            Timer timer = timers.computeIfAbsent(status, this::newTimer);
+            Tags tags = new Tags(status, type);
+            Timer timer = timers.computeIfAbsent(tags, this::newTimer);
             timer.record(endTime - startTime, TimeUnit.MILLISECONDS);
 
             if (!SUCCESS.equals(status)) {
@@ -89,10 +98,11 @@ public class PublisherMetrics {
         return null;
     }
 
-    private Timer newTimer(String status) {
+    private Timer newTimer(Tags tags) {
         return Timer.builder("hedera.mirror.monitor.publish")
                 .description("The time it takes to publish a transaction")
-                .tag("status", status)
+                .tag("status", tags.getStatus())
+                .tag("type", tags.getType().toString())
                 .register(meterRegistry);
     }
 
@@ -104,5 +114,11 @@ public class PublisherMetrics {
         Map<String, Integer> errorCounts = new HashMap<>();
         errors.forEachEntry((k, v) -> errorCounts.put(k, v));
         log.info("Published {} transactions in {} at {}/s. Errors: {}", count, stopwatch, rate, errorCounts);
+    }
+
+    @Value
+    private class Tags {
+        private final String status;
+        private final TransactionType type;
     }
 }

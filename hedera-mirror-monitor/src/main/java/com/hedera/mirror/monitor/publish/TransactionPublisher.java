@@ -79,7 +79,7 @@ public class TransactionPublisher {
             return null;
         }
 
-        return publisherMetrics.record(() -> doPublish(request));
+        return publisherMetrics.record(request, this::doPublish);
     }
 
     private PublishResponse doPublish(PublishRequest request) throws Exception {

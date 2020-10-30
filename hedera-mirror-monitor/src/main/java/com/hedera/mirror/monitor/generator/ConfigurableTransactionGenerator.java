@@ -52,7 +52,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     @Override
     public PublishRequest next() {
-        if (remaining.get() <= 0) {
+        if (remaining.getAndDecrement() <= 0) {
             throw new ScenarioException("Reached publish limit of " + properties.getLimit());
         }
 
@@ -61,8 +61,6 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         }
 
         rateLimiter.acquire();
-        remaining.decrementAndGet();
-
         return builder.transactionBuilder(transactionSupplier.get()).build();
     }
 
