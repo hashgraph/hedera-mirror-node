@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish;
 import lombok.Builder;
 import lombok.Value;
 
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TransactionBuilder;
 import com.hedera.hashgraph.sdk.TransactionId;
 

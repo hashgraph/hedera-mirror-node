@@ -58,7 +58,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     @Override
     public PublishRequest next() {
         try {
-            return distribution.sample().next(); // TODO: Remove child supplier when limit or duration is reached
+            return distribution.sample().next(); // TODO: Remove child generator when it completes
         } catch (Exception e) {
             log.error("Unable to generate a transaction", e);
             throw e;
