@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -57,6 +59,18 @@ public class TransactionPublisher {
             NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
             Client client = toClient(nodeProperties);
             clients.add(client);
+        }
+    }
+
+    @PreDestroy
+    public void close() {
+        log.info("Closing {} client connections", clients.size());
+
+        for (Client client : clients) {
+            try {
+                client.close(200, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+            }
         }
     }
 
