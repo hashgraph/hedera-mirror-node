@@ -72,8 +72,7 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
                 .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setReceiverSignatureRequired(receiverSignatureRequired)
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node updated test account at " + Instant
-                        .now());
+                .setTransactionMemo(Utility.getMemo("Mirror node updated test account"));
 
         if (proxyAccountId != null) {
             transaction.setProxyAccountId(AccountId.fromString(proxyAccountId));

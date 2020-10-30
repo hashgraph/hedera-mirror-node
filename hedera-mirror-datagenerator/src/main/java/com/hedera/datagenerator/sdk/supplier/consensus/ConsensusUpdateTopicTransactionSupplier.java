@@ -66,7 +66,8 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
                 .setExpirationTime(expirationTime)
                 .setTopicId(ConsensusTopicId.fromString(topicId))
-                .setTopicMemo(Utility.getEncodedTimestamp() + "_Mirror node updated test topic at " + Instant.now());
+                .setTopicMemo(Utility.getMemo("Mirror node created test topic"))
+                .setTransactionMemo(Utility.getMemo("Mirror node updated test topic"));
 
         if (adminKey != null) {
             Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);

@@ -20,7 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
-import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -58,7 +57,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Cr
                 .addRecipient(AccountId.fromString(recipientId), amount)
                 .addSender(AccountId.fromString(senderId), amount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo(Utility
-                        .getEncodedTimestamp() + "_Mirror node created test crypto transfer at " + Instant.now());
+                .setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
     }
 }

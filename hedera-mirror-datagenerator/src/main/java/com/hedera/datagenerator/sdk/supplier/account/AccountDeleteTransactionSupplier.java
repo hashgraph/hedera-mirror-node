@@ -20,7 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
-import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -58,8 +57,7 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
         return new AccountDeleteTransaction()
                 .setDeleteAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node deleted test account at " + Instant
-                        .now())
+                .setTransactionMemo(Utility.getMemo("Mirror node deleted test account"))
                 .setTransferAccountId(AccountId.fromString(transferAccountId));
     }
 }

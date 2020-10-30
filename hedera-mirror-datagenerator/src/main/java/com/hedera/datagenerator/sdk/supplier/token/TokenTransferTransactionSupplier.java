@@ -20,7 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -61,7 +60,6 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
                 .addRecipient(token, AccountId.fromString(recipientId), amount)
                 .addSender(token, AccountId.fromString(senderId), amount)
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node transferred test token at " + Instant
-                        .now());
+                .setTransactionMemo(Utility.getMemo("Mirror node transferred test token"));
     }
 }

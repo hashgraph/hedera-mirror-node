@@ -51,4 +51,9 @@ public class Utility {
     public static String getEncodedTimestamp() {
         return Base64.encodeBase64String(Longs.toByteArray(Instant.now().toEpochMilli()));
     }
+
+    public static String getMemo(String message) {
+        return getEncodedTimestamp() + "_" + message + " at " + Instant
+                .now();
+    }
 }

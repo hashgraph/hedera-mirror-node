@@ -20,7 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -53,7 +52,6 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
         return new TokenDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node deleted test token at " + Instant
-                        .now());
+                .setTransactionMemo(Utility.getMemo("Mirror node deleted test token"));
     }
 }

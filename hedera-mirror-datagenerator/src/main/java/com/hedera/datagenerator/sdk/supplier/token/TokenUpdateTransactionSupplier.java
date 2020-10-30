@@ -73,8 +73,7 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
                 .setName(symbol + "_name")
                 .setSybmol(symbol)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node updated test token at " + Instant
-                        .now());
+                .setTransactionMemo(Utility.getMemo("Mirror node updated test token"));
 
         if (adminKey != null) {
             Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);

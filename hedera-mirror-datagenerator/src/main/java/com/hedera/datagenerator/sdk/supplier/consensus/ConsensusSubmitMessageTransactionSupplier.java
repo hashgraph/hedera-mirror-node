@@ -60,8 +60,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
                 .setMaxTransactionFee(maxTransactionFee)
                 .setMessage(getMessage())
                 .setTopicId(ConsensusTopicId.fromString(topicId))
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node submitted test message at " + Instant
-                        .now());
+                .setTransactionMemo(Utility.getMemo("Mirror node submitted test message"));
     }
 
     private String getMessage() {

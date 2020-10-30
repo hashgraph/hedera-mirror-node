@@ -20,7 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
-import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -50,8 +49,7 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
                 .setInitialBalance(initialBalance)
                 .setKey(publicKey != null ? Ed25519PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(maxTransactionFee)
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node created test account at " + Instant
-                        .now());
+                .setTransactionMemo(Utility.getMemo("Mirror node created test account"));
     }
 
     private Ed25519PublicKey generateKeys() {

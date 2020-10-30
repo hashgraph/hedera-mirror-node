@@ -20,7 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -56,7 +55,6 @@ public class TokenFreezeTransactionSupplier implements TransactionSupplier<Token
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getEncodedTimestamp() + "_Mirror node froze test token at " + Instant
-                        .now());
+                .setTransactionMemo(Utility.getMemo("Mirror node froze test token"));
     }
 }
