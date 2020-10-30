@@ -24,7 +24,6 @@ import com.google.common.primitives.Longs;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -66,14 +65,15 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     }
 
     private String getMessage() {
+        String encodedTimestamp = Utility.getEncodedTimestamp();
         //If a custom message is entered, append the timestamp to the front and leave the message unaltered
         if (StringUtils.isNotBlank(message)) {
-            return Utility.getEncodedTimestamp() + "_" + message;
+            return encodedTimestamp + "_" + message;
         }
         //Generate a message from the timestamp and a random alphanumeric String
         byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
         int additionalBytes = messageSize <= timeRefBytes.length ? 0 : messageSize - timeRefBytes.length;
         String randomAlphanumeric = RandomStringUtils.randomAlphanumeric(additionalBytes);
-        return Base64.encodeBase64String(timeRefBytes) + randomAlphanumeric;
+        return encodedTimestamp + randomAlphanumeric;
     }
 }
