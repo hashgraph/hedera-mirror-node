@@ -21,12 +21,9 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -44,13 +41,5 @@ public class PublishProperties {
     private boolean enabled = true;
 
     @NotEmpty
-    private Set<NodeProperties> nodes = new LinkedHashSet<>();
-
-    @NotNull
-    private OperatorProperties operator = new OperatorProperties();
-
-    @NotEmpty
     private List<ScenarioProperties> scenarios = new ArrayList<>();
-
-    private boolean validateNodes = true;
 }

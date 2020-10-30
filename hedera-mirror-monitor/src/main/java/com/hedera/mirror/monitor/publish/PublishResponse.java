@@ -33,4 +33,5 @@ public class PublishResponse {
     private final TransactionRecord record;
     private final TransactionReceipt receipt;
     private final TransactionId transactionId;
+    private final TransactionType type;
 }

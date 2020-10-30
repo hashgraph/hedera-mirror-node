@@ -26,7 +26,6 @@ import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.channel.NullChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.endpoint.MessageProducerSupport;
@@ -40,7 +39,7 @@ import com.hedera.mirror.monitor.scenario.Scenario;
 
 @Log4j2
 @Configuration
-public class MonitorConfiguration {
+class MonitorConfiguration {
 
     @Resource
     private TransactionPublisher transactionPublisher;
@@ -63,10 +62,5 @@ public class MonitorConfiguration {
     @Bean
     MessageProducerSupport dataGenerator() {
         return new ReactiveMessageSourceProducer(() -> new GenericMessage<>(scenario.sample()));
-    }
-
-    @Bean
-    NullChannel errorChannel() {
-        return new NullChannel();
     }
 }

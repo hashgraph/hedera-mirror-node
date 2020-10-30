@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.publish;
+package com.hedera.mirror.monitor;
 
 /*-
  * ‌
@@ -20,26 +20,17 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-public class NodeProperties {
+public class OperatorProperties {
 
     @NotBlank
     private String accountId;
 
     @NotBlank
-    private String host;
-
-    @Min(0)
-    private int port = 50211;
-
-    public String getEndpoint() {
-        return host + ":" + port;
-    }
+    private String privateKey;
 }
-

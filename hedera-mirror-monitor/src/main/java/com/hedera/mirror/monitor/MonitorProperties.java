@@ -20,6 +20,9 @@ package com.hedera.mirror.monitor;
  * ‍
  */
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -29,11 +32,18 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.monitor")
 public class MonitorProperties {
 
-    private Network network = Network.TESTNET;
+    @NotNull
+    private HederaNetwork network = HederaNetwork.TESTNET;
 
-    public enum Network {
-        MAINNET,
-        PREVIEWNET,
-        TESTNET
+    @NotNull
+    private Set<NodeProperties> nodes = new LinkedHashSet<>();
+
+    @NotNull
+    private OperatorProperties operator = new OperatorProperties();
+
+    private boolean validateNodes = true;
+
+    public Set<NodeProperties> getNodes() {
+        return !nodes.isEmpty() ? nodes : network.getNodes();
     }
 }

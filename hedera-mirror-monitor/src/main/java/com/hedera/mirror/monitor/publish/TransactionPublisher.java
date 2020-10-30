@@ -24,10 +24,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.annotation.PostConstruct;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
@@ -35,30 +36,35 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.AccountInfoQuery;
 import com.hedera.hashgraph.sdk.crypto.PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.NodeProperties;
 
 @Log4j2
 @Named
+@RequiredArgsConstructor
 public class TransactionPublisher {
 
-    private final PublishProperties properties;
+    private final MonitorProperties monitorProperties;
+    private final PublishProperties publishProperties;
     private final PublisherMetrics publisherMetrics;
-    private final List<Client> clients;
+    private final List<Client> clients = new ArrayList<>();
 
-    public TransactionPublisher(PublishProperties properties, PublisherMetrics publisherMetrics) {
-        this.properties = properties;
-        this.publisherMetrics = publisherMetrics;
-        clients = new ArrayList<>();
-        List<NodeProperties> validNodes = validateNodes(properties);
-        Random random = new Random();
+    @PostConstruct
+    public void init() {
+        List<NodeProperties> validNodes = validateNodes();
 
-        for (int i = 0; i < properties.getConnections(); ++i) {
-            NodeProperties nodeProperties = validNodes.get(random.nextInt(validNodes.size()));
+        for (int i = 0; i < publishProperties.getConnections(); ++i) {
+            NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
             Client client = toClient(nodeProperties);
             clients.add(client);
         }
     }
 
     public PublishResponse publish(PublishRequest request) {
+        if (clients.isEmpty() || !publishProperties.isEnabled()) {
+            return null;
+        }
+
         return publisherMetrics.record(() -> doPublish(request));
     }
 
@@ -68,7 +74,9 @@ public class TransactionPublisher {
         Client client = clients.get(index);
 
         var transactionId = request.getTransactionBuilder().execute(client);
-        PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder().transactionId(transactionId);
+        PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
+                .transactionId(transactionId)
+                .type(request.getType());
 
         if (request.isRecord()) {
             var record = transactionId.getRecord(client);
@@ -83,10 +91,10 @@ public class TransactionPublisher {
         return response;
     }
 
-    private List<NodeProperties> validateNodes(PublishProperties properties) {
-        Set<NodeProperties> nodes = properties.getNodes();
+    private List<NodeProperties> validateNodes() {
+        Set<NodeProperties> nodes = monitorProperties.getNodes();
 
-        if (!properties.isValidateNodes()) {
+        if (!monitorProperties.isValidateNodes()) {
             return new ArrayList<>(nodes);
         }
 
@@ -116,8 +124,9 @@ public class TransactionPublisher {
 
     private Client toClient(NodeProperties nodeProperties) {
         AccountId nodeAccount = AccountId.fromString(nodeProperties.getAccountId());
-        AccountId operatorId = AccountId.fromString(properties.getOperator().getAccountId());
-        PrivateKey<?> operatorPrivateKey = Ed25519PrivateKey.fromString(properties.getOperator().getPrivateKey());
+        AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
+        PrivateKey<?> operatorPrivateKey = Ed25519PrivateKey
+                .fromString(monitorProperties.getOperator().getPrivateKey());
 
         Client client = new Client(Map.of(nodeAccount, nodeProperties.getEndpoint()));
         client.setOperator(operatorId, operatorPrivateKey);

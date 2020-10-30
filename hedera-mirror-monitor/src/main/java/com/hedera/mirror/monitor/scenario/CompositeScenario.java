@@ -23,12 +23,14 @@ package com.hedera.mirror.monitor.scenario;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Named;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
+@Log4j2
 @Named
 public class CompositeScenario implements Scenario {
 
@@ -55,6 +57,11 @@ public class CompositeScenario implements Scenario {
 
     @Override
     public PublishRequest sample() {
-        return distribution.sample().sample(); // TODO: Remove child supplier when limit or duration is reached
+        try {
+            return distribution.sample().sample(); // TODO: Remove child supplier when limit or duration is reached
+        } catch (Exception e) {
+            log.error("Unable to generate a transaction", e);
+            throw e;
+        }
     }
 }

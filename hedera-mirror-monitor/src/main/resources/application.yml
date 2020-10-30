@@ -1,24 +1,17 @@
 hedera:
   mirror:
     monitor:
+      network: TESTNET
+      operator:
+        accountId:
+        privateKey:
       publish:
         connections: 4
-        nodes:
-          - accountId: 0.0.3
-            host: 0.testnet.hedera.com
-          - accountId: 0.0.4
-            host: 1.testnet.hedera.com
-          - accountId: 0.0.5
-            host: 2.testnet.hedera.com
-          - accountId: 0.0.6
-            host: 3.testnet.hedera.com
-        operator:
-          accountId:
-          privateKey:
         scenarios:
           - name: HCS pinger
             properties:
               topicId:
+            record: true
             tps: 0.1
             type: CONSENSUS_SUBMIT_MESSAGE
 logging:

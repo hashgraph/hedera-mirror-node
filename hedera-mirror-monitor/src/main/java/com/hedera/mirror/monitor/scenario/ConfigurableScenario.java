@@ -20,11 +20,11 @@ package com.hedera.mirror.monitor.scenario;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.RateLimiter;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.monitor.converter.TransactionSupplierConverter;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.supplier.TransactionSupplier;
 
@@ -40,13 +40,14 @@ public class ConfigurableScenario implements Scenario {
 
     public ConfigurableScenario(ScenarioProperties properties) {
         this.properties = properties;
-        this.transactionSupplier = new TransactionSupplierConverter().convert(properties);
+        this.transactionSupplier = convert(properties);
         this.rateLimiter = RateLimiter.create(properties.getTps());
         remaining = new AtomicLong(properties.getLimit() > 0 ? properties.getLimit() : Long.MAX_VALUE);
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
                 .record(properties.isRecord())
-                .receipt(properties.isReceipt());
+                .receipt(properties.isReceipt())
+                .type(properties.getType());
     }
 
     @Override
@@ -63,5 +64,9 @@ public class ConfigurableScenario implements Scenario {
         remaining.decrementAndGet();
 
         return builder.transactionBuilder(transactionSupplier.get()).build();
+    }
+
+    private TransactionSupplier<?> convert(ScenarioProperties p) {
+        return new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
     }
 }
