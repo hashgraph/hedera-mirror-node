@@ -43,6 +43,8 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     //Optional
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
+
+    @Builder.Default
     private final String message = StringUtils.EMPTY;
 
     @Builder.Default
