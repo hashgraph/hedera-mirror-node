@@ -1,0 +1,65 @@
+hedera:
+  mirror:
+    monitor:
+      publish:
+        connections: 4
+        nodes:
+          - accountId: 0.0.3
+            host: 0.testnet.hedera.com
+          - accountId: 0.0.4
+            host: 1.testnet.hedera.com
+          - accountId: 0.0.5
+            host: 2.testnet.hedera.com
+          - accountId: 0.0.6
+            host: 3.testnet.hedera.com
+        operator:
+          accountId:
+          privateKey:
+        scenarios:
+          - name: HCS pinger
+            properties:
+              topicId:
+            tps: 0.1
+            type: CONSENSUS_SUBMIT_MESSAGE
+logging:
+  level:
+    root: warn
+    com.hedera.mirror.monitor: info
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, loggers, prometheus
+  metrics:
+    export:
+      elastic:
+        autoCreateIndex: false
+        enabled: false
+        index: mirror
+        step: 30s
+      prometheus:
+        step: 30s
+    tags:
+      application: ${spring.application.name}
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: ping
+server:
+  shutdown: graceful
+  port: 8082
+spring:
+  application:
+    name: hedera-mirror-monitor
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
