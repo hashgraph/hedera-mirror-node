@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +35,8 @@ import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 @Builder
 @Value
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
+
+    private static final List<String> requiredFields = Arrays.asList("tokenId");
 
     //Required
     private final String tokenId;
@@ -48,8 +52,7 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     public TokenMintTransaction get() {
 
         if (StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a tokenId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         return new TokenMintTransaction()

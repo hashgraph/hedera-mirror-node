@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -36,6 +38,8 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 @Log4j2
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
 
+    private static final List<String> requiredFields = Arrays.asList("accountId");
+
     //Required
     private final String accountId;
 
@@ -50,8 +54,7 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
     public AccountDeleteTransaction get() {
 
         if (StringUtils.isBlank(accountId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires an accountId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         return new AccountDeleteTransaction()

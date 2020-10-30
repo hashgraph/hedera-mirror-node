@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -35,9 +37,12 @@ import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 @Value
 public class TokenTransferTransactionSupplier implements TransactionSupplier<TokenTransferTransaction> {
 
+    private static final List<String> requiredFields = Arrays
+            .asList("recipientAccountId", "senderAccountId", "tokenId");
+
     //Required
-    private final String recipientId;
-    private final String senderId;
+    private final String recipientAccountId;
+    private final String senderAccountId;
     private final String tokenId;
 
     //Optional
@@ -50,15 +55,15 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
     @Override
     public TokenTransferTransaction get() {
 
-        if (StringUtils.isBlank(recipientId) || StringUtils.isBlank(senderId) || StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a recipientId, a senderId, and a tokenId be provided");
+        if (StringUtils.isBlank(recipientAccountId) || StringUtils.isBlank(senderAccountId) || StringUtils
+                .isBlank(tokenId)) {
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         TokenId token = TokenId.fromString(tokenId);
         return new TokenTransferTransaction()
-                .addRecipient(token, AccountId.fromString(recipientId), amount)
-                .addSender(token, AccountId.fromString(senderId), amount)
+                .addRecipient(token, AccountId.fromString(recipientAccountId), amount)
+                .addSender(token, AccountId.fromString(senderAccountId), amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo(Utility.getMemo("Mirror node transferred test token"));
     }

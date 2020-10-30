@@ -23,6 +23,8 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +40,8 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Builder
 @Value
 public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicUpdateTransaction> {
+
+    private static final List<String> requiredFields = Arrays.asList("topicId");
 
     //Required
     private final String topicId;
@@ -59,8 +63,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     public ConsensusTopicUpdateTransaction get() {
 
         if (StringUtils.isBlank(topicId) || StringUtils.isBlank(autoRenewAccountId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a topicId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()

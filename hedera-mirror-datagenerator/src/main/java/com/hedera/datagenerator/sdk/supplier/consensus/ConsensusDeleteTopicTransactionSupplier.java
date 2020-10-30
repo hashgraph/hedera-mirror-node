@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +36,8 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 @Value
 public class ConsensusDeleteTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicDeleteTransaction> {
 
+    private static final List<String> requiredFields = Arrays.asList("topicId");
+
     //Required
     private final String topicId;
 
@@ -45,8 +49,7 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
     public ConsensusTopicDeleteTransaction get() {
 
         if (StringUtils.isBlank(topicId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a topicId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         return new ConsensusTopicDeleteTransaction()

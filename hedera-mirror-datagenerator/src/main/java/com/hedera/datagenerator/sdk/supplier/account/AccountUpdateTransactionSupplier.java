@@ -23,6 +23,8 @@ package com.hedera.datagenerator.sdk.supplier.account;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -39,6 +41,8 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Value
 @Log4j2
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
+
+    private static final List<String> requiredFields = Arrays.asList("accountId");
 
     //Required
     private final String accountId;
@@ -62,8 +66,7 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     public AccountUpdateTransaction get() {
 
         if (StringUtils.isBlank(accountId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires an accountId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()

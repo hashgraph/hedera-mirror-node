@@ -23,6 +23,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +40,8 @@ import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 @Builder
 @Value
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
+
+    private static final List<String> requiredFields = Arrays.asList("tokenId");
 
     //Required
     private final String tokenId;
@@ -62,8 +66,7 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     public TokenUpdateTransaction get() {
 
         if (StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a tokenId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()

@@ -22,6 +22,8 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 
 import com.google.common.primitives.Longs;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -36,6 +38,8 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 @Builder
 @Value
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
+
+    private static final List<String> requiredFields = Arrays.asList("topicId");
 
     //Required
     private final String topicId;
@@ -54,8 +58,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     public ConsensusMessageSubmitTransaction get() {
 
         if (StringUtils.isBlank(topicId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a topicId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         return new ConsensusMessageSubmitTransaction()

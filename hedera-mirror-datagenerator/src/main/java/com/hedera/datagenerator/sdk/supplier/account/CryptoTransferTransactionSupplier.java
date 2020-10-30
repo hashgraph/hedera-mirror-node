@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -34,9 +36,11 @@ import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
 @Value
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<CryptoTransferTransaction> {
 
+    private static final List<String> requiredFields = Arrays.asList("recipientAccountId", "senderAccountId");
+
     //Required
-    private final String recipientId;
-    private final String senderId;
+    private final String recipientAccountId;
+    private final String senderAccountId;
 
     //Optional
     @Builder.Default
@@ -48,14 +52,13 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Cr
     @Override
     public CryptoTransferTransaction get() {
 
-        if (StringUtils.isBlank(recipientId) || StringUtils.isBlank(senderId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a recipientId and a senderId be provided");
+        if (StringUtils.isBlank(recipientAccountId) || StringUtils.isBlank(senderAccountId)) {
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         return new CryptoTransferTransaction()
-                .addRecipient(AccountId.fromString(recipientId), amount)
-                .addSender(AccountId.fromString(senderId), amount)
+                .addRecipient(AccountId.fromString(recipientAccountId), amount)
+                .addSender(AccountId.fromString(senderAccountId), amount)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
     }

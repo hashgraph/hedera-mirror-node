@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +36,8 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
 
+    private static final List<String> requiredFields = Arrays.asList("tokenId");
+
     //Required
     private final String tokenId;
 
@@ -45,8 +49,7 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
     public TokenDeleteTransaction get() {
 
         if (StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a tokenId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         return new TokenDeleteTransaction()

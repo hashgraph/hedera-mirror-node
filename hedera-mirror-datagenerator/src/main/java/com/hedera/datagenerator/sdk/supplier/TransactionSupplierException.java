@@ -18,10 +18,13 @@ package com.hedera.datagenerator.sdk.supplier;/*
  * ‍
  */
 
+import java.util.List;
+
 public class TransactionSupplierException extends RuntimeException {
     private static final long serialVersionUID = -7854869897581076679L;
+    private static final String MESSAGE = "%s requires %s be provided";
 
-    public TransactionSupplierException(String message) {
-        super(message);
+    public TransactionSupplierException(TransactionSupplier transactionSupplier, List<String> requiredFields) {
+        super(String.format(MESSAGE, transactionSupplier.getClass().getSimpleName(), requiredFields));
     }
 }

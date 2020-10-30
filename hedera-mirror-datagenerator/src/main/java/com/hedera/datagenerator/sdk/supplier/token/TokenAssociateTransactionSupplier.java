@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +37,8 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Value
 public class TokenAssociateTransactionSupplier implements TransactionSupplier<TokenAssociateTransaction> {
 
+    private static final List<String> requiredFields = Arrays.asList("accountId", "tokenId");
+
     //Required
     private final String accountId;
     private final String tokenId;
@@ -47,8 +51,7 @@ public class TokenAssociateTransactionSupplier implements TransactionSupplier<To
     public TokenAssociateTransaction get() {
 
         if (StringUtils.isBlank(accountId) || StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires an accountId and a tokenId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         return new TokenAssociateTransaction()

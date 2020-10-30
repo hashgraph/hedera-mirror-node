@@ -20,6 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +36,8 @@ import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 @Builder
 @Value
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
+
+    private static final List<String> requiredFields = Arrays.asList("treasuryAccountId");
 
     //Required
     private final String treasuryAccountId;
@@ -60,8 +64,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     public TokenCreateTransaction get() {
 
         if (StringUtils.isBlank(treasuryAccountId)) {
-            throw new TransactionSupplierException(this.getClass()
-                    .getSimpleName() + " requires a treasuryAccountId be provided");
+            throw new TransactionSupplierException(this, requiredFields);
         }
 
         AccountId treasuryAccoundId = AccountId.fromString(treasuryAccountId);
