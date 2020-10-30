@@ -28,12 +28,12 @@ import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.hashgraph.sdk.token.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
-import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
 
 @Builder
 @Value
-public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<TokenRevokeKycTransaction> {
+public class TokenGrantKycTransactionSupplier implements TransactionSupplier<TokenGrantKycTransaction> {
 
     //Required
     private final String accountId;
@@ -44,17 +44,17 @@ public class TokenRevokeKYCTransactionSupplier implements TransactionSupplier<To
     private final long maxTransactionFee = 1_000_000_000;
 
     @Override
-    public TokenRevokeKycTransaction get() {
+    public TokenGrantKycTransaction get() {
 
         if (StringUtils.isBlank(accountId) || StringUtils.isBlank(tokenId)) {
             throw new TransactionSupplierException(this.getClass()
                     .getSimpleName() + " requires an accountId and a tokenId be provided");
         }
 
-        return new TokenRevokeKycTransaction()
+        return new TokenGrantKycTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getMemo("Mirror node revoked kyc for test token"));
+                .setTransactionMemo(Utility.getMemo("Mirror node granted kyc to test token"));
     }
 }
