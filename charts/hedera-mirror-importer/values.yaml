@@ -84,6 +84,11 @@ readinessProbe:
   initialDelaySeconds: 60
   timeoutSeconds: 2
 
+redis:
+  sentinel:
+    enabled: false
+    port: 26379
+
 replicas: 1
 
 resources:
