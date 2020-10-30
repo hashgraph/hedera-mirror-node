@@ -51,7 +51,7 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
 
         if (StringUtils.isBlank(accountId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires an accountId be provided");
+                    .getSimpleName() + " requires an accountId be provided");
         }
 
         return new AccountDeleteTransaction()

@@ -50,7 +50,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Cr
 
         if (StringUtils.isBlank(recipientId) || StringUtils.isBlank(senderId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a recipientId and a senderId be provided");
+                    .getSimpleName() + " requires a recipientId and a senderId be provided");
         }
 
         return new CryptoTransferTransaction()

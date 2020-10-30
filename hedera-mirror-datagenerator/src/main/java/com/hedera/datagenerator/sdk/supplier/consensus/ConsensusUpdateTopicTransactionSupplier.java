@@ -60,7 +60,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
 
         if (StringUtils.isBlank(topicId) || StringUtils.isBlank(autoRenewAccountId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a topicId be provided");
+                    .getSimpleName() + " requires a topicId be provided");
         }
 
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()

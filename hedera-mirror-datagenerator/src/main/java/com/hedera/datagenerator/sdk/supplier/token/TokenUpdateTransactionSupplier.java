@@ -63,7 +63,7 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
 
         if (StringUtils.isBlank(tokenId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a tokenId be provided");
+                    .getSimpleName() + " requires a tokenId be provided");
         }
 
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()

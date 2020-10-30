@@ -46,7 +46,7 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
 
         if (StringUtils.isBlank(tokenId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a tokenId be provided");
+                    .getSimpleName() + " requires a tokenId be provided");
         }
 
         return new TokenDeleteTransaction()

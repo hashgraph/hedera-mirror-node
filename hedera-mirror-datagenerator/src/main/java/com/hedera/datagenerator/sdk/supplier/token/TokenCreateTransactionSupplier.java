@@ -61,7 +61,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
         if (StringUtils.isBlank(treasuryAccountId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a treasuryAccountId be provided");
+                    .getSimpleName() + " requires a treasuryAccountId be provided");
         }
 
         AccountId treasuryAccoundId = AccountId.fromString(treasuryAccountId);

@@ -49,7 +49,7 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
 
         if (StringUtils.isBlank(tokenId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a tokenId be provided");
+                    .getSimpleName() + " requires a tokenId be provided");
         }
 
         return new TokenMintTransaction()

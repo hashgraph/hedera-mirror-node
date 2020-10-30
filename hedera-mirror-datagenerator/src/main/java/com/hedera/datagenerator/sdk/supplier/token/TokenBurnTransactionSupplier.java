@@ -49,7 +49,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
 
         if (StringUtils.isBlank(tokenId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a tokenId be provided");
+                    .getSimpleName() + " requires a tokenId be provided");
         }
 
         return new TokenBurnTransaction()

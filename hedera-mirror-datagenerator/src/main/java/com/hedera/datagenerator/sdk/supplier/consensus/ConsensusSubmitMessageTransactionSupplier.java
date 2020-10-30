@@ -53,7 +53,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
         if (StringUtils.isBlank(topicId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a topicId be provided");
+                    .getSimpleName() + " requires a topicId be provided");
         }
 
         return new ConsensusMessageSubmitTransaction()

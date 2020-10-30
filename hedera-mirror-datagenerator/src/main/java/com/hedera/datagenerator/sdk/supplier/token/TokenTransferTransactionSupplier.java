@@ -52,7 +52,7 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
 
         if (StringUtils.isBlank(recipientId) || StringUtils.isBlank(senderId) || StringUtils.isBlank(tokenId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires a recipientId, a senderId, and a tokenId be provided");
+                    .getSimpleName() + " requires a recipientId, a senderId, and a tokenId be provided");
         }
 
         TokenId token = TokenId.fromString(tokenId);

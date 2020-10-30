@@ -51,7 +51,7 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
 
         if (StringUtils.isBlank(accountId) || StringUtils.isBlank(tokenId)) {
             throw new TransactionSupplierException(this.getClass()
-                    .getName() + " requires an accountId and a tokenId be provided");
+                    .getSimpleName() + " requires an accountId and a tokenId be provided");
         }
 
         return new TokenWipeTransaction()
