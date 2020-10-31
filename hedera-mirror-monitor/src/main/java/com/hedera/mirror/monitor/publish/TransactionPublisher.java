@@ -48,7 +48,7 @@ public class TransactionPublisher {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final PublisherMetrics publisherMetrics;
+    private final PublishMetrics publishMetrics;
     private final List<Client> clients = new ArrayList<>();
 
     @PostConstruct
@@ -79,7 +79,7 @@ public class TransactionPublisher {
             return null;
         }
 
-        return publisherMetrics.record(request, this::doPublish);
+        return publishMetrics.record(request, this::doPublish);
     }
 
     private PublishResponse doPublish(PublishRequest request) throws Exception {

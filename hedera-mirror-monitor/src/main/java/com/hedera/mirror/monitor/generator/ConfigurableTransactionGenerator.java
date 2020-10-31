@@ -48,6 +48,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
                 .record(properties.isRecord())
                 .receipt(properties.isReceipt())
                 .type(properties.getType());
+        log.info("Initializing scenario: {}", properties);
     }
 
     @Override

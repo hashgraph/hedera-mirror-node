@@ -34,7 +34,7 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 @Named
 public class CompositeTransactionGenerator implements TransactionGenerator {
 
-    private final EnumeratedDistribution<TransactionGenerator> distribution;
+    final EnumeratedDistribution<TransactionGenerator> distribution;
 
     public CompositeTransactionGenerator(PublishProperties properties) {
         List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();

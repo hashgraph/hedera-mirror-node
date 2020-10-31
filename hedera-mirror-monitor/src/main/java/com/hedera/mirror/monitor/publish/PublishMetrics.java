@@ -45,7 +45,7 @@ import com.hedera.hashgraph.sdk.LocalValidationException;
 @Log4j2
 @Named
 @RequiredArgsConstructor
-public class PublisherMetrics {
+public class PublishMetrics {
 
     private static final String SUCCESS = "SUCCESS";
 
@@ -56,7 +56,7 @@ public class PublisherMetrics {
     private final MeterRegistry meterRegistry;
 
     @FunctionalInterface
-    public interface CheckedFunction<T, R> {
+    interface CheckedFunction<T, R> {
         R apply(T t) throws Exception;
     }
 
