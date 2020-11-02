@@ -38,7 +38,6 @@ importer:
   enabled: true
   redis:
     sentinel:
-      enabled: true
       masterSet: mirror
 
 labels: {}

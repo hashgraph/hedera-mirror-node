@@ -35,10 +35,9 @@ spec:
               value: "true"
             - name: SPRING_CONFIG_ADDITIONAL_LOCATION
               value: "file:/usr/etc/hedera-mirror-importer/"
-            {{- if not .Values.redis.sentinel.enabled }}
             - name: SPRING_REDIS_HOST
               value: {{ include "hedera-mirror-importer.redis-host" . }}
-            {{- else }}
+            {{- if .Values.redis.sentinel.enabled }}
             - name: SPRING_REDIS_SENTINEL_MASTER
               value: {{ .Values.redis.sentinel.masterSet }}
             - name: SPRING_REDIS_SENTINEL_NODES

@@ -86,7 +86,7 @@ readinessProbe:
 
 redis:
   sentinel:
-    enabled: false
+    enabled: true
     port: 26379
 
 replicas: 1
