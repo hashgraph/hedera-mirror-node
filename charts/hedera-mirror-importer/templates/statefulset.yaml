@@ -37,6 +37,14 @@ spec:
               value: "file:/usr/etc/hedera-mirror-importer/"
             - name: SPRING_REDIS_HOST
               value: {{ include "hedera-mirror-importer.redis-host" . }}
+            {{- if .Values.redis.sentinel.enabled }}
+            - name: SPRING_REDIS_SENTINEL_MASTER
+              value: {{ .Values.redis.sentinel.masterSet }}
+            - name: SPRING_REDIS_SENTINEL_NODES
+              value: {{ print (include "hedera-mirror-importer.redis-host" .) ":" .Values.redis.sentinel.port }}
+            - name: SPRING_REDIS_SENTINEL_PASSWORD
+              value: {{ .Values.redis.sentinel.password | default .Values.global.redis.password }}
+            {{- end }}
             - name: SPRING_REDIS_PASSWORD
               value: {{ .Values.global.redis.password }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
