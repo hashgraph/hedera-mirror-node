@@ -29,7 +29,7 @@ grpc:
   enabled: true
   image:
     pullPolicy: Always
-    tag: 0.19.0-tdb
+    tag: 0.21.0-tdb
 
 importer:
   config:
@@ -53,7 +53,7 @@ importer:
       masterSet: mirror
   image:
     pullPolicy: Always
-    tag: 0.19.0-tdb
+    tag: 0.21.0-tdb
 
 labels: {}
 
