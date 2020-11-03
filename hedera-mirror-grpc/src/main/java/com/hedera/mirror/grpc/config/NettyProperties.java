@@ -20,22 +20,18 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
+import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMax;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
 public class NettyProperties {
-    @Min(1)
-    private int maxConcurrentCallsPerConnection = 5;
-
-    @Min(8) // 6 kb
-    private int maxInboundMessageSize = 6 * 1024;
-
-    @Min(8) // 1 kb
-    private int maxInboundMetadataSize = 1024;
 
     @Min(1)
     private int executorCoreThreadCount = 10;
@@ -43,6 +39,21 @@ public class NettyProperties {
     @Max(10000)
     private int executorMaxThreadCount = 1000;
 
-    @Max(60)
-    private long threadKeepAliveTime = 60;
+    @DurationMin(minutes = 1L)
+    @NotNull
+    private Duration maxConnectionIdle = Duration.ofMinutes(10L);
+
+    @Min(1)
+    private int maxConcurrentCallsPerConnection = 5;
+
+    @Min(8) // 1 kb
+    private int maxInboundMessageSize = 1024;
+
+    @Min(8) // 1 kb
+    private int maxInboundMetadataSize = 1024;
+
+    @DurationMin(minutes = 0L)
+    @DurationMax(minutes = 5L)
+    @NotNull
+    private Duration threadKeepAliveTime = Duration.ofMinutes(1L);
 }

@@ -5,6 +5,7 @@ grpc:
     local:
       address: in-process:local
   server:
+    enableKeepAlive: false
     inProcessName: local
 hedera:
   mirror:
