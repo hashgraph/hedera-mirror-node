@@ -20,10 +20,22 @@
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
         <jmeter.publishThreadCount></jmeter.publishThreadCount>
         <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
-        <cucumber.version>6.8.1</cucumber.version>
+        <cucumber.version>6.8.2</cucumber.version>
         <cucumber-reporting.version>4.0.84</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -34,8 +46,7 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <!-- grpc v 1.30.2 is the last known version that supports acceptance test running  -->
-            <version>1.30.2</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
@@ -237,7 +248,7 @@
                     <plugin>
                         <groupId>com.lazerycode.jmeter</groupId>
                         <artifactId>jmeter-maven-plugin</artifactId>
-                        <version>3.1.1</version>
+                        <version>3.1.2</version>
                         <executions>
                             <execution>
                                 <phase>integration-test</phase>

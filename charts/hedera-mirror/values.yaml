@@ -36,6 +36,9 @@ importer:
             password: mirror_node_pass
             username: mirror_node
   enabled: true
+  redis:
+    sentinel:
+      masterSet: mirror
 
 labels: {}
 

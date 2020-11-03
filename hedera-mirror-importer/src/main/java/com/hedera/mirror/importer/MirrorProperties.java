@@ -68,7 +68,7 @@ public class MirrorProperties {
     @RequiredArgsConstructor
     public enum HederaNetwork {
         DEMO("hedera-demo-streams"),
-        MAINNET("hedera-stable-mainnet-streams"),
+        MAINNET("hedera-mainnet-streams"),
         TESTNET("hedera-stable-testnet-streams-2020-08-27"),
         PREVIEWNET("hedera-preview-testnet-streams"),
         OTHER(""); // Pre-prod or ad hoc environments

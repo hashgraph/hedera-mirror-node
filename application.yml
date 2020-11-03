@@ -3,7 +3,6 @@
 #    importer:
 #      downloader:
 #        accessKey: {GOOG1E....}
-#        bucketName: {bucketName}
 #        cloudProvider: "GCP"
 #        gcpProjectId: {projectId}
 #        secretKey: {GOOG1E....}
