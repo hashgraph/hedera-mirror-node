@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor.publish;
 
 /*-
  * ‌
@@ -20,22 +20,18 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
-import java.util.Base64;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import lombok.Builder;
+import lombok.Value;
 
-@Log4j2
-@UtilityClass
-public class Utility {
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.TransactionBuilder;
+import com.hedera.hashgraph.sdk.TransactionId;
 
-    public static String getEncodedTimestamp() {
-        return Base64.getEncoder().encodeToString(Longs.toByteArray(Instant.now().toEpochMilli()));
-    }
-
-    public static String getMemo(String message) {
-        return getEncodedTimestamp() + "_" + message + " at " + Instant
-                .now();
-    }
+@Builder
+@Value
+public class PublishRequest {
+    private final boolean receipt;
+    private final boolean record;
+    private final TransactionBuilder<TransactionId, ?, ?> transactionBuilder;
+    private final TransactionType type;
 }

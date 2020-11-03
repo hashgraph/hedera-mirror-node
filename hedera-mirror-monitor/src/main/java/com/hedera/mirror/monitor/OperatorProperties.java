@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor;
 
 /*-
  * ‌
@@ -20,22 +20,17 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
-import java.util.Base64;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
+import org.springframework.validation.annotation.Validated;
 
-@Log4j2
-@UtilityClass
-public class Utility {
+@Data
+@Validated
+public class OperatorProperties {
 
-    public static String getEncodedTimestamp() {
-        return Base64.getEncoder().encodeToString(Longs.toByteArray(Instant.now().toEpochMilli()));
-    }
+    @NotBlank
+    private String accountId;
 
-    public static String getMemo(String message) {
-        return getEncodedTimestamp() + "_" + message + " at " + Instant
-                .now();
-    }
+    @NotBlank
+    private String privateKey;
 }

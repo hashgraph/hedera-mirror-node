@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor.config;
 
 /*-
  * ‌
@@ -20,22 +20,22 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
-import java.util.Base64;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
+import io.micrometer.core.instrument.binder.MeterBinder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@Log4j2
-@UtilityClass
-public class Utility {
+@Configuration
+public class MetricsConfiguration {
 
-    public static String getEncodedTimestamp() {
-        return Base64.getEncoder().encodeToString(Longs.toByteArray(Instant.now().toEpochMilli()));
+    @Bean
+    public MeterBinder processMemoryMetrics() {
+        return new ProcessMemoryMetrics();
     }
 
-    public static String getMemo(String message) {
-        return getEncodedTimestamp() + "_" + message + " at " + Instant
-                .now();
+    @Bean
+    public MeterBinder processThreadMetrics() {
+        return new ProcessThreadMetrics();
     }
 }

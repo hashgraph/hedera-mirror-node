@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor.generator;
 
 /*-
  * ‌
@@ -20,22 +20,9 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
-import java.util.Base64;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import com.hedera.mirror.monitor.publish.PublishRequest;
 
-@Log4j2
-@UtilityClass
-public class Utility {
+public interface TransactionGenerator {
 
-    public static String getEncodedTimestamp() {
-        return Base64.getEncoder().encodeToString(Longs.toByteArray(Instant.now().toEpochMilli()));
-    }
-
-    public static String getMemo(String message) {
-        return getEncodedTimestamp() + "_" + message + " at " + Instant
-                .now();
-    }
+    PublishRequest next();
 }
