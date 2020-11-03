@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.addressbook;
  * ‍
  */
 
-import static com.hedera.mirror.importer.repository.AddressBookRepository.ADDRESS_BOOK_CACHE_NAME;
-
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -90,7 +88,7 @@ public class AddressBookServiceImpl implements AddressBookService {
             log.error("Unable to parse address book", e);
         } finally {
             //Evict the cache regardless of errors
-            cacheManager.getCache(ADDRESS_BOOK_CACHE_NAME)
+            cacheManager.getCache(AddressBookRepository.ADDRESS_BOOK_CACHE_NAME)
                     .evict(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId());
         }
     }
