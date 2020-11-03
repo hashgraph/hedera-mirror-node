@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.addressbook;
  * ‍
  */
 
+import static com.hedera.mirror.importer.repository.AddressBookRepository.ADDRESS_BOOK_CACHE_NAME;
+
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -31,10 +33,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Resource;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -57,6 +63,10 @@ public class AddressBookServiceImpl implements AddressBookService {
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
 
+    @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE)
+    @Resource
+    CacheManager cacheManager;
+
     /**
      * Updates mirror node with new address book details provided in fileData object
      *
@@ -78,6 +88,10 @@ public class AddressBookServiceImpl implements AddressBookService {
             parse(fileData);
         } catch (Exception e) {
             log.error("Unable to parse address book", e);
+        } finally {
+            //Evict the cache regardless of errors
+            cacheManager.getCache(ADDRESS_BOOK_CACHE_NAME)
+                    .evict(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId());
         }
     }
 
@@ -90,7 +104,6 @@ public class AddressBookServiceImpl implements AddressBookService {
     public AddressBook getCurrent() {
         Instant now = Instant.now();
         long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
-
         return addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
                 .orElseThrow(() -> new IllegalStateException("No valid address book found in DB"));

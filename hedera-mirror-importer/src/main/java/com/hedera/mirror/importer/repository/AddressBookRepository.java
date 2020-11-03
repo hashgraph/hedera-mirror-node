@@ -20,13 +20,20 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.CacheConfiguration.NEVER_EXPIRE_LARGE;
+
 import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.AddressBook;
 
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
+    public static final String ADDRESS_BOOK_CACHE_NAME = "address_book";
+
+    @Cacheable(cacheNames = ADDRESS_BOOK_CACHE_NAME, cacheManager = NEVER_EXPIRE_LARGE, key =
+            "#encodedFileId", unless = "#result == null")
     @Query(value = "select * from address_book where start_consensus_timestamp <= ?1 and file_id = ?2 order by " +
             "start_consensus_timestamp desc limit 1", nativeQuery = true)
     Optional<AddressBook> findLatestAddressBook(long consensusTimestamp, long encodedFileId);
