@@ -10,11 +10,15 @@ hedera:
       port: 5600
 grpc:
   server:
+    enableKeepAlive: true
+    keepAliveTime: 5m
+    permitKeepAliveTime: 90s
     port: ${hedera.mirror.grpc.port}
 logging:
   level:
     root: warn
     com.hedera.mirror.grpc: info
+    # io.grpc: debug
     # org.hibernate.SQL: debug
     # org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
