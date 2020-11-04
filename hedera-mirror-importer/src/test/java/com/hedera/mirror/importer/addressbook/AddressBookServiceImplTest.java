@@ -146,7 +146,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void cacheAddressBook() {
+    void cacheAndEvictAddressBook() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         update(addressBookBytes, 1L, true);
 
