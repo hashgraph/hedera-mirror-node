@@ -59,6 +59,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${project.version}</docker.tag.version>
+        <embedded.testcontainers.version>1.85</embedded.testcontainers.version>
         <grpc-spring-boot.version>2.10.1.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.33.1</grpc.version>
         <hedera-protobuf.version>0.9.0-alpha5</hedera-protobuf.version>
@@ -73,7 +74,13 @@
         <protobuf.version>3.13.0</protobuf.version>
         <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.9.0-rc1</release.chartVersion>
-        <embedded.testcontainers.version>1.85</embedded.testcontainers.version>
+        <!--suppress UnresolvedMavenProperty -->
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${maven.multiModuleProjectDirectory}/hedera-mirror-coverage/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>hashgraph</sonar.organization>
+        <sonar.projectKey>${project.artifactId}</sonar.projectKey>
     </properties>
 
     <scm>
@@ -151,6 +158,7 @@
                         <!-- Jacoco prepare-agent builds some command-line params without -->
                         <!-- which jacoco will not instrument. Hence it is important to add -->
                         <!-- those command-line params here (${argLine} holds those params) -->
+                        <!--suppress UnresolvedMavenProperty -->
                         <argLine>${argLine} -Xms512m -Xmx1024m</argLine>
                     </configuration>
                 </plugin>
