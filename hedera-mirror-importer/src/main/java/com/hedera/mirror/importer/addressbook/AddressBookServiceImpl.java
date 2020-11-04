@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.addressbook;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.CacheConfiguration.NEVER_EXPIRE_LARGE;
+
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -31,14 +33,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Resource;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -57,13 +57,10 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+    public static final String ADDRESS_BOOK_CACHE_NAME = "address_book";
 
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
-
-    @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE)
-    @Resource
-    CacheManager cacheManager;
 
     /**
      * Updates mirror node with new address book details provided in fileData object
@@ -71,6 +68,8 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @param fileData file data entry containing address book bytes
      */
     @Override
+    @CacheEvict(cacheNames = ADDRESS_BOOK_CACHE_NAME, cacheManager = NEVER_EXPIRE_LARGE, key =
+            "#root.target.ADDRESS_BOOK_102_ENTITY_ID.getId()")
     public void update(FileData fileData) {
         if (!isAddressBook(fileData.getEntityId())) {
             log.warn("Not an address book File ID. Skipping processing ...");
@@ -81,16 +80,7 @@ public class AddressBookServiceImpl implements AddressBookService {
             log.warn("Byte array contents were empty. Skipping processing ...");
             return;
         }
-
-        try {
-            parse(fileData);
-        } catch (Exception e) {
-            log.error("Unable to parse address book", e);
-        } finally {
-            //Evict the cache regardless of errors
-            cacheManager.getCache(AddressBookRepository.ADDRESS_BOOK_CACHE_NAME)
-                    .evict(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId());
-        }
+        parse(fileData);
     }
 
     /**
@@ -99,6 +89,8 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @return returns AddressBook containing network node details
      */
     @Override
+    @Cacheable(cacheNames = ADDRESS_BOOK_CACHE_NAME, cacheManager = NEVER_EXPIRE_LARGE, key =
+            "#root.target.ADDRESS_BOOK_102_ENTITY_ID.getId()")
     public AddressBook getCurrent() {
         Instant now = Instant.now();
         long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());

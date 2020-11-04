@@ -51,20 +51,6 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 .isEqualTo(6L);
     }
 
-    @Test
-    void verifyCachingOnFind() {
-        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId101), 3, 4));
-        assertNull(cacheManager.getCache(AddressBookRepository.ADDRESS_BOOK_CACHE_NAME)
-                .get(addressBookEntityId101.getId()));
-        AddressBook addressBookDb = addressBookRepository
-                .findLatestAddressBook(7L, addressBookEntityId101.getId()).get();
-        AddressBook addressBookCache = (AddressBook) cacheManager
-                .getCache(AddressBookRepository.ADDRESS_BOOK_CACHE_NAME)
-                .get(addressBookEntityId101.getId()).get();
-        assertNotNull(addressBookCache);
-        assertThat(addressBookCache).isEqualTo(addressBookDb);
-    }
-
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer,
                                     long consensusTimestamp, int nodeCount) {
         long startConsensusTimestamp = consensusTimestamp + 1;
