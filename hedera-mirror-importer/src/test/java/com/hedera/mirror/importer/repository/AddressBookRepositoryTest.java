@@ -9,10 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.CacheManager;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -25,10 +22,6 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
 
     private final EntityId addressBookEntityId101 = EntityId.of("0.0.101", EntityTypeEnum.FILE);
     private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
-
-    @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE)
-    @Resource
-    CacheManager cacheManager;
 
     @Test
     void save() {
