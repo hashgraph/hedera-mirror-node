@@ -73,9 +73,9 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Resource
     private AddressBookService addressBookService;
 
-    @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE)
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
     @Resource
-    CacheManager cacheManager;
+    private CacheManager cacheManager;
 
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
@@ -151,20 +151,20 @@ class AddressBookServiceImplTest extends IntegrationTest {
         update(addressBookBytes, 1L, true);
 
         //verify cache is empty to start
-        assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_CACHE_NAME)
+        assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
                 .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
 
         //verify getCurrent() adds an entry to the cache
         AddressBook addressBookDb = addressBookService.getCurrent();
         AddressBook addressBookCache = (AddressBook) cacheManager
-                .getCache(AddressBookServiceImpl.ADDRESS_BOOK_CACHE_NAME)
+                .getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
                 .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()).get();
         assertNotNull(addressBookCache);
         assertThat(addressBookCache).isEqualTo(addressBookDb);
 
         //verify updating the address book evicts the cache.
         update(addressBookBytes, 2L, true);
-        assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_CACHE_NAME)
+        assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
                 .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
     }
 
