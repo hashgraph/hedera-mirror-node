@@ -32,7 +32,6 @@ import javax.inject.Named;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.DbProperties;
@@ -76,7 +75,6 @@ public class NotifyingTopicListener extends SharedTopicListener {
         channel = subscriber.channel("topic_message");
 
         topicMessages = Flux.defer(() -> listen())
-                .publishOn(Schedulers.boundedElastic())
                 .map(this::toTopicMessage)
                 .filter(Objects::nonNull)
                 .name("notify")

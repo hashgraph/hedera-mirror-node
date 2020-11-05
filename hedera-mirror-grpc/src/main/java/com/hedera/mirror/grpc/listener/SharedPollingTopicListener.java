@@ -58,9 +58,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         Duration frequency = listenerProperties.getFrequency();
         PollingContext context = new PollingContext();
 
-        topicMessages = Flux.defer(() -> poll(context)
-                .subscribeOn(scheduler)
-                .publishOn(Schedulers.boundedElastic()))
+        topicMessages = Flux.defer(() -> poll(context).subscribeOn(scheduler))
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
                         .fixedBackoff(frequency)
                         .withBackoffScheduler(scheduler))
