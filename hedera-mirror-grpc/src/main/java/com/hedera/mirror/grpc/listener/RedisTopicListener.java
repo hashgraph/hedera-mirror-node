@@ -36,7 +36,6 @@ import org.springframework.data.redis.serializer.RedisSerializationContext.Seria
 import org.springframework.data.redis.serializer.RedisSerializer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.GrpcProperties;
@@ -93,7 +92,6 @@ public class RedisTopicListener extends SharedTopicListener {
                 .map(Message::getMessage)
                 .name("redis")
                 .metrics()
-                .publishOn(Schedulers.boundedElastic())
                 .doOnCancel(() -> unsubscribe(topic))
                 .doOnComplete(() -> unsubscribe(topic))
                 .doOnError(t -> log.error("Error listening for messages", t))

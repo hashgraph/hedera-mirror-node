@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -44,7 +45,9 @@ public abstract class SharedTopicListener implements TopicListener {
                 .replay(1)
                 .autoConnect();
 
-        return getSharedListener(filter).doOnSubscribe(s -> log.info("Subscribing: {}", filter))
+        return getSharedListener(filter)
+                .publishOn(Schedulers.boundedElastic())
+                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
                 .doOnCancel(() -> processor.onNext("timeout"))
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
                 .timeout(timeoutFlux, message -> timeoutFlux, Mono.error(
