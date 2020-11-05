@@ -35,9 +35,12 @@ import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -70,13 +73,17 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Resource
     private AddressBookService addressBookService;
 
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
+    @Resource
+    private CacheManager cacheManager;
+
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
             long nodeId = 3 + i;
             builder.addNodeAddress(NodeAddress.newBuilder()
                     .setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
-                    .setPortno((int)nodeId)
+                    .setPortno((int) nodeId)
                     .setNodeId(nodeId)
                     .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
                     .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId))
@@ -139,6 +146,29 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    void cacheAndEvictAddressBook() {
+        byte[] addressBookBytes = UPDATED.toByteArray();
+        update(addressBookBytes, 1L, true);
+
+        //verify cache is empty to start
+        assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
+                .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
+
+        //verify getCurrent() adds an entry to the cache
+        AddressBook addressBookDb = addressBookService.getCurrent();
+        AddressBook addressBookCache = (AddressBook) cacheManager
+                .getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
+                .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()).get();
+        assertNotNull(addressBookCache);
+        assertThat(addressBookCache).isEqualTo(addressBookDb);
+
+        //verify updating the address book evicts the cache.
+        update(addressBookBytes, 2L, true);
+        assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
+                .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
+    }
+
+    @Test
     void updatePartialFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         int index = addressBookBytes.length / 2;
@@ -181,7 +211,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         assertEquals(1, addressBookRepository.count());
         assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository.count());
-
 
         AddressBook addressBook = addressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(6L);
@@ -302,7 +331,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(8L);
         assertAddressBook(addressBookService.getCurrent(), UPDATED);
 
-
         // 15 (101 update) + 12 (102 update)
         assertEquals(UPDATED.getNodeAddressCount() + FINAL
                 .getNodeAddressCount(), addressBookEntryRepository
@@ -364,7 +392,8 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         assertAddressBookData(addressBookBytes, 1L);
         AddressBook addressBook = addressBookService.getCurrent();
-        ListAssert<AddressBookEntry> listAssert = assertThat(addressBook.getEntries()).hasSize(nodeAddressBook.getNodeAddressCount());
+        ListAssert<AddressBookEntry> listAssert = assertThat(addressBook.getEntries())
+                .hasSize(nodeAddressBook.getNodeAddressCount());
         for (NodeAddress nodeAddress : nodeAddressBook.getNodeAddressList()) {
             listAssert.anySatisfy(abe -> {
                 assertThat(abe.getIp()).isEqualTo(nodeAddress.getIpAddress().toStringUtf8());
@@ -386,9 +415,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     private void assertAddressBook(AddressBook actual, NodeAddressBook expected) {
-        ListAssert<AddressBookEntry> listAssert = assertThat(actual.getEntries()).hasSize(expected.getNodeAddressCount());
+        ListAssert<AddressBookEntry> listAssert = assertThat(actual.getEntries())
+                .hasSize(expected.getNodeAddressCount());
 
-        for(NodeAddress nodeAddress : expected.getNodeAddressList()) {
+        for (NodeAddress nodeAddress : expected.getNodeAddressList()) {
             listAssert.anySatisfy(abe -> {
                 assertThat(abe.getIp()).isEqualTo(nodeAddress.getIpAddress().toStringUtf8());
                 assertThat(abe.getMemo()).isEqualTo(nodeAddress.getMemo().toStringUtf8());
