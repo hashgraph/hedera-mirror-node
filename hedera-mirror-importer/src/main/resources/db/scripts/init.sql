@@ -14,17 +14,29 @@ where not exists (select from pg_database where datname = :'db_name')\gexec
 
 do $$
 begin
-  create user mirror_node with login createrole password 'mirror_node_pass';
+  create user mirror_node with SUPERUSER password 'mirror_node_pass';
   exception when duplicate_object then
   raise notice 'not creating user mirror_node -- it already exists';
 end
 $$;
 
-create user :grpc_user with login password :'grpc_password';
+do $$
+begin
+  create user mirror_grpc with login createrole password 'mirror_grpc_pass';
+  exception when duplicate_object then
+  raise notice 'not creating user mirror_grpc -- it already exists';
+end
+$$;
 
 grant connect on database :db_name to :grpc_user;
 
-create user :rosetta_user with login password :'rosetta_password';
+do $$
+begin
+  create user mirror_rosetta with login createrole password 'mirror_rosetta_pass';
+  exception when duplicate_object then
+  raise notice 'not creating user mirror_rosetta -- it already exists';
+end
+$$;
 
 grant connect on database :db_name to :rosetta_user;
 

@@ -4,10 +4,15 @@
 
 # --------------------------  Clone Repository  -------------------------- #
 FROM ubuntu:18.04 as cloner
-RUN apt-get update && apt-get install -y git
-ARG GIT_BRANCH=master
-RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
-RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
+WORKDIR /hedera-mirror-node
+COPY . .
+
+## --------------------------  Clone Repository  -------------------------- #
+#FROM ubuntu:18.04 as cloner
+#RUN apt-get update && apt-get install -y git
+#ARG GIT_BRANCH=master
+#RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+#RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
 
 # ------------------------------  Rosetta  ------------------------------- #
 FROM golang:1.13 as rosetta-builder
@@ -62,7 +67,7 @@ USER postgres
 RUN /etc/init.d/postgresql start &&\
     createdb mirror_node &&\
     psql --command "create user mirror_node with SUPERUSER password 'mirror_node_pass'" &&\
-    PGPASSWORD=mirror_node_pass psql -d mirror_node -U mirror_node -h 127.0.0.1 -f /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init/init.sql
+    PGPASSWORD=mirror_node_pass psql -d mirror_node -U mirror_node -h 127.0.0.1 -f /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sql
 
 # And add ``listen_addresses`` to ``/etc/postgresql/9.6/main/postgresql.conf``
 RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
