@@ -78,7 +78,7 @@ public class CompositeTransactionGeneratorTest {
             assertThat(types.count(scenarioProperties.getType()))
                     .isNotNegative()
                     .isNotZero()
-                    .isCloseTo((int) scenarioProperties.getTps(), withinPercentage(20));
+                    .isCloseTo((int) scenarioProperties.getTps(), withinPercentage(40));
         }
     }
 
