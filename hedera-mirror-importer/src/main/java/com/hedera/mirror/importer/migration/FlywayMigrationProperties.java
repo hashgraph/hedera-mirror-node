@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.migration;
 
 /*-
  * ‌
@@ -20,28 +20,18 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-@Getter
-@RequiredArgsConstructor
-public enum EntityTypeEnum {
+@Data
+@Validated
+@ConfigurationProperties("hedera.mirror.importer.flyway.migration")
+public class FlywayMigrationProperties {
+    @NotNull
+    private int entityMismatchReadPageSize = 10000;
 
-    ACCOUNT(1),
-    CONTRACT(2),
-    FILE(3),
-    TOPIC(4),
-    TOKEN(5);
-
-    private final int id;
-
-    public static EntityTypeEnum fromId(int id) {
-        for (EntityTypeEnum entityTypeEnum : values()) {
-            if (entityTypeEnum.getId() == id) {
-                return entityTypeEnum;
-            }
-        }
-
-        return null;
-    }
+    @NotNull
+    private int entityMismatchWriteBatchSize = 1000;
 }
