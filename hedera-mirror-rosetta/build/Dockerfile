@@ -4,15 +4,10 @@
 
 # --------------------------  Clone Repository  -------------------------- #
 FROM ubuntu:18.04 as cloner
-WORKDIR /hedera-mirror-node
-COPY . .
-
-## --------------------------  Clone Repository  -------------------------- #
-#FROM ubuntu:18.04 as cloner
-#RUN apt-get update && apt-get install -y git
-#ARG GIT_BRANCH=master
-#RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
-#RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
+RUN apt-get update && apt-get install -y git
+ARG GIT_BRANCH=master
+RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
 
 # ------------------------------  Rosetta  ------------------------------- #
 FROM golang:1.13 as rosetta-builder
