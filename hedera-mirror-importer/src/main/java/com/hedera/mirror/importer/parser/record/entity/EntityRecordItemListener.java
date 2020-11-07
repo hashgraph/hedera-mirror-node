@@ -153,22 +153,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateTransaction(tx, recordItem);
         if (entityId != null) {
             tx.setEntityId(entityId);
-            // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since
-            // it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks).
-            entityListener.onEntityId(entityId);
-
-            if (isSuccessful && transactionHandler.updatesEntity()) {
-                updateEntity(recordItem, transactionHandler, entityId);
-            }
         }
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            // Don't add failed non-fee transfers as they can contain invalid data and we don't add failed
-            // transactions for aggregated transfers
-            if (isSuccessful) {
-                processNonFeeTransfers(consensusNs, body, txRecord);
-            }
-
             if (body.hasCryptoCreateAccount() && isSuccessful) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body);
             } else {
@@ -185,6 +172,20 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         if (isSuccessful) {
+            // Only add non-fee transfers on success as the data is assured to be valid
+            processNonFeeTransfers(consensusNs, body, txRecord);
+
+            if (entityId != null) {
+                // Only insert entityId on successful transaction, as non null entityIds can be retrieved from
+                // transactionBody which may not yet exist on network. entityIds from successful transactions are
+                // guaranteed to be valid entities on network (validated to exist in pre-consensus checks).
+                entityListener.onEntityId(entityId);
+
+                if (transactionHandler.updatesEntity()) {
+                    updateEntity(recordItem, transactionHandler, entityId);
+                }
+            }
+
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {

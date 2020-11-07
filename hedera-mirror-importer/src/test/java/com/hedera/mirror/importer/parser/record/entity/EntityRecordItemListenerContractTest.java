@@ -20,10 +20,10 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ShardID;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,14 +46,15 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
 
-    private static final ContractID contractId =
+    private static final ContractID CONTRACT_ID =
             ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1001).build();
-    private static final FileID fileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1002).build();
+    private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1002).build();
 
     @BeforeEach
     void before() throws Exception {
@@ -75,7 +75,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(1, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -100,7 +101,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(3, entityRepository.count()),
+                () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY)),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(0, liveHashRepository.count()),
@@ -126,7 +127,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(3, entityRepository.count()),
+                () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY)),
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(0, liveHashRepository.count()),
@@ -148,7 +149,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -178,7 +180,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY), EntityId.of(PROXY_UPDATE))
                 , () -> assertEquals(1, contractResultRepository.count())
                 , () -> assertEquals(6, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -199,7 +202,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PROXY_UPDATE), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -233,7 +237,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(1, contractResultRepository.count())
                 , () -> assertEquals(6, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -270,7 +275,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(1, contractResultRepository.count())
                 , () -> assertEquals(6, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -296,7 +302,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(4, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -317,13 +324,13 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(4, entityRepository.count())
+                , () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(0, fileDataRepository.count())
-                , () -> assertContractTransaction(transactionBody, record, false)
-                , () -> assertContractEntityHasNullFields(record.getConsensusTimestamp())
+                , () -> assertTransactionAndRecord(transactionBody, record)
+                , () -> assertThat(transactionBody.getContractDeleteInstance().getContractID()).isNotNull()
         );
     }
 
@@ -346,7 +353,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY), EntityId.of(PROXY))
                 , () -> assertEquals(2, contractResultRepository.count())
                 , () -> assertEquals(6, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -367,7 +375,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(4, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(1, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -387,12 +396,12 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(4, entityRepository.count()),
+                () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY)),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(0, liveHashRepository.count()),
                 () -> assertEquals(0, fileDataRepository.count()),
-                () -> assertContractTransaction(transactionBody, record, false)
+                () -> assertFailedContractCallTransaction(transactionBody, record)
         );
     }
 
@@ -407,12 +416,12 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(4, entityRepository.count()),
+                () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY)),
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(0, liveHashRepository.count()),
                 () -> assertEquals(0, fileDataRepository.count()),
-                () -> assertContractTransaction(transactionBody, record, false)
+                () -> assertFailedContractCallTransaction(transactionBody, record)
         );
     }
 
@@ -427,7 +436,8 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(4, entityRepository.count())
+                , () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -449,7 +459,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(3, entityRepository.count()), // payer, node, treasury
+                () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY)),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(0, liveHashRepository.count()),
@@ -474,6 +484,15 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
                 () -> assertNull(dbTransaction.getEntityId()),
                 () -> assertEquals(transactionBody.getContractCreateInstance().getInitialBalance(),
                         dbTransaction.getInitialBalance()));
+    }
+
+    private void assertFailedContractCallTransaction(TransactionBody transactionBody, TransactionRecord record) {
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        assertAll(
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertThat(dbTransaction.getEntityId()).isNotNull(),
+                () -> assertEquals(EntityId.of(transactionBody.getContractCall().getContractID()),
+                        dbTransaction.getEntityId()));
     }
 
     private void assertContractEntity(ContractCreateTransactionBody expected, Timestamp consensusTimestamp) {
@@ -536,7 +555,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
         return buildTransactionRecord(recordBuilder -> {
-            recordBuilder.getReceiptBuilder().setContractID(contractId);
+            recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
             buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
         }, transactionBody, status.getNumber());
     }
@@ -547,7 +566,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
     private TransactionRecord callRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
         return buildTransactionRecord(recordBuilder -> {
-            recordBuilder.getReceiptBuilder().setContractID(contractId);
+            recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
             buildContractFunctionResult(recordBuilder.getContractCallResultBuilder());
         }, transactionBody, status.getNumber());
     }
@@ -555,7 +574,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     private void buildContractFunctionResult(ContractFunctionResult.Builder builder) {
         builder.setBloom(ByteString.copyFromUtf8("bloom"));
         builder.setContractCallResult(ByteString.copyFromUtf8("call result"));
-        builder.setContractID(contractId);
+        builder.setContractID(CONTRACT_ID);
         builder.setErrorMessage("call error message");
         builder.setGasUsed(30);
         builder.addLogInfo(ContractLoginfo.newBuilder().addTopic(ByteString.copyFromUtf8("Topic")).build());
@@ -567,13 +586,12 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
             contractCreate.setAdminKey(keyFromString(KEY));
             contractCreate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(100).build());
             contractCreate.setConstructorParameters(ByteString.copyFromUtf8("Constructor Parameters"));
-            contractCreate.setFileID(fileId);
+            contractCreate.setFileID(FILE_ID);
             contractCreate.setGas(10000L);
             contractCreate.setInitialBalance(20000L);
             contractCreate.setMemo("Contract Memo");
             contractCreate.setNewRealmAdminKey(keyFromString(KEY2));
-            contractCreate.setProxyAccountID(
-                    AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1003).build());
+            contractCreate.setProxyAccountID(PROXY);
             contractCreate.setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build());
             contractCreate.setShardID(ShardID.newBuilder().setShardNum(0));
         });
@@ -584,24 +602,23 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
             ContractUpdateTransactionBody.Builder contractUpdate = builder.getContractUpdateInstanceBuilder();
             contractUpdate.setAdminKey(keyFromString(KEY));
             contractUpdate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(400).build());
-            contractUpdate.setContractID(contractId);
+            contractUpdate.setContractID(CONTRACT_ID);
             contractUpdate.setExpirationTime(Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
             contractUpdate.setFileID(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
             contractUpdate.setMemo("contract update memo");
-            contractUpdate.setProxyAccountID(
-                    AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3000).build());
+            contractUpdate.setProxyAccountID(PROXY_UPDATE);
         });
     }
 
     private Transaction contractDeleteTransaction() {
         return buildTransaction(builder -> {
             ContractDeleteTransactionBody.Builder contractDelete = builder.getContractDeleteInstanceBuilder();
-            contractDelete.setContractID(contractId);
+            contractDelete.setContractID(CONTRACT_ID);
         });
     }
 
     private Transaction contractCallTransaction() {
-        return contractCallTransaction(contractId);
+        return contractCallTransaction(CONTRACT_ID);
     }
 
     private Transaction contractCallTransaction(ContractID contractId) {

@@ -77,6 +77,14 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     protected static final AccountID PAYER =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build();
+    protected static final AccountID NODE =
+            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
+    protected static final AccountID TREASURY =
+            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(98).build();
+    protected static final AccountID PROXY =
+            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1003).build();
+    protected static final AccountID PROXY_UPDATE =
+            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3000).build();
     static final String TRANSACTION_MEMO = "transaction memo";
 
     @Resource
@@ -267,7 +275,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         recordBuilder.getReceiptBuilder().setStatusValue(status);
 
         // Give from payer to treasury and node
-        long[] transferAccounts = {PAYER.getAccountNum(), 98, 3};
+        long[] transferAccounts = {PAYER.getAccountNum(), TREASURY.getAccountNum(), NODE.getAccountNum()};
         long[] transferAmounts = {-2000, 1000, 1000};
         TransferList.Builder transferList = recordBuilder.getTransferListBuilder();
         for (int i = 0; i < transferAccounts.length; i++) {
@@ -349,6 +357,19 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         if (entityId != null) {
             assertThat(transaction)
                     .returns(entityId, t -> t.getEntityId().getId());
+        }
+    }
+
+    protected void assertEntities(EntityId... entityIds) {
+        if (entityIds == null) {
+            return;
+        }
+
+        assertEquals(entityIds.length, entityRepository.count());
+
+        // verify entities
+        for (EntityId entityId : entityIds) {
+            assertThat(entityRepository.findById(entityId.getId())).isPresent();
         }
     }
 }

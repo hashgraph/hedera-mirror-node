@@ -498,13 +498,12 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var runningHashVersion = 2;
         var chunkNum = 3;
         var chunkTotal = 5;
-        var payerAccountIdNum = 6L;
         var validStartNs = 7L;
 
         var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
-        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, PAYER.getAccountNum(),
                 TestUtils.toTimestamp(validStartNs));
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
                 runningHashVersion, consensusTimestamp, responseCode);
@@ -513,9 +512,41 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
-        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        AccountID payerAccountID = TestUtils.toTransactionId(TRANSACTION_ID).getAccountID();
+        assertEntities(entity.toEntityId(), EntityId.of(payerAccountID), EntityId.of(NODE));
         assertThat(entity).isEqualTo(topic);
         assertEquals(0L, topicMessageRepository.count());
+    }
+
+    @Test
+    void submitMessageToInvalidTopicEntityNotCreated() {
+        var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
+        var consensusTimestamp = 10_000_000L;
+        var message = "message";
+        var sequenceNumber = 10_000L;
+        var runningHash = "running-hash";
+        var runningHashVersion = 2;
+        var chunkNum = 3;
+        var chunkTotal = 5;
+        var payerAccountIdNum = 6L;
+        var validStartNs = 7L;
+
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
+        // Topic NOT saved in the repository.
+
+        createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
+                runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
+                TestUtils.toTimestamp(validStartNs));
+        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+
+        assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
+        AccountID payerAccountID = TestUtils.toTransactionId(TRANSACTION_ID).getAccountID();
+        assertEntities(EntityId.of(payerAccountID), EntityId.of(NODE));
+        assertEquals(0, topicMessageRepository.count());
     }
 
     private com.hederahashgraph.api.proto.java.Transaction createCreateTopicTransaction(
