@@ -1,6 +1,7 @@
 -- Change the values below if you are not installing via Docker
 
 \set db_name 'mirror_node'
+\set db_create 'create database mirror_node'
 \set db_user 'mirror_node'
 \set db_password 'mirror_node_pass'
 \set db_owner 'mirror_node'
@@ -26,7 +27,7 @@ begin
 end
 $$ language plpgsql;
 
-select 'create database mirror_node'
+select :'db_create'
 where not exists (select from pg_database where datname = :'db_name')\gexec
 
 select init_user(:'db_user', :'db_password');
