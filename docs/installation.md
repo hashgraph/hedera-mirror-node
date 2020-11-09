@@ -32,7 +32,7 @@ Run the script as a super user and check the output carefully to ensure no error
 
 #### PostgreSQL (V1)
 Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql`.
-Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, or `grpc_password` as appropriate.
+Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, `grpc_password`, `rosetta_user` or `rosetta_password` as appropriate.
 
 ```console
 psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql
