@@ -24,8 +24,8 @@ compile a runnable Mirror Node JAR file in the `target` directory.
 In addition to OpenJDK 11, you will need to install [PostgreSQL](https://postgresql.org) 9.6 and initialize it. The only
 setup required is to create the initial database and owner since [Flyway](https://flywaydb.org) manages the
 database schema. The SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init.sql` can be used to
-accomplish this. Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, or
-`grpc_password` as appropriate.
+accomplish this. Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, `grpc_password`,
+`rosetta_user` or `rosetta_password` as appropriate.
 Make sure the application [configuration](configuration.md) matches the values in the script. Run the script as a DB
 admin user and check the output carefully to ensure no errors occurred.
 

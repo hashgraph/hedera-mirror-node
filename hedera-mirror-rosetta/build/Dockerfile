@@ -61,8 +61,8 @@ USER postgres
 # Init db script
 RUN /etc/init.d/postgresql start &&\
     createdb mirror_node &&\
-    psql --command "create user mirror_node with SUPERUSER password 'mirror_node_pass'"&&\
-    POSTGRES_DB=mirror_node /hedera-mirror-node/hedera-mirror-grpc/scripts/db/init.sh
+    psql --command "create user mirror_node with SUPERUSER password 'mirror_node_pass'" &&\
+    PGPASSWORD=mirror_node_pass psql -d mirror_node -U mirror_node -h 127.0.0.1 -f /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sql
 
 # And add ``listen_addresses`` to ``/etc/postgresql/9.6/main/postgresql.conf``
 RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf

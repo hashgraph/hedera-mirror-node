@@ -6,9 +6,9 @@ hedera:
       db:
         host: 127.0.0.1
         name: mirror_node
-        password: mirror_node_pass
+        password: mirror_rosetta_pass
         port: 5432
-        username: mirror_node
+        username: mirror_rosetta
       online: true
       network: DEMO
       nodeVersion: 0
