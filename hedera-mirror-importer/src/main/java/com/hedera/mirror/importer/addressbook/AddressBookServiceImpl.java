@@ -91,7 +91,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @return returns AddressBook containing network node details
      */
     @Override
-    @Cacheable(key = "#root.target.ADDRESS_BOOK_102_ENTITY_ID.getId()")
+    @Cacheable
     public AddressBook getCurrent() {
         Instant now = Instant.now();
         long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());

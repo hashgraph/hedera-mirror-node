@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.interceptor.SimpleKey;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -152,20 +153,20 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         //verify cache is empty to start
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
-                .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
+                .get(SimpleKey.EMPTY));
 
         //verify getCurrent() adds an entry to the cache
         AddressBook addressBookDb = addressBookService.getCurrent();
         AddressBook addressBookCache = (AddressBook) cacheManager
                 .getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
-                .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()).get();
+                .get(SimpleKey.EMPTY).get();
         assertNotNull(addressBookCache);
         assertThat(addressBookCache).isEqualTo(addressBookDb);
 
         //verify updating the address book evicts the cache.
         update(addressBookBytes, 2L, true);
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
-                .get(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
+                .get(SimpleKey.EMPTY));
     }
 
     @Test

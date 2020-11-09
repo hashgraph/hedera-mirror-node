@@ -61,7 +61,7 @@ public class PublishMetrics {
     }
 
     public PublishResponse record(PublishRequest publishRequest,
-                                  CheckedFunction<PublishRequest, PublishResponse> function) {
+            CheckedFunction<PublishRequest, PublishResponse> function) {
         long startTime = System.currentTimeMillis();
         String status = SUCCESS;
         TransactionType type = publishRequest.getType();
@@ -75,15 +75,14 @@ public class PublishMetrics {
             throw e;
         } catch (StatusRuntimeException e) {
             StatusRuntimeException sre = (StatusRuntimeException) e.getCause();
-            String code = sre.getStatus().getCode().name();
-            log.debug("Network error {} submitting {} transaction: {}", code, type, sre.getStatus().getDescription());
-            status = code;
+            status = sre.getStatus().getCode().name();
+            log.debug("Network error {} submitting {} transaction: {}", status, type, sre.getStatus().getDescription());
         } catch (HederaStatusException e) {
-            log.debug("Hedera status error submitting {} transaction: {}", type, e.getMessage());
             status = e.status.name();
+            log.debug("Hedera {} error submitting {} transaction: {}", status, type, e.getMessage());
         } catch (Exception e) {
-            log.debug("Unknown error submitting {} transaction: {}", type, e.getMessage());
             status = e.getClass().getSimpleName();
+            log.debug("{} submitting {} transaction: {}", status, type, e.getMessage());
         } finally {
             long endTime = System.currentTimeMillis();
             Tags tags = new Tags(status, type);
