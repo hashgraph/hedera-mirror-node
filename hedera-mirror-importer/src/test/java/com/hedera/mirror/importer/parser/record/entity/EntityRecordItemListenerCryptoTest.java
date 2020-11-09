@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -82,7 +83,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count()) // accounts: node, treasury, payer, new crypto, proxy
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -107,7 +109,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(5, entityRepository.count()),
+                () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY)),
                 () -> assertEquals(5, cryptoTransferRepository.count()),
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(0, liveHashRepository.count()),
@@ -136,7 +139,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(3, entityRepository.count())
+                , () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -168,7 +171,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -196,7 +200,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(10, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -223,7 +228,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY), EntityId.of(PROXY_UPDATE))
                 , () -> assertEquals(8, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -334,7 +340,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(8, cryptoTransferRepository.count()) // 3 + 3 fee transfers + 2 for initial balance
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -364,7 +371,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(8, cryptoTransferRepository.count()) // 3 + 3 fee transfers + 2 for initial balance
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -397,7 +405,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(8, cryptoTransferRepository.count()) // 3 + 3 fee transfers + 2 for initial balance
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -430,7 +439,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(8, cryptoTransferRepository.count()) // 3 + 3 fee transfers + 2 for initial balance
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(1, liveHashRepository.count())
@@ -462,7 +472,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(8, cryptoTransferRepository.count()) // 3 + 3 fee transfers + 2 for initial balance
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -494,7 +505,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(3, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(11, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(1, liveHashRepository.count())
@@ -519,7 +531,11 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEntities(EntityId
+                        .of(String.format("0.0.%d", additionalTransfers[0]), EntityTypeEnum.ACCOUNT), EntityId
+                        .of(String.format("0.0.%d", additionalTransfers[1]), EntityTypeEnum.ACCOUNT), EntityId
+                        .of(PAYER), EntityId
+                        .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -540,6 +556,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE)),
                 () -> assertEquals(2, entityRepository.count()),
                 () -> assertEquals(0, cryptoTransferRepository.count()),
                 () -> assertEquals(0, contractResultRepository.count()),
@@ -561,7 +578,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(3, entityRepository.count(), "Payer, node and treasury"),
+                () -> assertEntities(EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY)),
                 () -> assertEquals(3, cryptoTransferRepository.count(), "Node and network fee"),
                 () -> assertEquals(0, nonFeeTransferRepository.count()),
                 () -> assertEquals(0, contractResultRepository.count()),
@@ -635,7 +652,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
                 .setNewRealmAdminKey(keyFromString(
                         "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
-                .setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3))
+                .setProxyAccountID(PROXY)
                 .setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build())
                 .setShardID(ShardID.newBuilder().setShardNum(0))
                 .setReceiveRecordThreshold(2000L)
@@ -649,7 +666,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setInitialBalance(INITIAL_BALANCE)
                 .setKey(keyFromString(KEY))
                 .setNewRealmAdminKey(keyFromString(KEY2))
-                .setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3))
+                .setProxyAccountID(PROXY)
                 .setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build())
                 .setShardID(ShardID.newBuilder().setShardNum(0))
                 .setReceiveRecordThreshold(2000L)
@@ -663,7 +680,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(5001L))
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
-                .setProxyAccountID(AccountID.newBuilder().setShardNum(5).setRealmNum(6).setAccountNum(8))
+                .setProxyAccountID(PROXY_UPDATE)
                 .setReceiveRecordThreshold(5001L)
                 .setReceiverSigRequired(false)
                 .setSendRecordThreshold(6001L));
