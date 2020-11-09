@@ -45,6 +45,7 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
+import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
@@ -365,11 +366,13 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             return;
         }
 
-        assertEquals(entityIds.length, entityRepository.count());
+        IterableAssert<Entities> entitiesIterableAssert = assertThat(entityRepository.findAll())
+                .hasSize(entityIds.length)
+                .allMatch(entity -> entity.getId() > 0)
+                .allMatch(entity -> entity.getEntityTypeId() != null);
 
-        // verify entities
-        for (EntityId entityId : entityIds) {
-            assertThat(entityRepository.findById(entityId.getId())).isPresent();
-        }
+        entitiesIterableAssert
+                .extracting(Entities::toEntityId)
+                .containsExactlyInAnyOrder(entityIds);
     }
 }

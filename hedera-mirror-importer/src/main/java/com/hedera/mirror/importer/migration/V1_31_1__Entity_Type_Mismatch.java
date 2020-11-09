@@ -44,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.exception.MigrationSQLException;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -60,12 +61,13 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
     private final String TRANSACTION_MAX_ENTITY_ID_SQL = "select max(entity_id) from transaction where entity_id is " +
             "not null";
     private final String CREATED_ENTITIES_TRANSACTION_SQL = "select  e.id, e.fk_entity_type_id, t.type, " +
-            "t.consensus_ns from t_entities e join transaction t on (e.id = t.entity_id and t.result = 22 and t" +
-            ".type " +
-            "in (8,11,17,24,29)) where e.id < ? and t.consensus_ns < ? order by id desc, consensus_ns desc limit ?";
+            "t.consensus_ns from t_entities e join transaction t on (e.id = t.entity_id and t.result = 22 and " +
+            "t.type in (8,11,17,24,29)) where e.id < ? and t.consensus_ns < ? order by id desc, consensus_ns desc " +
+            "limit ?";
     private final String ENTITIES_TYPE_UPDATE_SQL = "update t_entities set fk_entity_type_id = ? where id = ?";
     private final String ENTITY_MISMATCH_COUNT_SQL = "select count(*) from t_entities e join transaction t" +
             " on (e.id = t.entity_id and t.result = 22 and t.type = ? and e.fk_entity_type_id <> ?)";
+    private final String DROP_TEMP_ENTITIES_SQL = "drop table if exists t_entities_archive";
 
     AtomicLong entityIdCap;
     AtomicLong timestampCap;
@@ -120,9 +122,18 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
 
         verifyNoEntityMismatchesExist();
 
+        // drop temp table
+        jdbcTemplate.execute(DROP_TEMP_ENTITIES_SQL);
+
         log.info("Migration processed in {} s.", stopwatch.elapsed(TimeUnit.SECONDS));
     }
 
+    /**
+     * Retrieves max entityId found from all transactions.
+     *
+     * @return max entity id
+     * @throws SQLException
+     */
     private Long getMaxEntityId() throws SQLException {
         log.debug("Retrieve max entityId from transaction table");
         Long maxEntityId = jdbcTemplate.queryForObject(TRANSACTION_MAX_ENTITY_ID_SQL, Long.class);
@@ -131,6 +142,12 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
         return maxEntityId;
     }
 
+    /**
+     * Gets the numbers of entity type mismatches found for a specific type of entity
+     *
+     * @param args
+     * @return
+     */
     private Long getMismatchCount(@Nullable Object... args) {
         Long mismatchCount = jdbcTemplate.queryForObject(ENTITY_MISMATCH_COUNT_SQL, Long.class, args);
 
@@ -138,6 +155,16 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
         return mismatchCount;
     }
 
+    /**
+     * Retrieves a list of EntityIdType objects that represent mismatches found between the entity type in t_entities
+     * and transactions table
+     *
+     * @param entityId
+     * @param consensusTimestamp
+     * @param pageSize
+     * @return
+     * @throws SQLException
+     */
     private List<EntityIdType> getEntityIdTypes(long entityId, long consensusTimestamp, int pageSize) throws SQLException {
         log.info("Retrieve entityIdTypes for create transactions below entityId {} and before timestamp {} with page " +
                 "size {}", entityId, consensusTimestamp, pageSize);
@@ -147,7 +174,7 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
                 new RowMapper<>() {
                     @Override
                     public EntityIdType mapRow(ResultSet rs, int rowNum) throws SQLException {
-                        return getEntityIdType(rs);
+                        return getTypeMismatchedEntity(rs);
                     }
                 });
 
@@ -164,6 +191,12 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
         return entityIdTypes;
     }
 
+    /**
+     * Batch update entities with correct fk_entity_type_id
+     *
+     * @param entityIdTypes List of mismatched entities
+     * @return
+     */
     @Transactional
     public int[][] batchUpdate(List<EntityIdType> entityIdTypes) {
         log.trace("batchUpdate {} entities ", entityIdTypes.size());
@@ -175,7 +208,7 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
                     @Override
                     public void setValues(PreparedStatement ps, EntityIdType entityIdType) throws SQLException {
                         long id = entityIdType.entityId;
-                        ps.setLong(1, entityIdType.entityTypeId);
+                        ps.setLong(1, entityIdType.correctedEntityTypeId);
                         ps.setLong(2, id);
 
                         // update filter counters
@@ -186,7 +219,15 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
         );
     }
 
-    private int getCorrectedEntityType(long entityId, EntityTypeEnum expectedEntityType, int currentEntityType) {
+    /**
+     * Retrieve the correct entityType number based on comparison between expected and current values When matched
+     * return 0 to signal equality, when mismatched return expectedType
+     *
+     * @param expectedEntityType
+     * @param currentEntityType
+     * @return
+     */
+    private int getCorrectedEntityType(EntityTypeEnum expectedEntityType, int currentEntityType) {
         // check if EntityTypeEnum matches given currentEntityType.
         // Return 0 on match otherwise return expected EntityTypeEnum id
         if (expectedEntityType.getId() == currentEntityType) {
@@ -196,7 +237,14 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
         return expectedEntityType.getId();
     }
 
-    private EntityIdType getEntityIdType(ResultSet rs) throws SQLException {
+    /***
+     * Get an EntityIdType object that represents a type mismatch of the result of t_entities and transaction table join
+     * If entities object has no mismatch return null.
+     * @param rs
+     * @return EntityIdType object
+     * @throws SQLException
+     */
+    private EntityIdType getTypeMismatchedEntity(ResultSet rs) throws SQLException {
         int originalEntityType = rs.getInt("fk_entity_type_id");
         int transactionType = rs.getInt("type");
         long entityId = rs.getLong("id");
@@ -211,15 +259,15 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
         // for each create transaction, verify expected entity type is matched in entity object.
         // If so exit early, if not create EntityIdType with subset of correct entity properties
         if (transactionType == TransactionTypeEnum.CRYPTOCREATEACCOUNT.getProtoId()) {
-            correctedEntityType = getCorrectedEntityType(entityId, EntityTypeEnum.ACCOUNT, originalEntityType);
+            correctedEntityType = getCorrectedEntityType(EntityTypeEnum.ACCOUNT, originalEntityType);
         } else if (transactionType == TransactionTypeEnum.CONTRACTCREATEINSTANCE.getProtoId()) {
-            correctedEntityType = getCorrectedEntityType(entityId, EntityTypeEnum.CONTRACT, originalEntityType);
+            correctedEntityType = getCorrectedEntityType(EntityTypeEnum.CONTRACT, originalEntityType);
         } else if (transactionType == TransactionTypeEnum.FILECREATE.getProtoId()) {
-            correctedEntityType = getCorrectedEntityType(entityId, EntityTypeEnum.FILE, originalEntityType);
+            correctedEntityType = getCorrectedEntityType(EntityTypeEnum.FILE, originalEntityType);
         } else if (transactionType == TransactionTypeEnum.CONSENSUSCREATETOPIC.getProtoId()) {
-            correctedEntityType = getCorrectedEntityType(entityId, EntityTypeEnum.TOPIC, originalEntityType);
+            correctedEntityType = getCorrectedEntityType(EntityTypeEnum.TOPIC, originalEntityType);
         } else if (transactionType == TransactionTypeEnum.TOKENCREATION.getProtoId()) {
-            correctedEntityType = getCorrectedEntityType(entityId, EntityTypeEnum.TOKEN, originalEntityType);
+            correctedEntityType = getCorrectedEntityType(EntityTypeEnum.TOKEN, originalEntityType);
         }
 
         if (correctedEntityType == 0) {
@@ -227,50 +275,58 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
             return null;
         }
 
+        EntityIdType entityIdType = new EntityIdType(consensusTimestamp, correctedEntityType, entityId,
+                originalEntityType, transactionType);
         entityTransactionMismatchCount.incrementAndGet();
-        log.info("Entity {} contains type mismatch. transactionType: {}, expected EntityType: {}, actual EntityType:" +
-                " {}", entityId, transactionType, correctedEntityType, originalEntityType);
-        return new EntityIdType(entityId, correctedEntityType, consensusTimestamp);
+        log.info("Entity type mismatch encountered: {}", transactionType);
+        return entityIdType;
     }
 
-    private void verifyNoEntityMismatchesExist() throws SQLException {
+    /**
+     * Confirm no type mismatches exist on accounts, contracts, files, topics and tokens entities
+     *
+     * @throws SQLException
+     */
+    private void verifyNoEntityMismatchesExist() throws MigrationSQLException {
         log.info("Verifying no further entity mismatches exist for accounts, contracts, files, topics and tokens ...");
         Long accountMismatchCount = getMismatchCount(TransactionTypeEnum.CRYPTOCREATEACCOUNT
                 .getProtoId(), EntityTypeEnum.ACCOUNT.getId());
         if (accountMismatchCount > 0) {
-            throw new SQLException(accountMismatchCount + " Account type mismatches still remain");
+            throw new MigrationSQLException(accountMismatchCount + " Account type mismatches still remain");
         }
 
         Long contractMismatchCount = getMismatchCount(TransactionTypeEnum.CONTRACTCREATEINSTANCE
                 .getProtoId(), EntityTypeEnum.CONTRACT.getId());
         if (contractMismatchCount > 0) {
-            throw new SQLException(contractMismatchCount + " Contract type mismatches still remain");
+            throw new MigrationSQLException(contractMismatchCount + " Contract type mismatches still remain");
         }
 
         Long fileMismatchCount = getMismatchCount(TransactionTypeEnum.FILECREATE
                 .getProtoId(), EntityTypeEnum.FILE.getId());
         if (fileMismatchCount > 0) {
-            throw new SQLException(fileMismatchCount + " Fie type mismatches still remain");
+            throw new MigrationSQLException(fileMismatchCount + " Fie type mismatches still remain");
         }
 
         Long topicMismatchCount = getMismatchCount(TransactionTypeEnum.CONSENSUSCREATETOPIC
                 .getProtoId(), EntityTypeEnum.TOPIC.getId());
         if (topicMismatchCount > 0) {
-            throw new SQLException(topicMismatchCount + " Topic type mismatches still remain");
+            throw new MigrationSQLException(topicMismatchCount + " Topic type mismatches still remain");
         }
 
         Long tokenMismatchCount = getMismatchCount(TransactionTypeEnum.TOKENCREATION
                 .getProtoId(), EntityTypeEnum.TOKEN.getId());
         if (tokenMismatchCount > 0) {
-            throw new SQLException(tokenMismatchCount + " Token type mismatches still remain");
+            throw new MigrationSQLException(tokenMismatchCount + " Token type mismatches still remain");
         }
     }
 
     @Data
     // Custom Subset of on Entities object with corresponding consensusTimestamp of create transaction
     private class EntityIdType {
-        private final long entityId;
-        private final long entityTypeId;
         private final long consensusTimestamp;
+        private final long correctedEntityTypeId;
+        private final long entityId;
+        private final long initialEntityTypeId;
+        private final long transactionType;
     }
 }
