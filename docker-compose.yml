@@ -40,6 +40,14 @@ services:
       - ./data:/var/lib/hedera-mirror-importer
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 
+  monitor:
+    image: gcr.io/mirrornode/hedera-mirror-monitor:0.22.0-rc1
+    restart: unless-stopped
+    environment:
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-monitor/
+    volumes:
+      - ./application.yml:/usr/etc/hedera-mirror-monitor/application.yml
+
   redis:
     image: redis:5.0.9-alpine
     restart: unless-stopped
