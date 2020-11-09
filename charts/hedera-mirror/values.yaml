@@ -42,6 +42,9 @@ importer:
 
 labels: {}
 
+monitor:
+  enabled: true
+
 networkPolicy:
   enabled: false
 

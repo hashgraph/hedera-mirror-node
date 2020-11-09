@@ -39,6 +39,10 @@ livenessProbe:
 
 nodeSelector: {}
 
+podMonitor:
+  enabled: false
+  interval: 30s
+
 podSecurityContext:
   fsGroup: 1000
 
@@ -128,10 +132,6 @@ serviceAccount:
   create: true
   # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name:
-
-serviceMonitor:
-  enabled: false
-  interval: 30s
 
 terminationGracePeriodSeconds: 60
 
