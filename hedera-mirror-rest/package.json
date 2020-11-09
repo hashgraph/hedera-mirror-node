@@ -34,7 +34,7 @@
     "node-fetch": "^2.6.1",
     "pg": "~8.4.2",
     "qs": "^6.9.4",
-    "swagger-stats": "^0.95.17"
+    "swagger-stats": "^0.95.18"
   },
   "bundledDependencies": [
     "asn1js",
