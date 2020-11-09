@@ -1,0 +1,144 @@
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: monitor
+
+annotations: {}
+
+config:
+  hedera:
+    mirror:
+      monitor: {}
+
+fullnameOverride: ""
+
+global:
+  namespaceOverride: ""
+
+image:
+  pullPolicy: IfNotPresent
+  repository: gcr.io/mirrornode/hedera-mirror-monitor
+  tag: ""  # Default to the chart's app version
+
+imagePullSecrets: []
+
+labels: {}
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 100
+  periodSeconds: 10
+  timeoutSeconds: 2
+
+nodeSelector: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+priorityClassName: ""
+
+prometheusRules:
+  enabled: false
+  MonitorHighCPU:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror Monitor CPU usage exceeds 80%"
+    enabled: true
+    expr: sum(process_cpu_usage{application="hedera-mirror-monitor"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-monitor"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  MonitorHighMemory:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}%"
+      summary: "Mirror Monitor memory usage exceeds 80%"
+    enabled: true
+    expr: sum(jvm_memory_used_bytes{application="hedera-mirror-monitor"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-monitor"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      severity: critical
+
+  MonitorLog4j2Errors:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} encountered {{ $value }} exceptions in a 2m period"
+      summary: "High rate of log4j2 errors"
+    enabled: true
+    expr: sum(increase(log4j2_events_total{application="hedera-mirror-monitor", level="error"}[2m])) by (namespace, pod) >= 2
+    for: 3m
+    labels:
+      severity: critical
+
+  MonitorPublishErrors:
+    annotations:
+      description: "{{ $value | humanizePercentage }}% Error rate publishing {{ $labels.type }} transactions from {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Publish error rate exceeds 5%"
+    enabled: true
+    expr: sum(rate(hedera_mirror_monitor_publish_seconds_sum{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, type) / sum(rate(hedera_mirror_monitor_publish_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, type) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+
+  MonitorPublishLatency:
+    annotations:
+      description: "Publish latency exceeded {{ $value | humanizeDuration }} for {{ $labels.type }} transaction for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Publish latency exceeds 4s"
+    enabled: true
+    expr: sum(rate(hedera_mirror_monitor_publish_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, type) / sum(rate(hedera_mirror_monitor_publish_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, type) > 4
+    for: 2m
+    labels:
+      severity: critical
+
+rbac:
+  enabled: true
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 100
+  timeoutSeconds: 2
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 512Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+revisionHistoryLimit: 3
+
+securityContext:
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+serviceAccount:
+  create: true
+  # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+  name:
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+
+terminationGracePeriodSeconds: 60
+
+tolerations: []
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 10%
+    maxUnavailable: 25%
