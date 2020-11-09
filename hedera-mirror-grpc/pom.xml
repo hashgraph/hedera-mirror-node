@@ -47,6 +47,10 @@
             <version>${micrometer-jvm-extras.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-elastic</artifactId>
         </dependency>
@@ -155,12 +159,6 @@
             <artifactId>spring-cloud-starter-kubernetes-config</artifactId>
         </dependency>
         <!-- Test -->
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-testing</artifactId>
-            <version>${grpc.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
