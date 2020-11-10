@@ -110,6 +110,8 @@ readinessProbe:
   initialDelaySeconds: 100
   timeoutSeconds: 2
 
+replicas: 1
+
 resources:
   limits:
     cpu: 200m

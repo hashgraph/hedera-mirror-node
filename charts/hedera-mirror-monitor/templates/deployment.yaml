@@ -8,9 +8,7 @@ metadata:
   name: {{ include "hedera-mirror-monitor.fullname" . }}
   namespace: {{ include "hedera-mirror-monitor.namespace" . }}
 spec:
-  {{- if .Values.replicas }}
   replicas: {{ .Values.replicas }}
-  {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
