@@ -70,10 +70,10 @@ public class RecordFileParser implements FileParser {
     private final Timer parseLatencyMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
-                            RecordParserProperties parserProperties, MeterRegistry meterRegistry,
-                            RecordItemListener recordItemListener,
-                            RecordStreamFileListener recordStreamFileListener,
-                            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+            RecordParserProperties parserProperties, MeterRegistry meterRegistry,
+            RecordItemListener recordItemListener,
+            RecordStreamFileListener recordStreamFileListener,
+            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
         this.recordItemListener = recordItemListener;
@@ -123,8 +123,8 @@ public class RecordFileParser implements FileParser {
 
         latencyMetrics = latencyMetricsBuilder.build();
         sizeMetrics = sizeMetricsBuilder.build();
-        unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN);
-        unknownSizeMetric = sizeMetrics.get(TransactionTypeEnum.UNKNOWN);
+        unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN.getProtoId());
+        unknownSizeMetric = sizeMetrics.get(TransactionTypeEnum.UNKNOWN.getProtoId());
     }
 
     /**
@@ -139,7 +139,8 @@ public class RecordFileParser implements FileParser {
 
         String expectedPrevFileHash =
                 applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
-        DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType());
+        DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
+                .getDateRangeFilter(parserProperties.getStreamType());
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
         try {
@@ -154,7 +155,8 @@ public class RecordFileParser implements FileParser {
                     });
             if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
                     parserProperties.getMirrorProperties().getVerifyHashAfter(), recordFile.getName())) {
-                throw new HashMismatchException(recordFile.getName(), expectedPrevFileHash, recordFile.getPreviousHash());
+                throw new HashMismatchException(recordFile.getName(), expectedPrevFileHash,
+                        recordFile.getPreviousHash());
             }
 
             log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));

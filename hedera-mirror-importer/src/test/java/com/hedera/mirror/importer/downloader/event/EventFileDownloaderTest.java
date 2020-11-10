@@ -48,7 +48,8 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     @Override
     protected Downloader getDownloader() {
         return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (EventDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry, new EventFileReaderImpl());
+                (EventDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
+                new EventFileReaderImpl());
     }
 
     @Override
@@ -68,7 +69,7 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     }
 
     @Override
-    protected void resetStreamFileRepositoryMock() {
+    protected void reset() {
         // no-op, add the logic when event file is saved into db
     }
 

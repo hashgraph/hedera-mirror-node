@@ -111,7 +111,8 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null, recordFilename, 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", nodeAccountId, 0L, 2);
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                nodeAccountId, 0L, 2);
         recordFileRepository.save(recordFile);
     }
 
@@ -147,13 +148,12 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         assertEquals(transactionCount, transactionRepository.count()); // pg copy populated
         assertEquals(cryptoTransferCount, cryptoTransferRepository.count()); // pg copy populated
         assertEquals(entityCount, entityRepository.count());
-        assertEquals(recordFileCount, recordFileRepository.count());
 
         Iterable<RecordFile> recordFiles = recordFileRepository.findAll();
-        assertThat(recordFiles).allSatisfy(rf -> {
-           assertThat(rf.getLoadStart()).isGreaterThan(0L);
-           assertThat(rf.getLoadEnd()).isGreaterThan(0L);
-           assertThat(rf.getLoadEnd()).isGreaterThanOrEqualTo(rf.getLoadStart());
+        assertThat(recordFiles).hasSize(recordFileCount).allSatisfy(rf -> {
+            assertThat(rf.getLoadStart()).isGreaterThan(0L);
+            assertThat(rf.getLoadEnd()).isGreaterThan(0L);
+            assertThat(rf.getLoadEnd()).isGreaterThanOrEqualTo(rf.getLoadStart());
         });
     }
 }

@@ -69,7 +69,7 @@ describe('Load YAML configuration:', () => {
     expect(config.log.level).toBe('debug');
   });
 
-  test('${CONFIG_PATH}/application.yml', () => {
+  test('CONFIG_PATH/application.yml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.safeDump(custom));
     const config = require('../config');
 
@@ -79,7 +79,7 @@ describe('Load YAML configuration:', () => {
     expect(config.log.level).toBe('debug');
   });
 
-  test('${CONFIG_PATH}/application.yaml', () => {
+  test('CONFIG_PATH/application.yaml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yaml'), yaml.safeDump(custom));
     const config = require('../config');
 
@@ -146,7 +146,7 @@ describe('Custom CONFIG_NAME:', () => {
     return require('../config');
   };
 
-  test('${CONFIG_PATH}/${CONFIG_NAME}.yml', () => {
+  test('CONFIG_PATH/CONFIG_NAME.yml', () => {
     const config = loadConfigFromCustomObject(custom);
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);

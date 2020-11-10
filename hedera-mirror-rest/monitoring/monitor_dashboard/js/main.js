@@ -37,7 +37,7 @@ const init = () => {
   container.id = 'rootcontainer';
   app.appendChild(container);
 
-  fetchAndDisplay(container);
+  fetchAndDisplay();
 };
 
 const loadConfig = async () => {

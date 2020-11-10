@@ -95,11 +95,10 @@ public class BalanceFileReaderImplV1 implements BalanceFileReader {
             long consensusTimestamp = -1;
             for (int i = 0; i < MAX_HEADER_ROWS; i++) {
                 line = reader.readLine();
-                String lineLowered = line != null ? line.trim().toLowerCase() : StringUtils.EMPTY;
-                if (StringUtils.startsWith(lineLowered, TIMESTAMP_HEADER_PREFIX)) {
+                if (StringUtils.startsWithIgnoreCase(line, TIMESTAMP_HEADER_PREFIX)) {
                     Instant instant = Instant.parse(line.substring(TIMESTAMP_HEADER_PREFIX.length()));
                     consensusTimestamp = Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
-                } else if (StringUtils.startsWith(lineLowered, COLUMN_HEADER_PREFIX)) {
+                } else if (StringUtils.startsWithIgnoreCase(line, COLUMN_HEADER_PREFIX)) {
                     if (consensusTimestamp == -1) {
                         break;
                     }
