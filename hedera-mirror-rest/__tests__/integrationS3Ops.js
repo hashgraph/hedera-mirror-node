@@ -57,7 +57,7 @@ class S3Ops {
     const healthEndpoint = `${this.getEndpointUrl()}/health`;
     while (true) {
       try {
-        const res = await axios.get(healthEndpoint);
+        const res = await axios.get(healthEndpoint, {cancelToken: source.token});
         const {data} = res;
         if (data.services && data.services.s3 && data.services.s3 === 'running') {
           clearTimeout(timeout);
