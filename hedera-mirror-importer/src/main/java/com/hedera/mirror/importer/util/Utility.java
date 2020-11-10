@@ -80,7 +80,7 @@ public class Utility {
             return null;
         }
 
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
             byte[] fileHash = new byte[48];
 
             while (dis.available() != 0) {
