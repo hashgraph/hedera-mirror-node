@@ -41,6 +41,8 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 
   monitor:
+    deploy:
+      replicas: 0
     image: gcr.io/mirrornode/hedera-mirror-monitor:0.22.0-rc1
     restart: unless-stopped
     environment:
