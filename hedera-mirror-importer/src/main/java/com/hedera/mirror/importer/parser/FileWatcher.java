@@ -87,6 +87,7 @@ public abstract class FileWatcher {
             }
         } catch (InterruptedException e) {
             log.info("Watch thread halted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Error starting watch service", e);
         }
