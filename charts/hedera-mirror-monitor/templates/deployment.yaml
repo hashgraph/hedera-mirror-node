@@ -10,6 +10,8 @@ metadata:
 spec:
   {{- if .Values.replicas }}
   replicas: {{ .Values.replicas }}
+  {{- else }}
+  replicas: 0 # default to 0 to avoid running into issues when users forget to provide valid config
   {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
