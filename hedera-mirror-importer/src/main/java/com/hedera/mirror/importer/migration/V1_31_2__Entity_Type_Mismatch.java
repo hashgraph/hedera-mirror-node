@@ -51,7 +51,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
+public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
     private final EntityRepository entityRepository;
     private final TransactionRepository transactionRepository;
     private final DataSource dataSource;
@@ -74,7 +74,7 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
     AtomicLong entityTransactionCount;
     AtomicLong entityTransactionMismatchCount;
 
-    public V1_31_1__Entity_Type_Mismatch(@Lazy EntityRepository entityRepository,
+    public V1_31_2__Entity_Type_Mismatch(@Lazy EntityRepository entityRepository,
                                          @Lazy TransactionRepository transactionRepository, DataSource dataSource,
                                          FlywayMigrationProperties flywayMigrationProperties) {
         this.entityRepository = entityRepository;
@@ -106,7 +106,7 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
         // batch update retrieved entities and pull next set until no type mismatched entities are retrieved
         // entity id and transaction timestamp are used to optimally search through tables
         List<EntityIdType> entityIdTypeList = getEntityIdTypes(entityIdCap.get() + 1, timestampCap
-                .get() + 1, flywayMigrationProperties.getEntityMismatchReadPageSize());
+                .get(), flywayMigrationProperties.getEntityMismatchReadPageSize());
         while (entityIdTypeList != null) {
             if (!entityIdTypeList.isEmpty()) {
                 batchUpdate(entityIdTypeList);
@@ -230,11 +230,7 @@ public class V1_31_1__Entity_Type_Mismatch extends BaseJavaMigration {
     private int getCorrectedEntityType(EntityTypeEnum expectedEntityType, int currentEntityType) {
         // check if EntityTypeEnum matches given currentEntityType.
         // Return 0 on match otherwise return expected EntityTypeEnum id
-        if (expectedEntityType.getId() == currentEntityType) {
-            return 0;
-        }
-
-        return expectedEntityType.getId();
+        return expectedEntityType.getId() == currentEntityType ? 0 : expectedEntityType.getId();
     }
 
     /***

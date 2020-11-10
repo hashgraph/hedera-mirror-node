@@ -49,10 +49,10 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
-@TestPropertySource(properties = "spring.flyway.target=1.31.0")
-public class V1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
+@TestPropertySource(properties = "spring.flyway.target=1.31.1")
+public class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
     @Resource
-    private V1_31_1__Entity_Type_Mismatch migration;
+    private V1_31_2__Entity_Type_Mismatch migration;
 
     @Resource
     private DataSource dataSource;
@@ -120,7 +120,7 @@ public class V1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
     }
 
     @Test
-    void verifyEntityTypeMigrationInValidEntities() throws Exception {
+    void verifyEntityTypeMigrationInvalidEntities() throws Exception {
         flywayMigrationProperties.setEntityMismatchReadPageSize(3);
         flywayMigrationProperties.setEntityMismatchWriteBatchSize(3);
 
@@ -134,8 +134,6 @@ public class V1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
         entityRepository.insertEntityId(typeMismatchedFileEntityId);
         entityRepository.insertEntityId(typeMismatchedTopicEntityId);
         entityRepository.insertEntityId(typeMismatchedTokenEntityId);
-        entityRepository.insertEntityId(entityId(50, EntityTypeEnum.TOPIC));
-        entityRepository.insertEntityId(entityId(100, EntityTypeEnum.TOPIC));
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
@@ -163,7 +161,7 @@ public class V1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(7, entityRepository.count());
+        assertEquals(5, entityRepository.count());
         assertEquals(7, transactionRepository.count());
 
         assertAll(
@@ -181,7 +179,7 @@ public class V1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
     }
 
     @Test
-    void verifyEntityTypeMigrationInValidEntitiesMultiBatch() throws Exception {
+    void verifyEntityTypeMigrationInvalidEntitiesMultiBatch() throws Exception {
         flywayMigrationProperties.setEntityMismatchReadPageSize(4);
         flywayMigrationProperties.setEntityMismatchWriteBatchSize(4);
 
@@ -201,8 +199,6 @@ public class V1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
         entityRepository.insertEntityId(typeMismatchedFileEntityId);
         entityRepository.insertEntityId(typeMismatchedTopicEntityId);
         entityRepository.insertEntityId(typeMismatchedTokenEntityId);
-        entityRepository.insertEntityId(entityId(50, EntityTypeEnum.TOPIC));
-        entityRepository.insertEntityId(entityId(100, EntityTypeEnum.TOPIC));
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
@@ -244,7 +240,7 @@ public class V1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(12, entityRepository.count());
+        assertEquals(10, entityRepository.count());
         assertEquals(12, transactionRepository.count());
 
         assertAll(
