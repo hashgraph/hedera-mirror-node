@@ -156,10 +156,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
+            //TODO could we have token transfers in create account?
             if (body.hasCryptoCreateAccount() && isSuccessful) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body);
             } else {
                 insertTransferList(consensusNs, txRecord.getTransferList());
+                insertTokenTransfers(recordItem);
             }
         }
 
@@ -213,8 +215,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenMint(recordItem);
             } else if (body.hasTokenRevokeKyc()) {
                 insertTokenAccountRevokeKyc(recordItem);
-            } else if (body.hasTokenTransfers()) {
-                insertTokenTransfers(recordItem);
             } else if (body.hasTokenUnfreeze()) {
                 insertTokenAccountUnfreeze(recordItem);
             } else if (body.hasTokenUpdate()) {
