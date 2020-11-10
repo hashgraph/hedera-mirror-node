@@ -62,12 +62,7 @@ public abstract class FileWatcher {
             boolean valid = rootKey.isValid();
 
             while (valid && parserProperties.isEnabled()) {
-                WatchKey key;
-                try {
-                    key = watcher.poll(100, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    continue;
-                }
+                WatchKey key = watcher.poll(100, TimeUnit.MILLISECONDS);
 
                 if (ShutdownHelper.isStopping()) {
                     return;
@@ -90,6 +85,8 @@ public abstract class FileWatcher {
 
                 valid = key.reset();
             }
+        } catch (InterruptedException e) {
+            log.info("Watch thread halted: {}", e.getMessage());
         } catch (Exception e) {
             log.error("Error starting watch service", e);
         }

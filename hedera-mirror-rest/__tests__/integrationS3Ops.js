@@ -48,26 +48,26 @@ class S3Ops {
       this.port = defaultS3Port;
     }
 
-    let timeout = false;
-    new Promise((r) =>
-      setTimeout(() => {
-        timeout = true;
-        r();
-      }, 15000)
-    );
+    const {CancelToken} = axios;
+    const source = CancelToken.source();
+    const timeout = setTimeout(() => {
+      source.cancel('timed out, cancel the request');
+    }, 15 * 1000);
 
     const healthEndpoint = `${this.getEndpointUrl()}/health`;
-    while (!timeout) {
+    while (true) {
       try {
         const res = await axios.get(healthEndpoint);
         const {data} = res;
         if (data.services && data.services.s3 && data.services.s3 === 'running') {
+          clearTimeout(timeout);
           return;
         }
       } catch (err) {
-        //
+        if (axios.isCancel(err)) {
+          break;
+        }
       }
-
       await new Promise((r) => setTimeout(r, 200));
     }
 

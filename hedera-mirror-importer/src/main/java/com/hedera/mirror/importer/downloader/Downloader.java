@@ -101,8 +101,8 @@ public abstract class Downloader {
     private boolean mirrorDateRangePropertiesProcessed = false;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-                      AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-                      TransactionTemplate transactionTemplate, MeterRegistry meterRegistry) {
+            AddressBookService addressBookService, DownloaderProperties downloaderProperties,
+            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
         this.addressBookService = addressBookService;
@@ -184,7 +184,8 @@ public abstract class Downloader {
      * @param addressBook the current address book
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<String, FileStreamSignature> downloadSigFiles(AddressBook addressBook) throws InterruptedException {
+    private Multimap<String, FileStreamSignature> downloadSigFiles(AddressBook addressBook)
+            throws InterruptedException {
         String lastValidFileName = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileKey);
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
@@ -254,6 +255,7 @@ public abstract class Downloader {
                         } catch (InterruptedException ex) {
                             log.warn("Failed downloading {} in {}", pendingDownload.getS3key(),
                                     pendingDownload.getStopwatch(), ex);
+                            Thread.currentThread().interrupt();
                         }
                     });
                     if (count.get() > 0) {
@@ -350,7 +352,7 @@ public abstract class Downloader {
      * @param sigFilesMap signature files grouped by file name
      */
     private void verifySigsAndDownloadDataFiles(AddressBook addressBook,
-                                                Multimap<String, FileStreamSignature> sigFilesMap) {
+            Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBook);
         Path validPath = downloaderProperties.getValidPath();
         Instant endDate = mirrorProperties.getEndDate();

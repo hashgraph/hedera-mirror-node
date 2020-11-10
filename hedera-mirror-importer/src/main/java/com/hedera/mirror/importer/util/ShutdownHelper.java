@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.util;
  */
 
 import javax.inject.Named;
-
 import lombok.extern.log4j.Log4j2;
 
 /**
@@ -49,9 +48,10 @@ public class ShutdownHelper {
         stopping = true;
         log.info("Shutting down.......waiting 10s for internal processes to stop.");
         try {
-            Thread.sleep(10 * 1000);
+            Thread.sleep(10L * 1000L);
         } catch (InterruptedException e) {
             log.warn("Interrupted when waiting for shutdown...", e);
+            Thread.currentThread().interrupt();
         }
     }
 }

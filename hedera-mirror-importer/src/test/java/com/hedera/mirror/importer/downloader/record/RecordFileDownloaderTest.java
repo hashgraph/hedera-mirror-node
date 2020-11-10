@@ -24,7 +24,6 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -41,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -71,7 +71,8 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     @Override
     protected Downloader getDownloader() {
         return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (RecordDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry, recordFileRepository);
+                (RecordDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
+                recordFileRepository);
     }
 
     @Override
@@ -91,18 +92,20 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     }
 
     @Override
-    protected void resetStreamFileRepositoryMock() {
-        reset(recordFileRepository);
+    protected void reset() {
+        Mockito.reset(recordFileRepository);
+        valueCaptor = ArgumentCaptor.forClass(RecordFile.class);
     }
 
     @Override
     protected void verifyStreamFileRecord(List<String> files) {
         verify(recordFileRepository, times(files.size())).save(valueCaptor.capture());
         List<RecordFile> captured = valueCaptor.getAllValues();
-        assertThat(captured).allSatisfy(actual -> {
+        assertThat(captured).hasSize(files.size()).allSatisfy(actual -> {
             RecordFile expected = recordFileMap.get(actual.getName());
 
-            assertThat(actual).isEqualToIgnoringGivenFields(expected, "id", "loadStart", "loadEnd", "nodeAccountId", "recordFormatVersion");
+            assertThat(actual).isEqualToIgnoringGivenFields(expected, "id", "loadStart", "loadEnd", "nodeAccountId",
+                    "recordFormatVersion");
             assertThat(actual.getNodeAccountId()).isIn(allNodeAccountIds).isNotEqualTo(corruptedNodeAccountId);
         });
     }
@@ -114,10 +117,10 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
                 "2019-08-30T18_10_05.249678Z.rcd"
         );
 
-
         RecordFile rf1 = new RecordFile(1567188600419072000L, 1567188604906443001L, null, file1, 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", null, 19L, 2);
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                null, 19L, 2);
 
         RecordFile rf2 = new RecordFile(1567188605249678000L, 1567188609705382001L, null, file2, 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
