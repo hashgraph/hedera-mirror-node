@@ -40,7 +40,7 @@ spec:
             monitor:
               publish:
                 scenarios:
-                  - duration: ""
+                  - duration: 9223372036854775807s
                     name: HCS pinger
                     properties:
                       topicId: 0.0.103736
