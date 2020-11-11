@@ -20,12 +20,18 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
+import java.time.Duration;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.UnicastProcessor;
+import reactor.core.publisher.MonoSink;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
@@ -40,19 +46,59 @@ public abstract class SharedTopicListener implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        UnicastProcessor<String> processor = UnicastProcessor.create();
-        Flux<String> timeoutFlux = processor.delayElements(listenerProperties.getBufferTimeout())
-                .replay(1)
-                .autoConnect();
+        TimeoutContext timeoutContext = new TimeoutContext(Schedulers.parallel(), listenerProperties.getBufferTimeout());
+        Mono<TopicMessage> timeoutMono = Mono.create(timeoutContext);
 
-        return getSharedListener(filter)
+        Flux<TopicMessage> topicMessageFlux = getSharedListener(filter)
                 .publishOn(Schedulers.boundedElastic())
                 .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
-                .doOnCancel(() -> processor.onNext("timeout"))
+                .doOnCancel(timeoutContext::timeout)
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
-                .timeout(timeoutFlux, message -> timeoutFlux, Mono.error(
-                        new ClientTimeoutException("Client timed out while consuming the buffered messages")));
+                .doOnCancel(timeoutContext::onComplete)
+                .doOnComplete(timeoutContext::onComplete);
+        return Flux.merge(1, topicMessageFlux, timeoutMono);
     }
 
     protected abstract Flux<TopicMessage> getSharedListener(TopicMessageFilter filter);
+
+
+    @RequiredArgsConstructor
+    private class TimeoutContext implements Consumer<MonoSink<TopicMessage>> {
+
+        private final Scheduler scheduler;
+        private final Duration timeoutDuration;
+
+        private MonoSink<TopicMessage> sink;
+        private boolean completed;
+        private Disposable taskDisposer;
+
+        @Override
+        public void accept(final MonoSink<TopicMessage> sink) {
+            this.sink = sink;
+        }
+
+        public void timeout() {
+            if (completed) {
+                return;
+            }
+
+            try {
+                taskDisposer = scheduler.schedule(() -> {
+                    sink.error(new ClientTimeoutException("Client timed out while consuming the buffered messages"));
+                }, timeoutDuration.toMillis(), TimeUnit.MILLISECONDS);
+            } catch (RejectedExecutionException ex) {
+                log.error("Failed to schedule task to send ClientTimeoutException", ex);
+            }
+        }
+
+        public void onComplete() {
+            completed = true;
+
+            if (taskDisposer != null) {
+                taskDisposer.dispose();
+            }
+
+            sink.success();
+        }
+    }
 }
