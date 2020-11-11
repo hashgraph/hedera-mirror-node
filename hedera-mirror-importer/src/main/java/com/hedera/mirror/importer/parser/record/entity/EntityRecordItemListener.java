@@ -156,12 +156,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            //TODO could we have token transfers in create account?
             if (body.hasCryptoCreateAccount() && isSuccessful) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body);
             } else {
                 insertTransferList(consensusNs, txRecord.getTransferList());
-                insertTokenTransfers(recordItem);
             }
         }
 
@@ -192,6 +190,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
+            } else if (body.hasCryptoTransfer()) {
+                insertTokenTransfers(recordItem);
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
             } else if (body.hasFileCreate()) {
