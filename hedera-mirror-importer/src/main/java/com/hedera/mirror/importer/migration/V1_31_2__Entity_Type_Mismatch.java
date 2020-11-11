@@ -30,7 +30,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
@@ -50,21 +52,22 @@ public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
     private final FlywayMigrationProperties flywayMigrationProperties;
     private final JdbcTemplate jdbcTemplate;
 
-    private final String TRANSACTION_MAX_ENTITY_ID_SQL = "select max(entity_id) from transaction where entity_id is " +
+    private static final String TRANSACTION_MAX_ENTITY_ID_SQL = "select max(entity_id) from transaction where " +
+            "entity_id is " +
             "not null";
     // where clause used by count that captures correct entityType to transactionType mapping
-    private final String ENTITY_TYPE_MISMATCH_WHERE_CLAUSE = "t.result = 22 and ((t.type = 11 and " +
+    private static final String ENTITY_TYPE_MISMATCH_WHERE_CLAUSE = "t.result = 22 and ((t.type = 11 and " +
             "e.fk_entity_type_id <> 1) or (t.type = 8 and e.fk_entity_type_id <> 2) or (t.type = 17 and " +
             "e.fk_entity_type_id <> 3) or (t.type = 24 and e.fk_entity_type_id <> 4) or (t.type = 29 and " +
             "e.fk_entity_type_id <> 5))";
-    private final String ENTITY_TYPE_MISMATCH_COUNT_SQL = "select e.fk_entity_type_id, t.type, count(*) from " +
+    private static final String ENTITY_TYPE_MISMATCH_COUNT_SQL = "select e.fk_entity_type_id, t.type, count(*) from " +
             "t_entities e join transaction t on e.id = t.entity_id where " + ENTITY_TYPE_MISMATCH_WHERE_CLAUSE +
             " group by e.fk_entity_type_id, t.type having count(*) > 0";
-    private final String ENTITY_TYPE_MISMATCH_SEARCH_SQL = "select  e.id, e.fk_entity_type_id, t.type, " +
+    private static final String ENTITY_TYPE_MISMATCH_SEARCH_SQL = "select  e.id, e.fk_entity_type_id, t.type, " +
             "t.consensus_ns from t_entities e join transaction t on e.id = t.entity_id  where e.id < ? and " +
-            "t.consensus_ns < ? and t.result = 22 and t.type in (8,11,17,24,29) order by id desc, consensus_ns desc " +
+            "t.consensus_ns < ? and t.result = 22 and t.type in (8,11,17,24,29) order by id desc " +
             "limit ?";
-    private final String ENTITY_TYPE_UPDATE_SQL = "update t_entities set fk_entity_type_id = ? where id = ?";
+    private static final String ENTITY_TYPE_UPDATE_SQL = "update t_entities set fk_entity_type_id = ? where id = ?";
 
     private AtomicLong entityIdCap;
     private AtomicLong timestampCap;
@@ -102,15 +105,15 @@ public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
         // batch retrieve entities whose entity type does not match the appropriate create transactions type
         // batch update retrieved entities and search for next set of mismatches until no type mismatched entities
         // are retrieved.  entity id and transaction timestamp are used to optimally search through tables
-        List<TypeMismatchedEntity> typeMismatchedEntityList = getTypeMismatchedEntities(entityIdCap
+        TypeMismatchSearchResult typeMismatchSearchResult = getTypeMismatchedEntities(entityIdCap
                 .get() + 1, timestampCap
                 .get(), flywayMigrationProperties.getEntityMismatchReadPageSize());
-        while (typeMismatchedEntityList != null) {
-            if (!typeMismatchedEntityList.isEmpty()) {
-                batchUpdate(typeMismatchedEntityList);
+        while (typeMismatchSearchResult.isContinueSearch()) {
+            if (!typeMismatchSearchResult.getTypeMismatchedEntities().isEmpty()) {
+                batchUpdate(typeMismatchSearchResult.getTypeMismatchedEntities());
             }
 
-            typeMismatchedEntityList = getTypeMismatchedEntities(entityIdCap.get(), timestampCap
+            typeMismatchSearchResult = getTypeMismatchedEntities(entityIdCap.get(), timestampCap
                     .get(), flywayMigrationProperties
                     .getEntityMismatchReadPageSize());
         }
@@ -166,8 +169,8 @@ public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
     }
 
     /**
-     * Retrieves a list of TypeMismatchedEntity objects that represent mismatches found between the entity type in
-     * t_entities and transactions table for the given page size search
+     * Retrieves a TypeMismatchSearchResult containing the list of TypeMismatchedEntity objects that represent
+     * mismatches found between the entity type in t_entities and transactions table for the given page size search
      *
      * @param entityId
      * @param consensusTimestamp
@@ -175,7 +178,7 @@ public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
      * @return
      * @throws SQLException
      */
-    private List<TypeMismatchedEntity> getTypeMismatchedEntities(long entityId, long consensusTimestamp, int pageSize) {
+    private TypeMismatchSearchResult getTypeMismatchedEntities(long entityId, long consensusTimestamp, int pageSize) {
         log.info("Retrieve entityIdTypes for create transactions below entityId {} and before timestamp {} with page " +
                 "size {}", entityId, consensusTimestamp, pageSize);
         List<TypeMismatchedEntity> typeMismatchedEntities = jdbcTemplate.query(
@@ -192,7 +195,7 @@ public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
             // no more rows to consider, return null
             log.debug("Retrieved {} entities with mismatch type from t_entities and transaction join",
                     typeMismatchedEntities.size());
-            return null;
+            return new TypeMismatchSearchResult();
         }
 
         // remove nulls
@@ -200,7 +203,8 @@ public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
 
         log.debug("Retrieved {} entities with mismatch type from t_entities and transaction join",
                 typeMismatchedEntities.size());
-        return typeMismatchedEntities;
+
+        return new TypeMismatchSearchResult(typeMismatchedEntities, true);
     }
 
     /**
@@ -307,5 +311,13 @@ public class V1_31_2__Entity_Type_Mismatch extends BaseJavaMigration {
         private final long entityId;
         private final int initialEntityTypeId;
         private final int transactionType;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private class TypeMismatchSearchResult {
+        private List<TypeMismatchedEntity> typeMismatchedEntities;
+        private boolean continueSearch;
     }
 }

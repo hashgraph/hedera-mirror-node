@@ -50,7 +50,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
 @TestPropertySource(properties = "spring.flyway.target=1.31.1")
-public class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
+class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
     @Resource
     private V1_31_2__Entity_Type_Mismatch migration;
 
