@@ -40,7 +40,8 @@ spec:
             monitor:
               publish:
                 scenarios:
-                  - name: HCS pinger
+                  - duration: null
+                    name: HCS pinger
                     properties:
                       topicId: 0.0.103736
                     record: true
