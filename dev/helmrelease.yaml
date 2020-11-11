@@ -33,6 +33,19 @@ spec:
               startDate: 1970-01-01T00:00:00Z
       image:
         tag: master-9fedddf9ae666cc102101a12e26a7c0d1102d7ba
+    monitor:
+      config:
+        hedera:
+          mirror:
+            monitor:
+              publish:
+                scenarios:
+                  - name: HCS pinger
+                    properties:
+                      topicId: 0.0.103736
+                    record: true
+                    tps: 0.1
+                    type: CONSENSUS_SUBMIT_MESSAGE
     postgresql:
       enabled: false
     rest:
