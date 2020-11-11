@@ -295,7 +295,6 @@ const addTokenTransferTransaction = async (tokenTransfer) => {
     {account: tokenTransfer.treasuryAccountId, amount: NETWORK_FEE},
     {account: tokenTransfer.nodeAccountId, amount: NODE_FEE},
   ];
-  tokenTransfer.type = 30; // TOKENTRANSFERS
   await addTransaction(tokenTransfer);
 };
 

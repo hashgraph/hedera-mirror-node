@@ -251,8 +251,8 @@ describe('Utils isValidTransactionType tests', () => {
   test('Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', () => {
     expect(utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
   });
-  test('Verify valid for valid TOKENTRANSFERS transaction type', () => {
-    expect(utils.isValidTransactionType('TOKENTRANSFERS')).toBe(true);
+  test('Verify invalid for former TOKENTRANSFERS transaction type', () => {
+    expect(utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
   });
 });
 

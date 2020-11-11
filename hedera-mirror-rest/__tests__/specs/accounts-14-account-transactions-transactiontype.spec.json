@@ -60,24 +60,7 @@
       }
     ],
     "transactions": [],
-    "cryptotransfers": [
-      {
-        "consensus_timestamp": "1234567890000000001",
-        "payerAccountId": "0.0.7",
-        "recipientAccountId": "0.0.8",
-        "amount": 25,
-        "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
-      },
-      {
-        "consensus_timestamp": "1234567890000000005",
-        "payerAccountId": "0.0.8",
-        "recipientAccountId": "0.0.9",
-        "amount": 10,
-        "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
-      }
-    ],
+    "cryptotransfers": [],
     "tokentransfers": [
       {
         "consensus_timestamp": "1234567890000000007",
@@ -99,7 +82,7 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.8?transactionType=TOKENTRANSFERS",
+  "url": "/api/v1/accounts/0.0.8?transactionType=CRYPTOTRANSFER",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -108,7 +91,7 @@
         "consensus_timestamp": "1234567890.000000007",
         "max_fee": "33",
         "memo_base64": null,
-        "name": "TOKENTRANSFERS",
+        "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "result": "SUCCESS",
         "transaction_hash": "aGFzaA==",
