@@ -34,14 +34,4 @@ public enum EntityTypeEnum {
     TOKEN(5);
 
     private final int id;
-
-    public static EntityTypeEnum fromId(int id) {
-        for (EntityTypeEnum entityTypeEnum : values()) {
-            if (entityTypeEnum.getId() == id) {
-                return entityTypeEnum;
-            }
-        }
-
-        return null;
-    }
 }
