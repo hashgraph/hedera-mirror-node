@@ -91,7 +91,6 @@ To support the goals the following database schema changes should be made
     insert into t_transaction_types (proto_id, name) values
          (28, 'UNCHECKEDSUBMIT'),
          (29, 'TOKENCREATION'),
-         (30, 'TOKENTRANSFERS'),
          (31, 'TOKENFREEZE'),
          (32, 'TOKENUNFREEZE'),
          (33, 'TOKENGRANTKYC'),
@@ -274,7 +273,6 @@ In all cases override `getEntity()`, pulling `TokenID` from record receipt for `
     -   override `updatesEntity()` to return true
     -   override `updateEntity()` to set Entities `key`, `expiryTimeNs` and `AutoRenewPeriod` if applicable
     -   override `getEntity()`, pulling `TokenID` from record receipt
--   Add `TokenTransferTransactionsHandler`
 -   Add `TokenFreezeTransactionsHandler`
 -   Add `TokenUnfreezeTransactionsHandler`
 -   Add `TokenGrantKycTransactionsHandler`
@@ -316,7 +314,7 @@ In all cases override `getEntity()`, pulling `TokenID` from record receipt for `
 Modify `EntityRecordItemListener` to handle parsing HTS transactions
 Add logic to check for
 -   `TransactionBody.hasTokenCreation()` and parse `TokenCreateTransactionBody` out from the record. Create a new `Token` object and pass it to `entityListener.onToken()`.
--   `TransactionBody.hasTokenTransfers()` and parse `TokenTransferLists` out from the record. Create a new `TokenTransfer` object for each `AccountAmount` in the `TokenTransferList` object and pass it to `entityListener.onTokenTransfer()`.
+-   `TransactionBody.hasCryptoTransfer()` and parse `TokenTransferLists` out from the record. Create a new `TokenTransfer` object for each `AccountAmount` in the `TokenTransferList` object and pass it to `entityListener.onTokenTransfer()`.
 -   `TransactionBody.hasTokenAssociate()` and parse `TokenAssociateBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `associate` column to true and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenDissociate()` and parse `TokenDissociateBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `associate` column to false and pass it to `entityListener.onTokenAccount()`.
 -   `TransactionBody.hasTokenFreeze()` and parse `TokenFreezeAccountTransactionBody` out from the record. Retrieve an existing `TokenAccount` db entry, set the `frozen` column to true and pass it to `entityListener.onTokenAccount()`.
