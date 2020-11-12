@@ -104,12 +104,12 @@ const checkStateproofForFailedTransaction = async (server) => {
     return {url, ...result};
   }
 
-  const transaction = _.find(transactions, (txn) => txn.result !== 'DUPLICATE_TRANSACTION');
+  const transaction = _.find(transactions, (tx) => tx.result !== 'DUPLICATE_TRANSACTION');
   if (transaction === undefined) {
     return {
       url,
       passed: true,
-      message: 'Proper failed transaction is not found for stateproof check, will retry next time',
+      message: 'Non-duplicate failed transaction is not found for stateproof check, will retry next time',
     };
   }
 
