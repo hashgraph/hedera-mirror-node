@@ -191,6 +191,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
             } else if (body.hasCryptoTransfer()) {
+                //Token transfers can be present in CryptoTransferTransaction
                 insertTokenTransfers(recordItem);
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
