@@ -50,13 +50,13 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
-@TestPropertySource(properties = "spring.flyway.target=1.31.0")
-class V_1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
+@TestPropertySource(properties = "spring.flyway.target=1.31.1")
+class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
 
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/V1.31.1__remove_invalid_entities.sql")
+    @Value("classpath:db/migration/V1.31.2__remove_invalid_entities.sql")
     private File migrationSql;
 
     @Resource
