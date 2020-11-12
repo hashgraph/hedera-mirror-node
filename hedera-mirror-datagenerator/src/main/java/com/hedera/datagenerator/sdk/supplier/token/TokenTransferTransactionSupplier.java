@@ -30,12 +30,12 @@ import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.hashgraph.sdk.account.TransferTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
-import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 
 @Builder
 @Value
-public class TokenTransferTransactionSupplier implements TransactionSupplier<TokenTransferTransaction> {
+public class TokenTransferTransactionSupplier implements TransactionSupplier<TransferTransaction> {
 
     private static final List<String> requiredFields = Arrays
             .asList("recipientAccountId", "senderAccountId", "tokenId");
@@ -53,7 +53,7 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
     private final long maxTransactionFee = 1_000_000;
 
     @Override
-    public TokenTransferTransaction get() {
+    public TransferTransaction get() {
 
         if (StringUtils.isBlank(recipientAccountId) || StringUtils.isBlank(senderAccountId) || StringUtils
                 .isBlank(tokenId)) {
@@ -61,9 +61,9 @@ public class TokenTransferTransactionSupplier implements TransactionSupplier<Tok
         }
 
         TokenId token = TokenId.fromString(tokenId);
-        return new TokenTransferTransaction()
-                .addRecipient(token, AccountId.fromString(recipientAccountId), amount)
-                .addSender(token, AccountId.fromString(senderAccountId), amount)
+        return new TransferTransaction()
+                .addTokenTransfer(token, AccountId.fromString(recipientAccountId), amount)
+                .addTokenTransfer(token, AccountId.fromString(senderAccountId), Math.negateExact(amount))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo(Utility.getMemo("Mirror node transferred test token"));
     }
