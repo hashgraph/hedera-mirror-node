@@ -25,17 +25,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.sql.Connection;
+import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
-import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.flywaydb.core.api.configuration.Configuration;
-import org.flywaydb.core.api.migration.Context;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -49,13 +50,14 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
-@TestPropertySource(properties = "spring.flyway.target=1.31.1")
-class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
-    @Resource
-    private V1_31_2__Entity_Type_Mismatch migration;
+@TestPropertySource(properties = "spring.flyway.target=1.31.0")
+class V_1_31_1__Entity_Type_MismatchTest extends IntegrationTest {
 
     @Resource
-    private DataSource dataSource;
+    private JdbcOperations jdbcOperations;
+
+    @Value("classpath:db/migration/V1.31.1__remove_invalid_entities.sql")
+    private File migrationSql;
 
     @Resource
     private EntityRepository entityRepository;
@@ -66,9 +68,6 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
     @Resource
     private TransactionRepository transactionRepository;
 
-    @Resource
-    private FlywayMigrationProperties flywayMigrationProperties;
-
     @BeforeEach
     void before() {
         mirrorProperties.setStartDate(Instant.EPOCH);
@@ -78,7 +77,7 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
     @Test
     void verifyEntityTypeMigrationEmpty() throws Exception {
         // migration
-        migration.migrate(new FlywayContext());
+        migrate();
 
         assertEquals(0, entityRepository.count());
         assertEquals(0, transactionRepository.count());
@@ -86,9 +85,6 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationValidEntities() throws Exception {
-        flywayMigrationProperties.setEntityMismatchReadPageSize(3);
-        flywayMigrationProperties.setEntityMismatchWriteBatchSize(3);
-
         entityRepository.insertEntityId(entityId(1, EntityTypeEnum.ACCOUNT));
         entityRepository.insertEntityId(entityId(2, EntityTypeEnum.CONTRACT));
         entityRepository.insertEntityId(entityId(3, EntityTypeEnum.FILE));
@@ -113,7 +109,7 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
         transactionRepository.saveAll(transactionList);
 
         // migration
-        migration.migrate(new FlywayContext());
+        migrate();
 
         assertEquals(5, entityRepository.count());
         assertEquals(5, transactionRepository.count());
@@ -121,9 +117,6 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationInvalidEntities() throws Exception {
-        flywayMigrationProperties.setEntityMismatchReadPageSize(3);
-        flywayMigrationProperties.setEntityMismatchWriteBatchSize(3);
-
         EntityId typeMismatchedAccountEntityId = entityId(1, EntityTypeEnum.TOPIC);
         EntityId typeMismatchedContractEntityId = entityId(2, EntityTypeEnum.TOKEN);
         EntityId typeMismatchedFileEntityId = entityId(3, EntityTypeEnum.CONTRACT);
@@ -159,7 +152,7 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
         transactionRepository.saveAll(transactionList);
 
         // migration
-        migration.migrate(new FlywayContext());
+        migrate();
 
         assertEquals(5, entityRepository.count());
         assertEquals(7, transactionRepository.count());
@@ -180,9 +173,6 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationInvalidEntitiesMultiBatch() throws Exception {
-        flywayMigrationProperties.setEntityMismatchReadPageSize(4);
-        flywayMigrationProperties.setEntityMismatchWriteBatchSize(4);
-
         entityRepository.insertEntityId(entityId(1, EntityTypeEnum.ACCOUNT));
         entityRepository.insertEntityId(entityId(2, EntityTypeEnum.CONTRACT));
         entityRepository.insertEntityId(entityId(3, EntityTypeEnum.FILE));
@@ -238,7 +228,7 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
         transactionRepository.saveAll(transactionList);
 
         // migration
-        migration.migrate(new FlywayContext());
+        migrate();
 
         assertEquals(10, entityRepository.count());
         assertEquals(12, transactionRepository.count());
@@ -279,20 +269,7 @@ class V_1_31_2__Entity_Type_MismatchTest extends IntegrationTest {
         return EntityId.of(0, 1, id, entityType);
     }
 
-    private class FlywayContext implements Context {
-
-        @Override
-        public Configuration getConfiguration() {
-            return null;
-        }
-
-        @Override
-        public Connection getConnection() {
-            try {
-                return dataSource.getConnection();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+    private void migrate() throws IOException {
+        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 }
