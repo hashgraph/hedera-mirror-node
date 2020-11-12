@@ -59,7 +59,22 @@
         "balance": 90
       }
     ],
-    "transactions": [],
+    "transactions": [
+      {
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779555711927001",
+        "name": "TOKENCREATION",
+        "type": "29"
+      },
+      {
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000005",
+        "name": "CRYPTODELETE",
+        "type": "12"
+      }
+    ],
     "cryptotransfers": [],
     "tokentransfers": [
       {
@@ -82,7 +97,7 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.8?transactionType=CRYPTOTRANSFER",
+  "url": "/api/v1/accounts/0.0.8?transactionType=cryptotransfer",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [

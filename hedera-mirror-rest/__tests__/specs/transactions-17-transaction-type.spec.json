@@ -19,26 +19,23 @@
         "entity_type": 5
       }
     ],
-    "balances": [
+    "balances": [],
+    "transactions": [
       {
-        "timestamp": 2000,
-        "id": 1,
-        "balance": 10,
-        "tokens": [
-          {
-            "token_realm": 0,
-            "token_num": 90000,
-            "balance": 1
-          },
-          {
-            "token_realm": 0,
-            "token_num": 90001,
-            "balance": 11
-          }
-        ]
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779555711927001",
+        "name": "TOKENCREATION",
+        "type": "29"
+      },
+      {
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779555711927003",
+        "name": "CRYPTODELETE",
+        "type": "12"
       }
     ],
-    "transactions": [],
     "cryptotransfers": [],
     "tokentransfers": [
       {
