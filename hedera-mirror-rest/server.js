@@ -89,6 +89,7 @@ global.pool = pool;
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
+app.disable('x-powered-by');
 app.set('trust proxy', true);
 app.set('port', port);
 app.set('query parser', requestQueryParser);

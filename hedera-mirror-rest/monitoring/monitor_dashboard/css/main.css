@@ -19,42 +19,41 @@
  */
 
 .dot {
-    height: 20px;
-    width: 20px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 10px;
-    align-self: center;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 10px;
+  align-self: center;
 }
 
 .my-card {
-    margin: 10px 30px 10px 30px !important;
-    background-color: #f0f0f0;
+  margin: 10px 30px 10px 30px !important;
+  background-color: #f0f0f0;
 }
 
 .card-title {
-    font-size: 2em;
-    display: inline-block;
+  font-size: 2em;
+  display: inline-block;
 }
 
 .ip-addr {
-    font-size: 1.5em;
-    color: grey;
-    display: inline-block;
-    margin-bottom: 10px;
+  font-size: 1.5em;
+  color: grey;
+  display: inline-block;
+  margin-bottom: 10px;
 }
 
 .card-arrow {
-    position: absolute;
-    top: 50px;
-    right: 30px;
+  position: absolute;
+  top: 50px;
+  right: 30px;
 }
 
 .results {
-    display: inline-block;
-    verticle-align: bottom;
+  display: inline-block;
 }
 
 .modal-content {
-    width: 700px;
+  width: 700px;
 }

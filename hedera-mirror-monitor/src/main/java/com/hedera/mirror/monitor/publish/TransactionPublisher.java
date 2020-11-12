@@ -55,6 +55,10 @@ public class TransactionPublisher {
     public void init() {
         List<NodeProperties> validNodes = validateNodes();
 
+        if (validNodes.isEmpty()) {
+            throw new IllegalArgumentException("No valid nodes found");
+        }
+
         for (int i = 0; i < publishProperties.getConnections(); ++i) {
             NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
             Client client = toClient(nodeProperties);

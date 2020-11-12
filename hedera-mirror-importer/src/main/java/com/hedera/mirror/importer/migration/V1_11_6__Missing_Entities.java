@@ -54,7 +54,7 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
     // break it.
     // Correct way is to not use repositories and construct manually: new JdbcTemplate(context.getConnection())
     public V1_11_6__Missing_Entities(MirrorProperties mirrorProperties, @Lazy EntityRepository entityRepository,
-                                     @Lazy JdbcOperations jdbcOperations) {
+            @Lazy JdbcOperations jdbcOperations) {
         this.mirrorProperties = mirrorProperties;
         this.entityRepository = entityRepository;
         this.jdbcOperations = jdbcOperations;
@@ -127,8 +127,9 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
         if (entity.getProxyAccountId() == null && accountInfo.hasProxyAccountID()) {
             EntityId proxyAccountEntityId = EntityId.of(accountInfo.getProxyAccountID());
             // Persist if doesn't exist
-            entityRepository.findById(proxyAccountEntityId.getId())
-                    .orElseGet(() -> entityRepository.save(proxyAccountEntityId.toEntity()));
+            if (entityRepository.findById(proxyAccountEntityId.getId()).isEmpty()) {
+                entityRepository.save(proxyAccountEntityId.toEntity());
+            }
             entity.setProxyAccountId(proxyAccountEntityId);
         }
 

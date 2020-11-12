@@ -7,3 +7,15 @@
 #        gcpProjectId: {projectId}
 #        secretKey: {GOOG1E....}
 #      network: TESTNET
+#    monitor:
+#      operator:
+#        accountId: {accountId}
+#        privateKey: {privateKey}
+#      publish:
+#        connections: 4
+#        scenarios:
+#          - name: HCS pinger
+#            properties:
+#              topicId: {topicId}
+#            tps: 1
+#            type: CONSENSUS_SUBMIT_MESSAGE

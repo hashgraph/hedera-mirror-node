@@ -480,7 +480,7 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
     // Reconstruct the query string
     for (const [q, v] of Object.entries(req.query)) {
       if (Array.isArray(v)) {
-        v.map((vv) => (next += (next === '' ? '?' : '&') + q + '=' + vv));
+        v.forEach((vv) => (next += (next === '' ? '?' : '&') + q + '=' + vv));
       } else {
         next += (next === '' ? '?' : '&') + q + '=' + v;
       }

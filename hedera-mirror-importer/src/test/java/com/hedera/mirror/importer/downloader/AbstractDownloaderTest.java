@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -70,6 +69,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
@@ -386,8 +386,8 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
         verifyForSuccess();
 
-        reset(applicationStatusRepository);
-        resetStreamFileRepositoryMock();
+        Mockito.reset(applicationStatusRepository);
+        reset();
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
         Files.walk(downloaderProperties.getSignaturesPath())
                 .filter(this::isSigFile)
@@ -593,7 +593,7 @@ public abstract class AbstractDownloaderTest {
         verifyStreamFileRecord(files);
     }
 
-    protected abstract void resetStreamFileRepositoryMock();
+    protected abstract void reset();
 
     protected abstract void verifyStreamFileRecord(List<String> files);
 
@@ -642,7 +642,8 @@ public abstract class AbstractDownloaderTest {
         return addressBookFromBytes(addressBookBytes, now, entityId);
     }
 
-    protected static AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
+    protected static AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId)
+            throws InvalidProtocolBufferException {
         AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
                 .fileData(contents)
                 .startConsensusTimestamp(consensusTimestamp + 1)

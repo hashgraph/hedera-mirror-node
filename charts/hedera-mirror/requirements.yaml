@@ -9,6 +9,11 @@ dependencies:
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
     version: ">=0.7.0-0"
+  - alias: monitor
+    condition: monitor.enabled
+    name: hedera-mirror-monitor
+    repository: file://../hedera-mirror-monitor
+    version: ">=0.7.0-0"
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha

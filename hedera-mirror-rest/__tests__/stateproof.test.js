@@ -187,7 +187,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
   });
 
   const expectPassOrToThrow = async (queryResultOrFakeQueryFunc, expectPass) => {
-    let queryResult;
+    let queryResult = {rows: []};
     const queryStub = sinon.stub();
     if (typeof queryResultOrFakeQueryFunc === 'function') {
       queryStub.callsFake(queryResultOrFakeQueryFunc);
@@ -206,9 +206,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
       let expectedNodeAccountIds;
       const lastRow = _.last(queryResult.rows);
       if (lastRow.node_account_ids) {
-        expectedNodeAccountIds = _.map(lastRow.node_account_ids.split(','), (id) =>
-          EntityId.fromString(id).toString()
-        );
+        expectedNodeAccountIds = _.map(lastRow.node_account_ids.split(','), (id) => EntityId.fromString(id).toString());
       } else {
         expectedNodeAccountIds = lastRow.memos.split(',');
       }

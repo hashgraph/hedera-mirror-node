@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.downloader.balance;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -37,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
@@ -86,15 +86,16 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     }
 
     @Override
-    protected void resetStreamFileRepositoryMock() {
-        reset(accountBalanceFileRepository);
+    protected void reset() {
+        Mockito.reset(accountBalanceFileRepository);
+        valueCaptor = ArgumentCaptor.forClass(AccountBalanceFile.class);
     }
 
     @Override
     protected void verifyStreamFileRecord(List<String> files) {
         verify(accountBalanceFileRepository, times(files.size())).save(valueCaptor.capture());
         List<AccountBalanceFile> captured = valueCaptor.getAllValues();
-        assertThat(captured).allSatisfy(actual -> {
+        assertThat(captured).hasSize(files.size()).allSatisfy(actual -> {
             AccountBalanceFile expected = accountBalanceFileMap.get(actual.getName());
 
             assertThat(actual).isEqualToComparingOnlyGivenFields(expected, "name", "consensusTimestamp", "fileHash");

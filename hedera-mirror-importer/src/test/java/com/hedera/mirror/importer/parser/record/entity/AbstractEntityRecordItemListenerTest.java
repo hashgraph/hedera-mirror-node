@@ -365,11 +365,11 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             return;
         }
 
-        assertEquals(entityIds.length, entityRepository.count());
-
-        // verify entities
-        for (EntityId entityId : entityIds) {
-            assertThat(entityRepository.findById(entityId.getId())).isPresent();
-        }
+        assertThat(entityRepository.findAll())
+                .hasSize(entityIds.length)
+                .allMatch(entity -> entity.getId() > 0)
+                .allMatch(entity -> entity.getEntityTypeId() != null)
+                .extracting(Entities::toEntityId)
+                .containsExactlyInAnyOrder(entityIds);
     }
 }

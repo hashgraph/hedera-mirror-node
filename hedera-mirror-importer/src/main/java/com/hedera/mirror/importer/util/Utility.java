@@ -80,7 +80,7 @@ public class Utility {
             return null;
         }
 
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
             byte[] fileHash = new byte[48];
 
             while (dis.available() != 0) {
@@ -88,7 +88,10 @@ public class Utility {
 
                 switch (typeDelimiter) {
                     case FileDelimiter.SIGNATURE_TYPE_FILE_HASH:
-                        dis.read(fileHash);
+                        int length = dis.read(fileHash);
+                        if (length != fileHash.length) {
+                            throw new IllegalArgumentException("Unable to read signature file hash");
+                        }
                         break;
 
                     case FileDelimiter.SIGNATURE_TYPE_SIGNATURE:
@@ -162,7 +165,10 @@ public class Utility {
                     case FileDelimiter.RECORD_TYPE_PREV_HASH:
                         md.update(typeDelimiter);
                         byte[] readFileHash = new byte[48];
-                        dis.read(readFileHash);
+                        int length = dis.read(readFileHash);
+                        if (length != readFileHash.length) {
+                            throw new IllegalArgumentException("Unable to read record file hash");
+                        }
                         String previousHash = Hex.encodeHexString(readFileHash);
                         recordFile.setPreviousHash(previousHash);
                         md.update(readFileHash);
@@ -351,7 +357,9 @@ public class Utility {
             if (file.isDirectory()) {
                 purgeDirectory(file.toPath());
             }
-            file.delete();
+            if (!file.delete()) {
+                log.warn("Unable to delete file: {}", file);
+            }
         }
     }
 

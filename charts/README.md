@@ -1,9 +1,10 @@
 # Helm Chart
 
-Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the three mirror node components:
+Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the four mirror node components:
 
 - [Hedera Mirror Importer](hedera-mirror-importer)
 - [Hedera Mirror GRPC API](hedera-mirror-grpc)
+- [Hedera Mirror Monitor](hedera-mirror-monitor)
 - [Hedera Mirror REST API](hedera-mirror-rest)
 
 ## Requirements

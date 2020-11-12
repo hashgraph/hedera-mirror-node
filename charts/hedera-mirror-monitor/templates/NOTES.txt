@@ -1,0 +1,3 @@
+The Hedera Mirror Monitor is installed. To view the application logs and monitor its progress:
+
+kubectl logs -f --prefix --tail=3 -l app.kubernetes.io/component=monitor

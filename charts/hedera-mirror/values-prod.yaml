@@ -16,6 +16,13 @@ importer:
   prometheusRules:
     enabled: true
 
+monitor:
+  podMonitor:
+    enabled: true
+  priorityClassName: medium
+  prometheusRules:
+    enabled: true
+
 postgresql:
   metrics:
     enabled: true
