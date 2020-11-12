@@ -36,7 +36,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 
-public class V1_31_1_fix_address_book_102Test extends IntegrationTest {
+public class V1_31_0_fix_address_book_102Test extends IntegrationTest {
 
     @Resource
     private AddressBookRepository addressBookRepository;
@@ -44,7 +44,7 @@ public class V1_31_1_fix_address_book_102Test extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/V1.31.1__fix_address_book_102.sql")
+    @Value("classpath:db/migration/V1.31.0__fix_address_book_102.sql")
     private File sql;
 
     @Test
