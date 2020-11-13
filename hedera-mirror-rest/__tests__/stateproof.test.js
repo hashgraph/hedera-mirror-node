@@ -290,13 +290,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     });
   };
 
-  const verifyGetObjectStubAndReturnedFileObjects = (
-    getObjectStub,
-    fileObjects,
-    partialFilePaths,
-    failedNodes,
-    extraFileContent
-  ) => {
+  const verifyGetObjectStubAndReturnedFileObjects = (getObjectStub, fileObjects, failedNodes) => {
     let succeededPartialFilePaths = partialFilePaths;
     if (failedNodes) {
       succeededPartialFilePaths = _.filter(partialFilePaths, (partialFilePath) =>
@@ -306,7 +300,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
 
     expect(_.map(fileObjects, (file) => file.partialFilePath).sort()).toEqual(succeededPartialFilePaths.sort());
     for (const fileObject of fileObjects) {
-      const data = constants.recordStreamPrefix + fileObject.partialFilePath + extraFileContent || '';
+      const data = constants.recordStreamPrefix + fileObject.partialFilePath + extraFileContent;
       expect(fileObject.base64Data).toEqual(Buffer.from(data).toString('base64'));
     }
     expect(getObjectStub.callCount).toEqual(partialFilePaths.length);
@@ -339,13 +333,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
-    verifyGetObjectStubAndReturnedFileObjects(
-      getObjectStub,
-      fileObjects,
-      partialFilePaths,
-      undefined,
-      extraFileContent
-    );
+    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects);
   });
 
   test('with all files failed to download', async () => {
@@ -366,12 +354,8 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
-    verifyGetObjectStubAndReturnedFileObjects(
-      getObjectStub,
-      fileObjects,
-      partialFilePaths,
-      _.map([3, 4, 5, 6], (num) => `0.0.${num}`)
-    );
+    const failedNodes = _.map([3, 4, 5, 6], (num) => `0.0.${num}`);
+    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, failedNodes);
   });
 
   test('with download failed for 0.0.3', async () => {
@@ -403,13 +387,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
-    verifyGetObjectStubAndReturnedFileObjects(
-      getObjectStub,
-      fileObjects,
-      partialFilePaths,
-      ['0.0.3'],
-      extraFileContent
-    );
+    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, ['0.0.3']);
   });
 });
 
