@@ -20,7 +20,6 @@ package com.hedera.datagenerator.domain.generators.transaction;
  */
 
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.Getter;
@@ -101,7 +100,7 @@ public class FileTransactionGenerator extends TransactionGenerator {
         fileData.setConsensusTimestamp(consensusNs);
         long fileDataSize = properties.getFileDataSize().sample();
         byte[] fileDataBytes = new byte[(int) fileDataSize];
-        new Random().nextBytes(fileDataBytes);
+        RANDOM.nextBytes(fileDataBytes);
         fileData.setFileData(fileDataBytes);
         entityListener.onFileData(fileData);
     }

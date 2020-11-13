@@ -41,6 +41,7 @@ if (port === undefined || isNaN(Number(port))) {
   process.exit(1);
 }
 
+app.disable('x-powered-by');
 app.set('trust proxy', true);
 app.set('port', port);
 app.use(

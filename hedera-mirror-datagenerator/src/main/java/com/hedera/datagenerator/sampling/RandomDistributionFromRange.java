@@ -19,6 +19,7 @@ package com.hedera.datagenerator.sampling;
  * ‍
  */
 
+import java.security.SecureRandom;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 
@@ -37,7 +38,7 @@ public class RandomDistributionFromRange implements Distribution<Long> {
         }
         this.min = min;
         range = max - min;
-        random = new Random();
+        random = new SecureRandom();
     }
 
     @Override

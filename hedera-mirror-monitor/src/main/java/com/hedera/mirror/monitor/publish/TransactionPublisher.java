@@ -20,12 +20,13 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -45,6 +46,8 @@ import com.hedera.mirror.monitor.NodeProperties;
 @Named
 @RequiredArgsConstructor
 public class TransactionPublisher {
+
+    private static final Random RANDOM = new SecureRandom();
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
@@ -88,7 +91,7 @@ public class TransactionPublisher {
 
     private PublishResponse doPublish(PublishRequest request) throws Exception {
         log.trace("Publishing: {}", request);
-        int index = ThreadLocalRandom.current().nextInt(clients.size());
+        int index = RANDOM.nextInt(clients.size());
         Client client = clients.get(index);
 
         var transactionId = request.getTransactionBuilder().execute(client);
