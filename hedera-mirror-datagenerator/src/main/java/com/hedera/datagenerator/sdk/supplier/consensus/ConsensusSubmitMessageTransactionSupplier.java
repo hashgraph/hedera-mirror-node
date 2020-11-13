@@ -20,24 +20,21 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.security.SecureRandom;
-import java.time.Instant;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.Getter;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.hashgraph.sdk.HederaThrowable;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 
 @Data
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
-
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Min(1)
     private long maxTransactionFee = 1_000_000;
@@ -50,26 +47,41 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @NotBlank
     private String topicId;
 
+    private boolean retry = false;
+
+    // Cached for performance testing
+    @Getter(lazy = true)
+    private final ConsensusTopicId consensusTopicId = ConsensusTopicId.fromString(topicId);
+
+    @Getter(lazy = true)
+    private final String messageSuffix = randomString();
+
     @Override
     public ConsensusMessageSubmitTransaction get() {
-
-        return new ConsensusMessageSubmitTransaction()
+        return new NonRetryableConsensusMessageSubmitTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
-                .setMessage(getMessage())
-                .setTopicId(ConsensusTopicId.fromString(topicId))
-                .setTransactionMemo(Utility.getMemo("Mirror node submitted test message"));
+                .setMessage(generateMessage())
+                .setTopicId(getConsensusTopicId());
     }
 
-    private String getMessage() {
-        String encodedTimestamp = Utility.getEncodedTimestamp();
-        //If a custom message is entered, append the timestamp to the front and leave the message unaltered
+    private String generateMessage() {
+        return Utility.getEncodedTimestamp() + getMessageSuffix();
+    }
+
+    private String randomString() {
         if (StringUtils.isNotBlank(message)) {
-            return encodedTimestamp + "_" + message;
+            return message;
         }
-        //Generate a message from the timestamp and a random alphanumeric String
-        byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
-        int additionalBytes = messageSize <= timeRefBytes.length ? 0 : messageSize - timeRefBytes.length;
-        String randomAlphanumeric = RandomStringUtils.random(additionalBytes, 0, 0, true, true, null, RANDOM);
-        return encodedTimestamp + randomAlphanumeric;
+        int additionalBytes = messageSize <= Long.BYTES ? 0 : messageSize - Long.BYTES;
+        return RandomStringUtils.randomAlphanumeric(additionalBytes);
+    }
+
+    private class NonRetryableConsensusMessageSubmitTransaction extends ConsensusMessageSubmitTransaction {
+
+        @Override
+        protected boolean shouldRetry(HederaThrowable e) {
+            return retry;
+        }
     }
 }
+

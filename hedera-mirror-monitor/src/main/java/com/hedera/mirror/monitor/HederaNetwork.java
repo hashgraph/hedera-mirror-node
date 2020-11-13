@@ -65,7 +65,8 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.3", "0.testnet.hedera.com"),
                 new NodeProperties("0.0.4", "1.testnet.hedera.com"),
                 new NodeProperties("0.0.5", "2.testnet.hedera.com"),
-                new NodeProperties("0.0.6", "3.testnet.hedera.com")
+                new NodeProperties("0.0.6", "3.testnet.hedera.com"),
+                new NodeProperties("0.0.7", "4.testnet.hedera.com")
         );
     }
 }

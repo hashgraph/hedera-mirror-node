@@ -22,8 +22,11 @@ package com.hedera.mirror.monitor.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -38,6 +41,7 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 
 public class ConfigurableTransactionGeneratorTest {
 
+    private static final int SAMPLE_SIZE = 1000;
     private static final String TOPIC_ID = "0.0.1000";
 
     private ScenarioProperties properties;
@@ -46,16 +50,23 @@ public class ConfigurableTransactionGeneratorTest {
     @BeforeEach
     void init() {
         properties = new ScenarioProperties();
+        properties.setReceipt(100);
+        properties.setRecord(100);
         properties.setName("test");
         properties.setProperties(Map.of("topicId", TOPIC_ID));
+        properties.setTps(10000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(properties));
     }
 
     @Test
     void next() {
-        properties.setReceipt(true);
-        properties.setRecord(true);
+        assertRequest(generator.get().next());
+    }
+
+    @Test
+    void logResponse() {
+        properties.setLogResponse(true);
         assertRequest(generator.get().next());
     }
 
@@ -85,6 +96,76 @@ public class ConfigurableTransactionGeneratorTest {
     }
 
     @Test
+    void receiptDisabled() {
+        properties.setReceipt(0);
+        for (int i = 0; i < SAMPLE_SIZE; ++i) {
+            assertThat(generator.get().next())
+                    .extracting(PublishRequest::isReceipt)
+                    .isEqualTo(false);
+        }
+    }
+
+    @Test
+    void receiptEnabled() {
+        properties.setReceipt(100);
+        for (int i = 0; i < SAMPLE_SIZE; ++i) {
+            assertThat(generator.get().next())
+                    .extracting(PublishRequest::isReceipt)
+                    .isEqualTo(true);
+        }
+    }
+
+    @Test
+    void receiptPercent() {
+        properties.setReceipt(1);
+        Multiset<Boolean> receipts = HashMultiset.create();
+
+        for (int i = 0; i < SAMPLE_SIZE; ++i) {
+            receipts.add(generator.get().next().isReceipt());
+        }
+
+        assertThat((int) (receipts.count(true) * 100.0 / SAMPLE_SIZE))
+                .isNotNegative()
+                .isNotZero()
+                .isCloseTo(properties.getReceipt(), within((int) (SAMPLE_SIZE * 0.05)));
+    }
+
+    @Test
+    void recordDisabled() {
+        properties.setRecord(0);
+        for (int i = 0; i < SAMPLE_SIZE; ++i) {
+            assertThat(generator.get().next())
+                    .extracting(PublishRequest::isRecord)
+                    .isEqualTo(false);
+        }
+    }
+
+    @Test
+    void recordEnabled() {
+        properties.setRecord(100);
+        for (int i = 0; i < SAMPLE_SIZE; ++i) {
+            assertThat(generator.get().next())
+                    .extracting(PublishRequest::isRecord)
+                    .isEqualTo(true);
+        }
+    }
+
+    @Test
+    void recordPercent() {
+        properties.setRecord(75);
+        Multiset<Boolean> records = HashMultiset.create();
+
+        for (int i = 0; i < SAMPLE_SIZE; ++i) {
+            records.add(generator.get().next().isRecord());
+        }
+
+        assertThat((int) (records.count(true) * 100.0 / SAMPLE_SIZE))
+                .isNotNegative()
+                .isNotZero()
+                .isCloseTo(properties.getRecord(), within((int) (SAMPLE_SIZE * 0.05)));
+    }
+
+    @Test
     void missingRequiredField() {
         properties.setProperties(Collections.emptyMap());
         assertThatThrownBy(() -> generator.get().next()).isInstanceOf(ConstraintViolationException.class);
@@ -93,8 +174,9 @@ public class ConfigurableTransactionGeneratorTest {
     private void assertRequest(PublishRequest publishRequest) {
         assertThat(publishRequest).isNotNull()
                 .hasNoNullFieldsOrProperties()
-                .hasFieldOrPropertyWithValue("receipt", properties.isReceipt())
-                .hasFieldOrPropertyWithValue("record", properties.isRecord())
+                .hasFieldOrPropertyWithValue("logResponse", properties.isLogResponse())
+                .hasFieldOrPropertyWithValue("receipt", true)
+                .hasFieldOrPropertyWithValue("record", true)
                 .hasFieldOrPropertyWithValue("type", properties.getType())
                 .hasFieldOrPropertyWithValue("transactionBuilder.topicId", ConsensusTopicId.fromString(TOPIC_ID));
     }

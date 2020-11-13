@@ -20,11 +20,17 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
+import lombok.Getter;
+
 public class ScenarioException extends RuntimeException {
 
-    private static final long serialVersionUID = 3538325614384119370L;
+    private static final long serialVersionUID = 1690349494197296387L;
 
-    public ScenarioException(String message) {
+    @Getter
+    private final ScenarioProperties properties;
+
+    public ScenarioException(ScenarioProperties properties, String message) {
         super(message);
+        this.properties = properties;
     }
 }

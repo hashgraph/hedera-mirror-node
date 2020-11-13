@@ -23,9 +23,9 @@ package com.hedera.mirror.monitor.generator;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -37,29 +37,40 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 @Validated
 public class ScenarioProperties {
 
+    @NotNull
     @DurationMin(seconds = 30)
-    private Duration duration = Duration.ofMinutes(10L);
+    private Duration duration = Duration.ofNanos(Long.MAX_VALUE);
 
     private boolean enabled = true;
 
     @Min(0)
     private long limit = 0;
 
+    private boolean logResponse = false;
+
     @NotBlank
     private String name;
 
-    @NotEmpty
+    @NotNull
     private Map<String, Object> properties = new LinkedHashMap<>();
 
-    private boolean receipt = false; // TODO: Retrieve a percentage of receipts and records
+    @Min(0)
+    @Max(100)
+    private int receipt = 0;
 
-    private boolean record = false;
+    @Min(0)
+    @Max(100)
+    private int record = 0;
 
     @Min(0)
     private double tps = 10.0;
 
     @NotNull
     private TransactionType type;
+
+    public long getLimit() {
+        return limit > 0 ? limit : Long.MAX_VALUE;
+    }
 }
 
 

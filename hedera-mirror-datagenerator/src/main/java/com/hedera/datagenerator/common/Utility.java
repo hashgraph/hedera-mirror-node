@@ -31,11 +31,10 @@ import lombok.extern.log4j.Log4j2;
 public class Utility {
 
     public static String getEncodedTimestamp() {
-        return Base64.getEncoder().encodeToString(Longs.toByteArray(Instant.now().toEpochMilli()));
+        return Base64.getEncoder().encodeToString(Longs.toByteArray(System.currentTimeMillis()));
     }
 
     public static String getMemo(String message) {
-        return getEncodedTimestamp() + "_" + message + " at " + Instant
-                .now();
+        return getEncodedTimestamp() + "_" + message + " at " + Instant.now();
     }
 }

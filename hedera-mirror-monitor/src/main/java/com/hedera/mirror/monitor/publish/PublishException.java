@@ -20,19 +20,10 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import lombok.Builder;
-import lombok.Value;
+public class PublishException extends RuntimeException {
+    private static final long serialVersionUID = 1405915869165326841L;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.TransactionBuilder;
-import com.hedera.hashgraph.sdk.TransactionId;
-
-@Builder
-@Value
-public class PublishRequest {
-    private final boolean logResponse;
-    private final boolean receipt;
-    private final boolean record;
-    private final TransactionBuilder<TransactionId, ?, ?> transactionBuilder;
-    private final TransactionType type;
+    public PublishException(Throwable t) {
+        super(t);
+    }
 }

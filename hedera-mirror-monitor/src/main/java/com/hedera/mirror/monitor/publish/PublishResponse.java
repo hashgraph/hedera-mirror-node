@@ -22,6 +22,8 @@ package com.hedera.mirror.monitor.publish;
 
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -31,8 +33,44 @@ import com.hedera.hashgraph.sdk.TransactionRecord;
 @Builder
 @Value
 public class PublishResponse {
+
     private final TransactionRecord record;
     private final TransactionReceipt receipt;
     private final TransactionId transactionId;
     private final TransactionType type;
+
+    // Needed since the SDK doesn't implement toString() or have actual fields to use with reflection
+    @Override
+    public String toString() {
+        ToStringBuilder toStringBuilder = new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE);
+        toStringBuilder.append("transactionId", transactionId);
+        toStringBuilder.append("type", type);
+
+        if (record != null) {
+            toStringBuilder.append("consensusTimestamp", record.consensusTimestamp);
+        }
+
+        if (receipt != null) {
+            com.hedera.hashgraph.proto.TransactionReceipt receiptProto = receipt.toProto();
+            toStringBuilder.append("status", receiptProto.getStatus());
+
+            if (receiptProto.hasAccountID()) {
+                toStringBuilder.append("accountId", receiptProto.getAccountID());
+            } else if (receiptProto.hasContractID()) {
+                toStringBuilder.append("contractId", receiptProto.getContractID());
+            } else if (receiptProto.hasFileID()) {
+                toStringBuilder.append("fileId", receiptProto.getFileID());
+            } else if (receiptProto.hasTokenId()) {
+                toStringBuilder.append("tokenId", receiptProto.getTokenId());
+            } else if (receiptProto.hasTopicID()) {
+                toStringBuilder.append("topicId", receiptProto.getTopicID());
+            }
+
+            if (receiptProto.getTopicSequenceNumber() > 0) {
+                toStringBuilder.append("topicSequenceNumber", receiptProto.getTopicSequenceNumber());
+            }
+        }
+
+        return toStringBuilder.toString();
+    }
 }

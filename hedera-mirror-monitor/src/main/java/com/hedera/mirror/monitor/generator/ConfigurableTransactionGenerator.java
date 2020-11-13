@@ -48,27 +48,31 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         this.properties = properties;
         this.transactionSupplier = convert(properties);
         this.rateLimiter = RateLimiter.create(properties.getTps());
-        remaining = new AtomicLong(properties.getLimit() > 0 ? properties.getLimit() : Long.MAX_VALUE);
+        remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
-                .record(properties.isRecord())
-                .receipt(properties.isReceipt())
+                .logResponse(properties.isLogResponse())
                 .type(properties.getType());
-        log.info("Initializing scenario: {}", properties);
+        rateLimiter.acquire();
     }
 
     @Override
     public PublishRequest next() {
-        if (remaining.getAndDecrement() <= 0) {
-            throw new ScenarioException("Reached publish limit of " + properties.getLimit());
+        rateLimiter.acquire();
+        long count = remaining.getAndDecrement();
+
+        if (count <= 0) {
+            throw new ScenarioException(properties, "Reached publish limit of " + properties.getLimit());
         }
 
         if (stopTime - System.nanoTime() <= 0) {
-            throw new ScenarioException("Reached publish duration of " + properties.getDuration());
+            throw new ScenarioException(properties, "Reached publish duration of " + properties.getDuration());
         }
 
-        rateLimiter.acquire();
-        return builder.transactionBuilder(transactionSupplier.get()).build();
+        return builder.receipt(shouldGenerate(properties.getReceipt(), count))
+                .record(shouldGenerate(properties.getRecord(), count))
+                .transactionBuilder(transactionSupplier.get())
+                .build();
     }
 
     private TransactionSupplier<?> convert(ScenarioProperties p) {
@@ -83,5 +87,15 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         }
 
         return supplier;
+    }
+
+    private boolean shouldGenerate(int percent, long count) {
+        if (percent <= 0) {
+            return false;
+        } else if (percent >= 100) {
+            return true;
+        } else {
+            return (count % 100) <= percent;
+        }
     }
 }

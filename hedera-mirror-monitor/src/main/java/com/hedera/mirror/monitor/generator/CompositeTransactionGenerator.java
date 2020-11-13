@@ -27,6 +27,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
@@ -34,9 +35,43 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 @Named
 public class CompositeTransactionGenerator implements TransactionGenerator {
 
-    final EnumeratedDistribution<TransactionGenerator> distribution;
+    static final Pair<TransactionGenerator, Double> INACTIVE;
+
+    static {
+        ScenarioProperties scenarioProperties = new ScenarioProperties();
+        scenarioProperties.setName("Inactive");
+        scenarioProperties.setTps(Double.MIN_NORMAL); // Never retry
+        scenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
+        TransactionGenerator generator = new ConfigurableTransactionGenerator(scenarioProperties);
+        INACTIVE = Pair.create(generator, 1.0);
+    }
+
+    private final PublishProperties properties;
+    volatile EnumeratedDistribution<TransactionGenerator> distribution;
 
     public CompositeTransactionGenerator(PublishProperties properties) {
+        this.properties = properties;
+        rebuild();
+    }
+
+    @Override
+    public PublishRequest next() {
+        TransactionGenerator transactionGenerator = distribution.sample();
+
+        try {
+            return transactionGenerator.next();
+        } catch (ScenarioException e) {
+            log.warn(e.getMessage());
+            e.getProperties().setEnabled(false);
+            rebuild();
+            throw e;
+        } catch (Exception e) {
+            log.error("Unable to generate a transaction", e);
+            throw e;
+        }
+    }
+
+    private synchronized void rebuild() {
         List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
 
         double total = properties.getScenarios()
@@ -46,22 +81,18 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
                 .reduce(0.0, (x, y) -> x + y);
 
         for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
-            if (scenarioProperties.isEnabled()) {
+            if (properties.isEnabled() && scenarioProperties.isEnabled()) {
                 double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
                 pairs.add(Pair.create(new ConfigurableTransactionGenerator(scenarioProperties), weight));
+                log.info("Activated scenario: {}", scenarioProperties);
             }
         }
 
-        distribution = new EnumeratedDistribution<>(pairs);
-    }
-
-    @Override
-    public PublishRequest next() {
-        try {
-            return distribution.sample().next(); // TODO: Remove child generator when it completes
-        } catch (Exception e) {
-            log.error("Unable to generate a transaction", e);
-            throw e;
+        if (pairs.isEmpty()) {
+            pairs.add(INACTIVE);
+            log.info("Publishing is disabled");
         }
+
+        this.distribution = new EnumeratedDistribution<>(pairs);
     }
 }
