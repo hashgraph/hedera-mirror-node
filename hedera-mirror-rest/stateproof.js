@@ -187,17 +187,17 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
       };
 
       return new Promise((resolve) => {
-        let base64Data = '';
+        const buffers = [];
         s3Client
           .getObject(params)
           .createReadStream()
           .on('data', (chunk) => {
-            base64Data += Buffer.from(chunk).toString('base64');
+            buffers.push(Buffer.from(chunk));
           })
           .on('end', () => {
             resolve({
               partialFilePath,
-              base64Data,
+              base64Data: Buffer.concat(buffers).toString('base64'),
             });
           })
           // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient
