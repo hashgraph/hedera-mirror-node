@@ -420,7 +420,7 @@ public class TokenFeature {
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
-        assertThat(mirrorTransaction.getName()).isEqualTo("TOKENTRANSFERS");
+        assertThat(mirrorTransaction.getName()).isEqualTo("CRYPTOTRANSFER");
 
         boolean tokenIdFound = false;
 
