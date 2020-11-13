@@ -22,7 +22,6 @@ package com.hedera.mirror.grpc.domain;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Random;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Builder;
@@ -43,7 +42,7 @@ import com.hedera.mirror.grpc.validation.StartTime;
 @Value
 public class TopicMessageFilter {
 
-    private static final Random RANDOM = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private Instant endTime;
 

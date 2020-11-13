@@ -25,7 +25,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -42,7 +41,7 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("topicId");
-    private static final Random RANDOM = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     //Required
     private final String topicId;
