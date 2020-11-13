@@ -96,7 +96,6 @@ const createTransferLists = (rows) => {
   const transactions = {};
 
   for (const row of rows) {
-    console.log(row);
     if (!(row.consensus_ns in transactions)) {
       const validStartTimestamp = row.valid_start_ns;
       transactions[row.consensus_ns] = {
@@ -153,7 +152,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
        LEFT OUTER JOIN token_transfer ttl
-         ON t.type = 14
+         ON t.type = ${constants.transactionTypes.CRYPTOTRANSFER}
          AND tlist.consensus_timestamp = ttl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
