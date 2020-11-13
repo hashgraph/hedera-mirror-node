@@ -17,13 +17,14 @@
     ],
     "balances": [],
     "transactions": [],
-    "cryptotransfers": [],
-    "tokentransfers": [
+    "cryptotransfers": [
       {
         "consensus_timestamp": "1565779555711927001",
         "payerAccountId": "0.0.300",
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
+        "recipientAccountId": "0.0.3",
+        "amount": 2,
         "token_transfer_list": [
           {
             "token_id": "0.0.90000",
