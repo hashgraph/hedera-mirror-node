@@ -60,7 +60,7 @@ public abstract class SharedTopicListener implements TopicListener {
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
                 .doOnCancel(timeoutContext::onComplete)
                 .doOnComplete(timeoutContext::onComplete);
-        return Flux.merge(1, topicMessageFlux, timeoutMono).publishOn(Schedulers.boundedElastic());
+        return Flux.merge(1, topicMessageFlux, timeoutMono).publishOn(Schedulers.boundedElastic(), 1);
 //        UnicastProcessor<String> processor = UnicastProcessor.create();
 //        Flux<String> timeoutFlux = processor.delayElements(listenerProperties.getBufferTimeout())
 //                .replay(1)

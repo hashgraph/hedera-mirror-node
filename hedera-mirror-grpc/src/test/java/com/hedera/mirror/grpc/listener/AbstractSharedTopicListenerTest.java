@@ -47,19 +47,19 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .then(() -> {
                     // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
                     // overflow error
-                    publish(domainBuilder.topicMessages(maxBufferSize + 4, future));
+                    publish(domainBuilder.topicMessages(maxBufferSize + 10, future));
                 })
                 .expectNext(1L, 2L)
                 .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
                 .thenRequest(Long.MAX_VALUE)
-                .expectNextSequence(LongStream.range(3, maxBufferSize + 3).boxed().collect(Collectors.toList()))
+                .expectNextSequence(LongStream.range(3, maxBufferSize + 4).boxed().collect(Collectors.toList()))
                 .expectErrorMatches(Exceptions::isOverflow)
-                .verify(Duration.ofMillis(600L));
+                .verify(Duration.ofMillis(1000L));
 
         assertThat(subscription.isDisposed()).isFalse();
         subscription.dispose();
         assertThat(sequenceNumbers)
-                .isEqualTo(LongStream.range(1, maxBufferSize + 5).boxed().collect(Collectors.toList()));
+                .isEqualTo(LongStream.range(1, maxBufferSize + 11).boxed().collect(Collectors.toList()));
     }
 
     @Test

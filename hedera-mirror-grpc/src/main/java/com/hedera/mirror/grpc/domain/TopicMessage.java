@@ -31,18 +31,17 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Transient;
-import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.Value;
-import lombok.experimental.NonFinal;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
@@ -50,6 +49,8 @@ import com.hedera.mirror.grpc.converter.EncodedIdToEntityConverter;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 
+@AllArgsConstructor
+@Builder
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true, value = {"consensusTimestampInstant", "response"})
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
@@ -105,30 +106,15 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    @NonFinal
-    @Setter(AccessLevel.NONE)
-    private ConsensusTopicResponse response;
-
-    @Builder
-    public TopicMessage(Long consensusTimestamp, byte[] message, int realmNum, byte[] runningHash,
-            int runningHashVersion, long sequenceNumber, int topicNum, Integer chunkNum, Integer chunkTotal,
-            Long payerAccountId, Long validStartTimestamp) {
-        this.consensusTimestamp = consensusTimestamp;
-        this.message = message;
-        this.realmNum = realmNum;
-        this.runningHash = runningHash;
-        this.runningHashVersion = runningHashVersion;
-        this.sequenceNumber = sequenceNumber;
-        this.topicNum = topicNum;
-        this.chunkNum = chunkNum;
-        this.chunkTotal = chunkTotal;
-        this.payerAccountId = payerAccountId;
-        this.validStartTimestamp = validStartTimestamp;
-    }
+    private final AtomicReference<ConsensusTopicResponse> response = new AtomicReference<>();
 
     // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
-    public synchronized ConsensusTopicResponse toResponse() {
-        if (response == null) {
+    public ConsensusTopicResponse toResponse() {
+        return response.updateAndGet(response -> {
+            if (response != null) {
+                return response;
+            }
+
             var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
                     .setConsensusTimestamp(Timestamp.newBuilder()
                             .setSeconds(getConsensusTimestampInstant().getEpochSecond())
@@ -161,10 +147,8 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                 consensusTopicResponseBuilder.setChunkInfo(chunkBuilder.build());
             }
 
-            response = consensusTopicResponseBuilder.build();
-        }
-
-        return response;
+            return consensusTopicResponseBuilder.build();
+        });
     }
 
     @Override
