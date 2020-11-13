@@ -266,6 +266,12 @@ const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
+  if (!('amount' in cryptoTransfer)) {
+    cryptoTransfer.amount = NODE_FEE;
+  }
+  if (!('recipientAccountId' in cryptoTransfer)) {
+    cryptoTransfer.recipientAccountId = cryptoTransfer.nodeAccountId;
+  }
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [

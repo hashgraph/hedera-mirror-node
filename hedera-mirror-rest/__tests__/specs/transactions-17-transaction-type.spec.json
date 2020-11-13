@@ -40,10 +40,8 @@
       {
         "consensus_timestamp": "1565779555711927002",
         "payerAccountId": "0.0.9",
-        "recipientAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98",
         "nodeAccountId": "0.0.3",
-        "amount": 2,
+        "treasuryAccountId": "0.0.98",
         "token_transfer_list": [
           {
             "token_id": "0.0.90000",
