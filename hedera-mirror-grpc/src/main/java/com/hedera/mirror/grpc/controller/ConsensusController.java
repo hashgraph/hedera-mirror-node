@@ -67,14 +67,17 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
                 .map(TopicMessage::toResponse)
-                .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
-                .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
-                .onErrorMap(NonTransientDataAccessResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
-                .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
-                .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-                .onErrorMap(ClientTimeoutException.class, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
+                // Client errors
+                .onErrorMap(ClientTimeoutException.class, e -> clientError(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
+                .onErrorMap(ConstraintViolationException.class, e -> clientError(e, Status.INVALID_ARGUMENT))
+                .onErrorMap(Exceptions::isOverflow, e -> clientError(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
+                .onErrorMap(IllegalArgumentException.class, e -> clientError(e, Status.INVALID_ARGUMENT))
+                .onErrorMap(TopicNotFoundException.class, e -> clientError(e, Status.NOT_FOUND))
+                // Server errors
+                .onErrorMap(NonTransientDataAccessResourceException.class, e ->
+                        serverError(e, Status.UNAVAILABLE, DB_ERROR))
+                .onErrorMap(TimeoutException.class, e -> serverError(e, Status.RESOURCE_EXHAUSTED))
+                .onErrorMap(TransientDataAccessException.class, e -> serverError(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(t -> unknownError(t));
     }
 
@@ -105,12 +108,21 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return builder.build();
     }
 
-    private Throwable error(Throwable t, Status status) {
-        return error(t, status, t.getMessage());
+    private Throwable clientError(Throwable t, Status status) {
+        return clientError(t, status, t.getMessage());
     }
 
-    private Throwable error(Throwable t, Status status, String message) {
-        log.warn("Received {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
+    private Throwable clientError(Throwable t, Status status, String message) {
+        log.warn("Client error {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
+        return status.augmentDescription(message).asRuntimeException();
+    }
+
+    private Throwable serverError(Throwable t, Status status) {
+        return serverError(t, status, t.getMessage());
+    }
+
+    private Throwable serverError(Throwable t, Status status, String message) {
+        log.error("Server error {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
         return status.augmentDescription(message).asRuntimeException();
     }
 

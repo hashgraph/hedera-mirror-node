@@ -40,34 +40,33 @@ const httpErrorMessages = {
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const handleError = async (err, req, res, next) => {
-  // only logs in non test environment
-  if (process.env.NODE_ENV !== 'test') {
-    logger.error(`Error processing ${req.originalUrl}: `, err);
-  }
-
   // get application error message format
   const errorMessage = errorMessageFormat(err.message);
 
   // map errors to desired http status codes
   switch (err.constructor) {
     case DbError:
-      logger.debug(`DB error: ${err.dbErrorMessage}`);
+      logger.error(`DbError processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
       return;
     case InvalidArgumentError:
+      logger.warn(`InvalidArgumentError processing ${req.originalUrl}: ${err.message}`);
       res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
       return;
     case NotFoundError:
+      logger.warn(`NotFoundError processing ${req.originalUrl}: ${err.message}`);
       res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
       return;
     case FileDownloadError:
+      logger.error(`FileDownloadError processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
       return;
     case InvalidConfigError:
+      logger.error(`InvalidConfigError processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
       return;
     default:
-      logger.trace(`Unhandled error encountered: ${err.message}`);
+      logger.error(`Unhandled error ${err.constructor.name} encountered: `, err);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
   }
 

@@ -294,6 +294,7 @@ public class UtilityTest {
                                     @ConvertWith(InstantConverter.class) Instant verifyHashAfter, String fileName,
                                     Boolean expectedResult, String testName) {
         assertThat(Utility.verifyHashChain(actualPrevFileHash, expectedPrevFileHash, verifyHashAfter, fileName))
+                .as(testName)
                 .isEqualTo(expectedResult);
     }
 }

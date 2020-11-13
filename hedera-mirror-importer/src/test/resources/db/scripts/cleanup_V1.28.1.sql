@@ -9,7 +9,7 @@ TRUNCATE TABLE t_entities RESTART IDENTITY CASCADE;
 TRUNCATE TABLE transaction RESTART IDENTITY CASCADE;
 TRUNCATE TABLE topic_message RESTART IDENTITY CASCADE;
 TRUNCATE TABLE non_fee_transfer;
-UPDATE t_application_status
-SET status_value = NULL;
+LOCK TABLE t_application_status IN ACCESS EXCLUSIVE MODE;
+UPDATE t_application_status SET status_value = NULL;
 TRUNCATE TABLE address_book RESTART IDENTITY CASCADE;
 TRUNCATE TABLE address_book_entry RESTART IDENTITY CASCADE;

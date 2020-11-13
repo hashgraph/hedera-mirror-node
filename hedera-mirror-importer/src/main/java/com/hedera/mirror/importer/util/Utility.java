@@ -496,7 +496,7 @@ public class Utility {
             return true;
         }
         if (Utility.hashIsEmpty(expectedPrevFileHash)) {
-            log.error("Previous file hash not available");
+            log.warn("Previous file hash not available");
             return true;
         }
         log.trace("actual file hash = {}, expected file hash = {}", actualPrevFileHash, expectedPrevFileHash);

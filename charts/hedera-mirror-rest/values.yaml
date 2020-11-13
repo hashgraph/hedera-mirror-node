@@ -164,7 +164,7 @@ test:
   image:
     pullPolicy: IfNotPresent
     repository: bats/bats
-    tag: v1.2.1
+    tag: 1.2.1
 
 tolerations: []
 
