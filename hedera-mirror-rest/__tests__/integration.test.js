@@ -388,22 +388,22 @@ describe('DB integration test - spec based', () => {
     overrideConfig(spec.config);
   };
 
-  const md5 = (data) => crypto.createHash('md5').update(data).digest('hex');
+  const hasher = (data) => crypto.createHash('sha256').update(data).digest('hex');
 
   const transformStateProofResponse = (jsonObj) => {
     if (jsonObj.record_file) {
-      jsonObj.record_file = md5(jsonObj.record_file);
+      jsonObj.record_file = hasher(jsonObj.record_file);
     }
 
     if (jsonObj.address_books) {
       jsonObj.address_books.forEach((addressBook, index) => {
-        jsonObj.address_books[index] = md5(addressBook);
+        jsonObj.address_books[index] = hasher(addressBook);
       });
     }
 
     if (jsonObj.signature_files) {
       Object.keys(jsonObj.signature_files).forEach((nodeAccountId) => {
-        jsonObj.signature_files[nodeAccountId] = md5(jsonObj.signature_files[nodeAccountId]);
+        jsonObj.signature_files[nodeAccountId] = hasher(jsonObj.signature_files[nodeAccountId]);
       });
     }
   };

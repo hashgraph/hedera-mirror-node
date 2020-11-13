@@ -20,7 +20,9 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Random;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Builder;
@@ -41,6 +43,8 @@ import com.hedera.mirror.grpc.validation.StartTime;
 @Value
 public class TopicMessageFilter {
 
+    private static final Random RANDOM = new SecureRandom();
+
     private Instant endTime;
 
     @Min(0)
@@ -58,7 +62,7 @@ public class TopicMessageFilter {
     private Long startTimeLong = InstantToLongConverter.INSTANCE.convert(startTime);
 
     @Builder.Default
-    private String subscriberId = RandomStringUtils.randomAlphanumeric(8);
+    private String subscriberId = RandomStringUtils.random(8, 0, 0, true, true, null, RANDOM);
 
     @Min(0)
     private int topicNum;

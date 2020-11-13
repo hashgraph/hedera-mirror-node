@@ -16,13 +16,13 @@
   "url": "/api/v1/transactions/0.0.94139-1570803127-678422600/stateproof",
   "responseStatus": 200,
   "responseJson": {
-    "record_file": "96f00839bbf8984ec0a5b077a62236e9",
-    "address_books": ["e28a36c4926ab84655f3c4a3071c8cb3"],
+    "record_file": "9fd46d9d3620b2c713d511c1234679be20ac6f0c8abbe5bffca1cdee22e436ee",
+    "address_books": ["29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"],
     "signature_files": {
-      "0.0.3": "4e4001551046b361908dcb60ea7c7030",
-      "0.0.4": "8c8190946b950a79ddb60f86636ce8bf",
-      "0.0.5": "a56291e23fcd6fa58b715252d9f03e29",
-      "0.0.6": "d05d6fca6f81e736e394270620acd5e1"
+      "0.0.3": "cddc13091fb59fd6f77caa6c85cb9f2f4a2d80f6134451f41bb858a9993a70eb",
+      "0.0.4": "c39350277dae18a2238098a88867ea2516fe23acf5e0f85cad0fb522aca102c6",
+      "0.0.5": "f9a54052b0b195b7961031b8cb31ef80df977b9a1c2cebaf5f8acb978c09f26f",
+      "0.0.6": "1a5897cdce80edff3df07881454223bbca91a10ee1bd748bf5d570e8ca6fc933"
     }
   }
 }

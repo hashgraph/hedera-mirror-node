@@ -19,6 +19,8 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
+import java.security.SecureRandom;
+import java.util.Random;
 import java.util.function.Consumer;
 
 import com.hedera.datagenerator.sampling.Distribution;
@@ -27,6 +29,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 public abstract class TransactionGenerator {
 
+    protected static final Random RANDOM = new SecureRandom();
     private static final int RESULT_SUCCESS = 22;
     private static final byte[] MEMO = new byte[] {0b0, 0b1, 0b01, 0b10, 0b11};
 
