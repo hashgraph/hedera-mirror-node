@@ -31,6 +31,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.TransferTransaction;
+import com.hedera.hashgraph.sdk.token.TokenId;
 
 @Builder
 @Value
@@ -49,6 +50,8 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
 
+    private final String tokenId;
+
     @Override
     public TransferTransaction get() {
 
@@ -56,10 +59,21 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
             throw new TransactionSupplierException(this, requiredFields);
         }
 
-        return new TransferTransaction()
-                .addHbarTransfer(AccountId.fromString(recipientAccountId), amount)
-                .addHbarTransfer(AccountId.fromString(senderAccountId), Math.negateExact(amount))
+        AccountId recipientId = AccountId.fromString(recipientAccountId);
+        AccountId senderId = AccountId.fromString(recipientAccountId);
+
+        TransferTransaction transferTransaction = new TransferTransaction()
+                .addHbarTransfer(recipientId, amount)
+                .addHbarTransfer(senderId, Math.negateExact(amount))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
+
+        if (StringUtils.isNotBlank(tokenId)) {
+            TokenId token = TokenId.fromString(tokenId);
+            transferTransaction
+                    .addTokenTransfer(token, recipientId, amount)
+                    .addTokenTransfer(token, senderId, Math.negateExact(amount));
+        }
+        return transferTransaction;
     }
 }
