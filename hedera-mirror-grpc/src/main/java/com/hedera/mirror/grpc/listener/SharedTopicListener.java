@@ -31,6 +31,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -46,17 +47,32 @@ public abstract class SharedTopicListener implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
+//        return getSharedListener(filter)
+//                .publishOn(Schedulers.boundedElastic())
+//                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
+//                .onBackpressureBuffer(listenerProperties.getMaxBufferSize());
         TimeoutContext timeoutContext = new TimeoutContext(Schedulers.parallel(), listenerProperties.getBufferTimeout());
         Mono<TopicMessage> timeoutMono = Mono.create(timeoutContext);
 
         Flux<TopicMessage> topicMessageFlux = getSharedListener(filter)
-                .publishOn(Schedulers.boundedElastic())
                 .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
                 .doOnCancel(timeoutContext::timeout)
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
                 .doOnCancel(timeoutContext::onComplete)
                 .doOnComplete(timeoutContext::onComplete);
-        return Flux.merge(1, topicMessageFlux, timeoutMono);
+        return Flux.merge(1, topicMessageFlux, timeoutMono).publishOn(Schedulers.boundedElastic());
+//        UnicastProcessor<String> processor = UnicastProcessor.create();
+//        Flux<String> timeoutFlux = processor.delayElements(listenerProperties.getBufferTimeout())
+//                .replay(1)
+//                .autoConnect();
+//
+//        return getSharedListener(filter)
+//                .publishOn(Schedulers.boundedElastic())
+//                .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
+//                .doOnCancel(() -> processor.onNext("timeout"))
+//                .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
+//                .timeout(timeoutFlux, message -> timeoutFlux, Mono.error(
+//                        new ClientTimeoutException("Client timed out while consuming the buffered messages")));
     }
 
     protected abstract Flux<TopicMessage> getSharedListener(TopicMessageFilter filter);
@@ -77,6 +93,16 @@ public abstract class SharedTopicListener implements TopicListener {
             this.sink = sink;
         }
 
+        public void onComplete() {
+            completed = true;
+
+            if (taskDisposer != null) {
+                taskDisposer.dispose();
+            }
+
+            sink.success();
+        }
+
         public void timeout() {
             if (completed) {
                 return;
@@ -89,16 +115,6 @@ public abstract class SharedTopicListener implements TopicListener {
             } catch (RejectedExecutionException ex) {
                 log.error("Failed to schedule task to send ClientTimeoutException", ex);
             }
-        }
-
-        public void onComplete() {
-            completed = true;
-
-            if (taskDisposer != null) {
-                taskDisposer.dispose();
-            }
-
-            sink.success();
         }
     }
 }

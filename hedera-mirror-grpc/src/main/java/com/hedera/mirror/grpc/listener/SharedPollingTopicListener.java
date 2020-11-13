@@ -101,7 +101,9 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         void onNext(TopicMessage topicMessage) {
             count++;
             lastConsensusTimestamp = topicMessage.getConsensusTimestamp();
-            log.trace("Next message: {}", topicMessage);
+            if (log.isTraceEnabled()) {
+                log.trace("Next message: {}", topicMessage);
+            }
         }
 
         void onPollEnd() {
