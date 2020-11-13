@@ -21,7 +21,6 @@
   },
   "stateproof": {
     "enabled": true,
-    "failedTransactionLimit": 20,
     "intervalMultiplier": 10
   },
   "transaction": {

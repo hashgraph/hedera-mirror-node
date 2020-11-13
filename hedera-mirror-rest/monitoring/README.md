@@ -63,8 +63,6 @@ To customize per-resource configuration:
 - set `token.tokenId` to an existing token ID of the target environment in case it's needed to pass certain token tests,
   e.g., `tokenBalancesLimit` for the token. If not set, the tests will use the first token from the
   token discovery API response
-- set `failedTransactionLimit` for `stateproof` to limit the number of failed transactions to search for a non
-  "DUPLICATE_TRANSACTION" transaction for 404 check
 
 ```json
 {
@@ -81,7 +79,6 @@ To customize per-resource configuration:
   },
   "stateproof": {
     "enabled": true,
-    "failedTransactionLimit": 20,
     "intervalMultiplier": 10
   },
   "transaction": {

@@ -20,8 +20,6 @@
 
 'use strict';
 
-const _ = require('lodash');
-const config = require('./config');
 const {
   checkAPIResponseError,
   checkRespObjDefined,
@@ -36,7 +34,6 @@ const {
 const resource = 'stateproof';
 const transactionsPath = '/transactions';
 const transactionsJsonKey = 'transactions';
-const {failedTransactionLimit} = config[resource];
 const mandatoryParams = ['record_file', 'address_books', 'signature_files'];
 
 const stateproofPath = (transactionId) => `${transactionsPath}/${transactionId}/stateproof`;
@@ -93,27 +90,22 @@ const checkStateproofForValidTransaction = async (server) => {
  * @return {{url: String, passed: boolean, message: String}}
  */
 const checkStateproofForFailedTransaction = async (server) => {
-  let url = getUrl(server, transactionsPath, {limit: failedTransactionLimit, order: 'desc', result: 'fail'});
+  let url = getUrl(server, transactionsPath, {limit: 1, order: 'desc', result: 'fail'});
   const transactions = await getAPIResponse(url, transactionsJsonKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `transactions.length of ${elements.length} is not 1`,
+    })
     .run(transactions);
   if (!result.passed) {
     return {url, ...result};
   }
 
-  const transaction = _.find(transactions, (tx) => tx.result !== 'DUPLICATE_TRANSACTION');
-  if (transaction === undefined) {
-    return {
-      url,
-      passed: true,
-      message: 'Non-duplicate failed transaction is not found for stateproof check, will retry next time',
-    };
-  }
-
-  const transactionId = transaction.transaction_id;
+  const transactionId = transactions[0].transaction_id;
   url = getUrl(server, stateproofPath(transactionId));
   const stateproof = await getAPIResponse(url);
 
@@ -125,7 +117,7 @@ const checkStateproofForFailedTransaction = async (server) => {
   return {
     url,
     passed: true,
-    message: 'Successfully called stateproof for a failed transaction and got expected 404',
+    message: `Successfully called stateproof for a failed transaction and got expected 404}`,
   };
 };
 
