@@ -84,69 +84,6 @@ const checkStateproofForValidTransaction = async (server) => {
 };
 
 /**
- * Checks state proof for a failed transaction, expects 404 not found.
- *
- * @param {String} server
- * @return {{url: String, passed: boolean, message: String}}
- */
-const checkStateproofForFailedTransaction = async (server) => {
-  let url = getUrl(server, transactionsPath, {limit: 1, order: 'desc', result: 'fail'});
-  const transactions = await getAPIResponse(url, transactionsJsonKey);
-
-  let result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (elements) => `transactions.length of ${elements.length} is not 1`,
-    })
-    .run(transactions);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  const transactionId = transactions[0].transaction_id;
-  url = getUrl(server, stateproofPath(transactionId));
-  const stateproof = await getAPIResponse(url);
-
-  result = new CheckRunner().withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 404}).run(stateproof);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: `Successfully called stateproof for a failed transaction and got expected 404}`,
-  };
-};
-
-/**
- * Checks state proof for a non-existing transaction, expects 404 not found.
- *
- * @param {String} server
- * @return {{url: String, passed: boolean, message: String}}
- */
-const checkStateproofForNonExistingTransaction = async (server) => {
-  const transactionId = '0.0.19652-10-123456789';
-  const url = getUrl(server, stateproofPath(transactionId));
-  const stateproof = await getAPIResponse(url);
-
-  const result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError, {expectHttpError: true, status: 404})
-    .run(stateproof);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: `Successfully called stateproof for non-existing transaction ${transactionId} and got expected 404`,
-  };
-};
-
-/**
  * Run all stateproof tests in an asynchronous fashion waiting for all tests to complete
  *
  * @param {String} server API host endpoint
@@ -154,11 +91,7 @@ const checkStateproofForNonExistingTransaction = async (server) => {
  */
 const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
-  return Promise.all([
-    runTest(checkStateproofForValidTransaction),
-    runTest(checkStateproofForFailedTransaction),
-    runTest(checkStateproofForNonExistingTransaction),
-  ]);
+  return runTest(checkStateproofForValidTransaction);
 };
 
 module.exports = {
