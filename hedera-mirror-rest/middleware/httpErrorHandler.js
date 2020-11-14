@@ -53,25 +53,25 @@ const handleError = async (err, req, res, next) => {
     case DbError:
       logger.debug(`DB error: ${err.dbErrorMessage}`);
       res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
-      return;
+      break;
     case InvalidArgumentError:
       res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
-      return;
+      break;
     case NotFoundError:
       res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
-      return;
+      break;
     case FileDownloadError:
       res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
-      return;
+      break;
     case InvalidConfigError:
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
-      return;
+      break;
     default:
       logger.trace(`Unhandled error encountered: ${err.message}`);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
   }
 
-  next();
+  return undefined;
 };
 
 /**

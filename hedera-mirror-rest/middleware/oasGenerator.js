@@ -21,7 +21,7 @@
 'use strict';
 
 // ext libraries
-const {handleRequests, handleResponses} = require('express-oas-generator');
+const {handleRequests, handleResponses, init} = require('express-oas-generator');
 const swaggerUi = require('swagger-ui-express');
 const _ = require('lodash');
 
@@ -30,22 +30,42 @@ const oasDocumentV3 = require('./../oas_doc_v3.json');
 let urlPrefix;
 
 const oasGeneratorInit = (app, apiPrefix) => {
-  urlPrefix = apiPrefix;
-  var oasDocumentOptions = {
-    swaggerOptions: {
-      url: `http://localhost:5551/oas_doc.json`,
-    },
-  };
-  app.use(`${urlPrefix}/api-spec`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
-  app.use(`${urlPrefix}/api-spec/v2`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
-  app.use(`${urlPrefix}/api-spec/v3`, swaggerUi.serve, swaggerUi.setup(oasDocumentV3));
+  handleOASResponses(app);
+  // init(app, function (spec) {
+  //     _.set(spec, 'info.contact', {
+  //       name: 'Hedera Mirror Node Team 2',
+  //       email: 'mirrornode@hedera.com',
+  //       url: 'https://github.com/hashgraph/hedera-mirror-node',
+  //     });
+  //     _.set(spec, 'info.license.url', 'https://www.apache.org/licenses/LICENSE-2.0.html');
+  //     // _.set(
+  //     //   spec,
+  //     //   'info.description',
+  //     //   `Specification JSONs: [v2](${urlPrefix}/api-spec/v2), [v3](${urlPrefix}/api-spec/v3).\n\nHedera Mirror Node REST API 3`
+  //     // );
+  //     _.set(spec, `paths["${urlPrefix}/transactions/{id}"].get.parameters[0].description`, 'Transaction id details');
+  //     return spec;
+  //   },
+  //   './oas_doc.json',
+  //     1000,
+  //     `${urlPrefix}/api-spec`,
+  //     null,
+  //     ['accounts', 'balances', 'transactions', 'topics', 'tokens'],
+  //     ['production']);
+
+  // urlPrefix = apiPrefix;
+  // app.use(`${urlPrefix}/api-spec`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
+  // app.use(`${urlPrefix}/api-spec/v2`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
+  // app.use(`${urlPrefix}/api-spec/v3`, swaggerUi.serve, swaggerUi.setup(oasDocumentV3));
 };
 
-const handleOASRequests = () => {
+const handleOASRequests = (app, urlPrefix) => {
   handleRequests();
+
+  // serveOASSwaggerUI(app, urlPrefix);
 };
 
-const handleOASResponses = (app) => {
+const handleOASResponses = (app, urlPrefix) => {
   handleResponses(app, {
     predefinedSpec: function (spec) {
       _.set(spec, 'info.contact', {
@@ -54,31 +74,30 @@ const handleOASResponses = (app) => {
         url: 'https://github.com/hashgraph/hedera-mirror-node',
       });
       _.set(spec, 'info.license.url', 'https://www.apache.org/licenses/LICENSE-2.0.html');
-      _.set(
-        spec,
-        'info.description',
-        `Specification JSONs: [v2](${urlPrefix}/api-spec/v2), [v3](${urlPrefix}/api-spec/v3).\n\nHedera Mirror Node REST API`
-      );
+      // _.set(
+      //   spec,
+      //   'info.description',
+      //   `Specification JSONs: [v2](${urlPrefix}/api-spec/v2), [v3](${urlPrefix}/api-spec/v3).\n\nHedera Mirror Node REST API`
+      // );
       _.set(spec, `paths["${urlPrefix}/transactions/{id}"].get.parameters[0].description`, 'Transaction id details');
       return spec;
     },
     specOutputPath: './oas_doc.json',
-    writeIntervalMs: 60 * 1000,
+    writeIntervalMs: 0,
+    predefinedSpec: undefined,
+    // writeIntervalMs: 60 * 1000,
     swaggerUiServePath: `${urlPrefix}/api-spec`,
     mongooseModels: null,
     tags: ['accounts', 'balances', 'transactions', 'topics', 'tokens'],
-    ignoredNodeEnvironments: ['production'],
+    // ignoredNodeEnvironments: ['production'],
     alwaysServeDocs: true,
   });
+
+  serveOASSwaggerUI(app, urlPrefix);
 };
 
 const serveOASSwaggerUI = (app, apiPrefix) => {
   urlPrefix = apiPrefix;
-  var oasDocumentOptions = {
-    swaggerOptions: {
-      url: `http://localhost:5551/oas_doc.json`,
-    },
-  };
   app.use(`${urlPrefix}/api-spec`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
   app.use(`${urlPrefix}/api-spec/v2`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
   app.use(`${urlPrefix}/api-spec/v3`, swaggerUi.serve, swaggerUi.setup(oasDocumentV3));

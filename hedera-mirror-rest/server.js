@@ -28,6 +28,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const log4js = require('log4js');
 const compression = require('compression');
+const _ = require('lodash');
 
 // local files
 const accounts = require('./accounts');
@@ -42,7 +43,8 @@ const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const {oasGeneratorInit, serveOASSwaggerUI} = require('./middleware/oasGenerator');
+const {oasGeneratorInit, handleOASRequests, handleOASResponses} = require('./middleware/oasGenerator');
+const {handleResponses, handleRequests} = require('express-oas-generator');
 
 // Logger
 const logger = log4js.getLogger();
@@ -90,14 +92,14 @@ global.pool = pool;
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
+const apiPrefix = '/api/v1';
+
+handleOASResponses(app, apiPrefix);
+
 app.disable('x-powered-by');
 app.set('trust proxy', true);
 app.set('port', port);
 app.set('query parser', requestQueryParser);
-
-const apiPrefix = '/api/v1';
-
-oasGeneratorInit(app, apiPrefix);
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
@@ -111,8 +113,6 @@ app.use(cors());
 
 // logging middleware
 app.use(requestLogger);
-
-serveOASSwaggerUI(app, apiPrefix);
 
 // metrics middleware
 if (config.metrics.enabled) {
@@ -154,9 +154,11 @@ app.use(responseHandler);
 // response error handling middleware
 app.use(handleError);
 
+handleOASRequests(app, apiPrefix);
+
 if (process.env.NODE_ENV !== 'test') {
   const server = app.listen(port, () => {
-    console.log(`Server running on port: ${port}`);
+    logger.info(`Server running on port: ${port}`);
   });
 
   // Health check endpoints
