@@ -42,6 +42,7 @@ const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
+const {oasGeneratorInit, serveOASSwaggerUI} = require('./middleware/oasGenerator');
 
 // Logger
 const logger = log4js.getLogger();
@@ -94,6 +95,10 @@ app.set('trust proxy', true);
 app.set('port', port);
 app.set('query parser', requestQueryParser);
 
+const apiPrefix = '/api/v1';
+
+oasGeneratorInit(app, apiPrefix);
+
 // middleware functions, Prior to v0.5 define after sets
 app.use(
   bodyParser.urlencoded({
@@ -107,12 +112,12 @@ app.use(cors());
 // logging middleware
 app.use(requestLogger);
 
+serveOASSwaggerUI(app, apiPrefix);
+
 // metrics middleware
 if (config.metrics.enabled) {
   app.use(metricsHandler());
 }
-
-const apiPrefix = '/api/v1';
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);

@@ -1,0 +1,102 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/accounts": {"get": {"summary": "/api/v1/accounts", "responses": {}, "tags": ["accounts"]}},
+    "/api/v1/accounts/{id}": {
+      "get": {
+        "summary": "/api/v1/accounts/{id}",
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {},
+        "tags": ["accounts"]
+      }
+    },
+    "/api/v1/balances": {"get": {"summary": "/api/v1/balances", "responses": {}, "tags": ["balances"]}},
+    "/api/v1/transactions": {"get": {"summary": "/api/v1/transactions", "responses": {}, "tags": ["transactions"]}},
+    "/api/v1/transactions/{id}": {
+      "get": {
+        "summary": "/api/v1/transactions/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Transaction id details",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {},
+        "tags": ["transactions"]
+      }
+    },
+    "/api/v1/transactions/{id}/stateproof": {
+      "get": {
+        "summary": "/api/v1/transactions/{id}/stateproof",
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {},
+        "tags": ["transactions"]
+      }
+    },
+    "/api/v1/topics/{id}/messages": {
+      "get": {
+        "summary": "/api/v1/topics/{id}/messages",
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {},
+        "tags": ["topics"]
+      }
+    },
+    "/api/v1/topics/{id}/messages/{sequencenumber}": {
+      "get": {
+        "summary": "/api/v1/topics/{id}/messages/{sequencenumber}",
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}},
+          {"name": "sequencenumber", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {},
+        "tags": ["topics"]
+      }
+    },
+    "/api/v1/topics?/messages?/{consensusTimestamp}": {
+      "get": {
+        "summary": "/api/v1/topics?/messages?/{consensusTimestamp}",
+        "parameters": [{"name": "consensusTimestamp", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {},
+        "tags": ["topics"]
+      }
+    },
+    "/api/v1/tokens": {"get": {"summary": "/api/v1/tokens", "responses": {}, "tags": ["tokens"]}},
+    "/api/v1/tokens/{id}": {
+      "get": {
+        "summary": "/api/v1/tokens/{id}",
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {},
+        "tags": ["tokens"]
+      }
+    },
+    "/api/v1/tokens/{id}/balances": {
+      "get": {
+        "summary": "/api/v1/tokens/{id}/balances",
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}],
+        "responses": {},
+        "tags": ["balances", "tokens"]
+      }
+    }
+  },
+  "tags": [
+    {"name": "accounts"},
+    {"name": "balances"},
+    {"name": "transactions"},
+    {"name": "topics"},
+    {"name": "tokens"}
+  ],
+  "info": {
+    "title": "hedera-mirror-rest",
+    "version": "0.22.0-rc1",
+    "license": {"name": "Apache-2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0.html"},
+    "description": "Specification JSONs: [v2](/api/v1/api-spec/v2), [v3](/api/v1/api-spec/v3).\n\nHedera Mirror Node REST API",
+    "contact": {
+      "name": "Hedera Mirror Node Team",
+      "email": "mirrornode@hedera.com",
+      "url": "https://github.com/hashgraph/hedera-mirror-node"
+    }
+  }
+}
