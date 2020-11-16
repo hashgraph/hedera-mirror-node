@@ -50,7 +50,7 @@ const getRowValueAsInt = (row) => {
  * Gets 'n' randomly sampled entity_num from t_entities table.
  */
 const sampleEntityIds = (n) => {
-  return pool.query(`select entity_num as value from t_entities order by RANDOM() limit ${n};`, null).then((result) => {
+  return pool.query('select entity_num as value from t_entities order by RANDOM() limit $1', [n]).then((result) => {
     return result.rows.map(getRowValueAsInt);
   });
 };
@@ -59,29 +59,25 @@ const sampleEntityIds = (n) => {
  * Gets 'n' randomly sampled consensus timestamps from transaction table.
  */
 const sampleConsensusTimestamps = (n) => {
-  return pool
-    .query(`select consensus_ns as value from transaction order by RANDOM() limit ${n};`, null)
-    .then((result) => {
-      return result.rows.map(getRowValueAsInt);
-    });
+  return pool.query('select consensus_ns as value from transaction order by RANDOM() limit $1', [n]).then((result) => {
+    return result.rows.map(getRowValueAsInt);
+  });
 };
 
 /**
  * Gets 'n' randomly sampled balances from account_balance table.
  */
 const sampleBalanceValues = (n) => {
-  return pool
-    .query(`select balance as value from account_balance order by RANDOM() limit ${n};`, null)
-    .then((result) => {
-      return result.rows.map(getRowValueAsInt);
-    });
+  return pool.query('select balance as value from account_balance order by RANDOM() limit $1', [n]).then((result) => {
+    return result.rows.map(getRowValueAsInt);
+  });
 };
 
 /**
  * Gets 'n' randomly sampled token_id from token table.
  */
 const sampleTokenIds = (n) => {
-  return pool.query(`select token_id as value from token order by RANDOM() limit ${n};`, null).then((result) => {
+  return pool.query('select token_id as value from token order by RANDOM() limit $1', [n]).then((result) => {
     return result.rows.map(getRowValueAsInt);
   });
 };

@@ -19,6 +19,8 @@
  */
 'use strict';
 
+const crypto = require('crypto');
+
 const checkSql = (parsedparams, condition) => {
   for (const p of parsedparams) {
     if (p.field == condition.field && p.operator == condition.operator && p.value == condition.value) {
@@ -162,14 +164,8 @@ const badParamsList = () => {
   ];
 };
 
-const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-
 const randomString = (length) => {
-  let result = '';
-  for (let i = length; i > 0; i--) {
-    result += characters[Math.floor(Math.random() * characters.length)];
-  }
-  return result;
+  return crypto.randomBytes(length / 2).toString('hex');
 };
 
 module.exports = {

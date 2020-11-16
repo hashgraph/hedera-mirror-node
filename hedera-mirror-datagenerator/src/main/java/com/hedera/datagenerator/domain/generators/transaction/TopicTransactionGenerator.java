@@ -22,7 +22,6 @@ package com.hedera.datagenerator.domain.generators.transaction;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.Getter;
@@ -117,7 +116,7 @@ public class TopicTransactionGenerator extends TransactionGenerator {
         topicToNextSequenceNumber.put(topic, sequenceNumber + 1);
         long messageSize = properties.getMessageSize().sample();
         byte[] messageBytes = new byte[(int) messageSize];
-        new Random().nextBytes(messageBytes);
+        RANDOM.nextBytes(messageBytes);
         topicMessage.setMessage(messageBytes);
         entityListener.onTopicMessage(topicMessage);
     }

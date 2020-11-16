@@ -17,8 +17,7 @@
     ],
     "balances": [],
     "transactions": [],
-    "cryptotransfers": [],
-    "tokentransfers": [
+    "cryptotransfers": [
       {
         "consensus_timestamp": "1565779555711927001",
         "payerAccountId": "0.0.300",
@@ -55,7 +54,7 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "transaction_hash": "aGFzaA==",
-        "name": "TOKENTRANSFERS",
+        "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "transaction_id": "0.0.300-1565779555-711927000",
         "valid_duration_seconds": "11",

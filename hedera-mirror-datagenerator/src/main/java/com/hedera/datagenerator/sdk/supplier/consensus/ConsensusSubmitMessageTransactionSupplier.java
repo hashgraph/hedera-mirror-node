@@ -21,6 +21,7 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  */
 
 import com.google.common.primitives.Longs;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -40,6 +41,7 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("topicId");
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     //Required
     private final String topicId;
@@ -77,7 +79,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
         //Generate a message from the timestamp and a random alphanumeric String
         byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
         int additionalBytes = messageSize <= timeRefBytes.length ? 0 : messageSize - timeRefBytes.length;
-        String randomAlphanumeric = RandomStringUtils.randomAlphanumeric(additionalBytes);
+        String randomAlphanumeric = RandomStringUtils.random(additionalBytes, 0, 0, true, true, null, RANDOM);
         return encodedTimestamp + randomAlphanumeric;
     }
 }
