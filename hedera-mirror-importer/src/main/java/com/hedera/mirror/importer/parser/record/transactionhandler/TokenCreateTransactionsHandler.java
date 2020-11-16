@@ -54,7 +54,7 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
         }
 
         if (tokenCreateTransactionBody.hasExpiry()) {
-            entity.setExpiryTimeNs(Utility.timeStampInNanos(tokenCreateTransactionBody.getExpiry()));
+            entity.setExpiryTimeNs(Utility.timestampInNanosMax(tokenCreateTransactionBody.getExpiry()));
         }
     }
 
