@@ -40,7 +40,6 @@ import com.hedera.datagenerator.sdk.supplier.token.TokenFreezeTransactionSupplie
 import com.hedera.datagenerator.sdk.supplier.token.TokenGrantKycTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenMintTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenRevokeKycTransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.token.TokenTransferTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenUnfreezeTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenUpdateTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenWipeTransactionSupplier;
@@ -66,7 +65,6 @@ public enum TransactionType {
     TOKEN_GRANT_KYC(TokenGrantKycTransactionSupplier.class),
     TOKEN_MINT(TokenMintTransactionSupplier.class),
     TOKEN_REVOKE_KYC(TokenRevokeKycTransactionSupplier.class),
-    TOKEN_TRANSFER(TokenTransferTransactionSupplier.class),
     TOKEN_UNFREEZE(TokenUnfreezeTransactionSupplier.class),
     TOKEN_UPDATE(TokenUpdateTransactionSupplier.class),
     TOKEN_WIPE(TokenWipeTransactionSupplier.class);

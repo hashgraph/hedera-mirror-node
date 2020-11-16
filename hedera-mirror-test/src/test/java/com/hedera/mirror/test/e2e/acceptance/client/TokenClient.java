@@ -29,6 +29,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import com.hedera.hashgraph.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.hashgraph.sdk.account.TransferTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenAssociateTransaction;
@@ -41,7 +42,6 @@ import com.hedera.hashgraph.sdk.token.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
-import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
 import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
@@ -215,9 +215,9 @@ public class TokenClient extends AbstractNetworkClient {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
         Instant refInstant = Instant.now();
-        TokenTransferTransaction tokenTransferTransaction = new TokenTransferTransaction()
-                .addSender(tokenId, sender, amount)
-                .addRecipient(tokenId, recipient, amount)
+        TransferTransaction tokenTransferTransaction = new TransferTransaction()
+                .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
+                .addTokenTransfer(tokenId, recipient, amount)
                 .setMaxTransactionFee(1_000_000)
                 .setTransactionMemo("Transfer token_" + refInstant);
 

@@ -38,13 +38,12 @@ import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
+import com.hedera.hashgraph.sdk.account.TransferTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
-import com.hedera.hashgraph.sdk.token.TokenTransferTransaction;
 import com.hedera.mirror.grpc.jmeter.props.NodeInfo;
 
 @Log4j2
@@ -114,9 +113,9 @@ public class SDKClientHandler {
     }
 
     public TransactionId submitCryptoTransfer(AccountId operatorId, AccountId recipientId, int amount) throws HederaStatusException {
-        TransactionId transactionId = new CryptoTransferTransaction()
-                .addSender(operatorId, amount)
-                .addRecipient(recipientId, amount)
+        TransactionId transactionId = new TransferTransaction()
+                .addHbarTransfer(operatorId, Math.negateExact(amount))
+                .addHbarTransfer(recipientId, amount)
                 .setTransactionMemo("transfer test")
                 .execute(client);
 
@@ -125,9 +124,9 @@ public class SDKClientHandler {
 
     public TransactionId submitTokenTransfer(TokenId tokenId, AccountId operatorId, AccountId recipientId,
                                              long transferAmount) throws HederaStatusException {
-        TransactionId transactionId = new TokenTransferTransaction()
-                .addSender(tokenId, operatorId, transferAmount)
-                .addRecipient(tokenId, recipientId, transferAmount)
+        TransactionId transactionId = new TransferTransaction()
+                .addTokenTransfer(tokenId, operatorId, Math.negateExact(transferAmount))
+                .addTokenTransfer(tokenId, recipientId, transferAmount)
                 .setMaxTransactionFee(1_000_000)
                 .setTransactionMemo("Token Transfer_" + Instant.now())
                 .execute(client);

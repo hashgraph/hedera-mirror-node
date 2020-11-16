@@ -32,7 +32,7 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.account.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
+import com.hedera.hashgraph.sdk.account.TransferTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -68,9 +68,9 @@ public class AccountClient extends AbstractNetworkClient {
     public TransactionReceipt sendCryptoTransfer(AccountId recipient, long amount) throws HederaStatusException {
         log.debug("Send CryptoTransfer of {} tℏ from {} to {}", amount, sdkClient.getOperatorId(), recipient);
 
-        CryptoTransferTransaction cryptoTransferTransaction = new CryptoTransferTransaction()
-                .addSender(sdkClient.getOperatorId(), amount)
-                .addRecipient(recipient, amount)
+        TransferTransaction cryptoTransferTransaction = new TransferTransaction()
+                .addHbarTransfer(sdkClient.getOperatorId(), Math.negateExact(amount))
+                .addHbarTransfer(recipient, amount)
                 .setTransactionMemo("transfer test");
 
         TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null)
