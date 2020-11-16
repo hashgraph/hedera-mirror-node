@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class TokenCreateTransactionsHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getTokenId());
+        return EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
     }
 
     @Override
@@ -48,12 +48,12 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
             entity.setKey(tokenCreateTransactionBody.getAdminKey().toByteArray());
         }
 
-        if (tokenCreateTransactionBody.getAutoRenewPeriod() != 0) {
-            entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod());
+        if (tokenCreateTransactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        if (tokenCreateTransactionBody.getExpiry() != 0) {
-            entity.setExpiryTimeNs(tokenCreateTransactionBody.getExpiry());
+        if (tokenCreateTransactionBody.hasExpiry()) {
+            entity.setExpiryTimeNs(tokenCreateTransactionBody.getExpiry().getSeconds());
         }
     }
 

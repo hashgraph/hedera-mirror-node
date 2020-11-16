@@ -506,7 +506,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setModifiedTimestamp(consensusTimeStamp);
             token.setName(tokenCreateTransactionBody.getName());
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
-            token.setTokenId(new Token.Id(EntityId.of(recordItem.getRecord().getReceipt().getTokenId())));
+            token.setTokenId(new Token.Id(EntityId.of(recordItem.getRecord().getReceipt().getTokenID())));
 
             if (tokenCreateTransactionBody.hasFreezeKey()) {
                 token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
