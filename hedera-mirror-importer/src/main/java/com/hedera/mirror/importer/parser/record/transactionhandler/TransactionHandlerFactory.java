@@ -54,7 +54,6 @@ public class TransactionHandlerFactory {
     private final TokenGrantKycTransactionsHandler tokenGrantKycTransactionsHandler;
     private final TokenMintTransactionsHandler tokenMintTransactionsHandler;
     private final TokenRevokeKycTransactionsHandler tokenRevokeKycTransactionsHandler;
-    private final TokenTransferTransactionsHandler tokenTransferTransactionsHandler;
     private final TokenUnfreezeTransactionsHandler tokenUnfreezeTransactionsHandler;
     private final TokenUpdateTransactionsHandler tokenUpdateTransactionsHandler;
     private final TokenWipeTransactionsHandler tokenWipeTransactionsHandler;
@@ -117,8 +116,6 @@ public class TransactionHandlerFactory {
             return tokenMintTransactionsHandler;
         } else if (body.hasTokenRevokeKyc()) {
             return tokenRevokeKycTransactionsHandler;
-        } else if (body.hasTokenTransfers()) {
-            return tokenTransferTransactionsHandler;
         } else if (body.hasTokenUnfreeze()) {
             return tokenUnfreezeTransactionsHandler;
         } else if (body.hasTokenUpdate()) {

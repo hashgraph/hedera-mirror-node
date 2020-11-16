@@ -27,8 +27,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -347,14 +349,14 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
             builder.getTokenCreationBuilder()
                     .setAdminKey(TOKEN_REF_KEY)
                     .setDecimals(1000)
-                    .setExpiry(360)
+                    .setExpiry(Timestamp.newBuilder().setSeconds(360))
                     .setInitialSupply(1_000_000L)
                     .setFreezeDefault(false)
                     .setSupplyKey(TOKEN_REF_KEY)
                     .setSymbol(symbol)
                     .setTreasury(PAYER)
                     .setAutoRenewAccount(PAYER)
-                    .setAutoRenewPeriod(100)
+                    .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
                     .setName(symbol + "_token_name")
                     .setWipeKey(TOKEN_REF_KEY);
 
@@ -379,8 +381,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .setName(symbol + "_update_name")
                 .setTreasury(accountID)
                 .setAutoRenewAccount(accountID)
-                .setAutoRenewPeriod(12)
-                .setExpiry(360)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(12))
+                .setExpiry(Timestamp.newBuilder().setSeconds(360))
                 .setFreezeKey(newKey)
                 .setWipeKey(newKey)
         );
@@ -453,7 +455,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenTransferTransaction() {
-        return buildTransaction(builder -> builder.getTokenTransfersBuilder());
+        return buildTransaction(builder -> builder.getCryptoTransferBuilder());
     }
 
     private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
@@ -462,7 +464,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                                                       List<TokenTransferList> tokenTransferLists) {
         var receipt = TransactionReceipt.newBuilder()
                 .setStatus(responseCode)
-                .setTokenId(TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(tokenNum).build());
+                .setTokenID(TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(tokenNum).build());
 
         return buildTransactionRecord(recordBuilder -> {
                     recordBuilder

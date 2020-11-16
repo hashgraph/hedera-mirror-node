@@ -44,9 +44,7 @@
         "amount": 30,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98"
-      }
-    ],
-    "tokentransfers": [
+      },
       {
         "consensus_timestamp": "1234567890000000004",
         "payerAccountId": "0.0.10",
@@ -78,7 +76,7 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "transaction_hash": "aGFzaA==",
-        "name": "TOKENTRANSFERS",
+        "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "transaction_id": "0.0.10-1234567890-000000003",
         "valid_duration_seconds": "11",

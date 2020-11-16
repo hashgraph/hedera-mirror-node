@@ -27,13 +27,14 @@ import lombok.AllArgsConstructor;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
 public class TokenCreateTransactionsHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getTokenId());
+        return EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
     }
 
     @Override
@@ -48,12 +49,12 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
             entity.setKey(tokenCreateTransactionBody.getAdminKey().toByteArray());
         }
 
-        if (tokenCreateTransactionBody.getAutoRenewPeriod() != 0) {
-            entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod());
+        if (tokenCreateTransactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        if (tokenCreateTransactionBody.getExpiry() != 0) {
-            entity.setExpiryTimeNs(tokenCreateTransactionBody.getExpiry());
+        if (tokenCreateTransactionBody.hasExpiry()) {
+            entity.setExpiryTimeNs(Utility.timestampInNanosMax(tokenCreateTransactionBody.getExpiry()));
         }
     }
 

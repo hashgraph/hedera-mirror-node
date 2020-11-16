@@ -22,7 +22,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,16 +46,14 @@ public class TokenUpdateTransactionsHandlerTest extends AbstractTransactionHandl
                 .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
                         .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build())
                         .setAdminKey(key)
-                        .setExpiry(360)
+                        .setExpiry(Timestamp.newBuilder().setSeconds(360).build())
                         .setKycKey(key)
-                        .setAutoRenewPeriod(100)
-                        .setName("_token_name")
                         .setFreezeKey(key)
                         .setSymbol("SYMBOL")
                         .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
                         .setAutoRenewAccount(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2)
                                 .build())
-                        .setAutoRenewPeriod(100)
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
                         .setName("token_name")
                         .setWipeKey(key)
                         .build());
