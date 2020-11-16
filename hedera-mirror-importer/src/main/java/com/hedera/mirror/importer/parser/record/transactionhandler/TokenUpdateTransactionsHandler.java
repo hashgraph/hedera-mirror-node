@@ -27,6 +27,7 @@ import lombok.AllArgsConstructor;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
@@ -53,7 +54,7 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
         }
 
         if (tokenUpdateTransactionBody.hasExpiry()) {
-            entity.setExpiryTimeNs(tokenUpdateTransactionBody.getExpiry().getSeconds());
+            entity.setExpiryTimeNs(Utility.timeStampInNanos(tokenUpdateTransactionBody.getExpiry()));
         }
     }
 
