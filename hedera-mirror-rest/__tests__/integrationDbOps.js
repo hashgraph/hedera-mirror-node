@@ -55,7 +55,7 @@ const instantiateDatabase = async function () {
       .withExposedPorts(config.db.port)
       .start();
     config.db.port = dockerDb.getMappedPort(config.db.port);
-    config.db.host = dockerDb.getContainerIpAddress();
+    config.db.host = dockerDb.getHost();
     console.log(`Started dockerized PostgreSQL ${dockerPostgresTag}`);
   }
 
@@ -172,8 +172,8 @@ const runSqlQuery = async function (query, params) {
 };
 
 module.exports = {
-  cleanUp: cleanUp,
-  closeConnection: closeConnection,
-  instantiateDatabase: instantiateDatabase,
-  runSqlQuery: runSqlQuery,
+  cleanUp,
+  closeConnection,
+  instantiateDatabase,
+  runSqlQuery,
 };
