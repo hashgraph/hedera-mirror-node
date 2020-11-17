@@ -5,15 +5,45 @@
       "get": {
         "summary": "/api/v1/accounts",
         "parameters": [
-          {"name": "account.id", "in": "query", "example": "0.0.8", "schema": {"type": "string"}},
-          {"name": "limit", "in": "query", "example": "2", "schema": {"type": "integer"}},
-          {"name": "account.balance", "in": "query", "example": "gt:45", "schema": {"type": "string"}},
-          {"name": "order", "in": "query", "example": "desc", "schema": {"type": "string"}},
+          {
+            "name": "account.id",
+            "in": "query",
+            "example": "0.0.8",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "account.balance",
+            "in": "query",
+            "example": "gt:45",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "example": "desc",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "account.publickey",
             "in": "query",
             "example": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -32,22 +62,43 @@
                           "balance": {
                             "type": "object",
                             "properties": {
-                              "timestamp": {"type": "string"},
-                              "balance": {"type": "number"},
+                              "timestamp": {
+                                "type": "string"
+                              },
+                              "balance": {
+                                "type": "number"
+                              },
                               "tokens": {
                                 "type": "array",
                                 "items": {
                                   "type": "object",
-                                  "properties": {"token_id": {"type": "string"}, "balance": {"type": "number"}}
+                                  "properties": {
+                                    "token_id": {
+                                      "type": "string"
+                                    },
+                                    "balance": {
+                                      "type": "number"
+                                    }
+                                  }
                                 }
                               }
                             }
                           },
-                          "account": {"type": "string"},
-                          "expiry_timestamp": {"nullable": true},
-                          "auto_renew_period": {"nullable": true},
-                          "key": {"nullable": true},
-                          "deleted": {"type": "boolean"}
+                          "account": {
+                            "type": "string"
+                          },
+                          "expiry_timestamp": {
+                            "nullable": true
+                          },
+                          "auto_renew_period": {
+                            "nullable": true
+                          },
+                          "key": {
+                            "nullable": true
+                          },
+                          "deleted": {
+                            "type": "boolean"
+                          }
                         }
                       },
                       "example": [
@@ -55,7 +106,12 @@
                           "balance": {
                             "timestamp": "0.000002345",
                             "balance": 80,
-                            "tokens": [{"token_id": "0.0.200001", "balance": 8}]
+                            "tokens": [
+                              {
+                                "token_id": "0.0.200001",
+                                "balance": 8
+                              }
+                            ]
                           },
                           "account": "0.0.8",
                           "expiry_timestamp": null,
@@ -65,7 +121,15 @@
                         }
                       ]
                     },
-                    "links": {"type": "object", "properties": {"next": {"example": null, "nullable": true}}}
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "next": {
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -85,10 +149,18 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "properties": {"message": {"type": "string"}},
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            },
                             "required": ["message"]
                           },
-                          "example": [{"message": "Invalid parameter: account.id"}]
+                          "example": [
+                            {
+                              "message": "Invalid parameter: account.id"
+                            }
+                          ]
                         }
                       }
                     }
@@ -111,9 +183,18 @@
             "required": true,
             "description": "Account entity id",
             "example": "0.0.8",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
-          {"name": "transactiontype", "in": "query", "example": "TOKENTRANSFERS", "schema": {"type": "string"}}
+          {
+            "name": "transactiontype",
+            "in": "query",
+            "example": "TOKENTRANSFERS",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -128,22 +209,51 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "consensus_timestamp": {"type": "string"},
-                          "transaction_hash": {"type": "string"},
-                          "valid_start_timestamp": {"type": "string"},
-                          "charged_tx_fee": {"type": "number"},
-                          "memo_base64": {"nullable": true},
-                          "result": {"type": "string"},
-                          "name": {"type": "string"},
-                          "max_fee": {"type": "string"},
-                          "valid_duration_seconds": {"type": "string"},
-                          "node": {"type": "string"},
-                          "transaction_id": {"type": "string"},
+                          "consensus_timestamp": {
+                            "type": "string"
+                          },
+                          "transaction_hash": {
+                            "type": "string"
+                          },
+                          "valid_start_timestamp": {
+                            "type": "string"
+                          },
+                          "charged_tx_fee": {
+                            "type": "number"
+                          },
+                          "memo_base64": {
+                            "nullable": true
+                          },
+                          "result": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "max_fee": {
+                            "type": "string"
+                          },
+                          "valid_duration_seconds": {
+                            "type": "string"
+                          },
+                          "node": {
+                            "type": "string"
+                          },
+                          "transaction_id": {
+                            "type": "string"
+                          },
                           "transfers": {
                             "type": "array",
                             "items": {
                               "type": "object",
-                              "properties": {"account": {"type": "string"}, "amount": {"type": "number"}},
+                              "properties": {
+                                "account": {
+                                  "type": "string"
+                                },
+                                "amount": {
+                                  "type": "number"
+                                }
+                              },
                               "required": ["account", "amount"]
                             }
                           },
@@ -152,9 +262,15 @@
                             "items": {
                               "type": "object",
                               "properties": {
-                                "token_id": {"type": "string"},
-                                "account": {"type": "string"},
-                                "amount": {"type": "number"}
+                                "token_id": {
+                                  "type": "string"
+                                },
+                                "account": {
+                                  "type": "string"
+                                },
+                                "amount": {
+                                  "type": "number"
+                                }
                               },
                               "required": ["token_id", "account", "amount"]
                             }
@@ -175,13 +291,30 @@
                           "node": "0.0.3",
                           "transaction_id": "0.0.8-1234567890-000000006",
                           "transfers": [
-                            {"account": "0.0.3", "amount": 2},
-                            {"account": "0.0.8", "amount": -3},
-                            {"account": "0.0.98", "amount": 1}
+                            {
+                              "account": "0.0.3",
+                              "amount": 2
+                            },
+                            {
+                              "account": "0.0.8",
+                              "amount": -3
+                            },
+                            {
+                              "account": "0.0.98",
+                              "amount": 1
+                            }
                           ],
                           "token_transfers": [
-                            {"token_id": "0.0.90000", "account": "0.0.9", "amount": 1200},
-                            {"token_id": "0.0.90000", "account": "0.0.8", "amount": -1200}
+                            {
+                              "token_id": "0.0.90000",
+                              "account": "0.0.9",
+                              "amount": 1200
+                            },
+                            {
+                              "token_id": "0.0.90000",
+                              "account": "0.0.8",
+                              "amount": -1200
+                            }
                           ]
                         }
                       ]
@@ -189,25 +322,66 @@
                     "balance": {
                       "type": "object",
                       "properties": {
-                        "timestamp": {"type": "string", "example": "0.000002345"},
-                        "balance": {"type": "number", "example": 80},
+                        "timestamp": {
+                          "type": "string",
+                          "example": "0.000002345"
+                        },
+                        "balance": {
+                          "type": "number",
+                          "example": 80
+                        },
                         "tokens": {
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "properties": {"token_id": {"type": "string"}, "balance": {"type": "number"}},
+                            "properties": {
+                              "token_id": {
+                                "type": "string"
+                              },
+                              "balance": {
+                                "type": "number"
+                              }
+                            },
                             "required": ["token_id", "balance"]
                           },
-                          "example": [{"token_id": "0.0.99998", "balance": 8}]
+                          "example": [
+                            {
+                              "token_id": "0.0.99998",
+                              "balance": 8
+                            }
+                          ]
                         }
                       }
                     },
-                    "account": {"type": "string", "example": "0.0.8"},
-                    "expiry_timestamp": {"example": null, "nullable": true},
-                    "auto_renew_period": {"example": null, "nullable": true},
-                    "key": {"example": null, "nullable": true},
-                    "deleted": {"type": "boolean", "example": false},
-                    "links": {"type": "object", "properties": {"next": {"example": null, "nullable": true}}}
+                    "account": {
+                      "type": "string",
+                      "example": "0.0.8"
+                    },
+                    "expiry_timestamp": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "auto_renew_period": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "key": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "next": {
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -225,8 +399,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Invalid parameter: account.id"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Invalid parameter: account.id"
+                            }
+                          ]
                         }
                       }
                     }
@@ -247,8 +432,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Not found"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Not found"
+                            }
+                          ]
                         }
                       }
                     }
@@ -265,23 +461,58 @@
       "get": {
         "summary": "/api/v1/balances",
         "parameters": [
-          {"name": "account.id", "in": "query", "example": "0.0.8", "schema": {"type": "string"}},
+          {
+            "name": "account.id",
+            "in": "query",
+            "example": "0.0.8",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "account.balance",
             "in": "query",
             "example": ["gt:300", "lte:700"],
             "explode": true,
-            "schema": {"type": "array", "items": {"type": "string"}}
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           },
-          {"name": "order", "in": "query", "example": "asc", "schema": {"type": "string"}},
+          {
+            "name": "order",
+            "in": "query",
+            "example": "asc",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "account.publickey",
             "in": "query",
             "example": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
-          {"name": "timestamp", "in": "query", "example": "1566560004.000000000", "schema": {"type": "float"}},
-          {"name": "limit", "in": "query", "example": "2", "schema": {"type": "integer"}}
+          {
+            "name": "timestamp",
+            "in": "query",
+            "example": "1566560004.000000000",
+            "schema": {
+              "type": "float"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -291,28 +522,56 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "timestamp": {"type": "string", "example": "0.000002000"},
+                    "timestamp": {
+                      "type": "string",
+                      "example": "0.000002000"
+                    },
                     "balances": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "account": {"type": "string"},
-                          "balance": {"type": "number"},
+                          "account": {
+                            "type": "string"
+                          },
+                          "balance": {
+                            "type": "number"
+                          },
                           "tokens": {
                             "type": "array",
                             "items": {
                               "type": "object",
-                              "properties": {"token_id": {"type": "string"}, "balance": {"type": "number"}},
+                              "properties": {
+                                "token_id": {
+                                  "type": "string"
+                                },
+                                "balance": {
+                                  "type": "number"
+                                }
+                              },
                               "required": ["token_id", "balance"]
                             }
                           }
                         },
                         "required": ["account", "balance", "tokens"]
                       },
-                      "example": [{"account": "0.15.10", "balance": 100, "tokens": []}]
+                      "example": [
+                        {
+                          "account": "0.15.10",
+                          "balance": 100,
+                          "tokens": []
+                        }
+                      ]
                     },
-                    "links": {"type": "object", "properties": {"next": {"example": null, "nullable": true}}}
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "next": {
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -332,10 +591,18 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "properties": {"message": {"type": "string"}},
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            },
                             "required": ["message"]
                           },
-                          "example": [{"message": "Invalid parameter: account.id"}]
+                          "example": [
+                            {
+                              "message": "Invalid parameter: account.id"
+                            }
+                          ]
                         }
                       }
                     }
@@ -352,12 +619,54 @@
       "get": {
         "summary": "/api/v1/transactions",
         "parameters": [
-          {"name": "timestamp", "in": "query", "example": "1565779209.711927001", "schema": {"type": "float"}},
-          {"name": "result", "in": "query", "example": "success", "schema": {"type": "string"}},
-          {"name": "limit", "in": "query", "example": "2", "schema": {"type": "integer"}},
-          {"name": "account.id", "in": "query", "example": "0.0.9", "schema": {"type": "string"}},
-          {"name": "type", "in": "query", "example": "credit", "schema": {"type": "string"}},
-          {"name": "transactiontype", "in": "query", "example": "tokentransfers", "schema": {"type": "string"}}
+          {
+            "name": "timestamp",
+            "in": "query",
+            "example": "1565779209.711927001",
+            "schema": {
+              "type": "float"
+            }
+          },
+          {
+            "name": "result",
+            "in": "query",
+            "example": "success",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "account.id",
+            "in": "query",
+            "example": "0.0.9",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "example": "credit",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transactiontype",
+            "in": "query",
+            "example": "tokentransfers",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -367,8 +676,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "transactions": {"type": "array", "items": {}, "example": [null]},
-                    "links": {"type": "object", "properties": {"next": {"example": null, "nullable": true}}}
+                    "transactions": {
+                      "type": "array",
+                      "items": {},
+                      "example": [null]
+                    },
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "next": {
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -388,10 +709,18 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "properties": {"message": {"type": "string"}},
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            },
                             "required": ["message"]
                           },
-                          "example": [{"message": "Invalid parameter: timestamp"}]
+                          "example": [
+                            {
+                              "message": "Invalid parameter: timestamp"
+                            }
+                          ]
                         }
                       }
                     }
@@ -414,7 +743,9 @@
             "required": true,
             "description": "Transaction id",
             "example": "0.0.300-1565779555-711927000",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -430,22 +761,51 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "consensus_timestamp": {"type": "string"},
-                          "transaction_hash": {"type": "string"},
-                          "valid_start_timestamp": {"type": "string"},
-                          "charged_tx_fee": {"type": "number"},
-                          "memo_base64": {"nullable": true},
-                          "result": {"type": "string"},
-                          "name": {"type": "string"},
-                          "max_fee": {"type": "string"},
-                          "valid_duration_seconds": {"type": "string"},
-                          "node": {"type": "string"},
-                          "transaction_id": {"type": "string"},
+                          "consensus_timestamp": {
+                            "type": "string"
+                          },
+                          "transaction_hash": {
+                            "type": "string"
+                          },
+                          "valid_start_timestamp": {
+                            "type": "string"
+                          },
+                          "charged_tx_fee": {
+                            "type": "number"
+                          },
+                          "memo_base64": {
+                            "nullable": true
+                          },
+                          "result": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "max_fee": {
+                            "type": "string"
+                          },
+                          "valid_duration_seconds": {
+                            "type": "string"
+                          },
+                          "node": {
+                            "type": "string"
+                          },
+                          "transaction_id": {
+                            "type": "string"
+                          },
                           "transfers": {
                             "type": "array",
                             "items": {
                               "type": "object",
-                              "properties": {"account": {"type": "string"}, "amount": {"type": "number"}},
+                              "properties": {
+                                "account": {
+                                  "type": "string"
+                                },
+                                "amount": {
+                                  "type": "number"
+                                }
+                              },
                               "required": ["account", "amount"]
                             }
                           }
@@ -465,9 +825,18 @@
                           "node": "0.0.3",
                           "transaction_id": "0.0.10-1234567890-000000000",
                           "transfers": [
-                            {"account": "0.0.9", "amount": 10},
-                            {"account": "0.0.10", "amount": -11},
-                            {"account": "0.0.98", "amount": 1}
+                            {
+                              "account": "0.0.9",
+                              "amount": 10
+                            },
+                            {
+                              "account": "0.0.10",
+                              "amount": -11
+                            },
+                            {
+                              "account": "0.0.98",
+                              "amount": 1
+                            }
                           ]
                         }
                       ]
@@ -489,7 +858,14 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
                           "example": [
                             {
                               "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
@@ -515,8 +891,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Not found"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Not found"
+                            }
+                          ]
                         }
                       }
                     }
@@ -538,7 +925,9 @@
             "in": "path",
             "required": true,
             "example": "0.0.94139-1570800748-313194300",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -554,7 +943,14 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
                           "example": [
                             {
                               "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
@@ -580,8 +976,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Transaction not found"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Transaction not found"
+                            }
+                          ]
                         }
                       }
                     }
@@ -602,7 +1009,14 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
                           "example": [
                             {
                               "message": "Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig"
@@ -630,13 +1044,50 @@
             "required": true,
             "description": "Topic entity id",
             "example": 7,
-            "schema": {"type": "integer"}
+            "schema": {
+              "type": "integer"
+            }
           },
-          {"name": "sequencenumber", "in": "query", "example": "2", "schema": {"type": "integer"}},
-          {"name": "timestamp", "in": "query", "example": "lt:1234567890.000000004", "schema": {"type": "string"}},
-          {"name": "encoding", "in": "query", "example": "base64", "schema": {"type": "string"}},
-          {"name": "limit", "in": "query", "example": "2", "schema": {"type": "integer"}},
-          {"name": "order", "in": "query", "example": "desc", "schema": {"type": "string"}}
+          {
+            "name": "sequencenumber",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "timestamp",
+            "in": "query",
+            "example": "lt:1234567890.000000004",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "encoding",
+            "in": "query",
+            "example": "base64",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "example": "desc",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -651,12 +1102,24 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "consensus_timestamp": {"type": "string"},
-                          "topic_id": {"type": "string"},
-                          "message": {"type": "string"},
-                          "running_hash": {"type": "string"},
-                          "running_hash_version": {"type": "number"},
-                          "sequence_number": {"type": "number"}
+                          "consensus_timestamp": {
+                            "type": "string"
+                          },
+                          "topic_id": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "running_hash": {
+                            "type": "string"
+                          },
+                          "running_hash_version": {
+                            "type": "number"
+                          },
+                          "sequence_number": {
+                            "type": "number"
+                          }
                         },
                         "required": [
                           "consensus_timestamp",
@@ -678,7 +1141,15 @@
                         }
                       ]
                     },
-                    "links": {"type": "object", "properties": {"next": {"example": null, "nullable": true}}}
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "next": {
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -696,8 +1167,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Invalid parameter: topic_num"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Invalid parameter: topic_num"
+                            }
+                          ]
                         }
                       }
                     }
@@ -718,8 +1200,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "No such topic id - 7"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "No such topic id - 7"
+                            }
+                          ]
                         }
                       }
                     }
@@ -742,7 +1235,9 @@
             "required": true,
             "description": "Topic entity id",
             "example": "0.2.3",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "sequencenumber",
@@ -750,7 +1245,9 @@
             "required": true,
             "description": "Topic message sequence number",
             "example": 2,
-            "schema": {"type": "integer"}
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -761,12 +1258,30 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "consensus_timestamp": {"type": "string", "example": "1234567890.000000003"},
-                    "topic_id": {"type": "string", "example": "0.0.7"},
-                    "message": {"type": "string", "example": "eyJhIiwiYiIsImMifQ=="},
-                    "running_hash": {"type": "string", "example": "eyJkIiwiZSIsImYifQ=="},
-                    "running_hash_version": {"type": "number", "example": 2},
-                    "sequence_number": {"type": "number", "example": 3}
+                    "consensus_timestamp": {
+                      "type": "string",
+                      "example": "1234567890.000000003"
+                    },
+                    "topic_id": {
+                      "type": "string",
+                      "example": "0.0.7"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "eyJhIiwiYiIsImMifQ=="
+                    },
+                    "running_hash": {
+                      "type": "string",
+                      "example": "eyJkIiwiZSIsImYifQ=="
+                    },
+                    "running_hash_version": {
+                      "type": "number",
+                      "example": 2
+                    },
+                    "sequence_number": {
+                      "type": "number",
+                      "example": 3
+                    }
                   }
                 }
               }
@@ -786,10 +1301,18 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "properties": {"message": {"type": "string"}},
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            },
                             "required": ["message"]
                           },
-                          "example": [{"message": "Invalid parameter: topic_num"}]
+                          "example": [
+                            {
+                              "message": "Invalid parameter: topic_num"
+                            }
+                          ]
                         }
                       }
                     }
@@ -810,8 +1333,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Not found"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Not found"
+                            }
+                          ]
                         }
                       }
                     }
@@ -834,7 +1368,9 @@
             "required": true,
             "description": "Consensus timestamp of topic message",
             "example": 1234567890,
-            "schema": {"type": "float"}
+            "schema": {
+              "type": "float"
+            }
           }
         ],
         "responses": {
@@ -845,12 +1381,30 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "consensus_timestamp": {"type": "string", "example": "1234567890.000000002"},
-                    "topic_id": {"type": "string", "example": "0.0.7"},
-                    "message": {"type": "string", "example": "bWVzc2FnZQ=="},
-                    "running_hash": {"type": "string", "example": "cnVubmluZ19oYXNo"},
-                    "running_hash_version": {"type": "number", "example": 2},
-                    "sequence_number": {"type": "number", "example": 2}
+                    "consensus_timestamp": {
+                      "type": "string",
+                      "example": "1234567890.000000002"
+                    },
+                    "topic_id": {
+                      "type": "string",
+                      "example": "0.0.7"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "bWVzc2FnZQ=="
+                    },
+                    "running_hash": {
+                      "type": "string",
+                      "example": "cnVubmluZ19oYXNo"
+                    },
+                    "running_hash_version": {
+                      "type": "number",
+                      "example": 2
+                    },
+                    "sequence_number": {
+                      "type": "number",
+                      "example": 2
+                    }
                   }
                 }
               }
@@ -868,8 +1422,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Invalid parameter: consensus_timestamp"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Invalid parameter: consensus_timestamp"
+                            }
+                          ]
                         }
                       }
                     }
@@ -890,8 +1455,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Not found"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Not found"
+                            }
+                          ]
                         }
                       }
                     }
@@ -912,18 +1488,46 @@
             "name": "publickey",
             "in": "query",
             "example": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "token.id",
             "in": "query",
             "example": ["lt:0.30000.0", "gt:0.7.25301"],
             "explode": true,
-            "schema": {"type": "array", "items": {"type": "string"}}
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           },
-          {"name": "limit", "in": "query", "example": "2", "schema": {"type": "integer"}},
-          {"name": "account.id", "in": "query", "example": "2", "schema": {"type": "integer"}},
-          {"name": "order", "in": "query", "example": "desc", "schema": {"type": "string"}}
+          {
+            "name": "limit",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "account.id",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "example": "desc",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -938,15 +1542,35 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "token_id": {"type": "string"},
-                          "symbol": {"type": "string"},
-                          "admin_key": {"nullable": true}
+                          "token_id": {
+                            "type": "string"
+                          },
+                          "symbol": {
+                            "type": "string"
+                          },
+                          "admin_key": {
+                            "nullable": true
+                          }
                         },
                         "required": ["token_id", "symbol", "admin_key"]
                       },
-                      "example": [{"token_id": "0.0.1", "symbol": "FIRSTMOVERLPDJH", "admin_key": null}]
+                      "example": [
+                        {
+                          "token_id": "0.0.1",
+                          "symbol": "FIRSTMOVERLPDJH",
+                          "admin_key": null
+                        }
+                      ]
                     },
-                    "links": {"type": "object", "properties": {"next": {"example": null, "nullable": true}}}
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "next": {
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -966,10 +1590,18 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "properties": {"message": {"type": "string"}},
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            },
                             "required": ["message"]
                           },
-                          "example": [{"message": "Invalid parameter: account.id"}]
+                          "example": [
+                            {
+                              "message": "Invalid parameter: account.id"
+                            }
+                          ]
                         }
                       }
                     }
@@ -992,7 +1624,9 @@
             "required": true,
             "description": "Token entity id",
             "example": "0.0.1135",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1003,24 +1637,78 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "admin_key": {"example": null, "nullable": true},
-                    "auto_renew_account": {"example": null, "nullable": true},
-                    "auto_renew_period": {"example": null, "nullable": true},
-                    "created_timestamp": {"type": "string", "example": "0.000000000"},
-                    "decimals": {"type": "string", "example": "1000"},
-                    "expiry_timestamp": {"example": null, "nullable": true},
-                    "freeze_default": {"type": "boolean", "example": false},
-                    "freeze_key": {"example": null, "nullable": true},
-                    "initial_supply": {"type": "string", "example": "1000000"},
-                    "kyc_key": {"example": null, "nullable": true},
-                    "modified_timestamp": {"type": "string", "example": "0.000000000"},
-                    "name": {"type": "string", "example": "Token name"},
-                    "supply_key": {"example": null, "nullable": true},
-                    "symbol": {"type": "string", "example": "ORIGINALRDKSE"},
-                    "token_id": {"type": "string", "example": "0.0.1135"},
-                    "total_supply": {"type": "string", "example": "1000000"},
-                    "treasury_account_id": {"type": "string", "example": "0.0.98"},
-                    "wipe_key": {"example": null, "nullable": true}
+                    "admin_key": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "auto_renew_account": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "auto_renew_period": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "created_timestamp": {
+                      "type": "string",
+                      "example": "0.000000000"
+                    },
+                    "decimals": {
+                      "type": "string",
+                      "example": "1000"
+                    },
+                    "expiry_timestamp": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "freeze_default": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "freeze_key": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "initial_supply": {
+                      "type": "string",
+                      "example": "1000000"
+                    },
+                    "kyc_key": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "modified_timestamp": {
+                      "type": "string",
+                      "example": "0.000000000"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Token name"
+                    },
+                    "supply_key": {
+                      "example": null,
+                      "nullable": true
+                    },
+                    "symbol": {
+                      "type": "string",
+                      "example": "ORIGINALRDKSE"
+                    },
+                    "token_id": {
+                      "type": "string",
+                      "example": "0.0.1135"
+                    },
+                    "total_supply": {
+                      "type": "string",
+                      "example": "1000000"
+                    },
+                    "treasury_account_id": {
+                      "type": "string",
+                      "example": "0.0.98"
+                    },
+                    "wipe_key": {
+                      "example": null,
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -1038,8 +1726,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Invalid parameter: tokenid"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Invalid parameter: tokenid"
+                            }
+                          ]
                         }
                       }
                     }
@@ -1060,8 +1759,19 @@
                       "properties": {
                         "messages": {
                           "type": "array",
-                          "items": {"type": "object", "properties": {"message": {"type": "string"}}},
-                          "example": [{"message": "Not found"}]
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "example": [
+                            {
+                              "message": "Not found"
+                            }
+                          ]
                         }
                       }
                     }
@@ -1084,31 +1794,70 @@
             "required": true,
             "description": "Token entity id",
             "example": "0.20.1",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
-          {"name": "account.id", "in": "query", "example": "0.0.8", "schema": {"type": "string"}},
+          {
+            "name": "account.id",
+            "in": "query",
+            "example": "0.0.8",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "account.balance",
             "in": "query",
             "example": ["gt:300", "lte:700"],
             "explode": true,
-            "schema": {"type": "array", "items": {"type": "string"}}
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           },
-          {"name": "order", "in": "query", "example": "asc", "schema": {"type": "string"}},
+          {
+            "name": "order",
+            "in": "query",
+            "example": "asc",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "account.publickey",
             "in": "query",
             "example": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
-          {"name": "timestamp", "in": "query", "example": "1566560004.000000000", "schema": {"type": "float"}},
+          {
+            "name": "timestamp",
+            "in": "query",
+            "example": "1566560004.000000000",
+            "schema": {
+              "type": "float"
+            }
+          },
           {
             "name": "publickey",
             "in": "query",
             "example": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
-          {"name": "limit", "in": "query", "example": "2", "schema": {"type": "integer"}}
+          {
+            "name": "limit",
+            "in": "query",
+            "example": "2",
+            "schema": {
+              "type": "integer"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1118,17 +1867,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "timestamp": {"type": "string", "example": "0.000002000"},
+                    "timestamp": {
+                      "type": "string",
+                      "example": "0.000002000"
+                    },
                     "balances": {
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "properties": {"account": {"type": "string"}, "balance": {"type": "number"}},
+                        "properties": {
+                          "account": {
+                            "type": "string"
+                          },
+                          "balance": {
+                            "type": "number"
+                          }
+                        },
                         "required": ["account", "balance"]
                       },
-                      "example": [{"account": "0.15.2", "balance": 1000}]
+                      "example": [
+                        {
+                          "account": "0.15.2",
+                          "balance": 1000
+                        }
+                      ]
                     },
-                    "links": {"type": "object", "properties": {"next": {"example": null, "nullable": true}}}
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "next": {
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -1148,10 +1920,18 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "properties": {"message": {"type": "string"}},
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              }
+                            },
                             "required": ["message"]
                           },
-                          "example": [{"message": "Invalid parameter: account.id"}]
+                          "example": [
+                            {
+                              "message": "Invalid parameter: account.id"
+                            }
+                          ]
                         }
                       }
                     }
@@ -1166,16 +1946,29 @@
     }
   },
   "tags": [
-    {"name": "accounts"},
-    {"name": "balances"},
-    {"name": "transactions"},
-    {"name": "topics"},
-    {"name": "tokens"}
+    {
+      "name": "accounts"
+    },
+    {
+      "name": "balances"
+    },
+    {
+      "name": "transactions"
+    },
+    {
+      "name": "topics"
+    },
+    {
+      "name": "tokens"
+    }
   ],
   "info": {
     "title": "hedera-mirror-rest",
     "version": "0.22.0-rc1",
-    "license": {"name": "Apache-2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0.html"},
+    "license": {
+      "name": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    },
     "description": "Specification JSONs: [v2](/api/v1/api-spec/v2), [v3](/api/v1/api-spec/v3). Base url: [/api/v1](/api/v1)\n\nHedera Mirror Node REST API",
     "contact": {
       "name": "Hedera Mirror Node Team",
@@ -1183,5 +1976,9 @@
       "url": "https://github.com/hashgraph/hedera-mirror-node"
     }
   },
-  "servers": [{"url": "http://127.0.0.1:55573/api/v1"}]
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5551/api/v1"
+    }
+  ]
 }

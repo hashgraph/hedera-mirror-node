@@ -19,10 +19,14 @@
  */
 'use strict';
 
-const config = require('../config');
+// ext libraries
 const extend = require('extend');
 const swStats = require('swagger-stats');
-const apiSpec = require('./../oas_doc_v3.json');
+
+// files
+const config = require('../config');
+const oasGenerator = require('./oasGenerator');
+const apiSpec = require(`./../${oasGenerator.getSpecPath(3)}`);
 
 const metricsHandler = () => {
   let defaultMetricsConfig = {

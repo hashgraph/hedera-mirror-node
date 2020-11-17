@@ -21,13 +21,20 @@
 'use strict';
 
 // ext libraries
-const {handleRequests, handleResponses, init} = require('express-oas-generator');
+const {handleRequests, handleResponses} = require('express-oas-generator');
 const swaggerUi = require('swagger-ui-express');
 const _ = require('lodash');
 
+// files
 const config = require('./../config');
-const oasDocumentV2 = require('./../oas_doc.json');
-const oasDocumentV3 = require('./../oas_doc_v3.json');
+
+const getSpecPath = (version) => {
+  const versionPath = version === 3 ? '_v3' : '';
+  return `${config.oasGenerator.specFileName}${versionPath}.json`;
+};
+
+const oasDocumentV2 = require(`./../${getSpecPath(2)}`);
+const oasDocumentV3 = require(`./../${getSpecPath(3)}`);
 
 const handleOASRequests = () => {
   handleRequests();
@@ -70,7 +77,7 @@ const handleOASResponses = (app, urlPrefix) => {
       _.set(spec, `paths["${urlPrefix}/tokens/{id}/balances"].get.parameters[0].description`, 'Token entity id');
       return spec;
     },
-    specOutputPath: config.oasGenerator.enabled ? config.oasGenerator.specOutputPath : undefined,
+    specOutputPath: config.oasGenerator.enabled ? `${config.oasGenerator.specFileName}.json` : undefined,
     swaggerUiServePath: `${urlPrefix}/api-spec`,
     tags: ['accounts', 'balances', 'transactions', 'topics', 'tokens'],
     writeIntervalMs: config.oasGenerator.writeIntervalMs,
@@ -81,12 +88,13 @@ const handleOASResponses = (app, urlPrefix) => {
 };
 
 const serveOASSwaggerUI = (app, apiPrefix) => {
-  app.use(`${apiPrefix}/api-spec`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
+  app.use(`${apiPrefix}/api-spec`, swaggerUi.serve, swaggerUi.setup(oasDocumentV3));
   app.use(`${apiPrefix}/api-spec/v2`, swaggerUi.serve, swaggerUi.setup(oasDocumentV2));
   app.use(`${apiPrefix}/api-spec/v3`, swaggerUi.serve, swaggerUi.setup(oasDocumentV3));
 };
 
 module.exports = {
+  getSpecPath,
   handleOASResponses,
   handleOASRequests,
   serveOASSwaggerUI,

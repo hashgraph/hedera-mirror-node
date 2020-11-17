@@ -15,7 +15,7 @@ hedera:
       port: 5551
       oasGenerator:
         enabled: false
-        specOutputPath: './oas_doc.json'
+        specFileName: 'oas_doc'
         writeIntervalMs: 60000
         alwaysServeDocs: true
       metrics:
