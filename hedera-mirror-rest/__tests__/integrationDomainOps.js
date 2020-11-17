@@ -37,7 +37,6 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadEntities(testDataJson.entities);
-  await loadTokenTransfers(testDataJson.tokentransfers);
   await loadTransactions(testDataJson.transactions);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
@@ -101,16 +100,6 @@ const loadTokens = async (tokens) => {
 
   for (const token of tokens) {
     await addToken(token);
-  }
-};
-
-const loadTokenTransfers = async (tokenTransfers) => {
-  if (tokenTransfers == null) {
-    return;
-  }
-
-  for (const tokenTransfer of tokenTransfers) {
-    await addTokenTransferTransaction(tokenTransfer);
   }
 };
 
@@ -277,6 +266,12 @@ const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
+  if (!('amount' in cryptoTransfer)) {
+    cryptoTransfer.amount = NODE_FEE;
+  }
+  if (!('recipientAccountId' in cryptoTransfer)) {
+    cryptoTransfer.recipientAccountId = cryptoTransfer.nodeAccountId;
+  }
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
@@ -286,17 +281,6 @@ const addCryptoTransaction = async (cryptoTransfer) => {
     ];
   }
   await addTransaction(cryptoTransfer);
-};
-
-const addTokenTransferTransaction = async (tokenTransfer) => {
-  // transaction fees
-  tokenTransfer.transfers = [
-    {account: tokenTransfer.payerAccountId, amount: -NETWORK_FEE - NODE_FEE},
-    {account: tokenTransfer.treasuryAccountId, amount: NETWORK_FEE},
-    {account: tokenTransfer.nodeAccountId, amount: NODE_FEE},
-  ];
-  tokenTransfer.type = 30; // TOKENTRANSFERS
-  await addTransaction(tokenTransfer);
 };
 
 const addTopicMessage = async (message) => {

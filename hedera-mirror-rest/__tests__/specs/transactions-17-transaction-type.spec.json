@@ -20,18 +20,23 @@
       }
     ],
     "balances": [],
-    "transactions": [],
-    "cryptotransfers": [
+    "transactions": [
       {
-        "consensus_timestamp": "1234567890000000001",
-        "payerAccountId": "0.0.10",
-        "recipientAccountId": "0.0.9",
-        "amount": 10,
+        "payerAccountId": "0.0.9",
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
+        "consensus_timestamp": "1565779555711927001",
+        "name": "TOKENCREATION",
+        "type": "29"
+      },
+      {
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779555711927003",
+        "name": "CRYPTODELETE",
+        "type": "12"
       }
     ],
-    "tokentransfers": [
+    "cryptotransfers": [
       {
         "consensus_timestamp": "1565779555711927002",
         "payerAccountId": "0.0.9",
@@ -52,7 +57,7 @@
       }
     ]
   },
-  "url": "/api/v1/transactions?transactionType=tokentransfers",
+  "url": "/api/v1/transactions?transactionType=cryptotransfer",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -63,7 +68,7 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "transaction_hash": "aGFzaA==",
-        "name": "TOKENTRANSFERS",
+        "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "transaction_id": "0.0.9-1565779555-711927001",
         "valid_duration_seconds": "11",

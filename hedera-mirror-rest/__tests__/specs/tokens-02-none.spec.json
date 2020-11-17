@@ -5,8 +5,7 @@
     "tokens": [],
     "balances": [],
     "transactions": [],
-    "cryptotransfers": [],
-    "tokentransfers": []
+    "cryptotransfers": []
   },
   "url": "/api/v1/tokens",
   "responseStatus": 200,

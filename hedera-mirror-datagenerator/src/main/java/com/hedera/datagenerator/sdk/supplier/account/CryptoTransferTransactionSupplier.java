@@ -30,11 +30,12 @@ import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
+import com.hedera.hashgraph.sdk.account.TransferTransaction;
+import com.hedera.hashgraph.sdk.token.TokenId;
 
 @Builder
 @Value
-public class CryptoTransferTransactionSupplier implements TransactionSupplier<CryptoTransferTransaction> {
+public class CryptoTransferTransactionSupplier implements TransactionSupplier<TransferTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("recipientAccountId", "senderAccountId");
 
@@ -49,17 +50,30 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Cr
     @Builder.Default
     private final long maxTransactionFee = 1_000_000;
 
+    private final String tokenId;
+
     @Override
-    public CryptoTransferTransaction get() {
+    public TransferTransaction get() {
 
         if (StringUtils.isBlank(recipientAccountId) || StringUtils.isBlank(senderAccountId)) {
             throw new TransactionSupplierException(this, requiredFields);
         }
 
-        return new CryptoTransferTransaction()
-                .addRecipient(AccountId.fromString(recipientAccountId), amount)
-                .addSender(AccountId.fromString(senderAccountId), amount)
+        AccountId recipientId = AccountId.fromString(recipientAccountId);
+        AccountId senderId = AccountId.fromString(recipientAccountId);
+
+        TransferTransaction transferTransaction = new TransferTransaction()
+                .addHbarTransfer(recipientId, amount)
+                .addHbarTransfer(senderId, Math.negateExact(amount))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
+
+        if (StringUtils.isNotBlank(tokenId)) {
+            TokenId token = TokenId.fromString(tokenId);
+            transferTransaction
+                    .addTokenTransfer(token, recipientId, amount)
+                    .addTokenTransfer(token, senderId, Math.negateExact(amount));
+        }
+        return transferTransaction;
     }
 }

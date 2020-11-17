@@ -41,8 +41,7 @@
     ],
     "balances": [],
     "transactions": [],
-    "cryptotransfers": [],
-    "tokentransfers": []
+    "cryptotransfers": []
   },
   "url": "/api/v1/tokens/abc",
   "responseStatus": 400,

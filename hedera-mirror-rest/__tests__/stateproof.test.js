@@ -273,6 +273,8 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
 
 describe('downloadRecordStreamFilesFromObjectStorage', () => {
   const partialFilePaths = _.map([3, 4, 5, 6], (num) => `0.0.${num}/2020-02-09T18_30_25.001721Z.rcd_sig`);
+  const extraFileContent = '123456790123456789012345678901234';
+  const sliceSize = 5;
 
   beforeEach(() => {
     config.stateproof = {
@@ -288,7 +290,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     });
   };
 
-  const verifyGetObjectStubAndReturnedFileObjects = (getObjectStub, fileObjects, partialFilePaths, failedNodes) => {
+  const verifyGetObjectStubAndReturnedFileObjects = (getObjectStub, fileObjects, failedNodes) => {
     let succeededPartialFilePaths = partialFilePaths;
     if (failedNodes) {
       succeededPartialFilePaths = _.filter(partialFilePaths, (partialFilePath) =>
@@ -298,9 +300,8 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
 
     expect(_.map(fileObjects, (file) => file.partialFilePath).sort()).toEqual(succeededPartialFilePaths.sort());
     for (const fileObject of fileObjects) {
-      expect(fileObject.base64Data).toEqual(
-        Buffer.from(constants.recordStreamPrefix + fileObject.partialFilePath).toString('base64')
-      );
+      const data = constants.recordStreamPrefix + fileObject.partialFilePath + extraFileContent;
+      expect(fileObject.base64Data).toEqual(Buffer.from(data).toString('base64'));
     }
     expect(getObjectStub.callCount).toEqual(partialFilePaths.length);
     for (const args of getObjectStub.args) {
@@ -318,6 +319,12 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
         });
         stream._read = function (size) {
           this.push(params.Key);
+          let start = 0;
+          while (start < extraFileContent.length) {
+            const end = start + sliceSize;
+            this.push(extraFileContent.slice(start, end));
+            start = end;
+          }
           this.push(null);
         };
         return stream;
@@ -326,7 +333,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
-    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, partialFilePaths);
+    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects);
   });
 
   test('with all files failed to download', async () => {
@@ -347,12 +354,8 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
-    verifyGetObjectStubAndReturnedFileObjects(
-      getObjectStub,
-      fileObjects,
-      partialFilePaths,
-      _.map([3, 4, 5, 6], (num) => `0.0.${num}`)
-    );
+    const failedNodes = _.map([3, 4, 5, 6], (num) => `0.0.${num}`);
+    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, failedNodes);
   });
 
   test('with download failed for 0.0.3', async () => {
@@ -369,6 +372,12 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
             }
           } else {
             this.push(params.Key);
+            let start = 0;
+            while (start < extraFileContent.length) {
+              const end = start + sliceSize;
+              this.push(extraFileContent.slice(start, end));
+              start = end;
+            }
             this.push(null);
           }
         };
@@ -378,7 +387,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
-    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, partialFilePaths, ['0.0.3']);
+    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, ['0.0.3']);
   });
 });
 

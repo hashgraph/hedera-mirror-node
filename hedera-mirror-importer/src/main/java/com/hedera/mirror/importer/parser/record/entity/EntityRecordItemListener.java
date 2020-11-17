@@ -190,6 +190,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
+            } else if (body.hasCryptoTransfer()) {
+                //Token transfers can be present in CryptoTransferTransaction
+                insertTokenTransfers(recordItem);
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
             } else if (body.hasFileCreate()) {
@@ -213,8 +216,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenMint(recordItem);
             } else if (body.hasTokenRevokeKyc()) {
                 insertTokenAccountRevokeKyc(recordItem);
-            } else if (body.hasTokenTransfers()) {
-                insertTokenTransfers(recordItem);
             } else if (body.hasTokenUnfreeze()) {
                 insertTokenAccountUnfreeze(recordItem);
             } else if (body.hasTokenUpdate()) {
@@ -505,7 +506,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setModifiedTimestamp(consensusTimeStamp);
             token.setName(tokenCreateTransactionBody.getName());
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
-            token.setTokenId(new Token.Id(EntityId.of(recordItem.getRecord().getReceipt().getTokenId())));
+            token.setTokenId(new Token.Id(EntityId.of(recordItem.getRecord().getReceipt().getTokenID())));
 
             if (tokenCreateTransactionBody.hasFreezeKey()) {
                 token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
