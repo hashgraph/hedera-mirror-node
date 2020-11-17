@@ -190,7 +190,7 @@
           {
             "name": "transactiontype",
             "in": "query",
-            "example": "TOKENTRANSFERS",
+            "example": "cryptotransfer",
             "schema": {
               "type": "string"
             }
@@ -285,7 +285,7 @@
                           "charged_tx_fee": 7,
                           "memo_base64": null,
                           "result": "SUCCESS",
-                          "name": "TOKENTRANSFERS",
+                          "name": "CRYPTOTRANSFER",
                           "max_fee": "33",
                           "valid_duration_seconds": "11",
                           "node": "0.0.3",
@@ -734,7 +734,7 @@
             "in": "path",
             "required": true,
             "description": "Transaction id",
-            "example": "0.0.300-1565779555-711927000",
+            "example": "0.0.10-1234567890-000000000",
             "schema": {
               "type": "string"
             }
@@ -1956,7 +1956,7 @@
   ],
   "info": {
     "title": "hedera-mirror-rest",
-    "version": "0.22.0-rc1",
+    "version": "0.23.0-rc1",
     "license": {
       "name": "Apache-2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
