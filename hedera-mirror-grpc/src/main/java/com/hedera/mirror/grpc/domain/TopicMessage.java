@@ -110,9 +110,9 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
 
     // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
     public ConsensusTopicResponse toResponse() {
-        return response.updateAndGet(response -> {
-            if (response != null) {
-                return response;
+        return response.updateAndGet(resp -> {
+            if (resp != null) {
+                return resp;
             }
 
             var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
