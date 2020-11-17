@@ -172,8 +172,8 @@ readinessProbe:
 
 resources:
   limits:
-    cpu: 500m
-    memory: 750Mi
+    cpu: 2
+    memory: 2048Mi
   requests:
     cpu: 100m
     memory: 128Mi
