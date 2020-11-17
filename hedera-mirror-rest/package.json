@@ -47,6 +47,7 @@
     "compression",
     "cors",
     "express",
+    "express-oas-generator",
     "@godaddy/terminus",
     "extend",
     "js-yaml",
@@ -58,7 +59,8 @@
     "node-fetch",
     "pg",
     "qs",
-    "swagger-stats"
+    "swagger-stats",
+    "swagger-ui-express"
   ],
   "devDependencies": {
     "aws-sdk-mock": "^5.1.0",
