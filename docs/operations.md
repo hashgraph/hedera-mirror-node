@@ -189,10 +189,12 @@ The REST API supports the OpenAPI (Swagger) specification v2 and v3.
 This provides documentation and structure for metrics
 
 #### View Spec UI
-We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the open api spec. 
+We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the open api spec.
 The specification can be viewed at the following endpoints
-- `http://<ip>:<port>/<swaggerUIPath>` - Metrics dashboard
-Where `<swaggerUIPath>` is defined by `hedera.mirror.rest.oasGenerator.swaggerUIPath`, current default is 'swagger'
+- `http://<ip>:<port>/<swaggerUIPath>` - Default doc serve location
+- `http://<ip>:<port>/<swaggerUIPath>/v2` - Open API v2 doc serve location
+- `http://<ip>:<port>/<swaggerUIPath>/v3` - Explicit Open API v3 doc serve location
+Where `<swaggerUIPath>` is defined by `hedera.mirror.rest.oasGenerator.swaggerUIPath`, current default is 'api-spec'
 
 #### Update Spec
 To update the spec, we utilize the [express-oas-generator](https://github.com/mpashkovskiy/express-oas-generator) package to automatically generate the spec files based off of express routes.
@@ -202,7 +204,7 @@ Additionally query parameters and responses can be pulled by exercising all supp
 To ensure all routes, parameters and responses are incorporated into the spec
 1. Set the `hedera.mirror.rest.oasGenerator.enabled` to true
 2. Set/Update `hedera.mirror.rest.oasGenerator.specFilePath` to the desired location for the spec file
-2. Run `NODE_ENV=integration npm run integrationtest` to excercise the supported endpoints and url parameter combinations. 
+2. Run `NODE_ENV=integration npm run integrationtest` to excercise the supported endpoints and url parameter combinations.
 3. If applicable update the `servers.url` values to reference the correct host and IP values based on your deployment configuration
 
 ### Metrics

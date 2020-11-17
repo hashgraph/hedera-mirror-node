@@ -81,12 +81,14 @@ const getOpenApiSpecObject = (version) => {
 const serveOASSwaggerUI = (app, apiPrefix) => {
   // default spec endpoint
   app.use(`${apiPrefix}/${config.oasGenerator.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getOpenApiV3Object()));
+
   // support explicit v2 enpoint added by express-oas-generator
   app.use(
     `${apiPrefix}/${config.oasGenerator.swaggerUIPath}/v2`,
     swaggerUi.serve,
     swaggerUi.setup(getOpenApiV2Object())
   );
+
   // support explicit v3 enpoint added by express-oas-generator
   app.use(
     `${apiPrefix}/${config.oasGenerator.swaggerUIPath}/v3`,

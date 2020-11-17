@@ -21,11 +21,11 @@
 
 // ext libraries
 const extend = require('extend');
+const oasGenerator = require('./oasGenerator');
 const swStats = require('swagger-stats');
 
 // files
 const config = require('../config');
-const oasGenerator = require('./oasGenerator');
 
 const metricsHandler = () => {
   let defaultMetricsConfig = {

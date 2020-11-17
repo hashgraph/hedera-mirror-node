@@ -9,16 +9,9 @@ hedera:
         port: 5432
         username: mirror_api
       includeHostInLink: false
-      maxLimit: 1000
       log:
-        level: debug
-      port: 5551
-      oasGenerator:
-        enabled: false
-        specFilePath: 'oas/v1/openapi'
-        swaggerUIPath: 'api-spec'
-        writeIntervalMs: 1000
-        alwaysServeDocs: true
+        level: debug      
+      maxLimit: 1000      
       metrics:
         enabled: true
         config:
@@ -26,6 +19,13 @@ hedera:
           password: password
           username: metrics
           uriPath: '/swagger'
+      oasGenerator:
+        alwaysServeDocs: true
+        enabled: false
+        specFilePath: 'oas/v1/openapi'
+        swaggerUIPath: 'api-spec'
+        writeIntervalMs: 1000
+      port: 5551
       shard: 0
       stateproof:
         addressBookHistory: false
