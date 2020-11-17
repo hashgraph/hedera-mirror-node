@@ -43,8 +43,7 @@ const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const {oasGeneratorInit, handleOASRequests, handleOASResponses} = require('./middleware/oasGenerator');
-const {handleResponses, handleRequests} = require('express-oas-generator');
+const {handleOASRequests, handleOASResponses} = require('./middleware/oasGenerator');
 
 // Logger
 const logger = log4js.getLogger();

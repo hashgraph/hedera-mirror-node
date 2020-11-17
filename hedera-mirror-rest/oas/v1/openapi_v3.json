@@ -658,14 +658,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "transactiontype",
-            "in": "query",
-            "example": "tokentransfers",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -1975,6 +1967,10 @@
       "email": "mirrornode@hedera.com",
       "url": "https://github.com/hashgraph/hedera-mirror-node"
     }
+  },
+  "externalDocs": {
+    "description": "Hedera REST API Docs",
+    "url": "https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api"
   },
   "servers": [
     {

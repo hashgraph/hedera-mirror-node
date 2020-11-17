@@ -601,12 +601,6 @@
             "name": "type",
             "in": "query",
             "example": "credit"
-          },
-          {
-            "type": "string",
-            "name": "transactiontype",
-            "in": "query",
-            "example": "tokentransfers"
           }
         ],
         "responses": {
@@ -1790,6 +1784,10 @@
     }
   },
   "basePath": "/api/v1",
+  "externalDocs": {
+    "description": "Hedera REST API Docs",
+    "url": "https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api"
+  },
   "schemes": ["http"],
   "host": "127.0.0.1:5551"
 }

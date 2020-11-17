@@ -26,13 +26,12 @@ const swStats = require('swagger-stats');
 // files
 const config = require('../config');
 const oasGenerator = require('./oasGenerator');
-const apiSpec = require(`./../${oasGenerator.getSpecPath(3)}`);
 
 const metricsHandler = () => {
   let defaultMetricsConfig = {
     name: process.env.npm_package_name,
     onAuthenticate: onMetricsAuthenticate,
-    swaggerSpec: apiSpec,
+    swaggerSpec: oasGenerator.getOpenApiV3Object(),
     version: process.env.npm_package_version,
   };
 

@@ -184,10 +184,33 @@ for port in {6551..6560}; do curl -s "http://127.0.0.1:${port}/api/v1/transactio
 
 To setup live monitoring, see [monitoring](../hedera-mirror-rest/monitoring/README.md) documentation.
 
+### Open API Spec
+The REST API supports the OpenAPI (Swagger) specification v2 and v3.
+This provides documentation and structure for metrics
+
+#### View Spec UI
+We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the open api spec. 
+The specification can be viewed at the following endpoints
+- `http://<ip>:<port>/<swaggerUIPath>` - Metrics dashboard
+Where `<swaggerUIPath>` is defined by `hedera.mirror.rest.oasGenerator.swaggerUIPath`, current default is 'swagger'
+
+#### Update Spec
+To update the spec, we utilize the [express-oas-generator](https://github.com/mpashkovskiy/express-oas-generator) package to automatically generate the spec files based off of express routes.
+The package automatically generates the spec files based off of express routes in `server.js`.
+Additionally query parameters and responses can be pulled by exercising all supporterd endpoints on a running express server
+
+To ensure all routes, parameters and responses are incorporated into the spec
+1. Set the `hedera.mirror.rest.oasGenerator.enabled` to true
+2. Set/Update `hedera.mirror.rest.oasGenerator.specFilePath` to the desired location for the spec file
+2. Run `NODE_ENV=integration npm run integrationtest` to excercise the supported endpoints and url parameter combinations. 
+3. If applicable update the `servers.url` values to reference the correct host and IP values based on your deployment configuration
+
 ### Metrics
 The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io).
 Using this 3 endpoints are made available
 - `http://<ip>:<port>/<metricsPath>/ui` - Metrics dashboard
 - `http://<ip>:<port>/<metricsPath>/stats` - Aggregated statistics
 - `http://<ip>:<port>/<metricsPath>/metrics` - Prometheus formatted metrics
-Where `<metricsPath>` is defined by hedera.mirror.rest.metrics.config.uriPath, current default is 'swagger'
+Where `<metricsPath>` is defined by `hedera.mirror.rest.metrics.config.uriPath`, current default is 'swagger'
+
+
