@@ -22,12 +22,14 @@
 const config = require('../config');
 const extend = require('extend');
 const swStats = require('swagger-stats');
+const apiSpec = require('./../oas_doc_v3.json');
 
 const metricsHandler = () => {
   let defaultMetricsConfig = {
     name: process.env.npm_package_name,
-    version: process.env.npm_package_version,
     onAuthenticate: onMetricsAuthenticate,
+    swaggerSpec: apiSpec,
+    version: process.env.npm_package_version,
   };
 
   // combine defaultMetricsConfig with file defined configs

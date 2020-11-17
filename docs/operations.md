@@ -187,7 +187,7 @@ To setup live monitoring, see [monitoring](../hedera-mirror-rest/monitoring/READ
 ### Metrics
 The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io).
 Using this 3 endpoints are made available
-- `http://<ip>:<port>/<metricsPath>` - Metrics dashboard
+- `http://<ip>:<port>/<metricsPath>/ui` - Metrics dashboard
 - `http://<ip>:<port>/<metricsPath>/stats` - Aggregated statistics
 - `http://<ip>:<port>/<metricsPath>/metrics` - Prometheus formatted metrics
 Where `<metricsPath>` is defined by hedera.mirror.rest.metrics.config.uriPath, current default is 'swagger'

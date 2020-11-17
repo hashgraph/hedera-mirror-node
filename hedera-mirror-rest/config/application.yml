@@ -13,6 +13,11 @@ hedera:
       log:
         level: debug
       port: 5551
+      oasGenerator:
+        enabled: false
+        specOutputPath: './oas_doc.json'
+        writeIntervalMs: 60000
+        alwaysServeDocs: true
       metrics:
         enabled: true
         config:

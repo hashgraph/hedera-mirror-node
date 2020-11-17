@@ -94,12 +94,12 @@ global.pool = pool;
 const app = addAsync(express());
 const apiPrefix = '/api/v1';
 
-handleOASResponses(app, apiPrefix);
-
 app.disable('x-powered-by');
 app.set('trust proxy', true);
 app.set('port', port);
 app.set('query parser', requestQueryParser);
+
+handleOASResponses(app, apiPrefix);
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
@@ -141,7 +141,7 @@ if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
 // topics routes
 app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
 app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
-app.getAsync(`${apiPrefix}/topics?/messages?/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
+app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
 // tokens routes
 app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
@@ -154,7 +154,7 @@ app.use(responseHandler);
 // response error handling middleware
 app.use(handleError);
 
-handleOASRequests(app, apiPrefix);
+handleOASRequests();
 
 if (process.env.NODE_ENV !== 'test') {
   const server = app.listen(port, () => {
