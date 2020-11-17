@@ -82,27 +82,13 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         if (filter.hasLimit()) {
-            flux = flux.as(t -> t.limitRequest(filter.getLimit()));
+            flux = flux.limitRequest(filter.getLimit());
         }
 
-        return topicExists(filter).thenMany(flux
-                .doOnNext(topicContext::onNext)
+        return topicExists(filter).thenMany(flux.doOnNext(topicContext::onNext)
                 .doOnSubscribe(s -> subscriberCount.incrementAndGet())
-                .doFinally(s -> {
-                    subscriberCount.decrementAndGet();
-                    topicContext.finished(s);
-                }));
-//                .doFinally(topicContext::finished));
-//        return topicExists(filter).thenMany(topicMessageRetriever.retrieve(filter)
-//                .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
-//                .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
-//                .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestampInstant()
-//                        .isBefore(filter.getEndTime()))
-//                .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
-//                .doOnNext(topicContext::onNext)
-//                .doOnSubscribe(s -> subscriberCount.incrementAndGet())
-//                .doFinally(s -> subscriberCount.decrementAndGet())
-//                .doFinally(topicContext::finished));
+                .doFinally(s -> subscriberCount.decrementAndGet())
+                .doFinally(topicContext::finished));
     }
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
@@ -129,20 +115,15 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .startTime(startTime)
                 .build();
 
-        Flux<TopicMessage> incoming = topicListener.listen(newFilter);
-        if (topicContext.getFilter().getEndTime() == null) {
-            return incoming.concatMap(t -> missingMessages(topicContext, t));
-        }
-
         return topicListener.listen(newFilter)
                 .takeUntilOther(pastEndTime(topicContext))
                 .concatMap(t -> missingMessages(topicContext, t));
     }
 
     private Flux<Object> pastEndTime(TopicContext topicContext) {
-//        if (topicContext.getFilter().getEndTime() == null) {
-//            return Flux.never();
-//        }
+        if (topicContext.getFilter().getEndTime() == null) {
+            return Flux.never();
+        }
 
         return Flux.empty().repeatWhen(Repeat.create(r -> !topicContext.isComplete(), Long.MAX_VALUE)
                 .fixedBackoff(grpcProperties.getEndTimeInterval()));

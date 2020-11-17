@@ -67,36 +67,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
                 .map(TopicMessage::toResponse)
-                .onErrorMap(t -> {
-                    if (t instanceof ConstraintViolationException) {
-                        return error(t, Status.INVALID_ARGUMENT);
-                    } else if (t instanceof IllegalArgumentException) {
-                        return error(t, Status.INVALID_ARGUMENT);
-                    } else if (t instanceof NonTransientDataAccessResourceException) {
-                        return error(t, Status.UNAVAILABLE, DB_ERROR);
-                    } else if (t instanceof TimeoutException) {
-                        return error(t, Status.RESOURCE_EXHAUSTED);
-                    } else if (t instanceof TopicNotFoundException) {
-                        return error(t, Status.NOT_FOUND);
-                    } else if (t instanceof TransientDataAccessException) {
-                        return error(t, Status.RESOURCE_EXHAUSTED);
-                    } else if (Exceptions.isOverflow(t)) {
-                        return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
-                    } else if (t instanceof ClientTimeoutException) {
-                        return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
-                    }
-
-                    return unknownError(t);
-                });
-//                .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
-//                .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
-//                .onErrorMap(NonTransientDataAccessResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
-//                .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-//                .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
-//                .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-//                .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-//                .onErrorMap(ClientTimeoutException.class, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-//                .onErrorMap(t -> unknownError(t));
+                .onErrorMap(this::mapError);
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
@@ -124,6 +95,28 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         }
 
         return builder.build();
+    }
+
+    private Throwable mapError(Throwable t) {
+        if (t instanceof ConstraintViolationException) {
+            return error(t, Status.INVALID_ARGUMENT);
+        } else if (t instanceof IllegalArgumentException) {
+            return error(t, Status.INVALID_ARGUMENT);
+        } else if (t instanceof NonTransientDataAccessResourceException) {
+            return error(t, Status.UNAVAILABLE, DB_ERROR);
+        } else if (t instanceof TimeoutException) {
+            return error(t, Status.RESOURCE_EXHAUSTED);
+        } else if (t instanceof TopicNotFoundException) {
+            return error(t, Status.NOT_FOUND);
+        } else if (t instanceof TransientDataAccessException) {
+            return error(t, Status.RESOURCE_EXHAUSTED);
+        } else if (Exceptions.isOverflow(t)) {
+            return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        } else if (t instanceof ClientTimeoutException) {
+            return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        }
+
+        return unknownError(t);
     }
 
     private Throwable error(Throwable t, Status status) {

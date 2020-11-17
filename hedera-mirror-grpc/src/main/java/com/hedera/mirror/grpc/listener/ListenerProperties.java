@@ -35,23 +35,27 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.grpc.listener")
 public class ListenerProperties {
 
-    private boolean enabled = true;
-
-    @Min(32)
-    private int maxPageSize = 5000;
-
-    @Min(8192)
-    @Max(65536)
-    private int maxBufferSize = 16384;
-
     @DurationMin(seconds = 2)
     @DurationMax(seconds = 10)
     @NotNull
     private Duration bufferTimeout = Duration.ofSeconds(4);
 
+    private boolean enabled = true;
+
+    @Min(8192)
+    @Max(65536)
+    private int maxBufferSize = 16384;
+
+    @Min(32)
+    private int maxPageSize = 5000;
+
     @DurationMin(millis = 50)
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
+
+    @Min(1)
+    @Max(256)
+    private int prefetch = 48;
 
     @NotNull
     private ListenerType type = ListenerType.REDIS;

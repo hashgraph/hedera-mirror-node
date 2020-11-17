@@ -18,11 +18,17 @@ import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListenerTest {
 
+    private final int maxBufferSize = 16;
+    private final int prefetch = 1;
+
     @Test
     @DisplayName("slow subscriber receives overflow exception and normal subscriber is not affected")
     void slowSubscriberOverflowException() {
-        int maxBufferSize = 16;
+        // step verifier requests 2 messages on subscription, and there are downstream buffers after the backpressure
+        // buffer, to ensure overflow, set the number of topic messages to send as follows
+        int numMessages = maxBufferSize + prefetch * 2 + 3;
         listenerProperties.setMaxBufferSize(maxBufferSize);
+        listenerProperties.setPrefetch(prefetch);
 
         TopicMessageFilter filterFast = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -44,30 +50,26 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .as(p -> StepVerifier.create(p, 1)) // initial request amount of 1
                 .thenRequest(1) // trigger subscription
                 .thenAwait(Duration.ofMillis(10L))
-                .then(() -> {
-                    // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
-                    // overflow error
-                    publish(domainBuilder.topicMessages(maxBufferSize + 10, future));
-                })
+                .then(() -> publish(domainBuilder.topicMessages(numMessages, future)))
                 .expectNext(1L, 2L)
                 .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
                 .thenRequest(Long.MAX_VALUE)
-                .expectNextSequence(LongStream.range(3, maxBufferSize + 4).boxed().collect(Collectors.toList()))
+                .thenConsumeWhile(n -> n < numMessages)
                 .expectErrorMatches(Exceptions::isOverflow)
                 .verify(Duration.ofMillis(1000L));
 
         assertThat(subscription.isDisposed()).isFalse();
         subscription.dispose();
-        assertThat(sequenceNumbers)
-                .isEqualTo(LongStream.range(1, maxBufferSize + 11).boxed().collect(Collectors.toList()));
+        assertThat(sequenceNumbers).isEqualTo(LongStream.range(1, numMessages + 1).boxed().collect(Collectors.toList()));
     }
 
     @Test
     @DisplayName("slow subscriber causes buffer overflow then timeout exception")
     void slowSubscribeOverflowThenTimeout() {
-        int maxBufferSize = 16;
-        listenerProperties.setMaxBufferSize(maxBufferSize);
+        int numMessages = maxBufferSize + prefetch * 2 + 3;
         listenerProperties.setBufferTimeout(Duration.ofMillis(550L));
+        listenerProperties.setMaxBufferSize(maxBufferSize);
+        listenerProperties.setPrefetch(prefetch);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -79,11 +81,7 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .as(p -> StepVerifier.create(p, 1)) // initial request amount - 1
                 .thenRequest(1) // trigger subscription
                 .thenAwait(Duration.ofMillis(10L))
-                .then(() -> {
-                    // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
-                    // overflow error
-                    publish(domainBuilder.topicMessages(maxBufferSize + 4, future));
-                })
+                .then(() -> publish(domainBuilder.topicMessages(numMessages, future)))
                 .expectNext(1L, 2L)
                 .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
                 .thenRequest(2)
