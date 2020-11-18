@@ -45,7 +45,7 @@ class PendingDownload {
     private boolean alreadyWaited = false; // has waitForCompletion been called
 
     @NonFinal
-    private boolean downloadSuccessful;
+    private boolean downloadSuccessful = false;
 
     PendingDownload(Future<GetObjectResponse> future, File file, String s3key) {
         this.future = future;

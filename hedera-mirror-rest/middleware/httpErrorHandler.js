@@ -66,7 +66,7 @@ const handleError = async (err, req, res, next) => {
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
       return;
     default:
-      logger.error(`Unhandled error ${err.constructor.name} encountered: `, err);
+      logger.error(`Unhandled error ${err.constructor.name} processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
   }
 

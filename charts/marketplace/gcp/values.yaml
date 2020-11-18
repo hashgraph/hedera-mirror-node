@@ -22,7 +22,7 @@ grpc:
         health:
           group:
             readiness:
-              include: db, grpcServices, grpcChannel, ping
+              exclude: redis
   hpa:
     enabled: false
   ingress:
@@ -53,7 +53,7 @@ importer:
         health:
           group:
             readiness:
-              include: db, diskSpace, ping
+              exclude: redis
   rbac:
     enabled: false
   replicas: 1
