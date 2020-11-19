@@ -96,7 +96,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return builder.build();
     }
 
-    private Throwable mapError(Throwable t) {
+    private StatusRuntimeException mapError(Throwable t) {
         if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException) {
             return error(t, Status.INVALID_ARGUMENT);
         } else if (t instanceof NonTransientDataAccessResourceException) {
@@ -109,8 +109,6 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             return error(t, Status.RESOURCE_EXHAUSTED);
         } else if (Exceptions.isOverflow(t)) {
             return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
-        } else if (t instanceof StatusRuntimeException) {
-            return t;
         }
 
         final String message = "Unknown error subscribing to topic";
@@ -118,11 +116,11 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return Status.UNKNOWN.augmentDescription(message).asRuntimeException();
     }
 
-    private Throwable error(Throwable t, Status status) {
+    private StatusRuntimeException error(Throwable t, Status status) {
         return error(t, status, t.getMessage());
     }
 
-    private Throwable error(Throwable t, Status status, String message) {
+    private StatusRuntimeException error(Throwable t, Status status, String message) {
         log.warn("Received {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
         return status.augmentDescription(message).asRuntimeException();
     }

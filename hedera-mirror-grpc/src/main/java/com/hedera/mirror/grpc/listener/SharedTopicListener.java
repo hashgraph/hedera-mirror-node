@@ -50,7 +50,7 @@ public abstract class SharedTopicListener implements TopicListener {
                         listenerProperties.getMaxBufferSize(),
                         t -> overflowSink.error(Exceptions.failWithOverflow())
                 )
-                .doFinally((s) -> overflowSink.complete());
+                .doFinally(s -> overflowSink.complete());
         return Flux.merge(listenerProperties.getPrefetch(), topicMessageFlux, overflowProcessor)
                 .publishOn(Schedulers.boundedElastic(), false, listenerProperties.getPrefetch());
     }
