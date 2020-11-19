@@ -84,6 +84,7 @@ public abstract class SharedTopicListener implements TopicListener {
 
             if (taskDisposer != null) {
                 taskDisposer.dispose();
+                taskDisposer = null;
             }
 
             sink.success();

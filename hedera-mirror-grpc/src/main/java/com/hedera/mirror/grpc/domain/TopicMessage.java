@@ -53,7 +53,7 @@ import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 @AllArgsConstructor
 @Builder
 @Entity
-@JsonIgnoreProperties(ignoreUnknown = true, value = { "consensusTimestampInstant", "response" })
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"consensusTimestampInstant", "response"})
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
 @NoArgsConstructor(force = true)
