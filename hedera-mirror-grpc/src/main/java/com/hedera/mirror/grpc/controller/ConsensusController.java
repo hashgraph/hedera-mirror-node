@@ -41,7 +41,6 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
@@ -108,7 +107,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             return error(t, Status.NOT_FOUND);
         } else if (t instanceof TransientDataAccessException) {
             return error(t, Status.RESOURCE_EXHAUSTED);
-        } else if (Exceptions.isOverflow(t) || t instanceof ClientTimeoutException) {
+        } else if (Exceptions.isOverflow(t)) {
             return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
         } else if (t instanceof StatusRuntimeException) {
             return t;

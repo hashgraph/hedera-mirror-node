@@ -20,24 +20,17 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-import java.time.Duration;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import reactor.core.Disposable;
+import reactor.core.Exceptions;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoSink;
-import reactor.core.scheduler.Scheduler;
+import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 @RequiredArgsConstructor
 public abstract class SharedTopicListener implements TopicListener {
@@ -47,61 +40,20 @@ public abstract class SharedTopicListener implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        TimeoutContext timeoutContext = new TimeoutContext(Schedulers.parallel(),
-                listenerProperties.getBufferTimeout());
-        Mono<TopicMessage> timeoutMono = Mono.create(timeoutContext);
+        DirectProcessor<TopicMessage> overflowProcessor = DirectProcessor.create();
+        FluxSink<TopicMessage> overflowSink = overflowProcessor.sink();
 
         // moving publishOn from after onBackpressureBuffer to after Flux.merge reduces CPU usage by up to 40%
         Flux<TopicMessage> topicMessageFlux = getSharedListener(filter)
                 .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
-                .onBackpressureBuffer(listenerProperties.getMaxBufferSize(), t -> timeoutContext.onOverflow())
-                .doFinally(r -> timeoutContext.onComplete());
-        return Flux.merge(listenerProperties.getPrefetch(), topicMessageFlux, timeoutMono)
+                .onBackpressureBuffer(
+                        listenerProperties.getMaxBufferSize(),
+                        t -> overflowSink.error(Exceptions.failWithOverflow())
+                )
+                .doFinally((s) -> overflowSink.complete());
+        return Flux.merge(listenerProperties.getPrefetch(), topicMessageFlux, overflowProcessor)
                 .publishOn(Schedulers.boundedElastic(), false, listenerProperties.getPrefetch());
     }
 
     protected abstract Flux<TopicMessage> getSharedListener(TopicMessageFilter filter);
-
-    @RequiredArgsConstructor
-    private class TimeoutContext implements Consumer<MonoSink<TopicMessage>> {
-
-        private final Scheduler scheduler;
-        private final Duration timeout;
-
-        private MonoSink<TopicMessage> sink;
-        private final AtomicBoolean completed = new AtomicBoolean(false);
-        private volatile Disposable taskDisposer;
-
-        @Override
-        public void accept(MonoSink<TopicMessage> sink) {
-            this.sink = sink;
-        }
-
-        public void onComplete() {
-            if (!completed.compareAndSet(false, true)) {
-                return;
-            }
-
-            if (taskDisposer != null) {
-                taskDisposer.dispose();
-                taskDisposer = null;
-            }
-
-            sink.success();
-        }
-
-        public void onOverflow() {
-            if (completed.get()) {
-                return;
-            }
-
-            try {
-                taskDisposer = scheduler.schedule(() -> sink.error(new ClientTimeoutException(
-                                "Client timed out while consuming the buffered messages")),
-                        timeout.toMillis(), TimeUnit.MILLISECONDS);
-            } catch (RejectedExecutionException ex) {
-                log.error("Failed to schedule task to terminate with ClientTimeoutException", ex);
-            }
-        }
-    }
 }
