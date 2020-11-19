@@ -109,6 +109,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             return error(t, Status.RESOURCE_EXHAUSTED);
         } else if (Exceptions.isOverflow(t)) {
             return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        } else if (t instanceof StatusRuntimeException) {
+            return (StatusRuntimeException) t;
         }
 
         final String message = "Unknown error subscribing to topic";
