@@ -17,6 +17,12 @@ grpc:
         grpc:
           listener:
             type: NOTIFY
+    management:
+      endpoint:
+        health:
+          group:
+            readiness:
+              exclude: redis
   hpa:
     enabled: false
   ingress:
@@ -42,6 +48,12 @@ importer:
                   enabled: true
                 redis:
                   enabled: false
+    management:
+      endpoint:
+        health:
+          group:
+            readiness:
+              exclude: redis
   rbac:
     enabled: false
   replicas: 1

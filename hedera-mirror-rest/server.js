@@ -47,13 +47,17 @@ const {requestLogger, requestQueryParser} = require('./middleware/requestHandler
 const logger = log4js.getLogger();
 log4js.configure({
   appenders: {
-    everything: {
+    console: {
+      layout: {
+        pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %m%n',
+        type: 'pattern',
+      },
       type: 'stdout',
     },
   },
   categories: {
     default: {
-      appenders: ['everything'],
+      appenders: ['console'],
       level: config.log.level,
     },
   },

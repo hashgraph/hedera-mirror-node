@@ -106,9 +106,9 @@ prometheusRules:
   ImporterBalanceParseLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Took longer than 4s to parse balance stream files
+      summary: Took longer than 5s to parse balance stream files
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 4
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 5
     for: 1m
     labels:
       severity: critical
@@ -195,7 +195,7 @@ prometheusRules:
 
   ImporterLog4j2Errors:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} encountered {{ $value }} exceptions in a 2m period"
+      description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
       summary: High rate of log4j2 errors
     enabled: true
     expr: sum(increase(log4j2_events_total{application="hedera-mirror-importer", level="error"}[2m])) by (namespace, pod) >= 2

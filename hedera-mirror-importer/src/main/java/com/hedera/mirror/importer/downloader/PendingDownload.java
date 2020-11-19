@@ -21,10 +21,9 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import com.google.common.base.Stopwatch;
-
 import java.io.File;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
@@ -37,14 +36,16 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 @Log4j2
 @Value
 class PendingDownload {
-    Future<GetObjectResponse> future;
-    Stopwatch stopwatch;
-    File file; // Destination file
-    String s3key; // Source S3 key
+    private final Future<GetObjectResponse> future;
+    private final Stopwatch stopwatch;
+    private final File file; // Destination file
+    private final String s3key; // Source S3 key
+
     @NonFinal
-    boolean alreadyWaited = false; // has waitForCompletion been called
+    private boolean alreadyWaited = false; // has waitForCompletion been called
+
     @NonFinal
-    boolean downloadSuccessful;
+    private boolean downloadSuccessful = false;
 
     PendingDownload(Future<GetObjectResponse> future, File file, String s3key) {
         this.future = future;
@@ -67,11 +68,11 @@ class PendingDownload {
             downloadSuccessful = true;
         } catch (InterruptedException e) {
             log.warn("Failed downloading {} after {}", s3key, stopwatch, e);
-            downloadSuccessful = false;
-            throw e;
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException ex) {
+            log.warn("Failed downloading {} after {}: {}", s3key, stopwatch, ex.getMessage());
         } catch (Exception ex) {
             log.warn("Failed downloading {} after {}", s3key, stopwatch, ex);
-            downloadSuccessful = false;
         }
         return downloadSuccessful;
     }

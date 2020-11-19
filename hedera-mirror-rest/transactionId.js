@@ -63,7 +63,6 @@ const fromString = (transactionIdStr) => {
   const message =
     'Invalid Transaction id. Please use "shard.realm.num-sss-nnn" format where sss are seconds and nnn are nanoseconds';
   if (txIdMatches === null || txIdMatches.length !== 6) {
-    logger.error(`TransactionId.fromString, invalid transaction ID string ${transactionIdStr}`);
     throw new InvalidArgumentError(message);
   }
 
@@ -71,7 +70,6 @@ const fromString = (transactionIdStr) => {
   const seconds = long.fromString(txIdMatches[4]);
   const nanos = parseInt(txIdMatches[5], 10);
   if (seconds.lessThan(0)) {
-    logger.error(`TransactionId.fromString, invalid transaction ID string ${transactionIdStr}: seconds overflow`);
     throw new InvalidArgumentError(message);
   }
 
