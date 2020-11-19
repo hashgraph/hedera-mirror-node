@@ -40,10 +40,10 @@ const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
-const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
+const {serveOASSwaggerUI} = require('./middleware/oasHandler');
+const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const {handleOASRequests, handleOASResponses} = require('./middleware/oasGenerator');
 
 // Logger
 const logger = log4js.getLogger();
@@ -98,7 +98,7 @@ app.set('trust proxy', true);
 app.set('port', port);
 app.set('query parser', requestQueryParser);
 
-handleOASResponses(app, apiPrefix);
+serveOASSwaggerUI(app, apiPrefix);
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
@@ -152,8 +152,6 @@ app.use(responseHandler);
 
 // response error handling middleware
 app.use(handleError);
-
-handleOASRequests();
 
 if (process.env.NODE_ENV !== 'test') {
   const server = app.listen(port, () => {

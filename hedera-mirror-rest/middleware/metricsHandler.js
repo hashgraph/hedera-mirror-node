@@ -21,17 +21,17 @@
 
 // ext libraries
 const extend = require('extend');
-const oasGenerator = require('./oasGenerator');
 const swStats = require('swagger-stats');
 
 // files
 const config = require('../config');
+const oasHandler = require('./oasHandler');
 
 const metricsHandler = () => {
   let defaultMetricsConfig = {
     name: process.env.npm_package_name,
     onAuthenticate: onMetricsAuthenticate,
-    swaggerSpec: oasGenerator.getOpenApiV3Object(),
+    swaggerSpec: oasHandler.getV1OpenApiObject(),
     version: process.env.npm_package_version,
   };
 

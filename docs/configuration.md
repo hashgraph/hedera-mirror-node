@@ -212,11 +212,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.metrics.config.username`             | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
 | `hedera.mirror.rest.metrics.config.password`             | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
 | `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
-| `hedera.mirror.rest.oasGenerator.alwaysServeDocs`        | true                    | Whether to always serve the aos doc. Used when you don't want to apply middelwares but still serve existing api-docs and api-spec.                                                                  |
-| `hedera.mirror.rest.oasGenerator.enabled`                | false                   | Whether to generate oas file                                                                  |
-| `hedera.mirror.rest.oasGenerator.specFilePath`           | '/oas/v1/openapi'       | The path to a oas file and file name, if missing module won't write spec to the disc                                                                  |
-| `hedera.mirror.rest.oasGenerator.swaggerUIPath`          | '/api-spec'             | Swagger UI path for your REST API                                                                  |
-| `hedera.mirror.rest.oasGenerator.writeIntervalMs`        | 1000                    | The write interval in milliseconds.                                                                 |
+| `hedera.mirror.rest.oas.specFileName`                    | 'openapi'               | The file name of the oas file                                                                  |
+| `hedera.mirror.rest.oas.swaggerUIPath`                   | '/doc'                  | Swagger UI path for your REST API                                                                  |
 | `hedera.mirror.rest.shard`                               | 0                       | The default shard number that this mirror node participates in                                 |
 | `hedera.mirror.rest.stateproof.enabled`                  | false                   | Whether to enable stateproof REST API or not                                                   |
 | `hedera.mirror.rest.stateproof.streams.accessKey`        | ""                      | The cloud storage access key                                                                   |

@@ -185,27 +185,21 @@ for port in {6551..6560}; do curl -s "http://127.0.0.1:${port}/api/v1/transactio
 To setup live monitoring, see [monitoring](../hedera-mirror-rest/monitoring/README.md) documentation.
 
 ### Open API Spec
-The REST API supports the OpenAPI (Swagger) specification v2 and v3.
+The REST API supports the OpenAPI (Swagger) specification v3.
 This provides documentation and structure for metrics
 
 #### View Spec UI
 We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the open api spec.
-The specification can be viewed at the following endpoints
-- `http://<ip>:<port>/<swaggerUIPath>` - Default doc serve location
-- `http://<ip>:<port>/<swaggerUIPath>/v2` - Open API v2 doc serve location
-- `http://<ip>:<port>/<swaggerUIPath>/v3` - Explicit Open API v3 doc serve location
-Where `<swaggerUIPath>` is defined by `hedera.mirror.rest.oasGenerator.swaggerUIPath`, current default is 'api-spec'
+The specification can be viewed at the `<swaggerUIPath>` path under the appropriate version http endpoint `/api/<version>/<swaggerUIPath>`
+
+Where `<swaggerUIPath>` is defined by `hedera.mirror.rest.oas.swaggerUIPath`, current default is 'doc' e.g.
+- `/api/v1/doc` - API v1 doc serve path
 
 #### Update Spec
-To update the spec, we utilize the [express-oas-generator](https://github.com/mpashkovskiy/express-oas-generator) package to automatically generate the spec files based off of express routes.
-The package automatically generates the spec files based off of express routes in `server.js`.
-Additionally query parameters and responses can be pulled by exercising all supporterd endpoints on a running express server
+To update the spec, manually modify the spec file located under the `hedera-mirror-rest/api/<version>` directory
 
-To ensure all routes, parameters and responses are incorporated into the spec
-1. Set the `hedera.mirror.rest.oasGenerator.enabled` to true
-2. Set/Update `hedera.mirror.rest.oasGenerator.specFilePath` to the desired location for the spec file
-2. Run `NODE_ENV=integration npm run integrationtest` to excercise the supported endpoints and url parameter combinations.
-3. If applicable update the `servers.url` values to reference the correct host and IP values based on your deployment configuration
+Where `<specFileName>` is defined by `hedera.mirror.rest.oas.specFileName`, current default is 'openapi' e.g.
+- `hedera-mirror-rest/api/v1/openapi.yml` - API v1 openapi spec
 
 ### Metrics
 The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io).
