@@ -45,4 +45,13 @@ public class RetrieverProperties {
 
     @NotNull
     private Duration timeout = Duration.ofSeconds(60L);
+
+    @Min(1000)
+    private int unthrottledMaxPageSize = 5000;
+
+    @NotNull
+    private Duration unthrottledPollingFrequency = Duration.ofMillis(20);
+
+    @Min(4)
+    private long unthrottledMaxPolls = 12;
 }
