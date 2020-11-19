@@ -66,8 +66,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
-                .map(TopicMessage::toResponse)
-                .onErrorMap(this::mapError);
+                .map(TopicMessage::getResponse)
+                .onErrorMap(this::mapError); // consolidate error mappings to avoid deep flux operation chaining
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
@@ -98,9 +98,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     }
 
     private Throwable mapError(Throwable t) {
-        if (t instanceof ConstraintViolationException) {
-            return error(t, Status.INVALID_ARGUMENT);
-        } else if (t instanceof IllegalArgumentException) {
+        if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException) {
             return error(t, Status.INVALID_ARGUMENT);
         } else if (t instanceof NonTransientDataAccessResourceException) {
             return error(t, Status.UNAVAILABLE, DB_ERROR);
@@ -110,13 +108,15 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             return error(t, Status.NOT_FOUND);
         } else if (t instanceof TransientDataAccessException) {
             return error(t, Status.RESOURCE_EXHAUSTED);
-        } else if (Exceptions.isOverflow(t)) {
+        } else if (Exceptions.isOverflow(t) || t instanceof ClientTimeoutException) {
             return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
-        } else if (t instanceof ClientTimeoutException) {
-            return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        } else if (t instanceof StatusRuntimeException) {
+            return t;
         }
 
-        return unknownError(t);
+        final String message = "Unknown error subscribing to topic";
+        log.error(message, t);
+        return Status.UNKNOWN.augmentDescription(message).asRuntimeException();
     }
 
     private Throwable error(Throwable t, Status status) {
@@ -126,15 +126,5 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     private Throwable error(Throwable t, Status status, String message) {
         log.warn("Received {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
         return status.augmentDescription(message).asRuntimeException();
-    }
-
-    private Throwable unknownError(Throwable t) {
-        if (t instanceof StatusRuntimeException) {
-            return t;
-        }
-
-        final String message = "Unknown error subscribing to topic";
-        log.error(message, t);
-        return Status.UNKNOWN.augmentDescription(message).asRuntimeException();
     }
 }

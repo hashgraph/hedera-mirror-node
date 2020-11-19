@@ -31,15 +31,16 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Transient;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.Value;
 import org.springframework.data.domain.Persistable;
@@ -52,7 +53,7 @@ import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 @AllArgsConstructor
 @Builder
 @Entity
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"consensusTimestampInstant", "response"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = { "consensusTimestampInstant", "response" })
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
 @NoArgsConstructor(force = true)
@@ -103,52 +104,48 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @Transient
     private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartTimestamp);
 
+    // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
     @EqualsAndHashCode.Exclude
+    @Getter(lazy = true)
+    @Setter(value = AccessLevel.NONE)
     @ToString.Exclude
     @Transient
-    private final AtomicReference<ConsensusTopicResponse> response = new AtomicReference<>();
+    private final ConsensusTopicResponse response = toResponse();
 
-    // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
-    public ConsensusTopicResponse toResponse() {
-        return response.updateAndGet(resp -> {
-            if (resp != null) {
-                return resp;
+    private ConsensusTopicResponse toResponse() {
+        var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder()
+                        .setSeconds(getConsensusTimestampInstant().getEpochSecond())
+                        .setNanos(getConsensusTimestampInstant().getNano())
+                        .build())
+                .setMessage(UnsafeByteOperations.unsafeWrap(message))
+                .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
+                .setRunningHashVersion(runningHashVersion)
+                .setSequenceNumber(sequenceNumber);
+
+        if (getChunkNum() != null) {
+            ConsensusMessageChunkInfo.Builder chunkBuilder = ConsensusMessageChunkInfo.newBuilder()
+                    .setNumber(getChunkNum())
+                    .setTotal(getChunkTotal());
+
+            if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
+                chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
+                        .setAccountID(AccountID.newBuilder()
+                                .setShardNum(getPayerAccountEntity().getEntityShard())
+                                .setRealmNum(getPayerAccountEntity().getEntityRealm())
+                                .setAccountNum(getPayerAccountEntity().getEntityNum())
+                                .build())
+                        .setTransactionValidStart(Timestamp.newBuilder()
+                                .setSeconds(getValidStartInstant().getEpochSecond())
+                                .setNanos(getValidStartInstant().getNano())
+                                .build())
+                        .build());
             }
 
-            var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
-                    .setConsensusTimestamp(Timestamp.newBuilder()
-                            .setSeconds(getConsensusTimestampInstant().getEpochSecond())
-                            .setNanos(getConsensusTimestampInstant().getNano())
-                            .build())
-                    .setMessage(UnsafeByteOperations.unsafeWrap(message))
-                    .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
-                    .setRunningHashVersion(runningHashVersion)
-                    .setSequenceNumber(sequenceNumber);
+            consensusTopicResponseBuilder.setChunkInfo(chunkBuilder.build());
+        }
 
-            if (getChunkNum() != null) {
-                ConsensusMessageChunkInfo.Builder chunkBuilder = ConsensusMessageChunkInfo.newBuilder()
-                        .setNumber(getChunkNum())
-                        .setTotal(getChunkTotal());
-
-                if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
-                    chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
-                            .setAccountID(AccountID.newBuilder()
-                                    .setShardNum(getPayerAccountEntity().getEntityShard())
-                                    .setRealmNum(getPayerAccountEntity().getEntityRealm())
-                                    .setAccountNum(getPayerAccountEntity().getEntityNum())
-                                    .build())
-                            .setTransactionValidStart(Timestamp.newBuilder()
-                                    .setSeconds(getValidStartInstant().getEpochSecond())
-                                    .setNanos(getValidStartInstant().getNano())
-                                    .build())
-                            .build());
-                }
-
-                consensusTopicResponseBuilder.setChunkInfo(chunkBuilder.build());
-            }
-
-            return consensusTopicResponseBuilder.build();
-        });
+        return consensusTopicResponseBuilder.build();
     }
 
     @Override
