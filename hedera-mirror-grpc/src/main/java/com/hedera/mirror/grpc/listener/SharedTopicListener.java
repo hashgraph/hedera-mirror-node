@@ -23,14 +23,14 @@ package com.hedera.mirror.grpc.listener;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import reactor.core.Exceptions;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.UnicastProcessor;
+import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 @RequiredArgsConstructor
 public abstract class SharedTopicListener implements TopicListener {
@@ -40,18 +40,19 @@ public abstract class SharedTopicListener implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        UnicastProcessor<String> processor = UnicastProcessor.create();
-        Flux<String> timeoutFlux = processor.delayElements(listenerProperties.getBufferTimeout())
-                .replay(1)
-                .autoConnect();
+        DirectProcessor<TopicMessage> overflowProcessor = DirectProcessor.create();
+        FluxSink<TopicMessage> overflowSink = overflowProcessor.sink();
 
-        return getSharedListener(filter)
-                .publishOn(Schedulers.boundedElastic())
+        // moving publishOn from after onBackpressureBuffer to after Flux.merge reduces CPU usage by up to 40%
+        Flux<TopicMessage> topicMessageFlux = getSharedListener(filter)
                 .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
-                .doOnCancel(() -> processor.onNext("timeout"))
-                .onBackpressureBuffer(listenerProperties.getMaxBufferSize())
-                .timeout(timeoutFlux, message -> timeoutFlux, Mono.error(
-                        new ClientTimeoutException("Client timed out while consuming the buffered messages")));
+                .onBackpressureBuffer(
+                        listenerProperties.getMaxBufferSize(),
+                        t -> overflowSink.error(Exceptions.failWithOverflow())
+                )
+                .doFinally(s -> overflowSink.complete());
+        return Flux.merge(listenerProperties.getPrefetch(), topicMessageFlux, overflowProcessor)
+                .publishOn(Schedulers.boundedElastic(), false, listenerProperties.getPrefetch());
     }
 
     protected abstract Flux<TopicMessage> getSharedListener(TopicMessageFilter filter);

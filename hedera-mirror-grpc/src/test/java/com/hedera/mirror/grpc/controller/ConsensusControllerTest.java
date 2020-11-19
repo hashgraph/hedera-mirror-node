@@ -111,9 +111,9 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(topicMessage1.toResponse())
-                .expectNext(topicMessage2.toResponse())
-                .expectNext(topicMessage3.toResponse())
+                .expectNext(topicMessage1.getResponse())
+                .expectNext(topicMessage2.getResponse())
+                .expectNext(topicMessage3.getResponse())
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -135,7 +135,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         assertThat(blockingService.subscribeTopic(query))
                 .toIterable()
                 .hasSize(3)
-                .containsSequence(topicMessage1.toResponse(), topicMessage2.toResponse(), topicMessage3.toResponse());
+                .containsSequence(topicMessage1.getResponse(), topicMessage2.getResponse(), topicMessage3.getResponse());
     }
 
     @Test
@@ -154,9 +154,9 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(topicMessage1.toResponse())
-                .expectNext(topicMessage2.toResponse())
-                .expectNext(topicMessage3.toResponse())
+                .expectNext(topicMessage1.getResponse())
+                .expectNext(topicMessage2.getResponse())
+                .expectNext(topicMessage3.getResponse())
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -182,9 +182,9 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(topicMessage1.toResponse())
-                .expectNext(topicMessage2.toResponse())
-                .expectNext(topicMessage3.toResponse())
+                .expectNext(topicMessage1.getResponse())
+                .expectNext(topicMessage2.getResponse())
+                .expectNext(topicMessage3.getResponse())
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)

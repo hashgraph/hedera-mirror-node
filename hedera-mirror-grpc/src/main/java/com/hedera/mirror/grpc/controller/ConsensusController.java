@@ -41,7 +41,6 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
@@ -57,8 +56,9 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
-    private static final String DB_ERROR = "Unable to connect to database. Please retry later";
+    private static final String DB_ERROR = "Error querying the data source. Please retry later";
     private static final String OVERFLOW_ERROR = "Client lags too much behind. Please retry later";
+    private static final String UNKNOWN_ERROR = "Unknown error subscribing to topic";
 
     private final TopicMessageService topicMessageService;
 
@@ -66,25 +66,13 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
-                .map(TopicMessage::toResponse)
-                // Client errors
-                .onErrorMap(ClientTimeoutException.class, e -> clientError(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-                .onErrorMap(ConstraintViolationException.class, e -> clientError(e, Status.INVALID_ARGUMENT))
-                .onErrorMap(Exceptions::isOverflow, e -> clientError(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-                .onErrorMap(IllegalArgumentException.class, e -> clientError(e, Status.INVALID_ARGUMENT))
-                .onErrorMap(TopicNotFoundException.class, e -> clientError(e, Status.NOT_FOUND))
-                // Server errors
-                .onErrorMap(NonTransientDataAccessResourceException.class, e ->
-                        serverError(e, Status.UNAVAILABLE, DB_ERROR))
-                .onErrorMap(TimeoutException.class, e -> serverError(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(TransientDataAccessException.class, e -> serverError(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(t -> unknownError(t));
+                .map(TopicMessage::getResponse)
+                .onErrorMap(this::mapError); // consolidate error mappings to avoid deep flux operation chaining
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
         if (!query.hasTopicID()) {
-            log.warn("Missing required topicID");
-            throw Status.INVALID_ARGUMENT.augmentDescription("Missing required topicID").asRuntimeException();
+            throw new IllegalArgumentException("Missing required topicID");
         }
 
         TopicMessageFilter.TopicMessageFilterBuilder builder = TopicMessageFilter.builder()
@@ -108,31 +96,29 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return builder.build();
     }
 
-    private Throwable clientError(Throwable t, Status status) {
-        return clientError(t, status, t.getMessage());
+    private StatusRuntimeException mapError(Throwable t) {
+        if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException) {
+            return clientError(t, Status.INVALID_ARGUMENT, t.getMessage());
+        } else if (Exceptions.isOverflow(t)) {
+            return clientError(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        } else if (t instanceof NonTransientDataAccessResourceException) {
+            return serverError(t, Status.UNAVAILABLE, DB_ERROR);
+        } else if (t instanceof TopicNotFoundException) {
+            return clientError(t, Status.NOT_FOUND, t.getMessage());
+        } else if (t instanceof TransientDataAccessException || t instanceof TimeoutException) {
+            return serverError(t, Status.RESOURCE_EXHAUSTED, DB_ERROR);
+        } else {
+            return serverError(t, Status.UNKNOWN, UNKNOWN_ERROR);
+        }
     }
 
-    private Throwable clientError(Throwable t, Status status, String message) {
+    private StatusRuntimeException clientError(Throwable t, Status status, String message) {
         log.warn("Client error {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
         return status.augmentDescription(message).asRuntimeException();
     }
 
-    private Throwable serverError(Throwable t, Status status) {
-        return serverError(t, status, t.getMessage());
-    }
-
-    private Throwable serverError(Throwable t, Status status, String message) {
-        log.error("Server error {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
+    private StatusRuntimeException serverError(Throwable t, Status status, String message) {
+        log.error("Server error subscribing to topic: ", t);
         return status.augmentDescription(message).asRuntimeException();
-    }
-
-    private Throwable unknownError(Throwable t) {
-        if (t instanceof StatusRuntimeException) {
-            return t;
-        }
-
-        final String message = "Unknown error subscribing to topic";
-        log.error(message, t);
-        return Status.UNKNOWN.augmentDescription(message).asRuntimeException();
     }
 }

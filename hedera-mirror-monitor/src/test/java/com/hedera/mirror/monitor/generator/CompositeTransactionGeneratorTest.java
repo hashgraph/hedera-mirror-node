@@ -46,12 +46,12 @@ public class CompositeTransactionGeneratorTest {
         ScenarioProperties scenarioProperties1 = new ScenarioProperties();
         scenarioProperties1.setName("test1");
         scenarioProperties1.setProperties(Map.of("topicId", "0.0.1000"));
-        scenarioProperties1.setTps(75.0);
+        scenarioProperties1.setTps(7500.0);
         scenarioProperties1.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
 
         ScenarioProperties scenarioProperties2 = new ScenarioProperties();
         scenarioProperties2.setName("test2");
-        scenarioProperties2.setTps(25.0);
+        scenarioProperties2.setTps(2500.0);
         scenarioProperties2.setType(TransactionType.ACCOUNT_CREATE);
 
         properties = new PublishProperties();
@@ -69,7 +69,7 @@ public class CompositeTransactionGeneratorTest {
                 .containsExactly(0.75, 0.25);
 
         Multiset<TransactionType> types = HashMultiset.create();
-        for (int i = 0; i < 100; ++i) {
+        for (int i = 0; i < 10000; ++i) {
             PublishRequest request = generator.next();
             types.add(request.getType());
         }
@@ -78,7 +78,7 @@ public class CompositeTransactionGeneratorTest {
             assertThat(types.count(scenarioProperties.getType()))
                     .isNotNegative()
                     .isNotZero()
-                    .isCloseTo((int) scenarioProperties.getTps(), withinPercentage(40));
+                    .isCloseTo((int) scenarioProperties.getTps(), withinPercentage(20));
         }
     }
 

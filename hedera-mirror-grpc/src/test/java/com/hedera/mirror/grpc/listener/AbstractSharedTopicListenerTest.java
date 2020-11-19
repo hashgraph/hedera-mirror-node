@@ -14,15 +14,20 @@ import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListenerTest {
+
+    private final int maxBufferSize = 16;
+    private final int prefetch = 1;
 
     @Test
     @DisplayName("slow subscriber receives overflow exception and normal subscriber is not affected")
     void slowSubscriberOverflowException() {
-        int maxBufferSize = 16;
+        // step verifier requests 2 messages on subscription, and there are downstream buffers after the backpressure
+        // buffer, to ensure overflow, set the number of topic messages to send as follows
+        int numMessages = maxBufferSize + prefetch * 2 + 3;
         listenerProperties.setMaxBufferSize(maxBufferSize);
+        listenerProperties.setPrefetch(prefetch);
 
         TopicMessageFilter filterFast = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -44,52 +49,16 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .as(p -> StepVerifier.create(p, 1)) // initial request amount of 1
                 .thenRequest(1) // trigger subscription
                 .thenAwait(Duration.ofMillis(10L))
-                .then(() -> {
-                    // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
-                    // overflow error
-                    publish(domainBuilder.topicMessages(maxBufferSize + 3, future));
-                })
+                .then(() -> publish(domainBuilder.topicMessages(numMessages, future)))
                 .expectNext(1L, 2L)
                 .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
                 .thenRequest(Long.MAX_VALUE)
-                .expectNextSequence(LongStream.range(3, maxBufferSize + 3).boxed().collect(Collectors.toList()))
+                .thenConsumeWhile(n -> n < numMessages)
                 .expectErrorMatches(Exceptions::isOverflow)
-                .verify(Duration.ofMillis(600L));
+                .verify(Duration.ofMillis(1000L));
 
         assertThat(subscription.isDisposed()).isFalse();
         subscription.dispose();
-        assertThat(sequenceNumbers)
-                .isEqualTo(LongStream.range(1, maxBufferSize + 4).boxed().collect(Collectors.toList()));
-    }
-
-    @Test
-    @DisplayName("slow subscriber causes buffer overflow then timeout exception")
-    void slowSubscribeOverflowThenTimeout() {
-        int maxBufferSize = 16;
-        listenerProperties.setMaxBufferSize(maxBufferSize);
-        listenerProperties.setBufferTimeout(Duration.ofMillis(550L));
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .build();
-
-        // the slow subscriber
-        topicListener.listen(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(p -> StepVerifier.create(p, 1)) // initial request amount - 1
-                .thenRequest(1) // trigger subscription
-                .thenAwait(Duration.ofMillis(10L))
-                .then(() -> {
-                    // upon subscription, step verifier will request 2, so we need 2 + maxBufferSize + 1 to trigger
-                    // overflow error
-                    publish(domainBuilder.topicMessages(maxBufferSize + 3, future));
-                })
-                .expectNext(1L, 2L)
-                .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
-                .thenRequest(2)
-                .expectNext(3L, 4L)
-                .thenAwait(Duration.ofMillis(200L)) // timeout begins to count down when overflow happens
-                .expectError(ClientTimeoutException.class)
-                .verify(Duration.ofMillis(800L));
+        assertThat(sequenceNumbers).isEqualTo(LongStream.range(1, numMessages + 1).boxed().collect(Collectors.toList()));
     }
 }

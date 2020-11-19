@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Transient;
@@ -103,49 +102,47 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @Transient
     private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartTimestamp);
 
+    // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
     @EqualsAndHashCode.Exclude
+    @Getter(lazy = true)
     @ToString.Exclude
     @Transient
-    private final AtomicReference<ConsensusTopicResponse> response = new AtomicReference<>();
+    private final ConsensusTopicResponse response = toResponse();
 
-    // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
-    public ConsensusTopicResponse toResponse() {
-        if (response.get() == null) {
-            var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
-                    .setConsensusTimestamp(Timestamp.newBuilder()
-                            .setSeconds(getConsensusTimestampInstant().getEpochSecond())
-                            .setNanos(getConsensusTimestampInstant().getNano())
-                            .build())
-                    .setMessage(UnsafeByteOperations.unsafeWrap(message))
-                    .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
-                    .setRunningHashVersion(runningHashVersion)
-                    .setSequenceNumber(sequenceNumber);
+    private ConsensusTopicResponse toResponse() {
+        var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder()
+                        .setSeconds(getConsensusTimestampInstant().getEpochSecond())
+                        .setNanos(getConsensusTimestampInstant().getNano())
+                        .build())
+                .setMessage(UnsafeByteOperations.unsafeWrap(message))
+                .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
+                .setRunningHashVersion(runningHashVersion)
+                .setSequenceNumber(sequenceNumber);
 
-            if (getChunkNum() != null) {
-                ConsensusMessageChunkInfo.Builder chunkBuilder = ConsensusMessageChunkInfo.newBuilder()
-                        .setNumber(getChunkNum())
-                        .setTotal(getChunkTotal());
+        if (getChunkNum() != null) {
+            ConsensusMessageChunkInfo.Builder chunkBuilder = ConsensusMessageChunkInfo.newBuilder()
+                    .setNumber(getChunkNum())
+                    .setTotal(getChunkTotal());
 
-                if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
-                    chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
-                            .setAccountID(AccountID.newBuilder()
-                                    .setShardNum(getPayerAccountEntity().getEntityShard())
-                                    .setRealmNum(getPayerAccountEntity().getEntityRealm())
-                                    .setAccountNum(getPayerAccountEntity().getEntityNum())
-                                    .build())
-                            .setTransactionValidStart(Timestamp.newBuilder()
-                                    .setSeconds(getValidStartInstant().getEpochSecond())
-                                    .setNanos(getValidStartInstant().getNano())
-                                    .build())
-                            .build());
-                }
-
-                consensusTopicResponseBuilder.setChunkInfo(chunkBuilder.build());
+            if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
+                chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
+                        .setAccountID(AccountID.newBuilder()
+                                .setShardNum(getPayerAccountEntity().getEntityShard())
+                                .setRealmNum(getPayerAccountEntity().getEntityRealm())
+                                .setAccountNum(getPayerAccountEntity().getEntityNum())
+                                .build())
+                        .setTransactionValidStart(Timestamp.newBuilder()
+                                .setSeconds(getValidStartInstant().getEpochSecond())
+                                .setNanos(getValidStartInstant().getNano())
+                                .build())
+                        .build());
             }
 
-            response.set(consensusTopicResponseBuilder.build());
+            consensusTopicResponseBuilder.setChunkInfo(chunkBuilder.build());
         }
-        return response.get();
+
+        return consensusTopicResponseBuilder.build();
     }
 
     @Override
