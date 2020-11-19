@@ -41,7 +41,6 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
@@ -66,16 +65,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
-                .map(TopicMessage::toResponse)
-                .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
-                .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
-                .onErrorMap(NonTransientDataAccessResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
-                .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
-                .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
-                .onErrorMap(Exceptions::isOverflow, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-                .onErrorMap(ClientTimeoutException.class, e -> error(e, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR))
-                .onErrorMap(t -> unknownError(t));
+                .map(TopicMessage::getResponse)
+                .onErrorMap(this::mapError); // consolidate error mappings to avoid deep flux operation chaining
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
@@ -105,22 +96,34 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return builder.build();
     }
 
-    private Throwable error(Throwable t, Status status) {
-        return error(t, status, t.getMessage());
-    }
-
-    private Throwable error(Throwable t, Status status, String message) {
-        log.warn("Received {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
-        return status.augmentDescription(message).asRuntimeException();
-    }
-
-    private Throwable unknownError(Throwable t) {
-        if (t instanceof StatusRuntimeException) {
-            return t;
+    private StatusRuntimeException mapError(Throwable t) {
+        if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException) {
+            return error(t, Status.INVALID_ARGUMENT);
+        } else if (t instanceof NonTransientDataAccessResourceException) {
+            return error(t, Status.UNAVAILABLE, DB_ERROR);
+        } else if (t instanceof TimeoutException) {
+            return error(t, Status.RESOURCE_EXHAUSTED);
+        } else if (t instanceof TopicNotFoundException) {
+            return error(t, Status.NOT_FOUND);
+        } else if (t instanceof TransientDataAccessException) {
+            return error(t, Status.RESOURCE_EXHAUSTED);
+        } else if (Exceptions.isOverflow(t)) {
+            return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        } else if (t instanceof StatusRuntimeException) {
+            return (StatusRuntimeException) t;
         }
 
         final String message = "Unknown error subscribing to topic";
         log.error(message, t);
         return Status.UNKNOWN.augmentDescription(message).asRuntimeException();
+    }
+
+    private StatusRuntimeException error(Throwable t, Status status) {
+        return error(t, status, t.getMessage());
+    }
+
+    private StatusRuntimeException error(Throwable t, Status status, String message) {
+        log.warn("Received {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
+        return status.augmentDescription(message).asRuntimeException();
     }
 }
