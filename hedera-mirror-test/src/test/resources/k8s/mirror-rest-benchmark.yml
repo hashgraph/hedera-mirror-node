@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mirror-rest-benchmark
+  labels:
+    app.kubernetes.io/name: test
+spec:
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      name: mirror-rest-benchmark
+      labels:
+        app.kubernetes.io/name: test
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: test
+      restartPolicy: Never
+      containers:
+        - image: loadimpact/k6:master
+          command: ["k6", "run", "/usr/etc/k6-config/script.js"]
+          name: test
+          env:
+            - name: DEFAULT_VUS
+              value: "50"
+            - name: DEFAULT_DURATION
+              value: "300s"
+            - name: BASE_URL
+              value: "https://testnet.mirrornode.hedera.com"
+            - name: DEFAULT_ACCOUNT
+              value: "0.0.119036"
+            - name: DEFAULT_TOPIC
+              value: "1017"
+            - name: DEFAULT_TOPIC_SEQUENCE
+              value: "85022971"
+            - name: DEFAULT_TOPIC_TIMESTAMP
+              value: "1604093439.107103006"
+            - name: DEFAULT_TOKEN
+              value: "0.0.1646"
+            - name: DEFAULT_TRANSACTION
+              value: "0.0.11161-1605908678-269629000"
+            - name: DEFAULT_LIMIT
+              value: "100"
+          volumeMounts:
+            - name: benchmark-config-volume
+              mountPath: /usr/etc/k6-config
+      volumes:
+        - name: benchmark-config-volume
+          configMap:
+            name: k6-config
