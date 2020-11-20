@@ -19,15 +19,20 @@
  */
 'use strict';
 
-const config = require('../config');
+// ext libraries
 const extend = require('extend');
 const swStats = require('swagger-stats');
+
+// files
+const config = require('../config');
+const oasHandler = require('./openapiHandler');
 
 const metricsHandler = () => {
   let defaultMetricsConfig = {
     name: process.env.npm_package_name,
-    version: process.env.npm_package_version,
     onAuthenticate: onMetricsAuthenticate,
+    swaggerSpec: oasHandler.getV1OpenApiObject(),
+    version: process.env.npm_package_version,
   };
 
   // combine defaultMetricsConfig with file defined configs

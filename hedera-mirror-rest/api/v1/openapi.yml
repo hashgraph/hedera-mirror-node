@@ -1,0 +1,1130 @@
+openapi: 3.0.0
+paths:
+  /api/v1/accounts:
+    get:
+      summary: List account entities on network
+      description: Returns a list of all account entity items on the network.
+      operationId: listAccounts
+      parameters:
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/balanceQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/accountPublicKeyQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    $ref: '#/components/schemas/Accounts'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
+      tags:
+        - accounts
+  /api/v1/accounts/{id}:
+    get:
+      summary: Get account by id
+      description: Return the account transactions and balance information given an id
+      operationId: getAccountById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Account entity id
+          example: 0.0.8
+          schema:
+            type: string
+        - $ref: '#/components/parameters/transactionTypeQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBalanceTransactions'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - accounts
+  /api/v1/balances:
+    get:
+      summary: List account balances
+      description: Returns a timestamped list of account balances on the network. This includes both HBAR and token balances for accounts.
+      operationId: listAccountBalances
+      parameters:
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/balanceQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/accountPublicKeyQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    $ref: '#/components/schemas/Timestamp'
+                  balances:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountBalance'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
+      tags:
+        - balances
+  /api/v1/transactions:
+    get:
+      summary: List transactions
+      description: Lists transactions on the network. This includes successful and unsuccessful transactions.
+      operationId: listTransactions
+      parameters:
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/transactionTypeQueryParam'
+        - name: result
+          in: query
+          description: The transaction success type.
+          schema:
+            enum: [success, fail]
+        - name: type
+          in: query
+          description: The transaction account balance modification type.
+          schema:
+            enum: [credit, debit]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    $ref: '#/components/schemas/Transactions'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: timestamp"
+      tags:
+        - transactions
+  /api/v1/transactions/{id}:
+    get:
+      summary: Get transaction by id
+      description: Returns transaction information based on the given transaction id
+      operationId: getTransactionById
+      parameters:
+        - $ref: '#/components/parameters/transactionIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    $ref: '#/components/schemas/Transactions'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - transactions
+  /api/v1/transactions/{id}/stateproof:
+    get:
+      summary: Get stateproof information
+      description: Returns the  contents of the address book file, signature files, and record file that can be used to validate the transaction occurred on the Hedera network given transaction id.
+      operationId: getStateproofInfo
+      parameters:
+        - $ref: '#/components/parameters/transactionIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    $ref: '#/components/schemas/StateProofFiles'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
+        404:
+          $ref: '#/components/responses/TransactionNotFound'
+        503:
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/ServiceUnavailableError'
+              example:
+                _status:
+                  messages:
+                    - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
+      tags:
+        - transactions
+  /api/v1/topics/{id}/messages:
+    get:
+      summary: List topic messages by id
+      description: Returns the list of topic messages for the given topic id.
+      operationId: listTopicMessagesById
+      parameters:
+        - $ref: '#/components/parameters/topicIdPathParam'
+        - name: sequencenumber
+          in: query
+          example: 2
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - name: encoding
+          in: query
+          example: base64
+          schema:
+            type: string
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    $ref: '#/components/schemas/TopicMessages'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: topic_num"
+        404:
+          $ref: '#/components/responses/TopicNotFound'
+      tags:
+        - topics
+  /api/v1/topics/{id}/messages/{sequencenumber}:
+    get:
+      summary: Get topic message by id and sequence number
+      description: Returns a single topic message the given topic id and sequence number.
+      operationId: getTopicMessageByIdAndSequenceNumber
+      parameters:
+        - $ref: '#/components/parameters/topicIdPathParam'
+        - name: sequencenumber
+          in: path
+          required: true
+          description: Topic message sequence number
+          example: 2
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    $ref: '#/components/schemas/TopicMessages'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: topic_num"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - topics
+  /api/v1/topics/messages/{consensusTimestamp}:
+    get:
+      summary: Get topic message by consensusTimestamp
+      description: Returns a topic message the given the consensusTimestamp.
+      operationId: getTopicMessagesByConsensusTimestamp
+      parameters:
+        - name: consensusTimestamp
+          in: path
+          required: true
+          description: Consensus timestamp of topic message
+          example: 1234567890
+          schema:
+            type: number
+            format: float
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicMessage'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: consensus_timestamp"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - topics
+  /api/v1/tokens:
+    get:
+      summary: List tokens
+      description: Returns a list of tokens on the network.
+      operationId: listTokens
+      parameters:
+        - $ref: '#/components/parameters/publicKeyQueryParam'
+        - $ref: '#/components/parameters/tokenIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    $ref: '#/components/schemas/Tokens'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
+      tags:
+        - tokens
+  /api/v1/tokens/{id}:
+    get:
+      summary: Get token by id
+      description: Returns token entity information given the id
+      operationId: getTokenById
+      parameters:
+        - $ref: '#/components/parameters/tokenIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenInfo'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: tokenid"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - tokens
+  /api/v1/tokens/{id}/balances:
+    get:
+      summary: List token balances
+      description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
+      operationId: listTokenBalancesById
+      parameters:
+        - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/balanceQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/accountPublicKeyQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/publicKeyQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    $ref: '#/components/schemas/Timestamp'
+                  balances:
+                    $ref: '#/components/schemas/TokenDistribution'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
+      tags:
+        - tokens
+tags:
+  - name: accounts
+    description: The accounts object represents the information associated with an account entity and returns a list of account information.
+    externalDocs:
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#accounts
+  - name: balances
+    description: The balance object represents the balance of accounts on the Hedera network.
+    externalDocs:
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
+  - name: transactions
+    description: The transaction object represents the transactions processed on the Hedera network.
+    externalDocs:
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#transactions
+  - name: topics
+    description: The topics object represents the information associated with a topic enitty and returns topic messages information.
+    externalDocs:
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#topic-messages
+  - name: tokens
+    description: The tokens object represents the information associated with a token entity and returns a list of token information.
+info:
+  title: Hedera Mirror Node REST API
+  version: 0.23.0-oas
+  license:
+    name: Apache-2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+  description: "The Mirror Node REST API offers the ability to query cryptocurrency transactions and account information from a Hedera managed mirror node.\n\nAvailable versions: [v1](/api/v1/doc). Base url: [/api/v1](/api/v1)"
+  contact:
+    name: Hedera Mirror Node Team
+    email: mirrornode@hedera.com
+    url: 'https://github.com/hashgraph/hedera-mirror-node'
+externalDocs:
+  description: Hedera REST API Docs
+  url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api'
+servers:
+  - description: Current REST API server
+    url: '/api/v1'
+  - description: The production REST API servers
+    url: '{scheme}://{network}.mirrornode.hedera.com/api/v1'
+    variables:
+      scheme:
+        default: https
+        description: The URI scheme
+        enum: [http, https]
+      network:
+        default: testnet
+        description: The Hedera network in use
+        enum: [mainnet, previewnet, testnet]
+components:
+  schemas:
+    Timestamp:
+      type: string
+      example: 1586567700.453054000
+    TokenBalance:
+      type: object
+      required:
+        - token_id
+        - balance
+      properties:
+        token_id:
+          type: string
+        balance:
+          type: number
+      example:
+        token_id: 0.0.200001
+        balance: 8
+    AccountBalance:
+      type: object
+      required:
+        - account
+        - balance
+        - tokens
+      properties:
+        account:
+          type: string
+        balance:
+          type: number
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenBalance'
+      example:
+        account: 0.15.10
+        balance: 80
+        tokens:
+          - token_id: 0.0.200001
+            balance: 8
+    Balance:
+      type: object
+      required:
+        - timestamp
+        - balance
+        - tokens
+      properties:
+        timestamp:
+          type: string
+        balance:
+          type: number
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              token_id:
+                type: string
+              balance:
+                type: number
+      example:
+        timestamp: 0.000002345
+        balance: 80
+        tokens:
+          - token_id: 0.0.200001
+            balance: 8
+    AccountInfo:
+      type: object
+      required:
+        - account
+        - balance
+        - expiry_timestamp
+        - auto_renew_period
+        - key
+        - deleted
+      properties:
+        balance:
+          $ref: '#/components/schemas/Balance'
+        account:
+          type: string
+        expiry_timestamp:
+          nullable: true
+        auto_renew_period:
+          nullable: true
+        key:
+          nullable: true
+        deleted:
+          type: boolean
+      example:
+        balance:
+          timestamp: 0.000002345
+          balance: 80
+          tokens:
+            - token_id: 0.0.200001
+              balance: 8
+        account: 0.0.8
+        expiry_timestamp: null
+        auto_renew_period: null
+        key: null
+        deleted: false
+    Accounts:
+      type: array
+      items:
+        $ref: '#/components/schemas/AccountInfo'
+    Transaction:
+      type: object
+      properties:
+        consensus_timestamp:
+          type: string
+        transaction_hash:
+          type: string
+        valid_start_timestamp:
+          type: string
+        charged_tx_fee:
+          type: number
+        memo_base64:
+          nullable: true
+        result:
+          type: string
+        name:
+          type: string
+        max_fee:
+          type: string
+        valid_duration_seconds:
+          type: string
+        node:
+          type: string
+        transaction_id:
+          type: string
+        transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              account:
+                type: string
+              amount:
+                type: number
+            required:
+              - account
+              - amount
+        token_transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              token_id:
+                type: string
+              account:
+                type: string
+              amount:
+                type: number
+            required:
+              - token_id
+              - account
+              - amount
+      example:
+        consensus_timestamp: 1234567890.000000007
+        transaction_hash: aGFzaA==
+        valid_start_timestamp: 1234567890.000000006
+        charged_tx_fee: 7
+        memo_base64: null
+        result: SUCCESS
+        name: CRYPTOTRANSFER
+        max_fee: 33
+        valid_duration_seconds: 11
+        node: 0.0.3
+        transaction_id: 0.0.8-1234567890-000000006
+        transfers:
+          - account: 0.0.3
+            amount: 2
+          - account: 0.0.8
+            amount: -3
+          - account: 0.0.98
+            amount: 1
+        token_transfers:
+          - token_id: 0.0.90000
+            account: 0.0.9
+            amount: 1200
+          - token_id: 0.0.90000
+            account: 0.0.8
+            amount: -1200
+    Transactions:
+      type: array
+      items:
+        $ref: '#/components/schemas/Transaction'
+    AccountBalanceTransactions:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/Transactions'
+        balance:
+          $ref: '#/components/schemas/Balance'
+        account:
+          type: string
+        expiry_timestamp:
+          nullable: true
+        auto_renew_period:
+          nullable: true
+        key:
+          nullable: true
+        deleted:
+          type: boolean
+        links:
+          $ref: '#/components/schemas/Links'
+    TopicMessage:
+      type: object
+      properties:
+        consensus_timestamp:
+          type: string
+        topic_id:
+          type: string
+        message:
+          type: string
+        running_hash:
+          type: string
+        running_hash_version:
+          type: number
+        sequence_number:
+          type: number
+      required:
+        - consensus_timestamp
+        - topic_id
+        - message
+        - running_hash
+        - running_hash_version
+        - sequence_number
+      example:
+        consensus_timestamp: 1234567890.000000001
+        topic_id: 0.0.7
+        message: bWVzc2FnZQ==
+        running_hash: cnVubmluZ19oYXNo
+        running_hash_version: 0.10.0-rc1
+        sequence_number: 1
+    TopicMessages:
+      type: array
+      items:
+        $ref: '#/components/schemas/TopicMessage'
+    Token:
+      type: object
+      properties:
+        token_id:
+          type: string
+        symbol:
+          type: string
+        admin_key:
+          nullable: true
+      required:
+        - token_id
+        - symbol
+        - admin_key
+      example:
+        token_id: 0.0.1
+        symbol: FIRSTMOVERLPDJH
+        admin_key: null
+    Tokens:
+      type: array
+      items:
+        $ref: '#/components/schemas/Token'
+    TokenInfo:
+      type: object
+      properties:
+        admin_key:
+          example: null
+          nullable: true
+        auto_renew_account:
+          example: null
+          nullable: true
+        auto_renew_period:
+          example: null
+          nullable: true
+        created_timestamp:
+          type: string
+          example: 0.000000000
+        decimals:
+          type: string
+          example: 1000
+        expiry_timestamp:
+          example: null
+          nullable: true
+        freeze_default:
+          type: boolean
+          example: false
+        freeze_key:
+          example: null
+          nullable: true
+        initial_supply:
+          type: string
+          example: 1000000
+        kyc_key:
+          example: null
+          nullable: true
+        modified_timestamp:
+          type: string
+          example: 0.000000000
+        name:
+          type: string
+          example: Token name
+        supply_key:
+          example: null
+          nullable: true
+        symbol:
+          type: string
+          example: ORIGINALRDKSE
+        token_id:
+          type: string
+          example: 0.0.1135
+        total_supply:
+          type: string
+          example: 1000000
+        treasury_account_id:
+          type: string
+          example: 0.0.98
+        wipe_key:
+          example: null
+          nullable: true
+    TokenDistribution:
+      type: array
+      items:
+        type: object
+        properties:
+          account:
+            type: string
+          balance:
+            type: number
+        required:
+          - account
+          - balance
+      example:
+        - account: 0.15.2
+          balance: 1000
+    StateProofFiles:
+      type: object
+      properties:
+        record_file:
+          type: string
+        address_books:
+          type: array
+          items:
+            type: string
+        signature_files:
+          type: object
+          properties:
+            0.0.3:
+              type: string
+            0.0.4:
+              type: string
+            0.0.5:
+              type: string
+            0.0.6:
+              type: string
+          additionalProperties:
+            type: string
+      example:
+        record_file: c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0
+        address_books:
+          - 29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c
+        signature_files:
+          0.0.3: 1afc6e5ec4bbe84ebc55d0eb45b216386e46653e62bc5616a8fdbc745eb21415
+          0.0.4: d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71
+          0.0.5: 1f4be98a75a87cd649e3e1a58259275805c5cdf63fb04b3317efb511074645c7
+          0.0.6: 73be5f16d6f854827b7c8113faecb5c204b9f1d68b37d37358894d9abfc97e83
+          0.0.7: 42be5f16d6f854827b7c8113faecb5c204b9f1d68b37d37358894d9abfc97e83
+    Links:
+      type: object
+      properties:
+        next:
+          example: null
+          nullable: true
+    Error:
+      type: object
+      properties:
+        _status:
+          type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  message:
+                    type: string
+  responses:
+    NotFoundError:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: Not found
+    TopicNotFound:
+      description: Topic Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: No such topic id - 7
+    TransactionNotFound:
+      description: Transaction Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: Transaction not found
+    InvalidParameterError:
+      description: Invalid parameter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailableError:
+      description: Service Unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    accountIdQueryParam:
+      name: account.id
+      in: query
+      description: The ID of the account to return information for
+      example: 0.0.8
+      explode: true
+      examples:
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        entityNumNeOperator:
+          summary: Example of entityNum not equals operator
+          value: ne:300
+        idNeOperator:
+          summary: Example of id not equals operator
+          value: ne:0.0.300
+        entityNumGtOperator:
+          summary: Example of entityNum greater than operator
+          value: gt:400
+        idGtOperator:
+          summary: Example of id greater than operator
+          value: gt:0.0.400
+        entityNumGteOperator:
+          summary: Example of entityNum greater than or equals operator
+          value: gte:500
+        idGteOperator:
+          summary: Example of id greater than or equals operator
+          value: gte:0.0.500
+        entityNumLtOperator:
+          summary: Example of entityNum less than operator
+          value: lt:600
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.600
+        entityNumLteOperator:
+          summary: Example of entityNum less than or equals operator
+          value: lte:700
+        idLteOperator:
+          summary: Example of id less than or equals operator
+          value: lte:0.0.700
+      schema:
+        type: string
+        format: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
+    balanceQueryParam:
+      name: account.balance
+      in: query
+      description: The optional balance value to compare against
+      explode: true
+      examples:
+        noOperator:
+          summary: Example of equals with no operator
+          value: 100
+        eqOperator:
+          summary: Example of equals operator
+          value: eq:200
+        neOperator:
+          summary: Example of not equals operator
+          value: ne:300
+        gtOperator:
+          summary: Example of greater than operator
+          value: gt:400
+        gteOperator:
+          summary: Example of greater than or equals operator
+          value: gte:500
+        ltOperator:
+          summary: Example of less than operator
+          value: lt:600
+        lteOperator:
+          summary: Example of less than or equals operator
+          value: lte:700
+      schema:
+        type: string
+        format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
+    limitQueryParam:
+      name: limit
+      in: query
+      description: The limit of items to return
+      example: 2
+      schema:
+        type: integer
+        default: 1000
+        minimum: 1
+        maximum: 1000
+    orderQueryParam:
+      name: order
+      in: query
+      description: The order in which items are listed
+      example: desc
+      schema:
+        enum: [asc, desc]
+        default: asc
+    accountPublicKeyQueryParam:
+      name: account.publickey
+      in: query
+      description: The ED25519 account publickey to compare against
+      example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
+      schema:
+        type: string
+    publicKeyQueryParam:
+      name: publickey
+      in: query
+      description: The ED25519 publickey to compare against
+      example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
+      schema:
+        type: string
+    timestampQueryParam:
+      name: timestamp
+      in: query
+      explode: true
+      examples:
+        secondsNoOperator:
+          summary: Example of seconds equals with no operator
+          value: 1234567890
+        timestampNoOperator:
+          summary: Example of timestamp equals with no operator
+          value: 1234567890.000000100
+        secondsEqOperator:
+          summary: Example of seconds equals with operator
+          value: eq:1234567890
+        timestampEqOperator:
+          summary: Example of timestamp equals with operator
+          value: eq:1234567890.000000200
+        secondsNeOperator:
+          summary: Example of seconds not equals operator
+          value: ne:1234567890
+        timestampNeOperator:
+          summary: Example of timestamp not equals operator
+          value: ne:1234567890.000000300
+        secondsGtOperator:
+          summary: Example of seconds greater than operator
+          value: gt:1234567890
+        timestampGtOperator:
+          summary: Example of timestamp greater than operator
+          value: gt:1234567890.000000400
+        secondsGteOperator:
+          summary: Example of seconds greater than or equals operator
+          value: gte:1234567890
+        timestampGteOperator:
+          summary: Example of timestamp greater than or equals operator
+          value: gte:1234567890.000000500
+        secondsLtOperator:
+          summary: Example of seconds less than operator
+          value: lt:1234567890
+        timestampLtOperator:
+          summary: Example of timestamp less than operator
+          value: lt:1234567890.000000600
+        secondsLteOperator:
+          summary: Example of seconds less than or equals operator
+          value: lte:1234567890
+        timestampLteOperator:
+          summary: Example of timestamp less than or equals operator
+          value: lte:1234567890.000000700
+      schema:
+        type: string
+        format: >
+          ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
+    transactionTypeQueryParam:
+      name: transactiontype
+      in: query
+      example: cryptotransfer
+      schema:
+        type: string
+    transactionIdPathParam:
+      name: transactionId
+      in: path
+      required: true
+      description: Transaction id
+      example: 0.0.10-1234567890-000000000
+      schema:
+        type: string
+    tokenIdQueryParam:
+      name: token.id
+      in: query
+      example:
+        - lt:0.30000.0
+        - gt:0.7.25301
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
+    tokenIdPathParam:
+      name: id
+      in: path
+      required: true
+      description: Token entity id
+      example: 0.0.1135
+      schema:
+        type: string
+    topicIdPathParam:
+      name: id
+      in: path
+      required: true
+      description: Topic entity id
+      example: 0.2.3
+      schema:
+        type: string

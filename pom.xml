@@ -364,6 +364,7 @@
                             <includes>
                                 <include>charts/**/Chart.yaml</include>
                                 <include>docker-compose.yml</include>
+                                <include>hedera-mirror-rest/**/openapi.yml</include>
                                 <include>hedera-mirror-rest/package*.json</include>
                                 <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                 <include>*/pom.xml</include>
@@ -388,6 +389,10 @@
                                 <replacement>
                                     <token><![CDATA[(?<=version: )[0-9a-z.-]+]]></token>
                                     <value>${release.chartVersion}</value>
+                                </replacement>
+                                <replacement>
+                                    <token><![CDATA[(?<=(\s{3})version: )[0-9a-z.-]+]]></token>
+                                    <value>${release.version}</value>
                                 </replacement>
                                 <replacement>
                                     <token>

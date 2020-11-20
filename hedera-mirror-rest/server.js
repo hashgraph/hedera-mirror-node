@@ -28,6 +28,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const log4js = require('log4js');
 const compression = require('compression');
+const _ = require('lodash');
 
 // local files
 const accounts = require('./accounts');
@@ -39,8 +40,9 @@ const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
-const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
+const {serveSwaggerDocs} = require('./middleware/openapiHandler');
+const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 
 // Logger
@@ -93,10 +95,14 @@ global.pool = pool;
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
+const apiPrefix = '/api/v1';
+
 app.disable('x-powered-by');
 app.set('trust proxy', true);
 app.set('port', port);
 app.set('query parser', requestQueryParser);
+
+serveSwaggerDocs(app);
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
@@ -115,8 +121,6 @@ app.use(requestLogger);
 if (config.metrics.enabled) {
   app.use(metricsHandler());
 }
-
-const apiPrefix = '/api/v1';
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
@@ -140,7 +144,7 @@ if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
 // topics routes
 app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
 app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
-app.getAsync(`${apiPrefix}/topics?/messages?/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
+app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
 // tokens routes
 app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
@@ -155,7 +159,7 @@ app.use(handleError);
 
 if (process.env.NODE_ENV !== 'test') {
   const server = app.listen(port, () => {
-    console.log(`Server running on port: ${port}`);
+    logger.info(`Server running on port: ${port}`);
   });
 
   // Health check endpoints

@@ -184,10 +184,28 @@ for port in {6551..6560}; do curl -s "http://127.0.0.1:${port}/api/v1/transactio
 
 To setup live monitoring, see [monitoring](../hedera-mirror-rest/monitoring/README.md) documentation.
 
+### Open API Spec
+The REST API supports the OpenAPI (Swagger) specification v3.
+This provides documentation and structure for metrics
+
+#### View Spec UI
+We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the OpenAPI specification.
+The OpenAPI specification can be viewed at
+
+- `/api/v1/docs` - API v1 doc serve path
+Where `v1` corresponds to the Mirror Node REST API version and `docs` is the default path value as controlled by `hedera.mirror.rest.openapi.swaggerUIPath`.
+
+#### Update Spec
+To update the spec, manually modify the spec file located at
+- `hedera-mirror-rest/api/v1/openapi.yml`
+
+Where `v1` corresponds to the Mirror Node REST API version and `openapi` is the default fileName value as controlled by `hedera.mirror.rest.openapi.specFileName`.
+- `hedera-mirror-rest/api/v1/openapi.yml` - API v1 openapi spec
+
 ### Metrics
 The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io).
 Using this 3 endpoints are made available
-- `http://<ip>:<port>/<metricsPath>` - Metrics dashboard
-- `http://<ip>:<port>/<metricsPath>/stats` - Aggregated statistics
-- `http://<ip>:<port>/<metricsPath>/metrics` - Prometheus formatted metrics
-Where `<metricsPath>` is defined by hedera.mirror.rest.metrics.config.uriPath, current default is 'swagger'
+- `/swagger/ui` - Metrics dashboard
+- `/swagger/stats` - Aggregated statistics
+- `/swagger/metrics` - Prometheus formatted metrics
+Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest.metrics.config.uriPath`.
