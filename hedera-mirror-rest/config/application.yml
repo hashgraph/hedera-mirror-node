@@ -10,7 +10,7 @@ hedera:
         username: mirror_api
       includeHostInLink: false
       log:
-        level: trace
+        level: debug
       maxLimit: 1000
       metrics:
         enabled: true
