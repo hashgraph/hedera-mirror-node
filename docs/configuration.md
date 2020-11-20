@@ -158,7 +158,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.db.username`                            | mirror_grpc      | The username the GRPC API uses to connect to the database                                      |
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.entityCacheSize`                        | 50000            | The maximum size of the cache to store entities used for existence check                       |
-| `hedera.mirror.grpc.listener.bufferTimeout`                 | 4s               | The time to wait for a client to receive all buffered messages after buffer overflow. On timeout, server will send an error. Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.enabled`                       | true             | Whether to listen for incoming massages or not                                                 |
 | `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.maxBufferSize`                 | 16384            | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
@@ -175,7 +174,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.port`                                   | 5600             | The GRPC API port                                                                              |
 | `hedera.mirror.grpc.retriever.enabled`                      | true             | Whether to retrieve historical massages or not                                                 |
 | `hedera.mirror.grpc.retriever.maxPageSize`                  | 1000             | The maximum number of messages the retriever can return in a single call to the database       |
-| `hedera.mirror.grpc.retriever.pollingFrequency`             | 2s               | How often to poll for historical messages. Can accept duration units like `50ms`, `10s` etc |
+| `hedera.mirror.grpc.retriever.pollingFrequency`             | 2s               | How often to poll for historical messages. Can accept duration units like `50ms`, `10s` etc    |
 | `hedera.mirror.grpc.retriever.threadMultiplier`             | 4                | Multiplied by the CPU count to calculate the number of retriever threads                       |
 | `hedera.mirror.grpc.retriever.timeout`                      | 60s              | How long to wait between emission of messages before returning an error                        |
 | `hedera.mirror.grpc.retriever.unthrottledMaxPageSize`       | 5000             | The maximum number of messages the retriever can return in a single call to the database when unthrottled |
@@ -210,7 +209,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.maxLimit`                            | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
 | `hedera.mirror.rest.log.level`                           | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
 | `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
-| `hedera.mirror.rest.includeHostInLink`                   | false                   | Whether to include the host:port in the next links returned by the REST API                    |
 | `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
 | `hedera.mirror.rest.metrics.config.authentication`       | true                    | Whether access to metrics for the REST API is authenticated                                    |
 | `hedera.mirror.rest.metrics.config.username`             | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |

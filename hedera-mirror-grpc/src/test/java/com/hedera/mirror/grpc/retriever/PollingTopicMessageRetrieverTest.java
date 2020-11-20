@@ -311,6 +311,8 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .startTime(Instant.EPOCH)
                 .build();
 
+        // in unthrottled mode, the retriever should query the db for up to MaxPolls + 1 times when no limit is set,
+        // regardless of whether a db query returns less rows than MaxPageSize
         pollingTopicMessageRetriever.retrieve(filter, false)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)

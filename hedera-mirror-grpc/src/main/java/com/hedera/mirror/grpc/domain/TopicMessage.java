@@ -34,13 +34,11 @@ import java.util.Comparator;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Transient;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.Value;
 import org.springframework.data.domain.Persistable;
@@ -53,7 +51,7 @@ import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 @AllArgsConstructor
 @Builder
 @Entity
-@JsonIgnoreProperties(ignoreUnknown = true, value = { "consensusTimestampInstant", "response" })
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"consensusTimestampInstant", "response"})
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
 @NoArgsConstructor(force = true)
@@ -107,7 +105,6 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
     @EqualsAndHashCode.Exclude
     @Getter(lazy = true)
-    @Setter(value = AccessLevel.NONE)
     @ToString.Exclude
     @Transient
     private final ConsensusTopicResponse response = toResponse();

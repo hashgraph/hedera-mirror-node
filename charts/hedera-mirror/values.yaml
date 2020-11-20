@@ -91,7 +91,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 12.4.0-debian-10-r61
+    tag: 13.0.0-debian-10-r35
   postgresql:
     affinity:
       podAntiAffinity:

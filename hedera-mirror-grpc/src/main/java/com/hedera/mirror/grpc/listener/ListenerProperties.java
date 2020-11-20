@@ -25,7 +25,6 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMax;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -34,11 +33,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("hedera.mirror.grpc.listener")
 public class ListenerProperties {
-
-    @DurationMin(seconds = 2)
-    @DurationMax(seconds = 10)
-    @NotNull
-    private Duration bufferTimeout = Duration.ofSeconds(4);
 
     private boolean enabled = true;
 

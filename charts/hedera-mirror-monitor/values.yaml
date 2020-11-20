@@ -33,7 +33,7 @@ livenessProbe:
   httpGet:
     path: /actuator/health/liveness
     port: http
-  initialDelaySeconds: 100
+  initialDelaySeconds: 150
   periodSeconds: 10
   timeoutSeconds: 2
 
@@ -72,7 +72,7 @@ prometheusRules:
 
   MonitorLog4j2Errors:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} encountered {{ $value }} exceptions in a 2m period"
+      description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
       summary: "High rate of log4j2 errors"
     enabled: true
     expr: sum(increase(log4j2_events_total{application="hedera-mirror-monitor", level="error"}[2m])) by (namespace, pod) >= 2

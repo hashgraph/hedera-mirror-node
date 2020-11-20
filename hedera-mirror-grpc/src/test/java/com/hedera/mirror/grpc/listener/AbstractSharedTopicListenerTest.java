@@ -14,16 +14,15 @@ import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 
 public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListenerTest {
-
-    private final int maxBufferSize = 16;
-    private final int prefetch = 1;
 
     @Test
     @DisplayName("slow subscriber receives overflow exception and normal subscriber is not affected")
     void slowSubscriberOverflowException() {
+        int maxBufferSize = 16;
+        int prefetch = 1;
+
         // step verifier requests 2 messages on subscription, and there are downstream buffers after the backpressure
         // buffer, to ensure overflow, set the number of topic messages to send as follows
         int numMessages = maxBufferSize + prefetch * 2 + 3;
@@ -61,33 +60,5 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
         assertThat(subscription.isDisposed()).isFalse();
         subscription.dispose();
         assertThat(sequenceNumbers).isEqualTo(LongStream.range(1, numMessages + 1).boxed().collect(Collectors.toList()));
-    }
-
-    @Test
-    @DisplayName("slow subscriber causes buffer overflow then timeout exception")
-    void slowSubscribeOverflowThenTimeout() {
-        int numMessages = maxBufferSize + prefetch * 2 + 3;
-        listenerProperties.setBufferTimeout(Duration.ofMillis(550L));
-        listenerProperties.setMaxBufferSize(maxBufferSize);
-        listenerProperties.setPrefetch(prefetch);
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .build();
-
-        // the slow subscriber
-        topicListener.listen(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(p -> StepVerifier.create(p, 1)) // initial request amount - 1
-                .thenRequest(1) // trigger subscription
-                .thenAwait(Duration.ofMillis(10L))
-                .then(() -> publish(domainBuilder.topicMessages(numMessages, future)))
-                .expectNext(1L, 2L)
-                .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
-                .thenRequest(2)
-                .expectNext(3L, 4L)
-                .thenAwait(Duration.ofMillis(200L)) // timeout begins to count down when overflow happens
-                .expectError(ClientTimeoutException.class)
-                .verify(Duration.ofMillis(800L));
     }
 }

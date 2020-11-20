@@ -61,12 +61,9 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         }
 
         PollingContext context = new PollingContext(filter, throttled);
-        long numRepeats = throttled ? Long.MAX_VALUE : retrieverProperties.getUnthrottledMaxPolls();
-        Duration frequency = throttled ? retrieverProperties.getPollingFrequency() : retrieverProperties
-                .getUnthrottledPollingFrequency();
         return Flux.defer(() -> poll(context))
-                .repeatWhen(Repeat.create(r -> !context.isComplete(), numRepeats)
-                        .fixedBackoff(frequency)
+                .repeatWhen(Repeat.create(r -> !context.isComplete(), context.getNumRepeats())
+                        .fixedBackoff(context.getFrequency())
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
                 .name("retriever")
@@ -82,9 +79,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getTotal().get()) : Integer.MAX_VALUE;
-        int maxPageSize = context.isThrottled() ? retrieverProperties.getMaxPageSize() : retrieverProperties
-                .getUnthrottledMaxPageSize();
-        int pageSize = Math.min(limit, maxPageSize);
+        int pageSize = Math.min(limit, context.getMaxPageSize());
         Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
         context.getPageSize().set(0L);
 
@@ -104,10 +99,28 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
 
         private final TopicMessageFilter filter;
         private final boolean throttled;
+        private final Duration frequency;
+        private final int maxPageSize;
+        private final long numRepeats;
         private final AtomicLong pageSize = new AtomicLong(0L);
         private final Stopwatch stopwatch = Stopwatch.createStarted();
         private final AtomicLong total = new AtomicLong(0L);
         private volatile TopicMessage last;
+
+        public PollingContext(TopicMessageFilter filter, boolean throttled) {
+            this.filter = filter;
+            this.throttled = throttled;
+
+            if (throttled) {
+                numRepeats = Long.MAX_VALUE;
+                frequency = retrieverProperties.getPollingFrequency();
+                maxPageSize = retrieverProperties.getMaxPageSize();
+            } else {
+                numRepeats = retrieverProperties.getUnthrottledMaxPolls();
+                frequency = retrieverProperties.getUnthrottledPollingFrequency();
+                maxPageSize = retrieverProperties.getUnthrottledMaxPageSize();
+            }
+        }
 
         /**
          * Checks if this publisher is complete by comparing if the number of results in the last page was less than the

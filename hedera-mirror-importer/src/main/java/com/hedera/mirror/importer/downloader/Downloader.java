@@ -101,8 +101,8 @@ public abstract class Downloader {
     private boolean mirrorDateRangePropertiesProcessed = false;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-            AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry) {
+                      AddressBookService addressBookService, DownloaderProperties downloaderProperties,
+                      TransactionTemplate transactionTemplate, MeterRegistry meterRegistry) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
         this.addressBookService = addressBookService;
@@ -299,8 +299,7 @@ public abstract class Downloader {
         if (file.exists()) {
             boolean success = file.delete();
             if (!success) {
-                log.error("Failed to delete the file {}. Expect long stack trace with FileAlreadyExistsException below",
-                        file);
+                log.error("Failed to delete the file {}", file);
             }
         }
 
@@ -352,7 +351,7 @@ public abstract class Downloader {
      * @param sigFilesMap signature files grouped by file name
      */
     private void verifySigsAndDownloadDataFiles(AddressBook addressBook,
-            Multimap<String, FileStreamSignature> sigFilesMap) {
+                                                Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBook);
         Path validPath = downloaderProperties.getValidPath();
         Instant endDate = mirrorProperties.getEndDate();

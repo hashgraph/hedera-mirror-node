@@ -41,7 +41,6 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.ClientTimeoutException;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
@@ -57,8 +56,9 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
-    private static final String DB_ERROR = "Unable to connect to database. Please retry later";
+    private static final String DB_ERROR = "Error querying the data source. Please retry later";
     private static final String OVERFLOW_ERROR = "Client lags too much behind. Please retry later";
+    private static final String UNKNOWN_ERROR = "Unknown error subscribing to topic";
 
     private final TopicMessageService topicMessageService;
 
@@ -72,8 +72,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
         if (!query.hasTopicID()) {
-            log.warn("Missing required topicID");
-            throw Status.INVALID_ARGUMENT.augmentDescription("Missing required topicID").asRuntimeException();
+            throw new IllegalArgumentException("Missing required topicID");
         }
 
         TopicMessageFilter.TopicMessageFilterBuilder builder = TopicMessageFilter.builder()
@@ -97,34 +96,29 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return builder.build();
     }
 
-    private Throwable mapError(Throwable t) {
+    private StatusRuntimeException mapError(Throwable t) {
         if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException) {
-            return error(t, Status.INVALID_ARGUMENT);
+            return clientError(t, Status.INVALID_ARGUMENT, t.getMessage());
+        } else if (Exceptions.isOverflow(t)) {
+            return clientError(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
         } else if (t instanceof NonTransientDataAccessResourceException) {
-            return error(t, Status.UNAVAILABLE, DB_ERROR);
-        } else if (t instanceof TimeoutException) {
-            return error(t, Status.RESOURCE_EXHAUSTED);
+            return serverError(t, Status.UNAVAILABLE, DB_ERROR);
         } else if (t instanceof TopicNotFoundException) {
-            return error(t, Status.NOT_FOUND);
-        } else if (t instanceof TransientDataAccessException) {
-            return error(t, Status.RESOURCE_EXHAUSTED);
-        } else if (Exceptions.isOverflow(t) || t instanceof ClientTimeoutException) {
-            return error(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
-        } else if (t instanceof StatusRuntimeException) {
-            return t;
+            return clientError(t, Status.NOT_FOUND, t.getMessage());
+        } else if (t instanceof TransientDataAccessException || t instanceof TimeoutException) {
+            return serverError(t, Status.RESOURCE_EXHAUSTED, DB_ERROR);
+        } else {
+            return serverError(t, Status.UNKNOWN, UNKNOWN_ERROR);
         }
-
-        final String message = "Unknown error subscribing to topic";
-        log.error(message, t);
-        return Status.UNKNOWN.augmentDescription(message).asRuntimeException();
     }
 
-    private Throwable error(Throwable t, Status status) {
-        return error(t, status, t.getMessage());
+    private StatusRuntimeException clientError(Throwable t, Status status, String message) {
+        log.warn("Client error {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
+        return status.augmentDescription(message).asRuntimeException();
     }
 
-    private Throwable error(Throwable t, Status status, String message) {
-        log.warn("Received {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
+    private StatusRuntimeException serverError(Throwable t, Status status, String message) {
+        log.error("Server error subscribing to topic: ", t);
         return status.augmentDescription(message).asRuntimeException();
     }
 }

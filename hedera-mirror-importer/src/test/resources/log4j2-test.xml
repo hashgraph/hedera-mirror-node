@@ -2,7 +2,10 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n %throwable{short}"/>
+            <PatternLayout>
+                <alwaysWriteExceptions>false</alwaysWriteExceptions>
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}{GMT-6} %p %t %c{1.} %m %ex{short}%n</pattern>
+            </PatternLayout>
         </Console>
     </Appenders>
     <Loggers>

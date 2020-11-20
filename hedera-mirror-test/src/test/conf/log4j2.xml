@@ -2,11 +2,11 @@
 <Configuration status="warn" strict="true">
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n"/>
+            <PatternLayout>
+                <alwaysWriteExceptions>false</alwaysWriteExceptions>
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}{GMT-6} %p %t %c{1.} %m %ex{separator(\\n)}%n</pattern>
+            </PatternLayout>
         </Console>
-        <File name="file" fileName="../logs/jmeter.log">
-            <PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n"/>
-        </File>
     </Appenders>
     <Loggers>
         <Logger name="com.hedera.mirror" level="info" additivity="false">
