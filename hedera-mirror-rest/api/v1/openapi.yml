@@ -484,6 +484,8 @@ externalDocs:
   description: Hedera REST API Docs
   url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api'
 servers:
+  - description: Current REST API server
+    url: '/api/v1'
   - description: The production REST API servers
     url: '{scheme}://{network}.mirrornode.hedera.com/api/v1'
     variables:
@@ -495,8 +497,6 @@ servers:
         default: testnet
         description: The Hedera network in use
         enum: [mainnet, previewnet, testnet]
-  - description: Local test REST API server
-    url: 'http://127.0.0.1:5551/api/v1'
 components:
   schemas:
     Timestamp:
