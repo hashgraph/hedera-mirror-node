@@ -27,17 +27,19 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 
-public class AwsAssumeRoleCondition implements Condition {
+public class AwsDefaultCredentialsCondition implements Condition {
 
     // The roleArn must be provided, and the cloudProvider must be S3 to use AssumeRole
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-        String roleArn = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.s3.roleArn");
+        String accessKey = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.accessKey");
+        String secretKey = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.secretKey");
         String cloudProvider = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.cloudProvider");
         if (cloudProvider == null) {
             cloudProvider = CommonDownloaderProperties.CloudProvider.S3.name();
         }
-        return StringUtils.isNotBlank(roleArn) && StringUtils.equals(CommonDownloaderProperties.CloudProvider.S3.name(),
+        return (StringUtils.isBlank(accessKey) || StringUtils.isBlank(secretKey))
+                && StringUtils.equals(CommonDownloaderProperties.CloudProvider.S3.name(),
                 cloudProvider);
     }
 }

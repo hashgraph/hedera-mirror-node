@@ -32,7 +32,6 @@ public class StaticCredentialsCondition implements Condition {
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         String accessKey = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.accessKey");
         String secretKey = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.secretKey");
-        String roleArn = context.getEnvironment().getProperty("hedera.mirror.importer.downloader.s3.roleArn");
-        return StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey) && StringUtils.isBlank(roleArn);
+        return StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey);
     }
 }

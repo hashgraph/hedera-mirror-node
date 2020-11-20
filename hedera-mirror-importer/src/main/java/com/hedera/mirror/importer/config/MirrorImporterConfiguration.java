@@ -72,6 +72,7 @@ public class MirrorImporterConfiguration {
     public S3AsyncClient gcpCloudStorageClient() {
         log.info("Configured to download from GCP with bucket name '{}'", downloaderProperties.getBucketName());
         // Any valid region for aws client. Ignored by GCP.
+        //TODO Confirm if this actually needs to be set (region) at all, or can it be stripped out
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
                 .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
         String projectId = downloaderProperties.getGcpProjectId();
@@ -101,6 +102,10 @@ public class MirrorImporterConfiguration {
             log.info("Overriding s3 client endpoint to {}", endpointOverride);
             clientBuilder.endpointOverride(URI.create(endpointOverride));
         }
+        if (StringUtils.isNotBlank(downloaderProperties.getRegion())) {
+            clientBuilder
+                    .region(Region.of(downloaderProperties.getRegion()));
+        }
         return clientBuilder.build();
     }
 
@@ -112,7 +117,6 @@ public class MirrorImporterConfiguration {
 
         return S3AsyncClient.builder()
                 .credentialsProvider(awsCredentialsProvider)
-                .region(Region.of(region))
                 .httpClient(httpClient)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
     }
