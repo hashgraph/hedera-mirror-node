@@ -41,7 +41,7 @@ const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
-const {serveOASSwaggerUI} = require('./middleware/oasHandler');
+const {serveSwaggerDocs} = require('./middleware/oasHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 
@@ -98,7 +98,7 @@ app.set('trust proxy', true);
 app.set('port', port);
 app.set('query parser', requestQueryParser);
 
-serveOASSwaggerUI(app, apiPrefix);
+serveSwaggerDocs(app);
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(

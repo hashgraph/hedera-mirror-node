@@ -189,24 +189,23 @@ The REST API supports the OpenAPI (Swagger) specification v3.
 This provides documentation and structure for metrics
 
 #### View Spec UI
-We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the open api spec.
-The specification can be viewed at the `<swaggerUIPath>` path under the appropriate version http endpoint `/api/<version>/<swaggerUIPath>`
+We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the OpenAPI specification.
+The OpenAPI specification can be viewed at
 
-Where `<swaggerUIPath>` is defined by `hedera.mirror.rest.oas.swaggerUIPath`, current default is 'doc' e.g.
-- `/api/v1/doc` - API v1 doc serve path
+- `/api/v1/docs` - API v1 doc serve path
+Where `v1` corresponds to the Mirror Node REST API version and `docs` is the default path value as controlled by `hedera.mirror.rest.openapi.swaggerUIPath`.
 
 #### Update Spec
-To update the spec, manually modify the spec file located under the `hedera-mirror-rest/api/<version>` directory
+To update the spec, manually modify the spec file located at
+- `hedera-mirror-rest/api/v1/openapi.yml`
 
-Where `<specFileName>` is defined by `hedera.mirror.rest.oas.specFileName`, current default is 'openapi' e.g.
+Where `v1` corresponds to the Mirror Node REST API version and `openapi` is the default fileName value as controlled by `hedera.mirror.rest.openapi.specFileName`.
 - `hedera-mirror-rest/api/v1/openapi.yml` - API v1 openapi spec
 
 ### Metrics
 The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io).
 Using this 3 endpoints are made available
-- `http://<ip>:<port>/<metricsPath>/ui` - Metrics dashboard
-- `http://<ip>:<port>/<metricsPath>/stats` - Aggregated statistics
-- `http://<ip>:<port>/<metricsPath>/metrics` - Prometheus formatted metrics
-Where `<metricsPath>` is defined by `hedera.mirror.rest.metrics.config.uriPath`, current default is 'swagger'
-
-
+- `/swagger/ui` - Metrics dashboard
+- `/swagger/stats` - Aggregated statistics
+- `/swagger/metrics` - Prometheus formatted metrics
+Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest.metrics.config.uriPath`.

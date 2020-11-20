@@ -29,7 +29,7 @@ const yaml = require('js-yaml');
 
 // files
 const config = require('./../config');
-let v1OasDocument = undefined;
+let v1OpenApiDocument = undefined;
 
 /**
  * Check if apiVersion is currently supported
@@ -50,7 +50,7 @@ const isInValidVersionRange = (apiVersion) => {
  */
 const getSpecPath = (apiVersion) => {
   const apiVersionPath = isInValidVersionRange(apiVersion) ? `v${apiVersion}` : 'v1';
-  return `api/${apiVersionPath}/${config.oas.specFileName}.yml`;
+  return `api/${apiVersionPath}/${config.openapi.specFileName}.yml`;
 };
 
 /**
@@ -66,25 +66,25 @@ const getOpenApiSpecObject = (apiVersion) => {
  * Get the YAML object of the open api spec for the v1 rest api
  */
 const getV1OpenApiObject = () => {
-  if (_.isUndefined(v1OasDocument)) {
-    v1OasDocument = getOpenApiSpecObject(1);
+  if (_.isUndefined(v1OpenApiDocument)) {
+    v1OpenApiDocument = getOpenApiSpecObject(1);
   }
 
-  return v1OasDocument;
+  return v1OpenApiDocument;
 };
 
 /**
  * Serve the open api spec on the given express object
  * @param {ExpressWithAsync} app
  */
-const serveOASSwaggerUI = (app) => {
+const serveSwaggerDocs = (app) => {
   var options = {
     explorer: true,
   };
-  app.use(`/api/v1/${config.oas.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getV1OpenApiObject(), options));
+  app.use(`/api/v1/${config.openapi.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getV1OpenApiObject(), options));
 };
 
 module.exports = {
   getV1OpenApiObject,
-  serveOASSwaggerUI,
+  serveSwaggerDocs,
 };
