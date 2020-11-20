@@ -973,7 +973,7 @@ components:
           value: lte:0.0.700
       schema:
         type: string
-        format: ^(\d{1,10}.\d{1,10}.\d{1,10}|gte?:\d{1,10}.\d{1,10}.\d{1,10}|lte?:\d{1,10}.\d{1,10}.\d{1,10}|eq:\d{1,10}.\d{1,10}.\d{1,10}|ne:\d{1,10}.\d{1,10}.\d{1,10})$
+        format: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
     balanceQueryParam:
       name: account.balance
       in: query
@@ -1003,7 +1003,7 @@ components:
           value: lte:700
       schema:
         type: string
-        format: ^(\d{1,10}|gte?\:\d{1,10}|lte?:\d{1,10}|eq:\d{1,10}|ne:\d{1,10})$
+        format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
     limitQueryParam:
       name: limit
       in: query
