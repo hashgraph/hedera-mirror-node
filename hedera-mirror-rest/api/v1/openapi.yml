@@ -193,6 +193,15 @@ paths:
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
       responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    $ref: '#/components/schemas/StateProofFiles'
         400:
           description: Bad Request
           content:
@@ -475,7 +484,7 @@ externalDocs:
   description: Hedera REST API Docs
   url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api'
 servers:
-  - description: The production REST API server
+  - description: The production REST API servers
     url: '{scheme}://{network}.mirrornode.hedera.com/api/v1'
     variables:
       scheme:
@@ -486,6 +495,8 @@ servers:
         default: testnet
         description: The Hedera network in use
         enum: [mainnet, previewnet, testnet]
+  - description: Local test REST API server
+    url: 'http://127.0.0.1:5551/api/v1'
 components:
   schemas:
     Timestamp:
@@ -816,6 +827,38 @@ components:
       example:
         - account: 0.15.2
           balance: 1000
+    StateProofFiles:
+      type: object
+      properties:
+        record_file:
+          type: string
+        address_books:
+          type: array
+          items:
+            type: string
+        signature_files:
+          type: object
+          properties:
+            0.0.3:
+              type: string
+            0.0.4:
+              type: string
+            0.0.5:
+              type: string
+            0.0.6:
+              type: string
+          additionalProperties:
+            type: string
+      example:
+        record_file: c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0
+        address_books:
+          - 29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c
+        signature_files:
+          0.0.3: 1afc6e5ec4bbe84ebc55d0eb45b216386e46653e62bc5616a8fdbc745eb21415
+          0.0.4: d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71
+          0.0.5: 1f4be98a75a87cd649e3e1a58259275805c5cdf63fb04b3317efb511074645c7
+          0.0.6: 73be5f16d6f854827b7c8113faecb5c204b9f1d68b37d37358894d9abfc97e83
+          0.0.7: 42be5f16d6f854827b7c8113faecb5c204b9f1d68b37d37358894d9abfc97e83
     Links:
       type: object
       properties:
