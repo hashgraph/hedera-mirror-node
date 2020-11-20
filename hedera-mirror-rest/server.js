@@ -41,7 +41,7 @@ const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
-const {serveSwaggerDocs} = require('./middleware/oasHandler');
+const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 

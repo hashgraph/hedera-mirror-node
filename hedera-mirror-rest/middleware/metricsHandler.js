@@ -25,7 +25,7 @@ const swStats = require('swagger-stats');
 
 // files
 const config = require('../config');
-const oasHandler = require('./oasHandler');
+const oasHandler = require('./openapiHandler');
 
 const metricsHandler = () => {
   let defaultMetricsConfig = {

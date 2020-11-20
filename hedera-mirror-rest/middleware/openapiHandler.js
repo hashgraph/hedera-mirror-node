@@ -80,6 +80,7 @@ const getV1OpenApiObject = () => {
 const serveSwaggerDocs = (app) => {
   var options = {
     explorer: true,
+    customCss: '.topbar-wrapper img { content:url(https://s3.amazonaws.com/hedera-com/hedera_hashgraph.png); }',
   };
   app.use(`/api/v1/${config.openapi.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getV1OpenApiObject(), options));
 };
