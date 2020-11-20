@@ -440,25 +440,24 @@ paths:
                   messages:
                     - message: "Invalid parameter: account.id"
       tags:
-        - balances
         - tokens
 tags:
   - name: accounts
     description: The accounts object represents the information associated with an account entity and returns a list of account information.
     externalDocs:
-      url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#accounts'
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#accounts
   - name: balances
     description: The balance object represents the balance of accounts on the Hedera network.
     externalDocs:
-      url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances'
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
   - name: transactions
     description: The transaction object represents the transactions processed on the Hedera network.
     externalDocs:
-      url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#transactions'
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#transactions
   - name: topics
     description: The topics object represents the information associated with a topic enitty and returns topic messages information.
     externalDocs:
-      url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#topic-messages'
+      url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#topic-messages
   - name: tokens
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
@@ -885,25 +884,83 @@ components:
       in: query
       description: The ID of the account to return information for
       example: 0.0.8
+      explode: true
+      examples:
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        entityNumNeOperator:
+          summary: Example of entityNum not equals operator
+          value: ne:300
+        idNeOperator:
+          summary: Example of id not equals operator
+          value: ne:0.0.300
+        entityNumGtOperator:
+          summary: Example of entityNum greater than operator
+          value: gt:400
+        idGtOperator:
+          summary: Example of id greater than operator
+          value: gt:0.0.400
+        entityNumGteOperator:
+          summary: Example of entityNum greater than or equals operator
+          value: gte:500
+        idGteOperator:
+          summary: Example of id greater than or equals operator
+          value: gte:0.0.500
+        entityNumLtOperator:
+          summary: Example of entityNum less than operator
+          value: lt:600
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.600
+        entityNumLteOperator:
+          summary: Example of entityNum less than or equals operator
+          value: lte:700
+        idLteOperator:
+          summary: Example of id less than or equals operator
+          value: lte:0.0.700
       schema:
         type: string
+        format: ^(\d{1,10}.\d{1,10}.\d{1,10}|gte?:\d{1,10}.\d{1,10}.\d{1,10}|lte?:\d{1,10}.\d{1,10}.\d{1,10}|eq:\d{1,10}.\d{1,10}.\d{1,10}|ne:\d{1,10}.\d{1,10}.\d{1,10})$
     balanceQueryParam:
       name: account.balance
       in: query
       description: The optional balance value to compare against
       explode: true
-      example:
-        - 100
-        - eq:200
-        - ne:300
-        - gt:400
-        - gte:500
-        - lt:600
-        - lte:700
+      examples:
+        noOperator:
+          summary: Example of equals with no operator
+          value: 100
+        eqOperator:
+          summary: Example of equals operator
+          value: eq:200
+        neOperator:
+          summary: Example of not equals operator
+          value: ne:300
+        gtOperator:
+          summary: Example of greater than operator
+          value: gt:400
+        gteOperator:
+          summary: Example of greater than or equals operator
+          value: gte:500
+        ltOperator:
+          summary: Example of less than operator
+          value: lt:600
+        lteOperator:
+          summary: Example of less than or equals operator
+          value: lte:700
       schema:
-        type: array
-        items:
-          type: string
+        type: string
+        format: ^(\d{1,10}|gte?\:\d{1,10}|lte?:\d{1,10}|eq:\d{1,10}|ne:\d{1,10})$
     limitQueryParam:
       name: limit
       in: query
@@ -921,6 +978,7 @@ components:
       example: desc
       schema:
         enum: [asc, desc]
+        default: asc
     accountPublicKeyQueryParam:
       name: account.publickey
       in: query
@@ -938,9 +996,54 @@ components:
     timestampQueryParam:
       name: timestamp
       in: query
-      example: lt:1234567890.000000004
+      explode: true
+      examples:
+        secondsNoOperator:
+          summary: Example of seconds equals with no operator
+          value: 1234567890
+        timestampNoOperator:
+          summary: Example of timestamp equals with no operator
+          value: 1234567890.000000100
+        secondsEqOperator:
+          summary: Example of seconds equals with operator
+          value: eq:1234567890
+        timestampEqOperator:
+          summary: Example of timestamp equals with operator
+          value: eq:1234567890.000000200
+        secondsNeOperator:
+          summary: Example of seconds not equals operator
+          value: ne:1234567890
+        timestampNeOperator:
+          summary: Example of timestamp not equals operator
+          value: ne:1234567890.000000300
+        secondsGtOperator:
+          summary: Example of seconds greater than operator
+          value: gt:1234567890
+        timestampGtOperator:
+          summary: Example of timestamp greater than operator
+          value: gt:1234567890.000000400
+        secondsGteOperator:
+          summary: Example of seconds greater than or equals operator
+          value: gte:1234567890
+        timestampGteOperator:
+          summary: Example of timestamp greater than or equals operator
+          value: gte:1234567890.000000500
+        secondsLtOperator:
+          summary: Example of seconds less than operator
+          value: lt:1234567890
+        timestampLtOperator:
+          summary: Example of timestamp less than operator
+          value: lt:1234567890.000000600
+        secondsLteOperator:
+          summary: Example of seconds less than or equals operator
+          value: lte:1234567890
+        timestampLteOperator:
+          summary: Example of timestamp less than or equals operator
+          value: lte:1234567890.000000700
       schema:
         type: string
+        format: >
+          ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
     transactionTypeQueryParam:
       name: transactiontype
       in: query
