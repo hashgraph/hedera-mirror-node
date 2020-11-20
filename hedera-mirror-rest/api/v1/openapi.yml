@@ -20,9 +20,9 @@ paths:
                 type: object
                 properties:
                   accounts:
-                    $ref: '#/components/schemas/accountsObject'
+                    $ref: '#/components/schemas/Accounts'
                   links:
-                    $ref: '#/components/schemas/links'
+                    $ref: '#/components/schemas/Links'
         400:
           description: Bad Request
           content:
@@ -55,7 +55,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/accountBalanceTransactions'
+                $ref: '#/components/schemas/AccountBalanceTransactions'
         400:
           description: Bad Request
           content:
@@ -91,13 +91,13 @@ paths:
                 type: object
                 properties:
                   timestamp:
-                    $ref: '#/components/schemas/timestamp'
+                    $ref: '#/components/schemas/Timestamp'
                   balances:
                     type: array
                     items:
-                      $ref: '#/components/schemas/accountBalanceObject'
+                      $ref: '#/components/schemas/AccountBalance'
                   links:
-                    $ref: '#/components/schemas/links'
+                    $ref: '#/components/schemas/Links'
         400:
           description: Bad Request
           content:
@@ -139,9 +139,9 @@ paths:
                 type: object
                 properties:
                   transactions:
-                    $ref: '#/components/schemas/transactionsObject'
+                    $ref: '#/components/schemas/Transactions'
                   links:
-                    $ref: '#/components/schemas/links'
+                    $ref: '#/components/schemas/Links'
         400:
           description: Bad Request
           content:
@@ -170,7 +170,7 @@ paths:
                 type: object
                 properties:
                   transactions:
-                    $ref: '#/components/schemas/transactionsObject'
+                    $ref: '#/components/schemas/Transactions'
         400:
           description: Bad Request
           content:
@@ -246,9 +246,9 @@ paths:
                 type: object
                 properties:
                   messages:
-                    $ref: '#/components/schemas/topicMessages'
+                    $ref: '#/components/schemas/TopicMessages'
                   links:
-                    $ref: '#/components/schemas/links'
+                    $ref: '#/components/schemas/Links'
         400:
           description: Bad Request
           content:
@@ -286,9 +286,9 @@ paths:
                 type: object
                 properties:
                   messages:
-                    $ref: '#/components/schemas/topicMessages'
+                    $ref: '#/components/schemas/TopicMessages'
                   links:
-                    $ref: '#/components/schemas/links'
+                    $ref: '#/components/schemas/Links'
         400:
           description: Bad Request
           content:
@@ -315,14 +315,15 @@ paths:
           description: Consensus timestamp of topic message
           example: 1234567890
           schema:
-            type: float
+            type: number
+            format: float
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/topicMessage'
+                $ref: '#/components/schemas/TopicMessage'
         400:
           description: Bad Request
           content:
@@ -357,9 +358,9 @@ paths:
                 type: object
                 properties:
                   tokens:
-                    $ref: '#/components/schemas/tokens'
+                    $ref: '#/components/schemas/Tokens'
                   links:
-                    $ref: '#/components/schemas/links'
+                    $ref: '#/components/schemas/Links'
         400:
           description: Bad Request
           content:
@@ -385,7 +386,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/tokenInfo'
+                $ref: '#/components/schemas/TokenInfo'
         400:
           description: Bad Request
           content:
@@ -423,11 +424,11 @@ paths:
                 type: object
                 properties:
                   timestamp:
-                    $ref: '#/components/schemas/timestamp'
+                    $ref: '#/components/schemas/Timestamp'
                   balances:
-                    $ref: '#/components/schemas/tokenDistribution'
+                    $ref: '#/components/schemas/TokenDistribution'
                   links:
-                    $ref: '#/components/schemas/links'
+                    $ref: '#/components/schemas/Links'
         400:
           description: Bad Request
           content:
@@ -462,7 +463,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.23.0-rc1
+  version: 0.23.0-oas
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -488,10 +489,10 @@ servers:
         enum: [mainnet, previewnet, testnet]
 components:
   schemas:
-    timestamp:
+    Timestamp:
       type: string
       example: 1586567700.453054000
-    tokenBalanceObject:
+    TokenBalance:
       type: object
       required:
         - token_id
@@ -504,7 +505,7 @@ components:
       example:
         token_id: 0.0.200001
         balance: 8
-    accountBalanceObject:
+    AccountBalance:
       type: object
       required:
         - account
@@ -518,14 +519,14 @@ components:
         tokens:
           type: array
           items:
-            $ref: '#/components/schemas/tokenBalanceObject'
+            $ref: '#/components/schemas/TokenBalance'
       example:
         account: 0.15.10
         balance: 80
         tokens:
           - token_id: 0.0.200001
             balance: 8
-    balanceObject:
+    Balance:
       type: object
       required:
         - timestamp
@@ -551,7 +552,7 @@ components:
         tokens:
           - token_id: 0.0.200001
             balance: 8
-    accountInfoObject:
+    AccountInfo:
       type: object
       required:
         - account
@@ -562,7 +563,7 @@ components:
         - deleted
       properties:
         balance:
-          $ref: '#/components/schemas/balanceObject'
+          $ref: '#/components/schemas/Balance'
         account:
           type: string
         expiry_timestamp:
@@ -585,11 +586,11 @@ components:
         auto_renew_period: null
         key: null
         deleted: false
-    accountsObject:
+    Accounts:
       type: array
       items:
-        $ref: '#/components/schemas/accountInfoObject'
-    transactionObject:
+        $ref: '#/components/schemas/AccountInfo'
+    Transaction:
       type: object
       properties:
         consensus_timestamp:
@@ -667,17 +668,17 @@ components:
           - token_id: 0.0.90000
             account: 0.0.8
             amount: -1200
-    transactionsObject:
+    Transactions:
       type: array
       items:
-        $ref: '#/components/schemas/transactionObject'
-    accountBalanceTransactions:
+        $ref: '#/components/schemas/Transaction'
+    AccountBalanceTransactions:
       type: object
       properties:
         transactions:
-          $ref: '#/components/schemas/transactionsObject'
+          $ref: '#/components/schemas/Transactions'
         balance:
-          $ref: '#/components/schemas/balanceObject'
+          $ref: '#/components/schemas/Balance'
         account:
           type: string
         expiry_timestamp:
@@ -689,8 +690,8 @@ components:
         deleted:
           type: boolean
         links:
-          $ref: '#/components/schemas/links'
-    topicMessage:
+          $ref: '#/components/schemas/Links'
+    TopicMessage:
       type: object
       properties:
         consensus_timestamp:
@@ -717,13 +718,13 @@ components:
         topic_id: 0.0.7
         message: bWVzc2FnZQ==
         running_hash: cnVubmluZ19oYXNo
-        running_hash_version: 2
+        running_hash_version: 0.10.0-rc1
         sequence_number: 1
-    topicMessages:
+    TopicMessages:
       type: array
       items:
-        $ref: '#/components/schemas/topicMessage'
-    token:
+        $ref: '#/components/schemas/TopicMessage'
+    Token:
       type: object
       properties:
         token_id:
@@ -740,11 +741,11 @@ components:
         token_id: 0.0.1
         symbol: FIRSTMOVERLPDJH
         admin_key: null
-    tokens:
+    Tokens:
       type: array
       items:
-        $ref: '#/components/schemas/token'
-    tokenInfo:
+        $ref: '#/components/schemas/Token'
+    TokenInfo:
       type: object
       properties:
         admin_key:
@@ -801,7 +802,7 @@ components:
         wipe_key:
           example: null
           nullable: true
-    tokenDistribution:
+    TokenDistribution:
       type: array
       items:
         type: object
@@ -816,7 +817,7 @@ components:
       example:
         - account: 0.15.2
           balance: 1000
-    links:
+    Links:
       type: object
       properties:
         next:
@@ -836,30 +837,6 @@ components:
                   message:
                     type: string
   responses:
-    EmptyLinks:
-      description: An empty links objects
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              links:
-                type: object
-                properties:
-                  next:
-                    example: null
-                    nullable: true
-    accountsResponse:
-      description: Not Found
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              accounts:
-                $ref: '#/components/schemas/accountsObject'
-              links:
-                $ref: '#/components/schemas/links'
     NotFoundError:
       description: Not Found
       content:
