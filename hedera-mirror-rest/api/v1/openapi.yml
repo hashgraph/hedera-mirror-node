@@ -22,32 +22,17 @@ paths:
                   accounts:
                     $ref: '#/components/schemas/accountsObject'
                   links:
-                    type: object
-                    properties:
-                      next:
-                        example: null
-                        nullable: true
+                    $ref: '#/components/schemas/links'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                          required:
-                            - message
-                        example:
-                          - message: "Invalid parameter: account.id"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
       tags:
         - accounts
   /api/v1/accounts/{id}:
@@ -70,171 +55,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        consensus_timestamp:
-                          type: string
-                        transaction_hash:
-                          type: string
-                        valid_start_timestamp:
-                          type: string
-                        charged_tx_fee:
-                          type: number
-                        memo_base64:
-                          nullable: true
-                        result:
-                          type: string
-                        name:
-                          type: string
-                        max_fee:
-                          type: string
-                        valid_duration_seconds:
-                          type: string
-                        node:
-                          type: string
-                        transaction_id:
-                          type: string
-                        transfers:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              account:
-                                type: string
-                              amount:
-                                type: number
-                            required:
-                              - account
-                              - amount
-                        token_transfers:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              token_id:
-                                type: string
-                              account:
-                                type: string
-                              amount:
-                                type: number
-                            required:
-                              - token_id
-                              - account
-                              - amount
-                    example:
-                      - consensus_timestamp: 1234567890.000000007
-                        transaction_hash: aGFzaA==
-                        valid_start_timestamp: 1234567890.000000006
-                        charged_tx_fee: 7
-                        memo_base64: null
-                        result: SUCCESS
-                        name: CRYPTOTRANSFER
-                        max_fee: 33
-                        valid_duration_seconds: 11
-                        node: 0.0.3
-                        transaction_id: 0.0.8-1234567890-000000006
-                        transfers:
-                          - account: 0.0.3
-                            amount: 2
-                          - account: 0.0.8
-                            amount: -3
-                          - account: 0.0.98
-                            amount: 1
-                        token_transfers:
-                          - token_id: 0.0.90000
-                            account: 0.0.9
-                            amount: 1200
-                          - token_id: 0.0.90000
-                            account: 0.0.8
-                            amount: -1200
-                  balance:
-                    type: object
-                    properties:
-                      timestamp:
-                        type: string
-                        example: 0.000002345
-                      balance:
-                        type: number
-                        example: 80
-                      tokens:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            token_id:
-                              type: string
-                            balance:
-                              type: number
-                          required:
-                            - token_id
-                            - balance
-                        example:
-                          - token_id: 0.0.99998
-                            balance: 8
-                  account:
-                    type: string
-                    example: 0.0.8
-                  expiry_timestamp:
-                    example: null
-                    nullable: true
-                  auto_renew_period:
-                    example: null
-                    nullable: true
-                  key:
-                    example: null
-                    nullable: true
-                  deleted:
-                    type: boolean
-                    example: false
-                  links:
-                    type: object
-                    properties:
-                      next:
-                        example: null
-                        nullable: true
+                $ref: '#/components/schemas/accountBalanceTransactions'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: "Invalid parameter: account.id"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
         404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Not found
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
   /api/v1/balances:
@@ -258,64 +91,23 @@ paths:
                 type: object
                 properties:
                   timestamp:
-                    type: string
-                    example: 0.000002000
+                    $ref: '#/components/schemas/timestamp'
                   balances:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        account:
-                          type: string
-                        balance:
-                          type: number
-                        tokens:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              token_id:
-                                type: string
-                              balance:
-                                type: number
-                            required:
-                              - token_id
-                              - balance
-                      required:
-                        - account
-                        - balance
-                        - tokens
-                    example:
-                      - account: 0.15.10
-                        balance: 100
-                        tokens: []
+                      $ref: '#/components/schemas/accountBalanceObject'
                   links:
-                    type: object
-                    properties:
-                      next:
-                        example: null
-                        nullable: true
+                    $ref: '#/components/schemas/links'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                          required:
-                            - message
-                        example:
-                          - message: "Invalid parameter: account.id"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
       tags:
         - balances
   /api/v1/transactions:
@@ -347,37 +139,19 @@ paths:
                 type: object
                 properties:
                   transactions:
-                    type: array
-                    items: {}
-                    example:
-                      - null
+                    $ref: '#/components/schemas/transactionsObject'
                   links:
-                    type: object
-                    properties:
-                      next:
-                        example: null
-                        nullable: true
+                    $ref: '#/components/schemas/links'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                          required:
-                            - message
-                        example:
-                          - message: "Invalid parameter: timestamp"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: timestamp"
       tags:
         - transactions
   /api/v1/transactions/{id}:
@@ -396,101 +170,19 @@ paths:
                 type: object
                 properties:
                   transactions:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        consensus_timestamp:
-                          type: string
-                        transaction_hash:
-                          type: string
-                        valid_start_timestamp:
-                          type: string
-                        charged_tx_fee:
-                          type: number
-                        memo_base64:
-                          nullable: true
-                        result:
-                          type: string
-                        name:
-                          type: string
-                        max_fee:
-                          type: string
-                        valid_duration_seconds:
-                          type: string
-                        node:
-                          type: string
-                        transaction_id:
-                          type: string
-                        transfers:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              account:
-                                type: string
-                              amount:
-                                type: number
-                            required:
-                              - account
-                              - amount
-                    example:
-                      - consensus_timestamp: 1234567890.000000001
-                        transaction_hash: aGFzaA==
-                        valid_start_timestamp: 1234567890.000000000
-                        charged_tx_fee: 7
-                        memo_base64: null
-                        result: SUCCESS
-                        name: CRYPTOTRANSFER
-                        max_fee: 33
-                        valid_duration_seconds: 11
-                        node: 0.0.3
-                        transaction_id: 0.0.10-1234567890-000000000
-                        transfers:
-                          - account: 0.0.9
-                            amount: 10
-                          - account: 0.0.10
-                            amount: -11
-                          - account: 0.0.98
-                            amount: 1
+                    $ref: '#/components/schemas/transactionsObject'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
         404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Not found
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - transactions
   /api/v1/transactions/{id}/stateproof:
@@ -506,58 +198,23 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
         404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Transaction not found
+          $ref: '#/components/responses/TransactionNotFound'
         503:
           description: Service Unavailable
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
+                $ref: '#/components/responses/ServiceUnavailableError'
+              example:
+                _status:
+                  messages:
+                    - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
       tags:
         - transactions
   /api/v1/topics/{id}/messages:
@@ -589,80 +246,21 @@ paths:
                 type: object
                 properties:
                   messages:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        consensus_timestamp:
-                          type: string
-                        topic_id:
-                          type: string
-                        message:
-                          type: string
-                        running_hash:
-                          type: string
-                        running_hash_version:
-                          type: number
-                        sequence_number:
-                          type: number
-                      required:
-                        - consensus_timestamp
-                        - topic_id
-                        - message
-                        - running_hash
-                        - running_hash_version
-                        - sequence_number
-                    example:
-                      - consensus_timestamp: 1234567890.000000001
-                        topic_id: 0.0.7
-                        message: bWVzc2FnZQ==
-                        running_hash: cnVubmluZ19oYXNo
-                        running_hash_version: 2
-                        sequence_number: 1
+                    $ref: '#/components/schemas/topicMessages'
                   links:
-                    type: object
-                    properties:
-                      next:
-                        example: null
-                        nullable: true
+                    $ref: '#/components/schemas/links'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: "Invalid parameter: topic_num"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: topic_num"
         404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: No such topic id - 7
+          $ref: '#/components/responses/TopicNotFound'
       tags:
         - topics
   /api/v1/topics/{id}/messages/{sequencenumber}:
@@ -687,64 +285,22 @@ paths:
               schema:
                 type: object
                 properties:
-                  consensus_timestamp:
-                    type: string
-                    example: 1234567890.000000003
-                  topic_id:
-                    type: string
-                    example: 0.0.7
-                  message:
-                    type: string
-                    example: eyJhIiwiYiIsImMifQ==
-                  running_hash:
-                    type: string
-                    example: eyJkIiwiZSIsImYifQ==
-                  running_hash_version:
-                    type: number
-                    example: 2
-                  sequence_number:
-                    type: number
-                    example: 3
+                  messages:
+                    $ref: '#/components/schemas/topicMessages'
+                  links:
+                    $ref: '#/components/schemas/links'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                          required:
-                            - message
-                        example:
-                          - message: "Invalid parameter: topic_num"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: topic_num"
         404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Not found
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - topics
   /api/v1/topics/messages/{consensusTimestamp}:
@@ -766,64 +322,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  consensus_timestamp:
-                    type: string
-                    example: 1234567890.000000002
-                  topic_id:
-                    type: string
-                    example: 0.0.7
-                  message:
-                    type: string
-                    example: bWVzc2FnZQ==
-                  running_hash:
-                    type: string
-                    example: cnVubmluZ19oYXNo
-                  running_hash_version:
-                    type: number
-                    example: 2
-                  sequence_number:
-                    type: number
-                    example: 2
+                $ref: '#/components/schemas/topicMessage'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: "Invalid parameter: consensus_timestamp"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: consensus_timestamp"
         404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Not found
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - topics
   /api/v1/tokens:
@@ -846,51 +357,19 @@ paths:
                 type: object
                 properties:
                   tokens:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        token_id:
-                          type: string
-                        symbol:
-                          type: string
-                        admin_key:
-                          nullable: true
-                      required:
-                        - token_id
-                        - symbol
-                        - admin_key
-                    example:
-                      - token_id: 0.0.1
-                        symbol: FIRSTMOVERLPDJH
-                        admin_key: null
+                    $ref: '#/components/schemas/tokens'
                   links:
-                    type: object
-                    properties:
-                      next:
-                        example: null
-                        nullable: true
+                    $ref: '#/components/schemas/links'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                          required:
-                            - message
-                        example:
-                          - message: "Invalid parameter: account.id"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
       tags:
         - tokens
   /api/v1/tokens/{id}:
@@ -906,100 +385,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  admin_key:
-                    example: null
-                    nullable: true
-                  auto_renew_account:
-                    example: null
-                    nullable: true
-                  auto_renew_period:
-                    example: null
-                    nullable: true
-                  created_timestamp:
-                    type: string
-                    example: 0.000000000
-                  decimals:
-                    type: string
-                    example: 1000
-                  expiry_timestamp:
-                    example: null
-                    nullable: true
-                  freeze_default:
-                    type: boolean
-                    example: false
-                  freeze_key:
-                    example: null
-                    nullable: true
-                  initial_supply:
-                    type: string
-                    example: 1000000
-                  kyc_key:
-                    example: null
-                    nullable: true
-                  modified_timestamp:
-                    type: string
-                    example: 0.000000000
-                  name:
-                    type: string
-                    example: Token name
-                  supply_key:
-                    example: null
-                    nullable: true
-                  symbol:
-                    type: string
-                    example: ORIGINALRDKSE
-                  token_id:
-                    type: string
-                    example: 0.0.1135
-                  total_supply:
-                    type: string
-                    example: 1000000
-                  treasury_account_id:
-                    type: string
-                    example: 0.0.98
-                  wipe_key:
-                    example: null
-                    nullable: true
+                $ref: '#/components/schemas/tokenInfo'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: "Invalid parameter: tokenid"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: tokenid"
         404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                        example:
-                          - message: Not found
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
   /api/v1/tokens/{id}/balances:
@@ -1025,50 +423,21 @@ paths:
                 type: object
                 properties:
                   timestamp:
-                    type: string
-                    example: 0.000002000
+                    $ref: '#/components/schemas/timestamp'
                   balances:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        account:
-                          type: string
-                        balance:
-                          type: number
-                      required:
-                        - account
-                        - balance
-                    example:
-                      - account: 0.15.2
-                        balance: 1000
+                    $ref: '#/components/schemas/tokenDistribution'
                   links:
-                    type: object
-                    properties:
-                      next:
-                        example: null
-                        nullable: true
+                    $ref: '#/components/schemas/links'
         400:
           description: Bad Request
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  _status:
-                    type: object
-                    properties:
-                      messages:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            message:
-                              type: string
-                          required:
-                            - message
-                        example:
-                          - message: "Invalid parameter: account.id"
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
       tags:
         - balances
         - tokens
@@ -1119,7 +488,70 @@ servers:
         enum: [mainnet, previewnet, testnet]
 components:
   schemas:
+    timestamp:
+      type: string
+      example: 1586567700.453054000
+    tokenBalanceObject:
+      type: object
+      required:
+        - token_id
+        - balance
+      properties:
+        token_id:
+          type: string
+        balance:
+          type: number
+      example:
+        token_id: 0.0.200001
+        balance: 8
     accountBalanceObject:
+      type: object
+      required:
+        - account
+        - balance
+        - tokens
+      properties:
+        account:
+          type: string
+        balance:
+          type: number
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/tokenBalanceObject'
+      example:
+        account: 0.15.10
+        balance: 80
+        tokens:
+          - token_id: 0.0.200001
+            balance: 8
+    balanceObject:
+      type: object
+      required:
+        - timestamp
+        - balance
+        - tokens
+      properties:
+        timestamp:
+          type: string
+        balance:
+          type: number
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              token_id:
+                type: string
+              balance:
+                type: number
+      example:
+        timestamp: 0.000002345
+        balance: 80
+        tokens:
+          - token_id: 0.0.200001
+            balance: 8
+    accountInfoObject:
       type: object
       required:
         - account
@@ -1130,21 +562,7 @@ components:
         - deleted
       properties:
         balance:
-          type: object
-          properties:
-            timestamp:
-              type: string
-            balance:
-              type: number
-            tokens:
-              type: array
-              items:
-                type: object
-                properties:
-                  token_id:
-                    type: string
-                  balance:
-                    type: number
+          $ref: '#/components/schemas/balanceObject'
         account:
           type: string
         expiry_timestamp:
@@ -1170,7 +588,320 @@ components:
     accountsObject:
       type: array
       items:
-        $ref: '#/components/schemas/accountBalanceObject'
+        $ref: '#/components/schemas/accountInfoObject'
+    transactionObject:
+      type: object
+      properties:
+        consensus_timestamp:
+          type: string
+        transaction_hash:
+          type: string
+        valid_start_timestamp:
+          type: string
+        charged_tx_fee:
+          type: number
+        memo_base64:
+          nullable: true
+        result:
+          type: string
+        name:
+          type: string
+        max_fee:
+          type: string
+        valid_duration_seconds:
+          type: string
+        node:
+          type: string
+        transaction_id:
+          type: string
+        transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              account:
+                type: string
+              amount:
+                type: number
+            required:
+              - account
+              - amount
+        token_transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              token_id:
+                type: string
+              account:
+                type: string
+              amount:
+                type: number
+            required:
+              - token_id
+              - account
+              - amount
+      example:
+        consensus_timestamp: 1234567890.000000007
+        transaction_hash: aGFzaA==
+        valid_start_timestamp: 1234567890.000000006
+        charged_tx_fee: 7
+        memo_base64: null
+        result: SUCCESS
+        name: CRYPTOTRANSFER
+        max_fee: 33
+        valid_duration_seconds: 11
+        node: 0.0.3
+        transaction_id: 0.0.8-1234567890-000000006
+        transfers:
+          - account: 0.0.3
+            amount: 2
+          - account: 0.0.8
+            amount: -3
+          - account: 0.0.98
+            amount: 1
+        token_transfers:
+          - token_id: 0.0.90000
+            account: 0.0.9
+            amount: 1200
+          - token_id: 0.0.90000
+            account: 0.0.8
+            amount: -1200
+    transactionsObject:
+      type: array
+      items:
+        $ref: '#/components/schemas/transactionObject'
+    accountBalanceTransactions:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/transactionsObject'
+        balance:
+          $ref: '#/components/schemas/balanceObject'
+        account:
+          type: string
+        expiry_timestamp:
+          nullable: true
+        auto_renew_period:
+          nullable: true
+        key:
+          nullable: true
+        deleted:
+          type: boolean
+        links:
+          $ref: '#/components/schemas/links'
+    topicMessage:
+      type: object
+      properties:
+        consensus_timestamp:
+          type: string
+        topic_id:
+          type: string
+        message:
+          type: string
+        running_hash:
+          type: string
+        running_hash_version:
+          type: number
+        sequence_number:
+          type: number
+      required:
+        - consensus_timestamp
+        - topic_id
+        - message
+        - running_hash
+        - running_hash_version
+        - sequence_number
+      example:
+        consensus_timestamp: 1234567890.000000001
+        topic_id: 0.0.7
+        message: bWVzc2FnZQ==
+        running_hash: cnVubmluZ19oYXNo
+        running_hash_version: 2
+        sequence_number: 1
+    topicMessages:
+      type: array
+      items:
+        $ref: '#/components/schemas/topicMessage'
+    token:
+      type: object
+      properties:
+        token_id:
+          type: string
+        symbol:
+          type: string
+        admin_key:
+          nullable: true
+      required:
+        - token_id
+        - symbol
+        - admin_key
+      example:
+        token_id: 0.0.1
+        symbol: FIRSTMOVERLPDJH
+        admin_key: null
+    tokens:
+      type: array
+      items:
+        $ref: '#/components/schemas/token'
+    tokenInfo:
+      type: object
+      properties:
+        admin_key:
+          example: null
+          nullable: true
+        auto_renew_account:
+          example: null
+          nullable: true
+        auto_renew_period:
+          example: null
+          nullable: true
+        created_timestamp:
+          type: string
+          example: 0.000000000
+        decimals:
+          type: string
+          example: 1000
+        expiry_timestamp:
+          example: null
+          nullable: true
+        freeze_default:
+          type: boolean
+          example: false
+        freeze_key:
+          example: null
+          nullable: true
+        initial_supply:
+          type: string
+          example: 1000000
+        kyc_key:
+          example: null
+          nullable: true
+        modified_timestamp:
+          type: string
+          example: 0.000000000
+        name:
+          type: string
+          example: Token name
+        supply_key:
+          example: null
+          nullable: true
+        symbol:
+          type: string
+          example: ORIGINALRDKSE
+        token_id:
+          type: string
+          example: 0.0.1135
+        total_supply:
+          type: string
+          example: 1000000
+        treasury_account_id:
+          type: string
+          example: 0.0.98
+        wipe_key:
+          example: null
+          nullable: true
+    tokenDistribution:
+      type: array
+      items:
+        type: object
+        properties:
+          account:
+            type: string
+          balance:
+            type: number
+        required:
+          - account
+          - balance
+      example:
+        - account: 0.15.2
+          balance: 1000
+    links:
+      type: object
+      properties:
+        next:
+          example: null
+          nullable: true
+    Error:
+      type: object
+      properties:
+        _status:
+          type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  message:
+                    type: string
+  responses:
+    EmptyLinks:
+      description: An empty links objects
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              links:
+                type: object
+                properties:
+                  next:
+                    example: null
+                    nullable: true
+    accountsResponse:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              accounts:
+                $ref: '#/components/schemas/accountsObject'
+              links:
+                $ref: '#/components/schemas/links'
+    NotFoundError:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: Not found
+    TopicNotFound:
+      description: Topic Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: No such topic id - 7
+    TransactionNotFound:
+      description: Transaction Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: Transaction not found
+    InvalidParameterError:
+      description: Invalid parameter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailableError:
+      description: Service Unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   parameters:
     accountIdQueryParam:
       name: account.id
@@ -1192,28 +923,6 @@ components:
         - gte:500
         - lt:600
         - lte:700
-      #      examples:
-      #        noOperator:
-      #          summary: Example of no operator
-      #          value: 100
-      #        eqOperator:
-      #          summary: Example of equals operator
-      #          value: eq:200
-      #        neOperator:
-      #          summary: Example of not equals operator
-      #          value: ne:300
-      #        gtOperator:
-      #          summary: Example of greater than operator
-      #          value: gt:400
-      #        gteOperator:
-      #          summary: Example of greater than or equals operator
-      #          value: gte:500
-      #        ltOperator:
-      #          summary: Example of less than operator
-      #          value: lt:600
-      #        lteOperator:
-      #          summary: Example of less than or equals operator
-      #          value: lte:700
       schema:
         type: array
         items:
