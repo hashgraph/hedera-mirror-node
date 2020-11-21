@@ -116,9 +116,10 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 frequency = retrieverProperties.getPollingFrequency();
                 maxPageSize = retrieverProperties.getMaxPageSize();
             } else {
-                numRepeats = retrieverProperties.getUnthrottledMaxPolls();
-                frequency = retrieverProperties.getUnthrottledPollingFrequency();
-                maxPageSize = retrieverProperties.getUnthrottledMaxPageSize();
+                RetrieverProperties.UnthrottledProperties unthrottled = retrieverProperties.getUnthrottled();
+                numRepeats = unthrottled.getMaxPolls();
+                frequency = unthrottled.getPollingFrequency();
+                maxPageSize = unthrottled.getMaxPageSize();
             }
         }
 

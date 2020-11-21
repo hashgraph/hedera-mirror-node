@@ -55,17 +55,17 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     @BeforeEach
     void setup() {
-        unthrottledMaxPolls = retrieverProperties.getUnthrottledMaxPolls();
-        retrieverProperties.setUnthrottledMaxPolls(2);
+        unthrottledMaxPolls = retrieverProperties.getUnthrottled().getMaxPolls();
+        retrieverProperties.getUnthrottled().setMaxPolls(2);
 
-        unthrottledPollingFrequency = retrieverProperties.getUnthrottledPollingFrequency();
-        retrieverProperties.setUnthrottledPollingFrequency(Duration.ofMillis(5L));
+        unthrottledPollingFrequency = retrieverProperties.getUnthrottled().getPollingFrequency();
+        retrieverProperties.getUnthrottled().setPollingFrequency(Duration.ofMillis(5L));
     }
 
     @AfterEach
     void teardown() {
-        retrieverProperties.setUnthrottledMaxPolls(unthrottledMaxPolls);
-        retrieverProperties.setUnthrottledPollingFrequency(unthrottledPollingFrequency);
+        retrieverProperties.getUnthrottled().setMaxPolls(unthrottledMaxPolls);
+        retrieverProperties.getUnthrottled().setPollingFrequency(unthrottledPollingFrequency);
     }
 
     @ParameterizedTest
@@ -90,8 +90,6 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void noMessages(boolean throttled) {
-        retrieverProperties.setUnthrottledMaxPolls(1);
-
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
@@ -302,7 +300,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     @Test
     void unthrottledShouldKeepPolling() {
-        retrieverProperties.setUnthrottledMaxPolls(10);
+        retrieverProperties.getUnthrottled().setMaxPolls(10);
 
         Instant now = Instant.now();
         Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(5, now);
@@ -332,8 +330,8 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
             maxPageSize = retrieverProperties.getMaxPageSize();
             retrieverProperties.setMaxPageSize(newMaxPageSize);
         } else {
-            maxPageSize = retrieverProperties.getUnthrottledMaxPageSize();
-            retrieverProperties.setUnthrottledMaxPageSize(newMaxPageSize);
+            maxPageSize = retrieverProperties.getUnthrottled().getMaxPageSize();
+            retrieverProperties.getUnthrottled().setMaxPageSize(newMaxPageSize);
         }
 
         return maxPageSize;
@@ -343,7 +341,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
         if (throttle) {
             retrieverProperties.setMaxPageSize(maxPageSize);
         } else {
-            retrieverProperties.setUnthrottledMaxPageSize(maxPageSize);
+            retrieverProperties.getUnthrottled().setMaxPageSize(maxPageSize);
         }
     }
 }
