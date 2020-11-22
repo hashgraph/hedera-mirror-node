@@ -152,7 +152,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .limit(2L)
                 .build();
 
-        pollingTopicMessageRetriever.retrieve(filter, true)
+        pollingTopicMessageRetriever.retrieve(filter, throttle)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .expectNext(1L, 2L)
@@ -175,7 +175,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .startTime(Instant.EPOCH)
                 .build();
 
-        pollingTopicMessageRetriever.retrieve(filter, true)
+        pollingTopicMessageRetriever.retrieve(filter, throttle)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .expectNext(1L, 2L, 3L)
@@ -266,7 +266,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .realmNum(1)
                 .build();
 
-        pollingTopicMessageRetriever.retrieve(filter, true)
+        pollingTopicMessageRetriever.retrieve(filter, throttle)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .expectNext(2L)
