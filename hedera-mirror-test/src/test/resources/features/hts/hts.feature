@@ -69,7 +69,5 @@ Feature: HTS Base Coverage Feature
         Given I provide a token symbol <tokenId>
         Then the network should observe an error creating a token <errorCode>
         Examples:
-            | tokenId     | errorCode              |
-            | ""          | "MISSING_TOKEN_SYMBOL" |
-            | "q1MG"      | "INVALID_TOKEN_SYMBOL" |
-            | "hashGRAPH" | "INVALID_TOKEN_SYMBOL" |
+            | tokenId | errorCode              |
+            | ""      | "MISSING_TOKEN_SYMBOL" |
