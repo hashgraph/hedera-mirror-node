@@ -47,9 +47,11 @@ public class RetrieverProperties {
     @NotNull
     private Duration timeout = Duration.ofSeconds(60L);
 
+    @NotNull
     private UnthrottledProperties unthrottled = new UnthrottledProperties();
 
     @Data
+    @Validated
     public static class UnthrottledProperties {
 
         @Min(1000)
@@ -59,6 +61,7 @@ public class RetrieverProperties {
         private long maxPolls = 12;
 
         @DurationMin(millis = 10)
+        @NotNull
         private Duration pollingFrequency = Duration.ofMillis(20);
     }
 }
