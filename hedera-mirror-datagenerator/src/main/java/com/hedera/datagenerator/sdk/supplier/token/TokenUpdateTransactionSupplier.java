@@ -74,7 +74,7 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
                 .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(maxTransactionFee)
                 .setName(symbol + "_name")
-                .setSybmol(symbol)
+                .setSymbol(symbol)
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node updated test token"));
 
