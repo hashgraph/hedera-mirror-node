@@ -17,12 +17,12 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListenerTest {
 
-    private final int maxBufferSize = 16;
-    private final int prefetch = 1;
-
     @Test
     @DisplayName("slow subscriber receives overflow exception and normal subscriber is not affected")
     void slowSubscriberOverflowException() {
+        int maxBufferSize = 16;
+        int prefetch = 1;
+
         // step verifier requests 2 messages on subscription, and there are downstream buffers after the backpressure
         // buffer, to ensure overflow, set the number of topic messages to send as follows
         int numMessages = maxBufferSize + prefetch * 2 + 3;
