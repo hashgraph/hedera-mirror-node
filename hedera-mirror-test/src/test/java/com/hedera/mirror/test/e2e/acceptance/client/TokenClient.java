@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.Value;
@@ -65,6 +66,7 @@ public class TokenClient extends AbstractNetworkClient {
         Ed25519PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
                 .setAutoRenewAccount(expandedAccountId.getAccountId())
+                .setAutoRenewPeriod(Duration.ofSeconds(6_999_999L))
                 .setDecimals(10)
                 .setFreezeDefault(false)
                 .setInitialSupply(1000000000)
@@ -236,10 +238,11 @@ public class TokenClient extends AbstractNetworkClient {
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAdminKey(publicKey)
                 .setAutoRenewAccount(expandedAccountId.getAccountId())
+                .setAutoRenewPeriod(Duration.ofSeconds(8_000_001L))
                 .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
                 .setName(newSymbol + "_name")
                 .setSupplyKey(publicKey)
-                .setSybmol(newSymbol)
+                .setSymbol(newSymbol)
                 .setTokenId(tokenId)
                 .setTreasury(client.getOperatorId())
                 .setWipeKey(publicKey);
