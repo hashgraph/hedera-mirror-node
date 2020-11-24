@@ -60,7 +60,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
         }
 
         AccountId recipientId = AccountId.fromString(recipientAccountId);
-        AccountId senderId = AccountId.fromString(recipientAccountId);
+        AccountId senderId = AccountId.fromString(senderAccountId);
 
         TransferTransaction transferTransaction = new TransferTransaction()
                 .addHbarTransfer(recipientId, amount)
