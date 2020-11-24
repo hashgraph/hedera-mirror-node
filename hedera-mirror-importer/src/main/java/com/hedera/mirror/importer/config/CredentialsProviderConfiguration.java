@@ -45,7 +45,7 @@ public class CredentialsProviderConfiguration {
     private final CommonDownloaderProperties downloaderProperties;
 
     @Bean
-    public AwsCredentialsProvider staticCredentialsProvider() {
+    public AwsCredentialsProvider awsCredentialsProvider() {
         if (useAnonymousCredentialsProvider()) {
             log.info("Setting up S3 async client using anonymous credentials");
             return AnonymousCredentialsProvider.create();
@@ -60,9 +60,7 @@ public class CredentialsProviderConfiguration {
     private boolean useStaticCredentialsProvider() {
         //If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
         //force the mirror node to use the static provider.
-        return StringUtils
-                .equals(downloaderProperties.getCloudProvider().name(), CommonDownloaderProperties.CloudProvider.GCP
-                        .name()) ||
+        return downloaderProperties.getCloudProvider() == CommonDownloaderProperties.CloudProvider.GCP ||
                 ((StringUtils.isNotBlank(downloaderProperties.getAccessKey()) && StringUtils
                         .isNotBlank(downloaderProperties.getSecretKey())));
     }
