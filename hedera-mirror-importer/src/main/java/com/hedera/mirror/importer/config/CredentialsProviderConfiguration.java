@@ -66,6 +66,6 @@ public class CredentialsProviderConfiguration {
 
     private boolean useAnonymousCredentialsProvider() {
         return downloaderProperties.getAllowAnonymousAccess() != null ? downloaderProperties
-                .getAllowAnonymousAccess() : mirrorProperties.getNetwork().getAnonymousAccess();
+                .getAllowAnonymousAccess() : mirrorProperties.getNetwork().getAllowAnonymousAccess();
     }
 }

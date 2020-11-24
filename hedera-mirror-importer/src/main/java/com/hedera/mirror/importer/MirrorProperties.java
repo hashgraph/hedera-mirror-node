@@ -74,6 +74,6 @@ public class MirrorProperties {
         OTHER("", false); // Pre-prod or ad hoc environments
 
         private final String bucketName;
-        private final Boolean anonymousAccess;
+        private final Boolean allowAnonymousAccess;
     }
 }
