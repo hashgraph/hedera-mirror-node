@@ -54,13 +54,13 @@ public class CommonDownloaderProperties {
     @Min(0)
     private int maxConcurrency = 1000; // aws sdk default = 50
 
-    private String region;
+    private String region = "us-east-1";
 
     private String secretKey;
 
     private String gcpProjectId;
 
-    private final S3 s3 = new S3();
+    private Boolean allowAnonymousAccess;
 
     @Getter
     @RequiredArgsConstructor
@@ -69,16 +69,5 @@ public class CommonDownloaderProperties {
         GCP("https://storage.googleapis.com");
 
         private final String endpoint;
-    }
-
-    @Data
-    @Validated
-    public static class S3 {
-
-        private String externalId;
-
-        private String roleArn;
-
-        private String roleSessionName = "hedera-mirror-node";
     }
 }

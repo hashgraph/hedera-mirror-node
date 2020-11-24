@@ -29,6 +29,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.port`                                     | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.importer.db.username`                                 | mirror_node             | The username the processor uses to connect to the database                                     |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
+| `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |
 | `hedera.mirror.importer.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.balance.enabled`                  | true                    | Whether to enable balance file downloads                                                       |
 | `hedera.mirror.importer.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
@@ -108,21 +109,15 @@ Importer can be configured to publish transactions (in json format) to a Pubsub 
 See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
 for more info about `spring.cloud.gcp.*` properties.
 
-#### Connect to S3 with AssumeRole
+#### Connect to S3 with the Default Credentials Provider
 
-Importer can be configured to connect to S3 using temporary security credentials via AssumeRole.  This is only available
-when using AWS S3 as the cloud provider.  With this, a user that does not have permission to access an AWS resource can
-request a temporary role that will grant them that permission.  This is useful when dealing with multiple accounts
-where a user in one account needs access to a resource in another account, and is generally considered more secure than
-using long-term credentials.
+When connecting to an AWS S3 bucket that requires authentication (such as a requester pays bucket), you can opt to allow
+the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access and secret
+keys in the config.  This will also allow you to take advantage of alternative authorization modes such as AssumeRole.
+If the mirror node is configured to connect to an S3 bucket that requires authenticaion, and the static credentails are not provided
+in the config, the mirror node will default to using this provider.  For more information and to see how you can set up your
+environment to take advantage of this, see [the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html)
 
-The following properties are used to enable this:
-
--   `hedera.mirror.importer.downloader.accessKey` (The access key of the user requesting access)
--   `hedera.mirror.importer.downloader.secretKey` (The secret key of the user requesting access)
--   `hedera.mirror.importer.downloader.s3.externalId` (An external ID is an optional property attached to the role in AWS to make it more secure)
--   `hedera.mirror.importer.downloader.s3.roleArn` (Amazon Resource Name)
--   `hedera.mirror.importer.downloader.s3.roleSessionName` (A name to give to the session.  Defaults to "hedera-mirror-node")
 
 ```yaml
 hedera:

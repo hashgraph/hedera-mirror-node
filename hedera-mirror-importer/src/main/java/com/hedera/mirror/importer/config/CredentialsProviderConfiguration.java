@@ -22,9 +22,8 @@ package com.hedera.mirror.importer.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
@@ -33,8 +32,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
-import com.hedera.mirror.importer.config.condition.AwsDefaultCredentialsCondition;
-import com.hedera.mirror.importer.config.condition.StaticCredentialsCondition;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 
 @Configuration
@@ -43,26 +41,31 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 @RequiredArgsConstructor
 public class CredentialsProviderConfiguration {
 
+    private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties downloaderProperties;
 
     @Bean
-    @Conditional(StaticCredentialsCondition.class)
     public AwsCredentialsProvider staticCredentialsProvider() {
-        log.info("Setting up S3 async client using provided access/secret key");
-        return StaticCredentialsProvider.create(AwsBasicCredentials.create(downloaderProperties.getAccessKey(),
-                downloaderProperties.getSecretKey()));
-    }
-
-    @Bean
-    @Conditional(AwsDefaultCredentialsCondition.class)
-    public AwsCredentialsProvider awsDefaultCredentialsProvider() {
+        if (useAnonymousCredentialsProvider()) {
+            log.info("Setting up S3 async client using anonymous credentials");
+            return AnonymousCredentialsProvider.create();
+        } else if (useStaticCredentialsProvider()) {
+            log.info("Setting up S3 async client using provided access/secret key");
+            return StaticCredentialsProvider.create(AwsBasicCredentials.create(downloaderProperties.getAccessKey(),
+                    downloaderProperties.getSecretKey()));
+        }
         return DefaultCredentialsProvider.create();
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    public AwsCredentialsProvider anonymousCredentialsProvider() {
-        log.info("Setting up S3 async client using anonymous credentials");
-        return AnonymousCredentialsProvider.create();
+    private boolean useStaticCredentialsProvider() {
+        return ((StringUtils.isNotBlank(downloaderProperties.getAccessKey()) && StringUtils
+                .isNotBlank(downloaderProperties.getSecretKey())) || StringUtils
+                .equals(downloaderProperties.getCloudProvider().name(), CommonDownloaderProperties.CloudProvider.GCP
+                        .name()));
+    }
+
+    private boolean useAnonymousCredentialsProvider() {
+        return downloaderProperties.getAllowAnonymousAccess() != null ? downloaderProperties
+                .getAllowAnonymousAccess() : mirrorProperties.getNetwork().getAnonymousAccess();
     }
 }
