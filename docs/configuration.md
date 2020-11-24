@@ -55,9 +55,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.record.threads`                   | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
-| `hedera.mirror.importer.downloader.s3.externalId`                    |                         | The external id required to assume the role to connect to S3, if one was set                   |
-| `hedera.mirror.importer.downloader.s3.roleArn`                       |                         | The ARN for the role that needs to be assumed to connect to S3.  Only required if wishing to use temporary security credentials |
-| `hedera.mirror.importer.downloader.s3.roleSessionName`               | hedera-mirror-node      | A session name for assuming the role to access S3.  2-62 characters, can be alphanumeric, underscore, or any of =,.@- |
 | `hedera.mirror.importer.endDate`                                     | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
