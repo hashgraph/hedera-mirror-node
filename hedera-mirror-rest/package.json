@@ -11,7 +11,8 @@
     "test": "jest --testPathPattern='__tests__/*'",
     "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js",
-    "lint": "eslint \"**/*.js\""
+    "lint": "eslint \"**/*.js\"",
+    "integrationtest": "jest --testPathPattern='__tests__/integration.test.js' --collectCoverage=false"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
@@ -19,11 +20,12 @@
     "@awaitjs/express": "^0.6.3",
     "@godaddy/terminus": "^4.4.1",
     "asn1js": "^2.0.26",
-    "aws-sdk": "^2.778.0",
+    "aws-sdk": "^2.797.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "express-oas-generator": "^1.0.28",
     "extend": "^3.0.2",
     "js-yaml": "^3.14.0",
     "lodash": "^4.17.20",
@@ -34,7 +36,8 @@
     "node-fetch": "^2.6.1",
     "pg": "~8.5.1",
     "qs": "^6.9.4",
-    "swagger-stats": "^0.95.18"
+    "swagger-stats": "^0.95.18",
+    "swagger-ui-express": "^4.1.5"
   },
   "bundledDependencies": [
     "asn1js",
@@ -44,6 +47,7 @@
     "compression",
     "cors",
     "express",
+    "express-oas-generator",
     "@godaddy/terminus",
     "extend",
     "js-yaml",
@@ -55,7 +59,8 @@
     "node-fetch",
     "pg",
     "qs",
-    "swagger-stats"
+    "swagger-stats",
+    "swagger-ui-express"
   ],
   "devDependencies": {
     "aws-sdk-mock": "^5.1.0",
@@ -74,13 +79,13 @@
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.3",
     "nodemon": "^2.0.6",
-    "prettier": "^2.1.2",
+    "prettier": "^2.2.0",
     "pg-format": "^1.0.4",
     "pretty-quick": "^3.1.0",
     "rewire": "^5.0.0",
     "sinon": "^9.2.1",
     "supertest": "^6.0.1",
-    "testcontainers": "^6.1.1"
+    "testcontainers": "^6.2.0"
   },
   "husky": {
     "hooks": {
@@ -121,5 +126,6 @@
     "tabWidth": 2,
     "semi": true,
     "singleQuote": true
-  }
+  },
+  "baseUrlPath": "/api/v1"
 }

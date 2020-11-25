@@ -48,29 +48,29 @@ const handleError = async (err, req, res, next) => {
     case DbError:
       logger.error(`DbError processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
-      return;
+      break;
     case InvalidArgumentError:
       logger.warn(`InvalidArgumentError processing ${req.originalUrl}: ${err.message}`);
       res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
-      return;
+      break;
     case NotFoundError:
       logger.warn(`NotFoundError processing ${req.originalUrl}: ${err.message}`);
       res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
-      return;
+      break;
     case FileDownloadError:
       logger.error(`FileDownloadError processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
-      return;
+      break;
     case InvalidConfigError:
       logger.error(`InvalidConfigError processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
-      return;
+      break;
     default:
       logger.error(`Unhandled error ${err.constructor.name} processing ${req.originalUrl}: `, err);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
   }
 
-  next();
+  return undefined;
 };
 
 /**

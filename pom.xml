@@ -62,8 +62,8 @@
         <embedded.testcontainers.version>1.85</embedded.testcontainers.version>
         <grpc-spring-boot.version>2.10.1.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.33.1</grpc.version>
-        <hedera-protobuf.version>0.9.0-rc.3</hedera-protobuf.version>
-        <hedera-sdk.version>1.3.2</hedera-sdk.version>
+        <hedera-protobuf.version>0.9.0</hedera-protobuf.version>
+        <hedera-sdk.version>1.3.3</hedera-sdk.version>
         <jacoco.version>0.8.6</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
@@ -364,6 +364,7 @@
                             <includes>
                                 <include>charts/**/Chart.yaml</include>
                                 <include>docker-compose.yml</include>
+                                <include>hedera-mirror-rest/**/openapi.yml</include>
                                 <include>hedera-mirror-rest/package*.json</include>
                                 <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                 <include>*/pom.xml</include>
@@ -388,6 +389,10 @@
                                 <replacement>
                                     <token><![CDATA[(?<=version: )[0-9a-z.-]+]]></token>
                                     <value>${release.chartVersion}</value>
+                                </replacement>
+                                <replacement>
+                                    <token><![CDATA[(?<=(\s{3})version: )[0-9a-z.-]+]]></token>
+                                    <value>${release.version}</value>
                                 </replacement>
                                 <replacement>
                                     <token>

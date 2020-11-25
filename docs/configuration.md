@@ -157,9 +157,12 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.port`                                   | 5600             | The GRPC API port                                                                              |
 | `hedera.mirror.grpc.retriever.enabled`                      | true             | Whether to retrieve historical massages or not                                                 |
 | `hedera.mirror.grpc.retriever.maxPageSize`                  | 1000             | The maximum number of messages the retriever can return in a single call to the database       |
-| `hedera.mirror.grpc.retriever.pollingFrequency`             | 2s               | How often to polling for historical messages. Can accept duration units like `50ms`, `10s` etc |
+| `hedera.mirror.grpc.retriever.pollingFrequency`             | 2s               | How often to poll for historical messages. Can accept duration units like `50ms`, `10s` etc    |
 | `hedera.mirror.grpc.retriever.threadMultiplier`             | 4                | Multiplied by the CPU count to calculate the number of retriever threads                       |
 | `hedera.mirror.grpc.retriever.timeout`                      | 60s              | How long to wait between emission of messages before returning an error                        |
+| `hedera.mirror.grpc.retriever.unthrottled.maxPageSize`      | 5000             | The maximum number of messages the retriever can return in a single call to the database when unthrottled |
+| `hedera.mirror.grpc.retriever.unthrottled.maxPolls`         | 12               | The max number of polls when unthrottled                                                       |
+| `hedera.mirror.grpc.retriever.unthrottled.pollingFrequency` | 20ms             | How often to poll for messages when unthrottled. Can accept duration units like `50ms`, `10s` etc |
 | `hedera.mirror.grpc.shard`                                  | 0                | The default shard number that the GRPC component participates in                               |
 
 ## REST API
@@ -194,6 +197,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.metrics.config.username`             | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
 | `hedera.mirror.rest.metrics.config.password`             | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
 | `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
+| `hedera.mirror.rest.openapi.specFileName`                | 'openapi'               | The file name of the OpenAPI spec file                                                             |
+| `hedera.mirror.rest.openapi.swaggerUIPath`               | '/docs'                 | Swagger UI path for your REST API                                                                  |
 | `hedera.mirror.rest.shard`                               | 0                       | The default shard number that this mirror node participates in                                 |
 | `hedera.mirror.rest.stateproof.enabled`                  | false                   | Whether to enable stateproof REST API or not                                                   |
 | `hedera.mirror.rest.stateproof.streams.accessKey`        | ""                      | The cloud storage access key                                                                   |

@@ -24,6 +24,7 @@ import java.time.Duration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -45,4 +46,22 @@ public class RetrieverProperties {
 
     @NotNull
     private Duration timeout = Duration.ofSeconds(60L);
+
+    @NotNull
+    private UnthrottledProperties unthrottled = new UnthrottledProperties();
+
+    @Data
+    @Validated
+    public static class UnthrottledProperties {
+
+        @Min(1000)
+        private int maxPageSize = 5000;
+
+        @Min(4)
+        private long maxPolls = 12;
+
+        @DurationMin(millis = 10)
+        @NotNull
+        private Duration pollingFrequency = Duration.ofMillis(20);
+    }
 }

@@ -47,7 +47,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
     private final Scheduler scheduler;
 
     public PollingTopicMessageRetriever(RetrieverProperties retrieverProperties,
-                                        TopicMessageRepository topicMessageRepository) {
+            TopicMessageRepository topicMessageRepository) {
         this.retrieverProperties = retrieverProperties;
         this.topicMessageRepository = topicMessageRepository;
         int threadCount = retrieverProperties.getThreadMultiplier() * Runtime.getRuntime().availableProcessors();
@@ -55,15 +55,15 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
     }
 
     @Override
-    public Flux<TopicMessage> retrieve(TopicMessageFilter filter) {
+    public Flux<TopicMessage> retrieve(TopicMessageFilter filter, boolean throttled) {
         if (!retrieverProperties.isEnabled()) {
             return Flux.empty();
         }
 
-        PollingContext context = new PollingContext(filter);
+        PollingContext context = new PollingContext(filter, throttled);
         return Flux.defer(() -> poll(context))
-                .repeatWhen(Repeat.create(r -> !context.isComplete(), Long.MAX_VALUE)
-                        .fixedBackoff(retrieverProperties.getPollingFrequency())
+                .repeatWhen(Repeat.create(r -> !context.isComplete(), context.getNumRepeats())
+                        .fixedBackoff(context.getFrequency())
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
                 .name("retriever")
@@ -79,7 +79,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getTotal().get()) : Integer.MAX_VALUE;
-        int pageSize = Math.min(limit, retrieverProperties.getMaxPageSize());
+        int pageSize = Math.min(limit, context.getMaxPageSize());
         Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
         context.getPageSize().set(0L);
 
@@ -98,19 +98,46 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
     private class PollingContext {
 
         private final TopicMessageFilter filter;
+        private final boolean throttled;
+        private final Duration frequency;
+        private final int maxPageSize;
+        private final long numRepeats;
         private final AtomicLong pageSize = new AtomicLong(0L);
         private final Stopwatch stopwatch = Stopwatch.createStarted();
         private final AtomicLong total = new AtomicLong(0L);
         private volatile TopicMessage last;
 
+        public PollingContext(TopicMessageFilter filter, boolean throttled) {
+            this.filter = filter;
+            this.throttled = throttled;
+
+            if (throttled) {
+                numRepeats = Long.MAX_VALUE;
+                frequency = retrieverProperties.getPollingFrequency();
+                maxPageSize = retrieverProperties.getMaxPageSize();
+            } else {
+                RetrieverProperties.UnthrottledProperties unthrottled = retrieverProperties.getUnthrottled();
+                numRepeats = unthrottled.getMaxPolls();
+                frequency = unthrottled.getPollingFrequency();
+                maxPageSize = unthrottled.getMaxPageSize();
+            }
+        }
+
         /**
          * Checks if this publisher is complete by comparing if the number of results in the last page was less than the
-         * page size. This avoids the extra query if we were to just check if last page was empty.
+         * page size or if the limit has reached if it's set. This avoids the extra query if we were to just check
+         * if last page was empty.
          *
          * @return whether all historic messages have been returned
          */
         boolean isComplete() {
-            return pageSize.get() < retrieverProperties.getMaxPageSize();
+            boolean limitHit = filter.hasLimit() && filter.getLimit() == total.get();
+
+            if (throttled) {
+                return pageSize.get() < retrieverProperties.getMaxPageSize() || limitHit;
+            }
+
+            return limitHit;
         }
 
         void onNext(TopicMessage topicMessage) {

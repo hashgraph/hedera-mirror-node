@@ -73,7 +73,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext(filter);
 
-        Flux<TopicMessage> flux =  topicMessageRetriever.retrieve(filter)
+        Flux<TopicMessage> flux =  topicMessageRetriever.retrieve(filter, true)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0); // Ignore duplicates
 
@@ -164,7 +164,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 newFilter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
                 current.getSequenceNumber());
 
-        return topicMessageRetriever.retrieve(newFilter)
+        return topicMessageRetriever.retrieve(newFilter, false)
                 .concatWithValues(current)
                 .name("findMissing")
                 .metrics();
