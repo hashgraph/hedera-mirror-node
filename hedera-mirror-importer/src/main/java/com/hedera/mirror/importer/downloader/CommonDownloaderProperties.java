@@ -62,6 +62,19 @@ public class CommonDownloaderProperties {
 
     private Boolean allowAnonymousAccess;
 
+    public boolean isStaticCredentials() {
+        //If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
+        //force the mirror node to use the static provider.
+        return cloudProvider == CommonDownloaderProperties.CloudProvider.GCP ||
+                (StringUtils.isNotBlank(accessKey) && StringUtils
+                        .isNotBlank(secretKey));
+    }
+
+    public boolean isAnonymousCredentials() {
+        return allowAnonymousAccess != null ? allowAnonymousAccess : mirrorProperties.getNetwork()
+                .getAllowAnonymousAccess();
+    }
+
     @Getter
     @RequiredArgsConstructor
     public enum CloudProvider {

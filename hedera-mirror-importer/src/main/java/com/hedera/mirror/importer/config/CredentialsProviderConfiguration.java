@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -32,7 +31,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 
 @Configuration
@@ -41,32 +39,19 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 @RequiredArgsConstructor
 public class CredentialsProviderConfiguration {
 
-    private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties downloaderProperties;
 
     @Bean
     public AwsCredentialsProvider awsCredentialsProvider() {
-        if (useAnonymousCredentialsProvider()) {
+        if (downloaderProperties.isAnonymousCredentials()) {
             log.info("Setting up S3 async client using anonymous credentials");
             return AnonymousCredentialsProvider.create();
-        } else if (useStaticCredentialsProvider()) {
+        } else if (downloaderProperties.isStaticCredentials()) {
             log.info("Setting up S3 async client using provided access/secret key");
             return StaticCredentialsProvider.create(AwsBasicCredentials.create(downloaderProperties.getAccessKey(),
                     downloaderProperties.getSecretKey()));
         }
+        log.info("Setting up S3 async client using AWS Default Credentials Provider");
         return DefaultCredentialsProvider.create();
-    }
-
-    private boolean useStaticCredentialsProvider() {
-        //If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
-        //force the mirror node to use the static provider.
-        return downloaderProperties.getCloudProvider() == CommonDownloaderProperties.CloudProvider.GCP ||
-                (StringUtils.isNotBlank(downloaderProperties.getAccessKey()) && StringUtils
-                        .isNotBlank(downloaderProperties.getSecretKey()));
-    }
-
-    private boolean useAnonymousCredentialsProvider() {
-        return downloaderProperties.getAllowAnonymousAccess() != null ? downloaderProperties
-                .getAllowAnonymousAccess() : mirrorProperties.getNetwork().getAllowAnonymousAccess();
     }
 }
