@@ -114,24 +114,15 @@ keys in the config.  This will also allow you to take advantage of alternative a
 If the mirror node is configured to connect to an S3 bucket that requires authenticaion, and the static credentails are not provided
 in the config, the mirror node will default to using this provider.  For more information and to see how you can set up your
 environment to take advantage of this, see [the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html)
+When running in Docker or Kubernetes, credentials can be attached in a variety of ways, including by using volumes and secrets
+to directly add static credentials or an existing AWS credentials file, by using other tools such as Vault or AWS Secrets Manager,
+and many more.
 
-
+`Docker-compose.yml`
 ```yaml
-hedera:
-  mirror:
-    importer:
-      downloader:
-        accessKey: access_key
-        secretKey: secret_key
-        s3:
-          externalId: external_id
-          roleArn: arn:aws:iam::123123123123:role/testrole
-          roleSessionName: test_session
+volumes:
+      - ~/.aws/:/root/.aws:ro
 ```
-
-See [AssumeRole Documentation](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) for more
-information on how AssumeRole works.  For details on how to set up a role in AWS to allow for this, see
-[how to create a role and grant permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html).
 
 ## GRPC API
 
