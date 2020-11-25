@@ -61,8 +61,8 @@ public class CredentialsProviderConfiguration {
         //If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
         //force the mirror node to use the static provider.
         return downloaderProperties.getCloudProvider() == CommonDownloaderProperties.CloudProvider.GCP ||
-                ((StringUtils.isNotBlank(downloaderProperties.getAccessKey()) && StringUtils
-                        .isNotBlank(downloaderProperties.getSecretKey())));
+                (StringUtils.isNotBlank(downloaderProperties.getAccessKey()) && StringUtils
+                        .isNotBlank(downloaderProperties.getSecretKey()));
     }
 
     private boolean useAnonymousCredentialsProvider() {
