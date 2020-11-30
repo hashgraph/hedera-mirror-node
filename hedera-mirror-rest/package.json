@@ -79,7 +79,7 @@
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.3",
     "nodemon": "^2.0.6",
-    "prettier": "^2.2.0",
+    "prettier": "^2.2.1",
     "pg-format": "^1.0.4",
     "pretty-quick": "^3.1.0",
     "rewire": "^5.0.0",
