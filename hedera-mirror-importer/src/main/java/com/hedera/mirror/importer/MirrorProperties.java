@@ -67,12 +67,13 @@ public class MirrorProperties {
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        DEMO("hedera-demo-streams"),
-        MAINNET("hedera-mainnet-streams"),
-        TESTNET("hedera-stable-testnet-streams-2020-08-27"),
-        PREVIEWNET("hedera-preview-testnet-streams"),
-        OTHER(""); // Pre-prod or ad hoc environments
+        DEMO("hedera-demo-streams", true),
+        MAINNET("hedera-mainnet-streams", false),
+        TESTNET("hedera-stable-testnet-streams-2020-08-27", false),
+        PREVIEWNET("hedera-preview-testnet-streams", false),
+        OTHER("", false); // Pre-prod or ad hoc environments
 
         private final String bucketName;
+        private final Boolean allowAnonymousAccess;
     }
 }

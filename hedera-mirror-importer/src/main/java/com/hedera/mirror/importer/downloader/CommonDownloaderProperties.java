@@ -60,7 +60,20 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
-    private final S3 s3 = new S3();
+    private Boolean allowAnonymousAccess;
+
+    public boolean isStaticCredentials() {
+        //If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
+        //force the mirror node to use the static provider.
+        return cloudProvider == CommonDownloaderProperties.CloudProvider.GCP ||
+                (StringUtils.isNotBlank(accessKey) && StringUtils
+                        .isNotBlank(secretKey));
+    }
+
+    public boolean isAnonymousCredentials() {
+        return allowAnonymousAccess != null ? allowAnonymousAccess : mirrorProperties.getNetwork()
+                .getAllowAnonymousAccess();
+    }
 
     @Getter
     @RequiredArgsConstructor
@@ -69,17 +82,5 @@ public class CommonDownloaderProperties {
         GCP("https://storage.googleapis.com");
 
         private final String endpoint;
-    }
-
-    @Data
-    @Validated
-    public static class S3 {
-
-        private String externalId;
-
-        private String roleArn;
-
-        private String roleSessionName = "hedera-mirror-node";
-
     }
 }

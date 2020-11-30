@@ -97,12 +97,12 @@ properties:
           - type: Role
             rulesType: CUSTOM
             rules:
-              - apiGroups: ['']
-                resources: ['configmaps']
-                verbs: ['get', 'watch']
-              - apiGroups: ['']
-                resources: ['pods']
-                verbs: ['get']
+              - apiGroups: [ '' ]
+                resources: [ 'configmaps' ]
+                verbs: [ 'get', 'watch' ]
+              - apiGroups: [ '' ]
+                resources: [ 'pods' ]
+                verbs: [ 'get' ]
   importer.config.hedera.mirror.importer.db.password:
     type: string
     description: The password used by the importer to connect to the database
@@ -128,18 +128,6 @@ properties:
     type: string
     description: The Google Cloud secret key used to pay for downloaded streamed files
     title: Importer GCP secret key
-  importer.config.hedera.mirror.importer.downloader.s3.externalId:
-    type: string
-    description: The AWS external id for the role to assume, if one is needed.
-    title: Importer AWS external ID
-  importer.config.hedera.mirror.importer.downloader.s3.roleArn:
-    type: string
-    description: The AWS Amazon Resource Name (ARN) for the role to assume.  This is only needed in order to use temporary security credentials.
-    title: Importer AWS role ARN
-  importer.config.hedera.mirror.importer.downloader.s3.roleSessionName:
-    type: string
-    description: The name for the session when assuming a role in AWS.
-    title: Importer AWS role session name
   importer.config.hedera.mirror.importer.network:
     default: MAINNET
     type: string
@@ -167,12 +155,12 @@ properties:
           - type: Role
             rulesType: CUSTOM
             rules:
-              - apiGroups: ['']
-                resources: ['configmaps']
-                verbs: ['get', 'list','watch', 'create', 'update']
-              - apiGroups: ['']
-                resources: ['pods']
-                verbs: ['get', 'watch']
+              - apiGroups: [ '' ]
+                resources: [ 'configmaps' ]
+                verbs: [ 'get', 'list','watch', 'create', 'update' ]
+              - apiGroups: [ '' ]
+                resources: [ 'pods' ]
+                verbs: [ 'get', 'watch' ]
   postgresql.persistence.size:
     default: 500Gi
     description: The storage size for the PostgreSQL persistent volume

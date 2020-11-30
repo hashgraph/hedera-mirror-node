@@ -29,6 +29,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.port`                                     | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.importer.db.username`                                 | mirror_node             | The username the processor uses to connect to the database                                     |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
+| `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |
 | `hedera.mirror.importer.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.balance.enabled`                  | true                    | Whether to enable balance file downloads                                                       |
 | `hedera.mirror.importer.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
@@ -54,9 +55,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.record.threads`                   | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
-| `hedera.mirror.importer.downloader.s3.externalId`                    |                         | The external id required to assume the role to connect to S3, if one was set                   |
-| `hedera.mirror.importer.downloader.s3.roleArn`                       |                         | The ARN for the role that needs to be assumed to connect to S3.  Only required if wishing to use temporary security credentials |
-| `hedera.mirror.importer.downloader.s3.roleSessionName`               | hedera-mirror-node      | A session name for assuming the role to access S3.  2-62 characters, can be alphanumeric, underscore, or any of =,.@- |
 | `hedera.mirror.importer.endDate`                                     | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
@@ -108,38 +106,24 @@ Importer can be configured to publish transactions (in json format) to a Pubsub 
 See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
 for more info about `spring.cloud.gcp.*` properties.
 
-#### Connect to S3 with AssumeRole
+#### Connect to S3 with the Default Credentials Provider
 
-Importer can be configured to connect to S3 using temporary security credentials via AssumeRole.  This is only available
-when using AWS S3 as the cloud provider.  With this, a user that does not have permission to access an AWS resource can
-request a temporary role that will grant them that permission.  This is useful when dealing with multiple accounts
-where a user in one account needs access to a resource in another account, and is generally considered more secure than
-using long-term credentials.
+When connecting to an AWS S3 bucket that requires authentication (such as a requester pays bucket), you can opt to allow
+the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access and secret
+keys in the config.  This will also allow you to take advantage of alternative authorization modes such as
+[AssumeRole](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html).  If the mirror node is configured to connect to an
+S3 bucket that requires authenticaion, and the static credentials are not provided in the config, the mirror node will default to using this
+provider.  For more information and to see how you can set up your  environment to take advantage of this, see
+[the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html)
+When running in Docker or Kubernetes, credentials can be attached in a variety of ways, including by using volumes and secrets
+to directly add static credentials or an existing AWS credentials file, by using other tools such as Vault or AWS Secrets Manager,
+and many more.
 
-The following properties are used to enable this:
-
--   `hedera.mirror.importer.downloader.accessKey` (The access key of the user requesting access)
--   `hedera.mirror.importer.downloader.secretKey` (The secret key of the user requesting access)
--   `hedera.mirror.importer.downloader.s3.externalId` (An external ID is an optional property attached to the role in AWS to make it more secure)
--   `hedera.mirror.importer.downloader.s3.roleArn` (Amazon Resource Name)
--   `hedera.mirror.importer.downloader.s3.roleSessionName` (A name to give to the session.  Defaults to "hedera-mirror-node")
-
+`Docker-compose.yml`
 ```yaml
-hedera:
-  mirror:
-    importer:
-      downloader:
-        accessKey: access_key
-        secretKey: secret_key
-        s3:
-          externalId: external_id
-          roleArn: arn:aws:iam::123123123123:role/testrole
-          roleSessionName: test_session
+volumes:
+  - ~/.aws/:/root/.aws:ro
 ```
-
-See [AssumeRole Documentation](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) for more
-information on how AssumeRole works.  For details on how to set up a role in AWS to allow for this, see
-[how to create a role and grant permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html).
 
 ## GRPC API
 
