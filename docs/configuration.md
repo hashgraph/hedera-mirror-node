@@ -110,10 +110,11 @@ for more info about `spring.cloud.gcp.*` properties.
 
 When connecting to an AWS S3 bucket that requires authentication (such as a requester pays bucket), you can opt to allow
 the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access and secret
-keys in the config.  This will also allow you to take advantage of alternative authorization modes such as AssumeRole.
-If the mirror node is configured to connect to an S3 bucket that requires authenticaion, and the static credentails are not provided
-in the config, the mirror node will default to using this provider.  For more information and to see how you can set up your
-environment to take advantage of this, see [the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html)
+keys in the config.  This will also allow you to take advantage of alternative authorization modes such as
+[AssumeRole](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html).  If the mirror node is configured to connect to an
+S3 bucket that requires authenticaion, and the static credentials are not provided in the config, the mirror node will default to using this
+provider.  For more information and to see how you can set up your  environment to take advantage of this, see
+[the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html)
 When running in Docker or Kubernetes, credentials can be attached in a variety of ways, including by using volumes and secrets
 to directly add static credentials or an existing AWS credentials file, by using other tools such as Vault or AWS Secrets Manager,
 and many more.
@@ -121,7 +122,7 @@ and many more.
 `Docker-compose.yml`
 ```yaml
 volumes:
-      - ~/.aws/:/root/.aws:ro
+  - ~/.a**ws/:/root/.aws:ro
 ```
 
 ## GRPC API
