@@ -396,7 +396,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>
-                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest|test):)[0-9a-zA-Z.-]+]]></token>
+                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|test):)[0-9a-zA-Z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                             </replacements>

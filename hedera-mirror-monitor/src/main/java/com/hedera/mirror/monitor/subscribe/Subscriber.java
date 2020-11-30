@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.publish;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,21 +20,8 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import java.time.Instant;
-import lombok.Builder;
-import lombok.Value;
+import com.hedera.mirror.monitor.publish.PublishResponse;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.TransactionBuilder;
-import com.hedera.hashgraph.sdk.TransactionId;
-
-@Builder
-@Value
-public class PublishRequest {
-    private final boolean logResponse;
-    private final boolean receipt;
-    private final boolean record;
-    private final Instant timestamp = Instant.now();
-    private final TransactionBuilder<TransactionId, ?, ?> transactionBuilder;
-    private final TransactionType type;
+public interface Subscriber {
+    void onPublish(PublishResponse response);
 }

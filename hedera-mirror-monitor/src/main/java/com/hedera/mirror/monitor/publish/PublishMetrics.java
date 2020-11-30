@@ -77,15 +77,12 @@ public class PublishMetrics {
             StatusRuntimeException sre = (StatusRuntimeException) e.getCause();
             status = sre.getStatus().getCode().name();
             log.debug("Network error {} submitting {} transaction: {}", status, type, sre.getStatus().getDescription());
-            throw e;
         } catch (HederaStatusException e) {
             status = e.status.name();
             log.debug("Hedera {} error submitting {} transaction: {}", status, type, e.getMessage());
-            throw new PublishException(e);
         } catch (Exception e) {
             status = e.getClass().getSimpleName();
             log.debug("{} submitting {} transaction: {}", status, type, e.getMessage());
-            throw new PublishException(e);
         } finally {
             long endTime = System.currentTimeMillis();
             Tags tags = new Tags(status, type);
@@ -96,6 +93,8 @@ public class PublishMetrics {
                 errors.add(status);
             }
         }
+
+        return null;
     }
 
     private Timer newTimer(Tags tags) {

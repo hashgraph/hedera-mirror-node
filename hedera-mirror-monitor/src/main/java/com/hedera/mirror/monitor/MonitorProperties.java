@@ -21,7 +21,9 @@ package com.hedera.mirror.monitor;
  */
 
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -31,6 +33,9 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("hedera.mirror.monitor")
 public class MonitorProperties {
+
+    @Nullable
+    private MirrorNodeProperties mirrorNode;
 
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
@@ -43,7 +48,15 @@ public class MonitorProperties {
 
     private boolean validateNodes = true;
 
+    public MirrorNodeProperties getMirrorNode() {
+        return Objects.requireNonNullElseGet(this.mirrorNode, network::getMirrorNode);
+    }
+
     public Set<NodeProperties> getNodes() {
-        return !nodes.isEmpty() ? nodes : network.getNodes();
+        Set<NodeProperties> n = !nodes.isEmpty() ? nodes : network.getNodes();
+        if (n.isEmpty()) {
+            throw new IllegalArgumentException("nodes must not be empty");
+        }
+        return n;
     }
 }

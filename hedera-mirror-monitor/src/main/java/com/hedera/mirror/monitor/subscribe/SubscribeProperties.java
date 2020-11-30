@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.publish;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,10 +20,23 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-public class PublishException extends RuntimeException {
-    private static final long serialVersionUID = 1405915869165326841L;
+import java.util.ArrayList;
+import java.util.List;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-    public PublishException(Throwable t) {
-        super(t);
-    }
+@Data
+@Validated
+@ConfigurationProperties("hedera.mirror.monitor.subscribe")
+public class SubscribeProperties {
+
+    private boolean enabled = true;
+
+    @NotNull
+    private List<GrpcSubscriberProperties> grpc = new ArrayList<>();
+
+    @NotNull
+    private List<RestSubscriberProperties> rest = new ArrayList<>();
 }

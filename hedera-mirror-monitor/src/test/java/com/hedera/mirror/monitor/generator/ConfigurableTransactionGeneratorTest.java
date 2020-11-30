@@ -39,7 +39,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
-public class ConfigurableTransactionGeneratorTest {
+class ConfigurableTransactionGeneratorTest {
 
     private static final int SAMPLE_SIZE = 1000;
     private static final String TOPIC_ID = "0.0.1000";

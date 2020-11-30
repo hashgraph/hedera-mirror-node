@@ -61,6 +61,7 @@ public class TransactionPublisher {
             try {
                 client.close(200, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
+                // Ignore
             }
         }
     }
@@ -76,8 +77,8 @@ public class TransactionPublisher {
 
         var transactionId = request.getTransactionBuilder().execute(client);
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
-                .transactionId(transactionId)
-                .type(request.getType());
+                .request(request)
+                .transactionId(transactionId);
 
         if (request.isRecord()) {
             var record = transactionId.getRecord(client);

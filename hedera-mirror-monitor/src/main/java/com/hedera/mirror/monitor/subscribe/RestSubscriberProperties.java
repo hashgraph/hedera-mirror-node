@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.publish;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,21 +20,28 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import java.time.Instant;
-import lombok.Builder;
-import lombok.Value;
+import java.time.Duration;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.validation.annotation.Validated;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.TransactionBuilder;
-import com.hedera.hashgraph.sdk.TransactionId;
+@Data
+@Validated
+public class RestSubscriberProperties extends AbstractSubscriberProperties {
 
-@Builder
-@Value
-public class PublishRequest {
-    private final boolean logResponse;
-    private final boolean receipt;
-    private final boolean record;
-    private final Instant timestamp = Instant.now();
-    private final TransactionBuilder<TransactionId, ?, ?> transactionBuilder;
-    private final TransactionType type;
+    @NotNull
+    @DurationMin(millis = 50)
+    private Duration frequency = Duration.ofMillis(100);
+
+    @NotNull
+    @DurationMin(millis = 500)
+    private Duration timeout = Duration.ofSeconds(2);
+
+    @Override
+    public long getLimit() {
+        return limit > 0 ? limit : Long.MAX_VALUE;
+    }
 }
+
+

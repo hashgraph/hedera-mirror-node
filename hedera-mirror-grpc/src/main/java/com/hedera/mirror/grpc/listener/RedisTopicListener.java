@@ -76,8 +76,7 @@ public class RedisTopicListener extends SharedTopicListener {
     @Override
     protected Flux<TopicMessage> getSharedListener(TopicMessageFilter filter) {
         Topic topic = getTopic(filter);
-        return topicMessages.computeIfAbsent(topic.getTopic(), key -> subscribe(topic))
-                .doOnSubscribe(s -> log.info("Subscribing: {}", filter));
+        return topicMessages.computeIfAbsent(topic.getTopic(), key -> subscribe(topic));
     }
 
     private Topic getTopic(TopicMessageFilter filter) {

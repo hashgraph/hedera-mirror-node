@@ -29,12 +29,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum HederaNetwork {
 
-    MAINNET(mainnet()),
-    PREVIEWNET(previewnet()),
-    TESTNET(testnet()),
-    OTHER(Collections.emptySet());
+    MAINNET(mainnet(), new MirrorNodeProperties("mainnet.mirrornode.hedera.com")),
+    PREVIEWNET(previewnet(), new MirrorNodeProperties("previewnet.mirrornode.hedera.com")),
+    TESTNET(testnet(), new MirrorNodeProperties("testnet.mirrornode.hedera.com")),
+    OTHER(Collections.emptySet(), null);
 
     private final Set<NodeProperties> nodes;
+    private final MirrorNodeProperties mirrorNode;
 
     private static Set<NodeProperties> mainnet() {
         return Set.of(

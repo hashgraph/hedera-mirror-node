@@ -37,7 +37,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
-public class CompositeTransactionGeneratorTest {
+class CompositeTransactionGeneratorTest {
 
     private PublishProperties properties;
     private Supplier<CompositeTransactionGenerator> supplier;
