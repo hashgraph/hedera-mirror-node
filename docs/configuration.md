@@ -122,7 +122,7 @@ and many more.
 `Docker-compose.yml`
 ```yaml
 volumes:
-  - ~/.a**ws/:/root/.aws:ro
+  - ~/.aws/:/root/.aws:ro
 ```
 
 ## GRPC API
