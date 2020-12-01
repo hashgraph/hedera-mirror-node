@@ -7,6 +7,7 @@ applicationResource:
 global:
   db:
     host: RELEASE-NAME-timescaledb  # RELEASE-NAME will be replaced with actual release by children charts
+    initWithDeployment: false
   namespaceOverride: ""
   redis:
     host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
@@ -184,6 +185,9 @@ redis:
 
 rest:
   enabled: true
+  image:
+    pullPolicy: Always
+    tag: 0.23.0-rc1
 
 # https://github.com/timescale/timescaledb-kubernetes/tree/master/charts/timescaledb-single
 # configuration options (administration guide) at https://github.com/timescale/timescaledb-kubernetes/blob/master/charts/timescaledb-single/admin-guide.md
@@ -201,7 +205,7 @@ timescaledb:
   #    enabled: true
   #    secretName: pgbackrest-bootstrap
   callbacks:
-    configMap: timescaledb-init-callback
+    configMap: mirror-timescaledb-patroni-callbacks
   clusterName: mirror-timescaledb
   enabled: true
   # relies only on ClusterIP service creation
@@ -221,13 +225,6 @@ timescaledb:
         - host      mirror_node     mirror_node        127.0.0.1/32       trust
         - hostssl   mirror_node     mirror_node        127.0.0.1/32       trust
         - hostnossl mirror_node     mirror_node        127.0.0.1/32       trust
-  #  potential to use this to create initial users
-  #    bootstrap:
-  #      restore_or_initdb:
-  #        command: >
-  #          /etc/timescaledb/scripts/restore_or_initdb.sh
-  #          --encoding=UTF8
-  #          --locale=C.UTF-8
   persistentVolumes:
     data:
       size: 500Gi
@@ -239,5 +236,4 @@ timescaledb:
     # created by kustomization script from timescaledb-single chart
     certificate: mirror-timescaledb-certificate
     credentials: mirror-timescaledb-credentials
-    pgbackrest: mirror-timescaledb-pgbackrest
 

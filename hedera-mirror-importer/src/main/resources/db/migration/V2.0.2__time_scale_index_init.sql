@@ -4,9 +4,9 @@
 
 -- account_balance
 alter table account_balance
-    add constraint pk__account_balance primary key (consensus_timestamp, account_realm_num, account_num);
-create index if not exists balances__account_then_timestamp
-    on account_balance (account_realm_num desc, account_num desc, consensus_timestamp desc);
+    add constraint account_balance__pk primary key (consensus_timestamp, account_id)
+create index if not exists account_balance__account_timestamp
+    on account_balance (account_id desc, consensus_timestamp desc)
 
 -- account_balance_sets
 create index if not exists balance_sets__completed
@@ -57,6 +57,17 @@ alter table t_entities
 create index if not exists entities__ed25519_public_key_hex_natural_id
     on t_entities (ed25519_public_key_hex, fk_entity_type_id, entity_shard, entity_realm, entity_num);
 create unique index if not exists entities_unq on t_entities (entity_shard, entity_realm, entity_num, id); -- have to add id due to partitioning
+
+-- token_account
+create unique index if not exists token_account__token_account on token_account(token_id, account_id);
+
+-- token_balance
+alter table if exists token_balance
+    add constraint token_balance__pk primary key (consensus_timestamp, account_id, token_id);
+
+-- token_transfer
+create index if not exists token_transfer__token_account_timestamp
+     on token_transfer (consensus_timestamp desc, token_id desc, account_id desc);
 
 -- topic_message
 create index if not exists topic_message__realm_num_timestamp

@@ -1,54 +1,62 @@
+{{- if .Values.global.db.initWithDeployment -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
-    app: mirror-timescaledb
-    cluster-name: mirror-timescaledb
-  name: timescaledb-init-callback
+  name: mirror-timescaledb-patroni-callbacks
 data:
   on_start: |
     #!/bin/bash
+    echo "$0 on $2, running Mirror Node custom patroni startup callback"
 
-    # This script should only run on the master instance, Patroni
-    # passes on the role in the second parameter
-    [ "$2" != "master" ] && exit 0
+    if [ "$2" != "master" ]
+    then
+      echo "This script should only run on the master instance. Exiting ..."
+      exit 0
+    fi
 
+    echo "Starting Mirror Node main user and db creation"
+
+    # swap hard coded values for .Values or make secret to be deployed from file
+    DB_NAME=mirror_node
+    DB_PASSWORD=mirror_node_pass
+    DB_USERNAME=mirror_node
     psql --set ON_ERROR_STOP=1 \
-          --set hostname=$(hostname) \
-          --set event=$1 <<__SQL__
-      -- After a promote it may take a short while before our transaction actually
-      -- allows us to write therefore we sleep a short while if we're still in recovery
-      SELECT pg_sleep(3)
-      WHERE  pg_is_in_recovery();
+          --set dbname=${DB_NAME} \
+          --set password=${DB_PASSWORD} \
+          --set username=${DB_USERNAME} <<__SQL__
 
-      CREATE TABLE IF NOT EXISTS :"events_table"(
-        happened timestamptz,
-        event text,
-        pod text
-      );
-
-      INSERT INTO :"events_table" VALUES (now(), :'pre-mirror-init', :'hostname');
-
-      {{- $dbname := .Values.importer.config.hedera.mirror.importer.db.name }}
-      {{- $password := .Values.importer.config.hedera.mirror.importer.db.password }}
-      {{- $username := .Values.importer.config.hedera.mirror.importer.db.username }}
-      {{- $apiPassword := .Values.global.rest.password }}
-      {{- $apiUsername := .Values.global.rest.username }}
-      {{- $grpcPassword := .Values.grpc.config.hedera.mirror.grpc.db.password }}
-      {{- $grpcUsername := .Values.grpc.config.hedera.mirror.grpc.db.username }}
-      create user {{ $username }} with createrole password '{{ $password }}';
-      create database {{ $dbname }} with owner {{ $username }};
-      \c {{ $dbname }};
-      create role viewer;
-      grant connect on database {{ $dbname }} to viewer;
-      grant select on all tables in schema public to viewer;
-      alter default privileges for role {{ $username }} in schema public grant select on tables to viewer;
-      create user {{ $apiUsername }} password '{{ $apiPassword }}' in role viewer;
-      alter default privileges for role {{ $apiUsername }} in schema public grant select on tables to viewer;
-      create user {{ $grpcUsername }} password '{{ $grpcPassword }}' in role viewer;
-      alter default privileges for role {{ $grpcUsername }} in schema public grant select on tables to viewer;
+      create user :username with createrole password ':password';
+      create database :dbname with owner :username;
       create extension pg_stat_statements;
-
-      INSERT INTO :"events_table" VALUES (now(), :'post-mirror-init', :'hostname');
     __SQL__
+
+    echo "$0 creating api users"
+
+    # swap hard coded values for .Values or make secret to be deployed from file
+    psql "dbname=${DB_NAME} host=localhost user=${DB_USERNAME} password=${DB_PASSWORD}" \
+          --set ON_ERROR_STOP=1 \
+          --set username=${DB_USERNAME} \
+          --set apiPassword=mirror_api_pass \
+          --set apiUsername=mirror_api \
+          --set grpcPassword=mirror_grpc_pass \
+          --set grpcUsername=mirror_grpc <<__SQL__
+
+      create user :apiUsername with login password ':apiPassword';
+      create user :grpcUsername with login password ':grpcPassword';
+      alter default privileges in schema public grant select on tables to :apiUsername;
+      alter default privileges in schema public grant select on tables to :grpcUsername;
+      grant select on all tables in schema public to :apiUsername;
+      grant select on all tables in schema public to :grpcUsername;
+
+    __SQL__
+
+    echo "$0 adding pg_stat_statements extension"
+
+    psql "dbname=${DB_NAME} host=localhost user=${DB_USERNAME} password=${DB_PASSWORD}" \
+          --set ON_ERROR_STOP=1 <<__SQL__
+
+      create extension pg_stat_statements;
+    __SQL__
+
+    echo "$0 completed Mirror Node custom patroni startup callback"
+  {{- end -}

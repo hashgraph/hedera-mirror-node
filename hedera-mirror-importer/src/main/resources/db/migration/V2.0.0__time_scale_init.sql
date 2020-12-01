@@ -15,8 +15,7 @@ create domain nanos_timestamp as bigint; -- dropped using this domain in some ta
 create table if not exists account_balance (
     consensus_timestamp     bigint              not null,
     balance                 hbar_tinybars       not null,
-    account_realm_num       entity_realm_num    not null,
-    account_num             entity_num          not null
+    account_id              entity_id           not null
 );
 comment on table account_balance is 'account balances (historical) in tinybars at different consensus timestamps';
 
@@ -163,6 +162,7 @@ insert into t_entity_types (id, name) values (1, 'account');
 insert into t_entity_types (id, name) values (2, 'contract');
 insert into t_entity_types (id, name) values (3, 'file');
 insert into t_entity_types (id, name) values (4, 'topic');
+insert into t_entity_types (id, name) values (5, 'token');
 
 -- t_transaction_results
 create table if not exists t_transaction_results (
@@ -288,33 +288,135 @@ insert into t_transaction_results (proto_id, result) values (160, 'AUTORENEW_ACC
 insert into t_transaction_results (proto_id, result) values (162, 'TOPIC_EXPIRED');
 insert into t_transaction_results (proto_id, result) values (163,'INVALID_CHUNK_NUMBER');
 insert into t_transaction_results (proto_id, result) values (164,'INVALID_CHUNK_TRANSACTION_ID');
+insert into t_transaction_results (proto_id, result) values
+    (165, 'ACCOUNT_FROZEN_FOR_TOKEN'),
+    (166, 'TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED'),
+    (167, 'INVALID_TOKEN_ID'),
+    (168, 'INVALID_TOKEN_DECIMALS'),
+    (169, 'INVALID_TOKEN_INITIAL_SUPPLY'),
+    (170, 'INVALID_TREASURY_ACCOUNT_FOR_TOKEN'),
+    (171, 'INVALID_TOKEN_SYMBOL'),
+    (172, 'TOKEN_HAS_NO_FREEZE_KEY'),
+    (173, 'TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN'),
+    (174, 'MISSING_TOKEN_SYMBOL'),
+    (175, 'TOKEN_SYMBOL_TOO_LONG'),
+    (176, 'ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN'),
+    (177, 'TOKEN_HAS_NO_KYC_KEY'),
+    (178, 'INSUFFICIENT_TOKEN_BALANCE'),
+    (179, 'TOKEN_WAS_DELETED'),
+    (180, 'TOKEN_HAS_NO_SUPPLY_KEY'),
+    (181, 'TOKEN_HAS_NO_WIPE_KEY'),
+    (182, 'INVALID_TOKEN_MINT_AMOUNT'),
+    (183, 'INVALID_TOKEN_BURN_AMOUNT'),
+    (184, 'TOKEN_NOT_ASSOCIATED_TO_ACCOUNT'),
+    (185, 'CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT'),
+    (186, 'INVALID_KYC_KEY'),
+    (187, 'INVALID_WIPE_KEY'),
+    (188, 'INVALID_FREEZE_KEY'),
+    (189, 'INVALID_SUPPLY_KEY'),
+    (190, 'MISSING_TOKEN_NAME'),
+    (191, 'TOKEN_NAME_TOO_LONG'),
+    (192, 'INVALID_WIPING_AMOUNT'),
+    (193, 'TOKEN_IS_IMMUTABLE'),
+    (194, 'TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT'),
+    (195, 'TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES'),
+    (196, 'ACCOUNT_IS_TREASURY');
 
 -- t_transaction_types
 create table if not exists t_transaction_types (
     proto_id    integer     not null,
-    name        character   varying(30)
+    name        character   varying(30),
+    entity_type integer     null
 );
-insert into t_transaction_types (proto_id, name) values (7,'CONTRACTCALL');
-insert into t_transaction_types (proto_id, name) values (8,'CONTRACTCREATEINSTANCE');
-insert into t_transaction_types (proto_id, name) values (9,'CONTRACTUPDATEINSTANCE');
+insert into t_transaction_types (proto_id, name, entity_type) values (7,'CONTRACTCALL', 2);
+insert into t_transaction_types (proto_id, name, entity_type) values (8,'CONTRACTCREATEINSTANCE', 2);
+insert into t_transaction_types (proto_id, name, entity_type) values (9,'CONTRACTUPDATEINSTANCE', 2);
 insert into t_transaction_types (proto_id, name) values (10,'CRYPTOADDLIVEHASH');
-insert into t_transaction_types (proto_id, name) values (11,'CRYPTOCREATEACCOUNT');
-insert into t_transaction_types (proto_id, name) values (12,'CRYPTODELETE');
+insert into t_transaction_types (proto_id, name, entity_type) values (11,'CRYPTOCREATEACCOUNT', 1);
+insert into t_transaction_types (proto_id, name, entity_type) values (12,'CRYPTODELETE', 1);
 insert into t_transaction_types (proto_id, name) values (13,'CRYPTODELETELIVEHASH');
 insert into t_transaction_types (proto_id, name) values (14,'CRYPTOTRANSFER');
-insert into t_transaction_types (proto_id, name) values (15,'CRYPTOUPDATEACCOUNT');
-insert into t_transaction_types (proto_id, name) values (16,'FILEAPPEND');
-insert into t_transaction_types (proto_id, name) values (17,'FILECREATE');
-insert into t_transaction_types (proto_id, name) values (18,'FILEDELETE');
-insert into t_transaction_types (proto_id, name) values (19,'FILEUPDATE');
+insert into t_transaction_types (proto_id, name, entity_type) values (15,'CRYPTOUPDATEACCOUNT', 1);
+insert into t_transaction_types (proto_id, name, entity_type) values (16,'FILEAPPEND', 3);
+insert into t_transaction_types (proto_id, name, entity_type) values (17,'FILECREATE', 3);
+insert into t_transaction_types (proto_id, name, entity_type) values (18,'FILEDELETE', 3);
+insert into t_transaction_types (proto_id, name, entity_type) values (19,'FILEUPDATE', 3);
 insert into t_transaction_types (proto_id, name) values (20,'SYSTEMDELETE');
 insert into t_transaction_types (proto_id, name) values (21,'SYSTEMUNDELETE');
-insert into t_transaction_types (proto_id, name) values (22,'CONTRACTDELETEINSTANCE');
+insert into t_transaction_types (proto_id, name, entity_type) values (22,'CONTRACTDELETEINSTANCE', 2);
 insert into t_transaction_types (proto_id, name) values (23,'FREEZE');
-insert into t_transaction_types (proto_id, name) values (24,'CONSENSUSCREATETOPIC');
-insert into t_transaction_types (proto_id, name) values (25,'CONSENSUSUPDATETOPIC');
-insert into t_transaction_types (proto_id, name) values (26,'CONSENSUSDELETETOPIC');
-insert into t_transaction_types (proto_id, name) values (27,'CONSENSUSSUBMITMESSAGE');
+insert into t_transaction_types (proto_id, name, entity_type) values (24,'CONSENSUSCREATETOPIC', 4);
+insert into t_transaction_types (proto_id, name, entity_type) values (25,'CONSENSUSUPDATETOPIC', 4);
+insert into t_transaction_types (proto_id, name, entity_type) values (26,'CONSENSUSDELETETOPIC', 4);
+insert into t_transaction_types (proto_id, name, entity_type) values (27,'CONSENSUSSUBMITMESSAGE', 4);
+insert into t_transaction_types (proto_id, name, entity_type) values
+    (28, 'UNCHECKEDSUBMIT', null),
+    (29, 'TOKENCREATION', 5),
+    (31, 'TOKENFREEZE', 1),
+    (32, 'TOKENUNFREEZE', 1),
+    (33, 'TOKENGRANTKYC', 1),
+    (34, 'TOKENREVOKEKYC', 1),
+    (35, 'TOKENDELETION', 5),
+    (36, 'TOKENUPDATE', 5),
+    (37, 'TOKENMINT', 5),
+    (38, 'TOKENBURN', 5),
+    (39, 'TOKENWIPE', 5),
+    (40, 'TOKENASSOCIATE', 1),
+    (41, 'TOKENDISSOCIATE', 1);
+
+-- token
+create table if not exists token
+(
+    token_id                bigint                  primary key,
+    created_timestamp       bigint                  not null,
+    decimals                bigint                  not null,
+    freeze_default          boolean                 not null default false,
+    freeze_key              bytea,
+    freeze_key_ed25519_hex  varchar                 null,
+    initial_supply          bigint                  not null,
+    kyc_key                 bytea,
+    kyc_key_ed25519_hex     varchar                 null,
+    modified_timestamp      bigint                  not null,
+    name                    character varying(100)  not null,
+    supply_key              bytea,
+    supply_key_ed25519_hex  varchar                 null,
+    symbol                  character varying(100)  not null,
+    total_supply            bigint                  not null default 0,
+    treasury_account_id     entity_id               not null,
+    wipe_key                bytea,
+    wipe_key_ed25519_hex    varchar                 null
+);
+
+--- token_account
+create table if not exists token_account
+(
+    id                  serial              primary key,
+    account_id          entity_id           not null,
+    associated          boolean             not null default false,
+    created_timestamp   bigint              not null,
+    freeze_status       smallint            not null default 0,
+    kyc_status          smallint            not null default 0,
+    modified_timestamp  bigint              not null,
+    token_id            entity_id           not null
+);
+
+--- token_balance
+create table if not exists token_balance
+(
+    consensus_timestamp bigint              not null,
+    account_id          entity_id           not null,
+    balance             bigint              not null,
+    token_id            entity_id           not null
+);
+
+--- token_transfer
+create table if not exists token_transfer
+(
+    token_id            entity_id       not null,
+    account_id          entity_id       not null,
+    consensus_timestamp bigint          not null,
+    amount              hbar_tinybars   not null
+);
 
 -- topic_message
 create table if not exists topic_message
