@@ -20,14 +20,16 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  * ‍
  */
 
+import com.google.common.base.Charsets;
+import com.google.common.primitives.Longs;
+import java.security.SecureRandom;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.Getter;
-import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.HederaThrowable;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
@@ -41,7 +43,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
     private String message = StringUtils.EMPTY;
 
-    @Min(1)
+    @Min(8)
     private int messageSize = 256;
 
     @NotBlank
@@ -54,7 +56,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     private final ConsensusTopicId consensusTopicId = ConsensusTopicId.fromString(topicId);
 
     @Getter(lazy = true)
-    private final String messageSuffix = randomString();
+    private final byte[] messageSuffix = randomByteArray();
 
     @Override
     public ConsensusMessageSubmitTransaction get() {
@@ -64,16 +66,19 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
                 .setTopicId(getConsensusTopicId());
     }
 
-    private String generateMessage() {
-        return Utility.getEncodedTimestamp() + getMessageSuffix();
+    private byte[] generateMessage() {
+        byte[] timestamp = Longs.toByteArray(System.currentTimeMillis());
+        return ArrayUtils.addAll(timestamp, getMessageSuffix());
     }
 
-    private String randomString() {
+    private byte[] randomByteArray() {
         if (StringUtils.isNotBlank(message)) {
-            return message;
+            return message.getBytes(Charsets.UTF_8);
         }
-        int additionalBytes = messageSize <= Long.BYTES ? 0 : messageSize - Long.BYTES;
-        return RandomStringUtils.randomAlphanumeric(additionalBytes);
+
+        byte[] bytes = new byte[messageSize - Long.BYTES];
+        new SecureRandom().nextBytes(bytes);
+        return bytes;
     }
 
     private class NonRetryableConsensusMessageSubmitTransaction extends ConsensusMessageSubmitTransaction {

@@ -53,7 +53,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         builder = PublishRequest.builder()
                 .logResponse(properties.isLogResponse())
                 .type(properties.getType());
-        rateLimiter.acquire();
+        rateLimiter.acquire(); // The first acquire always succeeds, so do this so tps=Double.MIN_NORMAL won't acquire
     }
 
     @Override
@@ -90,12 +90,6 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     }
 
     private boolean shouldGenerate(int percent, long count) {
-        if (percent <= 0) {
-            return false;
-        } else if (percent >= 100) {
-            return true;
-        } else {
-            return (count % 100) <= percent;
-        }
+        return (count % 100) < percent;
     }
 }

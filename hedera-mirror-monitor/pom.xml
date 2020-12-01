@@ -17,6 +17,10 @@
         <javax.el.version>3.0.0</javax.el.version>
     </properties>
 
+    <properties>
+        <commons-math3.version>3.6.1</commons-math3.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -83,7 +87,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
-            <version>3.6.1</version>
+            <version>${commons-math3.version}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish</groupId>

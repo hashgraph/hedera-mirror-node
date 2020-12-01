@@ -51,6 +51,14 @@ class MonitorConfiguration {
     @Resource
     private Subscriber subscriber;
 
+    /**
+     * Constructs a reactive flow for publishing and subscribing to transactions. The transaction generator will run on
+     * a single thread and generate transactions as fast as possible. Next, a parallel Flux will concurrently publish
+     * those transactions to the main nodes. Finally, a subscriber will receive every published transaction response and
+     * validate whether that transaction was received by the mirror node APIs.
+     *
+     * @return the subscribed flux
+     */
     @Bean
     Disposable publishSubscribe() {
         return Flux.<PublishRequest>generate(sink -> sink.next(transactionGenerator.next()))

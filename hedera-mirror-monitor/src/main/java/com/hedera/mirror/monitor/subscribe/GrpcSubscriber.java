@@ -94,6 +94,7 @@ public class GrpcSubscriber implements Subscriber {
     }
 
     private void onNext(MirrorConsensusTopicResponse topicResponse) {
+        counter.incrementAndGet();
         log.trace("Received message #{} with timestamp {}", topicResponse.sequenceNumber,
                 topicResponse.consensusTimestamp);
 
@@ -104,7 +105,9 @@ public class GrpcSubscriber implements Subscriber {
             }
         }
 
-        Long timestamp = Utility.getDecodedTimestamp(topicResponse.message);
+        this.lastReceived = topicResponse;
+        Long timestamp = Utility.getTimestamp(topicResponse.message);
+
         if (timestamp == null || timestamp <= 0 || timestamp >= System.currentTimeMillis()) {
             log.warn("Invalid timestamp in message: {}", timestamp);
             return;
@@ -112,8 +115,6 @@ public class GrpcSubscriber implements Subscriber {
 
         long latency = System.currentTimeMillis() - timestamp;
         timer.record(latency, TimeUnit.MILLISECONDS);
-        this.lastReceived = topicResponse;
-        counter.incrementAndGet();
     }
 
     private void onError(Throwable t) {
@@ -168,9 +169,10 @@ public class GrpcSubscriber implements Subscriber {
     }
 
     private synchronized void resubscribe() {
+        long limit = subscriberProperties.getLimit();
         MirrorConsensusTopicQuery mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
         mirrorConsensusTopicQuery.setTopicId(ConsensusTopicId.fromString(subscriberProperties.getTopicId()));
-        mirrorConsensusTopicQuery.setLimit(Math.min(0, subscriberProperties.getLimit() - counter.get()));
+        mirrorConsensusTopicQuery.setLimit(limit > 0 ? limit - counter.get() : 0);
 
         Instant startTime = lastReceived != null ? lastReceived.consensusTimestamp.plusNanos(1) : subscriberProperties
                 .getStartTime();
