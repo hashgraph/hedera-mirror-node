@@ -25,6 +25,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -42,13 +45,20 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     private static final List<String> requiredFields = Arrays.asList("topicId");
 
     //Required
+    @NotBlank
     private String topicId;
 
     //Optional
     private String adminKey;
     private String autoRenewAccountId;
+
+    @NotNull
     private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+
+    @NotNull
     private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+
+    @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
     @Override

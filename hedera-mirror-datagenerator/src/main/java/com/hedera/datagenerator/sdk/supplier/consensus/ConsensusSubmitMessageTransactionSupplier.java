@@ -25,6 +25,8 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -42,11 +44,16 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     private static final SecureRandom RANDOM = new SecureRandom();
 
     //Required
+    @NotBlank
     private String topicId;
 
     //Optional
+    @Min(1)
     private long maxTransactionFee = 1_000_000;
+
     private String message = StringUtils.EMPTY;
+
+    @Min(1)
     private int messageSize = 256;
 
     @Override
