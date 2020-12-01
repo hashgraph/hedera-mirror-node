@@ -22,6 +22,8 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import java.util.Arrays;
 import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -38,13 +40,20 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private static final List<String> requiredFields = Arrays.asList("recipientAccountId", "senderAccountId");
 
     //Required
+    @NotBlank
     private String recipientAccountId;
+
+    @NotBlank
     private String senderAccountId;
 
     //Optional
+    @Min(1)
     private long amount = 1;
+
+    @Min(1)
     private long maxTransactionFee = 1_000_000;
-    private String tokenId = null;
+
+    private String tokenId;
 
     @Override
     public TransferTransaction get() {

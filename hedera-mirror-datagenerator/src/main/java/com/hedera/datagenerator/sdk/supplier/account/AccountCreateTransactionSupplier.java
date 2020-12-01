@@ -20,6 +20,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
+import javax.validation.constraints.Min;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
@@ -32,8 +33,12 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
 
     //Optional
+    @Min(1)
     private long initialBalance = 10_000_000;
+
+    @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
     private String publicKey;
 
     @Override

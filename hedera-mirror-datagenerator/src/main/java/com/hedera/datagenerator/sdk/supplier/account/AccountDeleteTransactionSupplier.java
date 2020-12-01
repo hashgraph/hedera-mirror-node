@@ -22,6 +22,8 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import java.util.Arrays;
 import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -37,10 +39,14 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
     private static final List<String> requiredFields = Arrays.asList("accountId");
 
     //Required
+    @NotBlank
     private String accountId;
 
     //Optional
+    @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
     private String transferAccountId = "0.0.2";
 
     @Override
