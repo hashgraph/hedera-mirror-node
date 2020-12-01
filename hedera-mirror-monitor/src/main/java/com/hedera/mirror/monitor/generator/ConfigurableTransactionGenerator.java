@@ -72,11 +72,11 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     }
 
     private TransactionSupplier<?> convert(ScenarioProperties p) {
-        TransactionSupplier supplier = new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
+        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
 
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         Validator validator = factory.getValidator();
-        Set<ConstraintViolation<TransactionSupplier>> validations = validator.validate(supplier);
+        Set<ConstraintViolation<TransactionSupplier<?>>> validations = validator.validate(supplier);
 
         if (!validations.isEmpty()) {
             throw new ConstraintViolationException(validations);
