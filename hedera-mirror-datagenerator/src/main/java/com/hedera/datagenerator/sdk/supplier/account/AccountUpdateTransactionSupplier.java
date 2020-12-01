@@ -25,9 +25,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
@@ -37,30 +35,21 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
-@Builder
-@Value
-@Log4j2
+@Data
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("accountId");
 
     //Required
-    private final String accountId;
+    private String accountId;
 
     //Optional
-    @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
-
-    @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
-
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-    private final String proxyAccountId;
-    private final String publicKey;
-
-    @Builder.Default
-    private final boolean receiverSignatureRequired = false;
+    private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    private long maxTransactionFee = 1_000_000_000;
+    private String proxyAccountId;
+    private String publicKey;
+    private boolean receiverSignatureRequired = false;
 
     @Override
     public AccountUpdateTransaction get() {

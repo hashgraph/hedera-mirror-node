@@ -22,8 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.token;
 
 import java.util.Arrays;
 import java.util.List;
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
@@ -33,32 +32,21 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 
-@Builder
-@Value
+@Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("treasuryAccountId");
 
     //Required
-    private final String treasuryAccountId;
+    private String treasuryAccountId;
 
     //Optional
-    private final String adminKey;
-
-    @Builder.Default
+    private String adminKey;
     private int decimals = 10;
-
-    @Builder.Default
     private boolean freezeDefault = false;
-
-    @Builder.Default
-    private final int initialSupply = 1000000000;
-
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-
-    @Builder.Default
-    private final String symbol = "HMNT";
+    private int initialSupply = 1000000000;
+    private long maxTransactionFee = 1_000_000_000;
+    private String symbol = "HMNT";
 
     @Override
     public TokenCreateTransaction get() {

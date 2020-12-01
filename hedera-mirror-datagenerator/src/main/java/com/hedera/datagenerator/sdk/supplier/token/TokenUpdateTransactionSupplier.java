@@ -25,8 +25,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
@@ -37,30 +36,21 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 
-@Builder
-@Value
+@Data
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("tokenId");
 
     //Required
-    private final String tokenId;
+    private String tokenId;
 
     //Optional
-    private final String adminKey;
-
-    @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
-
-    @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
-
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-
-    @Builder.Default
-    private final String symbol = "HMNT";
-    private final String treasuryAccountId;
+    private String adminKey;
+    private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    private long maxTransactionFee = 1_000_000_000;
+    private String symbol = "HMNT";
+    private String treasuryAccountId;
 
     @Override
     public TokenUpdateTransaction get() {

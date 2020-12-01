@@ -22,8 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 
 import java.util.Arrays;
 import java.util.List;
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
@@ -32,18 +31,16 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicDeleteTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 
-@Builder
-@Value
+@Data
 public class ConsensusDeleteTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicDeleteTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("topicId");
 
     //Required
-    private final String topicId;
+    private String topicId;
 
     //Optional
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
+    private long maxTransactionFee = 1_000_000_000;
 
     @Override
     public ConsensusTopicDeleteTransaction get() {

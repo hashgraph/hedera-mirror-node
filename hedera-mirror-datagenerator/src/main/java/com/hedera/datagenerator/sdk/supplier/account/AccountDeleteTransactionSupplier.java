@@ -22,9 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import java.util.Arrays;
 import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
@@ -33,22 +31,17 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.account.AccountId;
 
-@Builder
-@Value
-@Log4j2
+@Data
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("accountId");
 
     //Required
-    private final String accountId;
+    private String accountId;
 
     //Optional
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-
-    @Builder.Default
-    private final String transferAccountId = "0.0.2";
+    private long maxTransactionFee = 1_000_000_000;
+    private String transferAccountId = "0.0.2";
 
     @Override
     public AccountDeleteTransaction get() {

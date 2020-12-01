@@ -22,8 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.token;
 
 import java.util.Arrays;
 import java.util.List;
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
@@ -33,22 +32,18 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
 
-@Builder
-@Value
+@Data
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("accountId", "tokenId");
 
     //Required
-    private final String accountId;
-    private final String tokenId;
+    private String accountId;
+    private String tokenId;
 
     //Optional
-    @Builder.Default
-    private final long amount = 1;
-
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
+    private long amount = 1;
+    private long maxTransactionFee = 1_000_000_000;
 
     @Override
     public TokenWipeTransaction get() {

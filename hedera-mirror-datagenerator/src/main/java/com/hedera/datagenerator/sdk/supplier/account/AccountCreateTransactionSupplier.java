@@ -20,9 +20,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
+import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -30,18 +28,13 @@ import com.hedera.hashgraph.sdk.account.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
-@Builder
-@Value
-@Log4j2
+@Data
 public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
 
     //Optional
-    @Builder.Default
-    private final long initialBalance = 10_000_000;
-
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-    private final String publicKey;
+    private long initialBalance = 10_000_000;
+    private long maxTransactionFee = 1_000_000_000;
+    private String publicKey;
 
     @Override
     public AccountCreateTransaction get() {

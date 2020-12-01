@@ -22,8 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import java.util.Arrays;
 import java.util.List;
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
@@ -33,24 +32,19 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.TransferTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
 
-@Builder
-@Value
+@Data
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<TransferTransaction> {
 
     private static final List<String> requiredFields = Arrays.asList("recipientAccountId", "senderAccountId");
 
     //Required
-    private final String recipientAccountId;
-    private final String senderAccountId;
+    private String recipientAccountId;
+    private String senderAccountId;
 
     //Optional
-    @Builder.Default
-    private final long amount = 1;
-
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000;
-
-    private final String tokenId;
+    private long amount = 1;
+    private long maxTransactionFee = 1_000_000;
+    private String tokenId = null;
 
     @Override
     public TransferTransaction get() {
