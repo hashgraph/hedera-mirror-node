@@ -50,6 +50,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
 
     //Optional
     private String adminKey;
+
     private String autoRenewAccountId;
 
     @NotNull

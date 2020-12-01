@@ -58,7 +58,9 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     private long maxTransactionFee = 1_000_000_000;
 
     private String proxyAccountId;
+
     private String publicKey;
+
     private boolean receiverSignatureRequired = false;
 
     @Override

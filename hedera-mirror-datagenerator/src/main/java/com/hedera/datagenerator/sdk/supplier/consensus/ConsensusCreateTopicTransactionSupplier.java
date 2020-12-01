@@ -34,6 +34,7 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
 
     //Optional
     private String adminKey;
+
     private String autoRenewAccountId;
 
     @Min(1)
