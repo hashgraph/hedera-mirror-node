@@ -62,8 +62,8 @@ public class PublishResponse {
                 toStringBuilder.append("contractId", receiptProto.getContractID());
             } else if (receiptProto.hasFileID()) {
                 toStringBuilder.append("fileId", receiptProto.getFileID());
-            } else if (receiptProto.hasTokenId()) {
-                toStringBuilder.append("tokenId", receiptProto.getTokenId());
+            } else if (receiptProto.hasTokenID()) {
+                toStringBuilder.append("tokenId", receiptProto.getTokenID());
             } else if (receiptProto.hasTopicID()) {
                 toStringBuilder.append("topicId", receiptProto.getTopicID());
             }

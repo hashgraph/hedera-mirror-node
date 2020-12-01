@@ -61,6 +61,7 @@ public class RestSubscriber implements Subscriber {
 
         DirectProcessor<PublishResponse> directProcessor = DirectProcessor.create();
         restProcessor = directProcessor.sink();
+        AbstractSubscriberProperties.RetryProperties retry = properties.getRetry();
 
         directProcessor.doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
@@ -74,7 +75,8 @@ public class RestSubscriber implements Subscriber {
                         .bodyToMono(String.class)
                         .doOnNext(json -> log.trace("Response: {}", json))
                         .timeout(properties.getTimeout())
-                        .retryWhen(Retry.backoff(properties.getRetries(), properties.getFrequency())
+                        .retryWhen(Retry.backoff(retry.getMaxAttempts(), retry.getMinBackoff())
+                                .maxBackoff(retry.getMaxBackoff())
                                 .filter(this::isClientError))
                         .doOnNext(clientResponse -> record(publishResponse))
                 ).subscribe();

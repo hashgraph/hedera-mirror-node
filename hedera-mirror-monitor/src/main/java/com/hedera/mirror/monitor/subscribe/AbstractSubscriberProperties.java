@@ -44,8 +44,24 @@ public abstract class AbstractSubscriberProperties {
     @NotBlank
     protected String name;
 
-    @Min(0)
-    protected long retries = 16L;
+    @NotNull
+    protected RetryProperties retry = new RetryProperties();
+
+    @Data
+    @Validated
+    public static class RetryProperties {
+
+        @Min(0)
+        private long maxAttempts = 16L;
+
+        @NotNull
+        @DurationMin(millis = 500L)
+        private Duration maxBackoff = Duration.ofSeconds(8L);
+
+        @NotNull
+        @DurationMin(millis = 100L)
+        private Duration minBackoff = Duration.ofMillis(250L);
+    }
 }
 
 

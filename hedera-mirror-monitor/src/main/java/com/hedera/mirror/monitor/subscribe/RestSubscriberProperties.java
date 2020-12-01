@@ -31,10 +31,6 @@ import org.springframework.validation.annotation.Validated;
 public class RestSubscriberProperties extends AbstractSubscriberProperties {
 
     @NotNull
-    @DurationMin(millis = 50)
-    private Duration frequency = Duration.ofMillis(100);
-
-    @NotNull
     @DurationMin(millis = 500)
     private Duration timeout = Duration.ofSeconds(2);
 
@@ -43,5 +39,3 @@ public class RestSubscriberProperties extends AbstractSubscriberProperties {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
 }
-
-

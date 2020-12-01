@@ -20,26 +20,15 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
 public class GrpcSubscriberProperties extends AbstractSubscriberProperties {
-
-    @NotNull
-    @DurationMin(millis = 500L)
-    private Duration delayMax = Duration.ofSeconds(8L);
-
-    @NotNull
-    @DurationMin(millis = 100L)
-    private Duration delayMultiplier = Duration.ofMillis(500L);
 
     @Nullable
     private Instant startTime;

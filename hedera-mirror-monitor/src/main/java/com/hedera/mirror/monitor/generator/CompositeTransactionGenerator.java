@@ -74,17 +74,19 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     private synchronized void rebuild() {
         List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
 
-        double total = properties.getScenarios()
-                .stream()
-                .filter(ScenarioProperties::isEnabled)
-                .map(ScenarioProperties::getTps)
-                .reduce(0.0, (x, y) -> x + y);
+        if (properties.isEnabled()) {
+            double total = properties.getScenarios()
+                    .stream()
+                    .filter(ScenarioProperties::isEnabled)
+                    .map(ScenarioProperties::getTps)
+                    .reduce(0.0, (x, y) -> x + y);
 
-        for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
-            if (properties.isEnabled() && scenarioProperties.isEnabled()) {
-                double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
-                pairs.add(Pair.create(new ConfigurableTransactionGenerator(scenarioProperties), weight));
-                log.info("Activated scenario: {}", scenarioProperties);
+            for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
+                if (scenarioProperties.isEnabled()) {
+                    double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
+                    pairs.add(Pair.create(new ConfigurableTransactionGenerator(scenarioProperties), weight));
+                    log.info("Activated scenario: {}", scenarioProperties);
+                }
             }
         }
 

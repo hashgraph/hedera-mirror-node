@@ -121,10 +121,11 @@ public class GrpcSubscriber implements Subscriber {
         errors.add(getStatusCode(t).name());
 
         if (shouldRetry(t)) {
-            long delayMillis = retries.get() * subscriberProperties.getDelayMultiplier().toMillis();
-            Duration retry = Duration.ofMillis(Math.min(delayMillis, subscriberProperties.getDelayMax().toMillis()));
-            log.info("Retrying in {}s", retry.toSeconds());
-            Uninterruptibles.sleepUninterruptibly(retry);
+            AbstractSubscriberProperties.RetryProperties retry = subscriberProperties.getRetry();
+            long delayMillis = retries.get() * retry.getMinBackoff().toMillis();
+            Duration retryDuration = Duration.ofMillis(Math.min(delayMillis, retry.getMaxBackoff().toMillis()));
+            log.info("Retrying in {}s", retryDuration.toSeconds());
+            Uninterruptibles.sleepUninterruptibly(retryDuration);
             resubscribe();
         } else {
             close();
@@ -134,11 +135,12 @@ public class GrpcSubscriber implements Subscriber {
     private boolean shouldRetry(Throwable t) {
         Status.Code code = getStatusCode(t);
 
+        // Don't retry client errors
         if (code == INVALID_ARGUMENT || code == NOT_FOUND) {
             return false;
         }
 
-        return retries.incrementAndGet() < subscriberProperties.getRetries();
+        return retries.incrementAndGet() < subscriberProperties.getRetry().getMaxAttempts();
     }
 
     private Status.Code getStatusCode(Throwable t) {
