@@ -22,6 +22,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
 
 import java.util.Arrays;
 import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -38,14 +40,24 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     private static final List<String> requiredFields = Arrays.asList("treasuryAccountId");
 
     //Required
+    @NotBlank
     private String treasuryAccountId;
 
     //Optional
     private String adminKey;
+
+    @Min(1)
     private int decimals = 10;
+
     private boolean freezeDefault = false;
+
+    @Min(1)
     private int initialSupply = 1000000000;
+
+    @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
     private String symbol = "HMNT";
 
     @Override

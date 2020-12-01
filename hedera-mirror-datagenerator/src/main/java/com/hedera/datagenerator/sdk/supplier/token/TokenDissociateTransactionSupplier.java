@@ -22,6 +22,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
 
 import java.util.Arrays;
 import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -38,10 +40,14 @@ public class TokenDissociateTransactionSupplier implements TransactionSupplier<T
     private static final List<String> requiredFields = Arrays.asList("accountId", "tokenId");
 
     //Required
+    @NotBlank
     private String accountId;
+
+    @NotBlank
     private String tokenId;
 
     //Optional
+    @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
     @Override

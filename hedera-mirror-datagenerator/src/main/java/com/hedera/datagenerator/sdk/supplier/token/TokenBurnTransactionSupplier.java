@@ -22,6 +22,8 @@ package com.hedera.datagenerator.sdk.supplier.token;
 
 import java.util.Arrays;
 import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -37,10 +39,14 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
     private static final List<String> requiredFields = Arrays.asList("tokenId");
 
     //Required
+    @NotBlank
     private String tokenId;
 
     //Optional
+    @Min(1)
     private long amount = 1;
+
+    @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
     @Override
