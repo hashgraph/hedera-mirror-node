@@ -28,10 +28,10 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.mirror.monitor.publish.PublishRequest;
@@ -87,7 +87,7 @@ public class ConfigurableTransactionGeneratorTest {
     @Test
     void missingRequiredField() {
         properties.setProperties(Collections.emptyMap());
-        assertThatThrownBy(() -> generator.get().next()).isInstanceOf(TransactionSupplierException.class);
+        assertThatThrownBy(() -> generator.get().next()).isInstanceOf(ConstraintViolationException.class);
     }
 
     private void assertRequest(PublishRequest publishRequest) {
