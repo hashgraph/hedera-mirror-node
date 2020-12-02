@@ -50,7 +50,7 @@ public class TransactionPublisher {
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
     private final PublishMetrics publishMetrics;
-    private final Supplier<List<Client>> clients = Suppliers.memoize(() -> getClients());
+    private final Supplier<List<Client>> clients = Suppliers.memoize(this::getClients);
     private final AtomicInteger counter = new AtomicInteger(0);
 
     @PreDestroy
@@ -104,15 +104,15 @@ public class TransactionPublisher {
             throw new IllegalArgumentException("No valid nodes found");
         }
 
-        List<Client> clients = new ArrayList<>();
+        List<Client> validatedClients = new ArrayList<>();
 
         for (int i = 0; i < publishProperties.getConnections(); ++i) {
             NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
             Client client = toClient(nodeProperties);
-            clients.add(client);
+            validatedClients.add(client);
         }
 
-        return clients;
+        return validatedClients;
     }
 
     private List<NodeProperties> validateNodes() {

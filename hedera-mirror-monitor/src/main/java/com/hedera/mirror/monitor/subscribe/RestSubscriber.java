@@ -35,6 +35,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.FluxSink;
 import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -61,25 +62,29 @@ public class RestSubscriber implements Subscriber {
 
         DirectProcessor<PublishResponse> directProcessor = DirectProcessor.create();
         restProcessor = directProcessor.sink();
-        AbstractSubscriberProperties.RetryProperties retry = properties.getRetry();
+
+        RetryBackoffSpec retrySpec = Retry
+                .backoff(properties.getRetry().getMaxAttempts(), properties.getRetry().getMinBackoff())
+                .maxBackoff(properties.getRetry().getMaxBackoff())
+                .filter(this::isNotClientError)
+                .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
+                        r.totalRetries() + 1, r.failure()));
 
         directProcessor.doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
-                .doOnComplete(() -> log.info("Finished subscription"))
+                .doFinally(s -> log.warn("Received {} signal", s))
                 .limitRequest(properties.getLimit())
                 .take(properties.getDuration())
-                .onErrorContinue((t, o) -> log.info("Error: {}", t))
                 .flatMap(publishResponse -> webClient.get()
                         .uri("/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
                         .retrieve()
                         .bodyToMono(String.class)
                         .doOnNext(json -> log.trace("Response: {}", json))
                         .timeout(properties.getTimeout())
-                        .retryWhen(Retry.backoff(retry.getMaxAttempts(), retry.getMinBackoff())
-                                .maxBackoff(retry.getMaxBackoff())
-                                .filter(this::isClientError))
-                        .doOnNext(clientResponse -> record(publishResponse))
-                ).subscribe();
+                        .retryWhen(retrySpec)
+                        .onErrorContinue((t, o) -> log.info("Error subscribing to REST API: {}", t))
+                        .doOnNext(clientResponse -> record(publishResponse)))
+                .subscribe();
     }
 
     @Override
@@ -87,18 +92,20 @@ public class RestSubscriber implements Subscriber {
         restProcessor.next(response);
     }
 
-    private boolean isClientError(Throwable t) {
-        return t instanceof WebClientResponseException &&
-                ((WebClientResponseException) t).getStatusCode().is4xxClientError();
+    private boolean isNotClientError(Throwable t) {
+        return !(t instanceof WebClientResponseException &&
+                ((WebClientResponseException) t).getStatusCode().is4xxClientError());
     }
 
     private void record(PublishResponse r) {
+        Duration latency = Duration.between(r.getRequest().getTimestamp(), Instant.now());
+        log.debug("Transaction retrieved with a latency of {}s", latency.toSeconds());
         Timer timer = timers.computeIfAbsent(r.getRequest().getType(), this::newTimer);
-        timer.record(Duration.between(r.getRequest().getTimestamp(), Instant.now()));
+        timer.record(latency);
     }
 
     private Timer newTimer(TransactionType type) {
-        return Timer.builder("hedera.mirror.monitor.subscribe")
+        return Timer.builder(METRIC_NAME)
                 .tag("api", "rest")
                 .tag("type", type.name())
                 .register(meterRegistry);

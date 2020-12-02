@@ -27,7 +27,7 @@ public class ScenarioException extends RuntimeException {
     private static final long serialVersionUID = 1690349494197296387L;
 
     @Getter
-    private final ScenarioProperties properties;
+    private final transient ScenarioProperties properties;
 
     public ScenarioException(ScenarioProperties properties, String message) {
         super(message);

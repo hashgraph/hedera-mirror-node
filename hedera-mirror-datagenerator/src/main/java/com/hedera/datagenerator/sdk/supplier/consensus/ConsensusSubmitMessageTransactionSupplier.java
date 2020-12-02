@@ -20,8 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  * ‍
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.primitives.Longs;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -73,7 +73,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
     private byte[] randomByteArray() {
         if (StringUtils.isNotBlank(message)) {
-            return message.getBytes(Charsets.UTF_8);
+            return message.getBytes(StandardCharsets.UTF_8);
         }
 
         byte[] bytes = new byte[messageSize - Long.BYTES];

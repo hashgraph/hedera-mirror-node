@@ -1,7 +1,7 @@
 logging:
   level:
     root: warn
-    com.hedera.mirror.monitor: trace
+    com.hedera.mirror.monitor: info
 management:
   endpoints:
     web:

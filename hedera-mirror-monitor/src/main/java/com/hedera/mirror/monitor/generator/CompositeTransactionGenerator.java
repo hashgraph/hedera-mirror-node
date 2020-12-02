@@ -22,6 +22,7 @@ package com.hedera.mirror.monitor.generator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
@@ -40,6 +41,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     static {
         ScenarioProperties scenarioProperties = new ScenarioProperties();
         scenarioProperties.setName("Inactive");
+        scenarioProperties.setProperties(Map.of("topicId", "invalid"));
         scenarioProperties.setTps(Double.MIN_NORMAL); // Never retry
         scenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         TransactionGenerator generator = new ConfigurableTransactionGenerator(scenarioProperties);

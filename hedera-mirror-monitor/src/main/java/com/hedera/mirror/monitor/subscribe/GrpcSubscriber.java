@@ -80,7 +80,7 @@ public class GrpcSubscriber implements Subscriber {
         this.retries = new AtomicLong(0L);
         stopwatch = Stopwatch.createStarted();
         errors = ConcurrentHashMultiset.create();
-        this.timer = Timer.builder("hedera.mirror.monitor.subscribe")
+        this.timer = Timer.builder(METRIC_NAME)
                 .tag("api", "grpc")
                 .tag("type", TransactionType.CONSENSUS_SUBMIT_MESSAGE.toString())
                 .register(meterRegistry);
@@ -119,9 +119,10 @@ public class GrpcSubscriber implements Subscriber {
 
     private void onError(Throwable t) {
         log.error("Error subscribing: ", t);
-        errors.add(getStatusCode(t).name());
+        Status.Code statusCode = getStatusCode(t);
+        errors.add(statusCode.name());
 
-        if (shouldRetry(t)) {
+        if (shouldRetry(statusCode)) {
             AbstractSubscriberProperties.RetryProperties retry = subscriberProperties.getRetry();
             long delayMillis = retries.get() * retry.getMinBackoff().toMillis();
             Duration retryDuration = Duration.ofMillis(Math.min(delayMillis, retry.getMaxBackoff().toMillis()));
@@ -133,11 +134,9 @@ public class GrpcSubscriber implements Subscriber {
         }
     }
 
-    private boolean shouldRetry(Throwable t) {
-        Status.Code code = getStatusCode(t);
-
+    private boolean shouldRetry(Status.Code statusCode) {
         // Don't retry client errors
-        if (code == INVALID_ARGUMENT || code == NOT_FOUND) {
+        if (statusCode == INVALID_ARGUMENT || statusCode == NOT_FOUND) {
             return false;
         }
 
@@ -199,7 +198,7 @@ public class GrpcSubscriber implements Subscriber {
         long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
         double rate = Precision.round(elapsed > 0 ? (1_000_000.0 * count) / elapsed : 0.0, 1);
         Map<String, Integer> errorCounts = new HashMap<>();
-        errors.forEachEntry((k, v) -> errorCounts.put(k, v));
+        errors.forEachEntry(errorCounts::put);
         log.info("Received {} transactions in {} at {}/s. Errors: {}", count, stopwatch, rate, errorCounts);
     }
 }

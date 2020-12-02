@@ -23,5 +23,8 @@ package com.hedera.mirror.monitor.subscribe;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
 public interface Subscriber {
+
+    String METRIC_NAME = "hedera.mirror.monitor.subscribe";
+
     void onPublish(PublishResponse response);
 }

@@ -28,8 +28,8 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import lombok.extern.log4j.Log4j2;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.publish.PublishRequest;
@@ -78,8 +78,11 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private TransactionSupplier<?> convert(ScenarioProperties p) {
         TransactionSupplier<?> supplier = new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
 
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        Validator validator = factory.getValidator();
+        Validator validator = Validation.byDefaultProvider()
+                .configure()
+                .messageInterpolator(new ParameterMessageInterpolator())
+                .buildValidatorFactory()
+                .getValidator();
         Set<ConstraintViolation<TransactionSupplier<?>>> validations = validator.validate(supplier);
 
         if (!validations.isEmpty()) {
