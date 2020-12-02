@@ -23,10 +23,11 @@ package com.hedera.datagenerator.sdk.supplier.account;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import javax.validation.constraints.Future;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -40,10 +41,10 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     @NotBlank
     private String accountId;
 
-    @NotNull
+    @DurationMin(seconds = 1)
     private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
-    @NotNull
+    @Future
     private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
 
     @Min(1)
