@@ -47,15 +47,15 @@ public class TopicMessagePublishRequest {
     @ToString.Exclude
     private Ed25519PrivateKey operatorPrivateKey;
 
-    private byte[] randomAlphanumeric;
+    private byte[] randomBytes;
 
     public byte[] getMessage() {
-        if (randomAlphanumeric == null) {
-            randomAlphanumeric = new byte[messageByteSize > 8 ? messageByteSize - Long.BYTES : 0];
-            new SecureRandom().nextBytes(randomAlphanumeric);
+        if (randomBytes == null) {
+            randomBytes = new byte[messageByteSize > 8 ? messageByteSize - Long.BYTES : 0];
+            new SecureRandom().nextBytes(randomBytes);
         }
 
-        // set current time stamp to first 8 bytes of message and random message after
-        return ArrayUtils.addAll(Longs.toByteArray(System.currentTimeMillis()), randomAlphanumeric);
+        // set current time stamp to first 8 bytes of message and random bytes message after
+        return ArrayUtils.addAll(Longs.toByteArray(System.currentTimeMillis()), randomBytes);
     }
 }

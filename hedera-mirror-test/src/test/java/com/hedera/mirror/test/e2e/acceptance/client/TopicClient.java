@@ -118,7 +118,7 @@ public class TopicClient extends AbstractNetworkClient {
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
             byte[] publishTimestampByteArray = Longs.toByteArray(System.currentTimeMillis());
-            byte[] suffixByteArray = ("_" + baseMessage + "_" + i + 1).getBytes();
+            byte[] suffixByteArray = ("_" + baseMessage + "_" + (i + 1)).getBytes();
             byte[] message = ArrayUtils.addAll(publishTimestampByteArray, suffixByteArray);
 
             if (verify) {
