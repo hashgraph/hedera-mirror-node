@@ -13,6 +13,9 @@
         <artifactId>hedera-mirror-node</artifactId>
         <version>0.23.0-rc1</version>
     </parent>
+    <properties>
+        <javax.el.version>3.0.0</javax.el.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -83,14 +86,9 @@
             <version>3.6.1</version>
         </dependency>
         <dependency>
-            <groupId>javax.el</groupId>
-            <artifactId>javax.el-api</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish</groupId>
             <artifactId>javax.el</artifactId>
-            <version>3.0.0</version>
+            <version>${javax.el.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate.validator</groupId>
