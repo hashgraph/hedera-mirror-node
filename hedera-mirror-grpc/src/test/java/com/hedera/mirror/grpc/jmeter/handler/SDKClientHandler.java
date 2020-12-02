@@ -100,7 +100,7 @@ public class SDKClientHandler {
         return topicId;
     }
 
-    public List<TransactionId> submitTopicMessage(ConsensusTopicId topicId, String message) throws HederaStatusException {
+    public List<TransactionId> submitTopicMessage(ConsensusTopicId topicId, byte[] message) throws HederaStatusException {
         ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction = new ConsensusMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message);

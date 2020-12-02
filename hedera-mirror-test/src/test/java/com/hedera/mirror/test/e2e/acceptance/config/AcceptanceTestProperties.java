@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
 
 import java.time.Duration;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -58,4 +59,11 @@ public class AcceptanceTestProperties {
 
     @NotNull
     private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
+
+    @Min(1)
+    @Max(60)
+    private int restPollRetries = 60;
+
+    @NotNull
+    private Duration restRetryBackoffPeriod = Duration.ofMillis(1000);
 }

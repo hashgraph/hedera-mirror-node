@@ -23,12 +23,10 @@ package com.hedera.mirror.grpc.jmeter.sampler.result;
 import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Longs;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 @SuperBuilder
@@ -163,16 +161,10 @@ public abstract class HCSSamplerResult<T> {
 
         byte[] message = getMessageByteArray(currentResponse);
         try {
-            byte[] decodedMessage = Base64.decodeBase64(message);
-            publishInstant = retrieveInstantFromArray(decodedMessage);
+            publishInstant = retrieveInstantFromArray(message);
             if (isInstantOutOfRange(publishInstant)) {
-                publishInstant = retrieveInstantFromArray(message);
-
-                // support non encoded version
-                if (isInstantOutOfRange(publishInstant)) {
-                    log.debug("publishInstant is out of range: {}", publishInstant);
-                    publishInstant = null;
-                }
+                log.debug("publishInstant is out of range: {}", publishInstant);
+                publishInstant = null;
             }
         } catch (Exception ex) {
             log.debug("response message contains invalid publish millisecond value: {}", message);
@@ -183,7 +175,7 @@ public abstract class HCSSamplerResult<T> {
     }
 
     private Instant retrieveInstantFromArray(byte[] message) {
-        Long publishMillis = Longs.fromByteArray(Arrays.copyOfRange(message, 0, 8));
+        Long publishMillis = Longs.fromByteArray(message);
         return Instant.ofEpochMilli(publishMillis);
     }
 

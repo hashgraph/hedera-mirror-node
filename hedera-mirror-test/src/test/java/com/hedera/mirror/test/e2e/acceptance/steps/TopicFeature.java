@@ -364,7 +364,7 @@ public class TopicFeature {
             scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(() -> {
                 try {
-                    topicClient.publishMessageToTopic(consensusTopicId, "backgroundMessage", submitKey);
+                    topicClient.publishMessageToTopic(consensusTopicId, "backgroundMessage".getBytes(), submitKey);
                 } catch (HederaStatusException e) {
                     e.printStackTrace();
                 }

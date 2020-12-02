@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -117,8 +117,9 @@ public class TopicClient extends AbstractNetworkClient {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
-            byte[] byteArray = Longs.toByteArray(Instant.now().toEpochMilli());
-            String message = Base64.encodeBase64String(byteArray) + "_" + baseMessage + "_" + i + 1;
+            byte[] publishTimestampByteArray = Longs.toByteArray(System.currentTimeMillis());
+            byte[] suffixByteArray = ("_" + baseMessage + "_" + i + 1).getBytes();
+            byte[] message = ArrayUtils.addAll(publishTimestampByteArray, suffixByteArray);
 
             if (verify) {
                 transactionReceiptList.addAll(publishMessageToTopicAndVerify(topicId, message, submitKey));
@@ -130,7 +131,7 @@ public class TopicClient extends AbstractNetworkClient {
         return transactionReceiptList;
     }
 
-    public List<TransactionId> publishMessageToTopic(ConsensusTopicId topicId, String message,
+    public List<TransactionId> publishMessageToTopic(ConsensusTopicId topicId, byte[] message,
                                                      Ed25519PrivateKey submitKey) throws HederaStatusException {
         ConsensusMessageSubmitTransaction consensusMessageSubmitTransaction = new ConsensusMessageSubmitTransaction()
                 .setTopicId(topicId)
@@ -144,13 +145,13 @@ public class TopicClient extends AbstractNetworkClient {
             recordPublishInstants.put(0L, transactionRecord.consensusTimestamp);
         }
 
-        log.trace("Published message : '{}' to topicId : {} with consensusTimestamp: {}", message, topicId,
+        log.trace("Published message : '{}' to topicId : {} with consensusTimestamp: {}", new String(message), topicId,
                 transactionRecord.consensusTimestamp);
 
         return transactionIdList;
     }
 
-    public List<TransactionReceipt> publishMessageToTopicAndVerify(ConsensusTopicId topicId, String message,
+    public List<TransactionReceipt> publishMessageToTopicAndVerify(ConsensusTopicId topicId, byte[] message,
                                                                    Ed25519PrivateKey submitKey) throws HederaStatusException {
         List<TransactionId> transactionIdList = publishMessageToTopic(topicId, message, submitKey);
         List<TransactionReceipt> transactionReceipts = new ArrayList<>();

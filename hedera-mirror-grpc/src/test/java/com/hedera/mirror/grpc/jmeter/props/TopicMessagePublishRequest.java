@@ -21,13 +21,12 @@ package com.hedera.mirror.grpc.jmeter.props;
  */
 
 import com.google.common.primitives.Longs;
-import java.time.Instant;
+import java.security.SecureRandom;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -48,18 +47,15 @@ public class TopicMessagePublishRequest {
     @ToString.Exclude
     private Ed25519PrivateKey operatorPrivateKey;
 
-    private String randomAlphanumeric;
+    private byte[] randomAlphanumeric;
 
-    public String getMessage() {
-        int timeStampBytes = 8;
+    public byte[] getMessage() {
         if (randomAlphanumeric == null) {
-            int additionalBytes = messageByteSize <= timeStampBytes ? 0 : messageByteSize - 8;
-            randomAlphanumeric = RandomStringUtils.randomAlphanumeric(additionalBytes);
+            randomAlphanumeric = new byte[messageByteSize > 8 ? messageByteSize - Long.BYTES : 0];
+            new SecureRandom().nextBytes(randomAlphanumeric);
         }
 
-        // set current time stamp to first 8 bytes of message
-        byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
-
-        return Base64.encodeBase64String(timeRefBytes) + randomAlphanumeric;
+        // set current time stamp to first 8 bytes of message and random message after
+        return ArrayUtils.addAll(Longs.toByteArray(System.currentTimeMillis()), randomAlphanumeric);
     }
 }
