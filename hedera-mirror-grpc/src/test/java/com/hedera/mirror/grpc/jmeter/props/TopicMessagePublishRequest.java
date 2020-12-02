@@ -51,7 +51,7 @@ public class TopicMessagePublishRequest {
 
     public byte[] getMessage() {
         if (randomBytes == null) {
-            randomBytes = new byte[messageByteSize > 8 ? messageByteSize - Long.BYTES : 0];
+            randomBytes = new byte[messageByteSize > Long.BYTES ? messageByteSize - Long.BYTES : 0];
             new SecureRandom().nextBytes(randomBytes);
         }
 

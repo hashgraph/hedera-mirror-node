@@ -125,7 +125,7 @@ public class ClientConfiguration {
         Jackson2JsonEncoder jackson2JsonEncoder = new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON);
 
         return WebClient.builder()
-                .baseUrl(acceptanceTestProperties.getMirrorRestAddress())
+                .baseUrl(acceptanceTestProperties.getRestPollingProperties().getBaseUrl())
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
                 .codecs(clientCodecConfigurer -> {
                     clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(jackson2JsonDecoder);

@@ -28,6 +28,7 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import io.grpc.StatusRuntimeException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -364,7 +365,10 @@ public class TopicFeature {
             scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(() -> {
                 try {
-                    topicClient.publishMessageToTopic(consensusTopicId, "backgroundMessage".getBytes(), submitKey);
+                    topicClient.publishMessageToTopic(
+                            consensusTopicId,
+                            "backgroundMessage".getBytes(StandardCharsets.UTF_8),
+                            submitKey);
                 } catch (HederaStatusException e) {
                     e.printStackTrace();
                 }

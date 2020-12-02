@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.jmeter.sampler.result;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Longs;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import lombok.Data;
@@ -167,7 +168,8 @@ public abstract class HCSSamplerResult<T> {
                 publishInstant = null;
             }
         } catch (Exception ex) {
-            log.debug("response message contains invalid publish millisecond value: {}", message);
+            log.debug("response message contains invalid publish millisecond value: '{}', ex: {}",
+                    new String(message, StandardCharsets.UTF_8), ex.getMessage());
             publishInstant = null;
         }
 
@@ -175,6 +177,10 @@ public abstract class HCSSamplerResult<T> {
     }
 
     private Instant retrieveInstantFromArray(byte[] message) {
+        if (message == null || message.length < Long.BYTES) {
+            return Instant.MAX;
+        }
+
         Long publishMillis = Longs.fromByteArray(message);
         return Instant.ofEpochMilli(publishMillis);
     }

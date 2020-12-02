@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.primitives.Longs;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -111,14 +112,13 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public List<TransactionReceipt> publishMessagesToTopic(ConsensusTopicId topicId, String baseMessage,
-                                                           Ed25519PrivateKey submitKey,
-                                                           int numMessages, boolean verify) throws HederaStatusException
-            , InterruptedException {
+                                                           Ed25519PrivateKey submitKey, int numMessages,
+                                                           boolean verify) throws HederaStatusException {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
             byte[] publishTimestampByteArray = Longs.toByteArray(System.currentTimeMillis());
-            byte[] suffixByteArray = ("_" + baseMessage + "_" + (i + 1)).getBytes();
+            byte[] suffixByteArray = ("_" + baseMessage + "_" + (i + 1)).getBytes(StandardCharsets.UTF_8);
             byte[] message = ArrayUtils.addAll(publishTimestampByteArray, suffixByteArray);
 
             if (verify) {
@@ -145,8 +145,10 @@ public class TopicClient extends AbstractNetworkClient {
             recordPublishInstants.put(0L, transactionRecord.consensusTimestamp);
         }
 
-        log.trace("Published message : '{}' to topicId : {} with consensusTimestamp: {}", new String(message), topicId,
-                transactionRecord.consensusTimestamp);
+        if (log.isTraceEnabled()) {
+            log.trace("Published message : '{}' to topicId : {} with consensusTimestamp: {}",
+                    new String(message, StandardCharsets.UTF_8), topicId, transactionRecord.consensusTimestamp);
+        }
 
         return transactionIdList;
     }

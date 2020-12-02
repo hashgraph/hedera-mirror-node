@@ -272,16 +272,16 @@ public class TokenFeature {
 
     @Then("the mirror node REST API should return status {int}")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.restRetryBackoffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.restPollRetries}")
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
         verifyTransactions(status);
     }
 
     @Then("the mirror node REST API should return status {int} for token fund flow")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.restRetryBackoffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.restPollRetries}")
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenFundFlow(int status) {
         verifyBalances();
         verifyTransactions(status);
@@ -291,16 +291,16 @@ public class TokenFeature {
 
     @Then("the mirror node REST API should confirm token update")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.restRetryBackoffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.restPollRetries}")
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenUpdateFlow() {
         verifyTokenUpdate();
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.restRetryBackoffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.restPollRetries}")
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionIdString);
 
@@ -466,7 +466,7 @@ public class TokenFeature {
     @Recover
     public void recover(AssertionError t) {
         log.error("REST API response verification failed after {} retries w: {}",
-                acceptanceProps.getRestPollRetries(), t.getMessage());
+                acceptanceProps.getRestPollingProperties().getMaxAttempts(), t.getMessage());
         throw t;
     }
 }
