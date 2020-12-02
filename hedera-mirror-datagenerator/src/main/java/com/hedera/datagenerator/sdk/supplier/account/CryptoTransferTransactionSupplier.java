@@ -55,12 +55,15 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
         AccountId senderId = AccountId.fromString(senderAccountId);
 
         TransferTransaction transferTransaction = new TransferTransaction()
-                .addHbarTransfer(recipientId, amount)
-                .addHbarTransfer(senderId, Math.negateExact(amount))
                 .setMaxTransactionFee(maxTransactionFee)
                 .setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
 
-        if (StringUtils.isNotBlank(tokenId)) {
+        //Only add an Hbar transfer or a token transfer, never both
+        if (StringUtils.isBlank(tokenId)) {
+            transferTransaction
+                    .addHbarTransfer(recipientId, amount)
+                    .addHbarTransfer(senderId, Math.negateExact(amount));
+        } else {
             TokenId token = TokenId.fromString(tokenId);
             transferTransaction
                     .addTokenTransfer(token, recipientId, amount)
