@@ -23,51 +23,44 @@ package com.hedera.datagenerator.sdk.supplier.account;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
+import javax.validation.constraints.Future;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
-@Builder
-@Value
-@Log4j2
+@Data
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("accountId");
+    @NotBlank
+    private String accountId;
 
-    //Required
-    private final String accountId;
+    @NotNull
+    @DurationMin(seconds = 1)
+    private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
-    //Optional
-    @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    @NotNull
+    @Future
+    private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
 
-    @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-    private final String proxyAccountId;
-    private final String publicKey;
+    private String proxyAccountId;
 
-    @Builder.Default
-    private final boolean receiverSignatureRequired = false;
+    private String publicKey;
+
+    private boolean receiverSignatureRequired = false;
 
     @Override
     public AccountUpdateTransaction get() {
-
-        if (StringUtils.isBlank(accountId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(AccountId.fromString(accountId))

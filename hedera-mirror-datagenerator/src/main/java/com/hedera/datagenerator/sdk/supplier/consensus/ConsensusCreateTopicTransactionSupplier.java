@@ -20,8 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  * ‍
  */
 
-import lombok.Builder;
-import lombok.Value;
+import javax.validation.constraints.Min;
+import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -29,16 +29,15 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
-@Builder
-@Value
+@Data
 public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicCreateTransaction> {
 
-    //Optional
-    private final String adminKey;
-    private final String autoRenewAccountId;
+    private String adminKey;
 
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
+    private String autoRenewAccountId;
+
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
     @Override
     public ConsensusTopicCreateTransaction get() {

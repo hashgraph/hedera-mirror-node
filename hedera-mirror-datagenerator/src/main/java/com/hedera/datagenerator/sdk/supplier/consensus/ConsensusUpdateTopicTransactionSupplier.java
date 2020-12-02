@@ -23,48 +23,43 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
+import javax.validation.constraints.Future;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicUpdateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
-@Builder
-@Value
+@Data
 public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicUpdateTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("topicId");
+    private String adminKey;
 
-    //Required
-    private final String topicId;
+    private String autoRenewAccountId;
 
-    //Optional
-    private final String adminKey;
-    private final String autoRenewAccountId;
+    @NotNull
+    @DurationMin(seconds = 1)
+    private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
-    @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    @NotNull
+    @Future
+    private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
 
-    @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
+    @NotBlank
+    private String topicId;
 
     @Override
     public ConsensusTopicUpdateTransaction get() {
-
-        if (StringUtils.isBlank(topicId) || StringUtils.isBlank(autoRenewAccountId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
                 .setExpirationTime(expirationTime)

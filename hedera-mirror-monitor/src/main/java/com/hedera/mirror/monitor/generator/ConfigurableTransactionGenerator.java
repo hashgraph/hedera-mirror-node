@@ -22,7 +22,13 @@ package com.hedera.mirror.monitor.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.RateLimiter;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -66,6 +72,16 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     }
 
     private TransactionSupplier<?> convert(ScenarioProperties p) {
-        return new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
+        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
+
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        Validator validator = factory.getValidator();
+        Set<ConstraintViolation<TransactionSupplier<?>>> validations = validator.validate(supplier);
+
+        if (!validations.isEmpty()) {
+            throw new ConstraintViolationException(validations);
+        }
+
+        return supplier;
     }
 }

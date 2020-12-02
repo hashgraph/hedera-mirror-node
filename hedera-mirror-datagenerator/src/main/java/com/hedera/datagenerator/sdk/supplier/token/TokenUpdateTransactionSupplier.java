@@ -23,51 +23,46 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
+import javax.validation.constraints.Future;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 
-@Builder
-@Value
+@Data
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("tokenId");
+    private String adminKey;
 
-    //Required
-    private final String tokenId;
+    @NotNull
+    @DurationMin(seconds = 1)
+    private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
-    //Optional
-    private final String adminKey;
+    @NotNull
+    @Future
+    private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
 
-    @Builder.Default
-    private final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
-    @Builder.Default
-    private final Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    @NotBlank()
+    private String symbol = "HMNT";
 
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
+    @NotBlank
+    private String tokenId;
 
-    @Builder.Default
-    private final String symbol = "HMNT";
-    private final String treasuryAccountId;
+    private String treasuryAccountId;
 
     @Override
     public TokenUpdateTransaction get() {
-
-        if (StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAutoRenewPeriod(autoRenewPeriod)

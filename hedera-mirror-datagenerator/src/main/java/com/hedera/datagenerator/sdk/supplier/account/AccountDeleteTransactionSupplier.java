@@ -20,42 +20,29 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.account.AccountId;
 
-@Builder
-@Value
-@Log4j2
+@Data
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("accountId");
+    @NotBlank
+    private String accountId;
 
-    //Required
-    private final String accountId;
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
-    //Optional
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
-
-    @Builder.Default
-    private final String transferAccountId = "0.0.2";
+    @NotBlank
+    private String transferAccountId = "0.0.2";
 
     @Override
     public AccountDeleteTransaction get() {
-
-        if (StringUtils.isBlank(accountId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new AccountDeleteTransaction()
                 .setDeleteAccountId(AccountId.fromString(accountId))

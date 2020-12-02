@@ -20,52 +20,40 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 
-@Builder
-@Value
+@Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("treasuryAccountId");
+    private String adminKey;
 
-    //Required
-    private final String treasuryAccountId;
-
-    //Optional
-    private final String adminKey;
-
-    @Builder.Default
+    @Min(1)
     private int decimals = 10;
 
-    @Builder.Default
     private boolean freezeDefault = false;
 
-    @Builder.Default
-    private final int initialSupply = 1000000000;
+    @Min(1)
+    private int initialSupply = 1000000000;
 
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
-    @Builder.Default
-    private final String symbol = "HMNT";
+    @NotBlank
+    private String symbol = "HMNT";
+
+    @NotBlank
+    private String treasuryAccountId;
 
     @Override
     public TokenCreateTransaction get() {
-
-        if (StringUtils.isBlank(treasuryAccountId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         AccountId treasuryAccoundId = AccountId.fromString(treasuryAccountId);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()

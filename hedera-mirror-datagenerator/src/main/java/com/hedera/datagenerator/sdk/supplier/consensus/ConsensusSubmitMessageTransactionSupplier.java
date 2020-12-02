@@ -23,45 +23,35 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 import com.google.common.primitives.Longs;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import lombok.Builder;
-import lombok.Value;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 
-@Builder
-@Value
+@Data
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("topicId");
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    //Required
-    private final String topicId;
+    @Min(1)
+    private long maxTransactionFee = 1_000_000;
 
-    //Optional
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000;
+    private String message = StringUtils.EMPTY;
 
-    @Builder.Default
-    private final String message = StringUtils.EMPTY;
+    @Min(1)
+    private int messageSize = 256;
 
-    @Builder.Default
-    private final int messageSize = 256;
+    @NotBlank
+    private String topicId;
 
     @Override
     public ConsensusMessageSubmitTransaction get() {
-
-        if (StringUtils.isBlank(topicId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new ConsensusMessageSubmitTransaction()
                 .setMaxTransactionFee(maxTransactionFee)

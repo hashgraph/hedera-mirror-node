@@ -20,40 +20,29 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
-import lombok.Builder;
-import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 
-@Builder
-@Value
+@Data
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("tokenId");
+    @Min(1)
+    private long amount = 1;
 
-    //Required
-    private final String tokenId;
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
-    //Optional
-    @Builder.Default
-    private final long amount = 1;
-
-    @Builder.Default
-    private final long maxTransactionFee = 1_000_000_000;
+    @NotBlank
+    private String tokenId;
 
     @Override
     public TokenMintTransaction get() {
-
-        if (StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new TokenMintTransaction()
                 .setAmount(amount)
