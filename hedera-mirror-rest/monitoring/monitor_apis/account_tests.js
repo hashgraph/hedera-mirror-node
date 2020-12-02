@@ -105,7 +105,10 @@ const getAccountsWithAccountCheck = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getAccountsWithTimeAndLimitParams = async (server) => {
-  let url = getUrl(server, accountsPath, {limit: 1});
+  let url = getUrl(server, accountsPath, {
+    'account.balance': 'gte:0',
+    limit: 1,
+  });
   let accounts = await getAPIResponse(url, jsonRespKey);
 
   const checkRunnder = new CheckRunner()
