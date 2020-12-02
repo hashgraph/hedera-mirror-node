@@ -38,11 +38,6 @@ import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
 @Data
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
 
-    //Required
-    @NotBlank
-    private String tokenId;
-
-    //Optional
     private String adminKey;
 
     @NotNull
@@ -56,6 +51,9 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
 
     @NotBlank()
     private String symbol = "HMNT";
+
+    @NotBlank
+    private String tokenId;
 
     private String treasuryAccountId;
 

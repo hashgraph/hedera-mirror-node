@@ -37,11 +37,9 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Data
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
 
-    //Required
     @NotBlank
     private String accountId;
 
-    //Optional
     @NotNull
     private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 

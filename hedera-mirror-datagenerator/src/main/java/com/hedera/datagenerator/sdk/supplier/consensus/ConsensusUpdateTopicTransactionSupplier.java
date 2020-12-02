@@ -38,11 +38,6 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Data
 public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicUpdateTransaction> {
 
-    //Required
-    @NotBlank
-    private String topicId;
-
-    //Optional
     private String adminKey;
 
     private String autoRenewAccountId;
@@ -55,6 +50,9 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String topicId;
 
     @Override
     public ConsensusTopicUpdateTransaction get() {

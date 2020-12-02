@@ -32,16 +32,14 @@ import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 @Data
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
 
-    //Required
-    @NotBlank
-    private String tokenId;
-
-    //Optional
     @Min(1)
     private long amount = 1;
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String tokenId;
 
     @Override
     public TokenMintTransaction get() {

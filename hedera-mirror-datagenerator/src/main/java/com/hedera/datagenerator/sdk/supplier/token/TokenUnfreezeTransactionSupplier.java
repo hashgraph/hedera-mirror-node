@@ -33,16 +33,14 @@ import com.hedera.hashgraph.sdk.token.TokenUnfreezeTransaction;
 @Data
 public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<TokenUnfreezeTransaction> {
 
-    //Required
     @NotBlank
     private String accountId;
 
-    @NotBlank
-    private String tokenId;
-
-    //Optional
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String tokenId;
 
     @Override
     public TokenUnfreezeTransaction get() {

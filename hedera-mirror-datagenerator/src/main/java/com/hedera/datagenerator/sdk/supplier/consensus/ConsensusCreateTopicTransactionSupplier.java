@@ -32,7 +32,6 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Data
 public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicCreateTransaction> {
 
-    //Optional
     private String adminKey;
 
     private String autoRenewAccountId;

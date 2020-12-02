@@ -32,16 +32,14 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Data
 public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBurnTransaction> {
 
-    //Required
-    @NotBlank
-    private String tokenId;
-
-    //Optional
     @Min(1)
     private long amount = 1;
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String tokenId;
 
     @Override
     public TokenBurnTransaction get() {

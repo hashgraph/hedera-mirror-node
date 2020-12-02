@@ -32,13 +32,11 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 @Data
 public class ConsensusDeleteTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicDeleteTransaction> {
 
-    //Required
-    @NotBlank
-    private String topicId;
-
-    //Optional
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String topicId;
 
     @Override
     public ConsensusTopicDeleteTransaction get() {

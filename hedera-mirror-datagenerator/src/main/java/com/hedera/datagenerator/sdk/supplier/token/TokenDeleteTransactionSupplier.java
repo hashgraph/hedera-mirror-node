@@ -32,13 +32,11 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Data
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
 
-    //Required
-    @NotBlank
-    private String tokenId;
-
-    //Optional
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String tokenId;
 
     @Override
     public TokenDeleteTransaction get() {

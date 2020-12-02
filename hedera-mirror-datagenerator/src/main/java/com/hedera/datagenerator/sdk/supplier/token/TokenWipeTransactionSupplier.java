@@ -33,19 +33,17 @@ import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
 @Data
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
 
-    //Required
     @NotBlank
     private String accountId;
 
-    @NotBlank
-    private String tokenId;
-
-    //Optional
     @Min(1)
     private long amount = 1;
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String tokenId;
 
     @Override
     public TokenWipeTransaction get() {

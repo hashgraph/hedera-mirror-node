@@ -33,11 +33,6 @@ import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 @Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
 
-    //Required
-    @NotBlank
-    private String treasuryAccountId;
-
-    //Optional
     private String adminKey;
 
     @Min(1)
@@ -53,6 +48,9 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     @NotBlank
     private String symbol = "HMNT";
+
+    @NotBlank
+    private String treasuryAccountId;
 
     @Override
     public TokenCreateTransaction get() {

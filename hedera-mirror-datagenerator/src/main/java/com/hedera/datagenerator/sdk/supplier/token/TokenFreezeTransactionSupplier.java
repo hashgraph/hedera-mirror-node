@@ -23,11 +23,9 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenFreezeTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
@@ -35,23 +33,17 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Data
 public class TokenFreezeTransactionSupplier implements TransactionSupplier<TokenFreezeTransaction> {
 
-    //Required
     @NotBlank
     private String accountId;
+
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
     @NotBlank
     private String tokenId;
 
-    //Optional
-    @Min(1)
-    private long maxTransactionFee = 1_000_000_000;
-
     @Override
     public TokenFreezeTransaction get() {
-
-        if (StringUtils.isBlank(accountId) || StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new TokenFreezeTransaction()
                 .setAccountId(AccountId.fromString(accountId))

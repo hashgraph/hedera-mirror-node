@@ -33,16 +33,14 @@ import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
 @Data
 public class TokenRevokeKycTransactionSupplier implements TransactionSupplier<TokenRevokeKycTransaction> {
 
-    //Required
     @NotBlank
     private String accountId;
 
-    @NotBlank
-    private String tokenId;
-
-    //Optional
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String tokenId;
 
     @Override
     public TokenRevokeKycTransaction get() {

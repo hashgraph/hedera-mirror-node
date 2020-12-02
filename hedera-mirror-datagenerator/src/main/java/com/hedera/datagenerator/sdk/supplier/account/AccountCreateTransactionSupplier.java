@@ -32,7 +32,6 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Data
 public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
 
-    //Optional
     @Min(1)
     private long initialBalance = 10_000_000;
 

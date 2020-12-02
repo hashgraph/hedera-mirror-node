@@ -34,19 +34,17 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 @Data
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<TransferTransaction> {
 
-    //Required
-    @NotBlank
-    private String recipientAccountId;
-
-    @NotBlank
-    private String senderAccountId;
-
-    //Optional
     @Min(1)
     private long amount = 1;
 
     @Min(1)
     private long maxTransactionFee = 1_000_000;
+
+    @NotBlank
+    private String recipientAccountId;
+
+    @NotBlank
+    private String senderAccountId;
 
     private String tokenId;
 

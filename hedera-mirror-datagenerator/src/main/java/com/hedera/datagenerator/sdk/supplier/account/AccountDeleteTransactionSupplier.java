@@ -32,11 +32,9 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 @Data
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
 
-    //Required
     @NotBlank
     private String accountId;
 
-    //Optional
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
