@@ -23,8 +23,6 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 import com.google.common.primitives.Longs;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
@@ -33,14 +31,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 
 @Data
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
 
-    private static final List<String> requiredFields = Arrays.asList("topicId");
     private static final SecureRandom RANDOM = new SecureRandom();
 
     //Required
@@ -58,10 +54,6 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
     @Override
     public ConsensusMessageSubmitTransaction get() {
-
-        if (StringUtils.isBlank(topicId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new ConsensusMessageSubmitTransaction()
                 .setMaxTransactionFee(maxTransactionFee)

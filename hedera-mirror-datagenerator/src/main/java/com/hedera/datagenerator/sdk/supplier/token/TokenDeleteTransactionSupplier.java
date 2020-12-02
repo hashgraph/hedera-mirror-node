@@ -20,23 +20,17 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.token.TokenDeleteTransaction;
 import com.hedera.hashgraph.sdk.token.TokenId;
 
 @Data
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("tokenId");
 
     //Required
     @NotBlank
@@ -48,10 +42,6 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
 
     @Override
     public TokenDeleteTransaction get() {
-
-        if (StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new TokenDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)

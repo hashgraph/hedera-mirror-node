@@ -23,25 +23,19 @@ package com.hedera.datagenerator.sdk.supplier.account;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Data
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("accountId");
 
     //Required
     @NotBlank
@@ -65,10 +59,6 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountUpdateTransaction get() {
-
-        if (StringUtils.isBlank(accountId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(AccountId.fromString(accountId))

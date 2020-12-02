@@ -20,24 +20,18 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 
 @Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("treasuryAccountId");
 
     //Required
     @NotBlank
@@ -62,10 +56,6 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     @Override
     public TokenCreateTransaction get() {
-
-        if (StringUtils.isBlank(treasuryAccountId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         AccountId treasuryAccoundId = AccountId.fromString(treasuryAccountId);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()

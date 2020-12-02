@@ -20,8 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
@@ -36,8 +34,6 @@ import com.hedera.hashgraph.sdk.token.TokenId;
 
 @Data
 public class TokenFreezeTransactionSupplier implements TransactionSupplier<TokenFreezeTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("accountId", "tokenId");
 
     //Required
     @NotBlank

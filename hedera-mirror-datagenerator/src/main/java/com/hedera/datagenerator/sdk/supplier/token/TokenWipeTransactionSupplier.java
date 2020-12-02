@@ -20,24 +20,18 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
 
 @Data
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("accountId", "tokenId");
 
     //Required
     @NotBlank
@@ -55,10 +49,6 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
 
     @Override
     public TokenWipeTransaction get() {
-
-        if (StringUtils.isBlank(accountId) || StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new TokenWipeTransaction()
                 .setAccountId(AccountId.fromString(accountId))

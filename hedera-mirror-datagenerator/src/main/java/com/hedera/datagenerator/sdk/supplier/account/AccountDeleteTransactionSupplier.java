@@ -20,23 +20,17 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.account.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.account.AccountId;
 
 @Data
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("accountId");
 
     //Required
     @NotBlank
@@ -51,10 +45,6 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountDeleteTransaction get() {
-
-        if (StringUtils.isBlank(accountId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new AccountDeleteTransaction()
                 .setDeleteAccountId(AccountId.fromString(accountId))

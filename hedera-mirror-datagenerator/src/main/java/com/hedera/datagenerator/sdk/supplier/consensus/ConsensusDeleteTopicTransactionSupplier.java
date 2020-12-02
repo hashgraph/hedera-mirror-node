@@ -20,23 +20,17 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicDeleteTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 
 @Data
 public class ConsensusDeleteTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicDeleteTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("topicId");
 
     //Required
     @NotBlank
@@ -48,10 +42,6 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
 
     @Override
     public ConsensusTopicDeleteTransaction get() {
-
-        if (StringUtils.isBlank(topicId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new ConsensusTopicDeleteTransaction()
                 .setMaxTransactionFee(maxTransactionFee)

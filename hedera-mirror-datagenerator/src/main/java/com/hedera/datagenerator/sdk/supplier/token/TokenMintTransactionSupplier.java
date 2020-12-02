@@ -20,23 +20,17 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplierException;
 import com.hedera.hashgraph.sdk.token.TokenId;
 import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
 
 @Data
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
-
-    private static final List<String> requiredFields = Arrays.asList("tokenId");
 
     //Required
     @NotBlank
@@ -51,10 +45,6 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
 
     @Override
     public TokenMintTransaction get() {
-
-        if (StringUtils.isBlank(tokenId)) {
-            throw new TransactionSupplierException(this, requiredFields);
-        }
 
         return new TokenMintTransaction()
                 .setAmount(amount)
