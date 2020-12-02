@@ -22,6 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
@@ -47,6 +48,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
 
     private String tokenId;
 
+    @NotNull
     private TransferType transferType = TransferType.CRYPTO;
 
     @Override
