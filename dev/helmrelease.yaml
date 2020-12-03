@@ -40,9 +40,9 @@ spec:
             monitor:
               mirrorNode:
                 grpc:
-                  host: 35.225.201.99
+                  host: dev-mirror-grpc
                 rest:
-                  host: 35.225.201.99
+                  host: dev-mirror-rest
                   port: 80
               publish:
                 scenarios:
