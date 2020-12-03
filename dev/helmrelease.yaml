@@ -46,11 +46,11 @@ spec:
                   port: 80
               publish:
                 scenarios:
-                  - duration: 9223372036s
-                    name: HCS pinger
+                  - name: HCS pinger
+                    logResponse: true
                     properties:
                       topicId: 0.0.103736
-                    record: true
+                    record: 100
                     tps: 0.1
                     type: CONSENSUS_SUBMIT_MESSAGE
               subscribe:
