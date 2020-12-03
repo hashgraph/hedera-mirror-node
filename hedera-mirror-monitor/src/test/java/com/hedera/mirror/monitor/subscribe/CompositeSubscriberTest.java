@@ -43,8 +43,11 @@ class CompositeSubscriberTest {
 
     @BeforeEach
     void setup() {
+        MirrorNodeProperties mirrorNodeProperties = new MirrorNodeProperties();
+        mirrorNodeProperties.getGrpc().setHost("127.0.0.1");
+        mirrorNodeProperties.getRest().setHost("127.0.0.1");
         monitorProperties = new MonitorProperties();
-        monitorProperties.setMirrorNode(new MirrorNodeProperties());
+        monitorProperties.setMirrorNode(mirrorNodeProperties);
         subscribeProperties = new SubscribeProperties();
         meterRegistry = new SimpleMeterRegistry();
         webClient = WebClient.builder();

@@ -25,12 +25,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.util.concurrent.Uninterruptibles;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -64,6 +65,7 @@ class RestSubscriberTest {
     private RestSubscriberProperties subscriberProperties;
     private WebClient.Builder builder;
     private RestSubscriber restSubscriber;
+    private CountDownLatch countDownLatch;
 
     @BeforeEach
     void setup() {
@@ -84,68 +86,78 @@ class RestSubscriberTest {
     }
 
     @Test
-    void publish() {
+    void publish() throws Exception {
+        countDownLatch = new CountDownLatch(2);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         restSubscriber.onPublish(publishResponse());
         restSubscriber.onPublish(publishResponse());
 
+        countDownLatch.await(500, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(2L);
     }
 
     @Test
-    void duration() {
-        subscriberProperties.setDuration(Duration.ofMillis(1000L));
-        subscriberProperties.getRetry().setMaxAttempts(0);
+    void duration() throws Exception {
+        countDownLatch = new CountDownLatch(1);
+        subscriberProperties.setDuration(Duration.ofMillis(500));
         this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
-        Mono<ClientResponse> delay = Mono.delay(Duration.ofSeconds(5L)).then(response(HttpStatus.OK));
+        Mono<ClientResponse> delay = response(HttpStatus.OK)
+                .delayElement(Duration.ofSeconds(5L))
+                .doOnSubscribe(s -> countDownLatch.countDown());
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(delay);
 
         restSubscriber.onPublish(publishResponse());
 
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(2));
+        countDownLatch.await(1000, TimeUnit.MILLISECONDS);
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(0L);
     }
 
     @Test
-    void limit() {
+    void limit() throws Exception {
+        countDownLatch = new CountDownLatch(3);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         restSubscriber.onPublish(publishResponse());
         restSubscriber.onPublish(publishResponse());
         restSubscriber.onPublish(publishResponse());
 
+        countDownLatch.await(500, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(2L);
     }
 
     @Test
-    void clientError() {
+    void clientError() throws Exception {
+        countDownLatch = new CountDownLatch(1);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
                 .thenReturn(response(HttpStatus.BAD_REQUEST));
         restSubscriber.onPublish(publishResponse());
 
+        countDownLatch.await(500, TimeUnit.MILLISECONDS);
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(0L);
     }
 
     @Test
-    void serverErrorRecovers() {
+    void serverErrorRecovers() throws Exception {
+        countDownLatch = new CountDownLatch(2);
         Mockito.when(exchangeFunction.exchange(Mockito.isA(ClientRequest.class)))
                 .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR))
                 .thenReturn(response(HttpStatus.OK));
 
         restSubscriber.onPublish(publishResponse());
 
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(1));
+        countDownLatch.await(1000, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(1L);
     }
 
     @Test
-    void serverErrorNeverRecovers() {
+    void serverErrorNeverRecovers() throws Exception {
+        countDownLatch = new CountDownLatch(3);
         Mockito.when(exchangeFunction.exchange(Mockito.isA(ClientRequest.class)))
                 .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR))
                 .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR))
@@ -153,7 +165,7 @@ class RestSubscriberTest {
 
         restSubscriber.onPublish(publishResponse());
 
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(1));
+        countDownLatch.await(1000, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(0L);
     }
@@ -167,13 +179,15 @@ class RestSubscriberTest {
 
     private Mono<ClientResponse> response(HttpStatus httpStatus) {
         if (!httpStatus.is2xxSuccessful()) {
-            return Mono.defer(() -> Mono
-                    .error(WebClientResponseException.create(httpStatus.value(), "", HttpHeaders.EMPTY, null, null)));
+            return Mono.<ClientResponse>defer(() -> Mono
+                    .error(WebClientResponseException.create(httpStatus.value(), "", HttpHeaders.EMPTY, null, null)))
+                    .doFinally(s -> countDownLatch.countDown());
         }
         return Mono.just(ClientResponse.create(httpStatus)
                 .header("Content-Type", "application/json")
                 .body("{}")
-                .build());
+                .build())
+                .doFinally(s -> countDownLatch.countDown());
     }
 
     private void assertMetric(long count) {
