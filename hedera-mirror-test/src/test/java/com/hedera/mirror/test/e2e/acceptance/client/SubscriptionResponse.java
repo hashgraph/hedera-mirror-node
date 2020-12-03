@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Base64;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
@@ -65,8 +64,7 @@ public class SubscriptionResponse {
             MirrorConsensusTopicResponse mirrorConsensusTopicResponse = mirrorHCSResponseResponse
                     .getMirrorConsensusTopicResponse();
 
-            Instant publishInstant = Instant
-                    .ofEpochMilli(Longs.fromByteArray(Base64.decodeBase64(mirrorConsensusTopicResponse.message)));
+            Instant publishInstant = Instant.ofEpochMilli(Longs.fromByteArray(mirrorConsensusTopicResponse.message));
 
             long publishSeconds = publishInstant.getEpochSecond();
             long consensusSeconds = mirrorConsensusTopicResponse.consensusTimestamp.getEpochSecond();

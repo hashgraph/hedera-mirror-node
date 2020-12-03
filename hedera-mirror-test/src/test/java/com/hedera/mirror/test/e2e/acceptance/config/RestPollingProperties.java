@@ -22,40 +22,31 @@ package com.hedera.mirror.test.e2e.acceptance.config;
 
 import java.time.Duration;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMax;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Component
-@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
+@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.rest")
 @Data
 @Validated
-public class AcceptanceTestProperties {
-    private final RestPollingProperties restPollingProperties;
+public class RestPollingProperties {
 
     @NotBlank
-    private String nodeAddress;
-    @NotBlank
-    private String nodeId;
-    @NotBlank
-    private String mirrorNodeAddress;
-    @NotBlank
-    private String operatorId;
-    @NotBlank
-    private String operatorKey;
+    private String baseUrl;
+
+    @DurationMin(seconds = 0L)
+    @DurationMax(seconds = 10L)
     @NotNull
-    private Duration messageTimeout = Duration.ofSeconds(20);
-    @NotNull
-    private Long existingTopicNum;
+    private Duration delay = Duration.ofMillis(1000);
 
-    private boolean emitBackgroundMessages = false;
-
-    @Max(5)
-    private int subscribeRetries = 5;
-
-    @NotNull
-    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
+    @Min(1)
+    @Max(60)
+    private int maxAttempts = 60;
 }

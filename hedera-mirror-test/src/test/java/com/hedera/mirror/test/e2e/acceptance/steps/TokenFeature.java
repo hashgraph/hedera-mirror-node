@@ -191,15 +191,11 @@ public class TokenFeature {
     }
 
     @Then("I transfer {int} tokens to recipient")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
     public void transferTokensToRecipient(int amount) throws HederaStatusException {
         transferTokens(tokenId, amount, tokenClient.getSdkClient().getOperatorId(), recipient.getAccountId());
     }
 
     @Then("I transfer {int} tokens of {int} to {int}")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
     public void transferTokens(int amount, int token, int recipient) throws HederaStatusException {
         transferTokens(new TokenId(token), amount, tokenClient.getSdkClient()
                 .getOperatorId(), new AccountId(recipient));
@@ -275,13 +271,17 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
         verifyTransactions(status);
     }
 
     @Then("the mirror node REST API should return status {int} for token fund flow")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenFundFlow(int status) {
         verifyBalances();
         verifyTransactions(status);
@@ -290,13 +290,17 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should confirm token update")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenUpdateFlow() {
         verifyTokenUpdate();
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class}, backoff = @Backoff(delay = 5000))
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionIdString);
 
@@ -442,15 +446,14 @@ public class TokenFeature {
     }
 
     /**
-     * Recover method for REST verify operations. Method parameters of retry method must match this method after
-     * exception parameter
+     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
+     * after exception parameter
      *
      * @param t
      */
     @Recover
-    public void recover(AssertionError t, int status) {
-        log.error("Received {} from REST API, failed verification after {} retries w: {}",
-                status, acceptanceProps.getSubscribeRetries(), t.getMessage());
+    public void recover(StatusRuntimeException t) {
+        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
         throw t;
     }
 
@@ -461,9 +464,9 @@ public class TokenFeature {
      * @param t
      */
     @Recover
-    public void recover(AssertionError t, String endpoint, int status) {
-        log.error("Received {} response from {}. Failed verification after {} retries w:" +
-                " {}", status, endpoint, acceptanceProps.getSubscribeRetries(), t.getMessage());
+    public void recover(AssertionError t) {
+        log.error("REST API response verification failed after {} retries w: {}",
+                acceptanceProps.getRestPollingProperties().getMaxAttempts(), t.getMessage());
         throw t;
     }
 }
