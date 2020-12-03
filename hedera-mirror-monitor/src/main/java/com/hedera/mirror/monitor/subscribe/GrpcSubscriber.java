@@ -95,6 +95,7 @@ public class GrpcSubscriber implements Subscriber {
     }
 
     private void onNext(MirrorConsensusTopicResponse topicResponse) {
+        long endTimestamp = System.currentTimeMillis();
         counter.incrementAndGet();
         log.trace("Received message #{} with timestamp {}", topicResponse.sequenceNumber,
                 topicResponse.consensusTimestamp);
@@ -114,7 +115,7 @@ public class GrpcSubscriber implements Subscriber {
             return;
         }
 
-        long latency = System.currentTimeMillis() - timestamp;
+        long latency = endTimestamp - timestamp;
         timer.record(latency, TimeUnit.MILLISECONDS);
     }
 

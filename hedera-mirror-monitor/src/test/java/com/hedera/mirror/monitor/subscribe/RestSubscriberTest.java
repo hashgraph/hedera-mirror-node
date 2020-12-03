@@ -101,7 +101,7 @@ class RestSubscriberTest {
     @Test
     void duration() throws Exception {
         countDownLatch = new CountDownLatch(1);
-        subscriberProperties.setDuration(Duration.ofMillis(500));
+        subscriberProperties.setDuration(Duration.ofSeconds(1));
         this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
         Mono<ClientResponse> delay = response(HttpStatus.OK)
                 .delayElement(Duration.ofSeconds(5L))
@@ -110,7 +110,7 @@ class RestSubscriberTest {
 
         restSubscriber.onPublish(publishResponse());
 
-        countDownLatch.await(1000, TimeUnit.MILLISECONDS);
+        countDownLatch.await(2, TimeUnit.SECONDS);
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(0L);
     }

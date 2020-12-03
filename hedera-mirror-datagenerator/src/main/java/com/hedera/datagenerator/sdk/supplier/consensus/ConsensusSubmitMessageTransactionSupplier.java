@@ -23,6 +23,7 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 import com.google.common.primitives.Longs;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
@@ -44,6 +45,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     private String message = StringUtils.EMPTY;
 
     @Min(8)
+    @Max(6144)
     private int messageSize = 256;
 
     private boolean retry = false;
