@@ -82,7 +82,7 @@ public class RestSubscriber implements Subscriber {
                         .doOnNext(json -> log.trace("Response: {}", json))
                         .timeout(properties.getTimeout())
                         .retryWhen(retrySpec)
-                        .onErrorContinue((t, o) -> log.info("Error subscribing to REST API: {}", t))
+                        .onErrorContinue((t, o) -> log.warn("Error subscribing to REST API: {}", t))
                         .doOnNext(clientResponse -> record(publishResponse)))
                 .subscribe();
     }

@@ -96,14 +96,15 @@ class RestSubscriberTest {
 
     @Test
     void duration() {
-        subscriberProperties.setDuration(Duration.ofMillis(500L));
+        subscriberProperties.setDuration(Duration.ofMillis(1000L));
+        subscriberProperties.getRetry().setMaxAttempts(0);
         this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
         Mono<ClientResponse> delay = Mono.delay(Duration.ofSeconds(5L)).then(response(HttpStatus.OK));
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(delay);
 
         restSubscriber.onPublish(publishResponse());
 
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(1));
+        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(2));
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(0L);
     }

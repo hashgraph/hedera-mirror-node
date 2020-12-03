@@ -33,11 +33,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class MirrorNodeProperties {
 
-    MirrorNodeProperties(String host) {
-        grpc.setHost("hcs." + host);
-        rest.setHost(host);
-    }
-
     @NotNull
     private GrpcProperties grpc = new GrpcProperties();
 

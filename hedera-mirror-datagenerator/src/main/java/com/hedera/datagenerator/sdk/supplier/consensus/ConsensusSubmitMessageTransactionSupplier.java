@@ -46,12 +46,12 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Min(8)
     private int messageSize = 256;
 
+    private boolean retry = false;
+
     @NotBlank
     private String topicId;
 
-    private boolean retry = false;
-
-    // Cached for performance testing
+    // Internal variables that are cached for performance reasons
     @Getter(lazy = true)
     private final ConsensusTopicId consensusTopicId = ConsensusTopicId.fromString(topicId);
 

@@ -88,8 +88,9 @@ public class GrpcSubscriber implements Subscriber {
         statusThread = Executors.newSingleThreadScheduledExecutor()
                 .scheduleWithFixedDelay(this::status, 5, 5, TimeUnit.SECONDS);
 
-        log.info("Connecting to mirror node {}", monitorProperties.getMirrorNode().getGrpc().getEndpoint());
-        this.mirrorClient = new MirrorClient(monitorProperties.getMirrorNode().getGrpc().getEndpoint());
+        String endpoint = monitorProperties.getMirrorNode().getGrpc().getEndpoint();
+        log.info("Connecting to mirror node {}", endpoint);
+        this.mirrorClient = new MirrorClient(endpoint);
         resubscribe();
     }
 
