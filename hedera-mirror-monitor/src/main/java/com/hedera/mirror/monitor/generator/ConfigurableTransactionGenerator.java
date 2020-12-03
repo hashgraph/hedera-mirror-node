@@ -28,8 +28,8 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import lombok.extern.log4j.Log4j2;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.publish.PublishRequest;
@@ -48,34 +48,41 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         this.properties = properties;
         this.transactionSupplier = convert(properties);
         this.rateLimiter = RateLimiter.create(properties.getTps());
-        remaining = new AtomicLong(properties.getLimit() > 0 ? properties.getLimit() : Long.MAX_VALUE);
+        remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
-                .record(properties.isRecord())
-                .receipt(properties.isReceipt())
+                .logResponse(properties.isLogResponse())
                 .type(properties.getType());
-        log.info("Initializing scenario: {}", properties);
+        rateLimiter.acquire(); // The first acquire always succeeds, so do this so tps=Double.MIN_NORMAL won't acquire
     }
 
     @Override
     public PublishRequest next() {
-        if (remaining.getAndDecrement() <= 0) {
-            throw new ScenarioException("Reached publish limit of " + properties.getLimit());
+        rateLimiter.acquire();
+        long count = remaining.getAndDecrement();
+
+        if (count <= 0) {
+            throw new ScenarioException(properties, "Reached publish limit of " + properties.getLimit());
         }
 
         if (stopTime - System.nanoTime() <= 0) {
-            throw new ScenarioException("Reached publish duration of " + properties.getDuration());
+            throw new ScenarioException(properties, "Reached publish duration of " + properties.getDuration());
         }
 
-        rateLimiter.acquire();
-        return builder.transactionBuilder(transactionSupplier.get()).build();
+        return builder.receipt(shouldGenerate(properties.getReceipt(), count))
+                .record(shouldGenerate(properties.getRecord(), count))
+                .transactionBuilder(transactionSupplier.get())
+                .build();
     }
 
     private TransactionSupplier<?> convert(ScenarioProperties p) {
         TransactionSupplier<?> supplier = new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
 
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        Validator validator = factory.getValidator();
+        Validator validator = Validation.byDefaultProvider()
+                .configure()
+                .messageInterpolator(new ParameterMessageInterpolator())
+                .buildValidatorFactory()
+                .getValidator();
         Set<ConstraintViolation<TransactionSupplier<?>>> validations = validator.validate(supplier);
 
         if (!validations.isEmpty()) {
@@ -83,5 +90,9 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         }
 
         return supplier;
+    }
+
+    private boolean shouldGenerate(int percent, long count) {
+        return (count % 100) < percent;
     }
 }

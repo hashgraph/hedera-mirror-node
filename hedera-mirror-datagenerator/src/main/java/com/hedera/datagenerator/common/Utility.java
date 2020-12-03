@@ -22,7 +22,6 @@ package com.hedera.datagenerator.common;
 
 import com.google.common.primitives.Longs;
 import java.time.Instant;
-import java.util.Base64;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 
@@ -30,12 +29,15 @@ import lombok.extern.log4j.Log4j2;
 @UtilityClass
 public class Utility {
 
-    public static String getEncodedTimestamp() {
-        return Base64.getEncoder().encodeToString(Longs.toByteArray(Instant.now().toEpochMilli()));
+    public static Long getTimestamp(byte[] message) {
+        if (message == null || message.length < Long.BYTES) {
+            return null;
+        }
+
+        return Longs.fromByteArray(message);
     }
 
     public static String getMemo(String message) {
-        return getEncodedTimestamp() + "_" + message + " at " + Instant
-                .now();
+        return System.currentTimeMillis() + "_" + message + " at " + Instant.now();
     }
 }

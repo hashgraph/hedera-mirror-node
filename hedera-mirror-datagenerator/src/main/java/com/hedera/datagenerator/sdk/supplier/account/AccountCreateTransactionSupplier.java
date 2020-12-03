@@ -22,6 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import javax.validation.constraints.Min;
 import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -30,10 +31,13 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Data
+@Log4j2
 public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
 
     @Min(1)
     private long initialBalance = 10_000_000;
+
+    private boolean logKeys = false;
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
@@ -52,6 +56,13 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
     private Ed25519PublicKey generateKeys() {
         Ed25519PrivateKey privateKey = Ed25519PrivateKey.generate();
         Ed25519PublicKey publicKey = privateKey.publicKey;
+
+        // Since these keys will never be seen again, if we want to reuse this account provide an option to print them
+        if (logKeys) {
+            log.info("privateKey: {}", privateKey);
+            log.info("publicKey: {}", publicKey);
+        }
+
         return publicKey;
     }
 }

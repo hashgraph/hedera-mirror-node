@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -21,9 +21,6 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -31,45 +28,39 @@ import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-
 @Data
 @Validated
-public class ScenarioProperties {
+public abstract class AbstractSubscriberProperties {
 
     @NotNull
     @DurationMin(seconds = 30)
-    private Duration duration = Duration.ofNanos(Long.MAX_VALUE);
+    protected Duration duration = Duration.ofNanos(Long.MAX_VALUE);
 
-    private boolean enabled = true;
+    protected boolean enabled = true;
 
     @Min(0)
-    private long limit = 0;
-
-    private boolean logResponse = false;
+    protected long limit = 0; // 0 for unlimited
 
     @NotBlank
-    private String name;
+    protected String name;
 
     @NotNull
-    private Map<String, Object> properties = new LinkedHashMap<>();
+    protected RetryProperties retry = new RetryProperties();
 
-    @Min(0)
-    @Max(100)
-    private int receipt = 0;
+    @Data
+    @Validated
+    public static class RetryProperties {
 
-    @Min(0)
-    @Max(100)
-    private int record = 0;
+        @Min(0)
+        private long maxAttempts = 16L;
 
-    @Min(0)
-    private double tps = 10.0;
+        @NotNull
+        @DurationMin(millis = 500L)
+        private Duration maxBackoff = Duration.ofSeconds(8L);
 
-    @NotNull
-    private TransactionType type;
-
-    public long getLimit() {
-        return limit > 0 ? limit : Long.MAX_VALUE;
+        @NotNull
+        @DurationMin(millis = 100L)
+        private Duration minBackoff = Duration.ofMillis(250L);
     }
 }
 

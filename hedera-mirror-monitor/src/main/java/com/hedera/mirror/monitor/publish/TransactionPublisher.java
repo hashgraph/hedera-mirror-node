@@ -20,15 +20,15 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import java.security.SecureRandom;
+import com.google.common.base.Suppliers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -47,57 +47,38 @@ import com.hedera.mirror.monitor.NodeProperties;
 @RequiredArgsConstructor
 public class TransactionPublisher {
 
-    private static final Random RANDOM = new SecureRandom();
-
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
     private final PublishMetrics publishMetrics;
-    private final List<Client> clients = new ArrayList<>();
-
-    @PostConstruct
-    public void init() {
-        List<NodeProperties> validNodes = validateNodes();
-
-        if (validNodes.isEmpty()) {
-            throw new IllegalArgumentException("No valid nodes found");
-        }
-
-        for (int i = 0; i < publishProperties.getConnections(); ++i) {
-            NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
-            Client client = toClient(nodeProperties);
-            clients.add(client);
-        }
-    }
+    private final Supplier<List<Client>> clients = Suppliers.memoize(this::getClients);
+    private final AtomicInteger counter = new AtomicInteger(0);
 
     @PreDestroy
     public void close() {
-        log.info("Closing {} client connections", clients.size());
+        log.info("Closing {} client connections", clients.get().size());
 
-        for (Client client : clients) {
+        for (Client client : clients.get()) {
             try {
                 client.close(200, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
+                // Ignore
             }
         }
     }
 
     public PublishResponse publish(PublishRequest request) {
-        if (clients.isEmpty() || !publishProperties.isEnabled()) {
-            return null;
-        }
-
         return publishMetrics.record(request, this::doPublish);
     }
 
     private PublishResponse doPublish(PublishRequest request) throws Exception {
         log.trace("Publishing: {}", request);
-        int index = RANDOM.nextInt(clients.size());
-        Client client = clients.get(index);
+        int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
+        Client client = clients.get().get(index);
 
         var transactionId = request.getTransactionBuilder().execute(client);
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
-                .transactionId(transactionId)
-                .type(request.getType());
+                .request(request)
+                .transactionId(transactionId);
 
         if (request.isRecord()) {
             var record = transactionId.getRecord(client);
@@ -108,8 +89,30 @@ public class TransactionPublisher {
         }
 
         PublishResponse response = responseBuilder.build();
-        log.trace("Received response: {}", response);
+
+        if (request.isLogResponse()) {
+            log.info("Received response: {}", response);
+        }
+
         return response;
+    }
+
+    private List<Client> getClients() {
+        List<NodeProperties> validNodes = validateNodes();
+
+        if (validNodes.isEmpty()) {
+            throw new IllegalArgumentException("No valid nodes found");
+        }
+
+        List<Client> validatedClients = new ArrayList<>();
+
+        for (int i = 0; i < publishProperties.getConnections(); ++i) {
+            NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
+            Client client = toClient(nodeProperties);
+            validatedClients.add(client);
+        }
+
+        return validatedClients;
     }
 
     private List<NodeProperties> validateNodes() {
@@ -128,7 +131,7 @@ public class TransactionPublisher {
             try {
                 new AccountInfoQuery().setAccountId(accountId).execute(client, Duration.ofSeconds(10L));
                 validNodes.add(node);
-                log.info("Added node {} to the list of valid nodes", node);
+                log.info("Validated node: {}", node);
             } catch (Exception e) {
                 log.warn("Unable to validate node {}: ", node, e);
             } finally {

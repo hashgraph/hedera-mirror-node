@@ -61,7 +61,7 @@ public class PublishMetrics {
     }
 
     public PublishResponse record(PublishRequest publishRequest,
-            CheckedFunction<PublishRequest, PublishResponse> function) {
+                                  CheckedFunction<PublishRequest, PublishResponse> function) {
         long startTime = System.currentTimeMillis();
         String status = SUCCESS;
         TransactionType type = publishRequest.getType();

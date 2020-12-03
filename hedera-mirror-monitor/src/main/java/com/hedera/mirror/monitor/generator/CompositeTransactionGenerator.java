@@ -22,11 +22,13 @@ package com.hedera.mirror.monitor.generator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
@@ -34,34 +36,67 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 @Named
 public class CompositeTransactionGenerator implements TransactionGenerator {
 
-    final EnumeratedDistribution<TransactionGenerator> distribution;
+    static final Pair<TransactionGenerator, Double> INACTIVE;
+
+    static {
+        ScenarioProperties scenarioProperties = new ScenarioProperties();
+        scenarioProperties.setName("Inactive");
+        scenarioProperties.setProperties(Map.of("topicId", "invalid"));
+        scenarioProperties.setTps(Double.MIN_NORMAL); // Never retry
+        scenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
+        TransactionGenerator generator = new ConfigurableTransactionGenerator(scenarioProperties);
+        INACTIVE = Pair.create(generator, 1.0);
+    }
+
+    private final PublishProperties properties;
+    volatile EnumeratedDistribution<TransactionGenerator> distribution;
 
     public CompositeTransactionGenerator(PublishProperties properties) {
-        List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
-
-        double total = properties.getScenarios()
-                .stream()
-                .filter(ScenarioProperties::isEnabled)
-                .map(ScenarioProperties::getTps)
-                .reduce(0.0, (x, y) -> x + y);
-
-        for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
-            if (scenarioProperties.isEnabled()) {
-                double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
-                pairs.add(Pair.create(new ConfigurableTransactionGenerator(scenarioProperties), weight));
-            }
-        }
-
-        distribution = new EnumeratedDistribution<>(pairs);
+        this.properties = properties;
+        rebuild();
     }
 
     @Override
     public PublishRequest next() {
+        TransactionGenerator transactionGenerator = distribution.sample();
+
         try {
-            return distribution.sample().next(); // TODO: Remove child generator when it completes
+            return transactionGenerator.next();
+        } catch (ScenarioException e) {
+            log.warn(e.getMessage());
+            e.getProperties().setEnabled(false);
+            rebuild();
+            throw e;
         } catch (Exception e) {
             log.error("Unable to generate a transaction", e);
             throw e;
         }
+    }
+
+    private synchronized void rebuild() {
+        List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
+
+        if (properties.isEnabled()) {
+            double total = properties.getScenarios()
+                    .stream()
+                    .filter(ScenarioProperties::isEnabled)
+                    .map(ScenarioProperties::getTps)
+                    .reduce(0.0, (x, y) -> x + y);
+
+            for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
+                if (scenarioProperties.isEnabled()) {
+                    double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
+                    pairs.add(Pair.create(new ConfigurableTransactionGenerator(scenarioProperties), weight));
+                    log.info("Activated scenario: {}", scenarioProperties);
+                }
+            }
+        }
+
+        if (pairs.isEmpty()) {
+            pairs.add(INACTIVE);
+            log.info("Publishing is disabled");
+        }
+
+        this.distribution = new EnumeratedDistribution<>(pairs);
     }
 }

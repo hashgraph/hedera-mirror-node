@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
 import com.google.common.base.Suppliers;
@@ -36,7 +37,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
-public class CompositeTransactionGeneratorTest {
+class CompositeTransactionGeneratorTest {
 
     private PublishProperties properties;
     private Supplier<CompositeTransactionGenerator> supplier;
@@ -90,5 +91,37 @@ public class CompositeTransactionGeneratorTest {
                 .hasSize(1)
                 .extracting(Pair::getValue)
                 .containsExactly(1.0);
+    }
+
+    @Test
+    void noScenario() {
+        properties.getScenarios().clear();
+        assertInactive();
+    }
+
+    @Test
+    void publishDisabled() {
+        properties.setEnabled(false);
+        assertInactive();
+    }
+
+    @Test
+    void scenariosComplete() {
+        properties.getScenarios().remove(properties.getScenarios().size() - 1);
+        properties.getScenarios().get(0).setLimit(1L);
+        CompositeTransactionGenerator generator = supplier.get();
+        assertThat(generator.next()).isNotNull();
+        assertThatThrownBy(() -> generator.next()).isInstanceOf(ScenarioException.class);
+        assertInactive();
+        assertThat(properties.getScenarios())
+                .extracting(ScenarioProperties::isEnabled)
+                .containsExactly(false);
+    }
+
+    private void assertInactive() {
+        assertThat(supplier.get().distribution.getPmf())
+                .hasSize(1)
+                .first()
+                .isEqualTo(CompositeTransactionGenerator.INACTIVE);
     }
 }

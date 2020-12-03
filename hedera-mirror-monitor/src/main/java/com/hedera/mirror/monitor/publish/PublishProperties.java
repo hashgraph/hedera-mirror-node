@@ -36,7 +36,7 @@ import com.hedera.mirror.monitor.generator.ScenarioProperties;
 public class PublishProperties {
 
     @Min(1)
-    private int connections = 10;
+    private int connections = 5;
 
     private boolean enabled = true;
 

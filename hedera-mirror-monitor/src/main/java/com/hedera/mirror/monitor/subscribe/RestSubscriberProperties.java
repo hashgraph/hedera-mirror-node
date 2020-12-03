@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,17 +20,22 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
-import lombok.Getter;
+import java.time.Duration;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.validation.annotation.Validated;
 
-public class ScenarioException extends RuntimeException {
+@Data
+@Validated
+public class RestSubscriberProperties extends AbstractSubscriberProperties {
 
-    private static final long serialVersionUID = 1690349494197296387L;
+    @NotNull
+    @DurationMin(millis = 500)
+    private Duration timeout = Duration.ofSeconds(2);
 
-    @Getter
-    private final transient ScenarioProperties properties;
-
-    public ScenarioException(ScenarioProperties properties, String message) {
-        super(message);
-        this.properties = properties;
+    @Override
+    public long getLimit() {
+        return limit > 0 ? limit : Long.MAX_VALUE;
     }
 }

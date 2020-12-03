@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,17 +20,19 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
-import lombok.Getter;
+import java.time.Instant;
+import javax.annotation.Nullable;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
+import org.springframework.validation.annotation.Validated;
 
-public class ScenarioException extends RuntimeException {
+@Data
+@Validated
+public class GrpcSubscriberProperties extends AbstractSubscriberProperties {
 
-    private static final long serialVersionUID = 1690349494197296387L;
+    @Nullable
+    private Instant startTime;
 
-    @Getter
-    private final transient ScenarioProperties properties;
-
-    public ScenarioException(ScenarioProperties properties, String message) {
-        super(message);
-        this.properties = properties;
-    }
+    @NotBlank
+    private String topicId;
 }

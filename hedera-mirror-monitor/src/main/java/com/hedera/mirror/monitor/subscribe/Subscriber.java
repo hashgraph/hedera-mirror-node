@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,17 +20,11 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
-import lombok.Getter;
+import com.hedera.mirror.monitor.publish.PublishResponse;
 
-public class ScenarioException extends RuntimeException {
+public interface Subscriber {
 
-    private static final long serialVersionUID = 1690349494197296387L;
+    String METRIC_NAME = "hedera.mirror.monitor.subscribe";
 
-    @Getter
-    private final transient ScenarioProperties properties;
-
-    public ScenarioException(ScenarioProperties properties, String message) {
-        super(message);
-        this.properties = properties;
-    }
+    void onPublish(PublishResponse response);
 }

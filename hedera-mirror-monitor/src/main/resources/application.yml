@@ -1,22 +1,8 @@
-hedera:
-  mirror:
-    monitor:
-      network: TESTNET
-      operator:
-        accountId:
-        privateKey:
-      publish:
-        connections: 4
-        scenarios:
-          - name: HCS pinger
-            properties:
-              topicId:
-            record: true
-            tps: 0.1
-            type: CONSENSUS_SUBMIT_MESSAGE
 logging:
   level:
     root: warn
+    #org.springframework.web.reactive.function.client: trace
+    com.hedera.datagenerator: info
     com.hedera.mirror.monitor: info
 management:
   endpoints:

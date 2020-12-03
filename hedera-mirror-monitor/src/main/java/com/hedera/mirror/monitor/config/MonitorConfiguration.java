@@ -20,20 +20,20 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
-import java.util.concurrent.Executors;
+import java.util.Objects;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.endpoint.ReactiveMessageSourceProducer;
-import org.springframework.messaging.support.GenericMessage;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.monitor.generator.TransactionGenerator;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
+import com.hedera.mirror.monitor.subscribe.Subscriber;
 
 @Log4j2
 @Configuration
@@ -48,12 +48,25 @@ class MonitorConfiguration {
     @Resource
     private TransactionPublisher transactionPublisher;
 
+    @Resource
+    private Subscriber subscriber;
+
+    /**
+     * Constructs a reactive flow for publishing and subscribing to transactions. The transaction generator will run on
+     * a single thread and generate transactions as fast as possible. Next, a parallel Flux will concurrently publish
+     * those transactions to the main nodes. Finally, a subscriber will receive every published transaction response and
+     * validate whether that transaction was received by the mirror node APIs.
+     *
+     * @return the subscribed flux
+     */
     @Bean
-    IntegrationFlow publishFlow() {
-        return IntegrationFlows
-                .from(new ReactiveMessageSourceProducer(() -> new GenericMessage<>(transactionGenerator.next())))
-                .channel(c -> c.executor(Executors.newFixedThreadPool(publishProperties.getConnections())))
-                .handle(PublishRequest.class, (p, h) -> transactionPublisher.publish(p))
-                .nullChannel();
+    Disposable publishSubscribe() {
+        return Flux.<PublishRequest>generate(sink -> sink.next(transactionGenerator.next()))
+                .subscribeOn(Schedulers.single())
+                .parallel(publishProperties.getConnections())
+                .runOn(Schedulers.newParallel("publisher", publishProperties.getConnections()))
+                .map(transactionPublisher::publish)
+                .filter(Objects::nonNull)
+                .subscribe(subscriber::onPublish);
     }
 }

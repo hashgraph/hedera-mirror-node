@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor;
 
 /*-
  * ‌
@@ -20,57 +20,56 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
-import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
+import lombok.NoArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-
 @Data
+@NoArgsConstructor
 @Validated
-public class ScenarioProperties {
+public class MirrorNodeProperties {
 
     @NotNull
-    @DurationMin(seconds = 30)
-    private Duration duration = Duration.ofNanos(Long.MAX_VALUE);
-
-    private boolean enabled = true;
-
-    @Min(0)
-    private long limit = 0;
-
-    private boolean logResponse = false;
-
-    @NotBlank
-    private String name;
+    private GrpcProperties grpc = new GrpcProperties();
 
     @NotNull
-    private Map<String, Object> properties = new LinkedHashMap<>();
+    private RestProperties rest = new RestProperties();
 
-    @Min(0)
-    @Max(100)
-    private int receipt = 0;
+    @Data
+    @Validated
+    public static class GrpcProperties {
 
-    @Min(0)
-    @Max(100)
-    private int record = 0;
+        @NotBlank
+        private String host;
 
-    @Min(0)
-    private double tps = 10.0;
+        @Min(0)
+        @Max(65535)
+        private int port = 5600;
 
-    @NotNull
-    private TransactionType type;
+        public String getEndpoint() {
+            return host + ":" + port;
+        }
+    }
 
-    public long getLimit() {
-        return limit > 0 ? limit : Long.MAX_VALUE;
+    @Data
+    @Validated
+    public static class RestProperties {
+
+        @NotBlank
+        private String host;
+
+        @Min(0)
+        @Max(65535)
+        private int port = 443;
+
+        public String getBaseUrl() {
+            String scheme = port == 443 ? "https://" : "http://";
+            return scheme + host + ":" + port + "/api/v1";
+        }
     }
 }
-
 

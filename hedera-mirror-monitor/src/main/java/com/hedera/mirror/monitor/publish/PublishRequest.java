@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
 
@@ -30,8 +31,10 @@ import com.hedera.hashgraph.sdk.TransactionId;
 @Builder
 @Value
 public class PublishRequest {
+    private final boolean logResponse;
     private final boolean receipt;
     private final boolean record;
+    private final Instant timestamp = Instant.now();
     private final TransactionBuilder<TransactionId, ?, ?> transactionBuilder;
     private final TransactionType type;
 }

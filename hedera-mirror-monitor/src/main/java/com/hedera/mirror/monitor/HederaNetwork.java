@@ -29,12 +29,21 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum HederaNetwork {
 
-    MAINNET(mainnet()),
-    PREVIEWNET(previewnet()),
-    TESTNET(testnet()),
-    OTHER(Collections.emptySet());
+    MAINNET(mainnet(), mirrorNode("mainnet")),
+    PREVIEWNET(previewnet(), mirrorNode("previewnet")),
+    TESTNET(testnet(), mirrorNode("testnet")),
+    OTHER(Collections.emptySet(), null);
 
     private final Set<NodeProperties> nodes;
+    private final MirrorNodeProperties mirrorNode;
+
+    private static MirrorNodeProperties mirrorNode(String environment) {
+        String host = environment + ".mirrornode.hedera.com";
+        MirrorNodeProperties mirrorNodeProperties = new MirrorNodeProperties();
+        mirrorNodeProperties.getGrpc().setHost("hcs." + host);
+        mirrorNodeProperties.getRest().setHost(host);
+        return mirrorNodeProperties;
+    }
 
     private static Set<NodeProperties> mainnet() {
         return Set.of(
@@ -65,7 +74,8 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.3", "0.testnet.hedera.com"),
                 new NodeProperties("0.0.4", "1.testnet.hedera.com"),
                 new NodeProperties("0.0.5", "2.testnet.hedera.com"),
-                new NodeProperties("0.0.6", "3.testnet.hedera.com")
+                new NodeProperties("0.0.6", "3.testnet.hedera.com"),
+                new NodeProperties("0.0.7", "4.testnet.hedera.com")
         );
     }
 }
