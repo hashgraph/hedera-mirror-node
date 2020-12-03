@@ -130,10 +130,10 @@ class RestSubscriberTest {
     }
 
     @Test
-    void clientError() throws Exception {
+    void nonRetryableError() throws Exception {
         countDownLatch = new CountDownLatch(1);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
-                .thenReturn(response(HttpStatus.BAD_REQUEST));
+                .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR));
         restSubscriber.onPublish(publishResponse());
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
@@ -142,10 +142,10 @@ class RestSubscriberTest {
     }
 
     @Test
-    void serverErrorRecovers() throws Exception {
+    void recovers() throws Exception {
         countDownLatch = new CountDownLatch(2);
         Mockito.when(exchangeFunction.exchange(Mockito.isA(ClientRequest.class)))
-                .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR))
+                .thenReturn(response(HttpStatus.NOT_FOUND))
                 .thenReturn(response(HttpStatus.OK));
 
         restSubscriber.onPublish(publishResponse());
@@ -156,12 +156,12 @@ class RestSubscriberTest {
     }
 
     @Test
-    void serverErrorNeverRecovers() throws Exception {
+    void neverRecovers() throws Exception {
         countDownLatch = new CountDownLatch(3);
         Mockito.when(exchangeFunction.exchange(Mockito.isA(ClientRequest.class)))
-                .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR))
-                .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR))
-                .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR));
+                .thenReturn(response(HttpStatus.NOT_FOUND))
+                .thenReturn(response(HttpStatus.NOT_FOUND))
+                .thenReturn(response(HttpStatus.NOT_FOUND));
 
         restSubscriber.onPublish(publishResponse());
 

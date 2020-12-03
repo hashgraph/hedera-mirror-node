@@ -57,15 +57,15 @@ public class PublishResponse {
             toStringBuilder.append("status", receiptProto.getStatus());
 
             if (receiptProto.hasAccountID()) {
-                toStringBuilder.append("accountId", receiptProto.getAccountID());
+                toStringBuilder.append("accountId", receiptProto.getAccountID().getAccountNum());
             } else if (receiptProto.hasContractID()) {
-                toStringBuilder.append("contractId", receiptProto.getContractID());
+                toStringBuilder.append("contractId", receiptProto.getContractID().getContractNum());
             } else if (receiptProto.hasFileID()) {
-                toStringBuilder.append("fileId", receiptProto.getFileID());
+                toStringBuilder.append("fileId", receiptProto.getFileID().getFileNum());
             } else if (receiptProto.hasTokenID()) {
-                toStringBuilder.append("tokenId", receiptProto.getTokenID());
+                toStringBuilder.append("tokenId", receiptProto.getTokenID().getTokenNum());
             } else if (receiptProto.hasTopicID()) {
-                toStringBuilder.append("topicId", receiptProto.getTopicID());
+                toStringBuilder.append("topicId", receiptProto.getTopicID().getTopicNum());
             }
 
             if (receiptProto.getTopicSequenceNumber() > 0) {

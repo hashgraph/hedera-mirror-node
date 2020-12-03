@@ -60,7 +60,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
     @Override
     public ConsensusMessageSubmitTransaction get() {
-        return new NonRetryableConsensusMessageSubmitTransaction()
+        return new RetryConfigurableConsensusMessageSubmitTransaction()
                 .setMaxTransactionFee(maxTransactionFee)
                 .setMessage(generateMessage())
                 .setTopicId(getConsensusTopicId());
@@ -81,7 +81,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
         return bytes;
     }
 
-    private class NonRetryableConsensusMessageSubmitTransaction extends ConsensusMessageSubmitTransaction {
+    private class RetryConfigurableConsensusMessageSubmitTransaction extends ConsensusMessageSubmitTransaction {
 
         @Override
         protected boolean shouldRetry(HederaThrowable e) {

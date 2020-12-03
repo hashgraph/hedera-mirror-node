@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -66,7 +67,7 @@ public class RestSubscriber implements Subscriber {
         RetryBackoffSpec retrySpec = Retry
                 .backoff(properties.getRetry().getMaxAttempts(), properties.getRetry().getMinBackoff())
                 .maxBackoff(properties.getRetry().getMaxBackoff())
-                .filter(this::isNotClientError)
+                .filter(this::shouldRetry)
                 .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
                         r.totalRetries() + 1, r.failure()));
 
@@ -92,9 +93,9 @@ public class RestSubscriber implements Subscriber {
         restProcessor.next(response);
     }
 
-    private boolean isNotClientError(Throwable t) {
-        return !(t instanceof WebClientResponseException &&
-                ((WebClientResponseException) t).getStatusCode().is4xxClientError());
+    private boolean shouldRetry(Throwable t) {
+        return t instanceof WebClientResponseException &&
+                ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND;
     }
 
     private void record(PublishResponse r) {

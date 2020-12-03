@@ -91,7 +91,7 @@ public class GrpcSubscriber implements Subscriber {
         String endpoint = monitorProperties.getMirrorNode().getGrpc().getEndpoint();
         log.info("Connecting to mirror node {}", endpoint);
         this.mirrorClient = new MirrorClient(endpoint);
-        resubscribe();
+        subscribe();
     }
 
     private void onNext(MirrorConsensusTopicResponse topicResponse) {
@@ -129,7 +129,7 @@ public class GrpcSubscriber implements Subscriber {
             Duration retryDuration = Duration.ofMillis(Math.min(delayMillis, retry.getMaxBackoff().toMillis()));
             log.info("Retrying in {}s", retryDuration.toSeconds());
             Uninterruptibles.sleepUninterruptibly(retryDuration);
-            resubscribe();
+            subscribe();
         } else {
             close();
         }
@@ -168,7 +168,7 @@ public class GrpcSubscriber implements Subscriber {
         }
     }
 
-    private synchronized void resubscribe() {
+    private synchronized void subscribe() {
         long limit = subscriberProperties.getLimit();
         MirrorConsensusTopicQuery mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
         mirrorConsensusTopicQuery.setTopicId(ConsensusTopicId.fromString(subscriberProperties.getTopicId()));
