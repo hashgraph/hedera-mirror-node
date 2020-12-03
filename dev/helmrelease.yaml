@@ -38,6 +38,12 @@ spec:
         hedera:
           mirror:
             monitor:
+              mirrorNode:
+                grpc:
+                  host: 35.225.201.99
+                rest:
+                  host: 35.225.201.99
+                  port: 80
               publish:
                 scenarios:
                   - duration: 9223372036s
@@ -47,6 +53,14 @@ spec:
                     record: true
                     tps: 0.1
                     type: CONSENSUS_SUBMIT_MESSAGE
+              subscribe:
+                grpc:
+                  - name: HCS subscribe
+                    topicId: 0.0.103736
+                rest:
+                  - name: REST subscribe
+      image:
+        tag: master-85f30d0aaca6ead3949a722027cb8af2453dc8d4
     postgresql:
       enabled: false
     rest:
