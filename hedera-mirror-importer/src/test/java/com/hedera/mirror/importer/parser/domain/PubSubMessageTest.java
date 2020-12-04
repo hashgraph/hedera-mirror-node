@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -65,7 +64,7 @@ class PubSubMessageTest {
                 DEFAULT_TIMESTAMP_LONG,
                 EntityId.of(TOPIC_ID),
                 10,
-                getTransaction(),
+                new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
                 getTransactionRecord(),
                 nonFeeTransfers);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -102,7 +101,8 @@ class PubSubMessageTest {
 
     @Test
     void testSerializationWithNullFields() throws Exception {
-        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10, getTransaction(),
+        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10,
+                new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
                 getTransactionRecord(), null);
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
@@ -115,27 +115,30 @@ class PubSubMessageTest {
         assertThat(actual).isEqualTo(expected);
     }
 
-    private static Transaction getTransaction() {
-        return Transaction.newBuilder()
-                .setBody(TransactionBody.newBuilder()
-                        .setTransactionID(TransactionID.newBuilder()
-                                .setTransactionValidStart(TIMESTAMP)
-                                .setAccountID(ACCOUNT_ID)
-                                .build())
-                        .setNodeAccountID(ACCOUNT_ID)
-                        .setTransactionFee(INT64_VALUE)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(INT64_VALUE).build())
-                        .setMemoBytes(BYTE_STRING)
-                        .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
-                                .setTopicID(TOPIC_ID)
-                                .setMessage(BYTE_STRING)
-                                .build())
+    private static TransactionBody getTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(TIMESTAMP)
+                        .setAccountID(ACCOUNT_ID)
                         .build())
-                .setSigMap(SignatureMap.newBuilder()
-                        .addSigPair(SignaturePair.newBuilder()
-                                .setEd25519(BYTE_STRING)
-                                .setPubKeyPrefix(BYTE_STRING)
-                                .build())
+                .setNodeAccountID(ACCOUNT_ID)
+                .setTransactionFee(INT64_VALUE)
+                .setTransactionValidDuration(Duration.newBuilder()
+                        .setSeconds(INT64_VALUE).build())
+                .setMemoBytes(BYTE_STRING)
+                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody
+                        .newBuilder()
+                        .setTopicID(TOPIC_ID)
+                        .setMessage(BYTE_STRING)
+                        .build())
+                .build();
+    }
+
+    private static SignatureMap getSignatureMap() {
+        return SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setEd25519(BYTE_STRING)
+                        .setPubKeyPrefix(BYTE_STRING)
                         .build())
                 .build();
     }
@@ -232,7 +235,8 @@ class PubSubMessageTest {
                 "      }," +
                 "      \"amount\": \"100000000\"" +
                 "    }]" +
-                "  }" +
+                "  }," +
+                "  \"tokenTransferLists\":[]" +
                 "}";
     }
 }
