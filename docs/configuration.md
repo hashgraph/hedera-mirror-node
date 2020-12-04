@@ -28,7 +28,11 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.name`                                     | mirror_node             | The name of the database                                                                       |
 | `hedera.mirror.importer.db.password`                                 | mirror_node_pass        | The database password the processor uses to connect. **Should be changed from default**        |
 | `hedera.mirror.importer.db.port`                                     | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.importer.db.username`                                 | mirror_node             | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.importer.db.flyway.baselineVersion`                   | "0"                     | The version to tag an existing schema with when executing baseline                                     |
+| `hedera.mirror.importer.db.flyway.baselineOnMigrate`                 | true                    | Whether to automatically call baseline when migrate is executed against a non-empty schema with no schema history                                     |
+| `hedera.mirror.importer.db.flyway.connectRetries`                    | 20                      | The maximum number of retries when attempting to connect to the database                                     |
+| `hedera.mirror.importer.db.flyway.ignoreMissingMigrations`           | true                    | Whether to ignore missing migrations when reading the schema history table                                     |
+| `hedera.mirror.importer.db.flyway.target`                            | "1.999.0"               | Target version up to which Flyway should consider migrations                                     |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |
 | `hedera.mirror.importer.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
