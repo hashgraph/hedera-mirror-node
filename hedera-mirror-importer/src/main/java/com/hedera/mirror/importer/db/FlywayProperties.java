@@ -20,42 +20,25 @@ package com.hedera.mirror.importer.db;
  * ‍
  */
 
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+@ConfigurationProperties("hedera.mirror.importer.db.flyway")
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.importer.db")
-@RequiredArgsConstructor
-public class DBProperties {
-    private final FlywayProperties flywayProperties;
+public class FlywayProperties {
 
     @NotBlank
-    private String host = "";
+    private String baselineVersion = "0"; // set to 1.999.0 for v2 case
 
-    private boolean loadBalance = true;
+    private boolean baselineOnMigrate = true;
 
-    @NotBlank
-    private String name = "";
+    private int connectRetries = 20;
 
-    @NotBlank
-    private String password = "";
-
-    @Min(0)
-    private int port = 5432;
+    private boolean ignoreMissingMigrations = true;
 
     @NotBlank
-    private String restPassword = "";
-
-    @NotBlank
-    private String restUsername = "";
-
-    @NotBlank
-    private String username = "";
-
-    private String dockerImage = "postgres:10-alpine";
+    private String target = "1.999.0"; // set to 2.999.0 for v2 case
 }
