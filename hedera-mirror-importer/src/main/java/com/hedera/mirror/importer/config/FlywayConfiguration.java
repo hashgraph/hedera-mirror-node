@@ -36,6 +36,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.db.DBProperties;
 
 @Configuration
@@ -43,9 +44,10 @@ import com.hedera.mirror.importer.db.DBProperties;
 @RequiredArgsConstructor
 public class FlywayConfiguration {
 
+    private final ApplicationContext applicationContext;
     private final DataSource dataSource;
     private final DBProperties dbProperties;
-    private final ApplicationContext applicationContext;
+    private final MirrorProperties mirrorProperties;
 
     @Bean
     FlywayMigrationInitializer flywayInitializer() {
@@ -54,11 +56,11 @@ public class FlywayConfiguration {
                 "db-user", dbProperties.getUsername(),
                 "api-user", dbProperties.getRestUsername(),
                 "api-password", dbProperties.getRestPassword(),
-                "topicRunningHashV2AddedTimestamp", "0"
+                "topicRunningHashV2AddedTimestamp", getTopicRunningHashV2AddedTimestamp()
         );
 
         FluentConfiguration config = Flyway.configure()
-                .baselineDescription("v2 TimescaleDB initial")
+                .baselineDescription("Mirror Node DB Baseline")
                 .baselineOnMigrate(dbProperties.getFlywayProperties().isBaselineOnMigrate())
                 .baselineVersion(dbProperties.getFlywayProperties().getBaselineVersion())
                 .connectRetries(dbProperties.getFlywayProperties().getConnectRetries())
@@ -70,10 +72,12 @@ public class FlywayConfiguration {
                         .toArray(new JavaMigration[0]));
         Flyway flyway = config.load();
         return new FlywayMigrationInitializer(flyway, (f) -> {
-            // apply new baseline on new db
             if (!isFlywayInitialized()) {
+                log.info("Baselining migration to {}", flyway.getConfiguration().getBaselineVersion());
                 flyway.baseline();
             }
+
+            log.info("Initiating flyway migration with placeholders: {}", flyway.getConfiguration().getPlaceholders());
             flyway.migrate();
         });
     }
@@ -86,5 +90,18 @@ public class FlywayConfiguration {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to check if Flyway is initialized", e);
         }
+    }
+
+    private String getTopicRunningHashV2AddedTimestamp() {
+        Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
+        if (timestamp == null) {
+            if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
+                timestamp = 1592499600000000000L;
+            } else {
+                timestamp = 1588706343553042000L;
+            }
+        }
+
+        return timestamp.toString();
     }
 }
