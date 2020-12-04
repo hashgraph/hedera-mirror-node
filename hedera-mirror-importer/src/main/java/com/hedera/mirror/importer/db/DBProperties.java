@@ -56,6 +56,4 @@ public class DBProperties {
 
     @NotBlank
     private String username = "";
-
-    private String dockerImage = "postgres:10-alpine";
 }

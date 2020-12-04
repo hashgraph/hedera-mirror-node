@@ -10,6 +10,10 @@ hedera:
         restPassword: mirror_api_pass
         restUsername: mirror_api
         username: mirror_node
+        # set baselineVersion as large v1 version and target as high v2 version to run v2 migrations only
+        #        flyway:
+        #          baselineVersion: 1.999.999
+        #          target: 2.999.999
 logging:
   level:
     root: warn
@@ -69,16 +73,6 @@ spring:
         logUnclosedConnections: true
         reWriteBatchedInserts: true
       maximumPoolSize: 14 # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
-  flyway:
-    connectRetries: 20
-    baselineOnMigrate: true
-    baselineVersion: 0
-    ignoreMissingMigrations: true
-    placeholders:
-      api-password: ${hedera.mirror.importer.db.restPassword}
-      api-user: ${hedera.mirror.importer.db.restUsername}
-      db-name: ${hedera.mirror.importer.db.name}
-      db-user: ${hedera.mirror.importer.db.username}
   jpa:
     properties:
       hibernate:
