@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -235,8 +237,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         customBuilder.accept(bodyBuilder);
 
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                .setBodyBytes(bodyBuilder.build().toByteString())
-                .setSigMap(getSigMap())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(bodyBuilder.build().toByteString())
+                        .setSigMap(getSigMap())
+                        .build().toByteString())
                 .build();
     }
 
@@ -291,5 +295,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
         return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAccountNum(accountNum))
                 .setAmount(amount);
+    }
+
+    protected TransactionBody getTransactionBody(com.hederahashgraph.api.proto.java.Transaction transaction) throws InvalidProtocolBufferException {
+        return TransactionBody.parseFrom(
+                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
     }
 }

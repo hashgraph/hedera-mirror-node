@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -70,7 +71,11 @@ public abstract class AbstractTransactionHandlerTest {
     protected void testGetEntityIdHelper(
             TransactionBody transactionBody, TransactionRecord transactionRecord, EntityId expectedEntity) {
         RecordItem recordItem = new RecordItem(
-                Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build(),
+                Transaction.newBuilder().
+                        setSignedTransactionBytes(SignedTransaction.newBuilder()
+                                .setBodyBytes(transactionBody.toByteString())
+                                .build().toByteString())
+                        .build(),
                 transactionRecord);
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }

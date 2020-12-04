@@ -23,7 +23,8 @@ package com.hedera.mirror.importer.parser.domain;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import lombok.Value;
 
@@ -39,7 +40,6 @@ public class PubSubMessage {
 
     private final int transactionType;
 
-    @JsonSerialize(using = ProtoJsonSerializer.class)
     private final Transaction transaction;
 
     @JsonSerialize(using = ProtoJsonSerializer.class)
@@ -48,4 +48,13 @@ public class PubSubMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonSerialize(contentUsing = ProtoJsonSerializer.class)
     private final Iterable<AccountAmount> nonFeeTransfers;
+
+    @Value
+    // This is a pojo version of the Transaction proto, needed to get around protobuf serializing body as raw bytes
+    public static class Transaction {
+        @JsonSerialize(using = ProtoJsonSerializer.class)
+        private final TransactionBody body;
+        @JsonSerialize(using = ProtoJsonSerializer.class)
+        private final SignatureMap sigMap;
+    }
 }
