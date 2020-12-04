@@ -10,6 +10,10 @@ hedera:
         restPassword: mirror_api_pass
         restUsername: mirror_api
         username: mirror_node
+        # set baselineVersion as large v1 version and target as high v2 version to run v2 migrations only
+        #        flyway:
+        #          baselineVersion: 1.999.999
+        #          target: 2.999.999
 logging:
   level:
     root: warn
