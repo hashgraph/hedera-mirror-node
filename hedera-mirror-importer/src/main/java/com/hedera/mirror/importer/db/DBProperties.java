@@ -23,17 +23,13 @@ package com.hedera.mirror.importer.db;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.db")
-@RequiredArgsConstructor
 public class DBProperties {
-    private final FlywayProperties flywayProperties;
-
     @NotBlank
     private String host = "";
 

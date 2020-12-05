@@ -31,6 +31,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.flyway.baselineOnMigrate`                 | true                    | Whether to automatically call baseline when migrate is executed against a non-empty schema with no schema history                                     |
 | `hedera.mirror.importer.db.flyway.connectRetries`                    | 20                      | The maximum number of retries when attempting to connect to the database                                     |
 | `hedera.mirror.importer.db.flyway.ignoreMissingMigrations`           | true                    | Whether to ignore missing migrations when reading the schema history table                                     |
+| `hedera.mirror.importer.db.flyway.locations`                         | "classpath:db/migration/v1"               | Comma-separated list of locations to scan recursively for migrations                                     |
 | `hedera.mirror.importer.db.flyway.target`                            | "1.999.0"               | Target version up to which Flyway should consider migrations                                     |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |

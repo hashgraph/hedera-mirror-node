@@ -8,7 +8,7 @@ hedera:
           baselineOnMigrate: true
           connectRetries: 20
           ignoreMissingMigrations: true
-          locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
+          locations: "classpath:db/migration/v1"
           target: 1.999.999
         host: 127.0.0.1
         loadBalance: true
