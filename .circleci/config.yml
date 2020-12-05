@@ -125,6 +125,10 @@ commands:
                 grpc:
                   \<<: *db
             spring:
+              flyway:
+                baseline-version: 0
+                locations: "filesystem:./src/main/resources/db/migration/v1"
+                target: 1.999.999
               redis:
                 url: redis://127.0.0.1:6379
             ---
