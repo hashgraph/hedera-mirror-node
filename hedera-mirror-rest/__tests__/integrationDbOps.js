@@ -35,6 +35,7 @@ let sqlConnection;
 config.db.name = process.env.POSTGRES_DB || 'mirror_node_integration';
 const dbUser = process.env.POSTGRES_USER || config.db.username + '_admin';
 const dbPassword = process.env.POSTGRES_PASSWORD || randomString(16);
+const dockerImageName = 'postgres';
 const dockerPostgresTag = '9.6-alpine';
 
 /**
@@ -48,7 +49,7 @@ const instantiateDatabase = async function () {
       return;
     }
 
-    dockerDb = await new GenericContainer('postgres', dockerPostgresTag)
+    dockerDb = await new GenericContainer(dockerImageName, dockerPostgresTag)
       .withEnv('POSTGRES_DB', config.db.name)
       .withEnv('POSTGRES_USER', dbUser)
       .withEnv('POSTGRES_PASSWORD', dbPassword)
@@ -85,10 +86,11 @@ const flywayMigrate = function () {
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(flywayDataPath, 'config.json');
-  const locations = path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration');
+  const locations = path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration', 'v1');
   const flywayConfig = `
 {
   "flywayArgs": {
+    "baselineVersion": "0",
     "locations": "filesystem:${locations}",
     "password": "${dbPassword}",
     "placeholders.api-password": "${config.db.password}",
@@ -96,6 +98,7 @@ const flywayMigrate = function () {
     "placeholders.db-name": "${config.db.name}",
     "placeholders.db-user": "${dbUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
+    "target": "1.999.999",
     "url": "jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}",
     "user": "${dbUser}"
   },

@@ -48,6 +48,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.util.EntityIdEndec;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -55,7 +56,7 @@ public class V2_0_3__Address_Book extends BaseJavaMigration {
     private final AddressBookService addressBookService;
     private final MirrorProperties mirrorProperties;
     private final DataSource dataSource;
-    private final String FILE_DATA_SQL = "select * from file_data where consensus_timestamp > ? and entity_id " +
+    private static final String FILE_DATA_SQL = "select * from file_data where consensus_timestamp > ? and entity_id " +
             "in (101, 102) order by consensus_timestamp asc limit ?";
     private JdbcTemplate jdbcTemplate;
 
@@ -68,6 +69,11 @@ public class V2_0_3__Address_Book extends BaseJavaMigration {
 
     @Override
     public void migrate(Context context) throws Exception {
+        // verify if java migration should be skipped
+        if (Utility.skipMigrationVersion(getVersion(), context.getConfiguration())) {
+            return;
+        }
+
         jdbcTemplate = new JdbcTemplate(dataSource);
         Stopwatch stopwatch = Stopwatch.createStarted();
         AtomicLong currentConsensusTimestamp = new AtomicLong(0);
@@ -81,6 +87,7 @@ public class V2_0_3__Address_Book extends BaseJavaMigration {
             log.warn("Address books exist in address_book table. Skipping migration");
             return;
         } catch (IllegalStateException ex) {
+            log.debug("No address book found in db. Searching for address book on file system");
         }
 
         // retrieve bootstrap address book from filesystem or classpath

@@ -2,6 +2,14 @@ hedera:
   mirror:
     importer:
       db:
+        flyway:
+          # set baselineVersion as large v1 version and target as high v2 version to run v2 migrations only
+          baselineVersion: 0
+          baselineOnMigrate: true
+          connectRetries: 20
+          ignoreMissingMigrations: true
+          locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
+          target: 1.999.999
         host: 127.0.0.1
         loadBalance: true
         name: mirror_node
@@ -10,10 +18,6 @@ hedera:
         restPassword: mirror_api_pass
         restUsername: mirror_api
         username: mirror_node
-        # set baselineVersion as large v1 version and target as high v2 version to run v2 migrations only
-        #        flyway:
-        #          baselineVersion: 1.999.999
-        #          target: 2.999.999
 logging:
   level:
     root: warn
@@ -73,6 +77,18 @@ spring:
         logUnclosedConnections: true
         reWriteBatchedInserts: true
       maximumPoolSize: 14 # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
+  flyway:
+    baselineOnMigrate: ${hedera.mirror.importer.db.flyway.baselineOnMigrate}
+    baselineVersion: ${hedera.mirror.importer.db.flyway.baselineVersion}
+    connectRetries: ${hedera.mirror.importer.db.flyway.connectRetries}
+    ignoreMissingMigrations: ${hedera.mirror.importer.db.flyway.ignoreMissingMigrations}
+    locations: ${hedera.mirror.importer.db.flyway.locations}
+    placeholders:
+      api-password: ${hedera.mirror.importer.db.restPassword}n
+      api-user: ${hedera.mirror.importer.db.restUsername}
+      db-name: ${hedera.mirror.importer.db.name}
+      db-user: ${hedera.mirror.importer.db.username}
+    target: ${hedera.mirror.importer.db.flyway.target}
   jpa:
     properties:
       hibernate:
