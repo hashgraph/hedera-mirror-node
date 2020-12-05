@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -44,6 +45,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 
@@ -54,6 +56,7 @@ import com.hedera.mirror.importer.leader.LeaderAspect;
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
 public class MirrorImporterConfiguration {
 
+    private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties downloaderProperties;
     private final MetricsExecutionInterceptor metricsExecutionInterceptor;
     private final AwsCredentialsProvider awsCredentialsProvider;
@@ -112,6 +115,21 @@ public class MirrorImporterConfiguration {
                 .region(Region.of(region))
                 .httpClient(httpClient)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
+    }
+
+    @Bean
+    FlywayConfigurationCustomizer flywayConfigurationCustomizer() {
+        return configuration -> {
+            Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
+            if (timestamp == null) {
+                if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
+                    timestamp = 1592499600000000000L;
+                } else {
+                    timestamp = 1588706343553042000L;
+                }
+            }
+            configuration.getPlaceholders().put("topicRunningHashV2AddedTimestamp", timestamp.toString());
+        };
     }
 
     @Configuration
