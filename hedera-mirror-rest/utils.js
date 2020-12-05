@@ -363,17 +363,18 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
 
 /**
  * Parse the result=[success | fail | all] parameter
- * @param {HTTPRequest} req HTTP query request object
+ * @param {Request} req HTTP query request object
+ * @param {String} columnName Column name for the transaction result
  * @return {String} Value of the resultType parameter
  */
-const parseResultParams = (req) => {
+const parseResultParams = (req, columnName) => {
   const resultType = req.query.result;
   let query = '';
 
   if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = '     result=' + TRANSACTION_RESULT_SUCCESS;
+    query = `${columnName} = ${TRANSACTION_RESULT_SUCCESS}`;
   } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = '     result != ' + TRANSACTION_RESULT_SUCCESS;
+    query = `${columnName} != ${TRANSACTION_RESULT_SUCCESS}`;
   }
   return query;
 };

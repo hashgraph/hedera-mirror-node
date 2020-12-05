@@ -178,7 +178,7 @@ const getOneAccount = async (req, res) => {
     throw InvalidArgumentError.forParams('account.id');
   }
   const parsedQueryParams = req.query;
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 'ctl.consensus_timestamp');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 

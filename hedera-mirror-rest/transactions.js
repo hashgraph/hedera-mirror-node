@@ -159,6 +159,17 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
 };
 
 /**
+ * Build the where clause from an array of query conditions
+ *
+ * @param {string} conditions Query conditions
+ * @return {string} The where clause built from the query conditions
+ */
+const buildWhereClause = function (...conditions) {
+  const clause = conditions.filter((q) => q !== '').join(' AND ');
+  return clause === '' ? '' : `WHERE ${clause}`;
+};
+
+/**
  * Cryptotransfer transactions queries are organized as follows: First there's an inner query that selects the
  * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
  * extract all relevant information for those transactions.
@@ -167,10 +178,11 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
  * Also see: getTransactionsOuterQuery function
  *
  * @param {String} accountQuery SQL query that filters based on the account ids
- * @param {String} tsQuery SQL query that filters based on the timestamps
+ * @param {String} tsQuery SQL query that filters based on the timestamps for transactions table
  * @param {String} resultTypeQuery SQL query that filters based on the result types
  * @param {String} limitQuery SQL query that limits the number of unique transactions returned
  * @param {String} creditDebitQuery SQL query that filters for credit/debit transactions
+ * @param {String} transactionTypeQuery SQL query that filters by transaction type
  * @param {String} order Sorting order
  * @return {String} innerQuery SQL query that filters transactions based on various types of queries
  */
@@ -183,16 +195,21 @@ const getTransactionsInnerQuery = function (
   transactionTypeQuery,
   order
 ) {
-  let whereClause = [accountQuery, tsQuery, resultTypeQuery, creditDebitQuery, transactionTypeQuery]
-    .filter((q) => q !== '')
-    .join(' AND ');
-  whereClause = whereClause === '' ? '' : `WHERE ${whereClause}`;
+  const whereClause = buildWhereClause(resultTypeQuery, transactionTypeQuery);
+  const ctlWhereClause = buildWhereClause(accountQuery, tsQuery, creditDebitQuery);
+
   return `
-    SELECT DISTINCT ctl.consensus_timestamp
-    FROM crypto_transfer ctl
-      JOIN transaction t ON t.consensus_ns = ctl.consensus_timestamp
+    SELECT t.consensus_ns AS consensus_timestamp
+    FROM transaction t
+    JOIN (
+            SELECT DISTINCT consensus_timestamp
+            FROM crypto_transfer AS ctl
+            ${ctlWhereClause}
+            ORDER BY consensus_timestamp ${order}
+         ) AS ctl
+    ON t.consensus_ns = ctl.consensus_timestamp
     ${whereClause}
-    ORDER BY ctl.consensus_timestamp ${order}
+    ORDER BY t.consensus_ns ${order}
     ${limitQuery}`;
 };
 
@@ -201,8 +218,8 @@ const reqToSql = function (req) {
   const parsedQueryParams = req.query;
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
-  const resultTypeQuery = utils.parseResultParams(req);
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 'ctl.consensus_timestamp');
+  const resultTypeQuery = utils.parseResultParams(req, 't.result');
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(params);
@@ -322,6 +339,7 @@ module.exports = {
   getOneTransaction,
   createTransferLists,
   reqToSql,
+  buildWhereClause,
   getTransactionsInnerQuery,
   getTransactionsOuterQuery,
 };
