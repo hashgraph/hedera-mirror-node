@@ -187,7 +187,7 @@ public abstract class AbstractDownloaderTest {
         initProperties();
         transactionTemplate = new TransactionTemplate(platformTransactionManager);
         s3AsyncClient = new MirrorImporterConfiguration(
-                commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
+                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
                 AnonymousCredentialsProvider.create())
                 .s3CloudStorageClient();
         downloader = prepareDownloader();
