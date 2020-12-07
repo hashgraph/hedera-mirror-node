@@ -6,7 +6,7 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts
+    host: RELEASE-NAME-timescaledb  # RELEASE-NAME will be replaced with actual release by children charts
   namespaceOverride: ""
   redis:
     host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
@@ -15,6 +15,8 @@ global:
     username: mirror_api
     password: mirror_api_pass
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
+  extaddressbook:
+    enabled: true
 
 grpc:
   config:
@@ -35,7 +37,18 @@ importer:
             name: mirror_node
             password: mirror_node_pass
             username: mirror_node
+    spring:
+      flyway:
+        baselineOnMigrate: true
+        baselineVersion: 1.999.999
+        connectRetries: 20
+        ignoreMissingMigrations: true
+        locations: "classpath:db/migration/v2"
+        target: 2.999.999
   enabled: true
+  image:
+    pullPolicy: Always
+    tag: 0.24.0-tdb
   redis:
     sentinel:
       masterSet: mirror
@@ -43,13 +56,13 @@ importer:
 labels: {}
 
 monitor:
-  enabled: true
+  enabled: false
 
 networkPolicy:
   enabled: false
 
 postgresql:
-  enabled: true
+  enabled: false
   metrics:
     enabled: false
     resources:
@@ -169,3 +182,15 @@ redis:
 
 rest:
   enabled: true
+
+timescaledb:
+  credentials:
+    accessNode:
+      superuser: mirror_node_pass
+    dataNode:
+      superuser: mirror_node_pass
+  enabled: true
+  serviceAccount:
+    create: false
+
+
