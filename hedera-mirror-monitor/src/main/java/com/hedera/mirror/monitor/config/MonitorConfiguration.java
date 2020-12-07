@@ -62,11 +62,15 @@ class MonitorConfiguration {
     @Bean
     Disposable publishSubscribe() {
         return Flux.<PublishRequest>generate(sink -> sink.next(transactionGenerator.next()))
+                .retry()
+                .filter(Objects::nonNull)
+                .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .subscribeOn(Schedulers.single())
                 .parallel(publishProperties.getConnections())
                 .runOn(Schedulers.newParallel("publisher", publishProperties.getConnections()))
                 .map(transactionPublisher::publish)
                 .filter(Objects::nonNull)
+                .doOnError(t -> log.error("Error during publish/subscribe flow: ", t))
                 .subscribe(subscriber::onPublish);
     }
 }
