@@ -56,7 +56,7 @@ importer:
 labels: {}
 
 monitor:
-  enabled: false
+  enabled: true
 
 networkPolicy:
   enabled: false
