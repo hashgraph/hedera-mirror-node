@@ -25,6 +25,7 @@ import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +53,9 @@ public class PublishMetrics {
     private final AtomicLong counter = new AtomicLong(0L);
     private final Multiset<String> errors = ConcurrentHashMultiset.create();
     private final Stopwatch stopwatch = Stopwatch.createStarted();
-    private final Map<Tags, Timer> timers = new ConcurrentHashMap<>();
+    private final Map<Tags, Timer> handleTimers = new ConcurrentHashMap<>();
+    private final Map<Tags, Timer> submitTimers = new ConcurrentHashMap<>();
+    private final Map<Tags, TimeGauge> durationGauges = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
 
     @FunctionalInterface
@@ -65,10 +68,12 @@ public class PublishMetrics {
         long startTime = System.currentTimeMillis();
         String status = SUCCESS;
         TransactionType type = publishRequest.getType();
+        PublishResponse response = null;
 
         try {
-            PublishResponse response = function.apply(publishRequest);
+            response = function.apply(publishRequest);
             counter.incrementAndGet();
+
             return response;
         } catch (LocalValidationException e) {
             throw e;
@@ -86,10 +91,18 @@ public class PublishMetrics {
             log.debug("{} submitting {} transaction: {}", status, type, e.getMessage());
             throw new PublishException(e);
         } finally {
-            long endTime = System.currentTimeMillis();
-            Tags tags = new Tags(status, type);
-            Timer timer = timers.computeIfAbsent(tags, this::newTimer);
-            timer.record(endTime - startTime, TimeUnit.MILLISECONDS);
+            long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
+            String scenarioName = publishRequest.getScenarioName();
+            Tags tags = new Tags(scenarioName, status, type);
+            Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
+            submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
+            durationGauges.computeIfAbsent(tags, this::newDurationMetric);
+
+            if (response != null && response.getReceipt() != null) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                Timer handleTimer = handleTimers.computeIfAbsent(tags, this::newHandleMetric);
+                handleTimer.record(elapsed, TimeUnit.MILLISECONDS);
+            }
 
             if (!SUCCESS.equals(status)) {
                 errors.add(status);
@@ -97,9 +110,28 @@ public class PublishMetrics {
         }
     }
 
-    private Timer newTimer(Tags tags) {
-        return Timer.builder("hedera.mirror.monitor.publish")
-                .description("The time it takes to publish a transaction")
+    private TimeGauge newDurationMetric(Tags tags) {
+        TimeUnit unit = TimeUnit.NANOSECONDS;
+        return TimeGauge.builder("hedera.mirror.monitor.publish.duration", stopwatch, unit, s -> s.elapsed(unit))
+                .description("The amount of time this scenario has been publishing transactions")
+                .tag("scenario", tags.getScenarioName())
+                .tag("type", tags.getType().toString())
+                .register(meterRegistry);
+    }
+
+    private Timer newHandleMetric(Tags tags) {
+        return Timer.builder("hedera.mirror.monitor.publish.handle")
+                .description("The time it takes from submit to being handled by the main nodes")
+                .tag("scenario", tags.getScenarioName())
+                .tag("status", tags.getStatus())
+                .tag("type", tags.getType().toString())
+                .register(meterRegistry);
+    }
+
+    private Timer newSubmitMetric(Tags tags) {
+        return Timer.builder("hedera.mirror.monitor.publish.submit")
+                .description("The time it takes to submit a transaction")
+                .tag("scenario", tags.getScenarioName())
                 .tag("status", tags.getStatus())
                 .tag("type", tags.getType().toString())
                 .register(meterRegistry);
@@ -117,6 +149,7 @@ public class PublishMetrics {
 
     @Value
     private class Tags {
+        private final String scenarioName;
         private final String status;
         private final TransactionType type;
     }
