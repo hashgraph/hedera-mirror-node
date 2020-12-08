@@ -178,7 +178,7 @@ const getOneAccount = async (req, res) => {
     throw InvalidArgumentError.forParams('account.id');
   }
   const parsedQueryParams = req.query;
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 'ctl.consensus_timestamp');
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
@@ -215,7 +215,7 @@ const getOneAccount = async (req, res) => {
     order
   );
 
-  const innerParams = accountParams.concat(tsParams).concat(params);
+  const innerParams = accountParams.concat(tsParams).concat(tsParams).concat(params);
   const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
 
