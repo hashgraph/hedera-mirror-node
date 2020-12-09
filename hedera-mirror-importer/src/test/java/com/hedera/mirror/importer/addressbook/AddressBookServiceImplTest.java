@@ -33,16 +33,19 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
+import lombok.extern.log4j.Log4j2;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
 import org.springframework.util.ResourceUtils;
 
+import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.CacheConfiguration;
@@ -56,6 +59,7 @@ import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
+@Log4j2
 class AddressBookServiceImplTest extends IntegrationTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10);
@@ -65,6 +69,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @TempDir
     Path dataPath;
 
+    @Value("classpath:addressbook")
+    Path testPath;
+
+    @Resource
     private MirrorProperties mirrorProperties;
 
     @Resource
@@ -76,7 +84,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Resource
     private FileDataRepository fileDataRepository;
 
-    @Resource
     private AddressBookService addressBookService;
 
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
@@ -132,14 +139,26 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
-        mirrorProperties = new MirrorProperties();
-        mirrorProperties.setDataPath(dataPath);
+        addressBookService = new AddressBookServiceImpl(addressBookRepository, fileDataRepository, mirrorProperties);
     }
 
     @Test
     void startupWithOtherNetwork() {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
-        addressBookService.getCurrent();
+        // copy other addressbook to file system
+        FileCopier fileCopier = FileCopier.create(testPath, dataPath)
+                .from("")
+                .filterFiles("test-v1")
+                .to("");
+        fileCopier.copy();
+
+        MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
+        otherNetworkMirrorProperties.setDataPath(dataPath);
+        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
+        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        addressBookService = new AddressBookServiceImpl(addressBookRepository, fileDataRepository,
+                otherNetworkMirrorProperties);
+        AddressBook addressBook = addressBookService.getCurrent();
+        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(1L);
     }
 
     @Test
@@ -162,7 +181,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void cacheAndEvictAddressBook() {
         byte[] addressBookBytes = UPDATED.toByteArray();
-        update(addressBookBytes, 1L, true);
+        update(addressBookBytes, 2L, true);
 
         //verify cache is empty to start
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
@@ -177,7 +196,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertThat(addressBookCache).isEqualTo(addressBookDb);
 
         //verify updating the address book evicts the cache.
-        update(addressBookBytes, 2L, true);
+        update(addressBookBytes, 3L, true);
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
                 .get(SimpleKey.EMPTY));
     }
