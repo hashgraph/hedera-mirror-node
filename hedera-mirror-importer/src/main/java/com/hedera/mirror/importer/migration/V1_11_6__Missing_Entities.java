@@ -31,7 +31,6 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
@@ -44,7 +43,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class V1_11_6__Missing_Entities extends BaseJavaMigration {
+public class V1_11_6__Missing_Entities extends MirrorBaseJavaMigration {
 
     private final MirrorProperties mirrorProperties;
     private final EntityRepository entityRepository;
@@ -54,7 +53,7 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
     // break it.
     // Correct way is to not use repositories and construct manually: new JdbcTemplate(context.getConnection())
     public V1_11_6__Missing_Entities(MirrorProperties mirrorProperties, @Lazy EntityRepository entityRepository,
-            @Lazy JdbcOperations jdbcOperations) {
+                                     @Lazy JdbcOperations jdbcOperations) {
         this.mirrorProperties = mirrorProperties;
         this.entityRepository = entityRepository;
         this.jdbcOperations = jdbcOperations;
@@ -62,6 +61,10 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
 
     @Override
     public void migrate(Context context) throws Exception {
+        if (skipMigrationVersion(getVersion(), context.getConfiguration())) {
+            return;
+        }
+
         File accountInfoFile = getAccountInfoPath().toFile();
         if (!accountInfoFile.exists() || !accountInfoFile.canRead()) {
             log.warn("Skipping entity import due to missing file {}", accountInfoFile.getAbsoluteFile());

@@ -27,17 +27,21 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import org.assertj.core.api.ListAssert;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
+import org.springframework.util.ResourceUtils;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -56,6 +60,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10);
     private static final NodeAddressBook FINAL = addressBook(15);
+    private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
 
     @TempDir
     Path dataPath;
@@ -77,6 +82,8 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
     @Resource
     private CacheManager cacheManager;
+
+    private static byte[] initialAddressBookBytes;
 
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
@@ -113,6 +120,12 @@ class AddressBookServiceImplTest extends IntegrationTest {
         addressBookService.update(fileData);
     }
 
+    @BeforeAll
+    static void setupAll() throws IOException {
+        Path addressBookPath = ResourceUtils.getFile("classpath:addressbook/testnet").toPath();
+        initialAddressBookBytes = Files.readAllBytes(addressBookPath);
+    }
+
     @BeforeEach
     void setup() {
         mirrorProperties = new MirrorProperties();
@@ -122,9 +135,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void startupWithOtherNetwork() {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        addressBookService.getCurrent();
     }
 
     @Test
@@ -139,11 +150,9 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         // assert repositories contain updates
         assertAddressBookData(UPDATED.toByteArray(), 1);
-        assertEquals(1, addressBookRepository.count());
-        assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository.count());
-
-        assertEquals(1, addressBookRepository.count());
-        assertEquals(10, addressBookEntryRepository.count());
+        assertEquals(2, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + UPDATED.getNodeAddressCount(), addressBookEntryRepository
+                .count());
     }
 
     @Test
@@ -177,13 +186,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         update(addressBookPartial, 1L, true);
 
-        // bootstrap address book will be missing in most tests. In production migration will ensure DB population
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
-        assertEquals(0, addressBookRepository.count());
-        assertEquals(0, addressBookEntryRepository.count());
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
     }
 
     @Test
@@ -194,24 +200,20 @@ class AddressBookServiceImplTest extends IntegrationTest {
         byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, index * 2);
         byte[] addressBookBytes3 = Arrays.copyOfRange(addressBookBytes, index * 2, addressBookBytes.length);
 
-        // bootstrap address book will be missing in most tests. In production migration will ensure DB population
         update(addressBookBytes1, 1L, true);
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
         append(addressBookBytes2, 3L, true);
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
         append(addressBookBytes3, 5L, true);
         assertAddressBook(addressBookService.getCurrent(), UPDATED);
 
         assertAddressBookData(addressBookBytes, 5);
 
-        assertEquals(1, addressBookRepository.count());
-        assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository.count());
+        assertEquals(2, addressBookRepository.count());
+        assertEquals(UPDATED.getNodeAddressCount() + TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository
+                .count());
 
         AddressBook addressBook = addressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(6L);
@@ -225,12 +227,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
         byte[] addressBookBytes1 = Arrays.copyOfRange(addressBookBytes, 0, index);
         update(addressBookBytes1, 1L, true);
 
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
-        assertEquals(0, addressBookRepository.count());
-        assertEquals(0, addressBookEntryRepository.count());
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
     }
 
     @Test
@@ -238,11 +238,9 @@ class AddressBookServiceImplTest extends IntegrationTest {
         update(new byte[] {}, 1L, true);
         append(new byte[] {}, 2L, true);
 
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
-        assertEquals(0, addressBookRepository.count());
-        assertEquals(0, addressBookEntryRepository.count());
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
     }
 
     @Test
@@ -271,9 +269,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         update(addressBookBytes1, 1L, true);
 
         // create new address book and submit another append to complete file
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        addressBookService.getCurrent();
 
         append(addressBookBytes2, 3L, true);
 
@@ -304,25 +300,22 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         // perform file 102 first update and confirm no change to current address book and nodes addresses
         update(addressBookBytes1, 1L, true); // fileID 102
-        assertEquals(0, addressBookEntryRepository.count());
-        assertEquals(0, addressBookRepository.count()); // initial and 102 update
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
+        assertEquals(1, addressBookRepository.count()); // initial and 102 update
 
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        addressBookService.getCurrent();
 
         update(addressBook101Bytes1, 3L, false);
         append(addressBook101Bytes2, 5L, false);
 
         // verify partial bytes match 101 complete address book update
         assertAddressBookData(FINAL.toByteArray(), 5);
-        assertEquals(15, addressBookEntryRepository.count());
-        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + FINAL.getNodeAddressCount(), addressBookEntryRepository
+                .count());
+        assertEquals(2, addressBookRepository.count());
 
         // verify current address book bytes still match original load and not 101 update and append
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
         // perform file 102 append
         append(addressBookBytes2, 7L, true);
@@ -333,11 +326,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertAddressBook(addressBookService.getCurrent(), UPDATED);
 
         // 15 (101 update) + 12 (102 update)
-        assertEquals(UPDATED.getNodeAddressCount() + FINAL
-                .getNodeAddressCount(), addressBookEntryRepository
-                .count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + UPDATED.getNodeAddressCount() + FINAL.getNodeAddressCount(),
+                addressBookEntryRepository.count());
         assertAddressBookData(UPDATED.toByteArray(), 7);
-        assertEquals(2, addressBookRepository.count());
+        assertEquals(3, addressBookRepository.count());
     }
 
     @Test

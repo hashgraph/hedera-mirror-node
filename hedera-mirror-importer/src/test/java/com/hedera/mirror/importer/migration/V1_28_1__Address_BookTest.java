@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.Test;
@@ -180,7 +181,10 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
 
         @Override
         public Configuration getConfiguration() {
-            return null;
+            ClassicConfiguration configuration = new ClassicConfiguration();
+            configuration.setBaselineVersionAsString("0");
+            configuration.setTargetAsString("1.999.999");
+            return new ClassicConfiguration();
         }
 
         @Override
