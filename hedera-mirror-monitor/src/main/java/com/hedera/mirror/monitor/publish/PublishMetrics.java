@@ -71,7 +71,6 @@ public class PublishMetrics {
             counter.incrementAndGet();
             return response;
         } catch (LocalValidationException e) {
-            log.error("Local error. Halting thread", e);
             throw e;
         } catch (StatusRuntimeException e) {
             StatusRuntimeException sre = (StatusRuntimeException) e.getCause();

@@ -69,8 +69,9 @@ class MonitorConfiguration {
                 .map(transactionPublisher::publish)
                 .sequential()
                 .onErrorContinue(PublishException.class, (t, r) -> {})
-                .onErrorContinue((t, r) -> log.error("Unknown error during publish/subscribe flow: {}", t))
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
+                .doOnError(t -> log.error("Unexpected error during publish/subscribe flow:", t))
+                .doOnSubscribe(s -> log.info("Starting publisher flow"))
                 .subscribe(subscriber::onPublish);
     }
 }
