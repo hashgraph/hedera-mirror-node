@@ -20,15 +20,29 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
+import org.flywaydb.core.api.migration.Context;
 
 @Log4j2
-@Named
 public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
+
+    public abstract void doMigrate() throws Exception;
+
+    @Override
+    public void migrate(Context context) throws Exception {
+        MigrationVersion current = getVersion();
+        if (skipMigrationVersion(current, context.getConfiguration())) {
+            log.trace("Migration {} will be skipped as it precedes baseline version {}",
+                    current,
+                    context.getConfiguration().getBaselineVersion());
+            return;
+        }
+
+        doMigrate();
+    }
 
     /**
      * Determine whether a java migration should be skipped based on version and isIgnoreMissingMigrations setting
@@ -37,10 +51,9 @@ public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
      * @param migrationConfiguration flyway Configuration
      * @return
      */
-    public static boolean skipMigrationVersion(MigrationVersion current, Configuration migrationConfiguration) {
+    private boolean skipMigrationVersion(MigrationVersion current, Configuration migrationConfiguration) {
         MigrationVersion baselineVersion = migrationConfiguration.getBaselineVersion();
         if (baselineVersion.isNewerThan(current.getVersion()) && migrationConfiguration.isIgnoreMissingMigrations()) {
-            log.trace("Migration {} should be skipped as it precedes baseline version {}", current, baselineVersion);
             return true;
         }
 

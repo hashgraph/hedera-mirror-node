@@ -31,7 +31,6 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.flywaydb.core.api.migration.Context;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
 
@@ -60,11 +59,7 @@ public class V1_11_6__Missing_Entities extends MirrorBaseJavaMigration {
     }
 
     @Override
-    public void migrate(Context context) throws Exception {
-        if (skipMigrationVersion(getVersion(), context.getConfiguration())) {
-            return;
-        }
-
+    public void doMigrate() throws Exception {
         File accountInfoFile = getAccountInfoPath().toFile();
         if (!accountInfoFile.exists() || !accountInfoFile.canRead()) {
             log.warn("Skipping entity import due to missing file {}", accountInfoFile.getAbsoluteFile());

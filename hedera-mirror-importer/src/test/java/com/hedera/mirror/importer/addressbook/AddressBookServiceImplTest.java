@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -70,7 +71,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     Path testPath;
 
     @Resource
-    private MirrorProperties mirrorProperties;
+    private TransactionTemplate transactionTemplate;
 
     @Resource
     private AddressBookRepository addressBookRepository;
@@ -147,8 +148,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository,
-                otherNetworkMirrorProperties);
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
         assertThrows(IllegalStateException.class, () -> {
             customAddressBookService.getCurrent();
         });
@@ -169,8 +169,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository,
-                otherNetworkMirrorProperties);
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
         AddressBook addressBook = customAddressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(1L);
         assertEquals(1, addressBookRepository.count());
@@ -188,8 +187,8 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         // assert repositories contain updates
         assertAddressBookData(UPDATED.toByteArray(), 1);
-        assertEquals(1, addressBookRepository.count());
-        assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository
+        assertEquals(2, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + UPDATED.getNodeAddressCount(), addressBookEntryRepository
                 .count());
     }
 
@@ -338,8 +337,8 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         // perform file 102 first update and confirm no change to current address book and nodes addresses
         update(addressBookBytes1, 1L, true); // fileID 102
-        assertEquals(0, addressBookEntryRepository.count());
-        assertEquals(0, addressBookRepository.count()); // initial and 102 update
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
+        assertEquals(1, addressBookRepository.count()); // initial
 
         addressBookService.getCurrent();
 

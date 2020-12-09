@@ -24,7 +24,6 @@ import com.google.common.base.Stopwatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.flywaydb.core.api.migration.Context;
 import org.springframework.context.annotation.Lazy;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
@@ -39,11 +38,7 @@ public class V1_28_1__Address_Book extends MirrorBaseJavaMigration {
     }
 
     @Override
-    public void migrate(Context context) {
-        if (skipMigrationVersion(getVersion(), context.getConfiguration())) {
-            return;
-        }
-
+    public void doMigrate() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         addressBookService.migrate();
 

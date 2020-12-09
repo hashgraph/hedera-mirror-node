@@ -32,5 +32,5 @@ public interface AddressBookService {
 
     AddressBook getCurrent();
 
-    void migrate();
+    AddressBook migrate();
 }
