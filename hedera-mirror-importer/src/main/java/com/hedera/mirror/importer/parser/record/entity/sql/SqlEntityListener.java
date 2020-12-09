@@ -184,6 +184,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         Connection connection = null;
 
         try {
+            // batch save action may run asynchronously, trigger it before other operations can reduce latency
+            eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
+
             connection = DataSourceUtils.getConnection(dataSource);
             Stopwatch stopwatch = Stopwatch.createStarted();
             transactionPgCopy.copy(transactions, connection);
@@ -196,7 +199,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenTransferPgCopy.copy(tokenTransfers, connection);
             persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
-            eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {

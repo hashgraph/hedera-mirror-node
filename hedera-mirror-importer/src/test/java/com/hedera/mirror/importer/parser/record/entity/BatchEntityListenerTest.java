@@ -40,6 +40,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     protected final BatchEntityListener entityListener;
     protected final EntityListenerProperties properties;
 
+    private long consensusTimestamp = 1;
     private long sequenceNumber = 1;
 
     @BeforeEach
@@ -57,7 +58,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTopicMessage() {
+    void onTopicMessage() throws InterruptedException {
         // given
         TopicMessage topicMessage1 = topicMessage();
         TopicMessage topicMessage2 = topicMessage();
@@ -77,7 +78,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTopicMessageEmpty() {
+    void onTopicMessageEmpty() throws InterruptedException {
         // given
         Flux<TopicMessage> topicMessages = subscribe(1);
 
@@ -93,7 +94,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTopicMessageDisabled() {
+    void onTopicMessageDisabled() throws InterruptedException {
         // given
         properties.setEnabled(false);
         TopicMessage topicMessage = topicMessage();
@@ -112,7 +113,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onCleanup() {
+    void onCleanup() throws InterruptedException {
         // given
         TopicMessage topicMessage = topicMessage();
         Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicNum());
@@ -135,7 +136,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setChunkNum(1);
         topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
+        topicMessage.setConsensusTimestamp(consensusTimestamp++);
         topicMessage.setMessage("test message".getBytes());
         topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
         topicMessage.setRealmNum(0);

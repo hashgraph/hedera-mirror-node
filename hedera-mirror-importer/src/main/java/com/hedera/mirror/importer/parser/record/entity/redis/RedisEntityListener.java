@@ -25,15 +25,20 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.SynchronousSink;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamMessage;
@@ -51,22 +56,31 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @RequiredArgsConstructor
 public class RedisEntityListener implements BatchEntityListener {
 
+    public static final int TASK_QUEUE_SIZE = 8;
+
     private final MirrorProperties mirrorProperties;
     private final RedisProperties redisProperties;
     private final RedisOperations<String, StreamMessage> redisOperations;
-    private final List<TopicMessage> topicMessages = new ArrayList<>();
     private final MeterRegistry meterRegistry;
 
+    private long lastConsensusTimestamp;
+    private Disposable subscription;
     private Timer timer;
+    private List<TopicMessage> topicMessages;
+    private BlockingQueue<List<TopicMessage>> topicMessagesQueue;
     private String topicPrefix;
 
     @PostConstruct
     void init() {
+        lastConsensusTimestamp = 0;
+        subscription = null;
         timer = Timer.builder("hedera.mirror.importer.publish.duration")
                 .description("The amount of time it took to publish the domain entity")
                 .tag("entity", TopicMessage.class.getSimpleName())
                 .tag("type", "redis")
                 .register(meterRegistry);
+        topicMessages = new ArrayList<>();
+        topicMessagesQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
         topicPrefix = "topic." + mirrorProperties.getShard() + "."; // Cache to avoid reflection penalty
     }
 
@@ -77,20 +91,39 @@ public class RedisEntityListener implements BatchEntityListener {
 
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
+        long consensusTimestamp = topicMessage.getConsensusTimestamp();
+        if (consensusTimestamp <= lastConsensusTimestamp) {
+            return;
+        }
+
+        lastConsensusTimestamp = consensusTimestamp;
         topicMessages.add(topicMessage);
     }
 
     @Override
     @EventListener
-    public void onSave(EntityBatchSaveEvent event) {
-        try {
-            if (isEnabled()) {
-                Stopwatch stopwatch = Stopwatch.createStarted();
-                timer.record(() -> redisOperations.executePipelined(callback()));
-                log.info("Finished notifying {} messages in {}", topicMessages.size(), stopwatch);
-            }
-        } catch (Exception e) {
-            log.error("Unable to publish to redis", e);
+    public void onSave(EntityBatchSaveEvent event) throws InterruptedException {
+        if (!isEnabled() || topicMessages.isEmpty()) {
+            return;
+        }
+
+        // defer flux, subscription, and scheduler creation
+        if (subscription == null) {
+            // run the flux operations in a different thread
+            subscription = Flux.generate(this::generate)
+                    .doOnSubscribe(s -> log.info("Starting redis publish flow"))
+                    .doFinally(s -> log.info("Redis publish flow stopped with {} signal", s))
+                    .doOnError(t -> log.error("Unexpected error during redis publish flow", t))
+                    .subscribeOn(Schedulers.newSingle("redis-publish"))
+                    .subscribe(this::publish);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> topicMessagesQueue.offer(new ArrayList<>())));
+        }
+
+        List<TopicMessage> messages = topicMessages;
+        topicMessages = new ArrayList<>();
+        if (!topicMessagesQueue.offer(messages)) {
+            log.warn("topicMessagesQueue is full, will block until space is available");
+            topicMessagesQueue.put(messages);
         }
     }
 
@@ -101,12 +134,37 @@ public class RedisEntityListener implements BatchEntityListener {
         topicMessages.clear();
     }
 
+    private void generate(SynchronousSink<List<TopicMessage>> sink) {
+        try {
+            List<TopicMessage> messages = topicMessagesQueue.take();
+            if (messages.isEmpty()) {
+                sink.complete();
+            } else {
+                sink.next(messages);
+            }
+        } catch (Exception e) {
+            log.error("Unable to retrieve topicMessages from the blocking queue", e);
+            sink.error(new RuntimeException("Unexpected error when generating messages for the flow", e));
+        }
+    }
+
+    private void publish(List<TopicMessage> messages) {
+        try {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            timer.record(() -> redisOperations.executePipelined(callback(messages)));
+            log.info("Finished notifying {} messages in {}", messages.size(), stopwatch);
+            messages.clear();
+        } catch (Exception e) {
+            log.error("Unable to publish to redis", e);
+        }
+    }
+
     // Batch send using Redis pipelining
-    private <K, V> SessionCallback<Object> callback() {
+    private SessionCallback<Object> callback(List<TopicMessage> messages) {
         return new SessionCallback<>() {
             @Override
-            public <K, V> Object execute(RedisOperations<K, V> operations) throws DataAccessException {
-                for (TopicMessage topicMessage : topicMessages) {
+            public Object execute(RedisOperations operations) {
+                for (TopicMessage topicMessage : messages) {
                     String channel = topicPrefix + topicMessage.getRealmNum() + "." + topicMessage.getTopicNum();
                     redisOperations.convertAndSend(channel, topicMessage);
                 }
