@@ -116,7 +116,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         Instant now = Instant.now();
         long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
 
-        // retrieve latest address book. If address_book is empty parse bootstrap and historic address book files
+        // retrieve latest address book. If address_book is empty parse initial and historic address book files
         return addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
                 .orElseGet(() -> {
@@ -143,7 +143,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         addressBook = addressBookRepository.save(addressBook);
         log.info("Saved initial address book to db: {}", addressBook);
 
-        // Ensure all applicable addressBook file data is processed
+        // Ensure all applicable addressBook file data entries are processed
         parseHistoricAddressBooks();
     }
 

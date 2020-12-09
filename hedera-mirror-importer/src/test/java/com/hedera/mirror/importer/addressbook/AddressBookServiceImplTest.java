@@ -141,6 +141,21 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    void startupWithOtherNetworkIncorrectInitialAddressBookPath() {
+        MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
+        otherNetworkMirrorProperties.setDataPath(dataPath);
+        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
+        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
+                fileDataRepository,
+                otherNetworkMirrorProperties);
+        assertThrows(IllegalStateException.class, () -> {
+            customAddressBookService.getCurrent();
+        });
+        assertEquals(0, addressBookRepository.count());
+    }
+
+    @Test
     void startupWithOtherNetwork() {
         // copy other addressbook to file system
         FileCopier fileCopier = FileCopier.create(testPath, dataPath)
@@ -158,6 +173,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 otherNetworkMirrorProperties);
         AddressBook addressBook = customAddressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(1L);
+        assertEquals(1, addressBookRepository.count());
     }
 
     @Test
@@ -180,7 +196,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void cacheAndEvictAddressBook() {
         byte[] addressBookBytes = UPDATED.toByteArray();
-        update(addressBookBytes, 2L, true);
+        update(addressBookBytes, 1L, true);
 
         //verify cache is empty to start
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
@@ -195,7 +211,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertThat(addressBookCache).isEqualTo(addressBookDb);
 
         //verify updating the address book evicts the cache.
-        update(addressBookBytes, 3L, true);
+        update(addressBookBytes, 2L, true);
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
                 .get(SimpleKey.EMPTY));
     }
