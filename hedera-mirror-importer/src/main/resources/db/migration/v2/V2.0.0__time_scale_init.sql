@@ -3,128 +3,124 @@
 -- Supports mirror nodes migrated from v1.0
 -------------------
 
--- domains
-create domain hbar_tinybars as bigint;
-create domain entity_num as integer;
-create domain entity_realm_num as smallint;
-create domain entity_type_id as character(1);
-create domain entity_id as bigint;
-create domain nanos_timestamp as bigint;
--- dropped using this domain in some tables as it's needed as a bigint for hyper table partitioning
-
 -- account_balance
 create table if not exists account_balance
 (
-    consensus_timestamp bigint        not null,
-    balance             hbar_tinybars not null,
-    account_id          entity_id     not null
+    consensus_timestamp bigint  not null,
+    balance             bigint  not null,
+    account_id          bigint  not null
 );
-comment on table account_balance is 'account balances (historical) in tinybars at different consensus timestamps';
+comment on table account_balance is 'Account balances (historical) in tinybars at different consensus timestamps';
 
 create table if not exists account_balance_file
 (
-    consensus_timestamp bigint primary key,
-    count               bigint       not null,
+    consensus_timestamp bigint,
+    count               bigint          not null,
     load_start          bigint,
     load_end            bigint,
     file_hash           varchar(96),
-    name                varchar(250) not null,
-    node_account_id     entity_id    not null
+    name                varchar(250)    not null,
+    node_account_id     bigint          not null
 );
+comment on table account_balance_file is 'Account balances stream files';
 
 -- account_balance_sets
 create table if not exists account_balance_sets
 (
-    consensus_timestamp        bigint                      not null,
-    is_complete                boolean                     not null default false,
-    processing_start_timestamp timestamp without time zone null     default (now() at time zone 'utc'),
-    processing_end_timestamp   timestamp without time zone null,
-    constraint pk__account_balance_sets primary key (consensus_timestamp)
+    consensus_timestamp         bigint                      not null,
+    is_complete                 boolean                     not null default false,
+    processing_start_timestamp  timestamp without time zone null default (now() at time zone 'utc'),
+    processing_end_timestamp    timestamp without time zone null
 );
-comment on table account_balance_sets is 'processing state of snapshots of the entire set of account balances at different consensus timestamps';
+comment on table account_balance_sets is 'Processing state of snapshots of the entire set of account balances at different consensus timestamps';
 
 -- address_book
 create table if not exists address_book
 (
-    start_consensus_timestamp bigint primary key,
+    start_consensus_timestamp bigint,
     end_consensus_timestamp   bigint    null,
-    file_id                   entity_id not null,
+    file_id                   bigint    not null,
     node_count                int       null,
     file_data                 bytea     not null
 );
-
+comment on table address_book is 'Network address book files entries';
 
 -- address_book_entry
 create table if not exists address_book_entry
 (
-    id                  serial primary key,
-    consensus_timestamp bigint references address_book (start_consensus_timestamp) not null,
-    ip                  varchar(128)                                               null,
-    port                integer                                                    null,
-    memo                varchar(128)                                               null,
-    public_key          varchar(1024)                                              null,
-    node_id             bigint                                                     null,
-    node_account_id     entity_id                                                  null,
-    node_cert_hash      bytea                                                      null
+    id                  serial                                                      primary key,
+    consensus_timestamp bigint references address_book (start_consensus_timestamp)  not null,
+    ip                  varchar(128)                                                null,
+    port                integer                                                     null,
+    memo                varchar(128)                                                null,
+    public_key          varchar(1024)                                               null,
+    node_id             bigint                                                      null,
+    node_account_id     bigint                                                      null,
+    node_cert_hash      bytea                                                       null
 );
+comment on table address_book_entry is 'Network address book node entries';
 
 -- contract_result
 create table if not exists contract_result
 (
-    function_parameters bytea  null,
-    gas_supplied        bigint null,
-    call_result         bytea  null,
-    gas_used            bigint null,
-    consensus_timestamp bigint not null
+    function_parameters bytea   null,
+    gas_supplied        bigint  null,
+    call_result         bytea   null,
+    gas_used            bigint  null,
+    consensus_timestamp bigint  not null
 );
+comment on table contract_result is 'Crypto contract execution results';
 
 -- crypto_transfer
 create table if not exists crypto_transfer
 (
-    entity_id           entity_id     not null,
-    consensus_timestamp bigint        not null,
-    amount              hbar_tinybars not null
+    entity_id           bigint  not null,
+    consensus_timestamp bigint  not null,
+    amount              bigint  not null
 );
+comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
 -- file_data
 create table if not exists file_data
 (
-    file_data           bytea     null,
-    consensus_timestamp bigint    not null,
-    entity_id           entity_id not null,
-    transaction_type    smallint  not null
+    file_data           bytea       null,
+    consensus_timestamp bigint      not null,
+    entity_id           bigint      not null,
+    transaction_type    smallint    not null
 );
+comment on table file_data is 'File data entity entries';
 
 -- live_hash
 create table if not exists live_hash
 (
     livehash            bytea,
-    consensus_timestamp bigint not null
+    consensus_timestamp bigint  not null
 );
 
 -- non_fee_transfer
 create table if not exists non_fee_transfer
 (
-    entity_id           entity_id     not null,
-    consensus_timestamp bigint        not null,
-    amount              hbar_tinybars not null
+    entity_id           bigint  not null,
+    consensus_timestamp bigint  not null,
+    amount              bigint  not null
 );
+comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
 -- record_file
 -- id seq from v1.0 no longer explicitly created as s_record_files_seq
 create table if not exists record_file
 (
-    id              serial primary key,
-    name            character varying(250) not null,
+    name            character varying(250)  not null,
     load_start      bigint,
     load_end        bigint,
     file_hash       character varying(96),
     prev_hash       character varying(96),
-    consensus_start bigint default 0       not null,
-    consensus_end   bigint default 0       not null,
-    node_account_id entity_id              not null,
-    count           bigint                 not null
+    consensus_start bigint                  default 0 not null,
+    consensus_end   bigint                  default 0 not null,
+    node_account_id bigint                  not null,
+    count           bigint                  not null
 );
+comment on table record_file is 'Network record file stream entries';
 
 -- t_application_status
 create table if not exists t_application_status
@@ -133,6 +129,7 @@ create table if not exists t_application_status
     status_code  character varying(40),
     status_value character varying(100)
 );
+comment on table t_application_status is 'Parser application status cache values. Assists continuity between parser restarts';
 
 insert into t_application_status (status_name, status_code)
 values ('Last valid downloaded record file name', 'LAST_VALID_DOWNLOADED_RECORD_FILE'),
@@ -148,28 +145,31 @@ values ('Last valid downloaded record file name', 'LAST_VALID_DOWNLOADED_RECORD_
 -- t_entities
 create table if not exists t_entities
 (
-    entity_num             bigint  not null,
-    entity_realm           bigint  not null,
-    entity_shard           bigint  not null,
-    fk_entity_type_id      integer not null,
-    auto_renew_period      bigint,
-    key                    bytea,
-    deleted                boolean default false,
-    exp_time_ns            bigint,
-    ed25519_public_key_hex character varying,
-    submit_key             bytea,
-    memo                   text,
-    auto_renew_account_id  bigint,
-    id                     bigint  not null,
-    proxy_account_id       entity_id
+    entity_num              bigint              not null,
+    entity_realm            bigint              not null,
+    entity_shard            bigint              not null,
+    fk_entity_type_id       integer             not null,
+    auto_renew_period       bigint,
+    key                     bytea,
+    deleted                 boolean             default false,
+    exp_time_ns             bigint,
+    ed25519_public_key_hex  character varying,
+    submit_key              bytea,
+    memo                    text,
+    auto_renew_account_id   bigint,
+    id                      bigint              not null,
+    proxy_account_id        bigint
 );
+comment on table t_entities is 'Network entities with state';
 
 -- t_entity_types
 create table if not exists t_entity_types
 (
-    id   integer not null,
-    name character varying(8)
+    id      integer                 not null,
+    name    character varying(8)
 );
+comment on table t_entity_types is 'Network entity types';
+
 insert into t_entity_types (id, name)
 values (1, 'account'),
        (2, 'contract'),
@@ -180,9 +180,10 @@ values (1, 'account'),
 -- t_transaction_results
 create table if not exists t_transaction_results
 (
-    proto_id integer not null,
-    result   character varying(100)
+    proto_id    integer                 not null,
+    result      character varying(100)
 );
+comment on table t_transaction_results is 'Transaction result types';
 
 insert into t_transaction_results (result, proto_id)
 values ('OK', 0),
@@ -344,10 +345,11 @@ values ('OK', 0),
 -- t_transaction_types
 create table if not exists t_transaction_types
 (
-    proto_id    integer not null,
+    proto_id    integer                 not null,
     name        character varying(30),
-    entity_type integer null
+    entity_type integer                 null
 );
+comment on table t_transaction_types is 'Transaction types';
 
 insert into t_transaction_types (proto_id, name, entity_type)
 values (7, 'CONTRACTCALL', 2),
@@ -388,88 +390,94 @@ values (7, 'CONTRACTCALL', 2),
 -- token
 create table if not exists token
 (
-    token_id               bigint primary key,
-    created_timestamp      bigint                 not null,
-    decimals               bigint                 not null,
-    freeze_default         boolean                not null default false,
-    freeze_key             bytea,
-    freeze_key_ed25519_hex varchar                null,
-    initial_supply         bigint                 not null,
-    kyc_key                bytea,
-    kyc_key_ed25519_hex    varchar                null,
-    modified_timestamp     bigint                 not null,
-    name                   character varying(100) not null,
-    supply_key             bytea,
-    supply_key_ed25519_hex varchar                null,
-    symbol                 character varying(100) not null,
-    total_supply           bigint                 not null default 0,
-    treasury_account_id    entity_id              not null,
-    wipe_key               bytea,
-    wipe_key_ed25519_hex   varchar                null
+    token_id                bigint                  primary key,
+    created_timestamp       bigint                  not null,
+    decimals                bigint                  not null,
+    freeze_default          boolean                 not null default false,
+    freeze_key              bytea,
+    freeze_key_ed25519_hex  varchar                 null,
+    initial_supply          bigint                  not null,
+    kyc_key                 bytea,
+    kyc_key_ed25519_hex     varchar                 null,
+    modified_timestamp      bigint                  not null,
+    name                    character varying(100)  not null,
+    supply_key              bytea,
+    supply_key_ed25519_hex  varchar                 null,
+    symbol                  character varying(100)  not null,
+    total_supply            bigint                  not null default 0,
+    treasury_account_id     bigint                  not null,
+    wipe_key                bytea,
+    wipe_key_ed25519_hex    varchar                 null
 );
+comment on table token is 'Token entities';
 
 --- token_account
 create table if not exists token_account
 (
-    id                 serial primary key,
-    account_id         entity_id not null,
-    associated         boolean   not null default false,
-    created_timestamp  bigint    not null,
-    freeze_status      smallint  not null default 0,
-    kyc_status         smallint  not null default 0,
-    modified_timestamp bigint    not null,
-    token_id           entity_id not null
+    id                  serial      primary key,
+    account_id          bigint      not null,
+    associated          boolean     not null default false,
+    created_timestamp   bigint      not null,
+    freeze_status       smallint    not null default 0,
+    kyc_status          smallint    not null default 0,
+    modified_timestamp  bigint      not null,
+    token_id            bigint      not null
 );
+comment on table token is 'Token account entities';
 
 --- token_balance
 create table if not exists token_balance
 (
-    consensus_timestamp bigint    not null,
-    account_id          entity_id not null,
-    balance             bigint    not null,
-    token_id            entity_id not null
+    consensus_timestamp bigint  not null,
+    account_id          bigint  not null,
+    balance             bigint  not null,
+    token_id            bigint  not null
 );
+comment on table token_balance is 'Crypto account token balances';
 
 --- token_transfer
 create table if not exists token_transfer
 (
-    token_id            entity_id     not null,
-    account_id          entity_id     not null,
-    consensus_timestamp bigint        not null,
-    amount              hbar_tinybars not null
+    token_id            bigint  not null,
+    account_id          bigint  not null,
+    consensus_timestamp bigint  not null,
+    amount              bigint  not null
 );
+comment on table token_transfer is 'Crypto account token transfers';
 
 -- topic_message
 create table if not exists topic_message
 (
-    consensus_timestamp   bigint primary key not null,
-    realm_num             entity_realm_num   not null,
-    topic_num             entity_num         not null,
-    message               bytea              not null,
-    running_hash          bytea              not null,
-    sequence_number       bigint             not null,
-    running_hash_version  smallint           not null,
-    chunk_num             integer,
-    chunk_total           integer,
-    payer_account_id      entity_id,
-    valid_start_timestamp nanos_timestamp
+    consensus_timestamp     bigint      not null,
+    realm_num               smallint    not null,
+    topic_num               integer     not null,
+    message                 bytea       not null,
+    running_hash            bytea       not null,
+    sequence_number         bigint      not null,
+    running_hash_version    smallint    not null,
+    chunk_num               integer,
+    chunk_total             integer,
+    payer_account_id        bigint,
+    valid_start_timestamp   bigint
 );
+comment on table topic_message is 'Topic entity sequenced messages';
 
 -- transaction
 create table if not exists transaction
 (
-    consensus_ns           bigint    not null,
-    type                   smallint  not null,
-    result                 smallint  not null,
-    payer_account_id       entity_id not null,
-    valid_start_ns         bigint    not null,
-    valid_duration_seconds bigint,
-    node_account_id        entity_id not null,
-    entity_id              entity_id,
-    initial_balance        bigint default 0,
-    max_fee                hbar_tinybars,
-    charged_tx_fee         bigint,
-    memo                   bytea,
-    transaction_hash       bytea,
-    transaction_bytes      bytea
+    consensus_ns            bigint      not null,
+    type                    smallint    not null,
+    result                  smallint    not null,
+    payer_account_id        bigint      not null,
+    valid_start_ns          bigint      not null,
+    valid_duration_seconds  bigint,
+    node_account_id         bigint      not null,
+    entity_id               bigint,
+    initial_balance         bigint      default 0,
+    max_fee                 bigint,
+    charged_tx_fee          bigint,
+    memo                    bytea,
+    transaction_hash        bytea,
+    transaction_bytes       bytea
 );
+comment on table transaction is 'Submitted network transactions';

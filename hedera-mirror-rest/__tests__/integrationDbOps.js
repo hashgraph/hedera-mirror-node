@@ -98,6 +98,8 @@ const flywayMigrate = function () {
     "placeholders.db-name": "${config.db.name}",
     "placeholders.db-user": "${dbUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
+    "placeholders.chunkIdInterval": 10000,
+    "placeholders.chunkTimeInterval: 604800000000000,
     "target": "1.999.999",
     "url": "jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}",
     "user": "${dbUser}"
