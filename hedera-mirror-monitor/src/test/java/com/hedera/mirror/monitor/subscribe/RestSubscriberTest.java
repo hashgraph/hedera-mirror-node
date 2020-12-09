@@ -74,12 +74,14 @@ class RestSubscriberTest {
         monitorProperties = new MonitorProperties();
         monitorProperties.setMirrorNode(new MirrorNodeProperties());
         monitorProperties.getMirrorNode().getRest().setHost("127.0.0.1");
+        monitorProperties.getMirrorNode().getRest().setHost("127.0.0.1");
 
         subscriberProperties = new RestSubscriberProperties();
         subscriberProperties.setLimit(2L);
         subscriberProperties.getRetry().setMaxAttempts(2L);
         subscriberProperties.getRetry().setMinBackoff(Duration.ofNanos(1L));
         subscriberProperties.getRetry().setMaxBackoff(Duration.ofNanos(2L));
+        subscriberProperties.setValidationPercentage(1.0);
 
         builder = WebClient.builder().exchangeFunction(exchangeFunction);
         this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
