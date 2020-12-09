@@ -20,7 +20,6 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
-import java.util.Objects;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +29,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.monitor.generator.TransactionGenerator;
+import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
@@ -63,14 +63,15 @@ class MonitorConfiguration {
     Disposable publishSubscribe() {
         return Flux.<PublishRequest>generate(sink -> sink.next(transactionGenerator.next()))
                 .retry()
-                .filter(Objects::nonNull)
-                .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .subscribeOn(Schedulers.single())
                 .parallel(publishProperties.getConnections())
                 .runOn(Schedulers.newParallel("publisher", publishProperties.getConnections()))
                 .map(transactionPublisher::publish)
-                .filter(Objects::nonNull)
-                .doOnError(t -> log.error("Error during publish/subscribe flow: ", t))
+                .sequential()
+                .onErrorContinue(PublishException.class, (t, r) -> {})
+                .doFinally(s -> log.warn("Stopped after {} signal", s))
+                .doOnError(t -> log.error("Unexpected error during publish/subscribe flow:", t))
+                .doOnSubscribe(s -> log.info("Starting publisher flow"))
                 .subscribe(subscriber::onPublish);
     }
 }
