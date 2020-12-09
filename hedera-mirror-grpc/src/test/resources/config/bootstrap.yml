@@ -1,7 +1,7 @@
 embedded:
   postgresql:
     enabled: true
-    # set to timescale/timescaledb:latest-pg11 for v2 db schema. Eventually we'll want to use latest-pg12
+    # set to timescale/timescaledb:latest-pg12 for v2 db schema.
     docker-image: postgres:9.6-alpine #  postgres:12-alpine is current default
   redis:
     docker-image: redis:5.0.9-alpine

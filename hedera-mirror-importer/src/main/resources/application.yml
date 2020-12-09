@@ -77,7 +77,7 @@ spring:
     ignoreMissingMigrations: true
     locations: "classpath:db/migration/v1"
     placeholders:
-      api-password: ${hedera.mirror.importer.db.restPassword}n
+      api-password: ${hedera.mirror.importer.db.restPassword}
       api-user: ${hedera.mirror.importer.db.restUsername}
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
