@@ -22,6 +22,7 @@ package com.hedera.mirror.monitor.subscribe;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -50,6 +51,7 @@ public class RestSubscriber implements Subscriber {
     private final MeterRegistry meterRegistry;
     private final FluxSink<PublishResponse> restProcessor;
     private final Map<TransactionType, Timer> timers;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public RestSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
                           RestSubscriberProperties properties, WebClient.Builder webClientBuilder) {
@@ -72,12 +74,15 @@ public class RestSubscriber implements Subscriber {
                         r.totalRetries() + 1, r.failure()));
 
         directProcessor.doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
+                .filter(publishResponse -> Double
+                        .compare(RANDOM.nextDouble(), properties.getValidationPercentage()) < 1)
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
                 .doFinally(s -> log.warn("Received {} signal", s))
                 .limitRequest(properties.getLimit())
                 .take(properties.getDuration())
                 .flatMap(publishResponse -> webClient.get()
-                        .uri("/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
+                        .uri("/transactions/{transactionId}", toString(publishResponse
+                                .getTransactionId()))
                         .retrieve()
                         .bodyToMono(String.class)
                         .doOnNext(json -> log.trace("Response: {}", json))
