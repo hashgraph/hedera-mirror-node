@@ -137,7 +137,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     @Override
-    public synchronized void migrate() {
+    public void migrate() {
         log.debug("Searching for address book on file system");
         AddressBook addressBook = buildAddressBook(getInitialAddressBookFileData());
         addressBook = addressBookRepository.save(addressBook);
@@ -323,7 +323,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      *
      * @return Address book fileData object
      */
-    private FileData getInitialAddressBookFileData() {
+    private synchronized FileData getInitialAddressBookFileData() {
         byte[] addressBookBytes;
 
         // retrieve bootstrap address book from filesystem or classpath
@@ -363,9 +363,12 @@ public class AddressBookServiceImpl implements AddressBookService {
         while (!CollectionUtils.isEmpty(fileDataList)) {
             log.info("Retrieved {} file_data rows for address book processing", fileDataList.size());
             fileDataList.forEach(fileData -> {
-                // call normal address book file transaction parsing flow to parse and ingest address book contents
-                update(fileData);
-                fileDataEntries.incrementAndGet();
+                if (fileData.getFileData() != null && fileData.getFileData().length > 0) {
+                    // call normal address book file transaction parsing flow to parse and ingest address book contents
+                    parse(fileData);
+                    fileDataEntries.incrementAndGet();
+                }
+
                 currentConsensusTimestamp.set(fileData.getConsensusTimestamp());
             });
 
