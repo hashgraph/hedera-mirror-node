@@ -100,7 +100,7 @@ public class AddressBookServiceImpl implements AddressBookService {
             return;
         }
 
-        // ensure address_book table is populated with at least bootstrap addressBook prior to additions
+        // ensure address_book table is populated with at least initial addressBook prior to additions
         migrate();
 
         parse(fileData);
@@ -137,8 +137,13 @@ public class AddressBookServiceImpl implements AddressBookService {
         return ADDRESS_BOOK_101_ENTITY_ID.equals(entityId) || ADDRESS_BOOK_102_ENTITY_ID.equals(entityId);
     }
 
-    @Override
-    public synchronized AddressBook migrate() {
+    /**
+     * Migrates address book data by searching file_data table for applicable 101 and 102 files. These files are
+     * converted to AddressBook objects and used to populate address_book and address_book_entry tables
+     *
+     * @return Latest AddressBook from historical files
+     */
+    private synchronized AddressBook migrate() {
         if (addressBookRepository.count() > 0) {
             if (log.isTraceEnabled()) {
                 log.trace("Valid address books exist in db, skipping migration");
@@ -155,14 +160,6 @@ public class AddressBookServiceImpl implements AddressBookService {
             AddressBook latestAddressBook = parseHistoricAddressBooks();
             return latestAddressBook == null ? initialAddressBook : latestAddressBook;
         });
-
-//        log.debug("Searching for address book on file system");
-//        AddressBook initialAddressBook = parse(getInitialAddressBookFileData());
-//        log.info("Saved initial address book to db: {}", initialAddressBook);
-//
-//        // Ensure all applicable addressBook file data entries are processed
-//        AddressBook latestAddressBook = parseHistoricAddressBooks();
-//        return latestAddressBook == null ? initialAddressBook : latestAddressBook;
     }
 
     /**
@@ -170,6 +167,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * address book endConsensusTimestamp based on new address book's startConsensusTimestamp.
      *
      * @param fileData file data with timestamp, contents, entityId and transaction type for parsing
+     * @return Parsed AddressBook from fileData object
      */
     private AddressBook parse(FileData fileData) {
         byte[] addressBookBytes = null;
@@ -356,7 +354,8 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     /**
-     * Batch parse all 101 and 102 addressBook fileData objects and update the address_book table
+     * Batch parse all 101 and 102 addressBook fileData objects and update the address_book table. Uses page size and
+     * timestamp counters to batch query file data entries
      */
     private AddressBook parseHistoricAddressBooks() {
         AtomicLong fileDataEntries = new AtomicLong(0);
@@ -364,18 +363,19 @@ public class AddressBookServiceImpl implements AddressBookService {
         AtomicReference<AddressBook> lastAddressBook = new AtomicReference<>();
 
         // starting from consensusTimeStamp = 0 retrieve pages of fileData entries for historic address books
-        int pageSize = 1000; //
+        int pageSize = 1000;
         List<FileData> fileDataList = fileDataRepository
                 .findAddressBooksAfter(currentConsensusTimestamp.get(), pageSize);
         while (!CollectionUtils.isEmpty(fileDataList)) {
             log.info("Retrieved {} file_data rows for address book processing", fileDataList.size());
             fileDataList.forEach(fileData -> {
                 if (fileData.getFileData() != null && fileData.getFileData().length > 0) {
-                    // call normal address book file transaction parsing flow to parse and ingest address book contents
+                    // convert and ingest address book fileData contents
                     lastAddressBook.set(parse(fileData));
                     fileDataEntries.incrementAndGet();
                 }
 
+                // update timestamp counter to ensure next query doesn't reconsider files in this time range
                 currentConsensusTimestamp.set(fileData.getConsensusTimestamp());
             });
 
