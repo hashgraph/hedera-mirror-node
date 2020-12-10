@@ -52,7 +52,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class V2_0_3__Address_Book extends BaseJavaMigration {
+public class V2_0_4__Address_Book extends BaseJavaMigration {
     private final AddressBookService addressBookService;
     private final MirrorProperties mirrorProperties;
     private final DataSource dataSource;
@@ -60,7 +60,7 @@ public class V2_0_3__Address_Book extends BaseJavaMigration {
             "in (101, 102) order by consensus_timestamp asc limit ?";
     private JdbcTemplate jdbcTemplate;
 
-    public V2_0_3__Address_Book(MirrorProperties mirrorProperties, @Lazy AddressBookService addressBookService,
+    public V2_0_4__Address_Book(MirrorProperties mirrorProperties, @Lazy AddressBookService addressBookService,
                                 DataSource dataSource) {
         this.addressBookService = addressBookService;
         this.mirrorProperties = mirrorProperties;

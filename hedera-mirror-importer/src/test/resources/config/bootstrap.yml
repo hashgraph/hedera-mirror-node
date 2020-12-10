@@ -1,7 +1,7 @@
 embedded:
   postgresql:
-    # set to timescale/timescaledb:latest-pg12 for v2 db schema.
-    docker-image: postgres:9.6-alpine #  postgres:12-alpine is current default
+    # set to timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3 (same as chart) for v2 db schema.
+    docker-image: postgres:9.6-alpine
   google:
     pubsub:
       # Adding embedded containers' dependencies enables them by default. However, only few tests needs pubsub emulator,

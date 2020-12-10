@@ -271,8 +271,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onToken() throws Exception {
-        Token token1 = getToken("0.0.3", "0.0.5");
-        Token token2 = getToken("0.0.7", "0.0.11");
+        Token token1 = getToken("0.0.3", "0.0.5", 1);
+        Token token2 = getToken("0.0.7", "0.0.11", 2);
 
         // when
         sqlEntityListener.onToken(token1);
@@ -291,8 +291,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         String tokenId2 = "0.0.5";
         String accountId1 = "0.0.7";
         String accountId2 = "0.0.11";
-        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1);
-        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11");
+        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 1);
+        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11", 2);
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
@@ -392,17 +392,17 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return topicMessage;
     }
 
-    private Token getToken(String tokenId, String accountId) throws DecoderException {
+    private Token getToken(String tokenId, String accountId, long createdTimestamp) throws DecoderException {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build().toByteArray();
         Token token = new Token();
-        token.setCreatedTimestamp(1L);
+        token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(1000);
         token.setFreezeDefault(false);
         token.setFreezeKey(hexKey);
         token.setInitialSupply(1_000_000_000L);
         token.setKycKey(hexKey);
-        token.setModifiedTimestamp(3L);
+        token.setModifiedTimestamp(createdTimestamp);
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(hexKey);
         token.setSymbol("FOOTOK");
@@ -413,14 +413,14 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return token;
     }
 
-    private TokenAccount getTokenAccount(String tokenId, String accountId) {
+    private TokenAccount getTokenAccount(String tokenId, String accountId, long createdTimestamp) {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
         tokenAccount.setAssociated(true);
         tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setCreatedTimestamp(1L);
-        tokenAccount.setModifiedTimestamp(2L);
+        tokenAccount.setCreatedTimestamp(createdTimestamp);
+        tokenAccount.setModifiedTimestamp(createdTimestamp);
 
         return tokenAccount;
     }
