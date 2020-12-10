@@ -71,33 +71,31 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
 
         try {
             File file = validPath.toFile();
-            if (file.isDirectory()) {
-                String[] files = file.list();
-                if (files == null || files.length == 0) {
-                    log.info("No files to parse in directory {} for {}", file.getPath(), streamType);
-                    return;
-                }
-
-                Arrays.sort(files);
-                for (String filename : files) {
-                    if (isStreamFileRecordPresent(filename, streamType)) {
-                        continue;
-                    }
-
-                    StreamFile streamFile = readStreamFile(validPath.resolve(filename).toFile(), streamType);
-                    if (streamFile == null) {
-                        log.error("Got null streamFile for {}", filename);
-                        continue;
-                    }
-
-                    saveStreamFile(streamFile, streamType);
-                    count.getAndIncrement();
-                }
-            } else {
+            if (!file.isDirectory()) {
                 log.error("ValidPath {} for {} downloader is not a directory", validPath, streamType);
+                return;
+            }
+
+            String[] files = file.list();
+            if (files == null || files.length == 0) {
+                log.info("No files to parse in directory {} for {}", file.getPath(), streamType);
+                return;
+            }
+
+            Arrays.sort(files);
+            for (String filename : files) {
+                if (isStreamFileRecordPresent(filename, streamType)) {
+                    log.info("Skip file {} since it's already in db", filename);
+                    continue;
+                }
+
+                StreamFile streamFile = readStreamFile(validPath.resolve(filename).toFile(), streamType);
+                saveStreamFile(streamFile, streamType);
+                count.getAndIncrement();
             }
         } catch (Exception e) {
             log.error("Unexpected error adding stream file records for {}", streamType, e);
+            throw e;
         } finally {
             log.info("Added {} stream file records for {} in {}", count.get(), streamType, stopwatch);
         }
@@ -116,10 +114,7 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
             streamFile = Utility.parseRecordFile(file.getPath(), null);
         }
 
-        if (streamFile != null) {
-            streamFile.setNodeAccountId(DEFAULT_NODE_ACCOUNT_ID);
-        }
-
+        streamFile.setNodeAccountId(DEFAULT_NODE_ACCOUNT_ID);
         return streamFile;
     }
 
