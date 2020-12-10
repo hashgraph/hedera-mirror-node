@@ -21,8 +21,9 @@ package com.hedera.mirror.monitor.subscribe;
  */
 
 import java.time.Duration;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
@@ -40,6 +41,7 @@ public class RestSubscriberProperties extends AbstractSubscriberProperties {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
 
-    @PositiveOrZero
-    private double validationPercentage = 1.0;
+    @Min(0)
+    @Max(1)
+    private double samplePercent = 1.0;
 }
