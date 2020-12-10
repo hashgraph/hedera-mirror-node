@@ -61,10 +61,6 @@ public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
 
         // skip when current version is newer than target
         MigrationVersion targetVersion = migrationConfiguration.getTarget();
-        if (targetVersion != null && current.isNewerThan(targetVersion.getVersion())) {
-            return true;
-        }
-
-        return false;
+        return targetVersion != null && current.isNewerThan(targetVersion.getVersion());
     }
 }
