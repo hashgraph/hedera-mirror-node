@@ -74,14 +74,12 @@ class RestSubscriberTest {
         monitorProperties = new MonitorProperties();
         monitorProperties.setMirrorNode(new MirrorNodeProperties());
         monitorProperties.getMirrorNode().getRest().setHost("127.0.0.1");
-        monitorProperties.getMirrorNode().getRest().setHost("127.0.0.1");
 
         subscriberProperties = new RestSubscriberProperties();
         subscriberProperties.setLimit(2L);
         subscriberProperties.getRetry().setMaxAttempts(2L);
         subscriberProperties.getRetry().setMinBackoff(Duration.ofNanos(1L));
         subscriberProperties.getRetry().setMaxBackoff(Duration.ofNanos(2L));
-        subscriberProperties.setValidationPercentage(1.0);
 
         builder = WebClient.builder().exchangeFunction(exchangeFunction);
         this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
@@ -169,6 +167,19 @@ class RestSubscriberTest {
 
         countDownLatch.await(1000, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
+        assertMetric(0L);
+    }
+
+    @Test
+    void zeroValidationPercentage() throws InterruptedException {
+        countDownLatch = new CountDownLatch(2);
+        subscriberProperties.setValidationPercentage(0);
+
+        restSubscriber.onPublish(publishResponse());
+        restSubscriber.onPublish(publishResponse());
+
+        countDownLatch.await(500, TimeUnit.MILLISECONDS);
+        verify(exchangeFunction, times(0)).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(0L);
     }
 

@@ -41,5 +41,5 @@ public class RestSubscriberProperties extends AbstractSubscriberProperties {
     }
 
     @PositiveOrZero
-    private double validationPercentage = .2;
+    private double validationPercentage = 1.0;
 }
