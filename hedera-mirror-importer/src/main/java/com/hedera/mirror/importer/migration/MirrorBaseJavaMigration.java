@@ -20,16 +20,17 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
-@Log4j2
 public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
+    protected final Logger log = LogManager.getLogger(getClass());
 
-    public abstract void doMigrate() throws Exception;
+    protected abstract void doMigrate() throws Exception;
 
     @Override
     public void migrate(Context context) throws Exception {
@@ -51,9 +52,16 @@ public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
      * @param migrationConfiguration flyway Configuration
      * @return
      */
-    private boolean skipMigrationVersion(MigrationVersion current, Configuration migrationConfiguration) {
+    protected boolean skipMigrationVersion(MigrationVersion current, Configuration migrationConfiguration) {
+        // skip when current version is older than baseline
         MigrationVersion baselineVersion = migrationConfiguration.getBaselineVersion();
-        if (baselineVersion.isNewerThan(current.getVersion()) && migrationConfiguration.isIgnoreMissingMigrations()) {
+        if (baselineVersion.isNewerThan(current.getVersion())) {
+            return true;
+        }
+
+        // skip when current version is newer than target
+        MigrationVersion targetVersion = migrationConfiguration.getTarget();
+        if (targetVersion != null && current.isNewerThan(targetVersion.getVersion())) {
             return true;
         }
 

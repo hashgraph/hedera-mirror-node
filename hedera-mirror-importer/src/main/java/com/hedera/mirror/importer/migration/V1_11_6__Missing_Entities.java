@@ -28,7 +28,6 @@ import java.io.FileReader;
 import java.nio.file.Path;
 import java.util.Optional;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
@@ -40,7 +39,6 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
 @Named
 public class V1_11_6__Missing_Entities extends MirrorBaseJavaMigration {
 
