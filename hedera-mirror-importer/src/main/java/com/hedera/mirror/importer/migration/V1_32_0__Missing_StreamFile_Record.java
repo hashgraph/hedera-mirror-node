@@ -31,11 +31,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
-import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -50,7 +50,7 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
 
-    public final static EntityId DEFAULT_NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
+    public static final EntityId DEFAULT_NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
 
     private final BalanceDownloaderProperties balanceDownloaderProperties;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
@@ -59,11 +59,11 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
 
     @Override
     public void migrate(final Context context) {
-        addStreamFileRecords(balanceDownloaderProperties, accountBalanceFileRepository);
-        addStreamFileRecords(recordDownloaderProperties, recordFileRepository);
+        addStreamFileRecords(balanceDownloaderProperties);
+        addStreamFileRecords(recordDownloaderProperties);
     }
 
-    private void addStreamFileRecords(DownloaderProperties downloaderProperties, CrudRepository repository) {
+    private void addStreamFileRecords(DownloaderProperties downloaderProperties) {
         AtomicInteger count = new AtomicInteger(0);
         StreamType streamType = downloaderProperties.getStreamType();
         Path validPath = downloaderProperties.getValidPath();
@@ -85,7 +85,12 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
                     }
 
                     StreamFile streamFile = readStreamFile(validPath.resolve(filename).toFile(), streamType);
-                    repository.save(streamFile);
+                    if (streamFile == null) {
+                        log.error("Got null streamFile for {}", filename);
+                        continue;
+                    }
+
+                    saveStreamFile(streamFile, streamType);
                     count.getAndIncrement();
                 }
             } else {
@@ -116,6 +121,14 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
         }
 
         return streamFile;
+    }
+
+    private void saveStreamFile(StreamFile streamFile, StreamType streamType) {
+        if (streamType == StreamType.BALANCE) {
+            accountBalanceFileRepository.save((AccountBalanceFile) streamFile);
+        } else if (streamType == StreamType.RECORD) {
+            recordFileRepository.save((RecordFile) streamFile);
+        }
     }
 
     private boolean isStreamFileRecordPresent(String filename, StreamType streamType) {

@@ -56,7 +56,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @TestPropertySource(properties = "spring.flyway.target=1.31.3")
-public class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
+class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
 
     @Resource
     private V1_32_0__Missing_StreamFile_Record migration;
