@@ -73,8 +73,10 @@ public class RestSubscriber implements Subscriber {
                 .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
                         r.totalRetries() + 1, r.failure()));
 
+        double samplePercent = properties.getSamplePercent();
         directProcessor.doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
-                .filter(publishResponse -> shouldFilter(publishResponse, properties.getValidationPercentage()))
+                //Randomly filter out transactions to only validate a sample
+                .filter(r -> RANDOM.nextDouble() < samplePercent)
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
                 .doFinally(s -> log.warn("Received {} signal", s))
                 .limitRequest(properties.getLimit())
@@ -100,16 +102,6 @@ public class RestSubscriber implements Subscriber {
     private boolean shouldRetry(Throwable t) {
         return t instanceof WebClientResponseException &&
                 ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND;
-    }
-
-    //Randomly filter out transactions to only validate a set percentage
-    private boolean shouldFilter(PublishResponse publishResponse, double validationPercentage) {
-        boolean filterOut = Double
-                .compare(RANDOM.nextDouble(), validationPercentage) != -1;
-        if (filterOut) {
-            log.trace("Skipping REST validation of {}", publishResponse);
-        }
-        return !filterOut;
     }
 
     private void record(PublishResponse r) {
