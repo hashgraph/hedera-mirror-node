@@ -56,6 +56,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @RequiredArgsConstructor
 public class RedisEntityListener implements BatchEntityListener {
 
+    // hardcode it now to avoid spring validation performance penalty incurred on RedisProperties.isEnabled() if it were
+    // added to RedisProperties with validation annotations
     public static final int TASK_QUEUE_SIZE = 8;
 
     private final MirrorProperties mirrorProperties;
@@ -109,7 +111,9 @@ public class RedisEntityListener implements BatchEntityListener {
 
         // defer flux, subscription, and scheduler creation
         if (subscription == null) {
-            // run the flux operations in a different thread
+            // create a flux from the generator to pull then pump the topic messages list, immediately subscribe to the
+            // flux to publish the topic messages list to redis service. With subscribeOn the new single thread
+            // scheduler, the whole flux pipeline runs in a single thread.
             subscription = Flux.generate(this::generate)
                     .doOnSubscribe(s -> log.info("Starting redis publish flow"))
                     .doFinally(s -> log.info("Redis publish flow stopped with {} signal", s))

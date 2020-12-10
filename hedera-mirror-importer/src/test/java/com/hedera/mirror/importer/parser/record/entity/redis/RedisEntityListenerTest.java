@@ -60,7 +60,7 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
 
     @Autowired
     public RedisEntityListenerTest(RedisEntityListener entityListener, RedisProperties properties,
-                               RedisOperations<String, StreamMessage> redisOperations) {
+                                   RedisOperations<String, StreamMessage> redisOperations) {
         super(entityListener, properties);
         this.redisOperations = redisOperations;
     }

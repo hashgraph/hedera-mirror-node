@@ -184,7 +184,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         Connection connection = null;
 
         try {
-            // batch save action may run asynchronously, trigger it before other operations can reduce latency
+            // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
 
             connection = DataSourceUtils.getConnection(dataSource);
