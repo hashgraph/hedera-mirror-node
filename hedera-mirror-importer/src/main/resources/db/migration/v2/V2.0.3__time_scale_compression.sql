@@ -4,11 +4,13 @@
 
 -- hyper tables with integer based time_column_name require a function that returns the now() value (current time) in the units of the time column
 -- This is needed for policies
-create or replace function unix_now() returns bigint
+create or replace function unix_now
+() returns bigint
     language sql
     stable as
 $$
-select extract(epoch from now())::bigint * 1000000000
+select extract(epoch from now())
+::bigint * 1000000000
 $$;
 
 -- set integer now functions for tables
@@ -95,21 +97,39 @@ alter table transaction
 
 
 -- add compression policy
-select add_compression_policy('account_balance', bigint '${compressionAge}');
-select add_compression_policy('account_balance_file', bigint '${compressionAge}');
-select add_compression_policy('account_balance_sets', bigint '${compressionAge}');
-select add_compression_policy('address_book', bigint '${compressionAge}');
-select add_compression_policy('address_book_entry', bigint '${compressionAge}');
-select add_compression_policy('contract_result', bigint '${compressionAge}');
-select add_compression_policy('crypto_transfer', bigint '${compressionAge}');
-select add_compression_policy('file_data', bigint '${compressionAge}');
-select add_compression_policy('live_hash', bigint '${compressionAge}');
-select add_compression_policy('non_fee_transfer', bigint '${compressionAge}');
-select add_compression_policy('record_file', bigint '${compressionAge}');
-select add_compression_policy('t_entities', bigint '${compressionAge}');
-select add_compression_policy('token', bigint '${compressionAge}');
-select add_compression_policy('token_account', bigint '${compressionAge}');
-select add_compression_policy('token_balance', bigint '${compressionAge}');
-select add_compression_policy('token_transfer', bigint '${compressionAge}');
-select add_compression_policy('topic_message', bigint '${compressionAge}');
-select add_compression_policy('transaction', bigint '${compressionAge}');
+select add_compression_policy('account_balance', bigint '${compressionAge}'
+);
+select add_compression_policy('account_balance_file', bigint '${compressionAge}'
+);
+select add_compression_policy('account_balance_sets', bigint '${compressionAge}'
+);
+select add_compression_policy('address_book', bigint '${compressionAge}'
+);
+select add_compression_policy('address_book_entry', bigint '${compressionAge}'
+);
+select add_compression_policy('contract_result', bigint '${compressionAge}'
+);
+select add_compression_policy('crypto_transfer', bigint '${compressionAge}'
+);
+select add_compression_policy('file_data', bigint '${compressionAge}'
+);
+select add_compression_policy('live_hash', bigint '${compressionAge}'
+);
+select add_compression_policy('non_fee_transfer', bigint '${compressionAge}'
+);
+select add_compression_policy('record_file', bigint '${compressionAge}'
+);
+select add_compression_policy('t_entities', bigint '${compressionAge}'
+);
+select add_compression_policy('token', bigint '${compressionAge}'
+);
+select add_compression_policy('token_account', bigint '${compressionAge}'
+);
+select add_compression_policy('token_balance', bigint '${compressionAge}'
+);
+select add_compression_policy('token_transfer', bigint '${compressionAge}'
+);
+select add_compression_policy('topic_message', bigint '${compressionAge}'
+);
+select add_compression_policy('transaction', bigint '${compressionAge}'
+);

@@ -4,6 +4,7 @@ hedera:
       db:
         chunkIdInterval: 10000
         chunkTimeInterval: 604800000000000
+        compressionAge: 604800000000000
         host: 127.0.0.1
         loadBalance: true
         name: mirror_node
