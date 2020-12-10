@@ -96,6 +96,7 @@ alter table transaction
     set (timescaledb.compress, timescaledb.compress_segmentby = 'payer_account_id, type');
 
 
+
 -- add compression policy
 select add_compression_policy('account_balance', bigint '${compressionAge}'
 );
