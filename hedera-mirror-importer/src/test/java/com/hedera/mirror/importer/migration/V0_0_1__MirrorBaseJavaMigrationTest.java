@@ -27,7 +27,7 @@ import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.junit.jupiter.api.Test;
 
 // flyway requires class name conforms with naming convention
-public class V0_0_1__MirrorBaseJavaMigrationTest extends MirrorBaseJavaMigration {
+class V0_0_1__MirrorBaseJavaMigrationTest extends MirrorBaseJavaMigration {
     @Override
     public void doMigrate() {
         // do nothing
