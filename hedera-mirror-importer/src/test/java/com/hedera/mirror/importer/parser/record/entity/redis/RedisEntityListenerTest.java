@@ -117,7 +117,7 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
         for (int i = 0; i < RedisEntityListener.TASK_QUEUE_SIZE + 2; i++) {
             messages.add(topicMessage());
         }
-        Flux<TopicMessage> topicMessages = subscribe(messages.get(0).getTopicNum());
+        Flux<TopicMessage> topicMessageFlux = subscribe(messages.get(0).getTopicNum());
 
         // when
         doAnswer((Answer<Void>) invocation -> {
@@ -127,6 +127,7 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
             return null;
         }).when(redisOperations).convertAndSend(anyString(), any(Object.class));
 
+        // drive entityListener to handle topic messages in a different thread cause it will block
         new Thread(() -> {
             try {
                 for (TopicMessage message : messages) {
@@ -141,7 +142,7 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
         }).start();
 
         // then
-        topicMessages
+        topicMessageFlux
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(500))
                 .then(() -> assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1))

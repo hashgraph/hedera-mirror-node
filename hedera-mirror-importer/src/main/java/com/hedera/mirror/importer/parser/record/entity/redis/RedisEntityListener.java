@@ -123,11 +123,11 @@ public class RedisEntityListener implements BatchEntityListener {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> topicMessagesQueue.offer(new ArrayList<>())));
         }
 
-        List<TopicMessage> messages = topicMessages;
+        List<TopicMessage> latestMessageBatch = topicMessages;
         topicMessages = new ArrayList<>();
-        if (!topicMessagesQueue.offer(messages)) {
+        if (!topicMessagesQueue.offer(latestMessageBatch)) {
             log.warn("topicMessagesQueue is full, will block until space is available");
-            topicMessagesQueue.put(messages);
+            topicMessagesQueue.put(latestMessageBatch);
         }
     }
 
