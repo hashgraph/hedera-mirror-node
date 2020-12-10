@@ -174,9 +174,8 @@ public class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         migration.migrate(new FlywayContext());
 
         // then
-        List<String> expectedAddedStreamFiles = validFiles.stream()
-                .filter(filename -> !filesWithRecord.contains(filename))
-                .collect(Collectors.toList());
+        List<String> expectedAddedStreamFiles = new ArrayList<>(validFiles);
+        expectedAddedStreamFiles.removeAll(filesWithRecord);
         List<String> actualAddedStreamFiles = new ArrayList<>();
         accountBalanceFileRepository.findAll().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
         recordFileRepository.findAll().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
