@@ -4,9 +4,6 @@
 -- add TIMESTAMPTZ data type column to tables where no monotonically increasing id exists
 -------------------
 
--- Extend the database with TimescaleDB - assumes super user permissions on database
---create extension if not exists timescaledb cascade;
-
 -- account_balance
 select create_hypertable('account_balance', 'consensus_timestamp',
                          chunk_time_interval => ${chunkTimeInterval}, if_not_exists => true);
