@@ -24,7 +24,9 @@ import com.google.common.base.Stopwatch;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import javax.inject.Named;
@@ -36,6 +38,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.exception.SchemaMigrationException;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -57,7 +60,7 @@ public class V1_11_6__Missing_Entities extends MirrorBaseJavaMigration {
     }
 
     @Override
-    public void doMigrate() throws Exception {
+    public void doMigrate() throws SchemaMigrationException {
         File accountInfoFile = getAccountInfoPath().toFile();
         if (!accountInfoFile.exists() || !accountInfoFile.canRead()) {
             log.warn("Skipping entity import due to missing file {}", accountInfoFile.getAbsoluteFile());
@@ -82,6 +85,10 @@ public class V1_11_6__Missing_Entities extends MirrorBaseJavaMigration {
                     log.error("Unable to load AccountInfo: {}", line, e);
                 }
             }
+        } catch (FileNotFoundException ex) {
+            throw new SchemaMigrationException("Unable to read accountInfoFile", ex);
+        } catch (IOException ex) {
+            throw new SchemaMigrationException("Unable to read a line from accountInfoFile", ex);
         }
 
         log.info("Successfully loaded {} accounts in {}", count, stopwatch);

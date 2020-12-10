@@ -27,13 +27,15 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
+import com.hedera.mirror.importer.exception.SchemaMigrationException;
+
 public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
     protected final Logger log = LogManager.getLogger(getClass());
 
-    protected abstract void doMigrate() throws Exception;
+    protected abstract void doMigrate() throws SchemaMigrationException;
 
     @Override
-    public void migrate(Context context) throws Exception {
+    public void migrate(Context context) {
         MigrationVersion current = getVersion();
         if (skipMigrationVersion(current, context.getConfiguration())) {
             log.trace("Migration {} will be skipped as it precedes baseline version {}",
