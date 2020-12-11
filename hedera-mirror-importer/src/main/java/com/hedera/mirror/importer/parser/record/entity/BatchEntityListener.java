@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 public interface BatchEntityListener extends EntityListener {
 
-    void onSave(EntityBatchSaveEvent event);
+    void onSave(EntityBatchSaveEvent event) throws InterruptedException;
 
     void onCleanup(EntityBatchCleanupEvent event);
 }

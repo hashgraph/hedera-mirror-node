@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGNotification;
 import org.postgresql.jdbc.PgConnection;
@@ -49,13 +48,8 @@ public class NotifyingEntityListenerTest extends BatchEntityListenerTest {
         this.dataSource = dataSource;
     }
 
-    @BeforeEach
-    void setup() {
-        properties.setEnabled(true);
-    }
-
     @Test
-    void onTopicMessagePayloadTooLong() {
+    void onTopicMessagePayloadTooLong() throws InterruptedException {
         // given
         TopicMessage topicMessage = topicMessage();
         topicMessage.setMessage(RandomUtils.nextBytes(5824)); // Just exceeds 8000B
