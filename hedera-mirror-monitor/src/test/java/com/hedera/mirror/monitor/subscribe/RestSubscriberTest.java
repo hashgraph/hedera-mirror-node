@@ -22,6 +22,8 @@ package com.hedera.mirror.monitor.subscribe;
 
 import static com.hedera.mirror.monitor.subscribe.Subscriber.METRIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -171,16 +173,59 @@ class RestSubscriberTest {
     }
 
     @Test
-    void zeroValidationPercentage() throws InterruptedException {
-        countDownLatch = new CountDownLatch(2);
-        subscriberProperties.setValidationPercentage(0);
+    void zeroSamplePercent() throws InterruptedException {
+        subscriberProperties.setSamplePercent(0.0);
 
-        restSubscriber.onPublish(publishResponse());
-        restSubscriber.onPublish(publishResponse());
+        int sampleSize = 1000;
+        countDownLatch = new CountDownLatch(sampleSize);
+        subscriberProperties.setLimit(sampleSize);
+        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
 
-        countDownLatch.await(500, TimeUnit.MILLISECONDS);
+        for (int i = 0; i < sampleSize; ++i) {
+            restSubscriber.onPublish(publishResponse());
+        }
+
         verify(exchangeFunction, times(0)).exchange(Mockito.isA(ClientRequest.class));
         assertMetric(0L);
+    }
+
+    @Test
+    void middleSamplePercent() throws InterruptedException {
+        subscriberProperties.setSamplePercent(.75);
+
+        int sampleSize = 1000;
+        countDownLatch = new CountDownLatch(700);
+        subscriberProperties.setLimit(sampleSize);
+        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+
+        for (int i = 0; i < sampleSize; ++i) {
+            restSubscriber.onPublish(publishResponse());
+        }
+
+        countDownLatch.await(500, TimeUnit.MILLISECONDS);
+        verify(exchangeFunction, atLeast(700)).exchange(Mockito.isA(ClientRequest.class));
+        verify(exchangeFunction, atMost(800)).exchange(Mockito.isA(ClientRequest.class));
+    }
+
+    @Test
+    void oneHundredSamplePercent() throws Exception {
+        subscriberProperties.setSamplePercent(1.0);
+
+        int sampleSize = 1000;
+        countDownLatch = new CountDownLatch(700);
+        subscriberProperties.setLimit(sampleSize);
+        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+
+        for (int i = 0; i < sampleSize; ++i) {
+            restSubscriber.onPublish(publishResponse());
+        }
+
+        countDownLatch.await(500, TimeUnit.MILLISECONDS);
+        verify(exchangeFunction, times(1000)).exchange(Mockito.isA(ClientRequest.class));
+
+        assertMetric(1000L);
     }
 
     private PublishResponse publishResponse() {
