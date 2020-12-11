@@ -190,6 +190,10 @@ timescaledb:
     dataNode:
       superuser: mirror_node_pass
   enabled: true
+  persistentVolume:
+    size: 10Gi
+  postgresql:
+    databases: ["postgres", "mirror_node"]
   serviceAccount:
     create: false
 
