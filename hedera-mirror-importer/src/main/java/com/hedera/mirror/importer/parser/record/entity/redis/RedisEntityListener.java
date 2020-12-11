@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +38,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
-import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.SynchronousSink;
-import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamMessage;
@@ -65,8 +64,7 @@ public class RedisEntityListener implements BatchEntityListener {
     private final RedisOperations<String, StreamMessage> redisOperations;
     private final MeterRegistry meterRegistry;
 
-    private long lastConsensusTimestamp;
-    private Disposable subscription;
+    private AtomicLong lastConsensusTimestamp;
     private Timer timer;
     private List<TopicMessage> topicMessages;
     private BlockingQueue<List<TopicMessage>> topicMessagesQueue;
@@ -74,8 +72,7 @@ public class RedisEntityListener implements BatchEntityListener {
 
     @PostConstruct
     void init() {
-        lastConsensusTimestamp = 0;
-        subscription = null;
+        lastConsensusTimestamp = new AtomicLong(0);
         timer = Timer.builder("hedera.mirror.importer.publish.duration")
                 .description("The amount of time it took to publish the domain entity")
                 .tag("entity", TopicMessage.class.getSimpleName())
@@ -84,6 +81,17 @@ public class RedisEntityListener implements BatchEntityListener {
         topicMessages = new ArrayList<>();
         topicMessagesQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
         topicPrefix = "topic." + mirrorProperties.getShard() + "."; // Cache to avoid reflection penalty
+
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                while (true) {
+                    publish(topicMessagesQueue.take());
+                }
+            } catch (InterruptedException ex) {
+                //
+            }
+        });
     }
 
     @Override
@@ -94,11 +102,11 @@ public class RedisEntityListener implements BatchEntityListener {
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
         long consensusTimestamp = topicMessage.getConsensusTimestamp();
-        if (consensusTimestamp <= lastConsensusTimestamp) {
+        if (consensusTimestamp <= lastConsensusTimestamp.get()) {
             return;
         }
 
-        lastConsensusTimestamp = consensusTimestamp;
+        lastConsensusTimestamp.set(consensusTimestamp);
         topicMessages.add(topicMessage);
     }
 
@@ -107,20 +115,6 @@ public class RedisEntityListener implements BatchEntityListener {
     public void onSave(EntityBatchSaveEvent event) throws InterruptedException {
         if (!isEnabled() || topicMessages.isEmpty()) {
             return;
-        }
-
-        // defer flux, subscription, and scheduler creation
-        if (subscription == null) {
-            // create a flux from the generator to pull then pump the topic messages list, immediately subscribe to the
-            // flux to publish the topic messages list to redis service. With subscribeOn the new single thread
-            // scheduler, the whole flux pipeline runs in a single thread.
-            subscription = Flux.generate(this::generate)
-                    .doOnSubscribe(s -> log.info("Starting redis publish flow"))
-                    .doFinally(s -> log.info("Redis publish flow stopped with {} signal", s))
-                    .doOnError(t -> log.error("Unexpected error during redis publish flow", t))
-                    .subscribeOn(Schedulers.newSingle("redis-publish"))
-                    .subscribe(this::publish);
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> topicMessagesQueue.offer(new ArrayList<>())));
         }
 
         List<TopicMessage> latestMessageBatch = topicMessages;
@@ -138,26 +132,11 @@ public class RedisEntityListener implements BatchEntityListener {
         topicMessages.clear();
     }
 
-    private void generate(SynchronousSink<List<TopicMessage>> sink) {
-        try {
-            List<TopicMessage> messages = topicMessagesQueue.take();
-            if (messages.isEmpty()) {
-                sink.complete();
-            } else {
-                sink.next(messages);
-            }
-        } catch (Exception e) {
-            log.error("Unable to retrieve topicMessages from the blocking queue", e);
-            sink.error(new RuntimeException("Unexpected error when generating messages for the flow", e));
-        }
-    }
-
     private void publish(List<TopicMessage> messages) {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             timer.record(() -> redisOperations.executePipelined(callback(messages)));
             log.info("Finished notifying {} messages in {}", messages.size(), stopwatch);
-            messages.clear();
         } catch (Exception e) {
             log.error("Unable to publish to redis", e);
         }
