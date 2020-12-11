@@ -28,18 +28,25 @@ import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.IOUtils;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -53,7 +60,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-@AllArgsConstructor
 @CacheConfig(cacheNames = ADDRESS_BOOK_102_CACHE_NAME, cacheManager = EXPIRE_AFTER_5M)
 public class AddressBookServiceImpl implements AddressBookService {
 
@@ -63,6 +69,16 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
+    private final MirrorProperties mirrorProperties;
+    private final TransactionTemplate transactionTemplate;
+
+    public AddressBookServiceImpl(AddressBookRepository addressBookRepository, FileDataRepository fileDataRepository,
+                                  MirrorProperties mirrorProperties, TransactionTemplate transactionTemplate) {
+        this.addressBookRepository = addressBookRepository;
+        this.fileDataRepository = fileDataRepository;
+        this.mirrorProperties = mirrorProperties;
+        this.transactionTemplate = transactionTemplate;
+    }
 
     /**
      * Updates mirror node with new address book details provided in fileData object
@@ -82,6 +98,9 @@ public class AddressBookServiceImpl implements AddressBookService {
             return;
         }
 
+        // ensure address_book table is populated with at least initial addressBook prior to additions
+        migrate();
+
         parse(fileData);
     }
 
@@ -95,9 +114,11 @@ public class AddressBookServiceImpl implements AddressBookService {
     public AddressBook getCurrent() {
         Instant now = Instant.now();
         long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
+
+        // retrieve latest address book. If address_book is empty parse initial and historic address book files
         return addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
-                .orElseThrow(() -> new IllegalStateException("No valid address book found in DB"));
+                .orElseGet(this::migrate);
     }
 
     /**
@@ -112,12 +133,49 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     /**
+     * Migrates address book data by searching file_data table for applicable 101 and 102 files. These files are
+     * converted to AddressBook objects and used to populate address_book and address_book_entry tables
+     *
+     * @return Latest AddressBook from historical files
+     */
+    private synchronized AddressBook migrate() {
+        Instant now = Instant.now();
+        long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
+        AddressBook currentAddressBook = addressBookRepository
+                .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
+                .orElse(null);
+
+        if (currentAddressBook != null) {
+            if (log.isTraceEnabled()) {
+                log.trace("Valid address books exist in db, skipping migration");
+            }
+            return currentAddressBook;
+        }
+
+        log.info("No address book found in db, proceeding with migration");
+        return transactionTemplate.execute(status -> {
+            log.info("Searching for address book on file system");
+            AddressBook initialAddressBook = parse(getInitialAddressBookFileData());
+
+            // Parse all applicable addressBook file_data entries are processed
+            AddressBook latestAddressBook = parseHistoricAddressBooks();
+
+            // set latestAddressBook as newest addressBook from file_data entries or initial addressBook from filesystem
+            latestAddressBook = latestAddressBook == null ? initialAddressBook : latestAddressBook;
+
+            log.info("Migration complete. Current address book to db: {}", latestAddressBook);
+            return latestAddressBook;
+        });
+    }
+
+    /**
      * Parses provided fileData object into an AddressBook object if valid and stores into db. Also updates previous
      * address book endConsensusTimestamp based on new address book's startConsensusTimestamp.
      *
      * @param fileData file data with timestamp, contents, entityId and transaction type for parsing
+     * @return Parsed AddressBook from fileData object
      */
-    private void parse(FileData fileData) {
+    private AddressBook parse(FileData fileData) {
         byte[] addressBookBytes = null;
         if (fileData.transactionTypeIsAppend()) {
             // concatenate bytes from partial address book file data in db
@@ -126,8 +184,8 @@ public class AddressBookServiceImpl implements AddressBookService {
             addressBookBytes = fileData.getFileData();
         }
 
-        AddressBook addressBook = buildAddressBook(addressBookBytes, fileData.getConsensusTimestamp(), fileData
-                .getEntityId());
+        AddressBook addressBook = buildAddressBook(new FileData(fileData
+                .getConsensusTimestamp(), addressBookBytes, fileData.getEntityId(), fileData.getTransactionType()));
         if (addressBook != null) {
             addressBook = addressBookRepository.save(addressBook);
             log.info("Saved new address book to db: {}", addressBook);
@@ -135,6 +193,8 @@ public class AddressBookServiceImpl implements AddressBookService {
             // update previous addressBook
             updatePreviousAddressBook(fileData);
         }
+
+        return addressBook;
     }
 
     /**
@@ -177,20 +237,18 @@ public class AddressBookServiceImpl implements AddressBookService {
      * NodeAddressBook proto. If successful the NodeAddressBook details including AddressBookEntry entries are extracted
      * and added to AddressBook object.
      *
-     * @param addressBookBytes   byte array representation of AddressBookEntry proto
-     * @param consensusTimestamp transaction consensusTimestamp
-     * @param fileID             address book file id
+     * @param fileData fileData object representing address book data
      * @return
      */
-    private AddressBook buildAddressBook(byte[] addressBookBytes, long consensusTimestamp, EntityId fileID) {
-        long startConsensusTimestamp = consensusTimestamp + 1;
+    private AddressBook buildAddressBook(FileData fileData) {
+        long startConsensusTimestamp = fileData.getConsensusTimestamp() + 1;
         AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
-                .fileData(addressBookBytes)
+                .fileData(fileData.getFileData())
                 .startConsensusTimestamp(startConsensusTimestamp)
-                .fileId(fileID);
+                .fileId(fileData.getEntityId());
 
         try {
-            NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+            NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(fileData.getFileData());
 
             if (nodeAddressBook != null) {
                 if (nodeAddressBook.getNodeAddressCount() > 0) {
@@ -219,7 +277,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @return
      */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
-            long consensusTimestamp) {
+                                                                              long consensusTimestamp) {
         ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
         Set<Long> nodeIdSet = new HashSet<>();
 
@@ -268,5 +326,70 @@ public class AddressBookServiceImpl implements AddressBookService {
                                 previousAddressBook.getStartConsensusTimestamp(), fileData.getConsensusTimestamp());
                     }
                 });
+    }
+
+    /**
+     * Retrieve the initial address book file for the network from either the file system or class path
+     *
+     * @return Address book fileData object
+     */
+    private FileData getInitialAddressBookFileData() {
+        byte[] addressBookBytes;
+
+        // retrieve bootstrap address book from filesystem or classpath
+        try {
+            Path initialAddressBook = mirrorProperties.getInitialAddressBook();
+            if (initialAddressBook != null) {
+                addressBookBytes = Files.readAllBytes(initialAddressBook);
+                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length,
+                        initialAddressBook);
+            } else {
+                MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+                String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
+                Resource resource = new ClassPathResource(resourcePath, getClass());
+                addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
+                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length, resource);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load bootstrap address book", e);
+        }
+
+        return new FileData(0L, addressBookBytes,
+                AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID,
+                TransactionTypeEnum.FILECREATE.getProtoId());
+    }
+
+    /**
+     * Batch parse all 101 and 102 addressBook fileData objects and update the address_book table. Uses page size and
+     * timestamp counters to batch query file data entries
+     */
+    private AddressBook parseHistoricAddressBooks() {
+        int fileDataEntries = 0;
+        long currentConsensusTimestamp = 0;
+        AddressBook lastAddressBook = null;
+
+        // starting from consensusTimeStamp = 0 retrieve pages of fileData entries for historic address books
+        int pageSize = 1000;
+        List<FileData> fileDataList = fileDataRepository
+                .findAddressBooksAfter(currentConsensusTimestamp, pageSize);
+        while (!CollectionUtils.isEmpty(fileDataList)) {
+            log.info("Retrieved {} file_data rows for address book processing", fileDataList.size());
+
+            for (FileData fileData : fileDataList) {
+                if (fileData.getFileData() != null && fileData.getFileData().length > 0) {
+                    // convert and ingest address book fileData contents
+                    lastAddressBook = parse(fileData);
+                    fileDataEntries++;
+                }
+
+                // update timestamp counter to ensure next query doesn't reconsider files in this time range
+                currentConsensusTimestamp = fileData.getConsensusTimestamp();
+            }
+
+            fileDataList = fileDataRepository.findAddressBooksAfter(currentConsensusTimestamp, pageSize);
+        }
+
+        log.info("Processed {} historic address books", fileDataEntries);
+        return lastAddressBook;
     }
 }
