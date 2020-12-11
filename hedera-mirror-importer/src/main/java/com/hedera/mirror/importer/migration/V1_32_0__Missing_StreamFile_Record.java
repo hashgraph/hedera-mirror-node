@@ -64,7 +64,7 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
     }
 
     private void addStreamFileRecords(DownloaderProperties downloaderProperties) {
-        AtomicInteger count = new AtomicInteger(0);
+        int count = 0;
         StreamType streamType = downloaderProperties.getStreamType();
         Path validPath = downloaderProperties.getValidPath();
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -91,18 +91,18 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
 
                 StreamFile streamFile = readStreamFile(validPath.resolve(filename).toFile(), streamType);
                 saveStreamFile(streamFile, streamType);
-                count.getAndIncrement();
+                count++;
             }
         } catch (Exception e) {
             log.error("Unexpected error adding stream file records for {}", streamType, e);
             throw e;
         } finally {
-            log.info("Added {} stream file records for {} in {}", count.get(), streamType, stopwatch);
+            log.info("Added {} stream file records for {} in {}", count, streamType, stopwatch);
         }
     }
 
     private StreamFile readStreamFile(File file, StreamType streamType) {
-        StreamFile streamFile = null;
+        StreamFile streamFile;
         if (streamType == StreamType.BALANCE) {
             streamFile = AccountBalanceFile.builder()
                     .consensusTimestamp(Utility.getTimestampFromFilename(file.getName()))
@@ -112,6 +112,8 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
                     .build();
         } else if (streamType == StreamType.RECORD) {
             streamFile = Utility.parseRecordFile(file.getPath(), null);
+        } else {
+            throw new IllegalArgumentException("StreamType " + streamType + " is not supported");
         }
 
         streamFile.setNodeAccountId(DEFAULT_NODE_ACCOUNT_ID);
