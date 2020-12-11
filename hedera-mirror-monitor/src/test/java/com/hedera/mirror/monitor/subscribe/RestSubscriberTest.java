@@ -205,14 +205,13 @@ class RestSubscriberTest {
         int sampleSize = 1000;
         countDownLatch = new CountDownLatch(sampleSize);
         subscriberProperties.setLimit(sampleSize);
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
 
         for (int i = 0; i < sampleSize; ++i) {
-            restSubscriber.onPublish(publishResponse());
+            restSubscriber.get().onPublish(publishResponse());
         }
 
         verify(exchangeFunction, times(0)).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(0L);
+        assertE2EMetric(0L);
     }
 
     @Test
@@ -222,11 +221,10 @@ class RestSubscriberTest {
         int sampleSize = 1000;
         countDownLatch = new CountDownLatch(700);
         subscriberProperties.setLimit(sampleSize);
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         for (int i = 0; i < sampleSize; ++i) {
-            restSubscriber.onPublish(publishResponse());
+            restSubscriber.get().onPublish(publishResponse());
         }
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
@@ -241,17 +239,16 @@ class RestSubscriberTest {
         int sampleSize = 1000;
         countDownLatch = new CountDownLatch(700);
         subscriberProperties.setLimit(sampleSize);
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         for (int i = 0; i < sampleSize; ++i) {
-            restSubscriber.onPublish(publishResponse());
+            restSubscriber.get().onPublish(publishResponse());
         }
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(1000)).exchange(Mockito.isA(ClientRequest.class));
 
-        assertMetric(1000L);
+        assertE2EMetric(1000L);
     }
 
     private PublishResponse publishResponse() {
