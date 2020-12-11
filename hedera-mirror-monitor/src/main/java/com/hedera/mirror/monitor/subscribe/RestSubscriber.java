@@ -39,7 +39,7 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
-public class RestSubscriber extends AbstractSubscriber {
+public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties> {
 
     private final FluxSink<PublishResponse> restProcessor;
     private static final SecureRandom RANDOM = new SecureRandom();

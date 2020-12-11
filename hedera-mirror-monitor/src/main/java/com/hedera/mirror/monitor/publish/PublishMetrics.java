@@ -114,26 +114,26 @@ public class PublishMetrics {
         TimeUnit unit = TimeUnit.NANOSECONDS;
         return TimeGauge.builder("hedera.mirror.monitor.publish.duration", stopwatch, unit, s -> s.elapsed(unit))
                 .description("The amount of time this scenario has been publishing transactions")
-                .tag("scenario", tags.getScenarioName())
-                .tag("type", tags.getType().toString())
+                .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
+                .tag(Tags.TAG_TYPE, tags.getType().toString())
                 .register(meterRegistry);
     }
 
     private Timer newHandleMetric(Tags tags) {
         return Timer.builder("hedera.mirror.monitor.publish.handle")
                 .description("The time it takes from submit to being handled by the main nodes")
-                .tag("scenario", tags.getScenarioName())
-                .tag("status", tags.getStatus())
-                .tag("type", tags.getType().toString())
+                .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
+                .tag(Tags.TAG_STATUS, tags.getStatus())
+                .tag(Tags.TAG_TYPE, tags.getType().toString())
                 .register(meterRegistry);
     }
 
     private Timer newSubmitMetric(Tags tags) {
         return Timer.builder("hedera.mirror.monitor.publish.submit")
                 .description("The time it takes to submit a transaction")
-                .tag("scenario", tags.getScenarioName())
-                .tag("status", tags.getStatus())
-                .tag("type", tags.getType().toString())
+                .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
+                .tag(Tags.TAG_STATUS, tags.getStatus())
+                .tag(Tags.TAG_TYPE, tags.getType().toString())
                 .register(meterRegistry);
     }
 
@@ -149,6 +149,10 @@ public class PublishMetrics {
 
     @Value
     private class Tags {
+        private static final String TAG_SCENARIO = "scenario";
+        private static final String TAG_STATUS = "status";
+        private static final String TAG_TYPE = "type";
+
         private final String scenarioName;
         private final String status;
         private final TransactionType type;
