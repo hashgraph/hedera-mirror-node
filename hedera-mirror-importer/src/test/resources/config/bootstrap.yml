@@ -1,8 +1,4 @@
 embedded:
-  flyway:
-    baseline-version: 0
-    locations: "filesystem:./src/main/resources/db/migration/v1,filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
-    target: 1.999.999
   google:
     pubsub:
       # Adding embedded containers' dependencies enables them by default. However, only few tests needs pubsub emulator,
