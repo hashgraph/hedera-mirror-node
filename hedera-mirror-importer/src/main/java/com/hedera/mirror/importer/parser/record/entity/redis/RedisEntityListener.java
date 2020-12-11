@@ -89,7 +89,7 @@ public class RedisEntityListener implements BatchEntityListener {
                     publish(topicMessagesQueue.take());
                 }
             } catch (InterruptedException ex) {
-                //
+                Thread.currentThread().interrupt();
             }
         });
     }
