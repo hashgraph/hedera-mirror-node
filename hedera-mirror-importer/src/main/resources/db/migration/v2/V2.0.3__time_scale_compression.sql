@@ -74,9 +74,8 @@ alter table token
 alter table token_account
     set (timescaledb.compress, timescaledb.compress_orderby = 'created_timestamp desc', timescaledb.compress_segmentby = 'account_id');
 
--- The constraint "token_balance_timestamp_ids" cannot be enforced with the given compression configuration.
--- alter table token_balance
---     set (timescaledb.compress, timescaledb.compress_orderby = 'consensus_timestamp desc', timescaledb.compress_segmentby = 'account_id');
+alter table token_balance
+    set (timescaledb.compress, timescaledb.compress_orderby = 'consensus_timestamp desc', timescaledb.compress_segmentby = 'account_id,token_id');
 
 alter table token_transfer
     set (timescaledb.compress, timescaledb.compress_orderby = 'consensus_timestamp desc', timescaledb.compress_segmentby = 'account_id');
@@ -100,7 +99,7 @@ select add_compression_policy('record_file', bigint '${compressionAge}');
 select add_compression_policy('t_entities', bigint '${compressionAge}');
 select add_compression_policy('token', bigint '${compressionAge}');
 select add_compression_policy('token_account', bigint '${compressionAge}');
--- select add_compression_policy('token_balance', bigint '${compressionAge}');
+select add_compression_policy('token_balance', bigint '${compressionAge}');
 select add_compression_policy('token_transfer', bigint '${compressionAge}');
 select add_compression_policy('topic_message', bigint '${compressionAge}');
 select add_compression_policy('transaction', bigint '${compressionAge}');
