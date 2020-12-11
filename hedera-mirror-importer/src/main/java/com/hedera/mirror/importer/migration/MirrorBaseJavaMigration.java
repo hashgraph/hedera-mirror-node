@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.api.MigrationVersion;
@@ -27,15 +28,13 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
-import com.hedera.mirror.importer.exception.SchemaMigrationException;
-
 public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
     protected final Logger log = LogManager.getLogger(getClass());
 
-    protected abstract void doMigrate() throws SchemaMigrationException;
+    protected abstract void doMigrate() throws IOException;
 
     @Override
-    public void migrate(Context context) {
+    public void migrate(Context context) throws IOException {
         MigrationVersion current = getVersion();
         if (skipMigrationVersion(current, context.getConfiguration())) {
             log.trace("Migration {} will be skipped as it precedes baseline version {}",

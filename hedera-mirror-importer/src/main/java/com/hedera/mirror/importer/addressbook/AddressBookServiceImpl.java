@@ -152,9 +152,9 @@ public class AddressBookServiceImpl implements AddressBookService {
             return currentAddressBook;
         }
 
-        log.debug("No address book found in db, proceeding with migration");
+        log.info("No address book found in db, proceeding with migration");
         return transactionTemplate.execute(status -> {
-            log.debug("Searching for address book on file system");
+            log.info("Searching for address book on file system");
             AddressBook initialAddressBook = parse(getInitialAddressBookFileData());
 
             // Parse all applicable addressBook file_data entries are processed
