@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -33,7 +35,9 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import lombok.Data;
+import org.apache.commons.io.FileUtils;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +53,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -139,27 +144,39 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
     }
 
     @Test
-    void noFiles() {
+    void noFiles() throws IOException {
         testMigration(Collections.emptyList(), Collections.emptyList());
     }
 
     @Test
-    void allFilesHaveRecord() {
+    void allFilesHaveRecord() throws IOException {
         testMigration(allFiles, allFiles);
     }
 
     @Test
-    void allFilesWithoutRecord() {
+    void allFilesWithoutRecord() throws IOException {
         testMigration(allFiles, Collections.emptyList());
     }
 
     @Test
-    void someFilesHaveRecord() {
+    void someFilesHaveRecord() throws IOException {
         List<String> filesWithRecord = List.of(accountBalanceFiles.get(0), recordFiles.get(0));
         testMigration(allFiles, filesWithRecord);
     }
 
-    void testMigration(List<String> validFiles, List<String> filesWithRecord) {
+    @Test
+    void validPathIsNotDirectory() throws IOException {
+        // replace valid path with a file
+        for (DownloaderProperties properties : List.of(balanceDownloaderProperties, recordDownloaderProperties)) {
+            Path validPath = properties.getValidPath();
+            FileUtils.deleteDirectory(validPath.toFile());
+            FileUtils.write(validPath.toFile(), "", StandardCharsets.UTF_8);
+        }
+
+        testMigration(Collections.emptyList(), Collections.emptyList());
+    }
+
+    void testMigration(List<String> validFiles, List<String> filesWithRecord) throws IOException {
         // given
         for (String filename : validFiles) {
             allFilesWithMeta.get(filename).getFileCopier().filterFiles(filename).copy();
@@ -194,7 +211,7 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
 
         @Override
         public Configuration getConfiguration() {
-            return null;
+            return new FluentConfiguration().target("1.32.0");
         }
 
         @Override

@@ -28,8 +28,6 @@ import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.flywaydb.core.api.migration.BaseJavaMigration;
-import org.flywaydb.core.api.migration.Context;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -47,7 +45,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @Named
 @RequiredArgsConstructor
-public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
+public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration {
 
     public static final EntityId DEFAULT_NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
 
@@ -57,7 +55,7 @@ public class V1_32_0__Missing_StreamFile_Record extends BaseJavaMigration {
     private final RecordFileRepository recordFileRepository;
 
     @Override
-    public void migrate(final Context context) {
+    protected void doMigrate() {
         addStreamFileRecords(balanceDownloaderProperties);
         addStreamFileRecords(recordDownloaderProperties);
     }
