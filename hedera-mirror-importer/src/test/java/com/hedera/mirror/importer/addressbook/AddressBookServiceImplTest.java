@@ -555,7 +555,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void verifyAddressBookMigration() {
+    void verifyAddressBookMigrationInitiatedByDownloader() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
         store(addressBookBytes1, 2L, false);
 
@@ -577,6 +577,31 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertEquals(5, addressBookRepository.count()); // initial plus 4 files
         assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2) +
                 (FINAL.getNodeAddressCount() * 2), addressBookEntryRepository.count());
+    }
+
+    @Test
+    void verifyAddressBookMigrationInitiatedByParser() {
+        byte[] addressBookBytes1 = UPDATED.toByteArray();
+        store(addressBookBytes1, 2L, false);
+
+        byte[] addressBookBytes2 = UPDATED.toByteArray();
+        store(addressBookBytes2, 3L, true);
+
+        byte[] addressBookBytes3 = FINAL.toByteArray();
+        store(addressBookBytes3, 4L, false);
+
+        byte[] addressBookBytes4 = FINAL.toByteArray();
+        store(addressBookBytes4, 5L, true);
+
+        // migration
+        int addressBook5NodeCount = 20;
+        byte[] addressBookBytes5 = addressBook(addressBook5NodeCount).toByteArray();
+        addressBookService.update(createFileData(addressBookBytes5, 6L, true));
+
+        assertEquals(4, fileDataRepository.count());
+        assertEquals(6, addressBookRepository.count()); // initial plus 5 files
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2) +
+                (FINAL.getNodeAddressCount() * 2) + addressBook5NodeCount, addressBookEntryRepository.count());
     }
 
     private void assertAddressBookData(byte[] expected, long consensusTimestamp) {
