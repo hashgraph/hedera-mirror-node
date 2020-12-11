@@ -67,6 +67,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
             .setFileNum(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getEntityNum()).build();
     private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();
     private static final byte[] FILE_CONTENTS = {'a', 'b', 'c'};
+    private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
 
     @TempDir
     Path dataPath;
@@ -346,8 +347,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertFileData(fileAppendTransactionBody.getContents(), recordAppend.getConsensusTimestamp())
                 , () -> assertFileData(fileUpdateTransactionBody.getContents(), recordUpdate.getConsensusTimestamp())
                 , () -> assertAddressBookData(addressBook, recordAppend.getConsensusTimestamp())
-                , () -> assertEquals(13, addressBookEntryRepository.count())
-                , () -> assertEquals(1, addressBookRepository.count())
+                , () -> assertEquals(13 + TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count())
+                , () -> assertEquals(2, addressBookRepository.count())
                 , () -> assertEquals(2, fileDataRepository.count()) // update and append
         );
     }
@@ -561,15 +562,13 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        addressBookService.getCurrent();
         assertAll(
                 () -> assertRowCountOnSuccess(ADDRESS_BOOK_FILEID),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertEquals(0, addressBookRepository.count()),
-                () -> assertEquals(0, addressBookEntryRepository.count()),
+                () -> assertEquals(1, addressBookRepository.count()),
+                () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count()),
                 () -> assertEquals(1, fileDataRepository.count())
         );
     }
@@ -598,8 +597,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 () -> assertThat(currentAddressBook.getStartConsensusTimestamp())
                         .isEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp()) + 1),
                 () -> assertThat(currentAddressBook.getEntries()).hasSize(4)
-                , () -> assertEquals(1, addressBookRepository.count())
-                , () -> assertEquals(4, addressBookEntryRepository.count())
+                , () -> assertEquals(2, addressBookRepository.count())
+                , () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + 4, addressBookEntryRepository.count())
                 , () -> assertEquals(1, fileDataRepository.count())
         );
     }

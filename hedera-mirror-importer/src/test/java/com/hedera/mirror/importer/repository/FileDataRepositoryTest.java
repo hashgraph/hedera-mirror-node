@@ -32,6 +32,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 public class FileDataRepositoryTest extends AbstractRepositoryTest {
+    private final EntityId addressBookEntityId101 = EntityId.of("0.0.101", EntityTypeEnum.FILE);
     private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
 
     @Test
@@ -87,6 +88,28 @@ public class FileDataRepositoryTest extends AbstractRepositoryTest {
                         5, addressBookEntityId102.getId(), transactionTypes)).get()
                 .isNotNull()
                 .isEqualTo(fileData);
+    }
+
+    @Test
+    void findAddressBookFilesInRange() {
+        List<FileData> fileDataList = new ArrayList<>();
+        fileDataList.add(fileData(1, addressBookEntityId101.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(2, addressBookEntityId102.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(3, addressBookEntityId101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(4, addressBookEntityId101.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, addressBookEntityId102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(6, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(7, addressBookEntityId101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(8, addressBookEntityId102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataRepository.saveAll(fileDataList);
+
+        Assertions.assertThat(fileDataRepository
+                .findAddressBooksAfter(
+                        2, 5))
+                .isNotNull()
+                .hasSize(5)
+                .extracting(FileData::getConsensusTimestamp)
+                .containsSequence(3L, 4L, 5L, 6L, 7L);
     }
 
     private FileData fileData(long consensusTimestamp, long fileId, int transactionType) {
