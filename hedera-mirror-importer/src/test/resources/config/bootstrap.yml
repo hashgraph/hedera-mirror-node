@@ -1,11 +1,15 @@
 embedded:
-  postgresql:
-    # set to timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3 (same as chart) for v2 db schema.
-    docker-image: postgres:9.6-alpine
+  flyway:
+    baseline-version: 0
+    locations: "filesystem:./src/main/resources/db/migration/v1,filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
+    target: 1.999.999
   google:
     pubsub:
       # Adding embedded containers' dependencies enables them by default. However, only few tests needs pubsub emulator,
       # so it is enabled only for those tests.
       enabled: false
+  postgresql:
+    # set to timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3 (same as chart) for v2 db schema.
+    docker-image: postgres:9.6-alpine
   redis:
     docker-image: redis:5.0.9-alpine
