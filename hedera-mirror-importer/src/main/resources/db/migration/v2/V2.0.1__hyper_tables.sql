@@ -16,8 +16,10 @@ select create_hypertable('account_balance_file', 'consensus_timestamp',
 select create_hypertable('account_balance_sets', 'consensus_timestamp',
                          chunk_time_interval => ${chunkTimeInterval}, if_not_exists => true);
 
--- address_book skipped because we don't expect high traffic inserts
--- address_book_entry skipped because foreign keys are not supported with hyper tables, also we don't expect high traffic inserts
+-- address_book skipped because timescale doesn't support hyper tables that serve as foreign keys referenced by other tables
+
+select create_hypertable('address_book_entry', 'consensus_timestamp',
+                         chunk_time_interval => ${chunkTimeInterval}, if_not_exists => true);
 
 -- contract_result
 select create_hypertable('contract_result', 'consensus_timestamp',

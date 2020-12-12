@@ -25,8 +25,6 @@ alter table address_book
     add constraint address_book_start_timestamp primary key (start_consensus_timestamp);
 
 -- address_book_entry
-alter table address_book_entry
-    add constraint address_book_entry_id primary key (id);
 create index if not exists address_book_entry__timestamp
     on address_book_entry (consensus_timestamp);
 alter table address_book_entry
