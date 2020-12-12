@@ -342,3 +342,31 @@ describe('Utils getTransactionTypeQuery tests', () => {
     );
   });
 });
+
+describe('Utils convertMySqlStyleQueryToPostgres tests', () => {
+  const testSpecs = [
+    {
+      sqlQuery: '',
+      expected: '',
+    },
+    {
+      sqlQuery: 'select * from t limit 10',
+      expected: 'select * from t limit 10',
+    },
+    {
+      sqlQuery: 'select * from t where a = ? and b <> ?',
+      expected: 'select * from t where a = $1 and b <> $2',
+    },
+    {
+      sqlQuery: 'select * from t where a = ?a0 and b > ?a0 and c = ? and d < ?d0 and e > ?d0 and f <> ?',
+      expected: 'select * from t where a = $1 and b > $1 and c = $2 and d < $3 and e > $3 and f <> $4',
+    },
+  ];
+
+  testSpecs.forEach((testSpec) => {
+    const {sqlQuery, expected} = testSpec;
+    test(sqlQuery, () => {
+      expect(utils.convertMySqlStyleQueryToPostgres(sqlQuery)).toEqual(expected);
+    });
+  })
+});

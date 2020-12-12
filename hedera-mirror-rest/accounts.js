@@ -126,7 +126,7 @@ const getAccounts = async (req, res) => {
     .concat(pubKeyParams)
     .concat(params);
 
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getAccounts query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
@@ -215,7 +215,7 @@ const getOneAccount = async (req, res) => {
     order
   );
 
-  const innerParams = accountParams.concat(tsParams).concat(tsParams).concat(params);
+  const innerParams = accountParams.concat(tsParams).concat(params);
   const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
 

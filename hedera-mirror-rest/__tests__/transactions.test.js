@@ -185,7 +185,7 @@ const validateOrder = function (transactions, order) {
 const singleTests = {
   timestamp_lowerlimit: {
     urlparam: `timestamp=gte:${timeOneHourAgo}`,
-    checks: [{field: 'consensus_timestamp', operator: '>=', value: timeOneHourAgo + '000000000'}],
+    checks: [{field: 'consensus_ns', operator: '>=', value: timeOneHourAgo + '000000000'}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -193,7 +193,7 @@ const singleTests = {
   },
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
-    checks: [{field: 'consensus_timestamp', operator: '<', value: timeNow + '000000000'}],
+    checks: [{field: 'consensus_ns', operator: '<', value: timeNow + '000000000'}],
     checkFunctions: [
       {func: validateTsRange, args: [0, timeNow]},
       {func: validateFields, args: []},

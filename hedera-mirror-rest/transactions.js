@@ -119,10 +119,12 @@ const createTransferLists = (rows) => {
       };
     }
 
-    transactions[row.consensus_ns].transfers.push({
-      account: EntityId.fromString(row.ctl_entity_id).toString(),
-      amount: Number(row.amount),
-    });
+    if (row.ctl_entity_id !== null) {
+      transactions[row.consensus_ns].transfers.push({
+        account: EntityId.fromString(row.ctl_entity_id).toString(),
+        amount: Number(row.amount),
+      });
+    }
   }
 
   const anchorSecNs = rows.length > 0 ? utils.nsToSecNs(rows[rows.length - 1].consensus_ns) : 0;
@@ -150,7 +152,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
        JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-       JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
+       LEFT OUTER JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
        LEFT OUTER JOIN token_transfer ttl
          ON t.type = ${constants.transactionTypes.CRYPTOTRANSFER}
          AND tlist.consensus_timestamp = ttl.consensus_timestamp
@@ -167,6 +169,13 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
 const buildWhereClause = function (...conditions) {
   const clause = conditions.filter((q) => q !== '').join(' AND ');
   return clause === '' ? '' : `WHERE ${clause}`;
+};
+
+const convertToNamedQuery = function (query, prefix) {
+  let index = 0;
+  return query.replace(/\?/g, () => {
+    return `?${prefix}${index++}`;
+  });
 };
 
 /**
@@ -195,23 +204,61 @@ const getTransactionsInnerQuery = function (
   transactionTypeQuery,
   order
 ) {
-  const whereClause = buildWhereClause(tsQuery, resultTypeQuery, transactionTypeQuery);
-  const ctlTsQuery = tsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
-  const ctlWhereClause = buildWhereClause(accountQuery, ctlTsQuery, creditDebitQuery);
+  const namedAccountQuery = convertToNamedQuery(accountQuery, 'acct');
+  const namedTsQuery = convertToNamedQuery(tsQuery, 'ts');
+  const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
+  const ctlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
+
+  if (creditDebitQuery) {
+    // limit the query to transactions with crypto transfer list
+    const ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, creditDebitQuery);
+    const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
+    return `
+      SELECT t.consensus_ns AS consensus_timestamp
+      FROM transaction t
+      JOIN (
+        SELECT DISTINCT consensus_timestamp
+        FROM crypto_transfer AS ctl
+        ${ctlWhereClause}
+        ORDER BY consensus_timestamp ${order}
+      ) AS ctl
+      ON t.consensus_ns = ctl.consensus_timestamp
+      ${whereClause}
+      ORDER BY t.consensus_ns ${order}
+      ${namedLimitQuery}`;
+  }
+
+  const transactionAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 't.payer_account_id');
+  const transactionWhereClause = buildWhereClause(
+    transactionAccountQuery,
+    namedTsQuery,
+    resultTypeQuery,
+    transactionTypeQuery
+  );
+  const ctlJoinClause =
+    (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns';
+  const ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, resultTypeQuery, transactionTypeQuery);
 
   return `
-    SELECT t.consensus_ns AS consensus_timestamp
-    FROM transaction t
-    JOIN (
-            SELECT DISTINCT consensus_timestamp
-            FROM crypto_transfer AS ctl
-            ${ctlWhereClause}
-            ORDER BY consensus_timestamp ${order}
-         ) AS ctl
+    SELECT coalesce(t.consensus_ns,ctl.consensus_timestamp) AS consensus_timestamp
+    FROM (
+        SELECT consensus_ns
+        FROM transaction AS t
+        ${transactionWhereClause}
+        ORDER BY consensus_ns ${order}
+        ${namedLimitQuery}
+    ) AS t
+    FULL OUTER JOIN (
+        SELECT DISTINCT ON(ctl.consensus_timestamp) ctl.consensus_timestamp AS consensus_timestamp
+        FROM crypto_transfer AS ctl
+        ${ctlJoinClause}
+        ${ctlWhereClause}
+        ORDER BY ctl.consensus_timestamp ${order}
+        ${namedLimitQuery}
+    ) AS ctl
     ON t.consensus_ns = ctl.consensus_timestamp
-    ${whereClause}
-    ORDER BY t.consensus_ns ${order}
-    ${limitQuery}`;
+    ORDER BY consensus_timestamp ${order}
+    ${namedLimitQuery}`;
 };
 
 const reqToSql = function (req) {
@@ -223,7 +270,10 @@ const reqToSql = function (req) {
   const resultTypeQuery = utils.parseResultParams(req, 't.result');
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  const sqlParams = accountParams.concat(tsParams).concat(tsParams).concat(params);
+
+  // accountQuery and tsQuery will appear twice in the inner query, one for transaction table and one for
+  // crypto_transfer table. So concat their params twice here to match the query.
+  const sqlParams = accountParams.concat(tsParams).concat(params);
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,
@@ -238,7 +288,7 @@ const reqToSql = function (req) {
 
   return {
     limit,
-    query: utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams),
+    query: utils.convertMySqlStyleQueryToPostgres(sqlQuery),
     order,
     params: sqlParams,
   };
@@ -304,7 +354,7 @@ const getOneTransaction = async (req, res) => {
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-    JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
+    LEFT JOIN crypto_transfer ctl ON ctl.consensus_timestamp = t.consensus_ns
     LEFT JOIN token_transfer ttl
       ON t.type = ${constants.transactionTypes.CRYPTOTRANSFER}
       AND t.consensus_ns = ttl.consensus_timestamp
@@ -313,7 +363,7 @@ const getOneTransaction = async (req, res) => {
     GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name
     ORDER BY consensus_ns ASC, ctl_entity_id ASC, ctl.amount ASC`;
 
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
   if (logger.isTraceEnabled()) {
     logger.trace(`getOneTransaction query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);
   }
