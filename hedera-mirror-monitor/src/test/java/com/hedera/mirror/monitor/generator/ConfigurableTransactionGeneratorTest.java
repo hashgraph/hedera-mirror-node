@@ -41,7 +41,7 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 
 class ConfigurableTransactionGeneratorTest {
 
-    private static final int SAMPLE_SIZE = 1000;
+    private static final int SAMPLE_SIZE = 10_000;
     private static final String TOPIC_ID = "0.0.1000";
 
     private ScenarioProperties properties;
@@ -50,11 +50,11 @@ class ConfigurableTransactionGeneratorTest {
     @BeforeEach
     void init() {
         properties = new ScenarioProperties();
-        properties.setReceipt(100);
-        properties.setRecord(100);
+        properties.setReceipt(1);
+        properties.setRecord(1);
         properties.setName("test");
         properties.setProperties(Map.of("topicId", TOPIC_ID));
-        properties.setTps(10000);
+        properties.setTps(100_000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(properties));
     }
@@ -107,7 +107,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void receiptEnabled() {
-        properties.setReceipt(100);
+        properties.setReceipt(1);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isReceipt)
@@ -117,17 +117,17 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void receiptPercent() {
-        properties.setReceipt(1);
+        properties.setReceipt(0.001);
         Multiset<Boolean> receipts = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             receipts.add(generator.get().next().isReceipt());
         }
 
-        assertThat((int) (receipts.count(true) * 100.0 / SAMPLE_SIZE))
+        assertThat((double) receipts.count(true) / SAMPLE_SIZE)
                 .isNotNegative()
                 .isNotZero()
-                .isCloseTo(properties.getReceipt(), within((int) (SAMPLE_SIZE * 0.05)));
+                .isCloseTo(properties.getReceipt(), within(0.001));
     }
 
     @Test
@@ -142,7 +142,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void recordEnabled() {
-        properties.setRecord(100);
+        properties.setRecord(1);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isRecord)
@@ -152,17 +152,17 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void recordPercent() {
-        properties.setRecord(75);
+        properties.setRecord(0.75);
         Multiset<Boolean> records = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             records.add(generator.get().next().isRecord());
         }
 
-        assertThat((int) (records.count(true) * 100.0 / SAMPLE_SIZE))
+        assertThat((double) records.count(true) / SAMPLE_SIZE)
                 .isNotNegative()
                 .isNotZero()
-                .isCloseTo(properties.getRecord(), within((int) (SAMPLE_SIZE * 0.05)));
+                .isCloseTo(properties.getRecord(), within(SAMPLE_SIZE * 0.05));
     }
 
     @Test

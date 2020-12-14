@@ -20,13 +20,15 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import static com.hedera.mirror.monitor.subscribe.Subscriber.METRIC_NAME;
+import static com.hedera.mirror.monitor.subscribe.AbstractSubscriber.METRIC_DURATION;
+import static com.hedera.mirror.monitor.subscribe.AbstractSubscriber.METRIC_E2E;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.base.Suppliers;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -34,11 +36,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.ClientRequest;
@@ -56,17 +60,17 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
-@MockitoSettings
+@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class RestSubscriberTest {
 
-    @Mock()
+    @Mock
     private ExchangeFunction exchangeFunction;
 
     private MeterRegistry meterRegistry;
     private MonitorProperties monitorProperties;
     private RestSubscriberProperties subscriberProperties;
     private WebClient.Builder builder;
-    private RestSubscriber restSubscriber;
+    private Supplier<RestSubscriber> restSubscriber;
     private CountDownLatch countDownLatch;
 
     @BeforeEach
@@ -78,13 +82,15 @@ class RestSubscriberTest {
         monitorProperties.getMirrorNode().getRest().setHost("127.0.0.1");
 
         subscriberProperties = new RestSubscriberProperties();
-        subscriberProperties.setLimit(2L);
+        subscriberProperties.setLimit(3L);
+        subscriberProperties.setName("test");
         subscriberProperties.getRetry().setMaxAttempts(2L);
         subscriberProperties.getRetry().setMinBackoff(Duration.ofNanos(1L));
         subscriberProperties.getRetry().setMaxBackoff(Duration.ofNanos(2L));
 
         builder = WebClient.builder().exchangeFunction(exchangeFunction);
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
+        this.restSubscriber = Suppliers
+                .memoize(() -> new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder));
     }
 
     @Test
@@ -92,43 +98,60 @@ class RestSubscriberTest {
         countDownLatch = new CountDownLatch(2);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.onPublish(publishResponse());
-        restSubscriber.onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(2L);
+        assertE2EMetric(2L);
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isNotEmpty();
     }
 
     @Test
     void duration() throws Exception {
         countDownLatch = new CountDownLatch(1);
         subscriberProperties.setDuration(Duration.ofSeconds(1));
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
         Mono<ClientResponse> delay = response(HttpStatus.OK)
                 .delayElement(Duration.ofSeconds(5L))
                 .doOnSubscribe(s -> countDownLatch.countDown());
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(delay);
 
-        restSubscriber.onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
 
         countDownLatch.await(2, TimeUnit.SECONDS);
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(0L);
+        assertE2EMetric(0L);
     }
 
     @Test
-    void limit() throws Exception {
+    void limitReached() throws Exception {
         countDownLatch = new CountDownLatch(3);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.onPublish(publishResponse());
-        restSubscriber.onPublish(publishResponse());
-        restSubscriber.onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
-        verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(2L);
+        verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
+        assertE2EMetric(3L);
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isEmpty();
+    }
+
+    @Test
+    void limitExceeded() throws Exception {
+        countDownLatch = new CountDownLatch(3);
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+
+        restSubscriber.get().onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
+
+        countDownLatch.await(500, TimeUnit.MILLISECONDS);
+        verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
+        assertE2EMetric(3L);
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isEmpty();
     }
 
     @Test
@@ -136,11 +159,12 @@ class RestSubscriberTest {
         countDownLatch = new CountDownLatch(1);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
                 .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR));
-        restSubscriber.onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(0L);
+        assertE2EMetric(0L);
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isNotEmpty();
     }
 
     @Test
@@ -150,11 +174,12 @@ class RestSubscriberTest {
                 .thenReturn(response(HttpStatus.NOT_FOUND))
                 .thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
 
         countDownLatch.await(1000, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(1L);
+        assertE2EMetric(1L);
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isNotEmpty();
     }
 
     @Test
@@ -165,11 +190,12 @@ class RestSubscriberTest {
                 .thenReturn(response(HttpStatus.NOT_FOUND))
                 .thenReturn(response(HttpStatus.NOT_FOUND));
 
-        restSubscriber.onPublish(publishResponse());
+        restSubscriber.get().onPublish(publishResponse());
 
         countDownLatch.await(1000, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(0L);
+        assertE2EMetric(0L);
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isNotEmpty();
     }
 
     @Test
@@ -179,14 +205,13 @@ class RestSubscriberTest {
         int sampleSize = 1000;
         countDownLatch = new CountDownLatch(sampleSize);
         subscriberProperties.setLimit(sampleSize);
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
 
         for (int i = 0; i < sampleSize; ++i) {
-            restSubscriber.onPublish(publishResponse());
+            restSubscriber.get().onPublish(publishResponse());
         }
 
         verify(exchangeFunction, times(0)).exchange(Mockito.isA(ClientRequest.class));
-        assertMetric(0L);
+        assertE2EMetric(0L);
     }
 
     @Test
@@ -196,11 +221,10 @@ class RestSubscriberTest {
         int sampleSize = 1000;
         countDownLatch = new CountDownLatch(700);
         subscriberProperties.setLimit(sampleSize);
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         for (int i = 0; i < sampleSize; ++i) {
-            restSubscriber.onPublish(publishResponse());
+            restSubscriber.get().onPublish(publishResponse());
         }
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
@@ -215,22 +239,25 @@ class RestSubscriberTest {
         int sampleSize = 1000;
         countDownLatch = new CountDownLatch(700);
         subscriberProperties.setLimit(sampleSize);
-        this.restSubscriber = new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         for (int i = 0; i < sampleSize; ++i) {
-            restSubscriber.onPublish(publishResponse());
+            restSubscriber.get().onPublish(publishResponse());
         }
 
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
         verify(exchangeFunction, times(1000)).exchange(Mockito.isA(ClientRequest.class));
 
-        assertMetric(1000L);
+        assertE2EMetric(1000L);
     }
 
     private PublishResponse publishResponse() {
         return PublishResponse.builder()
-                .request(PublishRequest.builder().type(TransactionType.CONSENSUS_SUBMIT_MESSAGE).build())
+                .request(PublishRequest.builder()
+                        .timestamp(Instant.now())
+                        .type(TransactionType.CONSENSUS_SUBMIT_MESSAGE)
+                        .build())
+                .timestamp(Instant.now())
                 .transactionId(TransactionId.withValidStart(AccountId.fromString("0.0.1000"), Instant.ofEpochSecond(1)))
                 .build();
     }
@@ -248,15 +275,15 @@ class RestSubscriberTest {
                 .doFinally(s -> countDownLatch.countDown());
     }
 
-    private void assertMetric(long count) {
+    private void assertE2EMetric(long count) {
         if (count > 0) {
-            assertThat(meterRegistry.find(METRIC_NAME).timers())
+            assertThat(meterRegistry.find(METRIC_E2E).timers())
                     .hasSize(1)
                     .element(0)
                     .extracting(Timer::takeSnapshot)
                     .hasFieldOrPropertyWithValue("count", count);
         } else {
-            assertThat(meterRegistry.find(METRIC_NAME).timers()).isEmpty();
+            assertThat(meterRegistry.find(METRIC_E2E).timers()).isEmpty();
         }
     }
 }

@@ -1,6 +1,7 @@
 embedded:
   postgresql:
     enabled: true
-    docker-image: postgres:9.6-alpine
+    # set to timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3 (same as chart) for v2 db schema.
+    docker-image: postgres:9.6-alpine #  postgres:12-alpine is current default
   redis:
     docker-image: redis:5.0.9-alpine

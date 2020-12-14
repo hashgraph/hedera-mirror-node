@@ -47,6 +47,10 @@ public abstract class AbstractSubscriberProperties {
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
+    @DurationMin(seconds = 1L)
+    @NotNull
+    protected Duration statusFrequency = Duration.ofSeconds(5L);
+
     @Data
     @Validated
     public static class RetryProperties {

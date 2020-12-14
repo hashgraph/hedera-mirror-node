@@ -21,7 +21,7 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void save() throws DecoderException {
-        TokenAccount token = tokenAccountRepository.save(tokenAccount("0.0.101", "0.0.102"));
+        TokenAccount token = tokenAccountRepository.save(tokenAccount("0.0.101", "0.0.102", 1));
         Assertions.assertThat(tokenAccountRepository.findById(token.getId()).get())
                 .isNotNull()
                 .isEqualTo(token);
@@ -29,11 +29,11 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findByTokenIdAndAccountId() throws DecoderException {
-        tokenAccountRepository.save(tokenAccount("0.0.101", "0.0.102"));
+        tokenAccountRepository.save(tokenAccount("0.0.101", "0.0.102", 1));
         String tokenId = "0.2.22";
         String accountId = "0.2.44";
-        TokenAccount token2 = tokenAccountRepository.save(tokenAccount(tokenId, accountId));
-        tokenAccountRepository.save(tokenAccount("1.0.7", "1.0.34"));
+        TokenAccount token2 = tokenAccountRepository.save(tokenAccount(tokenId, accountId, 2));
+        tokenAccountRepository.save(tokenAccount("1.0.7", "1.0.34", 3));
         Assertions.assertThat(tokenAccountRepository
                 .findByTokenIdAndAccountId(EntityId.of(tokenId, EntityTypeEnum.TOKEN).getId(), EntityId
                         .of(accountId, EntityTypeEnum.ACCOUNT).getId()).get())
@@ -45,14 +45,14 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
                         .of("0.2.44", EntityTypeEnum.ACCOUNT).getId())).isEqualTo(Optional.empty());
     }
 
-    private TokenAccount tokenAccount(String tokenId, String accountId) {
+    private TokenAccount tokenAccount(String tokenId, String accountId, long createdTimestamp) {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
         tokenAccount.setAssociated(true);
         tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setCreatedTimestamp(1L);
-        tokenAccount.setModifiedTimestamp(2L);
+        tokenAccount.setCreatedTimestamp(createdTimestamp);
+        tokenAccount.setModifiedTimestamp(createdTimestamp);
         return tokenAccount;
     }
 }
