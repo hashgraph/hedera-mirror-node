@@ -104,6 +104,8 @@ app.set('port', port);
 app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
+
+// load transaction types from DB
 loadTransactionTypes();
 
 // middleware functions, Prior to v0.5 define after sets
