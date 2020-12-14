@@ -410,7 +410,6 @@ describe('DB integration test - spec based', () => {
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());
     configClone = _.cloneDeep(config);
-    transactionTypes.loadTransactionTypes();
   });
 
   afterAll(async () => {
