@@ -56,9 +56,9 @@ create index if not exists non_fee_transfer__consensus_timestamp
 
 -- record_file
 create unique index if not exists record_file_name
-    on record_file (name, consensus_start); -- have to add id due to partitioning
+    on record_file (name, consensus_start); -- have to add consensus_start due to partitioning
 create unique index if not exists record_file_hash
-    on record_file (file_hash, consensus_start); -- have to add id due to partitioning
+    on record_file (file_hash, consensus_start); -- have to add consensus_start due to partitioning
 create index if not exists record_file__consensus_start
     on record_file (consensus_start);
 create index if not exists record_file__consensus_end

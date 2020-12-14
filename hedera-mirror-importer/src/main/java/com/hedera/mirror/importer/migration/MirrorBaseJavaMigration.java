@@ -37,9 +37,10 @@ public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
     public void migrate(Context context) throws IOException {
         MigrationVersion current = getVersion();
         if (skipMigrationVersion(current, context.getConfiguration())) {
-            log.trace("Migration {} will be skipped as it precedes baseline version {}",
+            log.info("Migration {} will be skipped as it does not fall between the baseline: {} and target: {} range",
                     current,
-                    context.getConfiguration().getBaselineVersion());
+                    context.getConfiguration().getBaselineVersion(),
+                    context.getConfiguration().getTarget().getVersion());
             return;
         }
 
