@@ -8,8 +8,7 @@ create or replace function unix_now() returns bigint
     language sql
     stable as
 $$
-select extract(epoch from now())
-           ::bigint * 1000000000
+select extract(epoch from now())::bigint * 1000000000
 $$;
 
 -- set integer now functions for tables
