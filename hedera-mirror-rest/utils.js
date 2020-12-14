@@ -422,7 +422,7 @@ const buildPgSqlObject = (query, params, order, limit) => {
 const convertMySqlStyleQueryToPostgres = (sqlQuery) => {
   let paramsCount = 1;
   const namedParamIndex = {};
-  const sqlQueryNonInject = sqlQuery.replace(/\?([a-zA-Z][a-zA-Z0-9]*)?/g, (s) => {
+  return sqlQuery.replace(/\?([a-zA-Z][a-zA-Z0-9]*)?/g, (s) => {
     let index = namedParamIndex[s];
     if (index === undefined) {
       index = paramsCount;
@@ -435,8 +435,6 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery) => {
 
     return `$${index}`;
   });
-
-  return sqlQueryNonInject;
 };
 
 /**
