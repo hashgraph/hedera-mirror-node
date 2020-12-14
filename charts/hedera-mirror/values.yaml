@@ -6,7 +6,7 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-timescaledb  # RELEASE-NAME will be replaced with actual release by children charts
+    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts. Set to RELEASE-NAME-timescaledb for timescaledb
   namespaceOverride: ""
   redis:
     host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
@@ -16,7 +16,7 @@ global:
     password: mirror_api_pass
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
   extaddressbook:
-    enabled: true
+    enabled: false
 
 grpc:
   config:
@@ -51,7 +51,7 @@ networkPolicy:
   enabled: false
 
 postgresql:
-  enabled: false
+  enabled: true
   metrics:
     enabled: false
     resources:
@@ -178,7 +178,7 @@ timescaledb:
       superuser: mirror_node_pass
     dataNode:
       superuser: mirror_node_pass
-  enabled: true
+  enabled: false
   persistentVolume:
     size: 10Gi
   #  postgresql:

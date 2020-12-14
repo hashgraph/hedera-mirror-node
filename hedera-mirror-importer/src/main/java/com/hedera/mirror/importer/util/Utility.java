@@ -51,8 +51,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.flywaydb.core.api.MigrationVersion;
-import org.flywaydb.core.api.configuration.Configuration;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
@@ -505,23 +503,6 @@ public class Utility {
         if (actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
             return true;
         }
-        return false;
-    }
-
-    /**
-     * Determine whether a java migration should be skipped based on version and isIgnoreMissingMigrations setting
-     *
-     * @param current                The current java migration version
-     * @param migrationConfiguration flyway Configuration
-     * @return
-     */
-    public static boolean skipMigrationVersion(MigrationVersion current, Configuration migrationConfiguration) {
-        MigrationVersion baselineVersion = migrationConfiguration.getBaselineVersion();
-        if (baselineVersion.isNewerThan(current.getVersion()) && migrationConfiguration.isIgnoreMissingMigrations()) {
-            log.trace("Migration {} should be skipped as it precedes baseline version {}", current, baselineVersion);
-            return true;
-        }
-
         return false;
     }
 }
