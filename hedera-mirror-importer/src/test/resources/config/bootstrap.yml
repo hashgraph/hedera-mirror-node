@@ -1,11 +1,11 @@
 embedded:
-  postgresql:
-    enabled: true
-    docker-image: postgres:9.6-alpine
   google:
     pubsub:
       # Adding embedded containers' dependencies enables them by default. However, only few tests needs pubsub emulator,
       # so it is enabled only for those tests.
       enabled: false
+  postgresql:
+    # set to timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3 (same as chart) for v2 db schema.
+    docker-image: postgres:9.6-alpine
   redis:
     docker-image: redis:5.0.9-alpine
