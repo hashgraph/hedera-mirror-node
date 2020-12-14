@@ -171,10 +171,19 @@ const buildWhereClause = function (...conditions) {
   return clause === '' ? '' : `WHERE ${clause}`;
 };
 
+/**
+ * Convert parameters to the named format.
+ *
+ * @param {String} query - they mysql query
+ * @param {String} prefix - the prefix for the named parameters
+ * @return {String} - The converted query
+ */
 const convertToNamedQuery = function (query, prefix) {
   let index = 0;
   return query.replace(/\?/g, () => {
-    return `?${prefix}${index++}`;
+    const namedParam = `?${prefix}${index}`;
+    index += 1;
+    return namedParam;
   });
 };
 
@@ -208,10 +217,11 @@ const getTransactionsInnerQuery = function (
   const namedTsQuery = convertToNamedQuery(tsQuery, 'ts');
   const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
   const ctlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
+  let ctlWhereClause;
 
   if (creditDebitQuery) {
     // limit the query to transactions with crypto transfer list
-    const ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, creditDebitQuery);
+    ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, creditDebitQuery);
     const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
     return `
       SELECT t.consensus_ns AS consensus_timestamp
@@ -237,7 +247,7 @@ const getTransactionsInnerQuery = function (
   );
   const ctlJoinClause =
     (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns';
-  const ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, resultTypeQuery, transactionTypeQuery);
+  ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, resultTypeQuery, transactionTypeQuery);
 
   return `
     SELECT coalesce(t.consensus_ns,ctl.consensus_timestamp) AS consensus_timestamp
@@ -249,7 +259,7 @@ const getTransactionsInnerQuery = function (
         ${namedLimitQuery}
     ) AS t
     FULL OUTER JOIN (
-        SELECT DISTINCT ON(ctl.consensus_timestamp) ctl.consensus_timestamp AS consensus_timestamp
+        SELECT DISTINCT ctl.consensus_timestamp AS consensus_timestamp
         FROM crypto_transfer AS ctl
         ${ctlJoinClause}
         ${ctlWhereClause}
@@ -270,9 +280,6 @@ const reqToSql = function (req) {
   const resultTypeQuery = utils.parseResultParams(req, 't.result');
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-
-  // accountQuery and tsQuery will appear twice in the inner query, one for transaction table and one for
-  // crypto_transfer table. So concat their params twice here to match the query.
   const sqlParams = accountParams.concat(tsParams).concat(params);
 
   const innerQuery = getTransactionsInnerQuery(

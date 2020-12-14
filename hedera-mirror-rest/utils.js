@@ -240,8 +240,9 @@ const parseTimestampParam = (timestampParam) => {
     return '';
   }
   const seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
-  const nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
-  return `${seconds}${`${nanos}000000000`.substring(0, 9)}`;
+  let nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
+  nanos = `${nanos}000000000`.substring(0, 9);
+  return `${seconds}${nanos}`;
 };
 
 /**
