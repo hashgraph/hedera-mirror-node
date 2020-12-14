@@ -27,8 +27,6 @@ alter table address_book
 -- address_book_entry
 create index if not exists address_book_entry__timestamp
     on address_book_entry (consensus_timestamp);
-alter table address_book_entry
-    add constraint address_book_entry_fk foreign key (consensus_timestamp) references address_book (start_consensus_timestamp);
 
 -- contract_result
 create index if not exists contract_result__consensus
@@ -80,8 +78,8 @@ create unique index if not exists entities_unq
 -- token
 alter table if exists token
     add constraint token_timestamp primary key (created_timestamp);
-create unique index if not exists token_id_timestamp
-    on token (token_id, created_timestamp);
+create index if not exists token_id
+    on token (token_id);
 
 -- token_account
 alter table if exists token_account
