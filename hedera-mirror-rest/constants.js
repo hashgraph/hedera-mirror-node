@@ -101,42 +101,28 @@ const defaultBucketNames = {
 
 const recordStreamPrefix = 'recordstreams/record';
 
-const transactionTypes = {
-  UNKNOWN: -1,
-  CONTRACTCALL: 7,
-  CONTRACTCREATEINSTANCE: 8,
-  CONTRACTUPDATEINSTANCE: 9,
-  CRYPTOADDLIVEHASH: 10,
-  CRYPTOCREATEACCOUNT: 11,
-  CRYPTODELETE: 12,
-  CRYPTODELETELIVEHASH: 13,
-  CRYPTOTRANSFER: 14,
-  CRYPTOUPDATEACCOUNT: 15,
-  FILEAPPEND: 16,
-  FILECREATE: 17,
-  FILEDELETE: 18,
-  FILEUPDATE: 19,
-  SYSTEMDELETE: 20,
-  SYSTEMUNDELETE: 21,
-  CONTRACTDELETEINSTANCE: 22,
-  FREEZE: 23,
-  CONSENSUSCREATETOPIC: 24,
-  CONSENSUSUPDATETOPIC: 25,
-  CONSENSUSDELETETOPIC: 26,
-  CONSENSUSSUBMITMESSAGE: 27,
-  UNCHECKEDSUBMIT: 28,
-  TOKENCREATION: 29,
-  TOKENFREEZE: 31,
-  TOKENUNFREEZE: 32,
-  TOKENGRANTKYC: 33,
-  TOKENREVOKEKYC: 34,
-  TOKENDELETION: 35,
-  TOKENUPDATE: 36,
-  TOKENMINT: 37,
-  TOKENBURN: 38,
-  TOKENWIPE: 39,
-  TOKENASSOCIATE: 40,
-  TOKENDISSOCIATE: 41,
+const transactionTypes = new Map();
+
+const loadTransactionTypes = function () {
+  pool
+    .query('SELECT proto_id, name FROM t_transaction_types')
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      // logger.info(results)
+      for (const row of results.rows) {
+        // logger.info(row);
+        // logger.info(row.name);
+        // transactionTypes[row.name] = name.proto_id;
+        transactionTypes.set(row.name, row.proto_id);
+      }
+      // logger.info(transactionTypes2);
+    })
+    .then((q) => {
+      logger.info('HI IS HERE');
+      logger.info(transactionTypes);
+    });
 };
 
 module.exports = {
@@ -153,5 +139,6 @@ module.exports = {
   responseDataLabel,
   transactionColumns,
   transactionResultFilter,
+  loadTransactionTypes,
   transactionTypes,
 };

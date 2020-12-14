@@ -34,6 +34,7 @@ const _ = require('lodash');
 const accounts = require('./accounts');
 const balances = require('./balances');
 const config = require('./config');
+const constants = require('./constants');
 const health = require('./health');
 const stateproof = require('./stateproof');
 const tokens = require('./tokens');
@@ -103,6 +104,7 @@ app.set('port', port);
 app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
+constants.loadTransactionTypes();
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(

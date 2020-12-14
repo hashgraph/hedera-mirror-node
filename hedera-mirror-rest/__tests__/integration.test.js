@@ -53,13 +53,14 @@ const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
-const {cloudProviders} = require('../constants');
+const constants = require('../constants');
 
 let sqlConnection;
 
 beforeAll(async () => {
   jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
+  constants.loadTransactionTypes();
 });
 
 afterAll(() => {
@@ -73,7 +74,7 @@ beforeEach(async () => {
 
 //
 // TEST DATA
-// shard 0, realm 15, accounts 1-10
+// shard 0, realm 15, accounts 1-10constants
 // 3 balances per account
 // several transactions
 
@@ -273,7 +274,7 @@ describe('DB integration test - spec based', () => {
       enabled: true,
       streams: {
         network: 'OTHER',
-        cloudProvider: cloudProviders.S3,
+        cloudProvider: constants.cloudProviders.S3,
         endpointOverride: endpoint,
         region: 'us-east-1',
         bucketName,
@@ -341,6 +342,7 @@ describe('DB integration test - spec based', () => {
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());
     configClone = _.cloneDeep(config);
+    constants.loadTransactionTypes();
   });
 
   afterAll(async () => {

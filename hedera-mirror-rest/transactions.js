@@ -152,7 +152,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
        LEFT OUTER JOIN token_transfer ttl
-         ON t.type = ${constants.transactionTypes.CRYPTOTRANSFER}
+         ON t.type = ${constants.transactionTypes.get('CRYPTOTRANSFER')}
          AND tlist.consensus_timestamp = ttl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
@@ -255,9 +255,9 @@ const getTransactions = async (req, res) => {
 
   const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
+    logger.info(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   }
-
+  logger.info(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   // Execute query
   return pool
     .query(query.query, query.params)
@@ -304,9 +304,9 @@ const getOneTransaction = async (req, res) => {
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-    JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
+    LEFT JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
     LEFT JOIN token_transfer ttl
-      ON t.type = ${constants.transactionTypes.CRYPTOTRANSFER}
+      ON t.type = ${constants.transactionTypes.get('CRYPTOTRANSFER')}
       AND t.consensus_ns = ttl.consensus_timestamp
     WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?
@@ -335,6 +335,7 @@ const getOneTransaction = async (req, res) => {
       };
     });
 };
+
 module.exports = {
   getTransactions,
   getOneTransaction,
