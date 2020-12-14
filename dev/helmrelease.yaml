@@ -50,7 +50,7 @@ spec:
                     logResponse: true
                     properties:
                       topicId: 0.0.103736
-                    record: 100
+                    record: 1
                     tps: 0.1
                     type: CONSENSUS_SUBMIT_MESSAGE
               subscribe:
