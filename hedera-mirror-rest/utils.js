@@ -27,6 +27,7 @@ const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {transactionTypes} = require('./transactionTypes');
 
 const ENTITY_TYPE_ACCOUNT = 1;
 const ENTITY_TYPE_FILE = 3;
@@ -95,7 +96,7 @@ const isValidEncoding = (query) => {
 };
 
 const isValidTransactionType = (transactionType) => {
-  return _.isString(transactionType) && constants.transactionTypes.get(transactionType.toUpperCase()) !== undefined;
+  return _.isString(transactionType) && transactionTypes.get(transactionType.toUpperCase()) !== undefined;
 };
 
 /**
@@ -746,9 +747,7 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
   }
 
   if (isValidTransactionType(transactionType)) {
-    return `${constants.transactionColumns.TYPE}${opsMap.eq}${constants.transactionTypes.get(
-      transactionType.toUpperCase()
-    )}`;
+    return `${constants.transactionColumns.TYPE}${opsMap.eq}${transactionTypes.get(transactionType.toUpperCase())}`;
   }
 
   // throw error if transactionType filter was provided but invalid

@@ -51,10 +51,13 @@ const transactions = require('../transactions.js');
 const server = require('../server');
 const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
+const utils = require('../utils');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 const {cloudProviders} = require('../constants');
-const {loadTransactionTypes} = require('../transactionTypes');
+const {loadTransactionTypes, transactionTypes} = require('../transactionTypes');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const constants = require('../constants');
 
 let sqlConnection;
 
@@ -186,6 +189,70 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
     '1052, 0.15.9, 30',
     '1052, 0.15.98, 1',
   ]);
+});
+
+describe('DB integration test - utils.getTransactionTypeQuery', () => {
+  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', () => {
+    expect(utils.getTransactionTypeQuery(null)).toBe('');
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', () => {
+    expect(utils.getTransactionTypeQuery(undefined)).toBe('');
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', () => {
+    expect(utils.getTransactionTypeQuery({})).toBe('');
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', () => {
+    expect(() => utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
+      InvalidArgumentError
+    );
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
+    expect(() =>
+      utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+    ).toThrowError(InvalidArgumentError);
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', () => {
+    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
+      `type = ${transactionTypes.get('TOKENCREATION')}`
+    );
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', () => {
+    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
+      `type = ${transactionTypes.get('TOKENASSOCIATE')}`
+    );
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', () => {
+    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
+      `type = ${transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`
+    );
+  });
+});
+
+describe('DB integration test -  utils.isValidTransactionType', () => {
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for null', () => {
+    expect(utils.isValidTransactionType(null)).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for empty input', () => {
+    expect(utils.isValidTransactionType('')).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for invalid input', () => {
+    expect(utils.isValidTransactionType('1234567890.000000001')).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for entity format shard', () => {
+    expect(utils.isValidTransactionType('1.0.1')).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for negative num', () => {
+    expect(utils.isValidTransactionType(-10)).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for 0', () => {
+    expect(utils.isValidTransactionType(0)).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', () => {
+    expect(utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for former TOKENTRANSFERS transaction type', () => {
+    expect(utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
+  });
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {

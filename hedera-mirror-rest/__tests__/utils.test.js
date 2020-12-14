@@ -231,32 +231,6 @@ describe('Utils isValidNum tests', () => {
 });
 
 //TODO Redo these in integration tests
-// describe('Utils isValidTransactionType tests', () => {
-//   test('Verify invalid for null', () => {
-//     expect(utils.isValidTransactionType(null)).toBe(false);
-//   });
-//   test('Verify invalid for empty input', () => {
-//     expect(utils.isValidTransactionType('')).toBe(false);
-//   });
-//   test('Verify invalid for invalid input', () => {
-//     expect(utils.isValidTransactionType('1234567890.000000001')).toBe(false);
-//   });
-//   test('Verify invalid for entity format shard', () => {
-//     expect(utils.isValidTransactionType('1.0.1')).toBe(false);
-//   });
-//   test('Verify invalid for negative num', () => {
-//     expect(utils.isValidTransactionType(-10)).toBe(false);
-//   });
-//   test('Verify invalid for 0', () => {
-//     expect(utils.isValidTransactionType(0)).toBe(false);
-//   });
-//   test('Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', () => {
-//     expect(utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
-//   });
-//   test('Verify invalid for former TOKENTRANSFERS transaction type', () => {
-//     expect(utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
-//   });
-// });
 
 describe('utils encodeMessage tests', () => {
   const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
@@ -305,43 +279,5 @@ describe('utils encodeMessage tests', () => {
       const validDecoded = '7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC';
       expect(utils.parsePublicKey(validDer)).toBe(validDecoded);
     });
-  });
-});
-
-describe('Utils getTransactionTypeQuery tests', () => {
-  loadTransactionTypes();
-  test('Verify null query params', () => {
-    expect(utils.getTransactionTypeQuery(null)).toBe('');
-  });
-  test('Verify undefined query params', () => {
-    expect(utils.getTransactionTypeQuery(undefined)).toBe('');
-  });
-  test('Verify empty query params', () => {
-    expect(utils.getTransactionTypeQuery({})).toBe('');
-  });
-  test('Verify empty transaction type query', () => {
-    expect(() => utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
-      InvalidArgumentError
-    );
-  });
-  test('Verify non applicable transaction type query', () => {
-    expect(() =>
-      utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
-    ).toThrowError(InvalidArgumentError);
-  });
-  test('Verify applicable TOKENCREATION transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${transactionTypes.get('TOKENCREATION')}`
-    );
-  });
-  test('Verify applicable TOKENASSOCIATE transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${transactionTypes.get('TOKENASSOCIATE')}`
-    );
-  });
-  test('Verify applicable consensussubmitmessage transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`
-    );
   });
 });
