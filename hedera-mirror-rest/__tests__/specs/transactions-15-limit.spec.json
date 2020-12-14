@@ -19,7 +19,16 @@
       }
     ],
     "balances": [],
-    "transactions": [],
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.8",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779600711927001",
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15"
+      }
+    ],
     "cryptotransfers": [
       {
         "consensus_timestamp": "1565779111711927001",
@@ -83,17 +92,15 @@
   "responseJson": {
     "transactions": [
       {
-        "consensus_timestamp": "1565779666.711927001",
-        "valid_start_timestamp": "1565779666.711927000",
         "charged_tx_fee": 7,
+        "consensus_timestamp": "1565779666.711927001",
+        "max_fee": "33",
         "memo_base64": null,
-        "result": "SUCCESS",
-        "transaction_hash": "aGFzaA==",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
+        "result": "SUCCESS",
+        "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.8-1565779666-711927000",
-        "valid_duration_seconds": "11",
-        "max_fee": "33",
         "transfers": [
           {
             "account": "0.0.8",
@@ -107,55 +114,27 @@
             "account": "0.0.98",
             "amount": 1
           }
-        ]
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1565779666.711927000"
       },
       {
-        "consensus_timestamp": "1565779555.711927001",
-        "valid_start_timestamp": "1565779555.711927000",
-        "charged_tx_fee": 7,
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "1565779600.711927001",
+        "max_fee": "33",
         "memo_base64": null,
+        "name": "CRYPTOUPDATEACCOUNT",
+        "node": "0.0.3",
         "result": "SUCCESS",
         "transaction_hash": "aGFzaA==",
-        "name": "CRYPTOTRANSFER",
-        "node": "0.0.3",
-        "transaction_id": "0.0.300-1565779555-711927000",
+        "transaction_id": "0.0.8-1565779600-711927000",
+        "transfers": [],
         "valid_duration_seconds": "11",
-        "max_fee": "33",
-        "transfers": [
-          {
-            "account": "0.0.3",
-            "amount": 2
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          },
-          {
-            "account": "0.0.300",
-            "amount": -3
-          }
-        ],
-        "token_transfers": [
-          {
-            "account": "0.0.400",
-            "amount": 1000,
-            "token_id": "0.0.90000"
-          },
-          {
-            "account": "0.0.300",
-            "amount": -1200,
-            "token_id": "0.0.90000"
-          },
-          {
-            "account": "0.0.200",
-            "amount": 200,
-            "token_id": "0.0.90000"
-          }
-        ]
+        "valid_start_timestamp": "1565779600.711927000"
       }
     ],
     "links": {
-      "next": "/api/v1/transactions?limit=2&timestamp=lt:1565779555.711927001"
+      "next": "/api/v1/transactions?limit=2&timestamp=lt:1565779600.711927001"
     }
   }
 }
