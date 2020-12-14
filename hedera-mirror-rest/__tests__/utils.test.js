@@ -22,7 +22,7 @@
 const utils = require('../utils.js');
 const config = require('../config.js');
 const constants = require('../constants.js');
-const {loadTransactionTypes, transactionTypes} = require('../constants');
+const {loadTransactionTypes, transactionTypes} = require('../transactionTypes');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 describe('Utils getNullableNumber tests', () => {

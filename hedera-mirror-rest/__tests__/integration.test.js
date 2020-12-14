@@ -53,7 +53,8 @@ const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
-const {cloudProviders, loadTransactionTypes} = require('../constants');
+const {cloudProviders} = require('../constants');
+const {loadTransactionTypes} = require('../transactionTypes');
 
 let sqlConnection;
 
