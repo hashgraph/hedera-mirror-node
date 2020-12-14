@@ -16,8 +16,11 @@ select create_hypertable('account_balance_file', 'consensus_timestamp',
 select create_hypertable('account_balance_sets', 'consensus_timestamp',
                          chunk_time_interval => ${chunkTimeInterval}, if_not_exists => true);
 
--- address_book skipped because timescale doesn't support hyper tables that serve as foreign keys referenced by other tables
+-- address_book
+select create_hypertable('address_book', 'start_consensus_timestamp',
+                         chunk_time_interval => ${chunkTimeInterval}, if_not_exists => true);
 
+-- address_book_entry
 select create_hypertable('address_book_entry', 'consensus_timestamp',
                          chunk_time_interval => ${chunkTimeInterval}, if_not_exists => true);
 
