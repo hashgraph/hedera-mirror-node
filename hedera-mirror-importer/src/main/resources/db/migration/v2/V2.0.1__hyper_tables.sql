@@ -48,17 +48,17 @@ select create_hypertable('non_fee_transfer', 'consensus_timestamp',
 select create_hypertable('record_file', 'consensus_start',
                          chunk_time_interval => ${chunkTimeInterval}, if_not_exists => true);
 
--- t_application_status
+-- t_application_status hyper table creation skipped as it serves only as a reference table
 
 -- t_entities
 select create_hypertable('t_entities', 'id',
                          chunk_time_interval => ${chunkIdInterval}, if_not_exists => true);
 
--- t_entity_types hyper table skipped as table rarely gets updated
+-- t_entity_types hyper table creation skipped as it serves only as a reference table and rarely gets updated
 
--- t_transaction_results hyper table skipped as table rarely gets updated
+-- t_transaction_results hyper table creation skipped as it serves only as a reference table and rarely gets updated
 
--- t_transaction_types hyper table skipped as table rarely gets updated
+-- t_transaction_types hyper table creation skipped as it serves only as a reference table and rarely gets updated
 
 -- token
 select create_hypertable('token', 'created_timestamp',
