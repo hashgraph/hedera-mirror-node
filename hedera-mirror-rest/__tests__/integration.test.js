@@ -55,7 +55,7 @@ const utils = require('../utils');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 const {cloudProviders} = require('../constants');
-const {loadTransactionTypes, transactionTypes} = require('../transactionTypes');
+const transactionTypes = require('../transactionTypes');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const constants = require('../constants');
 
@@ -64,7 +64,7 @@ let sqlConnection;
 beforeAll(async () => {
   jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
-  loadTransactionTypes();
+  transactionTypes.loadTransactionTypes();
 });
 
 afterAll(() => {
@@ -213,17 +213,17 @@ describe('DB integration test - utils.getTransactionTypeQuery', () => {
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${transactionTypes.get('TOKENCREATION')}`
+      `type = ${transactionTypes.transactionTypesMap.get('TOKENCREATION')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${transactionTypes.get('TOKENASSOCIATE')}`
+      `type = ${transactionTypes.transactionTypesMap.get('TOKENASSOCIATE')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`
+      `type = ${transactionTypes.transactionTypesMap.get('CONSENSUSSUBMITMESSAGE')}`
     );
   });
 });
@@ -410,7 +410,7 @@ describe('DB integration test - spec based', () => {
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());
     configClone = _.cloneDeep(config);
-    loadTransactionTypes();
+    transactionTypes.loadTransactionTypes();
   });
 
   afterAll(async () => {

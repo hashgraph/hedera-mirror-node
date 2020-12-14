@@ -20,7 +20,7 @@
 
 'use strict';
 
-const transactionTypes = new Map();
+const transactionTypesMap = new Map();
 
 const loadTransactionTypes = function () {
   pool
@@ -29,22 +29,13 @@ const loadTransactionTypes = function () {
       throw new DbError(err.message);
     })
     .then((results) => {
-      // logger.info(results)
       for (const row of results.rows) {
-        // logger.info(row);
-        // logger.info(row.name);
-        // transactionTypes[row.name] = name.proto_id;
-        transactionTypes.set(row.name, row.proto_id);
+        transactionTypesMap.set(row.name, row.proto_id);
       }
-      // logger.info(transactionTypes2);
-    })
-    .then((q) => {
-      logger.info('HI IS HERE');
-      logger.info(transactionTypes);
     });
 };
 
 module.exports = {
-  transactionTypes,
+  transactionTypesMap,
   loadTransactionTypes,
 };

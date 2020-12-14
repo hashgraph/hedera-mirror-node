@@ -26,7 +26,7 @@ const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
-const {transactionTypes} = require('./transactionTypes');
+const {transactionTypesMap} = require('./transactionTypes');
 
 /**
  * Gets the select clause with token transfers sorted by token_id and account_id in the specified order
@@ -153,7 +153,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
        LEFT OUTER JOIN token_transfer ttl
-         ON t.type = ${transactionTypes.get('CRYPTOTRANSFER')}
+         ON t.type = ${transactionTypesMap.get('CRYPTOTRANSFER')}
          AND tlist.consensus_timestamp = ttl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
@@ -306,7 +306,7 @@ const getOneTransaction = async (req, res) => {
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
     JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
     LEFT JOIN token_transfer ttl
-      ON t.type = ${transactionTypes.get('CRYPTOTRANSFER')}
+      ON t.type = ${transactionTypesMap.get('CRYPTOTRANSFER')}
       AND t.consensus_ns = ttl.consensus_timestamp
     WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?
