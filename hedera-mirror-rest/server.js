@@ -34,13 +34,13 @@ const _ = require('lodash');
 const accounts = require('./accounts');
 const balances = require('./balances');
 const config = require('./config');
-const constants = require('./constants');
 const health = require('./health');
 const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
+const {loadTransactionTypes} = require('./constants');
 const {metricsHandler} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
@@ -104,7 +104,7 @@ app.set('port', port);
 app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
-constants.loadTransactionTypes();
+loadTransactionTypes();
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(

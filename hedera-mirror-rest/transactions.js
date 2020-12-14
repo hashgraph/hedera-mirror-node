@@ -255,9 +255,8 @@ const getTransactions = async (req, res) => {
 
   const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
-    logger.info(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
+    logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   }
-  logger.info(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   // Execute query
   return pool
     .query(query.query, query.params)
@@ -304,7 +303,7 @@ const getOneTransaction = async (req, res) => {
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-    LEFT JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
+    JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
     LEFT JOIN token_transfer ttl
       ON t.type = ${constants.transactionTypes.get('CRYPTOTRANSFER')}
       AND t.consensus_ns = ttl.consensus_timestamp
@@ -335,7 +334,6 @@ const getOneTransaction = async (req, res) => {
       };
     });
 };
-
 module.exports = {
   getTransactions,
   getOneTransaction,

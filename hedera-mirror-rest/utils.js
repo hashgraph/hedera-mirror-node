@@ -95,7 +95,6 @@ const isValidEncoding = (query) => {
 };
 
 const isValidTransactionType = (transactionType) => {
-  logger.info(constants.transactionTypes + ' is here');
   return _.isString(transactionType) && constants.transactionTypes.get(transactionType.toUpperCase()) !== undefined;
 };
 
