@@ -1,6 +1,6 @@
 /*-
  * ‌
- * Hedera Mirror Node
+ * Hedera Mirror Node REST API
  * ​
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
  * ​
@@ -17,7 +17,6 @@
  * limitations under the License.
  * ‍
  */
-
 'use strict';
 
 const transactionTypesQuery = 'SELECT proto_id, name FROM t_transaction_types';
