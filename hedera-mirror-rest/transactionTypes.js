@@ -20,11 +20,13 @@
 
 'use strict';
 
+const transactionTypesQuery = 'SELECT proto_id, name FROM t_transaction_types';
+
 const transactionTypesMap = new Map();
 
 const loadTransactionTypes = function () {
   pool
-    .query('SELECT proto_id, name FROM t_transaction_types')
+    .query(transactionTypesQuery)
     .catch((err) => {
       throw new DbError(err.message);
     })
