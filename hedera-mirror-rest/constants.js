@@ -101,30 +101,6 @@ const defaultBucketNames = {
 
 const recordStreamPrefix = 'recordstreams/record';
 
-const transactionTypes = new Map();
-
-const loadTransactionTypes = function () {
-  pool
-    .query('SELECT proto_id, name FROM t_transaction_types')
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      // logger.info(results)
-      for (const row of results.rows) {
-        // logger.info(row);
-        // logger.info(row.name);
-        // transactionTypes[row.name] = name.proto_id;
-        transactionTypes.set(row.name, row.proto_id);
-      }
-      // logger.info(transactionTypes2);
-    })
-    .then((q) => {
-      logger.info('HI IS HERE');
-      logger.info(transactionTypes);
-    });
-};
-
 module.exports = {
   characterEncoding,
   cloudProviders,
@@ -139,6 +115,4 @@ module.exports = {
   responseDataLabel,
   transactionColumns,
   transactionResultFilter,
-  loadTransactionTypes,
-  transactionTypes,
 };
