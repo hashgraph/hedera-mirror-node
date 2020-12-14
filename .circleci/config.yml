@@ -377,6 +377,8 @@ jobs:
       - gcloud_image_untag:
           imagepath: "importer"
       - gcloud_image_untag:
+          imagepath: "monitor"
+      - gcloud_image_untag:
           imagepath: "rest"
       - gcloud_image_untag:
           imagepath: "test"
@@ -384,6 +386,8 @@ jobs:
           imagepath: "grpc"
       - gcloud_image_delete:
           imagepath: "importer"
+      - gcloud_image_delete:
+          imagepath: "monitor"
       - gcloud_image_delete:
           imagepath: "rest"
       - gcloud_image_delete:

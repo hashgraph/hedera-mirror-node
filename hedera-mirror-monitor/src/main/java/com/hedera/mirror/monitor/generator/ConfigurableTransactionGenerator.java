@@ -22,6 +22,8 @@ package com.hedera.mirror.monitor.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.RateLimiter;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.ConstraintViolation;
@@ -36,6 +38,8 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
 public class ConfigurableTransactionGenerator implements TransactionGenerator {
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ScenarioProperties properties;
     private final TransactionSupplier<?> transactionSupplier;
@@ -52,6 +56,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
                 .logResponse(properties.isLogResponse())
+                .scenarioName(properties.getName())
                 .type(properties.getType());
         rateLimiter.acquire(); // The first acquire always succeeds, so do this so tps=Double.MIN_NORMAL won't acquire
     }
@@ -69,8 +74,9 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
             throw new ScenarioException(properties, "Reached publish duration of " + properties.getDuration());
         }
 
-        return builder.receipt(shouldGenerate(properties.getReceipt(), count))
-                .record(shouldGenerate(properties.getRecord(), count))
+        return builder.receipt(shouldGenerate(properties.getReceipt()))
+                .record(shouldGenerate(properties.getRecord()))
+                .timestamp(Instant.now())
                 .transactionBuilder(transactionSupplier.get())
                 .build();
     }
@@ -92,7 +98,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         return supplier;
     }
 
-    private boolean shouldGenerate(int percent, long count) {
-        return (count % 100) < percent;
+    private boolean shouldGenerate(double expectedPercent) {
+        return RANDOM.nextDouble() < expectedPercent;
     }
 }

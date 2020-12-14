@@ -37,7 +37,7 @@ public class PublishResponse {
     private final PublishRequest request;
     private final TransactionRecord record;
     private final TransactionReceipt receipt;
-    private final Instant timestamp = Instant.now();
+    private final Instant timestamp;
     private final TransactionId transactionId;
 
     // Needed since the SDK doesn't implement toString() or have actual fields to use with reflection

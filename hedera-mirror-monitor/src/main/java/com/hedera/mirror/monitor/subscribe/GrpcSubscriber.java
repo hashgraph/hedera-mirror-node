@@ -23,26 +23,15 @@ package com.hedera.mirror.monitor.subscribe;
 import static io.grpc.Status.Code.INVALID_ARGUMENT;
 import static io.grpc.Status.Code.NOT_FOUND;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ConcurrentHashMultiset;
-import com.google.common.collect.Multiset;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.annotation.PreDestroy;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.math3.util.Precision;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
@@ -54,19 +43,10 @@ import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
-@Log4j2
-public class GrpcSubscriber implements Subscriber {
-
-    private final MonitorProperties monitorProperties;
-    private final GrpcSubscriberProperties subscriberProperties;
-    private final Timer timer;
+public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties> {
 
     private final MirrorClient mirrorClient;
-    private final AtomicLong counter;
     private final AtomicLong retries;
-    private final Stopwatch stopwatch;
-    private final Multiset<String> errors;
-    private final ScheduledFuture<?> statusThread;
 
     private MirrorSubscriptionHandle subscription;
     private volatile MirrorConsensusTopicResponse lastReceived;
@@ -74,19 +54,8 @@ public class GrpcSubscriber implements Subscriber {
 
     GrpcSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
                    GrpcSubscriberProperties subscriberProperties) {
-        this.monitorProperties = monitorProperties;
-        this.subscriberProperties = subscriberProperties;
-        this.counter = new AtomicLong(0L);
+        super(meterRegistry, subscriberProperties);
         this.retries = new AtomicLong(0L);
-        stopwatch = Stopwatch.createStarted();
-        errors = ConcurrentHashMultiset.create();
-        this.timer = Timer.builder(METRIC_NAME)
-                .tag("api", "grpc")
-                .tag("type", TransactionType.CONSENSUS_SUBMIT_MESSAGE.toString())
-                .register(meterRegistry);
-
-        statusThread = Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(this::status, 5, 5, TimeUnit.SECONDS);
 
         String endpoint = monitorProperties.getMirrorNode().getGrpc().getEndpoint();
         log.info("Connecting to mirror node {}", endpoint);
@@ -97,6 +66,7 @@ public class GrpcSubscriber implements Subscriber {
     private void onNext(MirrorConsensusTopicResponse topicResponse) {
         long endTimestamp = System.currentTimeMillis();
         counter.incrementAndGet();
+        retries.set(0L);
         log.trace("Received message #{} with timestamp {}", topicResponse.sequenceNumber,
                 topicResponse.consensusTimestamp);
 
@@ -116,15 +86,16 @@ public class GrpcSubscriber implements Subscriber {
         }
 
         long latency = endTimestamp - timestamp;
-        timer.record(latency, TimeUnit.MILLISECONDS);
+        getLatencyTimer(TransactionType.CONSENSUS_SUBMIT_MESSAGE).record(latency, TimeUnit.MILLISECONDS);
     }
 
-    private void onError(Throwable t) {
+    @Override
+    protected void onError(Throwable t) {
         log.error("Error subscribing: ", t);
         Status.Code statusCode = getStatusCode(t);
         errors.add(statusCode.name());
 
-        if (shouldRetry(statusCode)) {
+        if (shouldRetry(t)) {
             AbstractSubscriberProperties.RetryProperties retry = subscriberProperties.getRetry();
             long delayMillis = retries.get() * retry.getMinBackoff().toMillis();
             Duration retryDuration = Duration.ofMillis(Math.min(delayMillis, retry.getMaxBackoff().toMillis()));
@@ -136,7 +107,10 @@ public class GrpcSubscriber implements Subscriber {
         }
     }
 
-    private boolean shouldRetry(Status.Code statusCode) {
+    @Override
+    protected boolean shouldRetry(Throwable t) {
+        Status.Code statusCode = getStatusCode(t);
+
         // Don't retry client errors
         if (statusCode == INVALID_ARGUMENT || statusCode == NOT_FOUND) {
             return false;
@@ -157,13 +131,13 @@ public class GrpcSubscriber implements Subscriber {
         // Ignore for now
     }
 
-    @PreDestroy
+    @Override
     public void close() {
         try {
-            log.info("Closing mirror node connection to {}", monitorProperties.getMirrorNode().getGrpc().getEndpoint());
+            super.close();
+            log.info("Closing mirror node connection");
             subscription.unsubscribe();
             mirrorClient.close(1, TimeUnit.SECONDS);
-            statusThread.cancel(true);
         } catch (Exception e) {
             // Ignore
         }
@@ -192,15 +166,5 @@ public class GrpcSubscriber implements Subscriber {
 
         log.info("Starting subscriber: {}", subscriberProperties);
         subscription = mirrorConsensusTopicQuery.subscribe(mirrorClient, this::onNext, this::onError);
-        retries.set(0L);
-    }
-
-    private void status() {
-        long count = counter.get();
-        long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        double rate = Precision.round(elapsed > 0 ? (1_000_000.0 * count) / elapsed : 0.0, 1);
-        Map<String, Integer> errorCounts = new HashMap<>();
-        errors.forEachEntry(errorCounts::put);
-        log.info("Received {} transactions in {} at {}/s. Errors: {}", count, stopwatch, rate, errorCounts);
     }
 }
