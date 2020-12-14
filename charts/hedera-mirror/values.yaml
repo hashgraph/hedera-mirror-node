@@ -37,18 +37,7 @@ importer:
             name: mirror_node
             password: mirror_node_pass
             username: mirror_node
-    spring:
-      flyway:
-        baselineOnMigrate: true
-        baselineVersion: 1.999.999
-        connectRetries: 20
-        ignoreMissingMigrations: true
-        locations: "classpath:db/migration/v2"
-        target: 2.999.999
   enabled: true
-  image:
-    pullPolicy: Always
-    tag: 0.24.0-tdb
   redis:
     sentinel:
       masterSet: mirror
@@ -192,8 +181,8 @@ timescaledb:
   enabled: true
   persistentVolume:
     size: 10Gi
-  postgresql:
-    databases: ["postgres", "mirror_node"]
+  #  postgresql:
+  #    databases: ["postgres", "mirror_node"]
   serviceAccount:
     create: false
 
