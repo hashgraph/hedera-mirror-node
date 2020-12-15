@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions at timestamp",
+  "description": "Transaction api calls for transactions without crypto transfer list at specified timestamp",
   "setup": {
     "accounts": [
       {
