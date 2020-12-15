@@ -213,9 +213,12 @@ const getTransactionsInnerQuery = function (
   transactionTypeQuery,
   order
 ) {
+  // convert the mysql style '?' placeholder to the named parameter format, later the same named parameter is converted
+  // to the same positional index, thus the caller only has to pass the value once for the same column
   const namedAccountQuery = convertToNamedQuery(accountQuery, 'acct');
   const namedTsQuery = convertToNamedQuery(tsQuery, 'ts');
   const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
+
   const ctlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
   let ctlWhereClause;
 
@@ -245,19 +248,22 @@ const getTransactionsInnerQuery = function (
     resultTypeQuery,
     transactionTypeQuery
   );
-  const ctlJoinClause =
-    (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns';
-  ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, resultTypeQuery, transactionTypeQuery);
+  const transactionOnlyQuery = `
+    SELECT consensus_ns AS consensus_timestamp
+    FROM transaction AS t
+    ${transactionWhereClause}
+    ORDER BY consensus_ns ${order}
+    ${namedLimitQuery}`;
 
-  return `
-    SELECT coalesce(t.consensus_ns,ctl.consensus_timestamp) AS consensus_timestamp
-    FROM (
-        SELECT consensus_ns
-        FROM transaction AS t
-        ${transactionWhereClause}
-        ORDER BY consensus_ns ${order}
-        ${namedLimitQuery}
-    ) AS t
+  if (namedAccountQuery) {
+    // account filter applies to both transaction.payer_account_id and crypto_transfer.entity_id, a full outer join is
+    // needed to get rows not in the other table.
+    const ctlJoinClause =
+      (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns';
+    ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, resultTypeQuery, transactionTypeQuery);
+    return `
+    SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp) AS consensus_timestamp
+    FROM (${transactionOnlyQuery}) AS t
     FULL OUTER JOIN (
         SELECT DISTINCT ctl.consensus_timestamp AS consensus_timestamp
         FROM crypto_transfer AS ctl
@@ -266,9 +272,13 @@ const getTransactionsInnerQuery = function (
         ORDER BY ctl.consensus_timestamp ${order}
         ${namedLimitQuery}
     ) AS ctl
-    ON t.consensus_ns = ctl.consensus_timestamp
+    ON t.consensus_timestamp = ctl.consensus_timestamp
     ORDER BY consensus_timestamp ${order}
     ${namedLimitQuery}`;
+  }
+
+  // no credit/debit type filter, no account filter
+  return transactionOnlyQuery;
 };
 
 const reqToSql = function (req) {
