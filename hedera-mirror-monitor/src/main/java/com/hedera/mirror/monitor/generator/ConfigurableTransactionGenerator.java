@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.RateLimiter;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.ConstraintViolation;
@@ -34,6 +35,7 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
@@ -41,6 +43,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    private final ExpressionConverter expressionConverter;
     private final ScenarioProperties properties;
     private final TransactionSupplier<?> transactionSupplier;
     private final RateLimiter rateLimiter;
@@ -48,7 +51,8 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private final long stopTime;
     private final PublishRequest.PublishRequestBuilder builder;
 
-    public ConfigurableTransactionGenerator(ScenarioProperties properties) {
+    public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter, ScenarioProperties properties) {
+        this.expressionConverter = expressionConverter;
         this.properties = properties;
         this.transactionSupplier = convert(properties);
         this.rateLimiter = RateLimiter.create(properties.getTps());
@@ -82,7 +86,8 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     }
 
     private TransactionSupplier<?> convert(ScenarioProperties p) {
-        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
+        Map<String, String> properties = expressionConverter.convert(p.getProperties());
+        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(properties, p.getType().getSupplier());
 
         Validator validator = Validation.byDefaultProvider()
                 .configure()

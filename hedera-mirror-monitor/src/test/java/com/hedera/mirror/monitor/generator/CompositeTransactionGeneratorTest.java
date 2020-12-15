@@ -58,7 +58,7 @@ class CompositeTransactionGeneratorTest {
         properties = new PublishProperties();
         properties.getScenarios().add(scenarioProperties1);
         properties.getScenarios().add(scenarioProperties2);
-        supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(properties));
+        supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(p -> p, properties));
     }
 
     @Test
