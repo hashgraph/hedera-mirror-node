@@ -136,7 +136,7 @@ const createTransferLists = (rows) => {
 };
 
 /**
- * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the
+ * Transactions queries are organized as follows: First there's an inner query that selects the
  * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
  * extract all relevant information for those transactions.
  * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
@@ -174,7 +174,7 @@ const buildWhereClause = function (...conditions) {
 /**
  * Convert parameters to the named format.
  *
- * @param {String} query - they mysql query
+ * @param {String} query - the mysql query
  * @param {String} prefix - the prefix for the named parameters
  * @return {String} - The converted query
  */
@@ -188,7 +188,7 @@ const convertToNamedQuery = function (query, prefix) {
 };
 
 /**
- * Cryptotransfer transactions queries are organized as follows: First there's an inner query that selects the
+ * Transactions queries are organized as follows: First there's an inner query that selects the
  * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
  * extract all relevant information for those transactions.
  * This function forms the inner query base based on all the query criteria specified in the REST URL
@@ -220,7 +220,7 @@ const getTransactionsInnerQuery = function (
   let ctlWhereClause;
 
   if (creditDebitQuery) {
-    // limit the query to transactions with crypto transfer list
+    // limit the query to transactions with cryptotransfer list
     ctlWhereClause = buildWhereClause(namedAccountQuery, ctlTsQuery, creditDebitQuery);
     const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
     return `

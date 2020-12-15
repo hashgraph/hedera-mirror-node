@@ -191,7 +191,7 @@ const getOneAccount = async (req, res) => {
   const entitySql = getAccountQuery(` (ab.account_id = ? or e.id = ?)`);
   const encodedAccountId = accountId.getEncodedId();
   const entityParams = [encodedAccountId, encodedAccountId];
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
@@ -217,7 +217,7 @@ const getOneAccount = async (req, res) => {
 
   const innerParams = accountParams.concat(tsParams).concat(params);
   const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-  const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
+  const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${JSON.stringify(innerParams)}`);
