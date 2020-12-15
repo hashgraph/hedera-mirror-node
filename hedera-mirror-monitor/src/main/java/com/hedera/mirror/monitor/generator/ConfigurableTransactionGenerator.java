@@ -56,7 +56,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter, ScenarioProperties properties) {
         this.expressionConverter = expressionConverter;
         this.properties = properties;
-        this.transactionSupplier = Suppliers.memoize(() -> convert(properties));
+        this.transactionSupplier = Suppliers.memoize(this::convert);
         this.rateLimiter = RateLimiter.create(properties.getTps());
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
@@ -87,9 +87,10 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
                 .build();
     }
 
-    private TransactionSupplier<?> convert(ScenarioProperties p) {
-        Map<String, String> converted = expressionConverter.convert(p.getProperties());
-        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(converted, p.getType().getSupplier());
+    private TransactionSupplier<?> convert() {
+        Map<String, String> convertedProperties = expressionConverter.convert(properties.getProperties());
+        TransactionSupplier<?> supplier = new ObjectMapper()
+                .convertValue(convertedProperties, properties.getType().getSupplier());
 
         Validator validator = Validation.byDefaultProvider()
                 .configure()

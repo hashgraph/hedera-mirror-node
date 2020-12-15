@@ -20,10 +20,10 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.security.SecureRandom;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
-import org.apache.commons.lang3.RandomStringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -33,6 +33,8 @@ import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
 
 @Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private String adminKey;
 
@@ -48,7 +50,9 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     private long maxTransactionFee = 1_000_000_000;
 
     @NotBlank
-    private String symbol = RandomStringUtils.randomAlphabetic(5);
+    private String symbol = RANDOM.ints(5, 'A', 'Z')
+            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+            .toString();
 
     @NotBlank
     private String treasuryAccountId;
