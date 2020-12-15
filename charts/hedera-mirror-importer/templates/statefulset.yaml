@@ -84,14 +84,14 @@ spec:
             sources:
               - secret:
                   name: {{ include "hedera-mirror-importer.fullname" . }}
-              {{- if .Values.global.extaddressbook.enabled }}
+              {{- if .Values.initialAddressBook.enabled }}
               - secret:
-                  name: mirror-importer-addressbook
+                  name: mirror-importer-addressbook # if enabled add filesystem path to initial address book for OTHER networks
               {{- end}}
-  {{- if not .Values.persistence.enabled }}
-  - name: data
-    emptyDir: {}
-    {{- else }}
+        {{- if not .Values.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+        {{- else }}
   volumeClaimTemplates:
     - metadata:
         name: data
