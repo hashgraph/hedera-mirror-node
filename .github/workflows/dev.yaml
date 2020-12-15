@@ -23,7 +23,7 @@ jobs:
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
       - name: Login to Google Container Registry
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@master
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.GCR_KEY }}

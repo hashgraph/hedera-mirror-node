@@ -44,7 +44,7 @@ public class V1_31_0_fix_address_book_102Test extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/V1.31.0__fix_address_book_102.sql")
+    @Value("classpath:db/migration/v1/V1.31.0__fix_address_book_102.sql")
     private File sql;
 
     @Test

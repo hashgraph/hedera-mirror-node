@@ -22,6 +22,7 @@ package com.hedera.mirror.monitor.publish;
 
 import com.google.common.base.Suppliers;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -78,19 +79,21 @@ public class TransactionPublisher {
         var transactionId = request.getTransactionBuilder().execute(client);
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
                 .request(request)
+                .timestamp(Instant.now())
                 .transactionId(transactionId);
 
         if (request.isRecord()) {
             var record = transactionId.getRecord(client);
             responseBuilder.record(record).receipt(record.receipt);
         } else if (request.isReceipt()) {
+            // TODO: Implement a faster retry for get receipt for more accurate metrics
             var receipt = transactionId.getReceipt(client);
             responseBuilder.receipt(receipt);
         }
 
         PublishResponse response = responseBuilder.build();
 
-        if (request.isLogResponse()) {
+        if (log.isTraceEnabled() || request.isLogResponse()) {
             log.info("Received response: {}", response);
         }
 

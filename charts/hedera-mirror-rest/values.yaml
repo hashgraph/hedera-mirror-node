@@ -77,7 +77,7 @@ prometheusRules:
   enabled: false
   RestErrors:
     annotations:
-      description: "REST API 5xx error rate for {{ $labels.namespace }}/{{ $labels.pod }} is {{ $value | humanizePercentage }}%"
+      description: "REST API 5xx error rate for {{ $labels.namespace }}/{{ $labels.pod }} is {{ $value | humanizePercentage }}"
       summary: "Mirror REST API error rate exceeds 5%"
     enabled: true
     expr: sum(rate(api_request_total{container="rest",code=~"^5.."}[5m])) by (namespace, pod) / sum(rate(api_request_total{container="rest"}[5m])) by (namespace, pod) > 0.05
@@ -87,7 +87,7 @@ prometheusRules:
 
   RestHighCPU:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror REST API CPU usage exceeds 80%"
     enabled: true
     expr: sum(nodejs_process_cpu_usage_percentage{container="rest"}) by (namespace, pod) > 80

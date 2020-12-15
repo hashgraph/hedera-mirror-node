@@ -55,12 +55,12 @@ public class ScenarioProperties {
     private Map<String, Object> properties = new LinkedHashMap<>();
 
     @Min(0)
-    @Max(100)
-    private int receipt = 0;
+    @Max(1)
+    private double receipt = 0.0;
 
     @Min(0)
-    @Max(100)
-    private int record = 0;
+    @Max(1)
+    private double record = 0.0;
 
     @Min(0)
     private double tps = 10.0;

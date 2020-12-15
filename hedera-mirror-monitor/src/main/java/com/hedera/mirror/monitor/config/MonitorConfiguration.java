@@ -63,6 +63,8 @@ class MonitorConfiguration {
     Disposable publishSubscribe() {
         return Flux.<PublishRequest>generate(sink -> sink.next(transactionGenerator.next()))
                 .retry()
+                .name("generate")
+                .metrics()
                 .subscribeOn(Schedulers.single())
                 .parallel(publishProperties.getConnections())
                 .runOn(Schedulers.newParallel("publisher", publishProperties.getConnections()))

@@ -56,7 +56,7 @@ class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/V1.31.2__remove_invalid_entities.sql")
+    @Value("classpath:db/migration/v1/V1.31.2__remove_invalid_entities.sql")
     private File migrationSql;
 
     @Resource

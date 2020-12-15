@@ -31,16 +31,17 @@ spring:
     url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
     username: ${hedera.mirror.grpc.db.username}
   flyway:
-    connectRetries: 10
     baselineOnMigrate: true
     baselineVersion: 0
+    connectRetries: 10
     ignoreMissingMigrations: true
-    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration"
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
     placeholders:
       api-password: mirror_api_pass
       api-user: mirror_api
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       topicRunningHashV2AddedTimestamp: 0
+    target: 1.999.999
   redis:
     url: redis://${embedded.redis.user}:${embedded.redis.password}@${embedded.redis.host}:${embedded.redis.port}
