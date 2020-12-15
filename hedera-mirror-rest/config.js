@@ -108,7 +108,7 @@ function setConfigValue(propertyPath, value) {
 function convertType(value) {
   let parsedValue = value;
 
-  if (value !== null && value !== '' && !isNaN(value)) {
+  if (value !== null && value !== '' && !Number.isNaN(value)) {
     parsedValue = +value;
   } else if (value === 'true' || value === 'false') {
     parsedValue = value === 'true';
@@ -119,6 +119,19 @@ function convertType(value) {
 
 function getConfig() {
   return config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
+}
+
+function parseDbPoolConfig() {
+  const {pool} = getConfig().db;
+  const configKeys = ['connectionTimeout', 'maxConnections', 'statementTimeout'];
+  configKeys.forEach((configKey) => {
+    const value = pool[configKey];
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      throw new InvalidConfigError(`invalid value set for db.pool.${configKey}: ${value}`);
+    }
+    pool[configKey] = parsed;
+  });
 }
 
 function parseStateProofStreamsConfig() {
@@ -151,6 +164,7 @@ if (!loaded) {
   load(__dirname);
   load(process.env.CONFIG_PATH);
   loadEnvironment();
+  parseDbPoolConfig();
   parseStateProofStreamsConfig();
   loaded = true;
 }
