@@ -108,7 +108,7 @@ function setConfigValue(propertyPath, value) {
 function convertType(value) {
   let parsedValue = value;
 
-  if (value !== null && value !== '' && !Number.isNaN(value)) {
+  if (value !== null && value !== '' && !isNaN(value)) {
     parsedValue = +value;
   } else if (value === 'true' || value === 'false') {
     parsedValue = value === 'true';
