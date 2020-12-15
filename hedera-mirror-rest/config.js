@@ -27,15 +27,11 @@ const path = require('path');
 const {InvalidConfigError} = require('./errors/invalidConfigError');
 const {cloudProviders, networks, defaultBucketNames} = require('./constants');
 
-let configName = 'application';
-if (process.env.CONFIG_NAME) {
-  configName = process.env.CONFIG_NAME;
-}
-
+const defaultConfigName = 'application';
 const config = {};
 let loaded = false;
 
-function load(configPath) {
+function load(configPath, configName) {
   if (!configPath) {
     return;
   }
@@ -160,9 +156,11 @@ function parseStateProofStreamsConfig() {
 }
 
 if (!loaded) {
-  load(path.join(__dirname, 'config'));
-  load(__dirname);
-  load(process.env.CONFIG_PATH);
+  const configName = process.env.CONFIG_NAME || defaultConfigName;
+  // always load the default configuration
+  load(path.join(__dirname, 'config'), defaultConfigName);
+  load(__dirname, configName);
+  load(process.env.CONFIG_PATH, configName);
   loadEnvironment();
   parseDbPoolConfig();
   parseStateProofStreamsConfig();

@@ -151,7 +151,6 @@ describe('Custom CONFIG_NAME:', () => {
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
     expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.log).toBeUndefined();
   });
 });
 
