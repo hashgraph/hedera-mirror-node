@@ -137,7 +137,7 @@ public class PublishMetrics {
                 .register(meterRegistry);
     }
 
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelayString = "${hedera.mirror.monitor.publish.statusFrequency:10000}")
     public void status() {
         long count = counter.get();
         long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);

@@ -29,6 +29,7 @@ import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
@@ -44,14 +45,16 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         scenarioProperties.setProperties(Map.of("topicId", "invalid"));
         scenarioProperties.setTps(Double.MIN_NORMAL); // Never retry
         scenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        TransactionGenerator generator = new ConfigurableTransactionGenerator(scenarioProperties);
+        TransactionGenerator generator = new ConfigurableTransactionGenerator(p -> p, scenarioProperties);
         INACTIVE = Pair.create(generator, 1.0);
     }
 
+    private final ExpressionConverter expressionConverter;
     private final PublishProperties properties;
     volatile EnumeratedDistribution<TransactionGenerator> distribution;
 
-    public CompositeTransactionGenerator(PublishProperties properties) {
+    public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
+        this.expressionConverter = expressionConverter;
         this.properties = properties;
         rebuild();
     }
@@ -86,7 +89,8 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
             for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
                 if (scenarioProperties.isEnabled()) {
                     double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
-                    pairs.add(Pair.create(new ConfigurableTransactionGenerator(scenarioProperties), weight));
+                    pairs.add(Pair.create(
+                            new ConfigurableTransactionGenerator(expressionConverter, scenarioProperties), weight));
                     log.info("Activated scenario: {}", scenarioProperties);
                 }
             }

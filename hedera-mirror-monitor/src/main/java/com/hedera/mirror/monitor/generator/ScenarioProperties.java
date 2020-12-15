@@ -52,7 +52,7 @@ public class ScenarioProperties {
     private String name;
 
     @NotNull
-    private Map<String, Object> properties = new LinkedHashMap<>();
+    private Map<String, String> properties = new LinkedHashMap<>();
 
     @Min(0)
     @Max(1)
