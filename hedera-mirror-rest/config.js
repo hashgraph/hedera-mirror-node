@@ -70,18 +70,18 @@ function loadEnvironment() {
  */
 function setConfigValue(propertyPath, value) {
   let current = config;
-  let properties = propertyPath.toLowerCase().split('_');
+  const properties = propertyPath.toLowerCase().split('_');
 
   // Ignore properties that don't start with HEDERA_MIRROR_REST
   if (properties.length < 4 || properties[0] !== 'hedera' || properties[1] !== 'mirror' || properties[2] !== 'rest') {
     return;
   }
 
-  for (let i in properties) {
-    let property = properties[i];
+  for (let i = 0; i < properties.length; i += 1) {
+    const property = properties[i];
     let found = false;
 
-    for (let [k, v] of Object.entries(current)) {
+    for (const [k, v] of Object.entries(current)) {
       if (property === k.toLowerCase()) {
         if (i < properties.length - 1) {
           current = v;
