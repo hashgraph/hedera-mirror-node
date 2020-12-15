@@ -37,6 +37,8 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplier;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
@@ -51,6 +53,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
     private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\$\\{(account|token|topic)\\.([A-Za-z0-9_]+)}");
 
     private final Map<Expression, String> expressions = new ConcurrentHashMap<>();
+    private final MonitorProperties monitorProperties;
     private final TransactionPublisher transactionPublisher;
 
     @Override
@@ -70,19 +73,15 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             return expressions.get(expression);
         }
 
-        return publish(expression);
-    }
-
-    private String publish(Expression expression) {
         try {
+            log.debug("Processing expression {}", expression);
             ExpressionType type = expression.getType();
             Class<? extends TransactionSupplier<?>> supplierClass = type.getTransactionType().getSupplier();
             TransactionSupplier<?> transactionSupplier = supplierClass.getConstructor().newInstance();
 
             if (transactionSupplier instanceof TokenCreateTransactionSupplier) {
-                String treasuryAccountId = publish(new Expression(ExpressionType.ACCOUNT, expression.getId()));
                 TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
-                tokenSupplier.setTreasuryAccountId(treasuryAccountId);
+                tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
             }
 
             PublishRequest request = PublishRequest.builder()
@@ -99,9 +98,11 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             log.info("Created {} entity {}", type, createdId);
             return createdId;
         } catch (RuntimeException e) {
+            log.error("Error converting expression {}:", expression, e);
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("Error converting expression {}:", expression, e);
+            throw new PublishException(e);
         }
     }
 

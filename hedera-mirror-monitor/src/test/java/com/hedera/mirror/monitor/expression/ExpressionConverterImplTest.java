@@ -23,16 +23,17 @@ package com.hedera.mirror.monitor.expression;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
@@ -42,21 +43,30 @@ import com.hedera.hashgraph.proto.TokenID;
 import com.hedera.hashgraph.proto.TopicID;
 import com.hedera.hashgraph.proto.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionRecord;
+import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
-public class ExpressionConverterImplTest {
+class ExpressionConverterImplTest {
 
     @Mock
     private TransactionPublisher transactionPublisher;
+
+    @Spy
+    private final MonitorProperties monitorProperties = new MonitorProperties();
 
     @InjectMocks
     private ExpressionConverterImpl expressionConverter;
 
     @Captor
     private ArgumentCaptor<PublishRequest> request;
+
+    @BeforeEach
+    void setup() {
+        monitorProperties.getOperator().setAccountId("0.0.2");
+    }
 
     @Test
     void invalidExpression() {
@@ -84,7 +94,7 @@ public class ExpressionConverterImplTest {
 
     @Test
     void empty() {
-        assertThat(expressionConverter.convert("")).isEqualTo("");
+        assertThat(expressionConverter.convert("")).isEmpty();
     }
 
     @Test
@@ -112,15 +122,11 @@ public class ExpressionConverterImplTest {
     @Test
     void token() {
         TransactionType type = TransactionType.TOKEN_CREATE;
-        when(transactionPublisher.publish(any()))
-                .thenReturn(response(TransactionType.ACCOUNT_CREATE, 100))
-                .thenReturn(response(type, 101));
+        when(transactionPublisher.publish(any())).thenReturn(response(type, 101));
         assertThat(expressionConverter.convert("${token.foo}")).isEqualTo("0.0.101");
 
-        verify(transactionPublisher, times(2)).publish(request.capture());
-        assertThat(request.getAllValues())
-                .extracting(PublishRequest::getType)
-                .containsExactly(TransactionType.ACCOUNT_CREATE, type);
+        verify(transactionPublisher).publish(request.capture());
+        assertThat(request.getValue().getType()).isEqualTo(type);
     }
 
     @Test

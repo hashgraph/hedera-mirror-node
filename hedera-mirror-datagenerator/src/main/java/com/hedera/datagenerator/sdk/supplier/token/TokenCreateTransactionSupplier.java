@@ -23,6 +23,7 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -47,17 +48,16 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     private long maxTransactionFee = 1_000_000_000;
 
     @NotBlank
-    private String symbol = "HMNT";
+    private String symbol = RandomStringUtils.randomAlphabetic(5);
 
     @NotBlank
     private String treasuryAccountId;
 
     @Override
     public TokenCreateTransaction get() {
-
-        AccountId treasuryAccoundId = AccountId.fromString(treasuryAccountId);
+        AccountId treasuryAccount = AccountId.fromString(treasuryAccountId);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
-                .setAutoRenewAccount(treasuryAccoundId)
+                .setAutoRenewAccount(treasuryAccount)
                 .setDecimals(decimals)
                 .setInitialSupply(initialSupply)
                 .setFreezeDefault(freezeDefault)
@@ -65,7 +65,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setName(symbol + "_name")
                 .setSymbol(symbol)
                 .setTransactionMemo(Utility.getMemo("Mirror node created test token"))
-                .setTreasury(treasuryAccoundId);
+                .setTreasury(treasuryAccount);
 
         if (adminKey != null) {
             Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);

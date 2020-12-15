@@ -21,12 +21,14 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Suppliers;
 import com.google.common.util.concurrent.RateLimiter;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
@@ -45,7 +47,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     private final ExpressionConverter expressionConverter;
     private final ScenarioProperties properties;
-    private final TransactionSupplier<?> transactionSupplier;
+    private final Supplier<TransactionSupplier<?>> transactionSupplier;
     private final RateLimiter rateLimiter;
     private final AtomicLong remaining;
     private final long stopTime;
@@ -54,7 +56,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter, ScenarioProperties properties) {
         this.expressionConverter = expressionConverter;
         this.properties = properties;
-        this.transactionSupplier = convert(properties);
+        this.transactionSupplier = Suppliers.memoize(() -> convert(properties));
         this.rateLimiter = RateLimiter.create(properties.getTps());
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
@@ -81,13 +83,13 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         return builder.receipt(shouldGenerate(properties.getReceipt()))
                 .record(shouldGenerate(properties.getRecord()))
                 .timestamp(Instant.now())
-                .transactionBuilder(transactionSupplier.get())
+                .transactionBuilder(transactionSupplier.get().get())
                 .build();
     }
 
     private TransactionSupplier<?> convert(ScenarioProperties p) {
-        Map<String, String> properties = expressionConverter.convert(p.getProperties());
-        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(properties, p.getType().getSupplier());
+        Map<String, String> converted = expressionConverter.convert(p.getProperties());
+        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(converted, p.getType().getSupplier());
 
         Validator validator = Validation.byDefaultProvider()
                 .configure()
