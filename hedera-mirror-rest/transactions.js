@@ -192,7 +192,6 @@ const convertToNamedQuery = function (query, prefix) {
  *
  * @param namedAccountQuery - Account query with named parameters
  * @param namedTsQuery - Transaction table timestamp query with named parameters
- * @param namedCtlTsQuery - Crypto transfer table timestamp query with named parameters
  * @param resultTypeQuery - Transaction result query
  * @param limitQuery - Limit query
  * @param creditDebitQuery - Credit or debit query
@@ -203,13 +202,13 @@ const convertToNamedQuery = function (query, prefix) {
 const getCryptoTransferTransactionsInnerQuery = function (
   namedAccountQuery,
   namedTsQuery,
-  namedCtlTsQuery,
   resultTypeQuery,
   limitQuery,
   creditDebitQuery,
   transactionTypeQuery,
   order
 ) {
+  const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
   const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, creditDebitQuery);
   const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
   return `
@@ -232,7 +231,6 @@ const getCryptoTransferTransactionsInnerQuery = function (
  *
  * @param namedAccountQuery - Account query with named parameters
  * @param namedTsQuery - Transaction table timestamp query with named parameters
- * @param namedCtlTsQuery - Crypto transfer table timestamp query with named parameters
  * @param resultTypeQuery - Transaction result query
  * @param namedLimitQuery - Limit query with named parameters
  * @param transactionTypeQuery - Transaction type query
@@ -242,7 +240,6 @@ const getCryptoTransferTransactionsInnerQuery = function (
 const getGeneralTransactionsInnerQuery = function (
   namedAccountQuery,
   namedTsQuery,
-  namedCtlTsQuery,
   resultTypeQuery,
   namedLimitQuery,
   transactionTypeQuery,
@@ -265,6 +262,7 @@ const getGeneralTransactionsInnerQuery = function (
   if (namedAccountQuery) {
     // account filter applies to both transaction.payer_account_id and crypto_transfer.entity_id, a full outer join is
     // needed to get rows not in the other table.
+    const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
     const ctlJoinClause =
       (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns';
     const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, resultTypeQuery, transactionTypeQuery);
@@ -275,13 +273,14 @@ const getGeneralTransactionsInnerQuery = function (
         ${ctlWhereClause}
         ORDER BY ctl.consensus_timestamp ${order}
         ${namedLimitQuery}`;
+
     return `
-    SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp) AS consensus_timestamp
-    FROM (${transactionOnlyQuery}) AS t
-    FULL OUTER JOIN (${ctlQuery}) AS ctl
-    ON t.consensus_timestamp = ctl.consensus_timestamp
-    ORDER BY consensus_timestamp ${order}
-    ${namedLimitQuery}`;
+      SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp) AS consensus_timestamp
+      FROM (${transactionOnlyQuery}) AS t
+      FULL OUTER JOIN (${ctlQuery}) AS ctl
+      ON t.consensus_timestamp = ctl.consensus_timestamp
+      ORDER BY consensus_timestamp ${order}
+      ${namedLimitQuery}`;
   }
 
   // no account filter, only need to query transaction table
@@ -319,14 +318,12 @@ const getTransactionsInnerQuery = function (
   const namedAccountQuery = convertToNamedQuery(accountQuery, 'acct');
   const namedTsQuery = convertToNamedQuery(tsQuery, 'ts');
   const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
-  const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
 
   if (creditDebitQuery) {
     // limit the query to transactions with cryptotransfer list
     return getCryptoTransferTransactionsInnerQuery(
       namedAccountQuery,
       namedTsQuery,
-      namedCtlTsQuery,
       resultTypeQuery,
       namedLimitQuery,
       creditDebitQuery,
@@ -338,7 +335,6 @@ const getTransactionsInnerQuery = function (
   return getGeneralTransactionsInnerQuery(
     namedAccountQuery,
     namedTsQuery,
-    namedCtlTsQuery,
     resultTypeQuery,
     namedLimitQuery,
     transactionTypeQuery,
