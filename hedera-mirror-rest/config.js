@@ -27,15 +27,11 @@ const path = require('path');
 const {InvalidConfigError} = require('./errors/invalidConfigError');
 const {cloudProviders, networks, defaultBucketNames} = require('./constants');
 
-let configName = 'application';
-if (process.env.CONFIG_NAME) {
-  configName = process.env.CONFIG_NAME;
-}
-
+const defaultConfigName = 'application';
 const config = {};
 let loaded = false;
 
-function load(configPath) {
+function load(configPath, configName) {
   if (!configPath) {
     return;
   }
@@ -74,18 +70,18 @@ function loadEnvironment() {
  */
 function setConfigValue(propertyPath, value) {
   let current = config;
-  let properties = propertyPath.toLowerCase().split('_');
+  const properties = propertyPath.toLowerCase().split('_');
 
   // Ignore properties that don't start with HEDERA_MIRROR_REST
   if (properties.length < 4 || properties[0] !== 'hedera' || properties[1] !== 'mirror' || properties[2] !== 'rest') {
     return;
   }
 
-  for (let i in properties) {
-    let property = properties[i];
+  for (let i = 0; i < properties.length; i += 1) {
+    const property = properties[i];
     let found = false;
 
-    for (let [k, v] of Object.entries(current)) {
+    for (const [k, v] of Object.entries(current)) {
       if (property === k.toLowerCase()) {
         if (i < properties.length - 1) {
           current = v;
@@ -121,6 +117,19 @@ function getConfig() {
   return config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
 }
 
+function parseDbPoolConfig() {
+  const {pool} = getConfig().db;
+  const configKeys = ['connectionTimeout', 'maxConnections', 'statementTimeout'];
+  configKeys.forEach((configKey) => {
+    const value = pool[configKey];
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      throw new InvalidConfigError(`invalid value set for db.pool.${configKey}: ${value}`);
+    }
+    pool[configKey] = parsed;
+  });
+}
+
 function parseStateProofStreamsConfig() {
   const {stateproof} = getConfig();
   if (!stateproof || !stateproof.enabled) {
@@ -147,10 +156,13 @@ function parseStateProofStreamsConfig() {
 }
 
 if (!loaded) {
-  load(path.join(__dirname, 'config'));
-  load(__dirname);
-  load(process.env.CONFIG_PATH);
+  const configName = process.env.CONFIG_NAME || defaultConfigName;
+  // always load the default configuration
+  load(path.join(__dirname, 'config'), defaultConfigName);
+  load(__dirname, configName);
+  load(process.env.CONFIG_PATH, configName);
   loadEnvironment();
+  parseDbPoolConfig();
   parseStateProofStreamsConfig();
   loaded = true;
 }

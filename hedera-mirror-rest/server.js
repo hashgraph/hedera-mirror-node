@@ -90,6 +90,9 @@ const pool = new Pool({
   database: config.db.name,
   password: config.db.password,
   port: config.db.port,
+  connectionTimeoutMillis: config.db.pool.connectionTimeout,
+  max: config.db.pool.maxConnections,
+  statement_timeout: config.db.pool.statementTimeout,
 });
 global.pool = pool;
 
