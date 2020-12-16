@@ -1,0 +1,19 @@
+# This file and its contents are licensed under the Apache License 2.0.
+# Please see the included NOTICE for copyright information and LICENSE for a copy of the license.
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+secretGenerator:
+  - name: -credentials
+    env:  credentials.conf
+  - name: -certificate
+    type: kubernetes.io/tls
+    files:
+      - tls.key
+      - tls.crt
+namePrefix: mirror
+commonLabels:
+  app: mirror-timescaledb
+  cluster-name: mirror
+generatorOptions:
+  disableNameSuffixHash: true

@@ -22,10 +22,37 @@ export RELEASE="mirror1"
 
 To install the wrapper chart:
 
-```shell script
-$ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
-$ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
-```
+1. Add the Hedera Mirror Node Repo
+    ```shell script
+    $ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
+    ```
+
+2. (Optional): Configure Network & AddressBook
+    When running against a network other than the demo/testnent/mainnet network, the network must be updated and an initialAddressBook file must be provided.
+
+    To achieve this, update the `values/yaml` file to set the `network` and `initialAddressBook` settings
+    ```yaml
+    importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              initialAddressBook: "/usr/etc/hedera-mirror-importer/addressbook.bin"
+              network: "OTHER"
+      initialAddressBook:
+        enabled: true
+    ```
+
+    Then create the addressBook file as a secret from a local file e.g. `/Downloads/addressBookFileName.bin`.
+    ```shell script
+    $ kubectl create secret generic mirror-importer-addressbook --from-file=<addressbookPath>/<addressbookFileName>.bin --save-config=true
+    ```
+   The secret data will be mounted as a file by the Importer StatefulSet and placed at the `/usr/etc/hedera-mirror-importer` location on the importer filesystem.
+
+3. Deploy Chart
+    ```shell script
+    $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
+    ```
 
 ## Testing
 
@@ -66,11 +93,49 @@ To remove all the Kubernetes components associated with the chart and delete the
 $ helm delete "${RELEASE}"
 ```
 
+
 The above command does not delete any of the underlying persistent volumes. To delete all the data associated with this release:
 
 ```shell script
-$ kubectl delete $(kubectl get pvc -o name)
+$ kubectl delete $(kubectl get pvc, ep, service -l release="${RELEASE}" -o name)
 ```
+
+Additionally, the Importer persistent volume can sometimes still remain. To explicitly delete:
+```shell script
+$ kubectl delete pvc data-"${RELEASE}"-importer-0
+```
+
+## Install (TimescaleDB, mirror db v2 schema)
+In an effort to increase performance and ingestion the v2 db schema of the mirror node will utilize [TimescaleDB](https://docs.timescale.com/latest/main) to take on a more time series aligned approach.
+
+To deploy the mirror chart using TimescaleDB instead of PostgreSQL take the following steps
+1. Set the following config values in `values.yaml` as noted below
+    ```yaml
+        global:
+          db:
+            host: RELEASE-NAME-timescaledb
+
+        postgresql:
+          enabled: false
+
+        timescaledb:
+          enabled: true
+    ```
+
+2. Create additional secret objects needed for timescale charts
+
+    Credentials (for superuser, admin and stand-by users) and a TLS certificate are needed for deployment.
+    After installing [Kustomize](https://kustomize.io/) the following command script can be used to create and add the Secrets to a cluster.
+    ```shell script
+    $ kubectl apply -k charts/hedera-mirror/kustomize/mirror
+    ```
+
+    To generate a new set of values and explore further details refer to [Creating the Secrets](https://github.com/timescale/timescaledb-kubernetes/blob/master/charts/timescaledb-single/admin-guide.md#creating-the-secrets)
+
+3. Deploy Chart
+    ```shell script
+    $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
+    ```
 
 ## Troubleshooting
 

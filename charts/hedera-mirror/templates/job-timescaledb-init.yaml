@@ -1,0 +1,92 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ printf "%s-timescaledb-init-job" .Release.Name }}
+  namespace: {{ include "hedera-mirror.namespace" . }}
+  annotations:
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      containers:
+        - name: init-mirrornode-db
+          image: postgres:11-alpine
+          command:
+            - sh
+            - -c
+            - >
+              while ! pg_isready -U postgres -h mirror-timescaledb-data; do sleep 1; done;
+              echo "${CREATE_USER_DB_SQL_COMMAND}" | psql --file=- --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" \
+                  --set ON_ERROR_STOP=1 \
+                  --set dbname="${DBNAME}" \
+                  --set dbuser="${DBUSER}" \
+                  --set dbpassword="${DBUSERPASSWORD}"
+              echo "${CREATE_API_USERS_SQL_COMMAND}" | psql --file=- --echo-queries -d "${ACCESS_SVC_CONNSTR_MAIN_USER}" \
+                  --set ON_ERROR_STOP=1 \
+                  --set grpcuser="${GRPCUSER}" \
+                  --set grpcpassword="${GRPCUSERPASSWORD}" \
+                  --set restuser="${RESTUSER}" \
+                  --set restpassword="${RESTPASSWORD}"
+          env:
+            - name: DBNAME
+              value: {{ .Values.importer.config.hedera.mirror.importer.db.name | quote }}
+            - name: DBUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-timescaledb-init" .Release.Name }}
+                  key: dbuser
+            - name: DBUSERPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-timescaledb-init" .Release.Name }}
+                  key: dbpassword
+            - name: GRPCUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-timescaledb-init" .Release.Name }}
+                  key: grpcuser
+            - name: GRPCUSERPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-timescaledb-init" .Release.Name }}
+                  key: grpcpassword
+            - name: RESTUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-timescaledb-init" .Release.Name }}
+                  key: restuser
+            - name: RESTPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-timescaledb-init" .Release.Name }}
+                  key: restpassword
+            - name: ACCESS_SVC_CONNSTR_POSTGRES
+              value: host=mirror-timescaledb user=postgres connect_timeout=3 sslmode=disable password={{ .Values.timescaledb.credentials.accessNode.superuser }}
+            - name: ACCESS_SVC_CONNSTR_MAIN_USER
+              value: host=mirror-timescaledb user={{ .Values.importer.config.hedera.mirror.importer.db.username }} connect_timeout=3 sslmode=disable password={{ .Values.importer.config.hedera.mirror.importer.db.password }}
+            - name: CREATE_USER_DB_SQL_COMMAND
+              value: |
+                SELECT format('CREATE DATABASE %I', :'dbname')
+                WHERE NOT EXISTS (
+                   SELECT
+                     FROM pg_database
+                    WHERE datname=:'dbname'
+                )
+                \gexec
+                create user :dbuser with createrole password :'dbpassword';
+                alter user :dbuser with superuser;
+            - name: CREATE_API_USERS_SQL_COMMAND
+              value: |
+                CREATE EXTENSION IF NOT EXISTS timescaledb;
+
+                create user :grpcuser with login password :'grpcpassword';
+                create user :restuser with login password :'restpassword';
+                alter default privileges in schema public grant select on tables to :grpcuser;
+                alter default privileges in schema public grant select on tables to :restuser;
+                grant select on all tables in schema public to :grpcuser;
+                grant select on all tables in schema public to :restuser;
+      restartPolicy: OnFailure
+  ttlSecondsAfterFinished: 600
