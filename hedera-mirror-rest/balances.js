@@ -32,7 +32,7 @@ const {DbError} = require('./errors/dbError');
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = async (req, res) => {
-  utils.validateReq(req);
+  await utils.validateReq(req);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');

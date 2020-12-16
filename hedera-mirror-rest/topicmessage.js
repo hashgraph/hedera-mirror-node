@@ -113,11 +113,11 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
   }
 };
 
-const validateGetTopicMessagesRequest = (topicId, filters) => {
+const validateGetTopicMessagesRequest = async (topicId, filters) => {
   validateGetTopicMessagesParams(topicId);
 
   // validate filters
-  utils.validateAndParseFilters(filters);
+  await utils.validateAndParseFilters(filters);
 };
 
 /**
@@ -191,7 +191,7 @@ const getTopicMessages = async (req, res) => {
   const filters = utils.buildFilterObject(req.query);
 
   // validate params
-  validateGetTopicMessagesRequest(topicIdStr, filters);
+  await validateGetTopicMessagesRequest(topicIdStr, filters);
   const topicId = EntityId.fromString(topicIdStr);
   await validateTopicId(topicId, topicIdStr);
 

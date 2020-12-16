@@ -201,14 +201,14 @@ describe('DB integration test - utils.getTransactionTypeQuery', () => {
     expect(await utils.getTransactionTypeQuery({})).toBe('');
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', async () => {
-    expect(
-      await (async () => await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''}))
-    ).toThrowError(InvalidArgumentError);
+    await expect(
+      async () => await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})
+    ).rejects.toThrowError(InvalidArgumentError);
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
     expect(
       async () => await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
-    ).toThrowError(InvalidArgumentError);
+    ).rejects.toThrowError(InvalidArgumentError);
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
     expect(await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(

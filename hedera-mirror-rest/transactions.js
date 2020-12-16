@@ -252,7 +252,7 @@ const reqToSql = async function (req) {
  */
 const getTransactions = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  await utils.validateReq(req);
 
   const query = await reqToSql(req);
   if (logger.isTraceEnabled()) {
