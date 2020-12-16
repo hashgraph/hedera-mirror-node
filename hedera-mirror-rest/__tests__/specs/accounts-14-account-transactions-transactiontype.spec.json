@@ -101,6 +101,23 @@
             "amount": 1200
           }
         ]
+      },
+      {
+        "consensus_timestamp": "1234567891000000007",
+        "payerAccountId": "0.0.8",
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98",
+        "charged_tx_fee": 0,
+        "transfers": [
+          {
+            "account": "0.0.1220",
+            "amount": -1220
+          },
+          {
+            "account": "0.0.1320",
+            "amount": 1220
+          }
+        ]
       }
     ]
   },
@@ -108,6 +125,29 @@
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "1234567891.000000007",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.8-1234567891-000000006",
+        "transfers": [
+          {
+            "account": "0.0.1220",
+            "amount": -1220
+          },
+          {
+            "account": "0.0.1320",
+            "amount": 1220
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567891.000000006"
+      },
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000007",
