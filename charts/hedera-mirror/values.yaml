@@ -37,13 +37,13 @@ importer:
             username: mirror_node
   enabled: true
   extraVolumes: []
-    # - name: addressbook-secret-volume
-    #   secret:
-    #     defaultMode: 420
-    #     secretName: mirror-importer-addressbook
+  # - name: addressbook-secret-volume
+  #   secret:
+  #     defaultMode: 420
+  #     secretName: mirror-importer-addressbook
   extraVolumeMounts: []
-    # - name: addressbook-secret-volume
-    #   mountPath: /usr/etc/hedera-mirror-importer/addressbook.bin
+  # - name: addressbook-secret-volume
+  #   mountPath: /usr/etc/addressbook/perf.bin
   redis:
     sentinel:
       masterSet: mirror
@@ -189,7 +189,7 @@ timescaledb:
     size: 500Gi
   resources:
     limits:
-      cpu: 1500m
+      cpu: 2Gi
       memory: 4Gi
     requests:
       cpu: 250m
@@ -200,9 +200,7 @@ timescaledb:
     parameters:
       max_wal_size: 8GB  # recommended to be 80% of the Volume Size
       min_wal_size: 2GB  # 80% of the WAL Volume Size
-      shared_buffers: 2GB # recommended to be 25% of available instance memory
+      shared_buffers: 1GB # recommended to be 25% of available instance memory
       work_mem: 50MB
-  serviceAccount:
-    create: true
 
 
