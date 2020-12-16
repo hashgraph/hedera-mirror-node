@@ -4,5 +4,5 @@ spring:
       enabled: false
   flyway:
     baselineVersion: 0
-    locations: "filesystem:./src/main/resources/db/migration/v1"
+    locations: "classpath:db/migration/v1"
     target: 1.999.999
