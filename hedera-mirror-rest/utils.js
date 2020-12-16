@@ -737,26 +737,20 @@ const parsePublicKey = (publicKey) => {
 };
 
 const getTransactionTypeQuery = async (parsedQueryParams) => {
-  logger.info('here');
   if (_.isNil(parsedQueryParams)) {
     return '';
   }
-  logger.info('here2');
 
   const transactionType = parsedQueryParams[constants.filterKeys.TRANSACTION_TYPE];
   if (_.isNil(transactionType)) {
     return '';
   }
 
-  logger.info('here3');
   if (await isValidTransactionType(transactionType)) {
-    logger.info('here3.1');
     const answer = `${constants.transactionColumns.TYPE}${opsMap.eq}${await transactionTypes.get(transactionType)}`;
-    logger.info(answer + ' is here');
     return answer;
   }
 
-  logger.info('here4');
   // throw error if transactionType filter was provided but invalid
   throw new InvalidArgumentError(`Invalid transactionType value '${transactionType}'`);
 };
