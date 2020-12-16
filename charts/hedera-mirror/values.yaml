@@ -36,6 +36,14 @@ importer:
             password: mirror_node_pass
             username: mirror_node
   enabled: true
+  extraVolumes: []
+    # - name: addressbook-secret-volume
+    #   secret:
+    #     defaultMode: 420
+    #     secretName: mirror-importer-addressbook
+  extraVolumeMounts: []
+    # - name: addressbook-secret-volume
+    #   mountPath: /usr/etc/hedera-mirror-importer/addressbook.bin
   redis:
     sentinel:
       masterSet: mirror
@@ -182,7 +190,7 @@ timescaledb:
   resources:
     limits:
       cpu: 1500m
-      memory: 1000Mi
+      memory: 4Gi
     requests:
       cpu: 250m
       memory: 500Mi
@@ -196,6 +204,5 @@ timescaledb:
       work_mem: 50MB
   serviceAccount:
     create: true
-    name: mirror-timescaledb-serviceacct
 
 

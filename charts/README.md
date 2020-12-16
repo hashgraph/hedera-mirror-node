@@ -30,24 +30,37 @@ To install the wrapper chart:
 2. (Optional): Configure Network & AddressBook
     When running against a network other than the demo/testnent/mainnet network, the network must be updated and an initialAddressBook file must be provided.
 
-    To achieve this, update the `values/yaml` file to set the `network` and `initialAddressBook` settings
+    e.g. To use an addressbook from a file located at `/Downloads/perf.bin`:
+    First create the addressBook file as a secret from the local file:
+    ```shell script
+    $ kubectl create secret generic mirror-importer-addressbook --from-file=perf.bin=/Downloads/perf.bin --save-config=true
+    ```
+
+    Then update the `values/yaml` file to set the `network`, `initialAddressBook`, `extraVolumes` and `extraVolumeMounts` configs.
     ```yaml
     importer:
       config:
         hedera:
           mirror:
             importer:
-              initialAddressBook: "/usr/etc/hedera-mirror-importer/addressbook.bin"
+              initialAddressBook: "/usr/etc/addressbook/perf.bin"
               network: "OTHER"
-      initialAddressBook:
-        enabled: true
+      extraVolumes:
+         - name: addressbook-secret-volume
+           secret:
+             defaultMode: 420
+             secretName: mirror-importer-addressbook
+      extraVolumeMounts:
+         - name: addressbook-secret-volume
+           mountPath: /usr/etc/addressbook
     ```
+    > **_Note_** Ensure the configured `mountPath` matches the path in `initialAddressBook`
 
-    Then create the addressBook file as a secret from a local file e.g. `/Downloads/addressBookFileName.bin`.
+    Then create the addressBook file as a secret from a local file e.g. `/Downloads/perf.bin`.
     ```shell script
-    $ kubectl create secret generic mirror-importer-addressbook --from-file=<addressbookPath>/<addressbookFileName>.bin --save-config=true
+    $ kubectl create secret generic mirror-importer-addressbook --from-file=perf.bin=/Downloads/perf.bin --save-config=true
     ```
-   The secret data will be mounted as a file by the Importer StatefulSet and placed at the `/usr/etc/hedera-mirror-importer` location on the importer filesystem.
+   The secret data will be mounted as a file by the Importer StatefulSet and placed at the `mountPath` location on the importer filesystem.
 
 3. Deploy Chart
     ```shell script
@@ -122,17 +135,7 @@ To deploy the mirror chart using TimescaleDB instead of PostgreSQL take the foll
           enabled: true
     ```
 
-2. Create additional secret objects needed for timescale charts
-
-    Credentials (for superuser, admin and stand-by users) and a TLS certificate are needed for deployment.
-    After installing [Kustomize](https://kustomize.io/) the following command script can be used to create and add the Secrets to a cluster.
-    ```shell script
-    $ kubectl apply -k charts/hedera-mirror/kustomize/mirror
-    ```
-
-    To generate a new set of values and explore further details refer to [Creating the Secrets](https://github.com/timescale/timescaledb-kubernetes/blob/master/charts/timescaledb-single/admin-guide.md#creating-the-secrets)
-
-3. Deploy Chart
+2. Deploy Chart
     ```shell script
     $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
     ```
