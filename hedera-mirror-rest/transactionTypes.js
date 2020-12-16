@@ -19,11 +19,21 @@
  */
 'use strict';
 
-const transactionTypesQuery = 'SELECT proto_id, name FROM t_transaction_types';
+const transactionTypesQuery = 'select proto_id, name from t_transaction_types';
 
 const transactionTypesMap = new Map();
 
-const loadTransactionTypes = function () {
+const get = async (transactionTypeName) => {
+  if (transactionTypesMap.size === 0) {
+    loadTransactionTypes();
+  }
+  return transactionTypesMap.get(transactionTypeName.toUpperCase());
+};
+
+const loadTransactionTypes = () => {
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getTransactionTypes query: ${transactionTypesQuery}`);
+  }
   pool
     .query(transactionTypesQuery)
     .catch((err) => {
@@ -37,6 +47,5 @@ const loadTransactionTypes = function () {
 };
 
 module.exports = {
-  transactionTypesMap,
-  loadTransactionTypes,
+  get,
 };
