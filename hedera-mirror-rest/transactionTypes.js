@@ -34,7 +34,6 @@ const get = async (transactionTypeName) => {
   }
 
   try {
-    logger.info(promise);
     const result = await promise;
     if (transactionTypesMap.size === 0) {
       result.rows.forEach((row) => transactionTypesMap.set(row.name, row.proto_id));
