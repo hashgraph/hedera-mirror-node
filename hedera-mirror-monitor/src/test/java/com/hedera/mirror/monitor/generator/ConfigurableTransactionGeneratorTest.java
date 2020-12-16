@@ -56,7 +56,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setProperties(Map.of("topicId", TOPIC_ID));
         properties.setTps(100_000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(properties));
+        generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(p -> p, properties));
     }
 
     @Test

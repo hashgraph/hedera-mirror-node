@@ -49,7 +49,7 @@ public abstract class AbstractSubscriberProperties {
 
     @DurationMin(seconds = 1L)
     @NotNull
-    protected Duration statusFrequency = Duration.ofSeconds(5L);
+    protected Duration statusFrequency = Duration.ofSeconds(10L);
 
     @Data
     @Validated

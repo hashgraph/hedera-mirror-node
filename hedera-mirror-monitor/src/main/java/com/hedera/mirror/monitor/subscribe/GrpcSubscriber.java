@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.subscribe;
  */
 
 import static io.grpc.Status.Code.INVALID_ARGUMENT;
-import static io.grpc.Status.Code.NOT_FOUND;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.Status;
@@ -41,6 +40,7 @@ import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
 public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties> {
@@ -52,10 +52,13 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
     private volatile MirrorConsensusTopicResponse lastReceived;
     private Instant endTime;
 
-    GrpcSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
-                   GrpcSubscriberProperties subscriberProperties) {
+    GrpcSubscriber(ExpressionConverter expressionConverter, MeterRegistry meterRegistry,
+                   MonitorProperties monitorProperties, GrpcSubscriberProperties subscriberProperties) {
         super(meterRegistry, subscriberProperties);
         this.retries = new AtomicLong(0L);
+
+        String topicId = expressionConverter.convert(subscriberProperties.getTopicId());
+        subscriberProperties.setTopicId(topicId);
 
         String endpoint = monitorProperties.getMirrorNode().getGrpc().getEndpoint();
         log.info("Connecting to mirror node {}", endpoint);
@@ -112,7 +115,7 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
         Status.Code statusCode = getStatusCode(t);
 
         // Don't retry client errors
-        if (statusCode == INVALID_ARGUMENT || statusCode == NOT_FOUND) {
+        if (statusCode == INVALID_ARGUMENT) {
             return false;
         }
 
