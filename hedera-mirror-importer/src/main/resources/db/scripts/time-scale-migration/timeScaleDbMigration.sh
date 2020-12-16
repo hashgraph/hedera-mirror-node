@@ -57,23 +57,23 @@ fi
 
 start_time="$(date -u +%s)"
 # assumes 1. Valid populated current mirror node postgres db with appropriate user 2. New empty TimeScaleDb db host with appropriate user
-echo "Migrating Mirror Node Data from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)"
+echo "Migrating Mirror Node Data from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
 
-echo "1. Migrate schema to TimeScaleDb. Postgres($OLD_DB_HOST:$OLD_DB_PORT) will prompt for password..."
+echo "1. Backing up table schema from Postgres($OLD_DB_HOST:$OLD_DB_PORT)..."
 PGPASSWORD=${OLD_PASSWORD} pg_dump -h $OLD_DB_HOST -p $OLD_DB_PORT -U $OLD_DB_USER --section=pre-data -f mirror_node_${start_time}.bak mirror_node
 #
-echo "2. Restore table schemas to new host. TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT) will prompt for password..."
+echo "2. Restoring table schemas to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
 psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER "password=${NEW_PASSWORD}" <mirror_node_${start_time}.bak
 
 ## Optionally we could skip step 1 and 2 and just create a whole new schema with a new init.sql -> timeScaleDBInit.sql
-echo "3. Create new hyper tables"
+echo "3. Creating new hyper tables on TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
 psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f createHyperTables.sql "password=${NEW_PASSWORD}"
 
-echo "4. Copy tables into separate CSV's"
+echo "4. Backing up tables from from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to separate CSV's..."
 psql -h $OLD_DB_HOST -d $OLD_DB_NAME -p $OLD_DB_PORT -U $OLD_DB_USER -f csvBackupTables.sql "password=${OLD_PASSWORD}"
 
 ## Optionally use https://github.com/timescale/timescaledb-parallel-copy as it's mulithreaded
-echo "5. Pg_restore to separate host"
+echo "5. Restoring CSV backups to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
 psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f csvRestoreTables.sql "password=${NEW_PASSWORD}"
 
 # leave index creation and policy sets to migration 2.0
