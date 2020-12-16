@@ -1,0 +1,51 @@
+{
+  "description": "Transaction api calls for a specific transaction without crypto transfer list using transaction id",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 3
+      },
+      {
+        "entity_num": 9
+      },
+      {
+        "entity_num": 10
+      },
+      {
+        "entity_num": 98
+      }
+    ],
+    "balances": [],
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890999999999",
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15"
+      }
+    ],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/transactions/0.0.10-1234567890-999999998",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [
+      {
+        "consensus_timestamp": "1234567890.999999999",
+        "valid_start_timestamp": "1234567890.999999998",
+        "charged_tx_fee": 0,
+        "memo_base64": null,
+        "result": "SUCCESS",
+        "transaction_hash": "aGFzaA==",
+        "name": "CRYPTOUPDATEACCOUNT",
+        "node": "0.0.3",
+        "transaction_id": "0.0.10-1234567890-999999998",
+        "valid_duration_seconds": "11",
+        "max_fee": "33",
+        "transfers": []
+      }
+    ]
+  }
+}

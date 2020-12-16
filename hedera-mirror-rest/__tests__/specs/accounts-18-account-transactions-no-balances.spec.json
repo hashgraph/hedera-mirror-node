@@ -64,6 +64,16 @@
         "balance": 90
       }
     ],
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.8",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000031",
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15"
+      }
+    ],
     "cryptotransfers": [
       {
         "consensus_timestamp": "1234567890000000001",
@@ -101,6 +111,20 @@
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "1234567890.000000031",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOUPDATEACCOUNT",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.8-1234567890-000000030",
+        "transfers": [],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567890.000000030"
+      },
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000005",
