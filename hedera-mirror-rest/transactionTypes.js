@@ -19,31 +19,30 @@
  */
 'use strict';
 
+const {DbError} = require('./errors/dbError');
+
 const transactionTypesQuery = 'select proto_id, name from t_transaction_types';
 
+// Transaction Type (String) -> ProtoId (Integer)
 const transactionTypesMap = new Map();
 
-const get = async (transactionTypeName) => {
-  if (transactionTypesMap.size === 0) {
-    loadTransactionTypes();
-  }
-  return transactionTypesMap.get(transactionTypeName.toUpperCase());
-};
+let promise;
 
-const loadTransactionTypes = () => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactionTypes query: ${transactionTypesQuery}`);
+const get = async (transactionTypeName) => {
+  if (!promise) {
+    promise = pool.query(transactionTypesQuery);
   }
-  pool
-    .query(transactionTypesQuery)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      for (const row of results.rows) {
-        transactionTypesMap.set(row.name, row.proto_id);
-      }
-    });
+
+  try {
+    logger.info(promise);
+    const result = await promise;
+    if (transactionTypesMap.size === 0) {
+      result.rows.forEach((row) => transactionTypesMap.set(row.name, row.proto_id));
+    }
+    return transactionTypesMap.get(transactionTypeName.toUpperCase());
+  } catch (err) {
+    throw new DbError(err.message);
+  }
 };
 
 module.exports = {
