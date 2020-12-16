@@ -64,7 +64,6 @@ let sqlConnection;
 beforeAll(async () => {
   jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
-  transactionTypes.loadTransactionTypes();
 });
 
 afterAll(() => {
@@ -175,7 +174,7 @@ function extractNameAndResultFromTransactionResults(rows) {
 //
 
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
-  let sql = transactions.reqToSql({query: {}});
+  let sql = await transactions.reqToSql({query: {}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
@@ -192,78 +191,78 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
 });
 
 describe('DB integration test - utils.getTransactionTypeQuery', () => {
-  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', () => {
-    expect(utils.getTransactionTypeQuery(null)).toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', async () => {
+    expect(await utils.getTransactionTypeQuery(null)).toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', () => {
-    expect(utils.getTransactionTypeQuery(undefined)).toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', async () => {
+    expect(await utils.getTransactionTypeQuery(undefined)).toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', () => {
-    expect(utils.getTransactionTypeQuery({})).toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', async () => {
+    expect(await utils.getTransactionTypeQuery({})).toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', () => {
-    expect(() => utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
-      InvalidArgumentError
-    );
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
-    expect(() =>
-      utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', async () => {
+    expect(
+      await (async () => await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''}))
     ).toThrowError(InvalidArgumentError);
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${transactionTypes.transactionTypesMap.get('TOKENCREATION')}`
+  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
+    expect(
+      async () => await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+    ).toThrowError(InvalidArgumentError);
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
+    expect(await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
+      `type = ${await transactionTypes.get('TOKENCREATION')}`
     );
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${transactionTypes.transactionTypesMap.get('TOKENASSOCIATE')}`
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', async () => {
+    expect(await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
+      `type = ${await transactionTypes.get('TOKENASSOCIATE')}`
     );
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${transactionTypes.transactionTypesMap.get('CONSENSUSSUBMITMESSAGE')}`
-    );
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', async () => {
+    expect(
+      await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})
+    ).toBe(`type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`);
   });
 });
 
 describe('DB integration test -  utils.isValidTransactionType', () => {
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for null', () => {
-    expect(utils.isValidTransactionType(null)).toBe(false);
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for null', async () => {
+    expect(await utils.isValidTransactionType(null)).toBe(false);
   });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for empty input', () => {
-    expect(utils.isValidTransactionType('')).toBe(false);
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for empty input', async () => {
+    expect(await utils.isValidTransactionType('')).toBe(false);
   });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for invalid input', () => {
-    expect(utils.isValidTransactionType('1234567890.000000001')).toBe(false);
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for invalid input', async () => {
+    expect(await utils.isValidTransactionType('1234567890.000000001')).toBe(false);
   });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for entity format shard', () => {
-    expect(utils.isValidTransactionType('1.0.1')).toBe(false);
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for entity format shard', async () => {
+    expect(await utils.isValidTransactionType('1.0.1')).toBe(false);
   });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for negative num', () => {
-    expect(utils.isValidTransactionType(-10)).toBe(false);
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for negative num', async () => {
+    expect(await utils.isValidTransactionType(-10)).toBe(false);
   });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for 0', () => {
-    expect(utils.isValidTransactionType(0)).toBe(false);
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for 0', async () => {
+    expect(await utils.isValidTransactionType(0)).toBe(false);
   });
-  test('DB integration test -  utils.isValidTransactionType - Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', () => {
-    expect(utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
+  test('DB integration test -  utils.isValidTransactionType - Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', async () => {
+    expect(await utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
   });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for former TOKENTRANSFERS transaction type', () => {
-    expect(utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for former TOKENTRANSFERS transaction type', async () => {
+    expect(await utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
   });
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
-  let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
+  let sql = await transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
   expect(mapTransactionResults(res.rows).sort()).toEqual(['1052, 0.15.8, -31', '1052, 0.15.9, 30', '1052, 0.15.98, 1']);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
-  let sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
+  let sql = await transactions.reqToSql({query: {'account.id': '0.17.666'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(0);
 });
@@ -273,7 +272,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   await addCryptoTransferTransaction(1063, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
   await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
-  let sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
+  let sql = await transactions.reqToSql({query: {'account.id': '0.15.5'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
@@ -292,7 +291,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
   await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
 
-  let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
+  let sql = await transactions.reqToSql({query: {timestamp: '0.000001070'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
   expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
@@ -312,7 +311,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
   await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
 
-  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
+  let sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
