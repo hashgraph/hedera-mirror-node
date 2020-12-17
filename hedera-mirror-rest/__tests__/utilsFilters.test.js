@@ -206,7 +206,7 @@ describe('utils validateAndParseFilters tests', () => {
     await verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for valid filters does not throw exception', () => {
+  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:2'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:1234567890.000000003'),
@@ -225,14 +225,10 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'utf-8'),
     ];
 
-    expect(async () => {
-      await utils.validateAndParseFilters(filters);
-    }).not.toThrow();
+    await expect(utils.validateAndParseFilters(filters)).resolves.toBeUndefined();
   });
 });
 
 const verifyInvalidFilters = async (filters) => {
-  await expect(async () => {
-    await utils.validateAndParseFilters(filters);
-  }).rejects.toThrowErrorMatchingSnapshot();
+  await expect(utils.validateAndParseFilters(filters)).rejects.toThrowErrorMatchingSnapshot();
 };
