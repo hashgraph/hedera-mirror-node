@@ -26,6 +26,7 @@ const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
+const transactionTypes = require('./transactionTypes');
 
 /**
  * Gets the select clause with token transfers sorted by token_id and account_id in the specified order
@@ -143,9 +144,10 @@ const createTransferLists = (rows) => {
  * Also see: getTransactionsInnerQuery function
  * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
  * @param {String} order Sorting order
- * @return {String} outerQuery Fully formed SQL query
+ * @return {{Promise<String>}} outerQuery Fully formed SQL query
  */
-const getTransactionsOuterQuery = function (innerQuery, order) {
+const getTransactionsOuterQuery = async (innerQuery, order) => {
+  const cryptoTransferProtoId = await transactionTypes.get('CRYPTOTRANSFER');
   return `
     ${getSelectClauseWithTokenTransferOrder(order)}
     FROM ( ${innerQuery} ) AS tlist
@@ -154,7 +156,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        LEFT OUTER JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
        LEFT OUTER JOIN token_transfer ttl
-         ON t.type = ${constants.transactionTypes.CRYPTOTRANSFER}
+         ON t.type = ${cryptoTransferProtoId}
          AND tlist.consensus_timestamp = ttl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo, t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
@@ -342,14 +344,14 @@ const getTransactionsInnerQuery = function (
   );
 };
 
-const reqToSql = function (req) {
+const reqToSql = async function (req) {
   // Parse the filter parameters for credit/debit, account-numbers, timestamp, and pagination (limit)
   const parsedQueryParams = req.query;
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req, 't.result');
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = await utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(params);
 
@@ -362,7 +364,7 @@ const reqToSql = function (req) {
     transactionTypeQuery,
     order
   );
-  const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
+  const sqlQuery = await getTransactionsOuterQuery(innerQuery, order);
 
   return {
     limit,
@@ -379,13 +381,12 @@ const reqToSql = function (req) {
  */
 const getTransactions = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  await utils.validateReq(req);
 
-  const query = reqToSql(req);
+  const query = await reqToSql(req);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   }
-
   // Execute query
   return pool
     .query(query.query, query.params)
@@ -434,7 +435,7 @@ const getOneTransaction = async (req, res) => {
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
     LEFT JOIN crypto_transfer ctl ON ctl.consensus_timestamp = t.consensus_ns
     LEFT JOIN token_transfer ttl
-      ON t.type = ${constants.transactionTypes.CRYPTOTRANSFER}
+      ON t.type = ${await transactionTypes.get('CRYPTOTRANSFER')}
       AND t.consensus_ns = ttl.consensus_timestamp
     WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?

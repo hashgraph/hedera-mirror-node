@@ -136,7 +136,7 @@ const getTokensRequest = async (req, res) => {
   const filters = utils.buildFilterObject(req.query);
 
   // validate filters
-  utils.validateAndParseFilters(filters);
+  await utils.validateAndParseFilters(filters);
 
   let getTokensSqlQuery = tokensSelectQuery;
   let getTokenSqlParams = [];
@@ -305,8 +305,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
     }
   }
 
-  const tsQueryWhereClause =
-    tsQueryWhereConditions.length === 0 ? '' : `where ${tsQueryWhereConditions.join(' and ')}`;
+  const tsQueryWhereClause = tsQueryWhereConditions.length === 0 ? '' : `where ${tsQueryWhereConditions.join(' and ')}`;
   whereClause = `${whereClause}
     and ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} = (
       select
@@ -348,7 +347,7 @@ const getTokenBalances = async (req, res) => {
   }
 
   const filters = utils.buildFilterObject(req.query);
-  utils.validateAndParseFilters(filters);
+  await utils.validateAndParseFilters(filters);
 
   const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
   if (logger.isTraceEnabled()) {

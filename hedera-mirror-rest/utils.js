@@ -27,6 +27,7 @@ const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const transactionTypes = require('./transactionTypes');
 
 const ENTITY_TYPE_ACCOUNT = 1;
 const ENTITY_TYPE_FILE = 3;
@@ -94,8 +95,8 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
-const isValidTransactionType = (transactionType) => {
-  return _.isString(transactionType) && constants.transactionTypes[transactionType.toUpperCase()] !== undefined;
+const isValidTransactionType = async (transactionType) => {
+  return _.isString(transactionType) && (await transactionTypes.get(transactionType)) !== undefined;
 };
 
 /**
@@ -128,7 +129,7 @@ const paramValidityChecks = (param, opAndVal) => {
   return filterValidityChecks(param, op, val);
 };
 
-const filterValidityChecks = (param, op, val) => {
+const filterValidityChecks = async (param, op, val) => {
   let ret = false;
 
   if (op === undefined || val === undefined) {
@@ -191,7 +192,7 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
-      ret = isValidTransactionType(val);
+      ret = await isValidTransactionType(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -206,17 +207,17 @@ const filterValidityChecks = (param, op, val) => {
  * @param {HTTPRequest} req HTTP request object
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = (req) => {
+const validateReq = async (req) => {
   const badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
       for (const val of req.query[key]) {
-        if (!paramValidityChecks(key, val)) {
+        if (!(await paramValidityChecks(key, val))) {
           badParams.push(key);
         }
       }
-    } else if (!paramValidityChecks(key, req.query[key])) {
+    } else if (!(await paramValidityChecks(key, req.query[key]))) {
       badParams.push(key);
     }
   }
@@ -662,11 +663,11 @@ const buildComparatorFilter = (name, filter) => {
  * @param filters
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = (filters) => {
+const validateAndParseFilters = async (filters) => {
   const badParams = [];
 
   for (const filter of filters) {
-    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
+    if (!(await filterValidityChecks(filter.key, filter.operator, filter.value))) {
       badParams.push(filter.key);
     } else {
       formatComparator(filter);
@@ -740,7 +741,7 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
-const getTransactionTypeQuery = (parsedQueryParams) => {
+const getTransactionTypeQuery = async (parsedQueryParams) => {
   if (_.isNil(parsedQueryParams)) {
     return '';
   }
@@ -750,10 +751,9 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
     return '';
   }
 
-  if (isValidTransactionType(transactionType)) {
-    return `${constants.transactionColumns.TYPE}${opsMap.eq}${
-      constants.transactionTypes[transactionType.toUpperCase()]
-    }`;
+  const protoId = await transactionTypes.get(transactionType);
+  if (protoId !== undefined) {
+    return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
   }
 
   // throw error if transactionType filter was provided but invalid

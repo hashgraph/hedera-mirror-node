@@ -101,7 +101,7 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
  */
 const getAccounts = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  await utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
   // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
@@ -203,7 +203,7 @@ const getOneAccount = async (req, res) => {
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [encodedAccountId];
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = await utils.getTransactionTypeQuery(parsedQueryParams);
 
   const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
@@ -216,7 +216,7 @@ const getOneAccount = async (req, res) => {
   );
 
   const innerParams = accountParams.concat(tsParams).concat(params);
-  const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
+  const transactionsQuery = await transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 
   if (logger.isTraceEnabled()) {
