@@ -52,7 +52,7 @@ const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
-const constants = require('../constants');
+const {cloudProviders, filterKeys} = require('../constants');
 const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
@@ -202,29 +202,29 @@ describe('DB integration test - utils.getTransactionTypeQuery', () => {
     expect(utils.getTransactionTypeQuery({})).resolves.toBe('');
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', () => {
-    expect(() => utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
+    expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
       InvalidArgumentError
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
-    expect(() =>
-      utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
-    ).rejects.toThrowError(InvalidArgumentError);
+    expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'newtransaction'})).rejects.toThrowError(
+      InvalidArgumentError
+    );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
-    expect(await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
+    expect(await utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
       `type = ${await transactionTypes.get('TOKENCREATION')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', async () => {
-    expect(await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
+    expect(await utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
       `type = ${await transactionTypes.get('TOKENASSOCIATE')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', async () => {
-    expect(
-      await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})
-    ).toBe(`type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`);
+    expect(await utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
+      `type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`
+    );
   });
 });
 
