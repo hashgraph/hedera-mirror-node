@@ -192,39 +192,39 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
 });
 
 describe('DB integration test - utils.getTransactionTypeQuery', () => {
-  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', () => {
-    expect(utils.getTransactionTypeQuery(null)).resolves.toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', async () => {
+    await expect(utils.getTransactionTypeQuery(null)).resolves.toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', () => {
-    expect(utils.getTransactionTypeQuery(undefined)).resolves.toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', async () => {
+    await expect(utils.getTransactionTypeQuery(undefined)).resolves.toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', () => {
-    expect(utils.getTransactionTypeQuery({})).resolves.toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', async () => {
+    await expect(utils.getTransactionTypeQuery({})).resolves.toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', () => {
-    expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', async () => {
+    await expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
       InvalidArgumentError
     );
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
-    expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'newtransaction'})).rejects.toThrowError(
-      InvalidArgumentError
-    );
+  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', async () => {
+    await expect(() =>
+      utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+    ).rejects.toThrowError(InvalidArgumentError);
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
-    expect(await utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
+    await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).resolves.toBe(
       `type = ${await transactionTypes.get('TOKENCREATION')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', async () => {
-    expect(await utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
+    await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).resolves.toBe(
       `type = ${await transactionTypes.get('TOKENASSOCIATE')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', async () => {
-    expect(await utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`
-    );
+    await expect(
+      utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})
+    ).resolves.toBe(`type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`);
   });
 });
 
