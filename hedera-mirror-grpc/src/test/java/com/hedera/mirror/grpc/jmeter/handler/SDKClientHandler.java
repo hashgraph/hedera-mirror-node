@@ -127,7 +127,7 @@ public class SDKClientHandler {
         TransactionId transactionId = new TransferTransaction()
                 .addTokenTransfer(tokenId, operatorId, Math.negateExact(transferAmount))
                 .addTokenTransfer(tokenId, recipientId, transferAmount)
-                .setMaxTransactionFee(1_000_000)
+                .setMaxTransactionFee(10_000_000L)
                 .setTransactionMemo("Token Transfer_" + Instant.now())
                 .execute(client);
 
