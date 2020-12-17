@@ -191,23 +191,23 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
 });
 
 describe('DB integration test - utils.getTransactionTypeQuery', () => {
-  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', async () => {
-    expect(await utils.getTransactionTypeQuery(null)).toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', () => {
+    expect(utils.getTransactionTypeQuery(null)).resolves.toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', async () => {
-    expect(await utils.getTransactionTypeQuery(undefined)).toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', () => {
+    expect(utils.getTransactionTypeQuery(undefined)).resolves.toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', async () => {
-    expect(await utils.getTransactionTypeQuery({})).toBe('');
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', () => {
+    expect(utils.getTransactionTypeQuery({})).resolves.toBe('');
   });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', async () => {
-    await expect(
-      async () => await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})
-    ).rejects.toThrowError(InvalidArgumentError);
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', () => {
+    expect(() => utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
+      InvalidArgumentError
+    );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
-    expect(
-      async () => await utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+    expect(() =>
+      utils.getTransactionTypeQuery({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
     ).rejects.toThrowError(InvalidArgumentError);
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
