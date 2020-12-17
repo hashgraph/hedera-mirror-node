@@ -1,17 +1,18 @@
 # Configuration
 
-The three components of the Hedera Mirror Node, Importer, REST API and gRPC API, all support loading configuration
-from an `application.yml` file or via the environment.
+The four components of the Hedera Mirror Node (Importer, Monitor, REST API and gRPC API) all support loading
+configuration from an `application.yml` file or via the environment.
 
 Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
-should be changed is `hedera.mirror.importer.network` as it controls which Hedera network to mirror.
-Additionally, the password properties have a default, but it is recommended they be changed from the default.
+should be changed is `hedera.mirror.importer.network` as it controls which Hedera network to mirror. Additionally, the
+password properties have a default, but it is recommended they be changed from the default.
 
 ## Importer
 
-The Importer component uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
-As a result, property files, YAML files, environment variables and command-line arguments can all be used to configure
-the application. See the Spring Boot [documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
+The Importer component uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the
+application. As a result, property files, YAML files, environment variables and command-line arguments can all be used
+to configure the application. See the Spring
+Boot [documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
 for the location and order it loads configuration.
 
 The following table lists the available properties along with their default values. Unless you need to set a non-default
@@ -97,11 +98,12 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 Importer can be configured to publish transactions (in json format) to a Pubsub topic using following properties:
 
--   `spring.cloud.gcp.pubsub.enabled`
--   `spring.cloud.gcp.pubsub.project-id`
--   `hedera.mirror.importer.parser.record.pubsub.topicName`
--   `spring.cloud.gcp.pubsub.credentials.*`
--   `hedera.mirror.importer.parser.record.entity.enabled` (Importer can not export to both database and pubsub simultaneously)
+- `spring.cloud.gcp.pubsub.enabled`
+- `spring.cloud.gcp.pubsub.project-id`
+- `hedera.mirror.importer.parser.record.pubsub.topicName`
+- `spring.cloud.gcp.pubsub.credentials.*`
+- `hedera.mirror.importer.parser.record.entity.enabled` (Importer can not export to both database and pubsub
+  simultaneously)
 
 See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
 for more info about `spring.cloud.gcp.*` properties.
@@ -109,17 +111,19 @@ for more info about `spring.cloud.gcp.*` properties.
 #### Connect to S3 with the Default Credentials Provider
 
 When connecting to an AWS S3 bucket that requires authentication (such as a requester pays bucket), you can opt to allow
-the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access and secret
-keys in the config.  This will also allow you to take advantage of alternative authorization modes such as
-[AssumeRole](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html).  If the mirror node is configured to connect to an
-S3 bucket that requires authenticaion, and the static credentials are not provided in the config, the mirror node will default to using this
-provider.  For more information and to see how you can set up your  environment to take advantage of this, see
+the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access
+and secret keys in the config. This will also allow you to take advantage of alternative authorization modes such as
+[AssumeRole](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html). If the mirror node is configured
+to connect to an S3 bucket that requires authenticaion, and the static credentials are not provided in the config, the
+mirror node will default to using this provider. For more information and to see how you can set up your environment to
+take advantage of this, see
 [the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html)
-When running in Docker or Kubernetes, credentials can be attached in a variety of ways, including by using volumes and secrets
-to directly add static credentials or an existing AWS credentials file, by using other tools such as Vault or AWS Secrets Manager,
-and many more.
+When running in Docker or Kubernetes, credentials can be attached in a variety of ways, including by using volumes and
+secrets to directly add static credentials or an existing AWS credentials file, by using other tools such as Vault or
+AWS Secrets Manager, and many more.
 
 `Docker-compose.yml`
+
 ```yaml
 volumes:
   - ~/.aws/:/root/.aws:ro
@@ -127,7 +131,8 @@ volumes:
 
 ## GRPC API
 
-Similar to the [Importer](#importer), the gRPC API uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
+Similar to the [Importer](#importer), the gRPC API uses [Spring Boot](https://spring.io/projects/spring-boot) properties
+to configure the application.
 
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
@@ -166,13 +171,69 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.retriever.unthrottled.pollingFrequency` | 20ms             | How often to poll for messages when unthrottled. Can accept duration units like `50ms`, `10s` etc |
 | `hedera.mirror.grpc.shard`                                  | 0                | The default shard number that the GRPC component participates in                               |
 
+## Monitor
+
+Similar to the [Importer](#importer), the monitor uses [Spring Boot](https://spring.io/projects/spring-boot) properties
+to configure the application.
+
+The following table lists the available properties along with their default values. Unless you need to set a non-default
+value, it is recommended to only populate overridden properties in the custom `application.yml`.
+
+Name                                                        | Default    | Description
+------------------------------------------------------------| -----------| ---------------------------------------
+`hedera.mirror.monitor.mirrorNode.grpc.host`                | ""         | The hostname of the mirror node's gRPC API
+`hedera.mirror.monitor.mirrorNode.grpc.port`                | 5600       | The port of the mirror node's gRPC API
+`hedera.mirror.monitor.mirrorNode.rest.host`                | ""         | The hostname of the mirror node's REST API
+`hedera.mirror.monitor.mirrorNode.rest.port`                | 443        | The port of the mirror node's REST API
+`hedera.mirror.monitor.network`                             | TESTNET    | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`.
+`hedera.mirror.monitor.nodes[].accountId`                   | ""         | The main node's account ID
+`hedera.mirror.monitor.nodes[].host`                        | ""         | The main node's hostname
+`hedera.mirror.monitor.nodes[].port`                        | 50211      | The main node's port
+`hedera.mirror.monitor.operator.accountId`                  | ""         | Operator account ID used to pay for transactions
+`hedera.mirror.monitor.operator.privateKey`                 | ""         | Operator ED25519 private key used to sign transactions in hex encoded DER format
+`hedera.mirror.monitor.publish.connections`                 | 5          | How many total connections to open to the main nodes. Connections will be round robin among available nodes
+`hedera.mirror.monitor.publish.enabled`                     | true       | Whether to enable transaction publishing
+`hedera.mirror.monitor.publish.scenarios[].duration`        | Infinite   | How long this scenario should publish transactions
+`hedera.mirror.monitor.publish.scenarios[].enabled`         | true       | Whether this publish scenario is enabled
+`hedera.mirror.monitor.publish.scenarios[].limit`           | 0          | How many transactions to publish before halting. 0 for unlimited
+`hedera.mirror.monitor.publish.scenarios[].logResponse`     | false      | Whether to log the response from HAPI
+`hedera.mirror.monitor.publish.scenarios[].name`            | ""         | The publish scenario name. Used to tag logs and metrics
+`hedera.mirror.monitor.publish.scenarios[].properties`      | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
+`hedera.mirror.monitor.publish.scenarios[].receipt`         | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
+`hedera.mirror.monitor.publish.scenarios[].record`          | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
+`hedera.mirror.monitor.publish.scenarios[].tps`             | 1.0        | The rate at which transactions will publish
+`hedera.mirror.monitor.publish.scenarios[].type`            |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
+`hedera.mirror.monitor.publish.statusFrequency`             | 10s        | How often to log publishing statistics
+`hedera.mirror.monitor.subscribe.grpc[].duration`           |            | How long to stay subscribed to the gRPC API
+`hedera.mirror.monitor.subscribe.grpc[].enabled`            | true       | Whether this subscribe scenario is enabled
+`hedera.mirror.monitor.subscribe.grpc[].limit`              | 0          | How many transactions to receive before halting. 0 for unlimited
+`hedera.mirror.monitor.subscribe.grpc[].name`               | ""         | The subscribe scenario name. Used to tag logs and metrics
+`hedera.mirror.monitor.subscribe.grpc[].retry.maxAttempts`  | 16         | How many consecutive retry attempts before giving up connecting to the mirror gRPC API
+`hedera.mirror.monitor.subscribe.grpc[].retry.maxBackoff`   | 8s         | The maximum amount of time to wait between retry attempts
+`hedera.mirror.monitor.subscribe.grpc[].retry.minBackoff`   | 250ms      | The initial amount of time to wait between retry attempts
+`hedera.mirror.monitor.subscribe.grpc[].startTime`          |            | The start time passed to the gRPC API. Defaults to current time if not set
+`hedera.mirror.monitor.subscribe.grpc[].statusFrequency`    | 10s        | How often to log subscription statistics
+`hedera.mirror.monitor.subscribe.grpc[].topicId`            |            | Which topic to subscribe to
+`hedera.mirror.monitor.subscribe.rest[].duration`           |            | How long to stay subscribed to the gRPC API
+`hedera.mirror.monitor.subscribe.rest[].enabled`            | true       | Whether this subscribe scenario is enabled
+`hedera.mirror.monitor.subscribe.rest[].limit`              | 0          | How many transactions to receive before halting. 0 for unlimited
+`hedera.mirror.monitor.subscribe.rest[].name`               | ""         | The subscribe scenario name. Used to tag logs and metrics
+`hedera.mirror.monitor.subscribe.rest[].retry.maxAttempts`  | 16         | How many consecutive retry attempts before giving up connecting to the mirror gRPC API
+`hedera.mirror.monitor.subscribe.rest[].retry.maxBackoff`   | 8s         | The maximum amount of time to wait between retry attempts
+`hedera.mirror.monitor.subscribe.rest[].retry.minBackoff`   | 250ms      | The initial amount of time to wait between retry attempts
+`hedera.mirror.monitor.subscribe.rest[].samplePercent`      | 1.0        | The percentage of transactions to verify against the REST API. Accepts values between 0-1
+`hedera.mirror.monitor.subscribe.rest[].statusFrequency`    | 10s        | How often to log subscription statistics
+`hedera.mirror.monitor.subscribe.rest[].timeout`            | 2s         | Maximum amount of time to wait for a REST API call to retrieve data
+`hedera.mirror.monitor.subscribe.enabled`                   | true       | Whether to enable subscribing to mirror node APIs to verify published transactions
+`hedera.mirror.monitor.validateNodes`                       | true       | Whether to validate and remove invalid or down nodes permanently before publishing
+
 ## REST API
 
 The REST API supports loading configuration from YAML or environment variables. By default, it loads a file named
 `application.yml` or `application.yaml` in each of the search paths (see below). The file name can be changed by setting
-the `CONFIG_NAME` environment variable. A custom location can be loaded by setting the `CONFIG_PATH` environment variable.
-The configuration is loaded in the following order with the latter configuration overwriting (technically recursively
-merged into) the current configuration:
+the `CONFIG_NAME` environment variable. A custom location can be loaded by setting the `CONFIG_PATH` environment
+variable. The configuration is loaded in the following order with the latter configuration overwriting (technically
+recursively merged into) the current configuration:
 
 1. `./config/application.yml`
 2. `./application.yml`
@@ -215,14 +276,15 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
 | `hedera.mirror.rest.shutdown.timeout`                    | 20000                   | The amount of time (in ms) to give the process to gracefully shut down                         |
 
-
 ### Enable State Proof Alpha
-To enable State Proof logic the REST API configurations must updated to allow for communication with cloud buckets to pull down the necessary files (address book, signatures files and record file).
-The process involves setting the properties under `hedera.mirror.rest.stateproof` as documented above [REST API Config](#rest-api)
+
+To enable State Proof logic the REST API configurations must updated to allow for communication with cloud buckets to
+pull down the necessary files (address book, signatures files and record file). The process involves setting the
+properties under `hedera.mirror.rest.stateproof` as documented above [REST API Config](#rest-api)
 
 An example configuration is provided below
 
-```.yaml
+```yaml
 hedera:
   mirror:
     rest:

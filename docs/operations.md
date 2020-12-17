@@ -1,19 +1,20 @@
 # Operations
 
--   [GRPC API](#grpc-api)
--   [Importer](#importer)
--   [REST API](#rest-api)
+- [GRPC API](#grpc-api)
+- [Importer](#importer)
+- [Monitor](#monitor)
+- [REST API](#rest-api)
 
 ## GRPC API
 
-The GRPC process is a Java-based application and should be able to run on any platform that Java supports. That said,
-we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
+The GRPC process is a Java-based application and should be able to run on any platform that Java supports. That said, we
+recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
 
 ### File Layout
 
--   `/etc/systemd/system/hedera-mirror-grpc.service` - systemd service definitions
--   `/usr/etc/hedera-mirror-grpc/application.yml` - Configuration file
--   `/usr/lib/hedera-mirror-grpc` - Binaries
+- `/etc/systemd/system/hedera-mirror-grpc.service` - systemd service definitions
+- `/usr/etc/hedera-mirror-grpc/application.yml` - Configuration file
+- `/usr/lib/hedera-mirror-grpc` - Binaries
 
 ### Starting
 
@@ -52,13 +53,13 @@ said, we recommend Ubuntu 18.04 be used as the base operating system as that is 
 
 ### File Layout
 
--   `/etc/systemd/system/hedera-mirror-importer.service` - systemd service definitions
--   `/usr/etc/hedera-mirror-importer/application.yml` - Configuration file
--   `/usr/lib/hedera-mirror-importer` - Binaries
--   `/var/lib/hedera-mirror-importer` - Data
-    -   `addressbook.bin` - The current address book in use
-    -   `accountBalances` - The downloaded balance and signature files
-    -   `recordstreams` - The downloaded record and signature files
+- `/etc/systemd/system/hedera-mirror-importer.service` - systemd service definitions
+- `/usr/etc/hedera-mirror-importer/application.yml` - Configuration file
+- `/usr/lib/hedera-mirror-importer` - Binaries
+- `/var/lib/hedera-mirror-importer` - Data
+    - `addressbook.bin` - The current address book in use
+    - `accountBalances` - The downloaded balance and signature files
+    - `recordstreams` - The downloaded record and signature files
 
 ### Starting
 
@@ -92,6 +93,12 @@ systemctl status hedera-mirror-importer.service
 sudo journalctl -fu hedera-mirror-importer.service
 ```
 
+## Monitor
+
+The monitor is a Java-based application and should be able to run on any platform that Java supports. That said, we
+recommend running it as a Docker container via [Docker Compose](/docker-compose.yml) or
+[Helm](/charts/hedera-mirror-monitor).
+
 ## REST API
 
 ### Initial Installation
@@ -124,8 +131,8 @@ pm2 start pm2.json
 
 ### File Layout
 
--   `/opt/restapi` - Binaries
--   `/opt/restapi/application.yml` - Configuration
+- `/opt/restapi` - Binaries
+- `/opt/restapi/application.yml` - Configuration
 
 ### Upgrading
 
@@ -185,27 +192,34 @@ for port in {6551..6560}; do curl -s "http://127.0.0.1:${port}/api/v1/transactio
 To setup live monitoring, see [monitoring](../hedera-mirror-rest/monitoring/README.md) documentation.
 
 ### Open API Spec
-The REST API supports the OpenAPI (Swagger) specification v3.
-This provides documentation and structure for metrics
+
+The REST API supports the OpenAPI (Swagger) specification v3. This provides documentation and structure for metrics
 
 #### View Spec UI
-We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our documentation based on the OpenAPI specification.
-The OpenAPI specification can be viewed at
 
-- `/api/v1/docs` - API v1 doc serve path
-Where `v1` corresponds to the Mirror Node REST API version and `docs` is the default path value as controlled by `hedera.mirror.rest.openapi.swaggerUIPath`.
+We utilize the [swagger-ui-express](https://github.com/scottie1984/swagger-ui-express) package to serve our
+documentation based on the OpenAPI specification. The OpenAPI specification can be viewed at
+
+- `/api/v1/docs` - API v1 doc serve path Where `v1` corresponds to the Mirror Node REST API version and `docs` is the
+  default path value as controlled by `hedera.mirror.rest.openapi.swaggerUIPath`.
 
 #### Update Spec
+
 To update the spec, manually modify the spec file located at
+
 - `hedera-mirror-rest/api/v1/openapi.yml`
 
-Where `v1` corresponds to the Mirror Node REST API version and `openapi` is the default fileName value as controlled by `hedera.mirror.rest.openapi.specFileName`.
+Where `v1` corresponds to the Mirror Node REST API version and `openapi` is the default fileName value as controlled
+by `hedera.mirror.rest.openapi.specFileName`.
+
 - `hedera-mirror-rest/api/v1/openapi.yml` - API v1 openapi spec
 
 ### Metrics
-The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io).
-Using this 3 endpoints are made available
+
+The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io). Using this 3 endpoints are made
+available
+
 - `/swagger/ui` - Metrics dashboard
 - `/swagger/stats` - Aggregated statistics
-- `/swagger/metrics` - Prometheus formatted metrics
-Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest.metrics.config.uriPath`.
+- `/swagger/metrics` - Prometheus formatted metrics Where `swagger` is the default metrics path as controlled
+  by `hedera.mirror.rest.metrics.config.uriPath`.
