@@ -40,24 +40,25 @@
  * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
  * in the specs/ dir.
  */
-const path = require('path');
-const request = require('supertest');
-const fs = require('fs');
-const _ = require('lodash');
+// external libraries
 const S3 = require('aws-sdk/clients/s3');
 const crypto = require('crypto');
-const EntityId = require('../entityId');
-const transactions = require('../transactions.js');
-const server = require('../server');
+const fs = require('fs');
+const _ = require('lodash');
+const path = require('path');
+const request = require('supertest');
+
 const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
-const utils = require('../utils');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 const {cloudProviders} = require('../constants');
-const transactionTypes = require('../transactionTypes');
+const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const constants = require('../constants');
+const server = require('../server');
+const transactions = require('../transactions.js');
+const transactionTypes = require('../transactionTypes');
+const utils = require('../utils');
 
 let sqlConnection;
 
