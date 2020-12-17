@@ -39,7 +39,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private long amount = 1;
 
     @Min(1)
-    private long maxTransactionFee = 1_000_000;
+    private long maxTransactionFee = 10_000_000L;
 
     @NotBlank
     private String recipientAccountId;
