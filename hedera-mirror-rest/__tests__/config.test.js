@@ -151,7 +151,6 @@ describe('Custom CONFIG_NAME:', () => {
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
     expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.log).toBeUndefined();
   });
 });
 
@@ -270,6 +269,90 @@ describe('Override stateproof config', () => {
       } else {
         expect(() => {
           loadConfigWithCustomStateproofConfig(customConfig);
+        }).toThrow();
+      }
+    });
+  });
+});
+
+describe('Override db pool config', () => {
+  const loadConfigWithCustomDbPoolConfig = (customDbPoolConfig) => {
+    if (customDbPoolConfig) {
+      const customConfig = {
+        hedera: {
+          mirror: {
+            rest: {
+              db: {
+                pool: customDbPoolConfig,
+              },
+            },
+          },
+        },
+      };
+      fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.safeDump(customConfig));
+      process.env = {CONFIG_PATH: tempDir};
+    }
+
+    return require('../config');
+  };
+
+  const testSpecs = [
+    {
+      name: 'the default values should be valid',
+      expectThrow: false,
+    },
+    {
+      name: 'override with valid integer values',
+      override: {
+        connectionTimeout: 200,
+        maxConnections: 5,
+        statementTimeout: 100,
+      },
+      expected: {
+        connectionTimeout: 200,
+        maxConnections: 5,
+        statementTimeout: 100,
+      },
+    },
+    {
+      name: 'override with valid string values',
+      override: {
+        connectionTimeout: '200',
+        maxConnections: '5',
+        statementTimeout: '100',
+      },
+      expected: {
+        connectionTimeout: 200,
+        maxConnections: 5,
+        statementTimeout: 100,
+      },
+    },
+    ..._.flattenDeep(
+      [-1, 0, true, false, '', 'NaN'].map((value) => {
+        return ['connectionTimeout', 'maxConnections', 'statementTimeout'].map((configKey) => {
+          return {
+            name: `override ${configKey} with invalid value ${JSON.stringify(value)}`,
+            override: {
+              [configKey]: value,
+            },
+            expectThrow: true,
+          };
+        });
+      })
+    ),
+  ];
+
+  testSpecs.forEach((testSpec) => {
+    const {name, override, expected, expectThrow} = testSpec;
+    test(name, () => {
+      if (!expectThrow) {
+        const config = loadConfigWithCustomDbPoolConfig(override);
+        if (expected) {
+          expect(config.db.pool).toEqual(expected);
+        }
+      } else {
+        expect(() => {
+          loadConfigWithCustomDbPoolConfig(override);
         }).toThrow();
       }
     });

@@ -19,7 +19,16 @@
       }
     ],
     "balances": [],
-    "transactions": [],
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779444711927001",
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15"
+      }
+    ],
     "cryptotransfers": [
       {
         "consensus_timestamp": "1565779111711927001",

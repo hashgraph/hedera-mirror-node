@@ -34,6 +34,14 @@
         "consensus_timestamp": "1565779555711927003",
         "name": "CRYPTODELETE",
         "type": "12"
+      },
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.8",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779444711927001",
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15"
       }
     ],
     "cryptotransfers": [
