@@ -144,7 +144,7 @@ const createTransferLists = (rows) => {
  * Also see: getTransactionsInnerQuery function
  * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
  * @param {String} order Sorting order
- * @return {String} outerQuery Fully formed SQL query
+ * @return {{Promise<String>}} outerQuery Fully formed SQL query
  */
 const getTransactionsOuterQuery = async (innerQuery, order) => {
   const cryptoTransferProtoId = await transactionTypes.get('CRYPTOTRANSFER');
