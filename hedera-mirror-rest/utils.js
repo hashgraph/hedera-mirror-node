@@ -750,7 +750,6 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  logger.info((await isValidTransactionType(transactionType)) + ' HERE');
   if (await isValidTransactionType(transactionType)) {
     return `${constants.transactionColumns.TYPE}${opsMap.eq}${await transactionTypes.get(transactionType)}`;
   }
