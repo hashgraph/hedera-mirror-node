@@ -43,6 +43,7 @@ const get = async (transactionTypeName) => {
     }
     return transactionTypesMap.get(transactionTypeName.toUpperCase());
   } catch (err) {
+    promise = null;
     throw new DbError(err.message);
   }
 };
