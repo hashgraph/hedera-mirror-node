@@ -105,7 +105,7 @@ const isValidTransactionType = async (transactionType) => {
  * @param {String} opAndVal operator:value to be validated
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
-const paramValidityChecks = async (param, opAndVal) => {
+const paramValidityChecks = (param, opAndVal) => {
   const ret = false;
   let val = null;
   let op = null;
@@ -126,7 +126,7 @@ const paramValidityChecks = async (param, opAndVal) => {
     return ret;
   }
 
-  return await filterValidityChecks(param, op, val);
+  return filterValidityChecks(param, op, val);
 };
 
 const filterValidityChecks = async (param, op, val) => {
@@ -752,8 +752,7 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   }
   logger.info((await isValidTransactionType(transactionType)) + ' HERE');
   if (await isValidTransactionType(transactionType)) {
-    const answer = `${constants.transactionColumns.TYPE}${opsMap.eq}${await transactionTypes.get(transactionType)}`;
-    return answer;
+    return `${constants.transactionColumns.TYPE}${opsMap.eq}${await transactionTypes.get(transactionType)}`;
   }
 
   // throw error if transactionType filter was provided but invalid
