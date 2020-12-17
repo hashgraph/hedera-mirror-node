@@ -71,7 +71,7 @@ specified, but some are empty and may need to be populated.
 
 For example, if you want to publish a topic message, you would open the `TransactionType` class,
 find `CONSENSUS_SUBMIT_MESSAGE`, then open the
-[ConsensusSubmitMessageTransactionSupplier](hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/consensus/ConsensusSubmitMessageTransactionSupplier.java)
+[ConsensusSubmitMessageTransactionSupplier](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/consensus/ConsensusSubmitMessageTransactionSupplier.java)
 class that it references. From there, you can see that fields `maxTransactionFee`, `message`, `retry`
 and `topicId` are available as properties. Only `topicId` doesn't have a default and will be required. Here's a YAML
 excerpt that specifies some of those properties:
@@ -97,7 +97,7 @@ syntax. This is useful to avoid boilerplate configuration and manual entity crea
 The syntax can currently only be used in `hedera.mirror.monitor.publish.scenarios.properties`
 and `hedera.mirror.monitor.subscribe.grpc.topicId`.
 
-The syntax takes the form of `${type.name}` where `type` is one of `account`, `token` or `topic` and name is a
+The syntax takes the form of `${type.name}` where `type` is one of `account`, `token` or `topic` and `name` is a
 descriptive label. Based upon the entity type, it will create the appropriate entity on the network with default values.
 The name label allows the same entity to be referenced in multiple places but only created once.
 
@@ -128,8 +128,10 @@ scenarios:
 The monitor can optionally subscribe to either the mirror node gRPC or REST APIs. Each subscription type can have one or
 more scenarios. For the REST API, it can verify a percentage of individual transactions have made it to the mirror node
 by querying the `/api/v1/transactions/{transactionId}` REST endpoint. The exact percentage to verify is controlled via
-the `samplePercent` property. For gRPC, `topicId` is required and controls which topic should be registered for
-asynchronous notifications of topic messages. Below is an example of both types:
+the `samplePercent` property.
+
+For gRPC, `topicId` is required and controls which topic should be registered for asynchronous notifications of topic
+messages. Below is an example of both types:
 
 ```yaml
 subscribe:

@@ -179,13 +179,15 @@ to configure the application.
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
+See the monitor [documentation](monitor.md) for more general information about configuring and using the monitor.
+
 Name                                                        | Default    | Description
 ------------------------------------------------------------| -----------| ---------------------------------------
 `hedera.mirror.monitor.mirrorNode.grpc.host`                | ""         | The hostname of the mirror node's gRPC API
 `hedera.mirror.monitor.mirrorNode.grpc.port`                | 5600       | The port of the mirror node's gRPC API
 `hedera.mirror.monitor.mirrorNode.rest.host`                | ""         | The hostname of the mirror node's REST API
 `hedera.mirror.monitor.mirrorNode.rest.port`                | 443        | The port of the mirror node's REST API
-`hedera.mirror.monitor.network`                             | TESTNET    | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`.
+`hedera.mirror.monitor.network`                             | TESTNET    | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
 `hedera.mirror.monitor.nodes[].accountId`                   | ""         | The main node's account ID
 `hedera.mirror.monitor.nodes[].host`                        | ""         | The main node's hostname
 `hedera.mirror.monitor.nodes[].port`                        | 50211      | The main node's port
@@ -193,7 +195,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.operator.privateKey`                 | ""         | Operator ED25519 private key used to sign transactions in hex encoded DER format
 `hedera.mirror.monitor.publish.connections`                 | 5          | How many total connections to open to the main nodes. Connections will be round robin among available nodes
 `hedera.mirror.monitor.publish.enabled`                     | true       | Whether to enable transaction publishing
-`hedera.mirror.monitor.publish.scenarios[].duration`        | Infinite   | How long this scenario should publish transactions
+`hedera.mirror.monitor.publish.scenarios[].duration`        |            | How long this scenario should publish transactions. Leave empty for infinite
 `hedera.mirror.monitor.publish.scenarios[].enabled`         | true       | Whether this publish scenario is enabled
 `hedera.mirror.monitor.publish.scenarios[].limit`           | 0          | How many transactions to publish before halting. 0 for unlimited
 `hedera.mirror.monitor.publish.scenarios[].logResponse`     | false      | Whether to log the response from HAPI
@@ -262,8 +264,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.metrics.config.username`             | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
 | `hedera.mirror.rest.metrics.config.password`             | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
 | `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
-| `hedera.mirror.rest.openapi.specFileName`                | 'openapi'               | The file name of the OpenAPI spec file                                                             |
-| `hedera.mirror.rest.openapi.swaggerUIPath`               | '/docs'                 | Swagger UI path for your REST API                                                                  |
+| `hedera.mirror.rest.openapi.specFileName`                | 'openapi'               | The file name of the OpenAPI spec file                                                         |
+| `hedera.mirror.rest.openapi.swaggerUIPath`               | '/docs'                 | Swagger UI path for your REST API                                                              |
 | `hedera.mirror.rest.shard`                               | 0                       | The default shard number that this mirror node participates in                                 |
 | `hedera.mirror.rest.stateproof.enabled`                  | false                   | Whether to enable stateproof REST API or not                                                   |
 | `hedera.mirror.rest.stateproof.streams.accessKey`        | ""                      | The cloud storage access key                                                                   |
@@ -280,7 +282,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 To enable State Proof logic the REST API configurations must updated to allow for communication with cloud buckets to
 pull down the necessary files (address book, signatures files and record file). The process involves setting the
-properties under `hedera.mirror.rest.stateproof` as documented above [REST API Config](#rest-api)
+properties under `hedera.mirror.rest.stateproof` as documented above [REST API Config](#rest-api).
 
 An example configuration is provided below
 
@@ -298,3 +300,4 @@ hedera:
           secretKey: <secretKey>
           bucketName: 'hedera-stable-testnet-streams-2020-08-27'
 ```
+

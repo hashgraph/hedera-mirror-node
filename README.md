@@ -99,49 +99,48 @@ cd hedera-mirror-node
 docker-compose up
 ```
 
-> **_NOTE:_** This defaults to a bucket setup for demonstration purposes. The real bucket name is not currently publicly available.
-> See [Testnet / Mainnet](https://github.com/hashgraph/hedera-mirror-node#Testnet/Mainnet) section for how to configure for real data
+> **_NOTE:_** This defaults to a bucket setup for demonstration purposes. See the [Public Networks](#public-networks)
+> section for how to configure the mirror node to retrieve production data.
 
 ## Data Access
 
 ### Demo
 
-The free option utilizes a bucket setup for demonstration purposes. The real bucket name is not currently publicly
-available. This is the default option and requires no additional steps.
+The free option utilizes a bucket setup for demonstration purposes. This is the default option and requires no
+additional steps.
 
-### Testnet / Mainnet
+### Public Networks
 
 To access real data from the testnet or mainnet buckets the requester pays flow
 for [GCP](https://cloud.google.com/storage/docs/requester-pays)
 or [AWS](https://docs.aws.amazon.com/AmazonS3/latest/dev/RequesterPaysBuckets.html) must be utilized. Here the charges
 associated with request and download of transaction data are paid for by the requester and not the bucket owner.
 
-To achieve this, 2 simple steps must be taken to configure the mirror node
+To achieve this, two simple steps must be taken to configure the mirror node:
 
 - Uncomment the contents of [application.yml](./application.yml) file under the root folder
-- Customize the contents according to your setup. See [configurations](docs/configuration.md) for detailed descriptions
-  of config options.
+- Customize the contents according to your setup. See [configurations](docs/configuration.md) for a detailed description
+  of the configuration options.
 
-> **_Note_** The [application.yml](./application.yml) file contents represent the minimal set of fields required to configure requester pays and must all be uncommented and filled in. The file is referenced in the [docker-compose.yml](docker-compose.yml) and allows customized configuration for each of the sub modules.
+> **_Note_** The [application.yml](./application.yml) file contents represent the minimal set of fields required to
+> configure requester pays and must all be uncommented and filled in. The file is referenced in the
+> [docker-compose.yml](docker-compose.yml) and allows customized configuration for each of the sub modules.
 
-
-See
-the [Docker compose Startup section](https://github.com/hashgraph/hedera-mirror-node/blob/master/docs/installation.md#running-via-docker-compose)
-for further details
+See the [Docker Compose](/docs/installation.md#running-via-docker-compose) documentation for further details.
 
 ### Verify Operational Mirror Node
 
-When running the Mirror Node using docker, activity logs and container status for each module container can be viewed
-in [docker desktop Dashboard](https://docs.docker.com/desktop/dashboard/) to verify expected operation.
+When running the Mirror Node using Docker, activity logs and container status for each module container can be viewed in
+the [Docker Desktop Dashboard](https://docs.docker.com/desktop/dashboard/) to verify expected operation.
 
 You can also interact with some module containers (gRPC and REST API's) to verify their operation.
 
-First list running docker container information using
+First list running docker container information using:
 
      docker ps
 
 Useful information for all the running containers such as CONTAINER ID, STATUS, IP's and ports will be displayed as
-below
+below:
 
     CONTAINER ID    IMAGE                                           COMMAND                 CREATED         STATUS          PORTS                   NAMES
     21fa2a986d99    gcr.io/mirrornode/hedera-mirror-rest:0.12.0     "docker-entrypoint.s…"  7 minutes ago   Up 12 seconds   0.0.0.0:5551->5551/tcp  hedera-mirror-node_rest_1
@@ -170,12 +169,12 @@ the database
 
 #### Database
 
-The following log can be used to confirm the database is up and running
+The following log can be used to confirm the database is up and running:
 
     LOG: database system is ready to accept connections
 
 If you have postgresql installed you can connect directly to your database using the following psql command and
-default [configurations](docs/configuration.md)
+default [configurations](docs/configuration.md):
 
     psql "dbname=mirror_node host=localhost user=mirror_node password=mirror_node_pass port=5432"
 
@@ -184,14 +183,16 @@ above
 
 Some useful basic queries to help view database contents and data include
 
-    \du
-    select * from account_balance limit 5;
-    select * from transactions limit 5;
-    select * from topic_message limit 5;
+```
+\du
+select * from account_balance limit 5;
+select * from transactions limit 5;
+select * from topic_message limit 5;
+```
 
 #### REST API
 
-The REST API container will display logs similar to the below at start
+The REST API container will display logs similar to the below at start:
 
     Server running on port: 5551
 
@@ -203,9 +204,11 @@ containers.
     http://127.0.0.1:5551/api/v1/balances
     http://127.0.0.1:5551/api/v1/transactions
 
-When using the terminal simply use the `curl` command on the above endpoints. e.g.
+When using the terminal simply use the `curl` command on the above endpoints.
 
-    curl http://127.0.0.1:5551/api/v1/transactions
+```shell
+curl http://127.0.0.1:5551/api/v1/transactions
+```
 
 #### gRPC API
 
@@ -214,22 +217,23 @@ The gRPC container will display logs similar to the below at start
     MirrorGrpcApplication Started MirrorGrpcApplication ....
     Listener Starting to poll every 1000ms
 
-The gRPC streaming endpoint can be verified using clients that support [HTTP/2](https://http2.github.io/)
-Some useful clients we're encountered include
+The gRPC streaming endpoint can be verified using clients that support [HTTP/2](https://http2.github.io/). Some useful
+clients we've encountered include:
 
 - [grpcurl](https://github.com/fullstorydev/grpcurl)
-  - run the following command making substitutions for {topicNum}, {grpcContainerIP} and {grpcContainerPort}
-    appropriately
+  - Run the following command making substitutions for `topicNum`, `grpcContainerIP` and `grpcContainerPort`:
 
-          grpcurl -plaintext -d '{"topicID":{"shardNum":0,"realmNum":0,"topicNum":{topicNum}},"consensusStartTime":{"seconds":0,"nanos":0},"limit":10}' {grpcContainerIP}:{grpcContainerPort} com.hedera.mirror.api.proto.ConsensusService/subscribeTopic
+```shell
+grpcurl -plaintext -d '{"topicID":{"shardNum":0,"realmNum":0,"topicNum":{topicNum}},"consensusStartTime":{"seconds":0,"nanos":0},"limit":10}' {grpcContainerIP}:{grpcContainerPort} com.hedera.mirror.api.proto.ConsensusService/subscribeTopic
+```
 
 - [Bloom](https://github.com/uw-labs/bloomrpc)
 
-Additionally logs on each module container can be viewed to verify expected operation or decipher issues -
-See [Troubleshooting](docs/troubleshooting.md).
+Additionally, logs of each module container can be viewed to verify expected operation or decipher issues.
+See [Troubleshooting](docs/troubleshooting.md) for details.
 
-Simply access the terminal on each container with the following command and refer to [Operations](docs/operations.md)
-document for directions on where and how to view logs
+Simply access the terminal on each container with the following command and refer to the [perations](docs/operations.md)
+documentation for directions on where and how to view logs.
 
      docker exec -it <CONTAINER ID> bash
 
