@@ -750,8 +750,10 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  if (await isValidTransactionType(transactionType)) {
-    return `${constants.transactionColumns.TYPE}${opsMap.eq}${await transactionTypes.get(transactionType)}`;
+
+  const protoId = await transactionTypes.get(transactionType);
+  if (protoId !== undefined) {
+    return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
   }
 
   // throw error if transactionType filter was provided but invalid
