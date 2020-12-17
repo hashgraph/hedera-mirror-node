@@ -30,6 +30,9 @@ let promise;
 
 const get = async (transactionTypeName) => {
   if (!promise) {
+    if (logger.isTraceEnabled()) {
+      logger.trace(`getTransactionTypes query: ${transactionTypesQuery}`);
+    }
     promise = pool.query(transactionTypesQuery);
   }
 
