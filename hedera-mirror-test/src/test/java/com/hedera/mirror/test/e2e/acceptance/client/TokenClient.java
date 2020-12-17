@@ -220,7 +220,7 @@ public class TokenClient extends AbstractNetworkClient {
         TransferTransaction tokenTransferTransaction = new TransferTransaction()
                 .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
                 .addTokenTransfer(tokenId, recipient, amount)
-                .setMaxTransactionFee(1_000_000)
+                .setMaxTransactionFee(10_000_000L)
                 .setTransactionMemo("Transfer token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
