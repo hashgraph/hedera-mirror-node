@@ -4,7 +4,7 @@ The monitor verifies end-to-end functionality of the Hedera network and generate
 both publishing transactions to HAPI and subscribing to the mirror node API. Configuration is flexible and declarative
 allowing one to express a mixture of transactions, their expected rate of publish and the tool will do its best to make
 it so. By default, the monitor is already setup with a basic scenario that creates a topic, submits a message every 10
-seconds to it and verifies the messages is received via the mirror node's gRPC and REST APIs.
+seconds to it and verifies the messages are received via the mirror node's gRPC and REST APIs.
 
 ## Configuration
 
@@ -12,7 +12,7 @@ This section covers the higher level properties to consider before diving into t
 properties in the next sections. For a full list of configuration options see the [config](/docs/configuration.md)
 documentation.
 
-First, make sure you are configured to talk to the correct Hedera network by setting `hedera.mirror.monitor.network` to
+First, make sure the monitor is configured to talk to the correct Hedera network by setting `hedera.mirror.monitor.network` to
 `MAINNET`, `PREVIEWNET` or `TESTNET`. If it's not one of these public environments, the network can be set to `OTHER`
 and `hedera.mirror.monitor.nodes` and `hedera.mirror.monitor.mirrorNode` properties should be filled in.
 
@@ -48,7 +48,7 @@ hedera:
 
 ### Publish
 
-The monitor can be configured to publish multiple transaction types concurrently. It does this be specifying a list of
+The monitor can be configured to publish multiple transaction types concurrently. It does this by specifying a list of
 scenarios that should actively publish. A unique scenario name is used as a label for metrics so that each scenario can
 be monitored separately. Each scenario has a target transactions per second (TPS) and uses a client side rate limiter to
 achieve the desired rate. Additionally, a percentage of receipts or records can be requested for each transaction to
