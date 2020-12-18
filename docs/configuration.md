@@ -1,6 +1,6 @@
 # Configuration
 
-The four components of the Hedera Mirror Node (Importer, Monitor, REST API and gRPC API) all support loading
+The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and gRPC API) all support loading
 configuration from an `application.yml` file or via the environment.
 
 Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
@@ -193,7 +193,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.nodes[].port`                        | 50211      | The main node's port
 `hedera.mirror.monitor.operator.accountId`                  | ""         | Operator account ID used to pay for transactions
 `hedera.mirror.monitor.operator.privateKey`                 | ""         | Operator ED25519 private key used to sign transactions in hex encoded DER format
-`hedera.mirror.monitor.publish.connections`                 | 5          | How many total connections to open to the main nodes. Connections will be round robin among available nodes
+`hedera.mirror.monitor.publish.connections`                 | 5          | How many total connections to open to the main nodes. Connections will be established in a round-robin fashion among available nodes
 `hedera.mirror.monitor.publish.enabled`                     | true       | Whether to enable transaction publishing
 `hedera.mirror.monitor.publish.scenarios[].duration`        |            | How long this scenario should publish transactions. Leave empty for infinite
 `hedera.mirror.monitor.publish.scenarios[].enabled`         | true       | Whether this publish scenario is enabled

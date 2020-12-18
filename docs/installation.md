@@ -54,7 +54,7 @@ java -jar hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar
 
 ### Monitor
 
-To run the GRPC API, first populate the configuration at one of the supported
+To run the monitor, first populate the configuration at one of the supported
 [configuration](configuration.md#monitor) paths, then run:
 
 ```console
