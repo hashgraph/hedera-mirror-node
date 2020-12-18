@@ -20,13 +20,19 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.StreamFileData;
+
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -35,24 +41,27 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.exception.RecordFileReaderException;
 import com.hedera.mirror.importer.leader.Leader;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 public class RecordFileDownloader extends Downloader {
 
+    private final RecordFileReader recordFileReader;
     private final RecordFileRepository recordFileRepository;
 
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
             TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
-            RecordFileRepository recordFileRepository) {
+            RecordFileReader recordFileReader, RecordFileRepository recordFileRepository) {
         super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
                 meterRegistry);
+        this.recordFileReader = recordFileReader;
         this.recordFileRepository = recordFileRepository;
     }
 
@@ -71,7 +80,11 @@ public class RecordFileDownloader extends Downloader {
      */
     @Override
     protected StreamFile readStreamFile(File file) {
-        return Utility.parseRecordFile(file.getPath(), null);
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+            return recordFileReader.read(new StreamFileData(file.getAbsolutePath(), bis), null);
+        } catch (IOException e) {
+            throw new RecordFileReaderException("Unable to open record file " + file.getPath());
+        }
     }
 
     @Override

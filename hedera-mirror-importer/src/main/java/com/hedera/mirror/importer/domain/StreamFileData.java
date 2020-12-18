@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,9 +20,11 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFileData;
+import java.io.BufferedInputStream;
+import lombok.Value;
 
-public interface FileParser<T extends StreamFileData> {
-
-    void parse(T streamFileData);
+@Value
+public class StreamFileData {
+    private final String filename;
+    private final BufferedInputStream bufferedInputStream;
 }

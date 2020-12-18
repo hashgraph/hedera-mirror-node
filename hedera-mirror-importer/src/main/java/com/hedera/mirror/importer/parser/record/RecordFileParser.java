@@ -24,9 +24,11 @@ import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcess
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.io.BufferedInputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -34,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
@@ -43,7 +46,8 @@ import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -57,6 +61,7 @@ public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordParserProperties parserProperties;
+    private final RecordFileReader recordFileReader;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -71,11 +76,13 @@ public class RecordFileParser implements FileParser {
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
+            RecordFileReader recordFileReader,
             RecordItemListener recordItemListener,
             RecordStreamFileListener recordStreamFileListener,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
+        this.recordFileReader = recordFileReader;
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
@@ -146,13 +153,11 @@ public class RecordFileParser implements FileParser {
         try {
             RecordFile recordFileDb = recordStreamFileListener.onStart(streamFileData);
             Stopwatch stopwatch = Stopwatch.createStarted();
-            RecordFile recordFile = Utility.parseRecordFile(
-                    streamFileData.getFilename(),
-                    recordItem -> {
-                        if (processRecordItem(recordItem, dateRangeFilter)) {
-                            counter.incrementAndGet();
-                        }
-                    });
+            RecordFile recordFile = recordFileReader.read(streamFileData, recordItem -> {
+                if (processRecordItem(recordItem, dateRangeFilter)) {
+                    counter.incrementAndGet();
+                }
+            });
             if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
                     parserProperties.getMirrorProperties().getVerifyHashAfter(), recordFile.getName())) {
                 throw new HashMismatchException(recordFile.getName(), expectedPrevFileHash,
@@ -168,7 +173,7 @@ public class RecordFileParser implements FileParser {
             success = true;
         } catch (Exception ex) {
             recordStreamFileListener.onError(); // rollback
-            throw ex;
+            throw new RuntimeException(ex);
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
             var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;

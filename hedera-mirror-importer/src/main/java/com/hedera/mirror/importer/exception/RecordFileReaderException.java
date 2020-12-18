@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,9 +20,19 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFileData;
+public class RecordFileReaderException extends ReaderException {
 
-public interface FileParser<T extends StreamFileData> {
+    private static final long serialVersionUID = 2533328395713171797L;
 
-    void parse(T streamFileData);
+    public RecordFileReaderException(final String message) {
+        super(message);
+    }
+
+    public RecordFileReaderException(final Throwable throwable) {
+        super(throwable);
+    }
+
+    public RecordFileReaderException(final String message, final Throwable throwable) {
+        super(message, throwable);
+    }
 }

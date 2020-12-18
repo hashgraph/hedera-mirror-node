@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.reader.record;
 
 /*-
  * ‌
@@ -20,9 +20,19 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
+import java.util.function.Consumer;
+
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 
-public interface FileParser<T extends StreamFileData> {
-
-    void parse(T streamFileData);
+public interface RecordFileReader {
+    /**
+     * Reads record file.
+     *
+     * @param streamFileData {@link StreamFileData} object for the record file.
+     * @param itemConsumer consumer to handle individual {@link RecordItem} objects.
+     * @return {@link RecordFile} object
+     */
+    RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer);
 }

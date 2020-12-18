@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,7 +34,7 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.mirror.importer.parser.FilePoller;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -91,8 +92,8 @@ public class RecordFilePoller implements FilePoller {
             // get file from full path
             File file = validPath.resolve(filePath).toFile();
 
-            try (InputStream fileInputStream = new FileInputStream(file)) {
-                recordFileParser.parse(new StreamFileData(file.getAbsolutePath(), fileInputStream));
+            try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+                recordFileParser.parse(new StreamFileData(file.getAbsolutePath(), bis));
 
                 if (parserProperties.isKeepFiles()) {
                     Utility.archiveFile(file, parserProperties.getParsedPath());

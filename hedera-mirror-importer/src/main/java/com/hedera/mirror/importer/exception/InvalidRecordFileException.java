@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.domain;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,11 +20,15 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
-import java.io.InputStream;
-import lombok.Value;
+public class InvalidRecordFileException extends RecordFileReaderException {
 
-@Value
-public class StreamFileData {
-    private final String filename;
-    private final InputStream inputStream;
+    private static final long serialVersionUID = 2786469980314810323L;
+
+    public InvalidRecordFileException(final String message) {
+        super(message);
+    }
+
+    public InvalidRecordFileException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }
