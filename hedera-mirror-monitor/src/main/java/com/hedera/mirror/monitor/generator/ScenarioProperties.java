@@ -63,7 +63,7 @@ public class ScenarioProperties {
     private double record = 0.0;
 
     @Min(0)
-    private double tps = 10.0;
+    private double tps = 1.0;
 
     @NotNull
     private TransactionType type;

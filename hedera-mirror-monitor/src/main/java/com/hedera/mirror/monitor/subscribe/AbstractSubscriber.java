@@ -100,6 +100,7 @@ public abstract class AbstractSubscriber<P extends AbstractSubscriberProperties>
         double rate = Precision.round(elapsed > 0 ? (1_000_000.0 * count) / elapsed : 0.0, 1);
         Map<String, Integer> errorCounts = new HashMap<>();
         errors.forEachEntry(errorCounts::put);
-        log.info("Received {} transactions in {} at {}/s. Errors: {}", count, stopwatch, rate, errorCounts);
+        log.info("{}: {} transactions in {} at {}/s. Errors: {}", subscriberProperties
+                .getName(), count, stopwatch, rate, errorCounts);
     }
 }
