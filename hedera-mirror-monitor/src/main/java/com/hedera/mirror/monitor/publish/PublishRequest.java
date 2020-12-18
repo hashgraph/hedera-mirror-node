@@ -32,9 +32,10 @@ import com.hedera.hashgraph.sdk.TransactionId;
 @Value
 public class PublishRequest {
     private final boolean logResponse;
+    private final String scenarioName;
     private final boolean receipt;
     private final boolean record;
-    private final Instant timestamp = Instant.now();
+    private final Instant timestamp;
     private final TransactionBuilder<TransactionId, ?, ?> transactionBuilder;
     private final TransactionType type;
 }

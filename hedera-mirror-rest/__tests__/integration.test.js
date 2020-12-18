@@ -40,20 +40,25 @@
  * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
  * in the specs/ dir.
  */
-const path = require('path');
-const request = require('supertest');
-const fs = require('fs');
-const _ = require('lodash');
+// external libraries
 const S3 = require('aws-sdk/clients/s3');
 const crypto = require('crypto');
-const EntityId = require('../entityId');
-const transactions = require('../transactions.js');
-const server = require('../server');
+const fs = require('fs');
+const _ = require('lodash');
+const path = require('path');
+const request = require('supertest');
+
 const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
-const {cloudProviders} = require('../constants');
+const {cloudProviders, filterKeys} = require('../constants');
+const EntityId = require('../entityId');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const server = require('../server');
+const transactions = require('../transactions.js');
+const transactionTypes = require('../transactionTypes');
+const utils = require('../utils');
 
 let sqlConnection;
 
@@ -170,7 +175,7 @@ function extractNameAndResultFromTransactionResults(rows) {
 //
 
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
-  let sql = transactions.reqToSql({query: {}});
+  const sql = await transactions.reqToSql({query: {}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
@@ -186,15 +191,79 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
   ]);
 });
 
+describe('DB integration test - utils.getTransactionTypeQuery', () => {
+  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', async () => {
+    await expect(utils.getTransactionTypeQuery(null)).resolves.toBe('');
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', async () => {
+    await expect(utils.getTransactionTypeQuery(undefined)).resolves.toBe('');
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', async () => {
+    await expect(utils.getTransactionTypeQuery({})).resolves.toBe('');
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', async () => {
+    await expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
+      InvalidArgumentError
+    );
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', async () => {
+    await expect(() =>
+      utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+    ).rejects.toThrowError(InvalidArgumentError);
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
+    await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).resolves.toBe(
+      `type = ${await transactionTypes.get('TOKENCREATION')}`
+    );
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', async () => {
+    await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).resolves.toBe(
+      `type = ${await transactionTypes.get('TOKENASSOCIATE')}`
+    );
+  });
+  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', async () => {
+    await expect(
+      utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})
+    ).resolves.toBe(`type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`);
+  });
+});
+
+describe('DB integration test -  utils.isValidTransactionType', () => {
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for null', async () => {
+    expect(await utils.isValidTransactionType(null)).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for empty input', async () => {
+    expect(await utils.isValidTransactionType('')).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for invalid input', async () => {
+    expect(await utils.isValidTransactionType('1234567890.000000001')).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for entity format shard', async () => {
+    expect(await utils.isValidTransactionType('1.0.1')).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for negative num', async () => {
+    expect(await utils.isValidTransactionType(-10)).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for 0', async () => {
+    expect(await utils.isValidTransactionType(0)).toBe(false);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', async () => {
+    expect(await utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
+  });
+  test('DB integration test -  utils.isValidTransactionType - Verify invalid for former TOKENTRANSFERS transaction type', async () => {
+    expect(await utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
+  });
+});
+
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
-  let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
+  const sql = await transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
   expect(mapTransactionResults(res.rows).sort()).toEqual(['1052, 0.15.8, -31', '1052, 0.15.9, 30', '1052, 0.15.98, 1']);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
-  let sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
+  const sql = await transactions.reqToSql({query: {'account.id': '0.17.666'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(0);
 });
@@ -204,7 +273,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   await addCryptoTransferTransaction(1063, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
   await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
-  let sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
+  const sql = await transactions.reqToSql({query: {'account.id': '0.15.5'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
@@ -223,7 +292,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
   await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
 
-  let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
+  const sql = await transactions.reqToSql({query: {timestamp: '0.000001070'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
   expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
@@ -243,7 +312,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
   await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
 
-  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
+  const sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank

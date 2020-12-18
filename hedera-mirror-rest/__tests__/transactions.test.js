@@ -23,6 +23,7 @@ const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils.js');
 const utils = require('../utils.js');
+const {buildWhereClause} = require('../transactions.js');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
@@ -332,4 +333,37 @@ describe('Transaction tests', () => {
   testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
   testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
   testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
+});
+
+describe('buildWhereClause', () => {
+  const testSpecs = [
+    {
+      conditions: [],
+      expected: '',
+    },
+    {
+      conditions: [''],
+      expected: '',
+    },
+    {
+      conditions: ['a>?'],
+      expected: 'where a>?',
+    },
+    {
+      conditions: ['a>?', 'b<?', 'c<>?'],
+      expected: 'where a>? and b<? and c<>?',
+    },
+    {
+      conditions: ['a>?', '', 'b<?', 'c<>?', ''],
+      expected: 'where a>? and b<? and c<>?',
+    },
+  ];
+
+  testSpecs.forEach((testSpec) => {
+    const {conditions, expected} = testSpec;
+    test(JSON.stringify(conditions), () => {
+      const whereClause = buildWhereClause(...conditions);
+      expect(whereClause.toLowerCase()).toEqual(expected);
+    });
+  });
 });

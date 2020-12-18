@@ -52,7 +52,7 @@ prometheusRules:
   enabled: false
   MonitorHighCPU:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror Monitor CPU usage exceeds 80%"
     enabled: true
     expr: sum(process_cpu_usage{application="hedera-mirror-monitor"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-monitor"}) by (namespace, pod) > 0.8
@@ -62,7 +62,7 @@ prometheusRules:
 
   MonitorHighMemory:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror Monitor memory usage exceeds 80%"
     enabled: true
     expr: sum(jvm_memory_used_bytes{application="hedera-mirror-monitor"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-monitor"}) by (namespace, pod) > 0.8
@@ -82,20 +82,60 @@ prometheusRules:
 
   MonitorPublishErrors:
     annotations:
-      description: "{{ $value | humanizePercentage }}% Error rate publishing {{ $labels.type }} transactions from {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "{{ $value | humanizePercentage }} Error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Publish error rate exceeds 5%"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_seconds_sum{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, type) / sum(rate(hedera_mirror_monitor_publish_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, type) > 0.05
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 0.05
     for: 2m
     labels:
       severity: critical
 
   MonitorPublishLatency:
     annotations:
-      description: "Publish latency exceeded {{ $value | humanizeDuration }} for {{ $labels.type }} transaction for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Publish latency exceeds 4s"
+      description: "Publish latency exceeded {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Publish latency exceeds 2s"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, type) / sum(rate(hedera_mirror_monitor_publish_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, type) > 4
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 2
+    for: 2m
+    labels:
+      severity: critical
+
+  MonitorPublishStopped:
+    annotations:
+      description: "Publish TPS dropped to {{ $value }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Publishing stopped"
+    enabled: true
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) <= 0
+    for: 2m
+    labels:
+      severity: critical
+
+  MonitorPublishToHandleLatency:
+    annotations:
+      description: "Transaction latency exceeded {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Submit to transaction being handled latency exceeds 8s"
+    enabled: true
+    expr: sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 8
+    for: 2m
+    labels:
+      severity: warning
+
+  MonitorSubscribeLatency:
+    annotations:
+      description: "{{ $labels.subscriber }} latency exceeded {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "End to end latency exceeds 10s"
+    enabled: true
+    expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) > 10
+    for: 2m
+    labels:
+      severity: critical
+
+  MonitorSubscribeStopped:
+    annotations:
+      description: "{{ $labels.subscriber }} TPS dropped to {{ $value }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Subscription stopped"
+    enabled: true
+    expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) <= 0
     for: 2m
     labels:
       severity: critical

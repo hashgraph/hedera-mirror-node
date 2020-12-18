@@ -24,6 +24,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.Getter;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -38,7 +39,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private long amount = 1;
 
     @Min(1)
-    private long maxTransactionFee = 1_000_000;
+    private long maxTransactionFee = 10_000_000L;
 
     @NotBlank
     private String recipientAccountId;
@@ -51,28 +52,33 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @NotNull
     private TransferType transferType = TransferType.CRYPTO;
 
+    @Getter(lazy = true)
+    private final AccountId recipientId = AccountId.fromString(recipientAccountId);
+
+    @Getter(lazy = true)
+    private final AccountId senderId = AccountId.fromString(senderAccountId);
+
+    @Getter(lazy = true)
+    private final TokenId transferTokenId = TokenId.fromString(tokenId);
+
     @Override
     public TransferTransaction get() {
-
-        AccountId recipientId = AccountId.fromString(recipientAccountId);
-        AccountId senderId = AccountId.fromString(senderAccountId);
-        TokenId transferTokenId = TokenId.fromString(tokenId);
 
         TransferTransaction transferTransaction = new TransferTransaction()
                 .setMaxTransactionFee(maxTransactionFee);
 
         switch (transferType) {
             case CRYPTO:
-                addCryptoTransfers(transferTransaction, recipientId, senderId);
+                addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
                 transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
                 break;
             case TOKEN:
-                addTokenTransfers(transferTransaction, transferTokenId, recipientId, senderId);
+                addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
                 transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test token transfer"));
                 break;
             case BOTH:
-                addTokenTransfers(transferTransaction, transferTokenId, recipientId, senderId);
-                addCryptoTransfers(transferTransaction, recipientId, senderId);
+                addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
+                addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
                 transferTransaction
                         .setTransactionMemo(Utility.getMemo("Mirror node created test crypto and token transfer"));
                 break;

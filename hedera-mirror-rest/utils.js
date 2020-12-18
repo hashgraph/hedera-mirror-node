@@ -27,6 +27,7 @@ const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const transactionTypes = require('./transactionTypes');
 
 const ENTITY_TYPE_ACCOUNT = 1;
 const ENTITY_TYPE_FILE = 3;
@@ -94,8 +95,8 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
-const isValidTransactionType = (transactionType) => {
-  return _.isString(transactionType) && constants.transactionTypes[transactionType.toUpperCase()] !== undefined;
+const isValidTransactionType = async (transactionType) => {
+  return _.isString(transactionType) && (await transactionTypes.get(transactionType)) !== undefined;
 };
 
 /**
@@ -105,7 +106,7 @@ const isValidTransactionType = (transactionType) => {
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
 const paramValidityChecks = (param, opAndVal) => {
-  let ret = false;
+  const ret = false;
   let val = null;
   let op = null;
 
@@ -128,7 +129,7 @@ const paramValidityChecks = (param, opAndVal) => {
   return filterValidityChecks(param, op, val);
 };
 
-const filterValidityChecks = (param, op, val) => {
+const filterValidityChecks = async (param, op, val) => {
   let ret = false;
 
   if (op === undefined || val === undefined) {
@@ -191,7 +192,7 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
-      ret = isValidTransactionType(val);
+      ret = await isValidTransactionType(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -206,20 +207,18 @@ const filterValidityChecks = (param, op, val) => {
  * @param {HTTPRequest} req HTTP request object
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = (req) => {
+const validateReq = async (req) => {
   const badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
       for (const val of req.query[key]) {
-        if (!paramValidityChecks(key, val)) {
+        if (!(await paramValidityChecks(key, val))) {
           badParams.push(key);
         }
       }
-    } else {
-      if (!paramValidityChecks(key, req.query[key])) {
-        badParams.push(key);
-      }
+    } else if (!(await paramValidityChecks(key, req.query[key]))) {
+      badParams.push(key);
     }
   }
 
@@ -242,8 +241,9 @@ const parseTimestampParam = (timestampParam) => {
     return '';
   }
   const seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
-  const nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
-  return '' + seconds + (nanos + '000000000').substring(0, 9);
+  let nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
+  nanos = `${nanos}000000000`.substring(0, 9);
+  return `${seconds}${nanos}`;
 };
 
 /**
@@ -255,14 +255,14 @@ const parseOperatorAndValueFromQueryParam = (paramValue) => {
   if (splitItem.length === 1) {
     // No operator specified. Just use "eq:"
     return {op: opsMap.eq, value: splitItem[0]};
-  } else if (splitItem.length === 2) {
+  }
+  if (splitItem.length === 2) {
     if (!(splitItem[0] in opsMap)) {
       return null;
     }
     return {op: opsMap[splitItem[0]], value: splitItem[1]};
-  } else {
-    return null;
   }
+  return null;
 };
 
 /**
@@ -355,7 +355,8 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
   return parseParams(parsedQueryParams[constants.filterKeys.CREDIT_TYPE], (op, value) => {
     if (value === 'credit') {
       return [`${columnName} > 0`, []];
-    } else if (value === 'debit') {
+    }
+    if (value === 'debit') {
       return [`${columnName} < 0`, []];
     }
   });
@@ -363,17 +364,18 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
 
 /**
  * Parse the result=[success | fail | all] parameter
- * @param {HTTPRequest} req HTTP query request object
+ * @param {Request} req HTTP query request object
+ * @param {String} columnName Column name for the transaction result
  * @return {String} Value of the resultType parameter
  */
-const parseResultParams = (req) => {
+const parseResultParams = (req, columnName) => {
   const resultType = req.query.result;
   let query = '';
 
   if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = '     result=' + TRANSACTION_RESULT_SUCCESS;
+    query = `${columnName} = ${TRANSACTION_RESULT_SUCCESS}`;
   } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = '     result != ' + TRANSACTION_RESULT_SUCCESS;
+    query = `${columnName} != ${TRANSACTION_RESULT_SUCCESS}`;
   }
   return query;
 };
@@ -412,19 +414,28 @@ const buildPgSqlObject = (query, params, order, limit) => {
 };
 
 /**
- * Convert the positional parameters from the MySql style query (?) to Postgres
- * style positional parameters ($1, $2, etc)
+ * Convert the positional parameters from the MySql style query (?) to Postgres style positional parameters
+ * ($1, $2, etc); named parameters of the format \?([a-zA-Z][a-zA-Z0-9]*)? will get the same positional index.
+ *
  * @param {String} sqlQuery MySql style query
- * @param {Array of values} sqlParams Values of positional parameters
  * @return {String} SQL query with Postgres style positional parameters
  */
-const convertMySqlStyleQueryToPostgres = (sqlQuery, sqlParams) => {
-  let paramsCount = 0;
-  let sqlQueryNonInject = sqlQuery.replace(/\?/g, () => {
-    return '$' + ++paramsCount;
-  });
+const convertMySqlStyleQueryToPostgres = (sqlQuery) => {
+  let paramsCount = 1;
+  const namedParamIndex = {};
+  return sqlQuery.replace(/\?([a-zA-Z][a-zA-Z0-9]*)?/g, (s) => {
+    let index = namedParamIndex[s];
+    if (index === undefined) {
+      index = paramsCount;
+      paramsCount += 1;
 
-  return sqlQueryNonInject;
+      if (s.length > 1) {
+        namedParamIndex[s] = index;
+      }
+    }
+
+    return `$${index}`;
+  });
 };
 
 /**
@@ -439,12 +450,12 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, sqlParams) => {
 const getPaginationLink = (req, isEnd, field, lastValue, order) => {
   let urlPrefix;
   if (config.port !== undefined && config.includeHostInLink === 1) {
-    urlPrefix = req.protocol + '://' + req.hostname + ':' + config.port;
+    urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
   } else {
     urlPrefix = '';
   }
 
-  var next = '';
+  let next = '';
 
   if (!isEnd) {
     const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
@@ -455,34 +466,32 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
     // new continuation value
     for (const [q, v] of Object.entries(req.query)) {
       if (Array.isArray(v)) {
-        for (let vv of v) {
+        for (const vv of v) {
           if (q === field && pattern.test(vv)) {
             req.query[q] = req.query[q].filter(function (value, index, arr) {
               return value != vv;
             });
           }
         }
-      } else {
-        if (q === field && pattern.test(v)) {
-          delete req.query[q];
-        }
+      } else if (q === field && pattern.test(v)) {
+        delete req.query[q];
       }
     }
 
     // And add back the continuation value as 'field=gt:x' (asc order) or
     // 'field=lt:x' (desc order)
     if (field in req.query) {
-      req.query[field] = [].concat(req.query[field]).concat(insertedPattern + ':' + lastValue);
+      req.query[field] = [].concat(req.query[field]).concat(`${insertedPattern}:${lastValue}`);
     } else {
-      req.query[field] = insertedPattern + ':' + lastValue;
+      req.query[field] = `${insertedPattern}:${lastValue}`;
     }
 
     // Reconstruct the query string
     for (const [q, v] of Object.entries(req.query)) {
       if (Array.isArray(v)) {
-        v.forEach((vv) => (next += (next === '' ? '?' : '&') + q + '=' + vv));
+        v.forEach((vv) => (next += `${(next === '' ? '?' : '&') + q}=${vv}`));
       } else {
-        next += (next === '' ? '?' : '&') + q + '=' + v;
+        next += `${(next === '' ? '?' : '&') + q}=${v}`;
       }
     }
     next = urlPrefix + req.path + next;
@@ -536,9 +545,7 @@ const returnEntriesLimit = (type) => {
  * @return {hexString} Converted hex string
  */
 const toHexString = (byteArray) => {
-  return byteArray === null
-    ? null
-    : byteArray.reduce((output, elem) => output + ('0' + elem.toString(16)).slice(-2), '');
+  return byteArray === null ? null : byteArray.reduce((output, elem) => output + `0${elem.toString(16)}`.slice(-2), '');
 };
 
 /**
@@ -553,7 +560,7 @@ const encodeKey = (key) => {
     return null;
   }
 
-  let hs = toHexString(key);
+  const hs = toHexString(key);
   const pattern = /^1220([A-Fa-f0-9]*)$/;
   const replacement = '$1';
   if (pattern.test(hs)) {
@@ -595,7 +602,7 @@ const encodeBinary = (buffer, encoding) => {
     charEncoding = constants.characterEncoding.UTF8;
   }
 
-  return null === buffer ? null : buffer.toString(charEncoding);
+  return buffer === null ? null : buffer.toString(charEncoding);
 };
 
 /**
@@ -611,7 +618,7 @@ const getNullableNumber = (num) => {
  * @returns {String} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
  */
 const createTransactionId = (entityStr, validStartTimestamp) => {
-  return entityStr + '-' + nsToSecNsWithHyphen(validStartTimestamp);
+  return `${entityStr}-${nsToSecNsWithHyphen(validStartTimestamp)}`;
 };
 
 /**
@@ -619,7 +626,7 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * @param filters
  */
 const buildFilterObject = (filters) => {
-  let filterObject = [];
+  const filterObject = [];
   if (filters === null) {
     return null;
   }
@@ -640,8 +647,8 @@ const buildFilterObject = (filters) => {
 };
 
 const buildComparatorFilter = (name, filter) => {
-  let splitVal = filter.split(':');
-  let opVal = splitVal.length === 1 ? ['eq', filter] : splitVal;
+  const splitVal = filter.split(':');
+  const opVal = splitVal.length === 1 ? ['eq', filter] : splitVal;
 
   return {
     key: name,
@@ -656,11 +663,11 @@ const buildComparatorFilter = (name, filter) => {
  * @param filters
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = (filters) => {
-  let badParams = [];
+const validateAndParseFilters = async (filters) => {
+  const badParams = [];
 
   for (const filter of filters) {
-    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
+    if (!(await filterValidityChecks(filter.key, filter.operator, filter.value))) {
       badParams.push(filter.key);
     } else {
       formatComparator(filter);
@@ -734,7 +741,7 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
-const getTransactionTypeQuery = (parsedQueryParams) => {
+const getTransactionTypeQuery = async (parsedQueryParams) => {
   if (_.isNil(parsedQueryParams)) {
     return '';
   }
@@ -744,10 +751,9 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
     return '';
   }
 
-  if (isValidTransactionType(transactionType)) {
-    return `${constants.transactionColumns.TYPE}${opsMap.eq}${
-      constants.transactionTypes[transactionType.toUpperCase()]
-    }`;
+  const protoId = await transactionTypes.get(transactionType);
+  if (protoId !== undefined) {
+    return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
   }
 
   // throw error if transactionType filter was provided but invalid

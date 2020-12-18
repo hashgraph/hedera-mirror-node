@@ -125,7 +125,7 @@ prometheusRules:
 
   ImporterCloudStorageErrors:
     annotations:
-      description: '{{ $value | humanizePercentage }}% Error rate trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}'
+      description: '{{ $value | humanizePercentage }} Error rate trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}'
       summary: "Cloud storage error rate exceeds 5%"
     enabled: true
     expr: (sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status!~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer"}[2m])) by (namespace, pod, type, action)) > 0.05
@@ -145,7 +145,7 @@ prometheusRules:
 
   ImporterFileVerificationErrors:
     annotations:
-      description: "Error rate of {{ $value | humanizePercentage }}% trying to download and verify {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Error rate of {{ $value | humanizePercentage }} trying to download and verify {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "{{ $labels.type }} file verification error rate exceeds 5%"
     enabled: true
     expr: sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer", success="false"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_stream_verification_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 0.05
@@ -155,7 +155,7 @@ prometheusRules:
 
   ImporterHighCPU:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror Importer CPU usage exceeds 80%"
     enabled: true
     expr: sum(process_cpu_usage{application="hedera-mirror-importer"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
@@ -165,7 +165,7 @@ prometheusRules:
 
   ImporterHighDBConnections:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }}% of available database connections"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
       summary: "Mirror Importer database connection utilization exceeds 75%"
     enabled: true
     expr: sum(hikaricp_connections_active{application="hedera-mirror-importer"}) by (namespace, pod) / sum(hikaricp_connections_max{application="hedera-mirror-importer"}) by (namespace, pod) > 0.75
@@ -175,7 +175,7 @@ prometheusRules:
 
   ImporterHighFileDescriptors:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror Importer file descriptor usage exceeds 80%"
     enabled: true
     expr: sum(process_files_open_files{application="hedera-mirror-importer"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
@@ -185,7 +185,7 @@ prometheusRules:
 
   ImporterHighMemory:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror Importer memory usage exceeds 80%"
     enabled: true
     expr: sum(jvm_memory_used_bytes{application="hedera-mirror-importer"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-importer"}) by (namespace, pod) > 0.8
@@ -205,7 +205,7 @@ prometheusRules:
 
   ImporterNoConsensus:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} only able to achieve {{ $value | humanizePercentage }}% consensus during {{ $labels.type }} stream signature verification"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} only able to achieve {{ $value | humanizePercentage }} consensus during {{ $labels.type }} stream signature verification"
       summary: Unable to verify {{ $labels.type }} stream signatures
     enabled: true
     expr: sum(rate(hedera_mirror_download_signature_verification_total{application="hedera-mirror-importer", status="CONSENSUS_REACHED"}[2m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_signature_verification_total{application="hedera-mirror-importer"}[2m])) by (namespace, pod, type) < 0.33
@@ -225,7 +225,7 @@ prometheusRules:
 
   ImporterParseErrors:
     annotations:
-      description: "Encountered {{ $value | humanizePercentage }}% errors trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Encountered {{ $value | humanizePercentage }} errors trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Error rate parsing {{ $labels.type }} exceeds 5%"
     enabled: true
     expr: sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer", success="false"}[3m])) by (namespace, pod, type) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer"}[3m])) by (namespace, pod, type) > 0.05

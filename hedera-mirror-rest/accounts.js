@@ -101,7 +101,7 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
  */
 const getAccounts = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  await utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
   // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
@@ -126,7 +126,7 @@ const getAccounts = async (req, res) => {
     .concat(pubKeyParams)
     .concat(params);
 
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getAccounts query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
@@ -191,7 +191,7 @@ const getOneAccount = async (req, res) => {
   const entitySql = getAccountQuery(` (ab.account_id = ? or e.id = ?)`);
   const encodedAccountId = accountId.getEncodedId();
   const entityParams = [encodedAccountId, encodedAccountId];
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
@@ -203,7 +203,7 @@ const getOneAccount = async (req, res) => {
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [encodedAccountId];
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = await utils.getTransactionTypeQuery(parsedQueryParams);
 
   const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
@@ -216,8 +216,8 @@ const getOneAccount = async (req, res) => {
   );
 
   const innerParams = accountParams.concat(tsParams).concat(params);
-  const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-  const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
+  const transactionsQuery = await transactions.getTransactionsOuterQuery(innerQuery, order);
+  const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${JSON.stringify(innerParams)}`);

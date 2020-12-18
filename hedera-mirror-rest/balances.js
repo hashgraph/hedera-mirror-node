@@ -32,7 +32,7 @@ const {DbError} = require('./errors/dbError');
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = async (req, res) => {
-  utils.validateReq(req);
+  await utils.validateReq(req);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
@@ -91,7 +91,7 @@ const getBalances = async (req, res) => {
       ${query}`;
 
   const sqlParams = tsParams.concat(accountParams).concat(pubKeyParams).concat(balanceParams).concat(params);
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getBalance query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);

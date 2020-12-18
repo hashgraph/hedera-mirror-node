@@ -21,9 +21,14 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Suppliers;
 import com.google.common.util.concurrent.RateLimiter;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
@@ -32,26 +37,32 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
 public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private final ExpressionConverter expressionConverter;
     private final ScenarioProperties properties;
-    private final TransactionSupplier<?> transactionSupplier;
+    private final Supplier<TransactionSupplier<?>> transactionSupplier;
     private final RateLimiter rateLimiter;
     private final AtomicLong remaining;
     private final long stopTime;
     private final PublishRequest.PublishRequestBuilder builder;
 
-    public ConfigurableTransactionGenerator(ScenarioProperties properties) {
+    public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter, ScenarioProperties properties) {
+        this.expressionConverter = expressionConverter;
         this.properties = properties;
-        this.transactionSupplier = convert(properties);
+        this.transactionSupplier = Suppliers.memoize(this::convert);
         this.rateLimiter = RateLimiter.create(properties.getTps());
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
                 .logResponse(properties.isLogResponse())
+                .scenarioName(properties.getName())
                 .type(properties.getType());
         rateLimiter.acquire(); // The first acquire always succeeds, so do this so tps=Double.MIN_NORMAL won't acquire
     }
@@ -69,14 +80,17 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
             throw new ScenarioException(properties, "Reached publish duration of " + properties.getDuration());
         }
 
-        return builder.receipt(shouldGenerate(properties.getReceipt(), count))
-                .record(shouldGenerate(properties.getRecord(), count))
-                .transactionBuilder(transactionSupplier.get())
+        return builder.receipt(shouldGenerate(properties.getReceipt()))
+                .record(shouldGenerate(properties.getRecord()))
+                .timestamp(Instant.now())
+                .transactionBuilder(transactionSupplier.get().get())
                 .build();
     }
 
-    private TransactionSupplier<?> convert(ScenarioProperties p) {
-        TransactionSupplier<?> supplier = new ObjectMapper().convertValue(p.getProperties(), p.getType().getSupplier());
+    private TransactionSupplier<?> convert() {
+        Map<String, String> convertedProperties = expressionConverter.convert(properties.getProperties());
+        TransactionSupplier<?> supplier = new ObjectMapper()
+                .convertValue(convertedProperties, properties.getType().getSupplier());
 
         Validator validator = Validation.byDefaultProvider()
                 .configure()
@@ -92,7 +106,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         return supplier;
     }
 
-    private boolean shouldGenerate(int percent, long count) {
-        return (count % 100) < percent;
+    private boolean shouldGenerate(double expectedPercent) {
+        return RANDOM.nextDouble() < expectedPercent;
     }
 }

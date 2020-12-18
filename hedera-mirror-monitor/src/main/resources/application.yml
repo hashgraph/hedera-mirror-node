@@ -1,3 +1,25 @@
+hedera:
+  mirror:
+    monitor:
+      publish:
+        scenarios:
+          - name: HCS Pinger
+            enabled: true
+            logResponse: false
+            properties:
+              topicId: ${topic.ping}
+            record: 1.0
+            tps: 0.1
+            type: CONSENSUS_SUBMIT_MESSAGE
+      subscribe:
+        grpc:
+          - name: HCS Subscribe
+            enabled: true
+            topicId: ${topic.ping}
+        rest:
+          - name: REST
+            enabled: false
+            samplePercent: 1.0
 logging:
   level:
     root: warn

@@ -20,11 +20,14 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -42,4 +45,8 @@ public class PublishProperties {
 
     @NotEmpty
     private List<ScenarioProperties> scenarios = new ArrayList<>();
+
+    @DurationMin(seconds = 1L)
+    @NotNull
+    private Duration statusFrequency = Duration.ofSeconds(10L);
 }

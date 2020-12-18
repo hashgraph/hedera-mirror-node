@@ -70,13 +70,15 @@ spring:
         reWriteBatchedInserts: true
       maximumPoolSize: 14 # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
   flyway:
-    connectRetries: 20
     baselineOnMigrate: true
-    baselineVersion: 0
+    connectRetries: 20
     ignoreMissingMigrations: true
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}
       api-user: ${hedera.mirror.importer.db.restUsername}
+      chunkIdInterval: 10000
+      chunkTimeInterval: 604800000000000
+      compressionAge: 604800000000000
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
   jpa:

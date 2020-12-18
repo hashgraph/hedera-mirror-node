@@ -168,16 +168,16 @@ describe('utils formatComparator tests', () => {
 });
 
 describe('utils validateAndParseFilters tests', () => {
-  test('Verify validateAndParseFilters for sequencenumber=2', () => {
+  test('Verify validateAndParseFilters for sequencenumber=2', async () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<:2'),
       utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<=:2'),
     ];
 
-    verifyInvalidFilters(filters);
+    await verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for erroneous data throws exception', () => {
+  test('Verify validateAndParseFilters for erroneous data throws exception', async () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:-1'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:today'),
@@ -191,10 +191,10 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'encrypt'),
     ];
 
-    verifyInvalidFilters(filters);
+    await verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for invalid format throws exception', () => {
+  test('Verify validateAndParseFilters for invalid format throws exception', async () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:0.1.23456789012345'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:23456789012345678901234'),
@@ -203,11 +203,10 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_PUBLICKEY, '3c3d546321ff6f63d701d2ec5c2'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '23456789012345678901234'),
     ];
-
-    verifyInvalidFilters(filters);
+    await verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for valid filters does not throw exception', () => {
+  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:2'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:1234567890.000000003'),
@@ -226,14 +225,10 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'utf-8'),
     ];
 
-    expect(() => {
-      utils.validateAndParseFilters(filters);
-    }).not.toThrow();
+    await expect(utils.validateAndParseFilters(filters)).resolves.toBeUndefined();
   });
 });
 
-const verifyInvalidFilters = (filters) => {
-  expect(() => {
-    utils.validateAndParseFilters(filters);
-  }).toThrowErrorMatchingSnapshot();
+const verifyInvalidFilters = async (filters) => {
+  await expect(utils.validateAndParseFilters(filters)).rejects.toThrowErrorMatchingSnapshot();
 };

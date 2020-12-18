@@ -27,12 +27,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
 @Named
@@ -40,11 +42,18 @@ import com.hedera.mirror.monitor.publish.PublishResponse;
 @RequiredArgsConstructor
 public class CompositeSubscriber implements Subscriber {
 
+    private final ExpressionConverter expressionConverter;
     private final MonitorProperties monitorProperties;
     private final SubscribeProperties subscribeProperties;
     private final MeterRegistry meterRegistry;
     private final WebClient.Builder webClientBuilder;
     final Supplier<List<Subscriber>> subscribers = Suppliers.memoize(this::subscribers);
+
+    @Override
+    @PreDestroy
+    public void close() {
+        subscribers.get().forEach(Subscriber::close);
+    }
 
     @Override
     public void onPublish(PublishResponse response) {
@@ -60,7 +69,7 @@ public class CompositeSubscriber implements Subscriber {
                 subscribeProperties.getGrpc()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)
-                        .map(p -> new GrpcSubscriber(meterRegistry, monitorProperties, p)),
+                        .map(p -> new GrpcSubscriber(expressionConverter, meterRegistry, monitorProperties, p)),
                 subscribeProperties.getRest()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)

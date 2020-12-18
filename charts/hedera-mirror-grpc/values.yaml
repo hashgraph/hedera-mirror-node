@@ -79,7 +79,7 @@ prometheusRules:
   enabled: false
   GrpcErrors:
     annotations:
-      description: '{{ $value | humanizePercentage }}% gRPC {{ $labels.statusCode }} error rate for {{ $labels.namespace }}/{{ $labels.pod }}'
+      description: '{{ $value | humanizePercentage }} gRPC {{ $labels.statusCode }} error rate for {{ $labels.namespace }}/{{ $labels.pod }}'
       summary: "Mirror gRPC API error rate exceeds 5%"
     enabled: true
     expr: sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc", statusCode!~"DEADLINE_EXCEEDED|INVALID_ARGUMENT|NOT_FOUND|OK|RESOURCE_EXHAUSTED"}[5m])) by (namespace, pod, statusCode) / sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod, statusCode) > 0.05
@@ -89,7 +89,7 @@ prometheusRules:
 
   GrpcHighCPU:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror gRPC API CPU usage exceeds 80%"
     enabled: true
     expr: sum(process_cpu_usage{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.8
@@ -99,7 +99,7 @@ prometheusRules:
 
   GrpcHighDBConnections:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }}% of available database connections"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
       summary: "Mirror gRPC API database connection utilization exceeds 75%"
     enabled: true
     expr: sum(hikaricp_connections_active{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(hikaricp_connections_max{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.75
@@ -109,7 +109,7 @@ prometheusRules:
 
   GrpcHighFileDescriptors:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror gRPC API file descriptor usage exceeds 80%"
     enabled: true
     expr: sum(process_files_open_files{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.8
@@ -129,7 +129,7 @@ prometheusRules:
 
   GrpcHighMemory:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}%"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror gRPC API memory usage exceeds 80%"
     enabled: true
     expr: sum(jvm_memory_used_bytes{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.8

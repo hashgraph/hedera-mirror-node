@@ -22,13 +22,10 @@ package com.hedera.mirror.monitor.subscribe;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -38,23 +35,18 @@ import reactor.core.publisher.FluxSink;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
-@Log4j2
-@RequiredArgsConstructor
-public class RestSubscriber implements Subscriber {
+public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties> {
 
-    private final MeterRegistry meterRegistry;
     private final FluxSink<PublishResponse> restProcessor;
-    private final Map<TransactionType, Timer> timers;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
-    public RestSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
-                          RestSubscriberProperties properties, WebClient.Builder webClientBuilder) {
-        this.meterRegistry = meterRegistry;
-        this.timers = new ConcurrentHashMap<>();
+    RestSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
+                   RestSubscriberProperties properties, WebClient.Builder webClientBuilder) {
+        super(meterRegistry, properties);
 
         String url = monitorProperties.getMirrorNode().getRest().getBaseUrl();
         WebClient webClient = webClientBuilder.baseUrl(url)
@@ -71,29 +63,51 @@ public class RestSubscriber implements Subscriber {
                 .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
                         r.totalRetries() + 1, r.failure()));
 
+        double samplePercent = properties.getSamplePercent();
         directProcessor.doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
+                //Randomly filter out transactions to only validate a sample
+                .filter(r -> RANDOM.nextDouble() < samplePercent)
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
                 .doFinally(s -> log.warn("Received {} signal", s))
+                .doFinally(s -> close())
                 .limitRequest(properties.getLimit())
                 .take(properties.getDuration())
                 .flatMap(publishResponse -> webClient.get()
-                        .uri("/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
+                        .uri("/transactions/{transactionId}", toString(publishResponse
+                                .getTransactionId()))
                         .retrieve()
                         .bodyToMono(String.class)
+                        .name("rest")
+                        .metrics()
                         .doOnNext(json -> log.trace("Response: {}", json))
                         .timeout(properties.getTimeout())
                         .retryWhen(retrySpec)
-                        .onErrorContinue((t, o) -> log.warn("Error subscribing to REST API: {}", t))
+                        .onErrorContinue((t, o) -> onError(t))
                         .doOnNext(clientResponse -> record(publishResponse)))
                 .subscribe();
     }
 
     @Override
     public void onPublish(PublishResponse response) {
-        restProcessor.next(response);
+        if (!restProcessor.isCancelled()) {
+            restProcessor.next(response);
+        }
     }
 
-    private boolean shouldRetry(Throwable t) {
+    @Override
+    protected void onError(Throwable t) {
+        log.warn("Error subscribing to REST API: {}", t.getMessage());
+        String error = t.getClass().getSimpleName();
+
+        if (t instanceof WebClientResponseException) {
+            error = ((WebClientResponseException) t).getStatusCode().toString();
+        }
+
+        errors.add(error);
+    }
+
+    @Override
+    protected boolean shouldRetry(Throwable t) {
         return t instanceof WebClientResponseException &&
                 ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND;
     }
@@ -101,15 +115,9 @@ public class RestSubscriber implements Subscriber {
     private void record(PublishResponse r) {
         Duration latency = Duration.between(r.getRequest().getTimestamp(), Instant.now());
         log.debug("Transaction retrieved with a latency of {}s", latency.toSeconds());
-        Timer timer = timers.computeIfAbsent(r.getRequest().getType(), this::newTimer);
+        Timer timer = getLatencyTimer(r.getRequest().getType());
         timer.record(latency);
-    }
-
-    private Timer newTimer(TransactionType type) {
-        return Timer.builder(METRIC_NAME)
-                .tag("api", "rest")
-                .tag("type", type.name())
-                .register(meterRegistry);
+        counter.incrementAndGet();
     }
 
     private String toString(TransactionId tid) {

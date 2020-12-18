@@ -27,18 +27,24 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import org.assertj.core.api.ListAssert;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.ResourceUtils;
 
+import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.CacheConfiguration;
@@ -56,11 +62,16 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10);
     private static final NodeAddressBook FINAL = addressBook(15);
+    private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
 
     @TempDir
     Path dataPath;
 
-    private MirrorProperties mirrorProperties;
+    @Value("classpath:addressbook")
+    Path testPath;
+
+    @Resource
+    private TransactionTemplate transactionTemplate;
 
     @Resource
     private AddressBookRepository addressBookRepository;
@@ -77,6 +88,8 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
     @Resource
     private CacheManager cacheManager;
+
+    private static byte[] initialAddressBookBytes;
 
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
@@ -95,13 +108,22 @@ class AddressBookServiceImplTest extends IntegrationTest {
         return builder.build();
     }
 
-    private void update(byte[] contents, long consensusTimeStamp, boolean is102) {
+    private FileData createFileData(byte[] contents, long consensusTimeStamp, boolean is102) {
         EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
                 AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID;
-        FileData fileData = new FileData(consensusTimeStamp, contents, entityId, TransactionTypeEnum.FILEUPDATE
+        return new FileData(consensusTimeStamp, contents, entityId, TransactionTypeEnum.FILEUPDATE
                 .getProtoId());
-        fileDataRepository.save(fileData);
+    }
+
+    private FileData store(byte[] contents, long consensusTimeStamp, boolean is102) {
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102);
+        return fileDataRepository.save(fileData);
+    }
+
+    private void update(byte[] contents, long consensusTimeStamp, boolean is102) {
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102);
         addressBookService.update(fileData);
+        fileDataRepository.save(fileData);
     }
 
     private void append(byte[] contents, long consensusTimeStamp, boolean is102) {
@@ -113,43 +135,69 @@ class AddressBookServiceImplTest extends IntegrationTest {
         addressBookService.update(fileData);
     }
 
-    @BeforeEach
-    void setup() {
-        mirrorProperties = new MirrorProperties();
-        mirrorProperties.setDataPath(dataPath);
+    @BeforeAll
+    static void setupAll() throws IOException {
+        Path addressBookPath = ResourceUtils.getFile("classpath:addressbook/testnet").toPath();
+        initialAddressBookBytes = Files.readAllBytes(addressBookPath);
+    }
+
+    @Test
+    void startupWithOtherNetworkIncorrectInitialAddressBookPath() {
+        MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
+        otherNetworkMirrorProperties.setDataPath(dataPath);
+        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
+        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
+        assertThrows(IllegalStateException.class, () -> {
+            customAddressBookService.getCurrent();
+        });
+        assertEquals(0, addressBookRepository.count());
     }
 
     @Test
     void startupWithOtherNetwork() {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        // copy other addressbook to file system
+        FileCopier fileCopier = FileCopier.create(testPath, dataPath)
+                .from("")
+                .filterFiles("test-v1")
+                .to("");
+        fileCopier.copy();
+
+        MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
+        otherNetworkMirrorProperties.setDataPath(dataPath);
+        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
+        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
+        AddressBook addressBook = customAddressBookService.getCurrent();
+        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(1L);
+        assertEquals(1, addressBookRepository.count());
     }
 
     @Test
     void updateCompleteFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
-        update(addressBookBytes, 1L, true);
+        long addressBookConsensusTimeStamp = 5L;
+        update(addressBookBytes, addressBookConsensusTimeStamp, true);
 
         // assert current addressBook is updated
         AddressBook addressBook = addressBookService.getCurrent();
-        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(2L);
+        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(addressBookConsensusTimeStamp + 1);
         assertAddressBook(addressBook, UPDATED);
 
         // assert repositories contain updates
-        assertAddressBookData(UPDATED.toByteArray(), 1);
-        assertEquals(1, addressBookRepository.count());
-        assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository.count());
-
-        assertEquals(1, addressBookRepository.count());
-        assertEquals(10, addressBookEntryRepository.count());
+        assertAddressBookData(UPDATED.toByteArray(), addressBookConsensusTimeStamp + 1);
+        assertEquals(2, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + UPDATED.getNodeAddressCount(), addressBookEntryRepository
+                .count());
     }
 
     @Test
     void cacheAndEvictAddressBook() {
         byte[] addressBookBytes = UPDATED.toByteArray();
-        update(addressBookBytes, 1L, true);
+        long addressBookConsensusTimeStamp = 5L;
+        update(addressBookBytes, addressBookConsensusTimeStamp, true);
 
         //verify cache is empty to start
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
@@ -164,7 +212,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertThat(addressBookCache).isEqualTo(addressBookDb);
 
         //verify updating the address book evicts the cache.
-        update(addressBookBytes, 2L, true);
+        update(addressBookBytes, addressBookConsensusTimeStamp + 1, true);
         assertNull(cacheManager.getCache(AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME)
                 .get(SimpleKey.EMPTY));
     }
@@ -175,15 +223,12 @@ class AddressBookServiceImplTest extends IntegrationTest {
         int index = addressBookBytes.length / 2;
         byte[] addressBookPartial = Arrays.copyOfRange(addressBookBytes, 0, index);
 
-        update(addressBookPartial, 1L, true);
+        update(addressBookPartial, 5L, true);
 
-        // bootstrap address book will be missing in most tests. In production migration will ensure DB population
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
-        assertEquals(0, addressBookRepository.count());
-        assertEquals(0, addressBookEntryRepository.count());
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
     }
 
     @Test
@@ -194,24 +239,21 @@ class AddressBookServiceImplTest extends IntegrationTest {
         byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, index * 2);
         byte[] addressBookBytes3 = Arrays.copyOfRange(addressBookBytes, index * 2, addressBookBytes.length);
 
-        // bootstrap address book will be missing in most tests. In production migration will ensure DB population
-        update(addressBookBytes1, 1L, true);
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        update(addressBookBytes1, 2L, true);
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
         append(addressBookBytes2, 3L, true);
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
-        append(addressBookBytes3, 5L, true);
+        long addressBookConsensusTimeStamp = 5L;
+        append(addressBookBytes3, addressBookConsensusTimeStamp, true);
         assertAddressBook(addressBookService.getCurrent(), UPDATED);
 
-        assertAddressBookData(addressBookBytes, 5);
+        assertAddressBookData(addressBookBytes, addressBookConsensusTimeStamp + 1);
 
-        assertEquals(1, addressBookRepository.count());
-        assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository.count());
+        assertEquals(2, addressBookRepository.count());
+        assertEquals(UPDATED.getNodeAddressCount() + TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository
+                .count());
 
         AddressBook addressBook = addressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(6L);
@@ -223,26 +265,22 @@ class AddressBookServiceImplTest extends IntegrationTest {
         byte[] addressBookBytes = UPDATED.toByteArray();
         int index = addressBookBytes.length / 2;
         byte[] addressBookBytes1 = Arrays.copyOfRange(addressBookBytes, 0, index);
-        update(addressBookBytes1, 1L, true);
+        update(addressBookBytes1, 2L, true);
 
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
-        assertEquals(0, addressBookRepository.count());
-        assertEquals(0, addressBookEntryRepository.count());
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
     }
 
     @Test
     void ignoreEmptyByteArray() {
-        update(new byte[] {}, 1L, true);
-        append(new byte[] {}, 2L, true);
+        update(new byte[] {}, 2L, true);
+        append(new byte[] {}, 3L, true);
 
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
-        assertEquals(0, addressBookRepository.count());
-        assertEquals(0, addressBookEntryRepository.count());
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
     }
 
     @Test
@@ -268,20 +306,19 @@ class AddressBookServiceImplTest extends IntegrationTest {
         byte[] addressBookBytes1 = Arrays.copyOfRange(addressBookBytes, 0, index);
         byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, addressBookBytes.length);
 
-        update(addressBookBytes1, 1L, true);
+        update(addressBookBytes1, 2L, true);
 
         // create new address book and submit another append to complete file
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        addressBookService.getCurrent();
 
-        append(addressBookBytes2, 3L, true);
+        long addressBookConsensusTimeStamp = 3L;
+        append(addressBookBytes2, addressBookConsensusTimeStamp, true);
 
         // verify valid address book and repository update
         AddressBook addressBook = addressBookService.getCurrent();
-        assertAddressBook(addressBookService.getCurrent(), FINAL);
-        assertAddressBookData(FINAL.toByteArray(), 3);
-        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(4L);
+        assertAddressBook(addressBook, FINAL);
+        assertAddressBookData(FINAL.toByteArray(), addressBookConsensusTimeStamp + 1);
+        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(addressBookConsensusTimeStamp + 1);
     }
 
     @Test
@@ -303,46 +340,44 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertEquals(0, addressBookRepository.count());
 
         // perform file 102 first update and confirm no change to current address book and nodes addresses
-        update(addressBookBytes1, 1L, true); // fileID 102
-        assertEquals(0, addressBookEntryRepository.count());
-        assertEquals(0, addressBookRepository.count()); // initial and 102 update
+        update(addressBookBytes1, 2L, true); // fileID 102
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
+        assertEquals(1, addressBookRepository.count()); // initial
 
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        addressBookService.getCurrent();
 
         update(addressBook101Bytes1, 3L, false);
-        append(addressBook101Bytes2, 5L, false);
+        long addressBook101ConsensusTimeStamp = 5L;
+        append(addressBook101Bytes2, addressBook101ConsensusTimeStamp, false);
 
         // verify partial bytes match 101 complete address book update
-        assertAddressBookData(FINAL.toByteArray(), 5);
-        assertEquals(15, addressBookEntryRepository.count());
-        assertEquals(1, addressBookRepository.count());
+        assertAddressBookData(FINAL.toByteArray(), addressBook101ConsensusTimeStamp + 1);
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + FINAL.getNodeAddressCount(), addressBookEntryRepository
+                .count());
+        assertEquals(2, addressBookRepository.count());
 
         // verify current address book bytes still match original load and not 101 update and append
-        assertThrows(IllegalStateException.class, () -> {
-            addressBookService.getCurrent();
-        });
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
 
         // perform file 102 append
-        append(addressBookBytes2, 7L, true);
+        long addressBook102ConsensusTimeStamp = 7L;
+        append(addressBookBytes2, addressBook102ConsensusTimeStamp, true);
 
         // verify address book and node addresses are updated
         AddressBook addressBook = addressBookService.getCurrent();
-        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(8L);
+        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(addressBook102ConsensusTimeStamp + 1);
         assertAddressBook(addressBookService.getCurrent(), UPDATED);
 
         // 15 (101 update) + 12 (102 update)
-        assertEquals(UPDATED.getNodeAddressCount() + FINAL
-                .getNodeAddressCount(), addressBookEntryRepository
-                .count());
-        assertAddressBookData(UPDATED.toByteArray(), 7);
-        assertEquals(2, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + UPDATED.getNodeAddressCount() + FINAL.getNodeAddressCount(),
+                addressBookEntryRepository.count());
+        assertAddressBookData(UPDATED.toByteArray(), addressBook102ConsensusTimeStamp + 1);
+        assertEquals(3, addressBookRepository.count());
     }
 
     @Test
     void verify102AddressBookEndPointsAreSet() {
-        long initialTimestamp = 0L;
+        long initialTimestamp = 5L;
         byte[] addressBookBytes = UPDATED.toByteArray();
         update(addressBookBytes, initialTimestamp, true);
 
@@ -367,11 +402,12 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .returns(null, AddressBook::getEndConsensusTimestamp)
                 .satisfies(a -> assertAddressBook(a, FINAL));
 
-        assertEquals(2, addressBookRepository.count());
-        assertEquals(UPDATED.getNodeAddressCount() + FINAL.getNodeAddressCount(), addressBookEntryRepository.count());
+        assertEquals(3, addressBookRepository.count()); // bootstrap, UPDATED and FINAL
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + UPDATED.getNodeAddressCount() + FINAL
+                .getNodeAddressCount(), addressBookEntryRepository.count());
 
         // verify end consensus timestamp was set for previous address book
-        assertThat(addressBookRepository.findById(1L))
+        assertThat(addressBookRepository.findById(initialTimestamp + 1))
                 .get()
                 .returns(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, AddressBook::getFileId)
                 .returns(initialTimestamp + 1, AddressBook::getStartConsensusTimestamp)
@@ -380,7 +416,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @Test
     void verify101AddressBookEndPointsAreSet() {
-        long initialTimestamp = 0L;
+        long initialTimestamp = 5L;
         byte[] addressBookBytes = UPDATED.toByteArray();
         update(addressBookBytes, initialTimestamp, false);
 
@@ -404,8 +440,9 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .returns(null, AddressBook::getEndConsensusTimestamp)
                 .satisfies(a -> assertAddressBook(a, FINAL));
 
-        assertEquals(2, addressBookRepository.count());
-        assertEquals(UPDATED.getNodeAddressCount() + FINAL.getNodeAddressCount(), addressBookEntryRepository.count());
+        assertEquals(3, addressBookRepository.count()); // bootstrap, UPDATED and FINAL
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + UPDATED.getNodeAddressCount() + FINAL
+                .getNodeAddressCount(), addressBookEntryRepository.count());
 
         // verify end consensus timestamp was set for previous address book
         assertThat(addressBookRepository.findById(initialTimestamp + 1))
@@ -417,7 +454,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @Test
     void verify101DoesntUpdate102() {
-        long timestamp102 = 1L;
+        long timestamp102 = 2L;
         byte[] addressBookBytes102 = UPDATED.toByteArray();
         update(addressBookBytes102, timestamp102, true);
 
@@ -464,9 +501,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .build();
 
         byte[] addressBookBytes = nodeAddressBook.toByteArray();
-        update(addressBookBytes, 1L, true);
+        long addressBookConsensusTimeStamp = 5L;
+        update(addressBookBytes, addressBookConsensusTimeStamp, true);
 
-        assertAddressBookData(addressBookBytes, 1L);
+        assertAddressBookData(addressBookBytes, addressBookConsensusTimeStamp + 1);
         AddressBook addressBook = addressBookService.getCurrent();
         ListAssert<AddressBookEntry> listAssert = assertThat(addressBook.getEntries())
                 .hasSize(nodeAddressBook.getNodeAddressCount());
@@ -485,8 +523,89 @@ class AddressBookServiceImplTest extends IntegrationTest {
         listAssert.anySatisfy(abe -> assertThat(abe.getPort()).isEqualTo(50211));
     }
 
+    @Test
+    void verifyGetCurrentCallPopulatesInitialAddressBook() {
+        assertEquals(0, addressBookRepository.count());
+
+        assertThat(addressBookService.getCurrent())
+                .returns(initialAddressBookBytes, AddressBook::getFileData)
+                .returns(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, AddressBook::getFileId)
+                .returns(1L, AddressBook::getStartConsensusTimestamp)
+                .returns(null, AddressBook::getEndConsensusTimestamp);
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
+    }
+
+    @Test
+    void verifyUpdateCallPopulatesInitialAddressBook() {
+        byte[] addressBookBytes = UPDATED.toByteArray();
+        int index = addressBookBytes.length / 2;
+        byte[] addressBookPartial = Arrays.copyOfRange(addressBookBytes, 0, index);
+
+        assertEquals(0, addressBookRepository.count());
+        update(addressBookPartial, 2L, false);
+
+        assertThat(addressBookService.getCurrent())
+                .returns(initialAddressBookBytes, AddressBook::getFileData)
+                .returns(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, AddressBook::getFileId)
+                .returns(1L, AddressBook::getStartConsensusTimestamp)
+                .returns(null, AddressBook::getEndConsensusTimestamp);
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count());
+    }
+
+    @Test
+    void verifyAddressBookMigrationInitiatedByDownloader() {
+        byte[] addressBookBytes1 = UPDATED.toByteArray();
+        store(addressBookBytes1, 2L, false);
+
+        byte[] addressBookBytes2 = UPDATED.toByteArray();
+        store(addressBookBytes2, 3L, true);
+
+        byte[] addressBookBytes3 = FINAL.toByteArray();
+        store(addressBookBytes3, 4L, false);
+
+        byte[] addressBookBytes4 = FINAL.toByteArray();
+        store(addressBookBytes4, 5L, true);
+
+        // migration
+        AddressBook addressBook = addressBookService.getCurrent();
+        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(6L);
+        assertAddressBook(addressBook, FINAL);
+
+        assertEquals(4, fileDataRepository.count());
+        assertEquals(5, addressBookRepository.count()); // initial plus 4 files
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2) +
+                (FINAL.getNodeAddressCount() * 2), addressBookEntryRepository.count());
+    }
+
+    @Test
+    void verifyAddressBookMigrationInitiatedByParser() {
+        byte[] addressBookBytes1 = UPDATED.toByteArray();
+        store(addressBookBytes1, 2L, false);
+
+        byte[] addressBookBytes2 = UPDATED.toByteArray();
+        store(addressBookBytes2, 3L, true);
+
+        byte[] addressBookBytes3 = FINAL.toByteArray();
+        store(addressBookBytes3, 4L, false);
+
+        byte[] addressBookBytes4 = FINAL.toByteArray();
+        store(addressBookBytes4, 5L, true);
+
+        // migration
+        int addressBook5NodeCount = 20;
+        byte[] addressBookBytes5 = addressBook(addressBook5NodeCount).toByteArray();
+        addressBookService.update(createFileData(addressBookBytes5, 6L, true));
+
+        assertEquals(4, fileDataRepository.count());
+        assertEquals(6, addressBookRepository.count()); // initial plus 5 files
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2) +
+                (FINAL.getNodeAddressCount() * 2) + addressBook5NodeCount, addressBookEntryRepository.count());
+    }
+
     private void assertAddressBookData(byte[] expected, long consensusTimestamp) {
-        AddressBook actualAddressBook = addressBookRepository.findById(consensusTimestamp + 1).get();
+        AddressBook actualAddressBook = addressBookRepository.findById(consensusTimestamp).get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
     }
 

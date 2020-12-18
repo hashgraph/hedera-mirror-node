@@ -35,7 +35,32 @@ let sqlConnection;
 config.db.name = process.env.POSTGRES_DB || 'mirror_node_integration';
 const dbUser = process.env.POSTGRES_USER || config.db.username + '_admin';
 const dbPassword = process.env.POSTGRES_PASSWORD || randomString(16);
-const dockerPostgresTag = '9.6-alpine';
+
+const v1SchemaConfigs = {
+  docker: {
+    imageName: 'postgres',
+    tagName: '9.6-alpine',
+  },
+  flyway: {
+    baselineVersion: '0',
+    locations: 'hedera-mirror-importer/src/main/resources/db/migration/v1',
+    target: '1.999.999',
+  },
+};
+const v2SchemaConfigs = {
+  docker: {
+    imageName: 'timescaledev/timescaledb-ha',
+    tagName: 'pg12-ts2.0.0-rc3',
+  },
+  flyway: {
+    baselineVersion: '1.999.999',
+    locations: 'hedera-mirror-importer/src/main/resources/db/migration/v2',
+    target: '2.999.999',
+  },
+};
+
+// if v2 schema is set in env use it, else default to v1
+const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
 /**
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
@@ -48,7 +73,7 @@ const instantiateDatabase = async function () {
       return;
     }
 
-    dockerDb = await new GenericContainer('postgres', dockerPostgresTag)
+    dockerDb = await new GenericContainer(schemaConfigs.docker.imageName, schemaConfigs.docker.tagName)
       .withEnv('POSTGRES_DB', config.db.name)
       .withEnv('POSTGRES_USER', dbUser)
       .withEnv('POSTGRES_PASSWORD', dbPassword)
@@ -56,7 +81,7 @@ const instantiateDatabase = async function () {
       .start();
     config.db.port = dockerDb.getMappedPort(config.db.port);
     config.db.host = dockerDb.getHost();
-    console.log(`Started dockerized PostgreSQL ${dockerPostgresTag}`);
+    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`);
   }
 
   sqlConnection = new SqlConnectionPool({
@@ -85,17 +110,22 @@ const flywayMigrate = function () {
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(flywayDataPath, 'config.json');
-  const locations = path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration');
+  const locations = path.join('..', schemaConfigs.flyway.locations);
   const flywayConfig = `
 {
   "flywayArgs": {
+    "baselineVersion": "${schemaConfigs.flyway.baselineVersion}",
     "locations": "filesystem:${locations}",
     "password": "${dbPassword}",
     "placeholders.api-password": "${config.db.password}",
     "placeholders.api-user": "${config.db.username}",
+    "placeholders.chunkIdInterval": 10000,
+    "placeholders.chunkTimeInterval": 604800000000000,
+    "placeholders.compressionAge": 604800000000000,
     "placeholders.db-name": "${config.db.name}",
     "placeholders.db-user": "${dbUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
+    "target": "${schemaConfigs.flyway.target}",
     "url": "jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}",
     "user": "${dbUser}"
   },

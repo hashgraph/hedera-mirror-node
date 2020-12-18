@@ -51,11 +51,14 @@ class CompositeSubscriberTest {
         subscribeProperties = new SubscribeProperties();
         meterRegistry = new SimpleMeterRegistry();
         webClient = WebClient.builder();
-        compositeSubscriber = new CompositeSubscriber(monitorProperties, subscribeProperties, meterRegistry, webClient);
+        compositeSubscriber = new CompositeSubscriber(p -> p, monitorProperties, subscribeProperties, meterRegistry,
+                webClient);
 
         grpcSubscriberProperties = new GrpcSubscriberProperties();
+        grpcSubscriberProperties.setName("grpc");
         grpcSubscriberProperties.setTopicId("0.0.1000");
         restSubscriberProperties = new RestSubscriberProperties();
+        restSubscriberProperties.setName("rest");
         subscribeProperties.getGrpc().add(grpcSubscriberProperties);
         subscribeProperties.getRest().add(restSubscriberProperties);
     }
