@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Primary;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidRecordFileException;
+import com.hedera.mirror.importer.exception.RecordFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
@@ -61,14 +62,14 @@ public class CompositeRecordFileReader implements RecordFileReader {
                     reader = version2Reader;
                     break;
                 default:
-                    throw new InvalidRecordFileException(String.format("Unsupported record file version %d of file %s",
+                    throw new InvalidRecordFileException(String.format("Unsupported record file version %d in file %s",
                             version, filename));
             }
 
             log.info("Loading record format version {} from record file: {}", version, filename);
             return reader.read(streamFileData, itemConsumer);
         } catch (IOException e) {
-            throw new InvalidRecordFileException("Error reading data for record file " + streamFileData.getFilename(), e);
+            throw new RecordFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
         }
     }
 }

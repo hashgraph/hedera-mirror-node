@@ -21,7 +21,10 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
@@ -34,10 +37,12 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -52,15 +57,16 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
     private final BalanceDownloaderProperties balanceDownloaderProperties;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordDownloaderProperties recordDownloaderProperties;
+    private final RecordFileReader recordFileReader;
     private final RecordFileRepository recordFileRepository;
 
     @Override
-    protected void doMigrate() {
+    protected void doMigrate() throws IOException {
         addStreamFileRecords(balanceDownloaderProperties);
         addStreamFileRecords(recordDownloaderProperties);
     }
 
-    private void addStreamFileRecords(DownloaderProperties downloaderProperties) {
+    private void addStreamFileRecords(DownloaderProperties downloaderProperties) throws IOException {
         int count = 0;
         StreamType streamType = downloaderProperties.getStreamType();
         Path validPath = downloaderProperties.getValidPath();
@@ -98,7 +104,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
         }
     }
 
-    private StreamFile readStreamFile(File file, StreamType streamType) {
+    private StreamFile readStreamFile(File file, StreamType streamType) throws IOException {
         StreamFile streamFile;
         if (streamType == StreamType.BALANCE) {
             streamFile = AccountBalanceFile.builder()
@@ -108,7 +114,10 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
                     .name(file.getName())
                     .build();
         } else if (streamType == StreamType.RECORD) {
-            streamFile = Utility.parseRecordFile(file.getPath(), null);
+            try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+                StreamFileData streamFileData = new StreamFileData(file.getAbsolutePath(), bis);
+                streamFile = recordFileReader.read(streamFileData, null);
+            }
         } else {
             throw new IllegalArgumentException("StreamType " + streamType + " is not supported");
         }

@@ -74,7 +74,6 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
         int version = dis.readInt();
         checkField(version, readerVersion, "record file version", recordFile.getName());
 
-        // HAPI version
         int hapiVersion = dis.readInt();
 
         // previous record file hash

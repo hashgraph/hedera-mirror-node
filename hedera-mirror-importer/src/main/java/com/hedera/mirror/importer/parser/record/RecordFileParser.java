@@ -173,7 +173,7 @@ public class RecordFileParser implements FileParser {
             success = true;
         } catch (Exception ex) {
             recordStreamFileListener.onError(); // rollback
-            throw new RuntimeException(ex);
+            throw ex;
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
             var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;

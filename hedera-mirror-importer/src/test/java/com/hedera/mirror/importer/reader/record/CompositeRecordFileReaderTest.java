@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.util;
+package com.hedera.mirror.importer.reader.record;
 
 /*-
  * ‌
@@ -20,9 +20,17 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-public class FileDelimiter {
-    public static final String HASH_ALGORITHM = "SHA-384";
+public class CompositeRecordFileReaderTest extends RecordFileReaderTest {
 
-    public static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
-    public static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
+    @Override
+    protected RecordFileReader getRecordFileReader() {
+        RecordFileReaderImplV1 v1Reader = new RecordFileReaderImplV1();
+        RecordFileReaderImplV2 v2Reader = new RecordFileReaderImplV2();
+        return new CompositeRecordFileReader(v1Reader, v2Reader);
+    }
+
+    @Override
+    protected boolean filterFile(int version) {
+        return true;
+    }
 }
