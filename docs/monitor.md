@@ -9,7 +9,7 @@ seconds to it, and verifies the messages are received via the mirror node's gRPC
 ## Configuration
 
 This section covers the higher level properties to consider before diving into the specific publish and subscribe
-properties in the next sections. For a full list of configuration options see the [config](/docs/configuration.md)
+properties in the next sections. For a full list of configuration options see the [config](/docs/configuration.md#monitor)
 documentation.
 
 First, make sure the monitor is configured to talk to the correct Hedera network by setting `hedera.mirror.monitor.network` to
