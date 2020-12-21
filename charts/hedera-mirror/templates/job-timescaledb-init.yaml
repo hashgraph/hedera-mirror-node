@@ -17,10 +17,11 @@ spec:
           command:
             - sh
             - -c
-            - >
+            - |
+              set -e
+
               while ! pg_isready -U postgres -h {{ printf "%s-timescaledb-data" .Release.Name }}; do sleep 1; done;
-              echo "$(<${DB_INIT_FILE})" | psql --file=- --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" \
-                                --set ON_ERROR_STOP=1 -f ${DB_INIT_FILE}
+              psql --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" --set ON_ERROR_STOP=1 -f ${DB_INIT_FILE}
           env:
             - name: ACCESS_SVC_CONNSTR_POSTGRES
               value: host=mirror-timescaledb user=postgres connect_timeout=3 sslmode=disable password={{ .Values.timescaledb.credentials.accessNode.superuser }}
