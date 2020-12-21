@@ -31,7 +31,7 @@ import org.junit.jupiter.api.TestFactory;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidRecordFileException;
 
-public abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
+abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
 
     @TestFactory
     Stream<DynamicTest> readIncompatibleFile() {

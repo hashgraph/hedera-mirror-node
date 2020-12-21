@@ -20,16 +20,12 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class RecordFileReaderException extends ReaderException {
+public class RecordFileReaderException extends ImporterException {
 
     private static final long serialVersionUID = 2533328395713171797L;
 
     public RecordFileReaderException(final String message) {
         super(message);
-    }
-
-    public RecordFileReaderException(final Throwable throwable) {
-        super(throwable);
     }
 
     public RecordFileReaderException(final String message, final Throwable throwable) {

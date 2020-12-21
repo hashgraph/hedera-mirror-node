@@ -54,7 +54,7 @@ import com.hedera.mirror.importer.exception.InvalidRecordFileException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @ExtendWith(MockitoExtension.class)
-public abstract class RecordFileReaderTest {
+abstract class RecordFileReaderTest {
     private final static String pathPrefix = "data/recordstreams";
 
     protected FileCopier fileCopier;

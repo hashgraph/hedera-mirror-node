@@ -27,8 +27,4 @@ public class InvalidRecordFileException extends RecordFileReaderException {
     public InvalidRecordFileException(final String message) {
         super(message);
     }
-
-    public InvalidRecordFileException(String message, Throwable throwable) {
-        super(message, throwable);
-    }
 }
