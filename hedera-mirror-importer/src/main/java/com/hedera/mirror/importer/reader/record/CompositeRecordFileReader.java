@@ -53,6 +53,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
             dis.mark(Integer.BYTES);
             int version = dis.readInt();
             dis.reset();
+            log.info("Loading record format version {} from record file: {}", version, filename);
 
             switch (version) {
                 case 1:
@@ -66,7 +67,6 @@ public class CompositeRecordFileReader implements RecordFileReader {
                             version, filename));
             }
 
-            log.info("Loading record format version {} from record file: {}", version, filename);
             return reader.read(streamFileData, itemConsumer);
         } catch (IOException e) {
             throw new RecordFileReaderException("Error reading record file " + streamFileData.getFilename(), e);

@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFileData;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -32,7 +30,6 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -40,8 +37,9 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.RecordFileReaderException;
+import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -83,7 +81,7 @@ public class RecordFileDownloader extends Downloader {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
             return recordFileReader.read(new StreamFileData(file.getAbsolutePath(), bis), null);
         } catch (IOException e) {
-            throw new RecordFileReaderException("Unable to open record file " + file.getPath());
+            throw new FileOperationException("Unable to open record file " + file.getPath(), e);
         }
     }
 
