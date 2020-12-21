@@ -21,22 +21,23 @@ export RELEASE="mirror1"
 ## Install
 
 To install the wrapper chart:
-
-1. Add the Hedera Mirror Node Repo
     ```shell script
     $ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
+    $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
     ```
 
-2. (Optional): Configure Network & AddressBook
-    When running against a network other than the demo/testnent/mainnet network, the network must be updated and an initialAddressBook file must be provided.
+### Configure Network & Address Book
 
-    e.g. To use an addressbook from a file located at `/Downloads/perf.bin`:
-    First create the addressBook file as a secret from the local file:
+When running against a network other than the demo/testnet/mainnet network, the network must be updated and an initial address book file must be provided prior to deploying the chart.
+
+e.g. To use an address book from a file located at `/Downloads/perf.bin`:
+
+1. First create the address book file as a secret from the local file:
     ```shell script
     $ kubectl create secret generic mirror-importer-addressbook --from-file=perf.bin=/Downloads/perf.bin --save-config=true
     ```
 
-    Then update the `values/yaml` file to set the `network`, `initialAddressBook`, `extraVolumes` and `extraVolumeMounts` configs.
+2. Then update the `values.yaml` file to set the `network`, `initialAddressBook`, `extraVolumes` and `extraVolumeMounts` configs.
     ```yaml
     importer:
       config:
@@ -46,26 +47,17 @@ To install the wrapper chart:
               initialAddressBook: "/usr/etc/addressbook/perf.bin"
               network: "OTHER"
       extraVolumes:
-         - name: addressbook-secret-volume
-           secret:
-             defaultMode: 420
-             secretName: mirror-importer-addressbook
+        - name: addressbook-secret-volume
+          secret:
+            defaultMode: 420
+            secretName: mirror-importer-addressbook
       extraVolumeMounts:
-         - name: addressbook-secret-volume
-           mountPath: /usr/etc/addressbook
+        - name: addressbook-secret-volume
+          mountPath: /usr/etc/addressbook
     ```
     > **_Note_** Ensure the configured `mountPath` matches the path in `initialAddressBook`
 
-    Then create the addressBook file as a secret from a local file e.g. `/Downloads/perf.bin`.
-    ```shell script
-    $ kubectl create secret generic mirror-importer-addressbook --from-file=perf.bin=/Downloads/perf.bin --save-config=true
-    ```
    The secret data will be mounted as a file by the Importer StatefulSet and placed at the `mountPath` location on the importer filesystem.
-
-3. Deploy Chart
-    ```shell script
-    $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
-    ```
 
 ## Testing
 
@@ -104,17 +96,7 @@ To remove all the Kubernetes components associated with the chart and delete the
 
 ```shell script
 $ helm delete "${RELEASE}"
-```
-
-
-The above command does not delete any of the underlying persistent volumes. To delete all the data associated with this release:
-
-```shell script
-$ kubectl delete $(kubectl get pvc, ep, service -l release="${RELEASE}" -o name)
-```
-
-Additionally, the Importer persistent volume can sometimes still remain. To explicitly delete:
-```shell script
+$ kubectl delete $(kubectl get pvc -l release="${RELEASE}" -o name)
 $ kubectl delete pvc data-"${RELEASE}"-importer-0
 ```
 
