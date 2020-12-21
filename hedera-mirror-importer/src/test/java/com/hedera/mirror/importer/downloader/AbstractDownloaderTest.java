@@ -116,6 +116,7 @@ public abstract class AbstractDownloaderTest {
     protected Instant file1Instant;
     protected Instant file2Instant;
     protected EntityId corruptedNodeAccountId;
+    protected NodeSignatureVerifier nodeSignatureVerifier;
 
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
@@ -190,6 +191,8 @@ public abstract class AbstractDownloaderTest {
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
                 AnonymousCredentialsProvider.create())
                 .s3CloudStorageClient();
+
+        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         downloader = prepareDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)

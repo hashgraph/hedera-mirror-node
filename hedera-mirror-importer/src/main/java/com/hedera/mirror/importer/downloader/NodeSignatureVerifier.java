@@ -31,9 +31,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
@@ -41,18 +44,14 @@ import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.util.Utility;
 
+@Named
 @Log4j2
+@RequiredArgsConstructor
 public class NodeSignatureVerifier {
 
-    private final Map<String, PublicKey> nodeAccountIDPubKeyMap;
+    private final AddressBookService addressBookService;
 
-    public NodeSignatureVerifier(AddressBook currentAddressBook) {
-        nodeAccountIDPubKeyMap = currentAddressBook
-                .getEntries()
-                .stream()
-                .collect(Collectors
-                        .toMap(AddressBookEntry::getNodeAccountIdString, AddressBookEntry::getPublicKeyAsObject));
-    }
+    private Map<String, PublicKey> nodeAccountIDPubKeyMap;
 
     private static boolean canReachConsensus(long actualNodes, long expectedNodes) {
         return actualNodes >= Math.ceil(expectedNodes / 3.0);
@@ -72,6 +71,15 @@ public class NodeSignatureVerifier {
      * @throws SignatureVerificationException
      */
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
+
+        AddressBook currentAddressBook = addressBookService.getCurrent();
+        //TODO cache this based on the id of the address book?
+        nodeAccountIDPubKeyMap = currentAddressBook
+                .getEntries()
+                .stream()
+                .collect(Collectors
+                        .toMap(AddressBookEntry::getNodeAccountIdString, AddressBookEntry::getPublicKeyAsObject));
+
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
         String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
                 .orElse(null);
@@ -154,8 +162,10 @@ public class NodeSignatureVerifier {
     private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures) {
         Map<String, Collection<String>> statusMap = signatures.stream()
                 .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
-                        Collectors.mapping(FileStreamSignature::getNodeAccountIdString, Collectors.toCollection(TreeSet::new))));
-        Set<String> seenNodes = signatures.stream().map(FileStreamSignature::getNodeAccountIdString).collect(Collectors.toSet());
+                        Collectors.mapping(FileStreamSignature::getNodeAccountIdString, Collectors
+                                .toCollection(TreeSet::new))));
+        Set<String> seenNodes = signatures.stream().map(FileStreamSignature::getNodeAccountIdString)
+                .collect(Collectors.toSet());
         Set<String> missingNodes = new TreeSet<>(Sets.difference(nodeAccountIDPubKeyMap.keySet(), seenNodes));
         statusMap.put("MISSING", missingNodes);
         statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());

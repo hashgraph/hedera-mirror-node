@@ -87,6 +87,8 @@ public abstract class Downloader {
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties commonDownloaderProperties;
     private final TransactionTemplate transactionTemplate;
+    //TODO sort?
+    protected final NodeSignatureVerifier nodeSignatureVerifier;
 
     protected final ApplicationStatusCode lastValidDownloadedFileKey;
     protected final ApplicationStatusCode lastValidDownloadedFileHashKey;
@@ -102,13 +104,15 @@ public abstract class Downloader {
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-                      TransactionTemplate transactionTemplate, MeterRegistry meterRegistry) {
+                      TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
+                      NodeSignatureVerifier nodeSignatureVerifier) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
         this.transactionTemplate = transactionTemplate;
         this.meterRegistry = meterRegistry;
+        this.nodeSignatureVerifier = nodeSignatureVerifier;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
         mirrorProperties = downloaderProperties.getMirrorProperties();
@@ -352,7 +356,6 @@ public abstract class Downloader {
      */
     private void verifySigsAndDownloadDataFiles(AddressBook addressBook,
                                                 Multimap<String, FileStreamSignature> sigFilesMap) {
-        NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBook);
         Path validPath = downloaderProperties.getValidPath();
         Instant endDate = mirrorProperties.getEndDate();
 

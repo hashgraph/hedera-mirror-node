@@ -35,6 +35,7 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -50,9 +51,9 @@ public class RecordFileDownloader extends Downloader {
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
             TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
-            RecordFileRepository recordFileRepository) {
+            RecordFileRepository recordFileRepository, NodeSignatureVerifier nodeSignatureVerifier) {
         super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
-                meterRegistry);
+                meterRegistry, nodeSignatureVerifier);
         this.recordFileRepository = recordFileRepository;
     }
 
