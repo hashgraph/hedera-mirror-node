@@ -21,10 +21,7 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
@@ -61,12 +58,12 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
     private final RecordFileRepository recordFileRepository;
 
     @Override
-    protected void doMigrate() throws IOException {
+    protected void doMigrate() {
         addStreamFileRecords(balanceDownloaderProperties);
         addStreamFileRecords(recordDownloaderProperties);
     }
 
-    private void addStreamFileRecords(DownloaderProperties downloaderProperties) throws IOException {
+    private void addStreamFileRecords(DownloaderProperties downloaderProperties) {
         int count = 0;
         StreamType streamType = downloaderProperties.getStreamType();
         Path validPath = downloaderProperties.getValidPath();
@@ -104,7 +101,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
         }
     }
 
-    private StreamFile readStreamFile(File file, StreamType streamType) throws IOException {
+    private StreamFile readStreamFile(File file, StreamType streamType) {
         StreamFile streamFile;
         if (streamType == StreamType.BALANCE) {
             streamFile = AccountBalanceFile.builder()
@@ -114,10 +111,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
                     .name(file.getName())
                     .build();
         } else if (streamType == StreamType.RECORD) {
-            try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
-                StreamFileData streamFileData = new StreamFileData(file.getAbsolutePath(), bis);
-                streamFile = recordFileReader.read(streamFileData, null);
-            }
+            streamFile = recordFileReader.read(StreamFileData.from(file));
         } else {
             throw new IllegalArgumentException("StreamType " + streamType + " is not supported");
         }

@@ -20,11 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.io.BufferedInputStream;
+import static com.hedera.mirror.importer.util.Utility.openQuietly;
+
+import java.io.File;
+import java.io.InputStream;
+import lombok.NonNull;
 import lombok.Value;
 
 @Value
 public class StreamFileData {
-    private final String filename;
-    private final BufferedInputStream bufferedInputStream;
+    String filename;
+    InputStream inputStream;
+
+    public static StreamFileData from(@NonNull File file) {
+        return new StreamFileData(file.getAbsolutePath(), openQuietly(file));
+    }
 }

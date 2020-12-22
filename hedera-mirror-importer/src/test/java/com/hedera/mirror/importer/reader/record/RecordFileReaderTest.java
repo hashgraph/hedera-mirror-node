@@ -21,13 +21,12 @@ package com.hedera.mirror.importer.reader.record;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -38,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -50,12 +48,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidRecordFileException;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @ExtendWith(MockitoExtension.class)
 abstract class RecordFileReaderTest {
-    private final static String pathPrefix = "data/recordstreams";
 
     protected FileCopier fileCopier;
     protected RecordFileReader recordFileReader;
@@ -95,7 +92,8 @@ abstract class RecordFileReaderTest {
     @BeforeEach
     void setup() {
         fileCopier = FileCopier
-                .create(Path.of(getClass().getClassLoader().getResource(pathPrefix).getPath()), dataPath);
+                .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
+                .from("recordstreams");
         recordFileReader = getRecordFileReader();
 
         RecordFile recordFileV1_1 = new RecordFile(1561990380317763000L, 1561990399074934000L, null,
@@ -132,22 +130,21 @@ abstract class RecordFileReaderTest {
 
                     // given
                     fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
-                    File inputFile = fileCopier.getTo().resolve(filename).toFile();
+                    File file = fileCopier.getTo().resolve(filename).toFile();
 
                     // when
-                    RecordFile actual;
-                    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFile))) {
-                        StreamFileData streamFileData = new StreamFileData(inputFile.getAbsolutePath(), bis);
-                        actual = recordFileReader.read(streamFileData, itemConsumer);
-                    }
+                    RecordFile actual = recordFileReader.read(StreamFileData.from(file), itemConsumer);
 
                     // then
                     assertThat(actual).isEqualTo(recordFile);
                     ArgumentCaptor<RecordItem> captor = ArgumentCaptor.forClass(RecordItem.class);
                     verify(itemConsumer, times(recordFile.getCount().intValue())).accept(captor.capture());
-                    RecordItem[] recordItems = captor.getAllValues().toArray(new RecordItem[0]);
-                    assertThat(recordItems[0].getConsensusTimestamp()).isEqualTo(recordFile.getConsensusStart());
-                    assertThat(recordItems[recordItems.length - 1].getConsensusTimestamp()).isEqualTo(recordFile.getConsensusEnd());
+                    List<Long> timestamps = captor.getAllValues().stream()
+                            .map(RecordItem::getConsensusTimestamp)
+                            .collect(Collectors.toList());
+                    assertThat(timestamps).first().isEqualTo(recordFile.getConsensusStart());
+                    assertThat(timestamps).last().isEqualTo(recordFile.getConsensusEnd());
+                    assertThat(timestamps).doesNotHaveDuplicates().isSorted();
                 });
     }
 
@@ -163,14 +160,10 @@ abstract class RecordFileReaderTest {
 
                     // given
                     fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
-                    File inputFile = fileCopier.getTo().resolve(filename).toFile();
+                    File file = fileCopier.getTo().resolve(filename).toFile();
 
                     // when
-                    RecordFile actual;
-                    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFile))) {
-                        StreamFileData streamFileData = new StreamFileData(inputFile.getAbsolutePath(), bis);
-                        actual = recordFileReader.read(streamFileData, null);
-                    }
+                    RecordFile actual = recordFileReader.read(StreamFileData.from(file));
 
                     // then
                     assertThat(actual).isEqualTo(recordFile);
@@ -189,15 +182,11 @@ abstract class RecordFileReaderTest {
 
                     // given
                     fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
-                    File inputFile = fileCopier.getTo().resolve(filename).toFile();
+                    File file = fileCopier.getTo().resolve(filename).toFile();
                     Files.walk(dataPath).forEach(RecordFileReaderTest::corruptFile);
 
                     // when
-                    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFile))) {
-                        StreamFileData streamFileData = new StreamFileData(inputFile.getAbsolutePath(), bis);
-                        Assertions.assertThrows(InvalidRecordFileException.class,
-                                () -> recordFileReader.read(streamFileData, null));
-                    }
+                    assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(StreamFileData.from(file)));
                 });
     }
 
@@ -213,15 +202,11 @@ abstract class RecordFileReaderTest {
 
                     // given
                     fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
-                    File inputFile = fileCopier.getTo().resolve(filename).toFile();
+                    File file = fileCopier.getTo().resolve(filename).toFile();
                     Files.walk(dataPath).forEach(RecordFileReaderTest::truncateFile);
 
                     // when
-                    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFile))) {
-                        StreamFileData streamFileData = new StreamFileData(inputFile.getAbsolutePath(), bis);
-                        Assertions.assertThrows(InvalidRecordFileException.class,
-                                () -> recordFileReader.read(streamFileData, null));
-                    }
+                    assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(StreamFileData.from(file)));
                 });
     }
 
@@ -232,8 +217,8 @@ abstract class RecordFileReaderTest {
                 .iterator();
     }
 
-    protected String getSubPath(int version) {
-        return String.format("v%d/record0.0.3", version);
+    protected Path getSubPath(int version) {
+        return Path.of("v" + version, "record0.0.3");
     }
 
     protected abstract RecordFileReader getRecordFileReader();

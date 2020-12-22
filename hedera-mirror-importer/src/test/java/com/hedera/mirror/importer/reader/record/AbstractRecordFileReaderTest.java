@@ -20,16 +20,15 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import java.io.BufferedInputStream;
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidRecordFileException;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
 abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
 
@@ -45,14 +44,10 @@ abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
 
                     // given
                     fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
-                    File inputFile = fileCopier.getTo().resolve(filename).toFile();
+                    File file = fileCopier.getTo().resolve(filename).toFile();
 
                     // when
-                    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFile))) {
-                        StreamFileData streamFileData = new StreamFileData(inputFile.getAbsolutePath(), bis);
-                        // then
-                        Assertions.assertThrows(InvalidRecordFileException.class, () -> recordFileReader.read(streamFileData, null));
-                    }
+                    assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(StreamFileData.from(file)));
                 }
         );
     }

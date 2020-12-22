@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -31,13 +32,13 @@ import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidRecordFileException;
-import com.hedera.mirror.importer.exception.RecordFileReaderException;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
+@Log4j2
 @Named
 @Primary
-@Log4j2
 @RequiredArgsConstructor
 public class CompositeRecordFileReader implements RecordFileReader {
 
@@ -46,7 +47,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
 
     @Override
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
-        try (DataInputStream dis = new DataInputStream(streamFileData.getBufferedInputStream())) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFileData.getInputStream()))) {
             RecordFileReader reader;
             String filename = streamFileData.getFilename();
 
@@ -63,13 +64,13 @@ public class CompositeRecordFileReader implements RecordFileReader {
                     reader = version2Reader;
                     break;
                 default:
-                    throw new InvalidRecordFileException(String.format("Unsupported record file version %d in file %s",
+                    throw new InvalidStreamFileException(String.format("Unsupported record file version %d in file %s",
                             version, filename));
             }
 
-            return reader.read(streamFileData, itemConsumer);
+            return reader.read(new StreamFileData(streamFileData.getFilename(), dis), itemConsumer);
         } catch (IOException e) {
-            throw new RecordFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
+            throw new StreamFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
         }
     }
 }

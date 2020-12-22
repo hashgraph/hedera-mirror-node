@@ -24,7 +24,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.exception.RecordFileReaderException;
+import com.hedera.mirror.importer.exception.StreamFileReaderException;
 
 @Named
 public class RecordFileReaderImplV1 extends AbstractRecordFileReader {
@@ -38,7 +38,7 @@ public class RecordFileReaderImplV1 extends AbstractRecordFileReader {
         try {
             return new RecordFileDigestV1();
         } catch (NoSuchAlgorithmException e) {
-            throw new RecordFileReaderException("Unable to instantiate RecordFileDigestV1" , e);
+            throw new StreamFileReaderException("Unable to instantiate RecordFileDigestV1" , e);
         }
     }
 

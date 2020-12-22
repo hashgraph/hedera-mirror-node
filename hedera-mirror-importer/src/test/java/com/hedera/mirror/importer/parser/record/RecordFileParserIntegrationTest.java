@@ -23,16 +23,12 @@ package com.hedera.mirror.importer.parser.record;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,9 +41,9 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.MissingFileException;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -109,7 +105,7 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         fileCopier.copy();
         file = dataPath.resolve(recordFilename).toFile();
 
-        streamFileData = new StreamFileData(file.toString(), new BufferedInputStream(new FileInputStream(file)));
+        streamFileData = StreamFileData.from(file);
 
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null, recordFilename, 0L, 0L,
@@ -117,11 +113,6 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
                 "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                 nodeAccountId, 0L, 2);
         recordFileRepository.save(recordFile);
-    }
-
-    @AfterEach
-    void after() throws IOException {
-        streamFileData.getBufferedInputStream().close();
     }
 
     @Test

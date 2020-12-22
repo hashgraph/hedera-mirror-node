@@ -21,10 +21,7 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +35,6 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -76,11 +72,7 @@ public class RecordFileDownloader extends Downloader {
      */
     @Override
     protected StreamFile readStreamFile(File file) {
-        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
-            return recordFileReader.read(new StreamFileData(file.getAbsolutePath(), bis), null);
-        } catch (IOException e) {
-            throw new FileOperationException("Unable to open record file " + file.getPath(), e);
-        }
+        return recordFileReader.read(StreamFileData.from(file));
     }
 
     @Override

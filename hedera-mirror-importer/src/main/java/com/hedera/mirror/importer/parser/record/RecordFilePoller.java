@@ -20,10 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import javax.inject.Named;
@@ -91,18 +88,15 @@ public class RecordFilePoller implements FilePoller {
             // get file from full path
             File file = validPath.resolve(filePath).toFile();
 
-            try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
-                recordFileParser.parse(new StreamFileData(file.getAbsolutePath(), bis));
+            try {
+                recordFileParser.parse(StreamFileData.from(file));
 
                 if (parserProperties.isKeepFiles()) {
                     Utility.archiveFile(file, parserProperties.getParsedPath());
                 } else {
                     FileUtils.deleteQuietly(file);
                 }
-            } catch (FileNotFoundException e) {
-                log.warn("File does not exist {}", filePath);
-                return;
-            } catch (Exception e) {
+             } catch (Exception e) {
                 log.error("Error parsing file {}", filePath, e);
                 return;
             }
