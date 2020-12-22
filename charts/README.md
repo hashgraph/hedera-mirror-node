@@ -27,6 +27,67 @@ $ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
 $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
 ```
 
+## Configure
+
+### TimescaleDB
+In an effort to increase performance and ingestion the v2 db schema of the mirror node will utilize [TimescaleDB](https://docs.timescale.com/latest/main) to take on a more time series aligned approach.
+
+To deploy the mirror chart using TimescaleDB instead of PostgreSQL take the following steps
+1. Set the following config values in `values.yaml` as noted below
+    ```yaml
+        global:
+          db:
+            host: RELEASE-NAME-timescaledb
+
+        postgresql:
+          enabled: false
+
+        timescaledb:
+          enabled: true
+    ```
+
+2. Deploy Chart
+    ```shell script
+    $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
+    ```
+
+### Address Book
+When running against a network other than the demo/testnet/mainnet network, the network must be updated and an initial address book file must be provided prior to deploying the chart.
+
+e.g. To use an address book from a file located at `/Downloads/perf.bin`:
+
+1. First create the address book file as a secret from the local file:
+    ```shell script
+    $ kubectl create secret generic mirror-importer-addressbook --from-file=perf.bin=/Downloads/perf.bin --save-config=true
+    ```
+
+2. Then create a local values file e.g `custom.yaml` file to set the `network`, `initialAddressBook`, `extraVolumes` and `extraVolumeMounts` configs.
+    ```yaml
+    importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              initialAddressBook: "/usr/etc/addressbook/perf.bin"
+              network: "OTHER"
+      extraVolumes:
+        - name: addressbook-secret-volume
+          secret:
+            defaultMode: 420
+            secretName: mirror-importer-addressbook
+      extraVolumeMounts:
+        - name: addressbook-secret-volume
+          mountPath: /usr/etc/addressbook
+    ```
+    > **_Note_** Ensure the configured `mountPath` matches the path in `initialAddressBook`
+
+   The secret data will be mounted as a file by the Importer StatefulSet and placed at the `mountPath` location on the importer filesystem.
+
+   The `custom.yaml` should be referenced as a values file during chart deployment:
+   ```shell script
+   $ helm upgrade --install mirror charts/hedera-mirror -f charts/hedera-mirror/custom.yaml
+   ```
+
 ## Testing
 
 To verify the chart installation is successful, you can run the helm tests. These tests are not automatically executed
@@ -67,7 +128,6 @@ $ helm delete "${RELEASE}"
 ```
 
 The above command does not delete any of the underlying persistent volumes. To delete all the data associated with this release:
-
 ```shell script
 $ kubectl delete $(kubectl get pvc -o name)
 ```
