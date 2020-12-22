@@ -27,4 +27,8 @@ public class SignatureVerificationException extends ImporterException {
     public SignatureVerificationException(String message) {
         super(message);
     }
+
+    public SignatureVerificationException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

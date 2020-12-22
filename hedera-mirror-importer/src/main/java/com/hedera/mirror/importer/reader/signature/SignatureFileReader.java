@@ -22,5 +22,12 @@ import java.io.InputStream;
 import org.apache.commons.lang3.tuple.Pair;
 
 public interface SignatureFileReader {
-    Pair<byte[], byte[]> read(InputStream inputStream);
+    /**
+     * Read an InputStream containing signature file data and extract the signature and the file hash. The InputStream
+     * is closed internally,
+     *
+     * @param signatureFileData The input stream from a signature file to read
+     * @return Pair of byte arrays, the left holding the file hash and the right the signature
+     */
+    Pair<byte[], byte[]> read(InputStream signatureFileData);
 }

@@ -25,6 +25,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.util.FileDelimiter;
 
 @Log4j2
@@ -55,16 +56,14 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
                         sig = sigBytes;
                         break;
                     default:
-                        log.error("Unknown file delimiter {} in signature file", typeDelimiter);
-                        return null;
+                        throw new SignatureVerificationException("Unknown file delimiter " + typeDelimiter + " in " +
+                                "signature file");
                 }
             }
 
             return Pair.of(fileHash, sig);
         } catch (Exception e) {
-            log.error("Exception occurred reading signature file", e);
+            throw new SignatureVerificationException("Exception occurred reading signature file", e);
         }
-
-        return null;
     }
 }

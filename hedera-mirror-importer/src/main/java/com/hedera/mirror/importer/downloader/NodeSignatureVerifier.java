@@ -97,21 +97,21 @@ public class NodeSignatureVerifier {
 
         for (FileStreamSignature fileStreamSignature : signatures) {
 
-            Pair<byte[], byte[]> hashAndSig = signatureFileReader
-                    .read(Utility.openQuietly(fileStreamSignature.getFile()));
+            try {
 
-            if (hashAndSig == null) {
+                Pair<byte[], byte[]> hashAndSig = signatureFileReader
+                        .read(Utility.openQuietly(fileStreamSignature.getFile()));
+
+                fileStreamSignature.setHash(hashAndSig.getLeft());
+                fileStreamSignature.setSignature(hashAndSig.getRight());
+                fileStreamSignature.setStatus(SignatureStatus.PARSED);
+                if (verifySignature(fileStreamSignature)) {
+                    fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
+                    signatureHashMap.put(fileStreamSignature.getHashAsHex(), fileStreamSignature);
+                }
+            } catch (Exception e) {
                 log.error("Failed to extract hash and signature from file {}", fileStreamSignature.getFile());
                 continue;
-            }
-
-            fileStreamSignature.setHash(hashAndSig.getLeft());
-            fileStreamSignature.setSignature(hashAndSig.getRight());
-            fileStreamSignature.setStatus(SignatureStatus.PARSED);
-
-            if (verifySignature(fileStreamSignature)) {
-                fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
-                signatureHashMap.put(fileStreamSignature.getHashAsHex(), fileStreamSignature);
             }
         }
 

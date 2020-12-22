@@ -51,7 +51,7 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
                 default:
                     fileReader = signatureFileReaderV2;
             }
-            return fileReader.read(inputStream);
+            return fileReader.read(dataInputStream);
         } catch (
                 IOException ex) {
             throw new InvalidDatasetException("Error reading signature file", ex);
