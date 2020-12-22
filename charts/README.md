@@ -22,10 +22,10 @@ export RELEASE="mirror1"
 
 To install the wrapper chart:
 
-   ```shell script
-   $ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
-   $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
-   ```
+```shell script
+$ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
+$ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
+```
 
 ## Configure
 
