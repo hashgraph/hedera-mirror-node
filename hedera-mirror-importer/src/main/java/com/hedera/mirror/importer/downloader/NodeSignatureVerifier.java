@@ -38,7 +38,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
@@ -76,12 +75,8 @@ public class NodeSignatureVerifier {
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
 
         AddressBook currentAddressBook = addressBookService.getCurrent();
-        //TODO cache this based on the id of the address book?
-        nodeAccountIDPubKeyMap = currentAddressBook
-                .getEntries()
-                .stream()
-                .collect(Collectors
-                        .toMap(AddressBookEntry::getNodeAccountIdString, AddressBookEntry::getPublicKeyAsObject));
+        //TODO This may need to move out of an attribute and be passed around.
+        nodeAccountIDPubKeyMap = currentAddressBook.getNodeAccountIDPubKeyMap();
 
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
         String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
