@@ -18,41 +18,37 @@ package com.hedera.mirror.importer.reader.signature;/*
  * ‍
  */
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Log4j2
 @Named
+@RequiredArgsConstructor
 public class CompositeSignatureFileReader implements SignatureFileReader {
 
-    private SignatureFileReaderV2 signatureFileReaderV2;
-    static final int BUFFER_SIZE = 16;
+    private final SignatureFileReaderV2 signatureFileReaderV2;
 
     @Override
-    public Pair<byte[], byte[]> read(InputStream inputStream) {
-        try (BufferedReader reader =
-                     new BufferedReader(new InputStreamReader(new BoundedInputStream(inputStream,
-                             BUFFER_SIZE)), BUFFER_SIZE)) {
-            String line = reader.readLine();
-            if (line == null) {
-                throw new InvalidDatasetException("Account balance file is empty");
-//            } else if (version2Reader.isFirstLineFromFileVersion(line)) {
-//                return version2Reader;
-//            } else {
-//                return version1Reader;
-            } else {
-                signatureFileReaderV2.read(inputStream);
+    public Pair<byte[], byte[]> read(BufferedInputStream bufferedInputStream) {
+
+        try (DataInputStream dataInputStream =
+                     new DataInputStream(bufferedInputStream)) {
+            dataInputStream.mark(Integer.BYTES);
+            int version = dataInputStream.readInt();
+            dataInputStream.reset();
+            switch (version) {
+                default:
+                    return signatureFileReaderV2.read(bufferedInputStream);
             }
-            return null;
-        } catch (IOException ex) {
+        } catch (
+                IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
         }
     }

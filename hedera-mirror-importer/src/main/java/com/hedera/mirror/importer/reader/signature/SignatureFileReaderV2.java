@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.signature;/*
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
-import java.io.InputStream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,10 +30,10 @@ import com.hedera.mirror.importer.util.FileDelimiter;
 @Named
 public class SignatureFileReaderV2 implements SignatureFileReader {
     @Override
-    public Pair<byte[], byte[]> read(InputStream inputStream) {
+    public Pair<byte[], byte[]> read(BufferedInputStream bufferedInputStream) {
         byte[] sig = null;
 
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
+        try (DataInputStream dis = new DataInputStream(bufferedInputStream)) {
             byte[] fileHash = new byte[48];
 
             while (dis.available() != 0) {
