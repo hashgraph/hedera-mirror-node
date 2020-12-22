@@ -33,13 +33,14 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
 
     private static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
     public static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
+    public static final byte HASH_SIZE = 48; // the size of the hash
 
     @Override
     public Pair<byte[], byte[]> read(InputStream inputStream) {
         byte[] sig = null;
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
-            byte[] fileHash = new byte[48];
+            byte[] fileHash = new byte[HASH_SIZE];
 
             while (dis.available() != 0) {
                 byte typeDelimiter = dis.readByte();
