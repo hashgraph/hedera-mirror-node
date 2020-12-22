@@ -18,8 +18,6 @@
 
 \copy file_data from file_data.csv csv;
 
-\copy flyway_schema_history from flyway_schema_history.csv csv;
-
 \copy live_hash from live_hash.csv csv;
 
 \copy non_fee_transfer from non_fee_transfer.csv csv;

@@ -59,7 +59,7 @@ start_time="$(date -u +%s)"
 echo "Migrating Mirror Node Data from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
 
 echo "1. Backing up flyway table schema from Postgres($OLD_DB_HOST:$OLD_DB_PORT)..."
-PGPASSWORD=${OLD_PASSWORD} pg_dump -h $OLD_DB_HOST -p $OLD_DB_PORT -U $OLD_DB_USER --section=pre-data --table public.flyway_schema_history -f mirror_node_${start_time}.bak mirror_node
+PGPASSWORD=${OLD_PASSWORD} pg_dump -h $OLD_DB_HOST -p $OLD_DB_PORT -U $OLD_DB_USER --table public.flyway_schema_history -f mirror_node_${start_time}.bak mirror_node
 
 echo "2. Restoring flyway_schema_history to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
 PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER <mirror_node_${start_time}.bak

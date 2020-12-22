@@ -1,0 +1,4 @@
+version: "3.3"
+services:
+  tsdb:
+    entrypoint: ["echo", "TimeScaleDB service is disabled"]

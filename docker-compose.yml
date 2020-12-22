@@ -67,3 +67,17 @@ services:
     tty: true
     ports:
       - 5551:5551
+
+  tsdb:
+    image: timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3
+    restart: unless-stopped
+    stop_grace_period: 2m
+    stop_signal: SIGTERM
+    tty: true
+    environment:
+      POSTGRES_PASSWORD: mirror_node_pass
+    volumes:
+      - ./tsdb:/var/lib/postgresql/data
+      - ./hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql/:/docker-entrypoint-initdb.d/init_v2.sql
+    ports:
+      - 6432:5432

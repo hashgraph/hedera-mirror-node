@@ -95,32 +95,60 @@ sudo journalctl -fu hedera-mirror-importer.service
 
 ### v1 to v2 Data Migration
 
-To support time series logic the Mirror Node db schema shifted from PostgeSQL (v1) to TimeScaleDB (v2)
+To support time series logic the Mirror Node DB schema shifted from PostgeSQL (v1) to TimeScaleDB (v2).
+Adopting the recommended steps [Migrating from a Different PostgreSQL Database](https://docs.timescale.com/latest/getting-started/migrating-data#different-db) we
+
+
 For mirror node operators running v1 db schema looking to upgrade to v2 the following steps can be taken
 
 1. Setup a new database using TimeScale
-Docker installation recommended - https://docs.timescale.com/latest/getting-started/installation/docker/installation-docker
+    Docker installation steps are recommended - https://docs.timescale.com/latest/getting-started/installation/docker/installation-docker
 
+    To install using docker-compose:
+    Update the  `docker-compose.override.yml` file to disable postgres instead of TimeScaleDB
+
+    ```yaml
+    version: "3.3"
+    services:
+      db:
+        entrypoint: ["echo", "PostgreSQL db is disabled"]
+    ```
+
+    Start up a TimescaleDB service:
+    ```shell script
+    $ docker-compose up tsdb
+    ```
+
+    Note: If the new db is running on the same server node as the original db, then the port must be updated to something other than 5432.
+    The `tsdb` port can be updated to a different port e.g. 6432 as follows:
+    ```yaml
+    ...
+    services:
+      ...
+      tsdb:
+        ports:
+          - 6432:5432
+    ```
 
 2. Create DB & Init Schema
-The init script for v2 at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql` may be used to create teh db, users, schema, extensions and ensure all permissions are set.
-This may be run manually against the db node or in teh docker case mounted under `/docker-entrypoint-initdb.d/` on the docker container
 
-> **_NOTE:_** The following steps assume the database, users and schema have been created
+    The init script for v2 at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql` may be used to create the db, users, schema, extensions and ensure all permissions are set.
+    This may be run manually against the db node. In the docker-compose case this file is already mounted under `/docker-entrypoint-initdb.d/` on the docker container and run on startup.
+
+    > **_NOTE:_** The following steps assume the database, users and schema have been created
 
 3. Configure migration properties
-A properties file contains variable for easy running. These options include variables such as db names, passwords, users, hosts for both the existing db and the new db.
 
-Updated the values at `hedera-mirror-importer/src/main/resources/db/scripts/time-scale-migration/migration.config` appropriately
+    A properties file contains db variable for easy running. These options include variables such as db names, passwords, users, hosts for both the existing db and the new db.
+
+    Update the values at `hedera-mirror-importer/src/main/resources/db/scripts/time-scale-migration/migration.config` appropriately for your db setup.
 
 4. Run migration script
 
-From the `hedera-mirror-importer/src/main/resources/db` directory run
+    From the `hedera-mirror-importer/src/main/resources/db` directory run
     ```shell script
     $ ./scripts/time-scale-migration/timeScaleDbMigration.sh
     ```
-
-Adopting the recommended steps [Migrating from a Different PostgreSQL Database](https://docs.timescale.com/latest/getting-started/migrating-data#different-db) we
 
 ## Monitor
 

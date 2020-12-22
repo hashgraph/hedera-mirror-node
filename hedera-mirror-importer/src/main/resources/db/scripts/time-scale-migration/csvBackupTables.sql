@@ -18,8 +18,6 @@
 
 \copy (select * from file_data) to file_data.csv delimiter ',' csv;
 
-\copy (select * from flyway_schema_history) to flyway_schema_history.csv delimiter ',' csv;
-
 \copy (select * from live_hash) to live_hash.csv delimiter ',' csv;
 
 \copy (select * from non_fee_transfer) to non_fee_transfer.csv delimiter ',' csv;
