@@ -28,7 +28,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Primary;
 
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
 @Named
@@ -43,18 +43,20 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
 
         try (DataInputStream dataInputStream =
                      new DataInputStream(new BufferedInputStream(inputStream))) {
-            dataInputStream.mark(Integer.BYTES);
+            dataInputStream.mark(Byte.BYTES);
             byte version = dataInputStream.readByte();
             dataInputStream.reset();
             SignatureFileReader fileReader;
-            switch (version) {
-                default:
-                    fileReader = signatureFileReaderV2;
+            // Version 2 of the signature file begins with a byte of value 4.
+            if (version <= 4) {
+                fileReader = signatureFileReaderV2;
+            } else {
+                throw new SignatureFileParsingException("Unsupported signature file version: " + version);
             }
             return fileReader.read(dataInputStream);
         } catch (
                 IOException ex) {
-            throw new InvalidDatasetException("Error reading signature file", ex);
+            throw new SignatureFileParsingException("Error reading signature file", ex);
         }
     }
 }
