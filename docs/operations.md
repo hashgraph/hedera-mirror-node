@@ -93,6 +93,35 @@ systemctl status hedera-mirror-importer.service
 sudo journalctl -fu hedera-mirror-importer.service
 ```
 
+### v1 to v2 Data Migration
+
+To support time series logic the Mirror Node db schema shifted from PostgeSQL (v1) to TimeScaleDB (v2)
+For mirror node operators running v1 db schema looking to upgrade to v2 the following steps can be taken
+
+1. Setup a new database using TimeScale
+Docker installation recommended - https://docs.timescale.com/latest/getting-started/installation/docker/installation-docker
+
+
+2. Create DB & Init Schema
+The init script for v2 at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql` may be used to create teh db, users, schema, extensions and ensure all permissions are set.
+This may be run manually against the db node or in teh docker case mounted under `/docker-entrypoint-initdb.d/` on the docker container
+
+> **_NOTE:_** The following steps assume the database, users and schema have been created
+
+3. Configure migration properties
+A properties file contains variable for easy running. These options include variables such as db names, passwords, users, hosts for both the existing db and the new db.
+
+Updated the values at `hedera-mirror-importer/src/main/resources/db/scripts/time-scale-migration/migration.config` appropriately
+
+4. Run migration script
+
+From the `hedera-mirror-importer/src/main/resources/db` directory run
+    ```shell script
+    $ ./scripts/time-scale-migration/timeScaleDbMigration.sh
+    ```
+
+Adopting the recommended steps [Migrating from a Different PostgreSQL Database](https://docs.timescale.com/latest/getting-started/migrating-data#different-db) we
+
 ## Monitor
 
 The monitor is a Java-based application and should be able to run on any platform that Java supports. That said, we
@@ -224,5 +253,4 @@ available
 - `/swagger/ui` - Metrics dashboard
 - `/swagger/stats` - Aggregated statistics
 - `/swagger/metrics` - Prometheus formatted metrics
-
 Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest.metrics.config.uriPath`.
