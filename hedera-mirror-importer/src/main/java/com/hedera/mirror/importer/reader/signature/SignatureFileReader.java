@@ -18,9 +18,9 @@ package com.hedera.mirror.importer.reader.signature;/*
  * ‍
  */
 
-import java.io.BufferedInputStream;
+import java.io.InputStream;
 import org.apache.commons.lang3.tuple.Pair;
 
 public interface SignatureFileReader {
-    Pair<byte[], byte[]> read(BufferedInputStream bufferedInputStream);
+    Pair<byte[], byte[]> read(InputStream inputStream);
 }

@@ -23,10 +23,7 @@ package com.hedera.mirror.importer.downloader;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Collection;
@@ -45,7 +42,8 @@ import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
-import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @Log4j2
@@ -54,7 +52,7 @@ public class NodeSignatureVerifier {
 
     private final AddressBookService addressBookService;
 
-    private final CompositeSignatureFileReader signatureFileReader;
+    private final SignatureFileReader signatureFileReader;
 
     private Map<String, PublicKey> nodeAccountIDPubKeyMap;
 
@@ -98,15 +96,12 @@ public class NodeSignatureVerifier {
         }
 
         for (FileStreamSignature fileStreamSignature : signatures) {
-//            Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(fileStreamSignature.getFile());
-            Pair<byte[], byte[]> hashAndSig = null;
-            try {
-                hashAndSig = signatureFileReader
-                        .read(new BufferedInputStream(new FileInputStream(fileStreamSignature.getFile())));
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
+
+            Pair<byte[], byte[]> hashAndSig = signatureFileReader
+                    .read(Utility.openQuietly(fileStreamSignature.getFile()));
+
             if (hashAndSig == null) {
+                log.error("Failed to extract hash and signature from file {}", fileStreamSignature.getFile());
                 continue;
             }
 

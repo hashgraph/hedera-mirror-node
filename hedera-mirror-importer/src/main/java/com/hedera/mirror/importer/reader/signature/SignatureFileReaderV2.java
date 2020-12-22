@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.reader.signature;/*
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
+import java.io.InputStream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
@@ -30,10 +31,10 @@ import com.hedera.mirror.importer.util.FileDelimiter;
 @Named
 public class SignatureFileReaderV2 implements SignatureFileReader {
     @Override
-    public Pair<byte[], byte[]> read(BufferedInputStream bufferedInputStream) {
+    public Pair<byte[], byte[]> read(InputStream inputStream) {
         byte[] sig = null;
 
-        try (DataInputStream dis = new DataInputStream(bufferedInputStream)) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
             byte[] fileHash = new byte[48];
 
             while (dis.available() != 0) {
@@ -54,16 +55,14 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
                         sig = sigBytes;
                         break;
                     default:
-                        //TODO
-//                        log.error("Unknown file delimiter {} in signature file {}", typeDelimiter, file);
+                        log.error("Unknown file delimiter {} in signature file", typeDelimiter);
                         return null;
                 }
             }
 
             return Pair.of(fileHash, sig);
         } catch (Exception e) {
-            //TODO Log without filename;
-//            log.error("Unable to extract hash and signature from file {}", file, e);
+            log.error("Exception occurred reading signature file", e);
         }
 
         return null;

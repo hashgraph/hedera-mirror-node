@@ -21,35 +21,40 @@ package com.hedera.mirror.importer.reader.signature;/*
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Log4j2
 @Named
+@Primary
 @RequiredArgsConstructor
 public class CompositeSignatureFileReader implements SignatureFileReader {
 
     private final SignatureFileReaderV2 signatureFileReaderV2;
 
     @Override
-    public Pair<byte[], byte[]> read(BufferedInputStream bufferedInputStream) {
+    public Pair<byte[], byte[]> read(InputStream inputStream) {
 
         try (DataInputStream dataInputStream =
-                     new DataInputStream(bufferedInputStream)) {
+                     new DataInputStream(new BufferedInputStream(inputStream))) {
             dataInputStream.mark(Integer.BYTES);
             int version = dataInputStream.readInt();
             dataInputStream.reset();
+            SignatureFileReader fileReader;
             switch (version) {
                 default:
-                    return signatureFileReaderV2.read(bufferedInputStream);
+                    fileReader = signatureFileReaderV2;
             }
+            return fileReader.read(inputStream);
         } catch (
                 IOException ex) {
-            throw new InvalidDatasetException("Error reading account balance file", ex);
+            throw new InvalidDatasetException("Error reading signature file", ex);
         }
     }
 }

@@ -35,6 +35,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,6 +55,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
@@ -505,4 +507,13 @@ public class Utility {
         }
         return false;
     }
+
+    public static InputStream openQuietly(File file) {
+        try {
+            return new FileInputStream(file);
+        } catch (IOException e) {
+            throw new FileOperationException("Unable to open file " + file.getPath(), e);
+        }
+    }
 }
+
