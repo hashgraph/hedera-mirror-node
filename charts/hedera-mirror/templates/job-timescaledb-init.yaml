@@ -1,11 +1,13 @@
+{{- if .Values.timescaledb.enabled -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: {{ printf "%s-timescaledb-init-job" .Release.Name }}
+  name: {{ include "hedera-mirror.dbHost" . }}-init-job
   namespace: {{ include "hedera-mirror.namespace" . }}
   annotations:
+    "helm.sh/hook": post-install
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   backoffLimit: 4
@@ -20,11 +22,11 @@ spec:
             - |
               set -e
 
-              while ! pg_isready -U postgres -h {{ printf "%s-timescaledb-data" .Release.Name }}; do sleep 1; done;
+              while ! pg_isready -U postgres -h {{ include "hedera-mirror.dbHost" . }}-data; do sleep 1; done;
               psql --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" --set ON_ERROR_STOP=1 -f ${DB_INIT_FILE}
           env:
             - name: ACCESS_SVC_CONNSTR_POSTGRES
-              value: host=mirror-timescaledb user=postgres connect_timeout=3 sslmode=disable password={{ .Values.timescaledb.credentials.accessNode.superuser }}
+              value: host={{ include "hedera-mirror.dbHost" . }} user=postgres connect_timeout=3 sslmode=disable password={{ .Values.timescaledb.credentials.accessNode.superuser }}
             - name: DB_INIT_FILE
               value: /usr/etc/db-init/init.sql
           volumeMounts:
@@ -34,6 +36,7 @@ spec:
         - name: timescale-db-init-volume
           secret:
             defaultMode: 420
-            secretName: {{ printf "%s-timescaledb-init" .Release.Name  }}
+            secretName: {{ include "hedera-mirror.dbHost" . }}-init
       restartPolicy: OnFailure
   ttlSecondsAfterFinished: 600
+  {{- end -}}

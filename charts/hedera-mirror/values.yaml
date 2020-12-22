@@ -189,7 +189,7 @@ timescaledb:
     size: 500Gi
   resources:
     limits:
-      cpu: 2Gi
+      cpu: 2
       memory: 4Gi
     requests:
       cpu: 250m
