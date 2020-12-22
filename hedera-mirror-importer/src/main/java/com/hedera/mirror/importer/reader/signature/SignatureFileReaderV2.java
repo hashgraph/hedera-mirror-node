@@ -26,11 +26,14 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
-import com.hedera.mirror.importer.util.FileDelimiter;
 
 @Log4j2
 @Named
 public class SignatureFileReaderV2 implements SignatureFileReader {
+
+    private static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
+    public static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
+
     @Override
     public Pair<byte[], byte[]> read(InputStream inputStream) {
         byte[] sig = null;
@@ -42,14 +45,14 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
                 byte typeDelimiter = dis.readByte();
 
                 switch (typeDelimiter) {
-                    case FileDelimiter.SIGNATURE_TYPE_FILE_HASH:
+                    case SIGNATURE_TYPE_FILE_HASH:
                         int length = dis.read(fileHash);
                         if (length != fileHash.length) {
                             throw new IllegalArgumentException("Unable to read signature file hash");
                         }
                         break;
 
-                    case FileDelimiter.SIGNATURE_TYPE_SIGNATURE:
+                    case SIGNATURE_TYPE_SIGNATURE:
                         int sigLength = dis.readInt();
                         byte[] sigBytes = new byte[sigLength];
                         dis.readFully(sigBytes);

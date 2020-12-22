@@ -23,8 +23,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public interface SignatureFileReader {
     /**
-     * Read an InputStream containing signature file data and extract the signature and the file hash. The InputStream
-     * is closed internally,
+     * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this
+     * signature 2. Extract signature from the file.
      *
      * @param signatureFileData The input stream from a signature file to read
      * @return Pair of byte arrays, the left holding the file hash and the right the signature

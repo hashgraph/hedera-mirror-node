@@ -51,7 +51,6 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
@@ -66,55 +65,6 @@ public class Utility {
 
     private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
-
-    /**
-     * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this
-     * signature 2. Extract signature from the file.
-     *
-     * @param file
-     * @return
-     */
-    public static Pair<byte[], byte[]> extractHashAndSigFromFile(File file) {
-        byte[] sig = null;
-
-        if (file.exists() == false) {
-            log.info("File does not exist {}", file.getPath());
-            return null;
-        }
-
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
-            byte[] fileHash = new byte[48];
-
-            while (dis.available() != 0) {
-                byte typeDelimiter = dis.readByte();
-
-                switch (typeDelimiter) {
-                    case FileDelimiter.SIGNATURE_TYPE_FILE_HASH:
-                        int length = dis.read(fileHash);
-                        if (length != fileHash.length) {
-                            throw new IllegalArgumentException("Unable to read signature file hash");
-                        }
-                        break;
-
-                    case FileDelimiter.SIGNATURE_TYPE_SIGNATURE:
-                        int sigLength = dis.readInt();
-                        byte[] sigBytes = new byte[sigLength];
-                        dis.readFully(sigBytes);
-                        sig = sigBytes;
-                        break;
-                    default:
-                        log.error("Unknown file delimiter {} in signature file {}", typeDelimiter, file);
-                        return null;
-                }
-            }
-
-            return Pair.of(fileHash, sig);
-        } catch (Exception e) {
-            log.error("Unable to extract hash and signature from file {}", file, e);
-        }
-
-        return null;
-    }
 
     /**
      * Calculate SHA384 hash of a balance file
