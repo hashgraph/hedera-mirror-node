@@ -2,8 +2,7 @@
 echo "BASH_VERSION: $BASH_VERSION"
 set -e
 
-. migration.config
-echo "$OLD_DB_HOST" "$OLD_DB_NAME" "$OLD_DB_PORT" "$OLD_DB_USER" "$NEW_DB_HOST" "$NEW_DB_NAME" "$NEW_DB_PORT" "$NEW_DB_USER"
+. scripts/time-scale-migration/migration.config
 
 if [[ -z $OLD_DB_HOST ]]; then
     echo "Current host name is not set. Please configure OLD_DB_HOST in migration.config file and rerun './timeScaleDbMigration.sh'"
@@ -59,22 +58,27 @@ start_time="$(date -u +%s)"
 # assumes 1. Valid populated current mirror node postgres db with appropriate user 2. New empty TimeScaleDb db host with appropriate user
 echo "Migrating Mirror Node Data from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
 
-echo "1. Backing up table schema from Postgres($OLD_DB_HOST:$OLD_DB_PORT)..."
-PGPASSWORD=${OLD_PASSWORD} pg_dump -h $OLD_DB_HOST -p $OLD_DB_PORT -U $OLD_DB_USER --section=pre-data -f mirror_node_${start_time}.bak mirror_node
-#
-echo "2. Restoring table schemas to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
-psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER "password=${NEW_PASSWORD}" <mirror_node_${start_time}.bak
+echo "1. Backing up flyway table schema from Postgres($OLD_DB_HOST:$OLD_DB_PORT)..."
+PGPASSWORD=${OLD_PASSWORD} pg_dump -h $OLD_DB_HOST -p $OLD_DB_PORT -U $OLD_DB_USER --section=pre-data --table public.flyway_schema_history -f mirror_node_${start_time}.bak mirror_node
 
-## Optionally we could skip step 1 and 2 and just create a whole new schema with a new init.sql -> timeScaleDBInit.sql
-echo "3. Creating new hyper tables on TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
-psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f createHyperTables.sql "password=${NEW_PASSWORD}"
+echo "2. Restoring flyway_schema_history to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
+PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER <mirror_node_${start_time}.bak
 
-echo "4. Backing up tables from from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to separate CSV's..."
-psql -h $OLD_DB_HOST -d $OLD_DB_NAME -p $OLD_DB_PORT -U $OLD_DB_USER -f csvBackupTables.sql "password=${OLD_PASSWORD}"
+echo "3. Create v2 table schemas in TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
+PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER <migration/v2/V2.0.0__time_scale_init.sql
+
+echo "4. Creating new hyper tables on TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
+PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f scripts/time-scale-migration/createHyperTables.sql
+
+echo "5. Backing up tables from from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to separate CSV's..."
+PGPASSWORD=${OLD_PASSWORD} psql -h $OLD_DB_HOST -d $OLD_DB_NAME -p $OLD_DB_PORT -U $OLD_DB_USER -f scripts/time-scale-migration/csvBackupTables.sql
 
 ## Optionally use https://github.com/timescale/timescaledb-parallel-copy as it's mulithreaded
-echo "5. Restoring CSV backups to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
-psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f csvRestoreTables.sql "password=${NEW_PASSWORD}"
+echo "6. Restoring CSV backups to TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT)..."
+PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f scripts/time-scale-migration/csvRestoreTables.sql
+
+echo "7. Alter schema on TimeScaleDb($NEW_DB_HOST:$NEW_DB_PORT) to support improved format..."
+PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f scripts/time-scale-migration/alterSchema.sql
 
 # leave index creation and policy sets to migration 2.0
 end_time="$(date -u +%s)"

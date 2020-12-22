@@ -14,7 +14,7 @@ comment on table account_balance is 'Account balances (historical) in tinybars a
 
 create table if not exists account_balance_file
 (
-    consensus_timestamp bigint,
+    consensus_timestamp bigint       not null,
     count               bigint       not null,
     load_start          bigint,
     load_end            bigint,
@@ -37,7 +37,7 @@ comment on table account_balance_sets is 'Processing state of snapshots of the e
 -- address_book
 create table if not exists address_book
 (
-    start_consensus_timestamp bigint,
+    start_consensus_timestamp bigint not null,
     end_consensus_timestamp   bigint null,
     file_id                   bigint not null,
     node_count                int    null,
@@ -415,6 +415,7 @@ comment on table token is 'Token entities';
 --- token_account
 create table if not exists token_account
 (
+    id                 serial,
     account_id         bigint   not null,
     associated         boolean  not null default false,
     created_timestamp  bigint   not null,

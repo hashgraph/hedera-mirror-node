@@ -42,7 +42,7 @@
 
 \copy (select * from token_balance) to token_balance.csv delimiter ',' csv;
 
-\copy (select * from token_message) to token_message.csv delimiter ',' csv;
+\copy (select * from token_transfer) to token_transfer.csv delimiter ',' csv;
 
 \copy (select * from topic_message) to topic_message.csv delimiter ',' csv;
 
