@@ -25,7 +25,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.hedera.mirror.importer.exception.SignatureVerificationException;
+import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
 @Named
@@ -42,32 +42,30 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
             byte[] fileHash = new byte[HASH_SIZE];
 
-            while (dis.available() != 0) {
-                byte typeDelimiter = dis.readByte();
+            byte typeDelimiter = dis.readByte();
+            if (typeDelimiter != SIGNATURE_TYPE_FILE_HASH) {
+                throw new IllegalArgumentException("Signature file hash not in correct position");
+            }
+            int length = dis.read(fileHash);
+            if (length != fileHash.length) {
+                throw new IllegalArgumentException("Unable to read signature file hash");
+            }
 
-                switch (typeDelimiter) {
-                    case SIGNATURE_TYPE_FILE_HASH:
-                        int length = dis.read(fileHash);
-                        if (length != fileHash.length) {
-                            throw new IllegalArgumentException("Unable to read signature file hash");
-                        }
-                        break;
-
-                    case SIGNATURE_TYPE_SIGNATURE:
-                        int sigLength = dis.readInt();
-                        byte[] sigBytes = new byte[sigLength];
-                        dis.readFully(sigBytes);
-                        sig = sigBytes;
-                        break;
-                    default:
-                        throw new SignatureVerificationException("Unknown file delimiter " + typeDelimiter + " in " +
-                                "signature file");
-                }
+            typeDelimiter = dis.readByte();
+            if (typeDelimiter != SIGNATURE_TYPE_SIGNATURE) {
+                throw new IllegalArgumentException("Signature file signature not in correct position");
+            }
+            int sigLength = dis.readInt();
+            byte[] sigBytes = new byte[sigLength];
+            dis.readFully(sigBytes);
+            sig = sigBytes;
+            if (dis.available() != 0) {
+                throw new IllegalArgumentException("Extra data discovered in signature file");
             }
 
             return Pair.of(fileHash, sig);
         } catch (Exception e) {
-            throw new SignatureVerificationException("Exception occurred reading signature file", e);
+            throw new SignatureFileParsingException("Exception occurred reading signature file", e);
         }
     }
 }
