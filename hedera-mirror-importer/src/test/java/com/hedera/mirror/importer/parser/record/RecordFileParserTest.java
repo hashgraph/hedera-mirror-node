@@ -61,9 +61,9 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
+import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidRecordFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.exception.RecordFileReaderException;
 import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
@@ -246,7 +246,7 @@ public class RecordFileParserTest {
         doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
 
         // when
-        Assertions.assertThrows(RecordFileReaderException.class, () -> {
+        Assertions.assertThrows(ImporterException.class, () -> {
             recordFileParser.parse(streamFileData1);
         });
 

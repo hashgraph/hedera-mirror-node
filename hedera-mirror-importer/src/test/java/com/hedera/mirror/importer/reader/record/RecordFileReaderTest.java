@@ -152,7 +152,7 @@ abstract class RecordFileReaderTest {
     }
 
     @TestFactory
-    Stream<DynamicTest> readValidFileWithOutConsumer() {
+    Stream<DynamicTest> readValidFileWithoutConsumer() {
         String template = "read valid version %d file %s";
 
         return DynamicTest.stream(

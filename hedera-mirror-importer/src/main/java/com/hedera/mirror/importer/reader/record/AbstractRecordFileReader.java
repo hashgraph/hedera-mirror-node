@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidRecordFileException;
 import com.hedera.mirror.importer.exception.RecordFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -60,7 +61,7 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
             recordFile.setFileHash(Hex.encodeHexString(digest.digest()));
 
             return recordFile;
-        } catch (RecordFileReaderException e) {
+        } catch (ImporterException e) {
             throw e;
         }  catch (Exception e) {
             throw new RecordFileReaderException("Error reading record file " + streamFileData.getFilename(), e);

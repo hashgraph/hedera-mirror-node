@@ -24,10 +24,6 @@ public class RecordFileReaderException extends ImporterException {
 
     private static final long serialVersionUID = 2533328395713171797L;
 
-    public RecordFileReaderException(final String message) {
-        super(message);
-    }
-
     public RecordFileReaderException(final String message, final Throwable throwable) {
         super(message, throwable);
     }

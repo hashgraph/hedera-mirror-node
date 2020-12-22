@@ -24,7 +24,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import javax.inject.Named;
@@ -33,8 +32,8 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import com.hedera.mirror.importer.parser.FilePoller;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.FilePoller;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 

@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.downloader.event;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -35,7 +34,6 @@ import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
-@Log4j2
 @Named
 public class EventFileDownloader extends Downloader {
 

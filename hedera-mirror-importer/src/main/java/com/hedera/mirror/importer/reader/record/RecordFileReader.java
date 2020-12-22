@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.RecordFileReaderException;
+import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 public interface RecordFileReader {
@@ -35,5 +35,5 @@ public interface RecordFileReader {
      * @param itemConsumer consumer to handle individual {@link RecordItem} objects.
      * @return {@link RecordFile} object
      */
-    RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) throws RecordFileReaderException;
+    RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) throws ImporterException;
 }

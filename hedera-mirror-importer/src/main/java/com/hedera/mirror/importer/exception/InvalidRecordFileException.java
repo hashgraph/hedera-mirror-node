@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class InvalidRecordFileException extends RecordFileReaderException {
+public class InvalidRecordFileException extends ImporterException {
 
     private static final long serialVersionUID = 2786469980314810323L;
 

@@ -29,7 +29,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -45,7 +44,6 @@ import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
-@Log4j2
 @Named
 public class RecordFileDownloader extends Downloader {
 
