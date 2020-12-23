@@ -68,7 +68,6 @@ public class NodeSignatureVerifier {
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
 
         AddressBook currentAddressBook = addressBookService.getCurrent();
-        //TODO This may need to move out of an attribute and be passed around.
         Map<String, PublicKey> nodeAccountIDPubKeyMap = currentAddressBook.getNodeAccountIDPubKeyMap();
 
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
