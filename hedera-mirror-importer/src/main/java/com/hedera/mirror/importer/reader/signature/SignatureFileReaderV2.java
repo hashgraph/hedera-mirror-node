@@ -57,7 +57,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
 
             byte signatureTypeDelimiter = dis.readByte();
             if (signatureTypeDelimiter != SIGNATURE_TYPE_SIGNATURE) {
-                throw new SignatureFileParsingException("Unable to read signature file hash: type delimiter " + signatureTypeDelimiter);
+                throw new SignatureFileParsingException("Unable to read signature file signature: type delimiter " + signatureTypeDelimiter);
             }
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
