@@ -90,7 +90,6 @@ public abstract class Downloader {
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties commonDownloaderProperties;
     private final TransactionTemplate transactionTemplate;
-    //TODO sort?
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
 
