@@ -50,7 +50,7 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
             dataInputStream.reset();
             SignatureFileReader fileReader;
             // Version 2 of the signature file begins with a byte of value 4.
-            if (version <= 4) {
+            if (version <= SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH) {
                 fileReader = signatureFileReaderV2;
             } else {
                 throw new SignatureFileParsingException("Unsupported signature file version: " + version);
