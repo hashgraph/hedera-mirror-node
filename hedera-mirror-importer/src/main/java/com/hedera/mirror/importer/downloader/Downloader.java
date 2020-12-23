@@ -253,17 +253,12 @@ public abstract class Downloader {
                     pendingDownloads.forEach(pendingDownload -> {
                         try {
                             if (pendingDownload.waitForCompletion()) {
-                                File sigFile = pendingDownload.getFile();
-                                try {
-                                    InputStream inputStream = Utility.openQuietly(sigFile);
-                                    FileStreamSignature fileStreamSignature = signatureFileReader.read(inputStream);
-                                    fileStreamSignature.setFile(sigFile);
-                                    fileStreamSignature.setNodeAccountId(nodeAccountId);
-                                    sigFilesMap.put(sigFile.getName(), fileStreamSignature);
-
+                                FileStreamSignature fileStreamSignature = parseSignatureFile(nodeAccountId,
+                                        pendingDownload
+                                                .getFile());
+                                if (fileStreamSignature != null) {
+                                    sigFilesMap.put(fileStreamSignature.getFile().getName(), fileStreamSignature);
                                     count.incrementAndGet();
-                                } catch (SignatureFileParsingException | FileOperationException ex) {
-                                    log.warn("Failed to parse signature file {}: {}", sigFile, ex);
                                 }
                             }
                         } catch (InterruptedException ex) {
@@ -291,6 +286,19 @@ public abstract class Downloader {
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         }
         return sigFilesMap;
+    }
+
+    private FileStreamSignature parseSignatureFile(EntityId nodeAccountId, File sigFile) {
+        try {
+            InputStream inputStream = Utility.openQuietly(sigFile);
+            FileStreamSignature fileStreamSignature = signatureFileReader.read(inputStream);
+            fileStreamSignature.setFile(sigFile);
+            fileStreamSignature.setNodeAccountId(nodeAccountId);
+            return fileStreamSignature;
+        } catch (SignatureFileParsingException | FileOperationException ex) {
+            log.warn("Failed to parse signature file {}: {}", sigFile, ex);
+            return null;
+        }
     }
 
     /**
