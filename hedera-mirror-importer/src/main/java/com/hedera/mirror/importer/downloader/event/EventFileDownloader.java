@@ -34,6 +34,7 @@ import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @Log4j2
@@ -46,9 +47,9 @@ public class EventFileDownloader extends Downloader {
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
             TransactionTemplate transactionTemplate, MeterRegistry meterRegistry, EventFileReader eventFileReader,
-            NodeSignatureVerifier nodeSignatureVerifier) {
+            NodeSignatureVerifier nodeSignatureVerifier, SignatureFileReader signatureFileReader) {
         super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
-                meterRegistry, nodeSignatureVerifier);
+                meterRegistry, nodeSignatureVerifier, signatureFileReader);
         this.eventFileReader = eventFileReader;
     }
 

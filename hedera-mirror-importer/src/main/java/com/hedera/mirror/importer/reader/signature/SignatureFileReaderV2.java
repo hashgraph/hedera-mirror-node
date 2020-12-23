@@ -25,8 +25,8 @@ import java.io.DataInputStream;
 import java.io.InputStream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.tuple.Pair;
 
+import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
@@ -38,8 +38,8 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
     public static final byte HASH_SIZE = 48; // the size of the hash
 
     @Override
-    public Pair<byte[], byte[]> read(InputStream inputStream) {
-        byte[] sig = null;
+    public FileStreamSignature read(InputStream inputStream) {
+        FileStreamSignature fileStreamSignature = new FileStreamSignature();
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
             byte[] fileHash = new byte[HASH_SIZE];
@@ -52,6 +52,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
             if (length != fileHash.length) {
                 throw new IllegalArgumentException("Unable to read signature file hash");
             }
+            fileStreamSignature.setHash(fileHash);
 
             typeDelimiter = dis.readByte();
             if (typeDelimiter != SIGNATURE_TYPE_SIGNATURE) {
@@ -60,12 +61,13 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
             dis.readFully(sigBytes);
-            sig = sigBytes;
+            fileStreamSignature.setSignature(sigBytes);
+
             if (dis.available() != 0) {
                 throw new IllegalArgumentException("Extra data discovered in signature file");
             }
 
-            return Pair.of(fileHash, sig);
+            return fileStreamSignature;
         } catch (Exception e) {
             throw new SignatureFileParsingException("Exception occurred reading signature file", e);
         }

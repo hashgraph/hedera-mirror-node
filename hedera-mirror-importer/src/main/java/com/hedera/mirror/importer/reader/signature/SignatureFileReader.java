@@ -21,7 +21,8 @@ package com.hedera.mirror.importer.reader.signature;
  */
 
 import java.io.InputStream;
-import org.apache.commons.lang3.tuple.Pair;
+
+import com.hedera.mirror.importer.domain.FileStreamSignature;
 
 public interface SignatureFileReader {
     /**
@@ -31,5 +32,5 @@ public interface SignatureFileReader {
      * @param signatureFileData The input stream from a signature file to read
      * @return Pair of byte arrays, the left holding the file hash and the right the signature
      */
-    Pair<byte[], byte[]> read(InputStream signatureFileData);
+    FileStreamSignature read(InputStream signatureFileData);
 }

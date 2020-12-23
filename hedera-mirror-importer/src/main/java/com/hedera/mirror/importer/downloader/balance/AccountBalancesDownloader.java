@@ -34,6 +34,7 @@ import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.leader.Leader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -48,9 +49,10 @@ public class AccountBalancesDownloader extends Downloader {
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             AddressBookService addressBookService, BalanceDownloaderProperties downloaderProperties,
             TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
-            AccountBalanceFileRepository accountBalanceFileRepository, NodeSignatureVerifier nodeSignatureVerifier) {
+            AccountBalanceFileRepository accountBalanceFileRepository, NodeSignatureVerifier nodeSignatureVerifier,
+            SignatureFileReader signatureFileReader) {
         super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
-                meterRegistry, nodeSignatureVerifier);
+                meterRegistry, nodeSignatureVerifier, signatureFileReader);
         this.accountBalanceFileRepository = accountBalanceFileRepository;
     }
 

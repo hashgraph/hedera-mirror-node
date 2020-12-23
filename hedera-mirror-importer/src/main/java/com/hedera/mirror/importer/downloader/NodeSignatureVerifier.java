@@ -34,15 +34,12 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
-import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @Log4j2
@@ -50,10 +47,6 @@ import com.hedera.mirror.importer.util.Utility;
 public class NodeSignatureVerifier {
 
     private final AddressBookService addressBookService;
-
-    private final SignatureFileReader signatureFileReader;
-
-    private Map<String, PublicKey> nodeAccountIDPubKeyMap;
 
     private static boolean canReachConsensus(long actualNodes, long expectedNodes) {
         return actualNodes >= Math.ceil(expectedNodes / 3.0);
@@ -76,7 +69,7 @@ public class NodeSignatureVerifier {
 
         AddressBook currentAddressBook = addressBookService.getCurrent();
         //TODO This may need to move out of an attribute and be passed around.
-        nodeAccountIDPubKeyMap = currentAddressBook.getNodeAccountIDPubKeyMap();
+        Map<String, PublicKey> nodeAccountIDPubKeyMap = currentAddressBook.getNodeAccountIDPubKeyMap();
 
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
         String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
@@ -87,26 +80,14 @@ public class NodeSignatureVerifier {
         long nodeCount = nodeAccountIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
             throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
-                    sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures));
+                    sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures,
+                    nodeAccountIDPubKeyMap));
         }
 
         for (FileStreamSignature fileStreamSignature : signatures) {
-
-            try {
-
-                Pair<byte[], byte[]> hashAndSig = signatureFileReader
-                        .read(Utility.openQuietly(fileStreamSignature.getFile()));
-
-                fileStreamSignature.setHash(hashAndSig.getLeft());
-                fileStreamSignature.setSignature(hashAndSig.getRight());
-                fileStreamSignature.setStatus(SignatureStatus.PARSED);
-                if (verifySignature(fileStreamSignature)) {
-                    fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
-                    signatureHashMap.put(fileStreamSignature.getHashAsHex(), fileStreamSignature);
-                }
-            } catch (Exception e) {
-                log.error("Failed to extract hash and signature from file {}", fileStreamSignature.getFile());
-                continue;
+            if (verifySignature(fileStreamSignature, nodeAccountIDPubKeyMap)) {
+                fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
+                signatureHashMap.put(fileStreamSignature.getHashAsHex(), fileStreamSignature);
             }
         }
 
@@ -124,20 +105,22 @@ public class NodeSignatureVerifier {
             return;
         } else if (consensusCount > 0) {
             log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
-                    statusMap(signatures));
+                    statusMap(signatures, nodeAccountIDPubKeyMap));
             return;
         }
 
-        throw new SignatureVerificationException("Signature verification failed for file " + filename + ": " + statusMap(signatures));
+        throw new SignatureVerificationException("Signature verification failed for file " + filename + ": " + statusMap(signatures, nodeAccountIDPubKeyMap));
     }
 
     /**
      * check whether the given signature is valid
      *
-     * @param fileStreamSignature the data that was signed
+     * @param fileStreamSignature    the data that was signed
+     * @param nodeAccountIDPubKeyMap map of node account ids (as Strings) and their public keys
      * @return true if the signature is valid
      */
-    private boolean verifySignature(FileStreamSignature fileStreamSignature) {
+    private boolean verifySignature(FileStreamSignature fileStreamSignature,
+                                    Map<String, PublicKey> nodeAccountIDPubKeyMap) {
         PublicKey publicKey = nodeAccountIDPubKeyMap.get(fileStreamSignature.getNodeAccountIdString());
         if (publicKey == null) {
             log.warn("Missing PublicKey for node {}", fileStreamSignature.getNodeAccountIdString());
@@ -161,7 +144,8 @@ public class NodeSignatureVerifier {
         return false;
     }
 
-    private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures) {
+    private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures, Map<String,
+            PublicKey> nodeAccountIDPubKeyMap) {
         Map<String, Collection<String>> statusMap = signatures.stream()
                 .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
                         Collectors.mapping(FileStreamSignature::getNodeAccountIdString, Collectors
