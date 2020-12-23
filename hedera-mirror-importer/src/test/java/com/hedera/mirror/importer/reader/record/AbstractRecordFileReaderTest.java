@@ -45,9 +45,10 @@ abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
                     // given
                     fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
                     File file = fileCopier.getTo().resolve(filename).toFile();
+                    StreamFileData streamFileData = StreamFileData.from(file);
 
                     // when
-                    assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(StreamFileData.from(file)));
+                    assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));
                 }
         );
     }

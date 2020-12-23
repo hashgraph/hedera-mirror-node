@@ -32,7 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class StreamFileDataTest {
+class StreamFileDataTest {
 
     @TempDir
     Path dataPath;
@@ -55,6 +55,7 @@ public class StreamFileDataTest {
             }
 
             StreamFileData streamFileData = StreamFileData.from(file);
+
             assertThat(streamFileData.getFilename()).isEqualTo(file.getAbsolutePath());
             assertThat(streamFileData.getInputStream()).isNotNull();
         } else {
