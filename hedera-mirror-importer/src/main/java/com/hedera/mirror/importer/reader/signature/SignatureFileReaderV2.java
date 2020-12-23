@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.reader.signature;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -44,19 +45,19 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
             byte[] fileHash = new byte[HASH_SIZE];
 
-            byte typeDelimiter = dis.readByte();
-            if (typeDelimiter != SIGNATURE_TYPE_FILE_HASH) {
-                throw new IllegalArgumentException("Signature file hash not in correct position");
+            byte hashTypeDelimiter = dis.readByte();
+            if (hashTypeDelimiter != SIGNATURE_TYPE_FILE_HASH) {
+                throw new SignatureFileParsingException("Unable to read signature file hash: type delimiter " + hashTypeDelimiter);
             }
             int length = dis.read(fileHash);
             if (length != fileHash.length) {
-                throw new IllegalArgumentException("Unable to read signature file hash");
+                throw new SignatureFileParsingException("Unable to read signature file hash: hash length " + length);
             }
             fileStreamSignature.setHash(fileHash);
 
-            typeDelimiter = dis.readByte();
-            if (typeDelimiter != SIGNATURE_TYPE_SIGNATURE) {
-                throw new IllegalArgumentException("Signature file signature not in correct position");
+            byte signatureTypeDelimiter = dis.readByte();
+            if (signatureTypeDelimiter != SIGNATURE_TYPE_SIGNATURE) {
+                throw new SignatureFileParsingException("Unable to read signature file hash: type delimiter " + signatureTypeDelimiter);
             }
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
@@ -64,12 +65,12 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
             fileStreamSignature.setSignature(sigBytes);
 
             if (dis.available() != 0) {
-                throw new IllegalArgumentException("Extra data discovered in signature file");
+                throw new SignatureFileParsingException("Extra data discovered in signature file");
             }
 
             return fileStreamSignature;
-        } catch (Exception e) {
-            throw new SignatureFileParsingException("Exception occurred reading signature file", e);
+        } catch (IOException e) {
+            throw new SignatureFileParsingException(e);
         }
     }
 }
