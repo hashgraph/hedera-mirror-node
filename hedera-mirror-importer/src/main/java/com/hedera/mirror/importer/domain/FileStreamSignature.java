@@ -50,8 +50,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     }
 
     public enum SignatureStatus {
-        DOWNLOADED,        // Signature has been downloaded but not verified
-        PARSED,            // Extracted hash and signature data from file
+        DOWNLOADED,        // Signature has been downloaded and parsed but not verified
         VERIFIED,          // Signature has been verified against the node's public key
         CONSENSUS_REACHED  // At least 1/3 of all nodes have been verified
     }
