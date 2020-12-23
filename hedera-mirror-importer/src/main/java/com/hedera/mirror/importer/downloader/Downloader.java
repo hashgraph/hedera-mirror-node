@@ -177,7 +177,7 @@ public abstract class Downloader {
             }
 
             // Verify signature files and download corresponding files of valid signature files
-            verifySigsAndDownloadDataFiles(addressBook, sigFilesMap);
+            verifySigsAndDownloadDataFiles(sigFilesMap);
         } catch (SignatureVerificationException e) {
             log.warn(e.getMessage());
         } catch (Exception e) {
@@ -361,11 +361,9 @@ public abstract class Downloader {
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
      *
-     * @param addressBook the current address book
      * @param sigFilesMap signature files grouped by file name
      */
-    private void verifySigsAndDownloadDataFiles(AddressBook addressBook,
-                                                Multimap<String, FileStreamSignature> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         Path validPath = downloaderProperties.getValidPath();
         Instant endDate = mirrorProperties.getEndDate();
 
