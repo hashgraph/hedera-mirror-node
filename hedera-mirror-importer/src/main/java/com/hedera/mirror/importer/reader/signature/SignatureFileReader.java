@@ -30,7 +30,7 @@ public interface SignatureFileReader {
      * signature 2. Extract signature from the file.
      *
      * @param signatureFileData The input stream from a signature file to read
-     * @return Pair of byte arrays, the left holding the file hash and the right the signature
+     * @return FileStreamSignature containing the hash of the corresponding RecordStream file and the signature
      */
     FileStreamSignature read(InputStream signatureFileData);
 }
