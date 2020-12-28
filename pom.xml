@@ -70,7 +70,7 @@
         <jib.version>2.6.0</jib.version>
         <jmeter.version>5.4</jmeter.version>
         <micrometer-jvm-extras.version>0.2.1</micrometer-jvm-extras.version>
-        <msgpack.version>0.8.21</msgpack.version>
+        <msgpack.version>0.8.22</msgpack.version>
         <protobuf.version>3.14.0</protobuf.version>
         <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.12.0-rc1</release.chartVersion>
