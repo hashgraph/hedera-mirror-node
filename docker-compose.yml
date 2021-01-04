@@ -79,7 +79,7 @@ services:
     environment:
       POSTGRES_PASSWORD: mirror_node_pass
     volumes:
-      - ./tsdb:/var/lib/postgresql/data
+      - ./timescaledb:/var/lib/postgresql/data
       - ./hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql/:/docker-entrypoint-initdb.d/init_v2.sql
     ports:
       - 5432:5432

@@ -78,11 +78,8 @@ echo "3. Create v2 table schemas in TimescaleDB($NEW_DB_HOST:$NEW_DB_PORT)..."
 PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER <migration/v2/V2.0.0__time_scale_init.sql
 
 echo "4. Creating new hyper tables on TimescaleDB($NEW_DB_HOST:$NEW_DB_PORT)..."
-sed 's/${chunkTimeInterval}/'$CHUNK_INTERVAL_TIME'/g' migration/v2/V2.0.1__hyper_tables.sql >scripts/timescaledb/createHyperTables_0.sql
-sed 's/${chunkIdInterval}/'$CHUNK_INTERVAL_ID'/g' scripts/timescaledb/createHyperTables_0.sql >scripts/timescaledb/createHyperTables.sql
+sed -e 's/${chunkTimeInterval}/'$CHUNK_INTERVAL_TIME'/g' -e 's/${chunkIdInterval}/'$CHUNK_INTERVAL_ID'/g' migration/v2/V2.0.1__hyper_tables.sql >scripts/timescaledb/createHyperTables.sql
 PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f scripts/timescaledb/createHyperTables.sql
-rm scripts/timescaledb/createHyperTables_0.sql
-rm scripts/timescaledb/createHyperTables.sql
 
 echo "5. Backing up tables from from Postgres($OLD_DB_HOST:$OLD_DB_PORT) to separate CSV's..."
 PGPASSWORD=${OLD_PASSWORD} psql -h $OLD_DB_HOST -d $OLD_DB_NAME -p $OLD_DB_PORT -U $OLD_DB_USER -f scripts/timescaledb/csvBackupTables.sql
