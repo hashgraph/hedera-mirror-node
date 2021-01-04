@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.reader.signature;
 
 /*-
  * ‌
@@ -20,15 +20,17 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class SignatureVerificationException extends ImporterException {
+import java.io.InputStream;
 
-    private static final long serialVersionUID = 4830495870121480440L;
+import com.hedera.mirror.importer.domain.FileStreamSignature;
 
-    public SignatureVerificationException(String message) {
-        super(message);
-    }
-
-    public SignatureVerificationException(String message, Throwable throwable) {
-        super(message, throwable);
-    }
+public interface SignatureFileReader {
+    /**
+     * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this
+     * signature 2. Extract signature from the file.
+     *
+     * @param signatureFileData The input stream from a signature file to read
+     * @return FileStreamSignature containing the hash of the corresponding RecordStream file and the signature
+     */
+    FileStreamSignature read(InputStream signatureFileData);
 }

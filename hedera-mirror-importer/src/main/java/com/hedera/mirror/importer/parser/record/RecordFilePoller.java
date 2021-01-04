@@ -96,7 +96,7 @@ public class RecordFilePoller implements FilePoller {
                 } else {
                     FileUtils.deleteQuietly(file);
                 }
-             } catch (Exception e) {
+            } catch (Exception e) {
                 log.error("Error parsing file {}", filePath, e);
                 return;
             }

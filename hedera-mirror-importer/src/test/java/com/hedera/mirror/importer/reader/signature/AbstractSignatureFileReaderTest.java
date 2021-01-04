@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.util;
+package com.hedera.mirror.importer.reader.signature;
 
 /*-
  * ‌
@@ -20,9 +20,22 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-public class FileDelimiter {
-    public static final String HASH_ALGORITHM = "SHA-384";
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
-    public static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
-    public static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
+import com.hedera.mirror.importer.IntegrationTest;
+
+abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
+
+    protected InputStream getInputStream(File file) throws FileNotFoundException {
+        return new BufferedInputStream(new FileInputStream(file));
+    }
+
+    protected InputStream getInputStream(byte[] bytes) {
+        return new ByteArrayInputStream(bytes);
+    }
 }

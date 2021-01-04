@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -49,7 +47,6 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
@@ -60,57 +57,9 @@ public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
-    private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
-
-    /**
-     * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this
-     * signature 2. Extract signature from the file.
-     *
-     * @param file
-     * @return
-     */
-    public static Pair<byte[], byte[]> extractHashAndSigFromFile(File file) {
-        byte[] sig = null;
-
-        if (file.exists() == false) {
-            log.info("File does not exist {}", file.getPath());
-            return null;
-        }
-
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
-            byte[] fileHash = new byte[48];
-
-            while (dis.available() != 0) {
-                byte typeDelimiter = dis.readByte();
-
-                switch (typeDelimiter) {
-                    case FileDelimiter.SIGNATURE_TYPE_FILE_HASH:
-                        int length = dis.read(fileHash);
-                        if (length != fileHash.length) {
-                            throw new IllegalArgumentException("Unable to read signature file hash");
-                        }
-                        break;
-
-                    case FileDelimiter.SIGNATURE_TYPE_SIGNATURE:
-                        int sigLength = dis.readInt();
-                        byte[] sigBytes = new byte[sigLength];
-                        dis.readFully(sigBytes);
-                        sig = sigBytes;
-                        break;
-                    default:
-                        log.error("Unknown file delimiter {} in signature file {}", typeDelimiter, file);
-                        return null;
-                }
-            }
-
-            return Pair.of(fileHash, sig);
-        } catch (Exception e) {
-            log.error("Unable to extract hash and signature from file {}", file, e);
-        }
-
-        return null;
-    }
+    private static final String HASH_ALGORITHM = "SHA-384";
+    private static final Long SCALAR = 1_000_000_000L;
 
     /**
      * Calculate SHA384 hash of a balance file
@@ -120,7 +69,7 @@ public class Utility {
      */
     public static String getBalanceFileHash(String fileName) {
         try {
-            MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+            MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
             byte[] array = Files.readAllBytes(Paths.get(fileName));
             return Utility.bytesToHex(md.digest(array));
         } catch (NoSuchAlgorithmException | IOException e) {
@@ -391,22 +340,25 @@ public class Utility {
      * @param verifyHashAfter      Only the files created after (not including) this point of time are verified for hash
      *                             chaining.
      * @param fileName             name of current stream file being verified
-     * @return true if verification succeeds, else false
+     * @return true if verification succee ds, else false
      */
-    public static boolean verifyHashChain(
-            String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, String fileName) {
+    public static boolean verifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
+                                          Instant verifyHashAfter, String fileName) {
         var fileInstant = Instant.parse(FilenameUtils.getBaseName(fileName).replaceAll("_", ":"));
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
+
         if (Utility.hashIsEmpty(expectedPrevFileHash)) {
             log.warn("Previous file hash not available");
             return true;
         }
-        log.trace("actual file hash = {}, expected file hash = {}", actualPrevFileHash, expectedPrevFileHash);
-        if (actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
-            return true;
+
+        if (log.isTraceEnabled()) {
+            log.trace("actual file hash = {}, expected file hash = {}",
+                    actualPrevFileHash, expectedPrevFileHash);
         }
-        return false;
+
+        return actualPrevFileHash.contentEquals(expectedPrevFileHash);
     }
 }

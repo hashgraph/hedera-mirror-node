@@ -77,7 +77,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
         RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(), new RecordFileReaderImplV2());
         return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
-                recordFileReader, recordFileRepository);
+                recordFileReader, recordFileRepository, nodeSignatureVerifier, signatureFileReader);
     }
 
     @Override
