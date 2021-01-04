@@ -43,8 +43,7 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
     @Override
     public FileStreamSignature read(InputStream inputStream) {
 
-        try (DataInputStream dataInputStream =
-                     new DataInputStream(new BufferedInputStream(inputStream))) {
+        try (DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream))) {
             dataInputStream.mark(Byte.BYTES);
             byte version = dataInputStream.readByte();
             dataInputStream.reset();
@@ -56,8 +55,7 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
                 throw new SignatureFileParsingException("Unsupported signature file version: " + version);
             }
             return fileReader.read(dataInputStream);
-        } catch (
-                IOException ex) {
+        } catch (IOException ex) {
             throw new SignatureFileParsingException("Error reading signature file", ex);
         }
     }

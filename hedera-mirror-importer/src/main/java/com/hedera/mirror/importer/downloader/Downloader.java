@@ -72,7 +72,7 @@ import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.exception.SignatureFileParsingException;
+import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -254,8 +254,7 @@ public abstract class Downloader {
                         try {
                             if (pendingDownload.waitForCompletion()) {
                                 FileStreamSignature fileStreamSignature = parseSignatureFile(nodeAccountId,
-                                        pendingDownload
-                                                .getFile());
+                                        pendingDownload.getFile());
                                 if (fileStreamSignature != null) {
                                     sigFilesMap.put(fileStreamSignature.getFile().getName(), fileStreamSignature);
                                     count.incrementAndGet();
@@ -295,7 +294,7 @@ public abstract class Downloader {
             fileStreamSignature.setFile(sigFile);
             fileStreamSignature.setNodeAccountId(nodeAccountId);
             return fileStreamSignature;
-        } catch (SignatureFileParsingException | FileOperationException ex) {
+        } catch (ImporterException ex) {
             log.warn("Failed to parse signature file {}: {}", sigFile, ex);
             return null;
         }
