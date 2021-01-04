@@ -6,7 +6,7 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts
+    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts. Set to RELEASE-NAME-timescaledb for timescaledb
   namespaceOverride: ""
   redis:
     host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
@@ -36,6 +36,14 @@ importer:
             password: mirror_node_pass
             username: mirror_node
   enabled: true
+  extraVolumes: []
+  # - name: addressbook-secret-volume
+  #   secret:
+  #     defaultMode: 420
+  #     secretName: mirror-importer-addressbook
+  extraVolumeMounts: []
+  # - name: addressbook-secret-volume
+  #   mountPath: /usr/etc/addressbook/perf.bin
   redis:
     sentinel:
       masterSet: mirror
@@ -169,3 +177,30 @@ redis:
 
 rest:
   enabled: true
+
+timescaledb:
+  credentials:
+    accessNode:
+      superuser: mirror_node_pass
+    dataNode:
+      superuser: mirror_node_pass
+  enabled: false
+  persistentVolume:
+    size: 500Gi
+  resources:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 250m
+      memory: 500Mi
+  postgresql:
+    databases:
+      - postgres
+    parameters:
+      max_wal_size: 8GB  # recommended to be 80% of the Volume Size
+      min_wal_size: 2GB  # 80% of the WAL Volume Size
+      shared_buffers: 1GB # recommended to be 25% of available instance memory
+      work_mem: 50MB
+
+

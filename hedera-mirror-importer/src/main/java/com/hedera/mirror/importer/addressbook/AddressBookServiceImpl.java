@@ -340,16 +340,18 @@ public class AddressBookServiceImpl implements AddressBookService {
         try {
             Path initialAddressBook = mirrorProperties.getInitialAddressBook();
             if (initialAddressBook != null) {
+                log.info("Loading bootstrap address book from {}", initialAddressBook.toString());
                 addressBookBytes = Files.readAllBytes(initialAddressBook);
-                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length,
-                        initialAddressBook);
             } else {
                 MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
                 String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
+
+                log.info("Loading bootstrap address book from {}", resourcePath);
                 Resource resource = new ClassPathResource(resourcePath, getClass());
                 addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
-                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length, resource);
             }
+
+            log.info("Loaded bootstrap address book of {} B", addressBookBytes.length);
         } catch (Exception e) {
             throw new IllegalStateException("Unable to load bootstrap address book", e);
         }

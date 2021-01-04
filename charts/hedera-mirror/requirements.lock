@@ -1,21 +1,24 @@
 dependencies:
 - name: hedera-mirror-grpc
   repository: file://../hedera-mirror-grpc
-  version: 0.11.0
+  version: 0.12.0-rc1
 - name: hedera-mirror-importer
   repository: file://../hedera-mirror-importer
-  version: 0.11.0
+  version: 0.12.0-rc1
 - name: hedera-mirror-monitor
   repository: file://../hedera-mirror-monitor
-  version: 0.11.0
+  version: 0.12.0-rc1
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
-  version: 5.2.4
+  version: 6.3.2
 - name: redis
   repository: https://charts.bitnami.com/bitnami
-  version: 11.3.4
+  version: 12.2.3
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
-  version: 0.11.0
-digest: sha256:6b933a7b21a513ff4e4205dc5dcca8ddfe45a5ba30b53cb876ae6de275a19abc
-generated: "2020-12-10T09:36:32.637676-06:00"
+  version: 0.12.0-rc1
+- name: timescaledb-multinode
+  repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
+  version: 0.7.0
+digest: sha256:b261bda6d871b9ddc44e06ad21b51429a14028ca8db2ff330d54a11e5109e630
+generated: "2020-12-21T15:48:49.454221-06:00"

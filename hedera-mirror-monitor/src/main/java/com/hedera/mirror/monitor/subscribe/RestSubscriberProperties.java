@@ -36,12 +36,12 @@ public class RestSubscriberProperties extends AbstractSubscriberProperties {
     @DurationMin(millis = 500)
     private Duration timeout = Duration.ofSeconds(2);
 
+    @Min(0)
+    @Max(1)
+    private double samplePercent = 1.0;
+
     @Override
     public long getLimit() {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
-
-    @Min(0)
-    @Max(1)
-    private double samplePercent = 1.0;
 }

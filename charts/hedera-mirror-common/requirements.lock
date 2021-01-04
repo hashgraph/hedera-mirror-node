@@ -1,15 +1,15 @@
 dependencies:
 - name: loki-stack
-  repository: https://grafana.github.io/loki/charts
-  version: 2.0.2
+  repository: https://grafana.github.io/helm-charts
+  version: 2.2.0
 - name: prometheus-adapter
   repository: https://prometheus-community.github.io/helm-charts
-  version: 2.7.1
+  version: 2.10.1
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 11.1.7
+  version: 12.8.0
 - name: traefik
   repository: https://helm.traefik.io/traefik
-  version: 9.10.1
-digest: sha256:c785db5d048259f313657513a0fc3ecac3095ab96d705764b220cab4295d5d5c
-generated: "2020-11-17T12:39:26.560221-06:00"
+  version: 9.11.0
+digest: sha256:540a7ec55477d78d25d3e75be2386a8d15e8e8b1f22aedd86c2a51cf61e065bc
+generated: "2020-12-21T12:43:29.852955-06:00"

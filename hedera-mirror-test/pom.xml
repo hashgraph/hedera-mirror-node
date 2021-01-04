@@ -12,7 +12,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.24.0</version>
+        <version>0.25.0-rc1</version>
     </parent>
 
     <properties>
@@ -20,8 +20,8 @@
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
         <jmeter.publishThreadCount></jmeter.publishThreadCount>
         <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
-        <cucumber.version>6.8.2</cucumber.version>
-        <cucumber-reporting.version>4.0.84</cucumber-reporting.version>
+        <cucumber.version>6.9.1</cucumber.version>
+        <cucumber-reporting.version>4.0.89</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -236,7 +236,7 @@
                     <plugin>
                         <groupId>com.lazerycode.jmeter</groupId>
                         <artifactId>jmeter-maven-plugin</artifactId>
-                        <version>3.1.2</version>
+                        <version>3.2.0</version>
                         <executions>
                             <execution>
                                 <phase>integration-test</phase>
