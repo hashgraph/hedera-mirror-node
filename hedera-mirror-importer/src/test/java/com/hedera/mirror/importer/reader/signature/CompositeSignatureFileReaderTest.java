@@ -43,7 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @ExtendWith(MockitoExtension.class)
-public class CompositeSignatureFileReaderTest {
+class CompositeSignatureFileReaderTest {
 
     @Mock
     SignatureFileReaderV2 signatureFileReaderV2;
