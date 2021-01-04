@@ -36,6 +36,6 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
     }
 
     protected InputStream getInputStream(byte[] bytes) {
-        return new BufferedInputStream(new ByteArrayInputStream(bytes));
+        return new ByteArrayInputStream(bytes);
     }
 }
