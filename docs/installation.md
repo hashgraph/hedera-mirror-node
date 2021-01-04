@@ -19,16 +19,29 @@ runnable Mirror Node JAR file in the `target` directory.
 ## Running Locally
 
 ### Database Setup
+In addition to OpenJDK 11, you will need to install a database and initialize it.
+The Mirror Node utilizes [PostgreSQL](https://postgresql.org) v9.6 or [TimescaleDB](https://docs.timescale.com/latest/main) v2 depending on the version of its database schema.
 
-In addition to OpenJDK 11, you will need to install [PostgreSQL](https://postgresql.org) 9.6 and initialize it. The only
-setup required is to create the initial database and owner since [Flyway](https://flywaydb.org) manages the database
-schema. The SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init.sql` can be used to
-accomplish this. Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, or
-`grpc_password` as appropriate. Make sure the application [configuration](configuration.md) matches the values in the
-script. Run the script as a DB admin user and check the output carefully to ensure no errors occurred.
+In both cases the only setup required is to create the initial database, users, schema, extensions and ensure all
+permissions are set since [Flyway](https://flywaydb.org) manages the database schema.
+Scripts for v1 and v2 are provided to accomplish this.
+Make sure the application [configuration](configuration.md) matches the values in the script.
+Run the script as a super user and check the output carefully to ensure no errors occurred.
+
+#### PostgreSQL (V1)
+Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql`.
+Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, or `grpc_password` as appropriate.
 
 ```console
-psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init.sql
+psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql
+```
+
+#### TimescaleDB (V2)
+Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql`.
+Edit the file and change the db user names, passwords and schema as appropriate.
+
+```console
+psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql
 ```
 
 ### Importer
@@ -86,7 +99,7 @@ npm test
 
 Docker Compose scripts are provided and run all the mirror node components:
 
-- PostgreSQL database
+- PostgreSQL/TimescaleDB database
 - GRPC API
 - Importer
 - Monitor
@@ -95,13 +108,32 @@ Docker Compose scripts are provided and run all the mirror node components:
 Containers use the following persisted volumes:
 
 - `./db` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the
-  PostgreSQL database. If the database container fails to initialise properly and the database fails to run, you will
-  have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be
-  run.
+  PostgreSQL/TimescaleDB database. If the database container fails to initialise properly and the database fails to run,
+  you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will
+  not be run.
 
 - `./data` on your local machine maps to `/var/lib/hedera-mirror-importer` in the container. This contains files
   downloaded from S3 or GCP. These are necessary not only for the database data to be persisted, but also so that the
   parsing containers can access file obtained via the downloading containers
+
+### Configuration
+
+#### TimescaleDB vs PostgreSQL
+To utilize the TimescaleDB database over the default PostgreSQL database, disable the PostgreSQL container and enable the TimescaleDB container.
+
+To achieve this the `docker-compose.yml` can be updated as follows:
+```yaml
+    ...
+    services:
+      db:
+        deploy:
+          replicas: 0
+      ...
+      timescaledb:
+        #    deploy:
+        #      replicas: 0
+      ...
+```
 
 ### Starting
 

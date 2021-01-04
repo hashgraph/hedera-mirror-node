@@ -28,7 +28,7 @@ spec:
             - name: ACCESS_SVC_CONNSTR_POSTGRES
               value: host={{ include "hedera-mirror.dbHost" . }} user=postgres connect_timeout=3 sslmode=disable password={{ .Values.timescaledb.credentials.accessNode.superuser }}
             - name: DB_INIT_FILE
-              value: /usr/etc/db-init/init.sql
+              value: /usr/etc/db-init/init_v2.sql
           volumeMounts:
             - name: timescale-db-init-volume
               mountPath: /usr/etc/db-init

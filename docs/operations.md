@@ -100,57 +100,34 @@ To support time series logic the Mirror Node DB schema shifted from PostgeSQL (v
 
 For mirror node operators running v1 db schema, the following steps can be taken to upgrade to v2.
 
-1. Setup a new database container using TimeScale
+1. Setup a new TimescaleDB database
 
-    To install using docker-compose, update the `docker-compose.override.yml` file to disable postgres instead of TimeScaleDB
+    A new TimescaleDB server must be spun up.
 
-    ```yaml
-    version: "3.3"
-    services:
-      db:
-        entrypoint: ["echo", "PostgreSQL db is disabled"]
-    ```
+    Refer to Mirror Node [DB Installation](installation.md#database-setup) for manual instructions.
 
-    Start up the TimescaleDB service:
+    To use the Mirror Node configured docker container, simply run:
+
     ```shell script
-    $ docker-compose up tsdb
+    $ docker-compose up timescaledb
     ```
 
-    Note: If the new db is running on the same server node as the original PostgeSQL db, then the port must be updated to something other than 5432.
-    The `tsdb` port can be updated to a different port e.g. 6432 as follows:
-    ```yaml
-    ...
-    services:
-      ...
-      tsdb:
-        ports:
-          - 6432:5432
-    ```
-
-2. Create DB & Init Schema
-
-    The init script for v2 `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql` may be used to create the database, users, schema, extensions and ensure all permissions are set.
-    In the docker-compose case this file is already mounted under `/docker-entrypoint-initdb.d/` on the docker container and run on startup.
-
-    This may be run manually against the db node if not using docker-compose:
-    ```shell script
-    $ psql "dbname=mirror_node host=localhost user=mirror_importer password=mirror_importer_pass port=6432" -f hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql
-    ```
+    Refer to [TimescaleDB Installation Instructions](https://docs.timescale.com/latest/getting-started/installation) for other installation options.
 
     > **_NOTE:_** The following steps assume the database, users and schema have been created as detailed above
 
-3. Configure migration properties
+2. Configure migration properties
 
-    The configuration file `hedera-mirror-importer/src/main/resources/db/scripts/time-scale-migration/migration.config` contains db variables for easy running.
+    The configuration file `hedera-mirror-importer/src/main/resources/db/scripts/timescaledb/migration.config` contains db variables for easy running.
     These options include variables such as db names, passwords, users, hosts for both the existing db and the new db.
 
     Update these values appropriately for your db setup.
 
-4. Run migration script
+3. Run migration script
 
-    From the `hedera-mirror-importer/src/main/resources/db` directory run the `timeScaleDbMigration.sh` script
+    From the `hedera-mirror-importer/src/main/resources/db` directory run the `migration.sh` script
     ```shell script
-    $ ./scripts/time-scale-migration/timeScaleDbMigration.sh
+    $ ./scripts/timescaledb/migration.sh
     ```
 
    The script uses successive `psql` connections to backup, configure and restore data on the new database nodes.
@@ -290,4 +267,5 @@ available
 - `/swagger/ui` - Metrics dashboard
 - `/swagger/stats` - Aggregated statistics
 - `/swagger/metrics` - Prometheus formatted metrics
+
 Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest.metrics.config.uriPath`.

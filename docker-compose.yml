@@ -68,7 +68,9 @@ services:
     ports:
       - 5551:5551
 
-  tsdb:
+  timescaledb:
+    deploy:
+      replicas: 0
     image: timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3
     restart: unless-stopped
     stop_grace_period: 2m
@@ -80,4 +82,4 @@ services:
       - ./tsdb:/var/lib/postgresql/data
       - ./hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql/:/docker-entrypoint-initdb.d/init_v2.sql
     ports:
-      - 6432:5432
+      - 5432:5432
