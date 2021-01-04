@@ -1,6 +1,6 @@
 package com.hedera.mirror.importer.reader.signature;
 
-/*
+/*-
  * ‌
  * Hedera Mirror Node
  * ​
