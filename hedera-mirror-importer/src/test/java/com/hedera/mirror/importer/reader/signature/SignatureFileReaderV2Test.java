@@ -37,7 +37,7 @@ import org.springframework.beans.factory.annotation.Value;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
-class SignatureFileReaderV2Test extends SignatureFileReaderTest {
+class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
     @Value("classpath:data/signature/v2/2019-08-30T18_10_00.419072Z.rcd_sig")
     private File balanceFile;
