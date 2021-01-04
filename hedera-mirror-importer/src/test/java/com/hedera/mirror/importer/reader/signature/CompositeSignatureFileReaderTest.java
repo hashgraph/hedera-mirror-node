@@ -62,30 +62,36 @@ public class CompositeSignatureFileReaderTest {
     void testValidV2() throws IOException {
         byte[] versionNumber = {SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH};
         FileUtils.writeByteArrayToFile(signatureFile, versionNumber);
-        compositeBalanceFileReader.read(getInputStream(signatureFile));
-        verify(signatureFileReaderV2, times(1)).read(any(InputStream.class));
+        try (InputStream stream = getInputStream(signatureFile)) {
+            compositeBalanceFileReader.read(stream);
+            verify(signatureFileReaderV2, times(1)).read(any(InputStream.class));
+        }
     }
 
     @Test
-    void testBlankFile() {
-        SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-            compositeBalanceFileReader.read(getInputStream(signatureFile));
-        });
-        assertAll(
-                () -> assertTrue(exception.getMessage().contains("Error reading signature file")),
-                () -> assertTrue(exception.getCause() instanceof IOException)
-        );
+    void testBlankFile() throws IOException {
+        try (InputStream stream = getInputStream(signatureFile)) {
+            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
+                compositeBalanceFileReader.read(stream);
+            });
+            assertAll(
+                    () -> assertTrue(exception.getMessage().contains("Error reading signature file")),
+                    () -> assertTrue(exception.getCause() instanceof IOException)
+            );
+        }
     }
 
     @Test
-    void testInvalidFileVersion() {
+    void testInvalidFileVersion() throws IOException {
         byte[] invalidVersionNumber = {12};
-        SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-            FileUtils.writeByteArrayToFile(signatureFile, invalidVersionNumber);
-            compositeBalanceFileReader.read(getInputStream(signatureFile));
-        });
-        assertTrue(exception.getMessage()
-                .contains("Unsupported signature file version: " + invalidVersionNumber[0]));
+        FileUtils.writeByteArrayToFile(signatureFile, invalidVersionNumber);
+        try (InputStream stream = getInputStream(signatureFile)) {
+            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
+                compositeBalanceFileReader.read(stream);
+            });
+            assertTrue(exception.getMessage()
+                    .contains("Unsupported signature file version: " + invalidVersionNumber[0]));
+        }
     }
 
     private InputStream getInputStream(File file) throws FileNotFoundException {

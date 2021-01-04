@@ -40,15 +40,15 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
     @Value("classpath:data/signature/v2/2019-08-30T18_10_00.419072Z.rcd_sig")
-    private File balanceFile;
+    private File signatureFile;
 
     @Resource
     SignatureFileReaderV2 fileReaderV2;
 
     @Test
     void testReadValidFile() throws IOException {
-        try (InputStream bs = getInputStream(balanceFile)) {
-            FileStreamSignature answer = fileReaderV2.read(bs);
+        try (InputStream stream = getInputStream(signatureFile)) {
+            FileStreamSignature answer = fileReaderV2.read(stream);
             assertNotNull(answer);
             assertNotNull(answer.getSignature());
             assertNotNull(answer.getHash());
@@ -57,69 +57,77 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
     @Test
     void testReadBlankFile() throws IOException {
-        SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-            try (InputStream stream = getInputStream(createTempFile())) {
+        try (InputStream stream = getInputStream(createTempFile())) {
+            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 fileReaderV2.read(stream);
-            }
-        });
-        assertTrue(exception.getCause() instanceof IOException);
+            });
+            assertTrue(exception.getCause() instanceof IOException);
+        }
     }
 
     @Test
     void testReadFileWithExtraData() throws IOException {
         File testFile = createTempFile();
-        byte[] bytes = FileUtils.readFileToByteArray(balanceFile);
+        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         byte[] extraBytes = "extra".getBytes();
         byte[] newFileBytes = Bytes.concat(bytes, extraBytes);
         FileUtils.writeByteArrayToFile(testFile, newFileBytes);
-        SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-            fileReaderV2.read(getInputStream(testFile));
-        });
-        assertTrue(exception.getMessage().contains("Extra data discovered in signature file"));
+        try (InputStream stream = getInputStream(testFile)) {
+            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
+                fileReaderV2.read(stream);
+            });
+            assertTrue(exception.getMessage().contains("Extra data discovered in signature file"));
+        }
     }
 
     @Test
     void testReadFileHashWrongDelimiter() throws IOException {
         File testFile = createTempFile();
-        byte[] bytes = FileUtils.readFileToByteArray(balanceFile);
+        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         byte[] invalidDelimiter = {1};
         byte[] newFileBytes = Bytes.concat(invalidDelimiter, bytes);
         FileUtils.writeByteArrayToFile(testFile, newFileBytes);
-        SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-            fileReaderV2.read(getInputStream(testFile));
-        });
-        assertTrue(exception.getMessage()
-                .contains("Unable to read signature file hash: type delimiter " + invalidDelimiter[0]));
+        try (InputStream stream = getInputStream(testFile)) {
+            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
+                fileReaderV2.read(stream);
+            });
+            assertTrue(exception.getMessage()
+                    .contains("Unable to read signature file hash: type delimiter " + invalidDelimiter[0]));
+        }
     }
 
     @Test
     void testReadFileHashTooShort() throws IOException {
         File testFile = createTempFile();
-        byte[] bytes = FileUtils.readFileToByteArray(balanceFile);
+        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         //Creating a file with only the first 47 bytes of the original (one less than the expected hash length)
         byte[] shortenedBytes = Arrays.copyOfRange(bytes, 0, 48);
         FileUtils.writeByteArrayToFile(testFile, shortenedBytes);
-        SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-            fileReaderV2.read(getInputStream(testFile));
-        });
-        assertTrue(exception.getMessage()
-                .contains("Unable to read signature file hash: hash length 47"));
+        try (InputStream stream = getInputStream(testFile)) {
+            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
+                fileReaderV2.read(stream);
+            });
+            assertTrue(exception.getMessage()
+                    .contains("Unable to read signature file hash: hash length 47"));
+        }
     }
 
     @Test
     void testReadFileSignatureWrongDelimiter() throws IOException {
         File testFile = createTempFile();
-        byte[] bytes = FileUtils.readFileToByteArray(balanceFile);
+        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         byte[] invalidDelimiter = {1};
         byte[] hashBytes = Arrays.copyOfRange(bytes, 0, 49);
         byte[] signatureBytes = Arrays.copyOfRange(bytes, 50, bytes.length);
 
         byte[] newFileBytes = Bytes.concat(hashBytes, invalidDelimiter, signatureBytes);
         FileUtils.writeByteArrayToFile(testFile, newFileBytes);
-        SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-            fileReaderV2.read(getInputStream(testFile));
-        });
-        assertTrue(exception.getMessage()
-                .contains("Unable to read signature file signature: type delimiter " + invalidDelimiter[0]));
+        try (InputStream stream = getInputStream(testFile)) {
+            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
+                fileReaderV2.read(stream);
+            });
+            assertTrue(exception.getMessage()
+                    .contains("Unable to read signature file signature: type delimiter " + invalidDelimiter[0]));
+        }
     }
 }
