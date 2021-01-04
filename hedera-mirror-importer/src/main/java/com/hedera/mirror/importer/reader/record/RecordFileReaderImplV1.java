@@ -62,12 +62,12 @@ public class RecordFileReaderImplV1 extends AbstractRecordFileReader {
 
         @Override
         public void updateBody(byte input) {
-            updateHeader(input);
+            md.update(input);
         }
 
         @Override
         public void updateBody(byte[] input) {
-            updateHeader(input);
+            md.update(input);
         }
 
         @Override
