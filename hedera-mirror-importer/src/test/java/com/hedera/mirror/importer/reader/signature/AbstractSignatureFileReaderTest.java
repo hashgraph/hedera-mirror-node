@@ -30,7 +30,7 @@ import java.nio.file.Files;
 
 import com.hedera.mirror.importer.IntegrationTest;
 
-class AbstractSignatureFileReaderTest extends IntegrationTest {
+abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
 
     protected InputStream getInputStream(File file) throws FileNotFoundException {
         return new BufferedInputStream(new FileInputStream(file));
