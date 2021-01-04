@@ -21,12 +21,11 @@ package com.hedera.mirror.importer.reader.signature;
  */
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 
 import com.hedera.mirror.importer.IntegrationTest;
 
@@ -36,7 +35,7 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
         return new BufferedInputStream(new FileInputStream(file));
     }
 
-    protected File createTempFile() throws IOException {
-        return Files.createTempFile(null, null).toFile();
+    protected InputStream getInputStream(byte[] bytes) {
+        return new BufferedInputStream(new ByteArrayInputStream(bytes));
     }
 }

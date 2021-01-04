@@ -57,7 +57,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
     @Test
     void testReadBlankFile() throws IOException {
-        try (InputStream stream = getInputStream(createTempFile())) {
+        try (InputStream stream = getInputStream(new byte[0])) {
             SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 fileReaderV2.read(stream);
             });
@@ -66,13 +66,11 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     }
 
     @Test
-    void testReadFileWithExtraData() throws IOException {
-        File testFile = createTempFile();
+    void testReadStreamWithExtraData() throws IOException {
         byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         byte[] extraBytes = "extra".getBytes();
-        byte[] newFileBytes = Bytes.concat(bytes, extraBytes);
-        FileUtils.writeByteArrayToFile(testFile, newFileBytes);
-        try (InputStream stream = getInputStream(testFile)) {
+        byte[] allBytes = Bytes.concat(bytes, extraBytes);
+        try (InputStream stream = getInputStream(allBytes)) {
             SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 fileReaderV2.read(stream);
             });
@@ -81,13 +79,11 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     }
 
     @Test
-    void testReadFileHashWrongDelimiter() throws IOException {
-        File testFile = createTempFile();
+    void testReadStreamHashWrongDelimiter() throws IOException {
         byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         byte[] invalidDelimiter = {1};
-        byte[] newFileBytes = Bytes.concat(invalidDelimiter, bytes);
-        FileUtils.writeByteArrayToFile(testFile, newFileBytes);
-        try (InputStream stream = getInputStream(testFile)) {
+        byte[] allBytes = Bytes.concat(invalidDelimiter, bytes);
+        try (InputStream stream = getInputStream(allBytes)) {
             SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 fileReaderV2.read(stream);
             });
@@ -97,13 +93,11 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     }
 
     @Test
-    void testReadFileHashTooShort() throws IOException {
-        File testFile = createTempFile();
+    void testReadStreamHashTooShort() throws IOException {
         byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         //Creating a file with only the first 47 bytes of the original (one less than the expected hash length)
         byte[] shortenedBytes = Arrays.copyOfRange(bytes, 0, 48);
-        FileUtils.writeByteArrayToFile(testFile, shortenedBytes);
-        try (InputStream stream = getInputStream(testFile)) {
+        try (InputStream stream = getInputStream(shortenedBytes)) {
             SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 fileReaderV2.read(stream);
             });
@@ -113,16 +107,13 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     }
 
     @Test
-    void testReadFileSignatureWrongDelimiter() throws IOException {
-        File testFile = createTempFile();
+    void testReadStreamSignatureWrongDelimiter() throws IOException {
         byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
         byte[] invalidDelimiter = {1};
         byte[] hashBytes = Arrays.copyOfRange(bytes, 0, 49);
         byte[] signatureBytes = Arrays.copyOfRange(bytes, 50, bytes.length);
-
-        byte[] newFileBytes = Bytes.concat(hashBytes, invalidDelimiter, signatureBytes);
-        FileUtils.writeByteArrayToFile(testFile, newFileBytes);
-        try (InputStream stream = getInputStream(testFile)) {
+        byte[] allBytes = Bytes.concat(hashBytes, invalidDelimiter, signatureBytes);
+        try (InputStream stream = getInputStream(allBytes)) {
             SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 fileReaderV2.read(stream);
             });

@@ -27,13 +27,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,19 +47,15 @@ class CompositeSignatureFileReaderTest {
 
     private CompositeSignatureFileReader compositeBalanceFileReader;
 
-    private File signatureFile;
-
     @BeforeEach
-    void setUp() throws IOException {
-        signatureFile = Files.createTempFile(null, null).toFile();
+    void setUp() {
         compositeBalanceFileReader = new CompositeSignatureFileReader(signatureFileReaderV2);
     }
 
     @Test
     void testValidV2() throws IOException {
         byte[] versionNumber = {SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH};
-        FileUtils.writeByteArrayToFile(signatureFile, versionNumber);
-        try (InputStream stream = getInputStream(signatureFile)) {
+        try (InputStream stream = getInputStream(versionNumber)) {
             compositeBalanceFileReader.read(stream);
             verify(signatureFileReaderV2, times(1)).read(any(InputStream.class));
         }
@@ -70,7 +63,7 @@ class CompositeSignatureFileReaderTest {
 
     @Test
     void testBlankFile() throws IOException {
-        try (InputStream stream = getInputStream(signatureFile)) {
+        try (InputStream stream = getInputStream(new byte[0])) {
             SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 compositeBalanceFileReader.read(stream);
             });
@@ -84,8 +77,7 @@ class CompositeSignatureFileReaderTest {
     @Test
     void testInvalidFileVersion() throws IOException {
         byte[] invalidVersionNumber = {12};
-        FileUtils.writeByteArrayToFile(signatureFile, invalidVersionNumber);
-        try (InputStream stream = getInputStream(signatureFile)) {
+        try (InputStream stream = getInputStream(invalidVersionNumber)) {
             SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
                 compositeBalanceFileReader.read(stream);
             });
@@ -94,7 +86,7 @@ class CompositeSignatureFileReaderTest {
         }
     }
 
-    private InputStream getInputStream(File file) throws FileNotFoundException {
-        return new FileInputStream(file);
+    private InputStream getInputStream(byte[] bytes) throws FileNotFoundException {
+        return new ByteArrayInputStream(bytes);
     }
 }
