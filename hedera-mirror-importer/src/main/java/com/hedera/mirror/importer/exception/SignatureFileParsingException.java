@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.util;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,10 +20,18 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-public class FileDelimiter {
-    public static final String HASH_ALGORITHM = "SHA-384";
+public class SignatureFileParsingException extends ImporterException {
+    private static final long serialVersionUID = 8172331078550974122L;
 
-    public static final byte RECORD_TYPE_PREV_HASH = 1; // next 48 bytes are hash384 or previous files
-    public static final int RECORD_FORMAT_VERSION = 2;
-    public static final byte RECORD_TYPE_RECORD = 2; // next data type is transaction and its record
+    public SignatureFileParsingException(String message) {
+        super(message);
+    }
+
+    public SignatureFileParsingException(Throwable throwable) {
+        super(throwable);
+    }
+
+    public SignatureFileParsingException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

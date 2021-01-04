@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.util;
+package com.hedera.mirror.importer.reader.signature;
 
 /*-
  * ‌
@@ -20,10 +20,17 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-public class FileDelimiter {
-    public static final String HASH_ALGORITHM = "SHA-384";
+import java.io.InputStream;
 
-    public static final byte RECORD_TYPE_PREV_HASH = 1; // next 48 bytes are hash384 or previous files
-    public static final int RECORD_FORMAT_VERSION = 2;
-    public static final byte RECORD_TYPE_RECORD = 2; // next data type is transaction and its record
+import com.hedera.mirror.importer.domain.FileStreamSignature;
+
+public interface SignatureFileReader {
+    /**
+     * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this
+     * signature 2. Extract signature from the file.
+     *
+     * @param signatureFileData The input stream from a signature file to read
+     * @return FileStreamSignature containing the hash of the corresponding RecordStream file and the signature
+     */
+    FileStreamSignature read(InputStream signatureFileData);
 }

@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.security.PublicKey;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
@@ -30,12 +32,13 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.FileIdConverter;
 
@@ -59,6 +62,13 @@ public class AddressBook {
     private Integer nodeCount;
 
     private byte[] fileData;
+
+    @Transient
+    @Getter(lazy = true)
+    private final Map<String, PublicKey> nodeAccountIDPubKeyMap = this.getEntries()
+            .stream()
+            .collect(Collectors
+                    .toMap(AddressBookEntry::getNodeAccountIdString, AddressBookEntry::getPublicKeyAsObject));
 
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "consensusTimestamp")

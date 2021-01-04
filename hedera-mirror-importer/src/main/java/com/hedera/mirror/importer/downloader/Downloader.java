@@ -32,6 +32,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -71,7 +72,9 @@ import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
+import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
@@ -87,6 +90,8 @@ public abstract class Downloader {
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties commonDownloaderProperties;
     private final TransactionTemplate transactionTemplate;
+    protected final NodeSignatureVerifier nodeSignatureVerifier;
+    protected final SignatureFileReader signatureFileReader;
 
     protected final ApplicationStatusCode lastValidDownloadedFileKey;
     protected final ApplicationStatusCode lastValidDownloadedFileHashKey;
@@ -102,14 +107,17 @@ public abstract class Downloader {
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-                      TransactionTemplate transactionTemplate, MeterRegistry meterRegistry) {
+                      TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
+                      NodeSignatureVerifier nodeSignatureVerifier, SignatureFileReader signatureFileReader) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
         this.transactionTemplate = transactionTemplate;
         this.meterRegistry = meterRegistry;
+        this.nodeSignatureVerifier = nodeSignatureVerifier;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
+        this.signatureFileReader = signatureFileReader;
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
         mirrorProperties = downloaderProperties.getMirrorProperties();
         commonDownloaderProperties = downloaderProperties.getCommon();
@@ -160,7 +168,7 @@ public abstract class Downloader {
 
         try {
             AddressBook addressBook = addressBookService.getCurrent();
-            var sigFilesMap = downloadSigFiles(addressBook);
+            var sigFilesMap = downloadAndParseSigFiles(addressBook);
 
             // Following is a cost optimization to not unnecessarily list the public demo bucket once complete
             if (sigFilesMap.isEmpty() && mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
@@ -169,7 +177,7 @@ public abstract class Downloader {
             }
 
             // Verify signature files and download corresponding files of valid signature files
-            verifySigsAndDownloadDataFiles(addressBook, sigFilesMap);
+            verifySigsAndDownloadDataFiles(sigFilesMap);
         } catch (SignatureVerificationException e) {
             log.warn(e.getMessage());
         } catch (Exception e) {
@@ -178,13 +186,13 @@ public abstract class Downloader {
     }
 
     /**
-     * Download all signature files with a timestamp later than the last valid file. Put signature files into a
-     * multi-map sorted and grouped by the timestamp.
+     * Download and parse all signature files with a timestamp later than the last valid file. Put signature files into
+     * a multi-map sorted and grouped by the timestamp.
      *
      * @param addressBook the current address book
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<String, FileStreamSignature> downloadSigFiles(AddressBook addressBook)
+    private Multimap<String, FileStreamSignature> downloadAndParseSigFiles(AddressBook addressBook)
             throws InterruptedException {
         String lastValidFileName = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileKey);
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
@@ -238,19 +246,19 @@ public abstract class Downloader {
                     }
 
                     /*
-                     * With the list of pending downloads - wait for them to complete and add them to the list
-                     * of downloaded signature files.
+                     * With the list of pending downloads - wait for them to complete, parse them,  and add them to
+                     * the list of signature files.
                      */
                     AtomicLong count = new AtomicLong();
                     pendingDownloads.forEach(pendingDownload -> {
                         try {
                             if (pendingDownload.waitForCompletion()) {
-                                count.incrementAndGet();
-                                File sigFile = pendingDownload.getFile();
-                                FileStreamSignature fileStreamSignature = new FileStreamSignature();
-                                fileStreamSignature.setFile(sigFile);
-                                fileStreamSignature.setNodeAccountId(nodeAccountId);
-                                sigFilesMap.put(sigFile.getName(), fileStreamSignature);
+                                FileStreamSignature fileStreamSignature = parseSignatureFile(nodeAccountId,
+                                        pendingDownload.getFile());
+                                if (fileStreamSignature != null) {
+                                    sigFilesMap.put(fileStreamSignature.getFile().getName(), fileStreamSignature);
+                                    count.incrementAndGet();
+                                }
                             }
                         } catch (InterruptedException ex) {
                             log.warn("Failed downloading {} in {}", pendingDownload.getS3key(),
@@ -277,6 +285,19 @@ public abstract class Downloader {
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         }
         return sigFilesMap;
+    }
+
+    private FileStreamSignature parseSignatureFile(EntityId nodeAccountId, File sigFile) {
+        try {
+            InputStream inputStream = Utility.openQuietly(sigFile);
+            FileStreamSignature fileStreamSignature = signatureFileReader.read(inputStream);
+            fileStreamSignature.setFile(sigFile);
+            fileStreamSignature.setNodeAccountId(nodeAccountId);
+            return fileStreamSignature;
+        } catch (ImporterException ex) {
+            log.warn("Failed to parse signature file {}: {}", sigFile, ex);
+            return null;
+        }
     }
 
     /**
@@ -347,12 +368,9 @@ public abstract class Downloader {
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
      *
-     * @param addressBook the current address book
      * @param sigFilesMap signature files grouped by file name
      */
-    private void verifySigsAndDownloadDataFiles(AddressBook addressBook,
-                                                Multimap<String, FileStreamSignature> sigFilesMap) {
-        NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBook);
+    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         Path validPath = downloaderProperties.getValidPath();
         Instant endDate = mirrorProperties.getEndDate();
 
