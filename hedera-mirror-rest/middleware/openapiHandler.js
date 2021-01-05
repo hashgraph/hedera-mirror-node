@@ -59,7 +59,7 @@ const getSpecPath = (apiVersion) => {
  */
 const getOpenApiSpecObject = (apiVersion) => {
   const openApiSpecPath = path.resolve(process.cwd(), getSpecPath(apiVersion));
-  return yaml.safeLoad(fs.readFileSync(openApiSpecPath, 'utf8'));
+  return yaml.load(fs.readFileSync(openApiSpecPath, 'utf8'));
 };
 
 /**
