@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: init-mirrornode-db
-          image: timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3
+          image: timescale/timescaledb:2.0.0-pg12
           command:
             - sh
             - -c

@@ -185,6 +185,9 @@ timescaledb:
     dataNode:
       superuser: mirror_node_pass
   enabled: false
+  image:
+    repository: timescaledev/timescaledb-ha
+    tag: pg12.5-ts2.0.0-p0
   persistentVolume:
     size: 500Gi
   resources:
