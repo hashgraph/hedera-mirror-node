@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: init-mirrornode-db
-          image: timescale/timescaledb:2.0.0-pg12
+          image: "{{ .Values.timescaledb.image.repository }}:{{ .Values.timescaledb.image.tag }}"
           command:
             - sh
             - -c
