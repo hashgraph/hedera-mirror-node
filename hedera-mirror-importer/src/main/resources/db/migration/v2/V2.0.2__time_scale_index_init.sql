@@ -15,10 +15,10 @@ create index if not exists balance_sets__completed
     on account_balance_sets (is_complete, consensus_timestamp desc);
 
 -- account_balance_file
-create unique index if not exists account_balance_file__name
-    on account_balance_file (name, consensus_timestamp desc);
 alter table account_balance_file
     add constraint account_balance_file_timestamp primary key (consensus_timestamp);
+create unique index if not exists account_balance_file__name
+    on account_balance_file (name, consensus_timestamp desc);
 
 -- address_book, desc index on start_consensus_timestamp already created by hypertable
 
@@ -66,11 +66,13 @@ create unique index if not exists entities_unq
 -- have to add id due to partitioning
 
 -- token
-create index if not exists token_id
+create unique index if not exists token_id
     on token (token_id);
+create unique index if not exists token__id_timestamp
+    on token (token_id, created_timestamp);
 
 -- token_account
-create unique index if not exists token_account__token_account
+create unique index if not exists token_account__token_account_timestamp
     on token_account (token_id, account_id, created_timestamp);
 
 -- token_balance
@@ -93,7 +95,7 @@ create unique index if not exists topic_message__topic_num_realm_num_seqnum
 -- transaction
 create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
-create index if not exists transaction__payer_account_id
-    on transaction (payer_account_id);
+create index if not exists transaction__payer_account_id_consensus_ns
+    on transaction (payer_account_id, consensus_ns);
 create index if not exists transaction_consensus_ns
     on transaction (consensus_ns);
