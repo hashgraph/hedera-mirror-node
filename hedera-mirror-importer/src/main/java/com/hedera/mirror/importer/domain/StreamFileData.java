@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,9 +20,19 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFileData;
+import static com.hedera.mirror.importer.util.Utility.openQuietly;
 
-public interface FileParser<T extends StreamFileData> {
+import java.io.File;
+import java.io.InputStream;
+import lombok.NonNull;
+import lombok.Value;
 
-    void parse(T streamFileData);
+@Value
+public class StreamFileData {
+    String filename;
+    InputStream inputStream;
+
+    public static StreamFileData from(@NonNull File file) {
+        return new StreamFileData(file.getAbsolutePath(), openQuietly(file));
+    }
 }

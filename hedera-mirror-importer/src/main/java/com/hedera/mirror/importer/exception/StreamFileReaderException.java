@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.domain;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,11 +20,11 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
-import java.io.InputStream;
-import lombok.Value;
+public class StreamFileReaderException extends ImporterException {
 
-@Value
-public class StreamFileData {
-    private final String filename;
-    private final InputStream inputStream;
+    private static final long serialVersionUID = 2533328395713171797L;
+
+    public StreamFileReaderException(final String message, final Throwable throwable) {
+        super(message, throwable);
+    }
 }

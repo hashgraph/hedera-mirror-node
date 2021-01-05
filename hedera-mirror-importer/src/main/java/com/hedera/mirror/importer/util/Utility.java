@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.util;
 
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
-import com.google.common.primitives.Ints;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
@@ -30,8 +29,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -44,7 +41,6 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
@@ -52,10 +48,8 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
 @UtilityClass
@@ -63,8 +57,9 @@ public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
-    private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
+    private static final String HASH_ALGORITHM = "SHA-384";
+    private static final Long SCALAR = 1_000_000_000L;
 
     /**
      * Calculate SHA384 hash of a balance file
@@ -74,122 +69,13 @@ public class Utility {
      */
     public static String getBalanceFileHash(String fileName) {
         try {
-            MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+            MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
             byte[] array = Files.readAllBytes(Paths.get(fileName));
             return Utility.bytesToHex(md.digest(array));
         } catch (NoSuchAlgorithmException | IOException e) {
             log.error(e);
             return null;
         }
-    }
-
-    /**
-     * Parses record stream file.
-     *
-     * @param filePath           path to record file
-     * @param recordItemConsumer if not null, consumer is invoked for each transaction in the record file
-     * @return parsed record file
-     */
-    public static RecordFile parseRecordFile(String filePath, Consumer<RecordItem> recordItemConsumer) {
-        RecordFile recordFile = new RecordFile();
-        String fileName = FilenameUtils.getName(filePath);
-        recordFile.setName(fileName);
-
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
-            MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-            MessageDigest mdForContent = md;
-
-            int recordFormatVersion = readInt(dis, md);
-            if (recordFormatVersion >= FileDelimiter.RECORD_FORMAT_VERSION) {
-                mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-            }
-
-            readInt(dis, md); // version
-            log.info("Loading record format version {} from record file: {}", recordFormatVersion, fileName);
-            recordFile.setRecordFormatVersion(recordFormatVersion);
-
-            log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, fileName);
-
-            long count = 0;
-            while (dis.available() != 0) {
-                byte typeDelimiter = dis.readByte();
-                switch (typeDelimiter) {
-                    case FileDelimiter.RECORD_TYPE_PREV_HASH:
-                        md.update(typeDelimiter);
-                        byte[] readFileHash = new byte[48];
-                        int length = dis.read(readFileHash);
-                        if (length != readFileHash.length) {
-                            throw new IllegalArgumentException("Unable to read record file hash");
-                        }
-                        String previousHash = Hex.encodeHexString(readFileHash);
-                        recordFile.setPreviousHash(previousHash);
-                        md.update(readFileHash);
-                        break;
-
-                    case FileDelimiter.RECORD_TYPE_RECORD:
-                        mdForContent.update(typeDelimiter);
-                        byte[] transactionRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
-                        byte[] recordRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
-
-                        boolean isFirstTransaction = recordFile.getConsensusStart() == null;
-                        boolean isLastTransaction = dis.available() == 0;
-
-                        // We need the first and last transaction timestamps for metrics
-                        if (recordItemConsumer != null || isFirstTransaction || isLastTransaction) {
-                            RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
-
-                            if (recordItemConsumer != null) {
-                                recordItemConsumer.accept(recordItem);
-                            }
-
-                            if (isFirstTransaction) {
-                                recordFile.setConsensusStart(recordItem.getConsensusTimestamp());
-                            }
-
-                            if (isLastTransaction) {
-                                recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
-                            }
-                        }
-                        count++;
-                        break;
-                    default:
-                        throw new IllegalArgumentException(String.format(
-                                "Unknown record file delimiter %s for file %s", typeDelimiter, fileName));
-                }
-            }
-            if (recordFormatVersion == FileDelimiter.RECORD_FORMAT_VERSION) {
-                md.update(mdForContent.digest());
-            }
-            if (recordFile.getPreviousHash() == null) {
-                throw new IllegalArgumentException("previous hash is null in file " + fileName);
-            }
-            recordFile.setFileHash(Hex.encodeHexString(md.digest()));
-            log.trace("Calculated file hash for the record file {}", recordFile.getFileHash());
-            recordFile.setCount(count);
-
-            return recordFile;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error parsing bad record file " + fileName, e);
-        }
-    }
-
-    /**
-     * Reads int from the input stream and updates the digest.
-     */
-    public static int readInt(DataInputStream dis, MessageDigest md) throws IOException {
-        int value = dis.readInt();
-        md.update(Ints.toByteArray(value));
-        return value;
-    }
-
-    /**
-     * Reads given number of bytes from the input stream and updates the digest.
-     */
-    public static byte[] readBytes(DataInputStream dis, int len, MessageDigest md) throws IOException {
-        byte[] bytes = new byte[len];
-        dis.readFully(bytes);
-        md.update(bytes);
-        return bytes;
     }
 
     /**
@@ -391,6 +277,21 @@ public class Utility {
     }
 
     /**
+     * Opens a file and returns a {@link InputStream} object. Throws {@link FileOperationException} if
+     * some error occurs.
+     *
+     * @param file the input file
+     * @return {@link InputStream} object representing the file
+     */
+    public static InputStream openQuietly(File file) {
+        try {
+            return new FileInputStream(file);
+        } catch (IOException e) {
+            throw new FileOperationException("Unable to open file " + file.getPath(), e);
+        }
+    }
+
+    /**
      * If the protobuf encoding of a Key is a single ED25519 key, return the key as a String with lowercase hex
      * encoding.
      *
@@ -439,31 +340,25 @@ public class Utility {
      * @param verifyHashAfter      Only the files created after (not including) this point of time are verified for hash
      *                             chaining.
      * @param fileName             name of current stream file being verified
-     * @return true if verification succeeds, else false
+     * @return true if verification succee ds, else false
      */
-    public static boolean verifyHashChain(
-            String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, String fileName) {
+    public static boolean verifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
+                                          Instant verifyHashAfter, String fileName) {
         var fileInstant = Instant.parse(FilenameUtils.getBaseName(fileName).replaceAll("_", ":"));
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
+
         if (Utility.hashIsEmpty(expectedPrevFileHash)) {
             log.warn("Previous file hash not available");
             return true;
         }
-        log.trace("actual file hash = {}, expected file hash = {}", actualPrevFileHash, expectedPrevFileHash);
-        if (actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
-            return true;
-        }
-        return false;
-    }
 
-    public static InputStream openQuietly(File file) {
-        try {
-            return new FileInputStream(file);
-        } catch (IOException e) {
-            throw new FileOperationException("Unable to open file " + file.getPath(), e);
+        if (log.isTraceEnabled()) {
+            log.trace("actual file hash = {}, expected file hash = {}",
+                    actualPrevFileHash, expectedPrevFileHash);
         }
+
+        return actualPrevFileHash.contentEquals(expectedPrevFileHash);
     }
 }
-

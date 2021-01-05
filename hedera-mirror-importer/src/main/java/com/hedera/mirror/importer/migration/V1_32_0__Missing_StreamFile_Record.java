@@ -34,10 +34,12 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -52,6 +54,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
     private final BalanceDownloaderProperties balanceDownloaderProperties;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordDownloaderProperties recordDownloaderProperties;
+    private final RecordFileReader recordFileReader;
     private final RecordFileRepository recordFileRepository;
 
     @Override
@@ -108,7 +111,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
                     .name(file.getName())
                     .build();
         } else if (streamType == StreamType.RECORD) {
-            streamFile = Utility.parseRecordFile(file.getPath(), null);
+            streamFile = recordFileReader.read(StreamFileData.from(file));
         } else {
             throw new IllegalArgumentException("StreamType " + streamType + " is not supported");
         }

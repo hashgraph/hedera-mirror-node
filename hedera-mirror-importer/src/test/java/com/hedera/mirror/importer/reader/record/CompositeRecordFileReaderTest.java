@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.reader.record;
 
 /*-
  * ‌
@@ -20,9 +20,17 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFileData;
+public class CompositeRecordFileReaderTest extends RecordFileReaderTest {
 
-public interface FileParser<T extends StreamFileData> {
+    @Override
+    protected RecordFileReader getRecordFileReader() {
+        RecordFileReaderImplV1 v1Reader = new RecordFileReaderImplV1();
+        RecordFileReaderImplV2 v2Reader = new RecordFileReaderImplV2();
+        return new CompositeRecordFileReader(v1Reader, v2Reader);
+    }
 
-    void parse(T streamFileData);
+    @Override
+    protected boolean filterFile(int version) {
+        return true;
+    }
 }

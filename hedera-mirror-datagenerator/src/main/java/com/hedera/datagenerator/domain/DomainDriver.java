@@ -38,7 +38,7 @@ import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
 import com.hedera.mirror.importer.util.Utility;
 

@@ -33,7 +33,6 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -55,10 +54,16 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
+import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
+import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -132,8 +137,10 @@ public class RecordFileParserTest {
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
         parserProperties.init();
+        RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
+                new RecordFileReaderImplV2());
         recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties, new SimpleMeterRegistry(),
-                recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
+                recordFileReader, recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
         StreamType streamType = StreamType.RECORD;
         fileCopier = FileCopier
                 .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
@@ -151,8 +158,8 @@ public class RecordFileParserTest {
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
                 recordFile1.getFileHash(), null, 15L, 2);
 
-        streamFileData1 = new StreamFileData(file1.toString(), new FileInputStream(file1));
-        streamFileData2 = new StreamFileData(file2.toString(), new FileInputStream(file2));
+        streamFileData1 = StreamFileData.from(file1);
+        streamFileData2 = StreamFileData.from(file2);
 
         doReturn(recordFile1).when(recordStreamFileListener).onStart(streamFileData1);
         doReturn(recordFile2).when(recordStreamFileListener).onStart(streamFileData2);
@@ -177,15 +184,14 @@ public class RecordFileParserTest {
     void invalidFile() throws Exception {
         // given
         FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
-        streamFileData1 = new StreamFileData(file1.toString(), new FileInputStream(file1));
+        StreamFileData streamFileData = StreamFileData.from(file1);
+        doReturn(recordFile1).when(recordStreamFileListener).onStart(streamFileData);
 
         // when
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            recordFileParser.parse(streamFileData1);
-        });
+        Assertions.assertThrows(InvalidStreamFileException.class, () -> recordFileParser.parse(streamFileData));
 
         // then
-        verify(recordStreamFileListener).onStart(streamFileData1);
+        verify(recordStreamFileListener).onStart(streamFileData);
         verify(recordStreamFileListener, never()).onEnd(recordFile1);
         verify(recordStreamFileListener).onError();
     }
@@ -226,7 +232,7 @@ public class RecordFileParserTest {
         doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
 
         // when
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+        Assertions.assertThrows(ImporterException.class, () -> {
             recordFileParser.parse(streamFileData1);
         });
 
@@ -251,7 +257,6 @@ public class RecordFileParserTest {
         DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
         doReturn(filter)
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
-        fileCopier.copy();
 
         // when
         recordFileParser.parse(streamFileData1);
@@ -276,7 +281,6 @@ public class RecordFileParserTest {
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
         doReturn(filter)
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
-        fileCopier.copy();
 
         // when
         recordFileParser.parse(streamFileData1);

@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.parser;
 
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileData;
 
 public interface StreamFileListener<T extends StreamFile> {
     /**

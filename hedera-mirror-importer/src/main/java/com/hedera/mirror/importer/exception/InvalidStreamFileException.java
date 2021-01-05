@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.util;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,10 +20,11 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-public class FileDelimiter {
-    public static final String HASH_ALGORITHM = "SHA-384";
+public class InvalidStreamFileException extends ImporterException {
 
-    public static final byte RECORD_TYPE_PREV_HASH = 1; // next 48 bytes are hash384 or previous files
-    public static final int RECORD_FORMAT_VERSION = 2;
-    public static final byte RECORD_TYPE_RECORD = 2; // next data type is transaction and its record
+    private static final long serialVersionUID = 2786469980314810323L;
+
+    public InvalidStreamFileException(final String message) {
+        super(message);
+    }
 }
