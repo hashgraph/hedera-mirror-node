@@ -22,8 +22,10 @@ runnable Mirror Node JAR file in the `target` directory.
 In addition to OpenJDK 11, you will need to install a database and initialize it.
 The Mirror Node utilizes [PostgreSQL](https://postgresql.org) v9.6 or [TimescaleDB](https://docs.timescale.com/latest/main) v2 depending on the version of its database schema.
 
-In both cases the only setup required is to create the initial database, users, schema, extensions and ensure all
-permissions are set since [Flyway](https://flywaydb.org) manages the database schema.
+For both databases, since [Flyway](https://flywaydb.org) will manage the database schema, the only required setup steps include:
+* creating the database, users, schema, and extensions.
+* ensuring all permissions are set.
+
 Scripts for v1 and v2 are provided to accomplish this.
 Make sure the application [configuration](configuration.md) matches the values in the script.
 Run the script as a super user and check the output carefully to ensure no errors occurred.
@@ -121,7 +123,7 @@ Containers use the following persisted volumes:
 #### TimescaleDB vs PostgreSQL
 To utilize the TimescaleDB database over the default PostgreSQL database, disable the PostgreSQL container and enable the TimescaleDB container.
 
-To achieve this the `docker-compose.yml` can be updated as follows:
+To achieve this the `docker-compose.yml` can be updated to set the postgres `db` service replicas to 0 whiles removing this same setting from the `timescaledb` service as follows:
 ```yaml
     ...
     services:

@@ -77,7 +77,7 @@ PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT 
 echo "3. Create v2 table schemas in TimescaleDB($NEW_DB_HOST:$NEW_DB_PORT)..."
 PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER <migration/v2/V2.0.0__time_scale_init.sql
 
-echo "4. Creating new hyper tables on TimescaleDB($NEW_DB_HOST:$NEW_DB_PORT)..."
+echo "4. Creating new hypertables on TimescaleDB($NEW_DB_HOST:$NEW_DB_PORT)..."
 sed -e 's/${chunkTimeInterval}/'$CHUNK_INTERVAL_TIME'/g' -e 's/${chunkIdInterval}/'$CHUNK_INTERVAL_ID'/g' migration/v2/V2.0.1__hyper_tables.sql >scripts/timescaledb/createHyperTables.sql
 PGPASSWORD=${NEW_PASSWORD} psql -h $NEW_DB_HOST -d $NEW_DB_NAME -p $NEW_DB_PORT -U $NEW_DB_USER -f scripts/timescaledb/createHyperTables.sql
 

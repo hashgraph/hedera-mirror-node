@@ -100,7 +100,7 @@ To support time series logic the Mirror Node DB schema shifted from PostgeSQL (v
 
 For mirror node operators running v1 db schema, the following steps can be taken to upgrade to v2.
 
-1. Setup a new TimescaleDB database
+1. Set up a new TimescaleDB database
 
     A new TimescaleDB server must be spun up.
 
@@ -130,9 +130,9 @@ For mirror node operators running v1 db schema, the following steps can be taken
     $ ./scripts/timescaledb/migration.sh
     ```
 
-   The script uses successive `psql` connections to backup, configure and restore data on the new database nodes.
+   The script uses successive `psql` connections to back up, configure and restore data on the new database nodes.
    First it copies over the `flyway_schema_history` table, to maintain migration history.
-   It then utilizes the migration sql script used by normal flyway operations to create the new tables and then creates the Timescale hyper tables based on these.
+   It then utilizes the migration sql script used by normal flyway operations to create the new tables and then creates the Timescale hypertables based on these.
    Following this the tables from the old database are backed up as csv files using `\COPY` and then the data inserted into the new database also using `\COPY`.
    Finally the schema of the `flyway_schema_history` is updated and the sequence values are updated to ensure continuation.
 
