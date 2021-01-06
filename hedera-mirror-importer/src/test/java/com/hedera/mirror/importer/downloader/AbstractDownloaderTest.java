@@ -90,6 +90,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -196,7 +197,8 @@ public abstract class AbstractDownloaderTest {
                 AnonymousCredentialsProvider.create())
                 .s3CloudStorageClient();
 
-        signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2());
+        signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
+                new SignatureFileReaderV5());
         nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         downloader = prepareDownloader();
 
