@@ -203,7 +203,5 @@ timescaledb:
     parameters:
       max_wal_size: 8GB  # recommended to be 80% of the Volume Size
       min_wal_size: 2GB  # 80% of the WAL Volume Size
-      shared_buffers: 1GB # recommended to be 25% of available instance memory
+      shared_buffers: 1GB  # recommended to be 25% of available instance memory
       work_mem: 50MB
-
-

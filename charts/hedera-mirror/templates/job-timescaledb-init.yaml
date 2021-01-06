@@ -2,15 +2,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror.dbHost" . }}-init-job
   namespace: {{ include "hedera-mirror.namespace" . }}
   annotations:
     "helm.sh/hook": post-install
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
-  backoffLimit: 4
+  backoffLimit: 1
   template:
     spec:
       containers:
@@ -23,20 +21,49 @@ spec:
               set -e
 
               while ! pg_isready -U postgres -h {{ include "hedera-mirror.dbHost" . }}-data; do sleep 1; done;
-              psql --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" --set ON_ERROR_STOP=1 -f ${DB_INIT_FILE}
+              psql --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" --set ON_ERROR_STOP=1 -f ${DB_USERS_FILE}
+              echo 'Completed db initialization and user creation for mirror node'
+              sleep 5s
+
+              while ! pg_isready -U postgres -h {{ include "hedera-mirror.dbHost" . }}-data; do sleep 1; done;
+              psql --echo-queries -d "${ACCESS_SVC_CONNSTR_MIRRORNODE}" --set ON_ERROR_STOP=1 -f ${DB_SCHEMA_FILE}
+              echo 'Completed db schema initialization'
+              sleep 5s
+
+              while ! pg_isready -U postgres -h {{ include "hedera-mirror.dbHost" . }}-data; do sleep 1; done;
+              psql --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" --set ON_ERROR_STOP=1 -f ${DB_PATH_FILE}
+              echo 'Completed db search path setting'
+
+              echo 'Completed db initialization for mirror node'
           env:
             - name: ACCESS_SVC_CONNSTR_POSTGRES
               value: host={{ include "hedera-mirror.dbHost" . }} user=postgres connect_timeout=3 sslmode=disable password={{ .Values.timescaledb.credentials.accessNode.superuser }}
-            - name: DB_INIT_FILE
-              value: /usr/etc/db-init/init_v2.sql
+            - name: ACCESS_SVC_CONNSTR_MIRRORNODE
+              value: host={{ include "hedera-mirror.dbHost" . }} dbname={{ .Values.importer.config.hedera.mirror.importer.db.name }} user={{ .Values.importer.config.hedera.mirror.importer.db.owner }} connect_timeout=3 sslmode=disable password={{ .Values.importer.config.hedera.mirror.importer.db.ownerPassword }}
+            - name: DB_USERS_FILE
+              value: /usr/etc/db-init/users_v2.sql
+            - name: DB_SCHEMA_FILE
+              value: /usr/etc/db-init/schema_v2.sql
+            - name: DB_PATH_FILE
+              value: /usr/etc/db-init/path_v2.sql
           volumeMounts:
-            - name: timescale-db-init-volume
+            - name: timescaledb-init-volume
               mountPath: /usr/etc/db-init
       volumes:
-        - name: timescale-db-init-volume
-          secret:
-            defaultMode: 420
-            secretName: {{ include "hedera-mirror.dbHost" . }}-init
-      restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 600
-  {{- end -}}
+        - name: timescaledb-init-volume
+          projected:
+            sources:
+              - secret:
+                  name: {{ include "hedera-mirror.dbHost" . }}-init
+                  items:
+                      - key: users_v2.sql
+                        path: users_v2.sql
+                        mode: 420
+                      - key: schema_v2.sql
+                        path: schema_v2.sql
+                        mode: 420
+                      - key: path_v2.sql
+                        path: path_v2.sql
+                        mode: 420
+      restartPolicy: Never
+{{- end -}}
