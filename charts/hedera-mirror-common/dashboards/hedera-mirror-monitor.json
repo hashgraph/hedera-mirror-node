@@ -2653,7 +2653,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (pod, method, uri)",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method, uri)",
           "interval": "1m",
           "legendFormat": "{{ method}} {{uri}}",
           "refId": "A"
