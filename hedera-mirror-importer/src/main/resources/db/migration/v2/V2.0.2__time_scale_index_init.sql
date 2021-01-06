@@ -66,8 +66,6 @@ create unique index if not exists entities_unq
 -- have to add id due to partitioning
 
 -- token
-create unique index if not exists token_id
-    on token (token_id);
 create unique index if not exists token__id_timestamp
     on token (token_id, created_timestamp);
 

@@ -415,7 +415,6 @@ comment on table token is 'Token entities';
 --- token_account
 create table if not exists token_account
 (
-    id                 serial,
     account_id         bigint   not null,
     associated         boolean  not null default false,
     created_timestamp  bigint   not null,

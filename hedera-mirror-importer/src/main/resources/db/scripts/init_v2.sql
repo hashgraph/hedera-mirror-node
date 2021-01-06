@@ -2,7 +2,7 @@
 -- Change the values below if you are not installing via Docker
 
 \set db_host 'localhost'
-\set db_port 6432
+\set db_port 5432
 \set db_name 'mirror_node'
 \set db_super_user 'postgres'
 \set db_owner 'mirror_node'
@@ -53,8 +53,10 @@ grant select on all sequences in schema :schema_name to readonly;
 alter default privileges in schema :schema_name grant select on sequences to readonly;
 
 -- grant write privileges on sequences to readwrite
-grant insert, update, delete on all tables in schema :schema_name to readwrite;
-alter default privileges in schema :schema_name grant insert, update, delete on tables to readwrite;
+grant insert, update on all tables in schema :schema_name to readwrite;
+alter default privileges in schema :schema_name grant insert, update on tables to readwrite;
+grant usage on all sequences in schema :schema_name to readwrite;
+alter default privileges in schema :schema_name grant usage on sequences to readwrite;
 
 -- alter search path for given schema as super user
 \c :db_name :db_super_user
@@ -64,5 +66,5 @@ alter user :grpc_user set search_path = :schema_name, public;
 alter user :rest_user set search_path = :schema_name, public;
 
 -- add extensions, ensuring they're available to new schema
-create extension if not exists timescaledb schema :schema_name cascade;
+create extension if not exists timescaledb schema :schema_name;
 create extension if not exists pg_stat_statements schema :schema_name;
