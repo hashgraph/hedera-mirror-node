@@ -180,8 +180,9 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
         String fileName = UUID.randomUUID().toString();
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile recordFile = new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID()
-                .toString(), "", nodeAccountId, 0L, 0);
+        RecordFile recordFile = new RecordFile(recordItem.getConsensusTimestamp(),
+                recordItem.getConsensusTimestamp() + 1, null, fileName, 0L, 0L,
+                UUID.randomUUID().toString(), "", nodeAccountId, 0L, 0);
         recordFileRepository.save(recordFile);
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         entityRecordItemListener.onItem(recordItem);

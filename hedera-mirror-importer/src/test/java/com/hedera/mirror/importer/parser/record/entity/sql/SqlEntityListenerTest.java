@@ -94,7 +94,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @BeforeEach
     final void beforeEach() {
         String newFileHash = UUID.randomUUID().toString();
-        recordFile = insertRecordFileRecord(fileName, newFileHash, "fileHash0");
+        recordFile = insertRecordFileRecord(fileName, newFileHash, "fileHash0", 1L);
 
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
@@ -240,7 +240,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
 
-        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null);
+        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null, 1L);
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
         sqlEntityListener.onEntityId(entityId); // duplicate across files
         completeFileAndCommit();
@@ -341,7 +341,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return recordFile.getFileHash();
     }
 
-    private RecordFile insertRecordFileRecord(String filename, String fileHash, String prevHash) {
+    private RecordFile insertRecordFileRecord(String filename, String fileHash, String prevHash, long consensusStart) {
         if (fileHash == null) {
             fileHash = UUID.randomUUID().toString();
         }
@@ -350,7 +350,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         }
 
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile rf = new RecordFile(1L, 2L, null, filename, 0L, 0L, fileHash, prevHash, nodeAccountId, 0L, 0);
+        RecordFile rf = new RecordFile(consensusStart, consensusStart + 1, null, filename, 0L, 0L, fileHash, prevHash
+                , nodeAccountId, 0L, 0);
         recordFileRepository.save(rf);
         return rf;
     }

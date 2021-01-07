@@ -1,11 +1,10 @@
 -------------------
 -- Drop token_account id, replacing id primary key with unique index on (created_timestamp)
 -------------------
-alter table token_account
+alter table if exists token_account
     drop constraint token_account_pkey;
-create unique index if not exists token_account__created_timestamp
-    on token_account (created_timestamp);
-
+alter table if exists token_account
+    add primary key (created_timestamp);
 alter table if exists token_account
     drop column if exists id;
 
