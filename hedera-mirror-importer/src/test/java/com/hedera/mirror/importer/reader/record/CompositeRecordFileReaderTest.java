@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reader.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,8 @@ public class CompositeRecordFileReaderTest extends RecordFileReaderTest {
     protected RecordFileReader getRecordFileReader() {
         RecordFileReaderImplV1 v1Reader = new RecordFileReaderImplV1();
         RecordFileReaderImplV2 v2Reader = new RecordFileReaderImplV2();
-        return new CompositeRecordFileReader(v1Reader, v2Reader);
+        RecordFileReaderImplV5 v5Reader = new RecordFileReaderImplV5();
+        return new CompositeRecordFileReader(v1Reader, v2Reader, v5Reader);
     }
 
     @Override

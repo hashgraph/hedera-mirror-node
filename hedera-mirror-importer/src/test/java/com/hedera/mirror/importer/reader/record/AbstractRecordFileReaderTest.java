@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reader.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,12 @@ abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
 
         return DynamicTest.stream(
                 getFilteredFiles(true),
-                (recordFile) -> String.format(template, recordFile.getRecordFormatVersion(), recordFile.getName()),
+                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
                 (recordFile) -> {
                     String filename = recordFile.getName();
 
                     // given
-                    fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
+                    fileCopier.from(getSubPath(recordFile.getVersion())).filterFiles(filename).copy();
                     File file = fileCopier.getTo().resolve(filename).toFile();
                     StreamFileData streamFileData = StreamFileData.from(file);
 

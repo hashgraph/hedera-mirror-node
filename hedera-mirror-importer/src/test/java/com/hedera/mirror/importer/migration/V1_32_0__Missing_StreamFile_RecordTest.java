@@ -50,14 +50,14 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
+import com.hedera.mirror.importer.migration.domain.RecordFileV1_33_0;
+import com.hedera.mirror.importer.migration.repository.RecordFileRepositoryV1_33_0;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @TestPropertySource(properties = "spring.flyway.target=1.31.3")
@@ -72,7 +72,7 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
     @Resource
     private BalanceDownloaderProperties balanceDownloaderProperties;
     @Resource
-    private RecordFileRepository recordFileRepository;
+    private RecordFileRepositoryV1_33_0 recordFileRepositoryCompat;
     @Resource
     private RecordDownloaderProperties recordDownloaderProperties;
     @Resource
@@ -115,23 +115,31 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         ));
 
         // record file "2019-08-30T18_10_00.419072Z.rcd"
-        RecordFile recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null,
-                "2019-08-30T18_10_00.419072Z.rcd", null, null,
-                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                nodeAccountId, 0L, 2);
+        RecordFileV1_33_0 recordFile = RecordFileV1_33_0.builder()
+                .consensusStart(1567188600419072000L)
+                .consensusEnd(1567188604906443001L)
+                .count(0L)
+                .fileHash("591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda")
+                .name("2019-08-30T18_10_00.419072Z.rcd")
+                .nodeAccountId(nodeAccountId)
+                .previousHash(Utility.EMPTY_HASH)
+                .build();
         allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(
-                recordFileCopier, recordFile, recordFileRepository
+                recordFileCopier, recordFile, recordFileRepositoryCompat
         ));
 
         // record file "2019-08-30T18_10_05.249678Z.rcd"
-        recordFile = new RecordFile(1567188605249678000L, 1567188609705382001L, null,
-                "2019-08-30T18_10_05.249678Z.rcd", null, null,
-                "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
-                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                nodeAccountId, 0L, 2);
+        recordFile = RecordFileV1_33_0.builder()
+                .consensusStart(1567188605249678000L)
+                .consensusEnd(1567188609705382001L)
+                .count(0L)
+                .fileHash("5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36")
+                .name("2019-08-30T18_10_05.249678Z.rcd")
+                .nodeAccountId(nodeAccountId)
+                .previousHash(recordFile.getFileHash())
+                .build();
         allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(
-                recordFileCopier, recordFile, recordFileRepository
+                recordFileCopier, recordFile, recordFileRepositoryCompat
         ));
 
         allFiles = List.copyOf(allFilesWithMeta.keySet());
@@ -195,7 +203,7 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         expectedAddedStreamFiles.removeAll(filesWithRecord);
         List<String> actualAddedStreamFiles = new ArrayList<>();
         accountBalanceFileRepository.findAll().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
-        recordFileRepository.findAll().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
+        recordFileRepositoryCompat.findAll().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
         actualAddedStreamFiles.removeAll(filesWithRecord);
         assertThat(actualAddedStreamFiles).hasSameElementsAs(expectedAddedStreamFiles);
     }

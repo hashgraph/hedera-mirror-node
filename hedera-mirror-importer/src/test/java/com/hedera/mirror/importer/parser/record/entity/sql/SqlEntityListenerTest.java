@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -350,7 +350,15 @@ public class SqlEntityListenerTest extends IntegrationTest {
         }
 
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile rf = new RecordFile(1L, 2L, null, filename, 0L, 0L, fileHash, prevHash, nodeAccountId, 0L, 0);
+        RecordFile rf = RecordFile.builder()
+                .consensusStart(1L)
+                .consensusEnd(2L)
+                .count(0L)
+                .fileHash(fileHash)
+                .name(filename)
+                .nodeAccountId(nodeAccountId)
+                .previousHash(prevHash)
+                .build();
         recordFileRepository.save(rf);
         return rf;
     }

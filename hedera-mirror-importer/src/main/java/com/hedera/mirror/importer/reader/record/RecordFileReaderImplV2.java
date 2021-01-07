@@ -27,7 +27,7 @@ import javax.inject.Named;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 
 @Named
-public class RecordFileReaderImplV2 extends AbstractRecordFileReader {
+public class RecordFileReaderImplV2 extends AbstractPreV5RecordFileReader {
 
     public RecordFileReaderImplV2() {
         super(2);

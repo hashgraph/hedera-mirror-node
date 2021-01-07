@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,10 +108,9 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
         streamFileData = StreamFileData.from(file);
 
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null, recordFilename, 0L, 0L,
-                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                nodeAccountId, 0L, 2);
+        recordFile = TestUtils.getRecordFilesMap().get(recordFilename).toBuilder()
+                .nodeAccountId(nodeAccountId)
+                .build();
         recordFileRepository.save(recordFile);
     }
 

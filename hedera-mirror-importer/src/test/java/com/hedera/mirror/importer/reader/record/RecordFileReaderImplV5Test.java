@@ -1,7 +1,7 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.reader.record;
 
 /*-
- * ‌
+ *
  * Hedera Mirror Node
  * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
@@ -17,22 +17,17 @@ package com.hedera.mirror.importer.exception;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
+ *
  */
 
-public class StreamFileReaderException extends ImporterException {
-
-    private static final long serialVersionUID = 2533328395713171797L;
-
-    public StreamFileReaderException(String message) {
-        super(message);
+public class RecordFileReaderImplV5Test extends AbstractRecordFileReaderTest {
+    @Override
+    protected RecordFileReader getRecordFileReader() {
+        return new RecordFileReaderImplV5();
     }
 
-    public StreamFileReaderException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public StreamFileReaderException(final String message, final Throwable throwable) {
-        super(message, throwable);
+    @Override
+    protected boolean filterFile(final int version) {
+        return version == 5;
     }
 }

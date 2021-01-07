@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.downloader.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
@@ -53,6 +54,7 @@ import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
+import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -74,7 +76,8 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
 
     @Override
     protected Downloader getDownloader() {
-        RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(), new RecordFileReaderImplV2());
+        RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
+                new RecordFileReaderImplV2(), new RecordFileReaderImplV5());
         return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
                 recordFileReader, recordFileRepository, nodeSignatureVerifier, signatureFileReader);
@@ -122,17 +125,10 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
                 "2019-08-30T18_10_05.249678Z.rcd"
         );
 
-        RecordFile rf1 = new RecordFile(1567188600419072000L, 1567188604906443001L, null, file1, 0L, 0L,
-                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                null, 19L, 2);
-
-        RecordFile rf2 = new RecordFile(1567188605249678000L, 1567188609705382001L, null, file2, 0L, 0L,
-                "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
-                rf1.getFileHash(), null, 15L, 2);
-
-        recordFileMap.put(rf1.getName(), rf1);
-        recordFileMap.put(rf2.getName(), rf2);
+        RecordFile recordFile1 = TestUtils.getRecordFilesMap().get(file1);
+        RecordFile recordFile2 = TestUtils.getRecordFilesMap().get(file2);
+        recordFileMap.put(recordFile1.getName(), recordFile1);
+        recordFileMap.put(recordFile2.getName(), recordFile2);
     }
 
     @Test

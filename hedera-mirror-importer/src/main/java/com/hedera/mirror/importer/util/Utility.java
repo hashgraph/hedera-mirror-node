@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.util;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ import com.hedera.mirror.importer.exception.FileOperationException;
 public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
+    public static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
 
-    private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
     private static final String HASH_ALGORITHM = "SHA-384";
     private static final Long SCALAR = 1_000_000_000L;
 
@@ -335,30 +335,29 @@ public class Utility {
     /**
      * Helps verify chaining for files in a stream.
      *
-     * @param actualPrevFileHash   prevFileHash as read from current file
-     * @param expectedPrevFileHash hash of last file from application state
-     * @param verifyHashAfter      Only the files created after (not including) this point of time are verified for hash
-     *                             chaining.
-     * @param fileName             name of current stream file being verified
-     * @return true if verification succee ds, else false
+     * @param actualPrevHash   prevHash as read from current file
+     * @param expectedPrevHash hash of last file from application state
+     * @param verifyHashAfter  Only the files created after (not including) this point of time are verified for hash
+     *                         chaining.
+     * @param fileName         name of current stream file being verified
+     * @return true if verification succeeds, else false
      */
-    public static boolean verifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
+    public static boolean verifyHashChain(String actualPrevHash, String expectedPrevHash,
                                           Instant verifyHashAfter, String fileName) {
         var fileInstant = Instant.parse(FilenameUtils.getBaseName(fileName).replaceAll("_", ":"));
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
 
-        if (Utility.hashIsEmpty(expectedPrevFileHash)) {
-            log.warn("Previous file hash not available");
+        if (Utility.hashIsEmpty(expectedPrevHash)) {
+            log.warn("Previous hash not available");
             return true;
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("actual file hash = {}, expected file hash = {}",
-                    actualPrevFileHash, expectedPrevFileHash);
+            log.trace("actual hash = {}, expected hash = {}", actualPrevHash, expectedPrevHash);
         }
 
-        return actualPrevFileHash.contentEquals(expectedPrevFileHash);
+        return actualPrevHash.contentEquals(expectedPrevHash);
     }
 }

@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.migration;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,10 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
+import com.hedera.mirror.importer.migration.domain.RecordFileV1_33_0;
+import com.hedera.mirror.importer.migration.repository.RecordFileRepositoryV1_33_0;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -55,7 +56,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordDownloaderProperties recordDownloaderProperties;
     private final RecordFileReader recordFileReader;
-    private final RecordFileRepository recordFileRepository;
+    private final RecordFileRepositoryV1_33_0 recordFileRepositoryCompat;
 
     @Override
     protected void doMigrate() {
@@ -124,7 +125,17 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
         if (streamType == StreamType.BALANCE) {
             accountBalanceFileRepository.save((AccountBalanceFile) streamFile);
         } else if (streamType == StreamType.RECORD) {
-            recordFileRepository.save((RecordFile) streamFile);
+            RecordFile recordFile = (RecordFile) streamFile;
+            RecordFileV1_33_0 recordFileV1_33_0 = RecordFileV1_33_0.builder()
+                    .consensusStart(recordFile.getConsensusStart())
+                    .consensusEnd(recordFile.getConsensusEnd())
+                    .count(recordFile.getCount())
+                    .fileHash(recordFile.getFileHash())
+                    .name(recordFile.getName())
+                    .nodeAccountId(recordFile.getNodeAccountId())
+                    .previousHash(recordFile.getPreviousHash())
+                    .build();
+            recordFileRepositoryCompat.save(recordFileV1_33_0);
         }
     }
 
@@ -134,7 +145,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
             long timestamp = Utility.getTimestampFromFilename(filename);
             streamFile = accountBalanceFileRepository.findById(timestamp);
         } else if (streamType == StreamType.RECORD) {
-            streamFile = recordFileRepository.findByName(filename);
+            streamFile = recordFileRepositoryCompat.findByName(filename);
         }
 
         return streamFile.isPresent();

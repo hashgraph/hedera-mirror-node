@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reader.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
 
     private final RecordFileReaderImplV1 version1Reader;
     private final RecordFileReaderImplV2 version2Reader;
+    private final RecordFileReaderImplV5 version5Reader;
 
     @Override
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
@@ -62,6 +63,9 @@ public class CompositeRecordFileReader implements RecordFileReader {
                     break;
                 case 2:
                     reader = version2Reader;
+                    break;
+                case 5:
+                    reader = version5Reader;
                     break;
                 default:
                     throw new InvalidStreamFileException(String.format("Unsupported record file version %d in file %s",

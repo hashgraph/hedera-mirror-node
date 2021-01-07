@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reader.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,25 +29,21 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @RequiredArgsConstructor
-public abstract class AbstractRecordFileReader implements RecordFileReader {
+public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
 
     protected static final String HASH_ALGORITHM = "SHA-384";
     protected static final int HASH_SIZE = 48; // 48-byte SHA-384 hash
     protected static final byte PREV_HASH_MARKER = 1;
     protected static final byte RECORD_MARKER = 2;
 
-    protected final Logger log = LogManager.getLogger(getClass());
     private final int readerVersion;
 
     @Override
@@ -84,22 +80,22 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
     private void readHeader(DataInputStream dis, RecordFileDigest digest, RecordFile recordFile) throws IOException {
         // record file version
         int version = dis.readInt();
-        checkField(version, readerVersion, "record file version", recordFile.getName());
+        Utility.checkField(version, readerVersion, "record file version", recordFile.getName());
 
         int hapiVersion = dis.readInt();
 
         // previous record file hash
         byte marker = dis.readByte();
-        checkField(marker, PREV_HASH_MARKER, "previous hash marker", recordFile.getName());
+        Utility.checkField(marker, PREV_HASH_MARKER, "previous hash marker", recordFile.getName());
         byte[] prevHash = dis.readNBytes(HASH_SIZE);
-        checkField(prevHash.length, HASH_SIZE, "previous hash size", recordFile.getName());
+        Utility.checkField(prevHash.length, HASH_SIZE, "previous hash size", recordFile.getName());
 
         digest.updateHeader(Ints.toByteArray(version));
         digest.updateHeader(Ints.toByteArray(hapiVersion));
         digest.updateHeader(marker);
         digest.updateHeader(prevHash);
 
-        recordFile.setRecordFormatVersion(version);
+        recordFile.setVersion(version);
         recordFile.setPreviousHash(Hex.encodeHexString(prevHash));
     }
 
@@ -123,10 +119,10 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
 
         while (dis.available() != 0) {
             byte marker = dis.readByte();
-            checkField(marker, RECORD_MARKER, "record marker", recordFile.getName());
+            Utility.checkField(marker, RECORD_MARKER, "record marker", recordFile.getName());
 
-            byte[] transactionBytes = readLengthAndBytes(dis);
-            byte[] recordBytes = readLengthAndBytes(dis);
+            byte[] transactionBytes = Utility.readLengthAndBytes(dis);
+            byte[] recordBytes = Utility.readLengthAndBytes(dis);
 
             digest.updateBody(marker);
             digest.updateBody(Ints.toByteArray(transactionBytes.length));
@@ -160,19 +156,5 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
         recordFile.setConsensusStart(consensusStart);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setCount(count);
-    }
-
-    private byte[] readLengthAndBytes(DataInputStream dis) throws IOException {
-        int len = dis.readInt();
-        byte[] bytes = new byte[len];
-        dis.readFully(bytes);
-        return bytes;
-    }
-
-    private <T> void checkField(T actual, T expected, String name, String filename) {
-        if (actual != expected) {
-            throw new InvalidStreamFileException(String.format("Expect %s (%s) got %s for record file %s",
-                    name, expected, actual, filename));
-        }
     }
 }

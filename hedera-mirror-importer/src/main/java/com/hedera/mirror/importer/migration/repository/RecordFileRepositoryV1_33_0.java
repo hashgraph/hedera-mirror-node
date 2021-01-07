@@ -1,11 +1,11 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.migration.repository;
 
 /*-
- * ‌
+ *
  * Hedera Mirror Node
- * ​
+ *  ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
- * ​
+ *  ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +17,15 @@ package com.hedera.mirror.importer.exception;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
+ *
  */
 
-public class StreamFileReaderException extends ImporterException {
+import java.util.Optional;
+import org.springframework.data.repository.CrudRepository;
 
-    private static final long serialVersionUID = 2533328395713171797L;
+import com.hedera.mirror.importer.migration.domain.RecordFileV1_33_0;
 
-    public StreamFileReaderException(String message) {
-        super(message);
-    }
+public interface RecordFileRepositoryV1_33_0 extends CrudRepository<RecordFileV1_33_0, Long> {
 
-    public StreamFileReaderException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public StreamFileReaderException(final String message, final Throwable throwable) {
-        super(message, throwable);
-    }
+    Optional<RecordFileV1_33_0> findByName(String name);
 }

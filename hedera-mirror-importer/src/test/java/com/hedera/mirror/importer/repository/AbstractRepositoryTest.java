@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.repository;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.migration.repository.RecordFileRepositoryV1_33_0;
 
 public abstract class AbstractRepositoryTest extends IntegrationTest {
 
@@ -41,6 +42,8 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     protected ContractResultRepository contractResultRepository;
     @Resource
     protected RecordFileRepository recordFileRepository;
+    @Resource
+    protected RecordFileRepositoryV1_33_0 recordFileRepositoryV1_33_0;
     @Resource
     protected CryptoTransferRepository cryptoTransferRepository;
     @Resource

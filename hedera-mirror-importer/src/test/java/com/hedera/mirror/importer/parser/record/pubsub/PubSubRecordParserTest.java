@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,16 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
                 .filter(p -> p.toString().endsWith(".rcd"))
                 .forEach(p -> {
                     String filename = FilenameUtils.getName(p.toString());
-                    RecordFile rf = new RecordFile(Utility.getTimestampFromFilename(filename), 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 0L, 2);
+                    RecordFile rf = RecordFile.builder()
+                            .consensusStart(Utility.getTimestampFromFilename(filename))
+                            .consensusEnd(0L)
+                            .count(0L)
+                            .fileHash(filename)
+                            .name(filename)
+                            .nodeAccountId(nodeAccountId)
+                            .previousHash(filename)
+                            .version(2)
+                            .build();
                     recordFileRepository.save(rf);
                 });
     }

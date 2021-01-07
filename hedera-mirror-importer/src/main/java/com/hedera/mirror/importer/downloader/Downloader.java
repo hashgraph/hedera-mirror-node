@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.downloader;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -488,10 +488,10 @@ public abstract class Downloader {
         String fileName = streamFile.getName();
 
         if (lastValidDownloadedFileHashKey != null) {
-            String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
+            String expectedPrevHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
             Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-            if (!verifyHashChain(streamFile.getPreviousHash(), expectedPrevFileHash, verifyHashAfter, fileName)) {
-                throw new HashMismatchException(fileName, expectedPrevFileHash, streamFile.getPreviousHash());
+            if (!verifyHashChain(streamFile.getPreviousHash(), expectedPrevHash, verifyHashAfter, fileName)) {
+                throw new HashMismatchException(fileName, expectedPrevHash, streamFile.getPreviousHash());
             }
         }
 
