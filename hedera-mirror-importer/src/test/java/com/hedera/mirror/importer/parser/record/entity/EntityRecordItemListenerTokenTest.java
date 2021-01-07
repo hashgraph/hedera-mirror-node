@@ -561,8 +561,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         var createTransactionRecord = createTransactionRecord(consensusTimestamp, tokenID
                 .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, tokenTransfer);
 
-        RecordItem recordItem = new RecordItem(createTransaction, createTransactionRecord);
-        parseRecordItemAndCommit(recordItem);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
     }
 
     private void createAndAssociateToken(TokenID tokenID, String symbol, long createTimestamp,
