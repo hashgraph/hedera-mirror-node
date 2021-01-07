@@ -125,5 +125,5 @@ alter table if exists transaction
     add primary key (consensus_ns);
 create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
-create index if not exists transaction__payer_account_id_consensus_ns
+create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
