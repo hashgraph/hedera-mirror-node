@@ -60,7 +60,7 @@ describe('Load YAML configuration:', () => {
   });
 
   test('./application.yml', () => {
-    fs.writeFileSync(path.join('.', 'application.yml'), yaml.safeDump(custom));
+    fs.writeFileSync(path.join('.', 'application.yml'), yaml.dump(custom));
     const config = require('../config');
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
@@ -70,7 +70,7 @@ describe('Load YAML configuration:', () => {
   });
 
   test('CONFIG_PATH/application.yml', () => {
-    fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.safeDump(custom));
+    fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(custom));
     const config = require('../config');
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
@@ -80,7 +80,7 @@ describe('Load YAML configuration:', () => {
   });
 
   test('CONFIG_PATH/application.yaml', () => {
-    fs.writeFileSync(path.join(tempDir, 'application.yaml'), yaml.safeDump(custom));
+    fs.writeFileSync(path.join(tempDir, 'application.yaml'), yaml.dump(custom));
     const config = require('../config');
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
@@ -141,7 +141,7 @@ describe('Load environment configuration:', () => {
 
 describe('Custom CONFIG_NAME:', () => {
   const loadConfigFromCustomObject = (custom) => {
-    fs.writeFileSync(path.join(tempDir, 'config.yml'), yaml.safeDump(custom));
+    fs.writeFileSync(path.join(tempDir, 'config.yml'), yaml.dump(custom));
     process.env = {CONFIG_NAME: 'config', CONFIG_PATH: tempDir};
     return require('../config');
   };
@@ -165,7 +165,7 @@ describe('Override stateproof config', () => {
         },
       },
     };
-    fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.safeDump(customConfig));
+    fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(customConfig));
     process.env = {CONFIG_PATH: tempDir};
     return require('../config');
   };
@@ -289,7 +289,7 @@ describe('Override db pool config', () => {
           },
         },
       };
-      fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.safeDump(customConfig));
+      fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(customConfig));
       process.env = {CONFIG_PATH: tempDir};
     }
 

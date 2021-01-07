@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
-import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
@@ -29,7 +28,7 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.MissingFileException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;

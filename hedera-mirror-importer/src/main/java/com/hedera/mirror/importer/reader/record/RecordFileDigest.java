@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.reader.record;
 
 /*-
  * ‌
@@ -20,9 +20,13 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFileData;
-
-public interface FileParser<T extends StreamFileData> {
-
-    void parse(T streamFileData);
+/**
+ * Calculates digest for record file.
+ */
+public interface RecordFileDigest {
+    void updateHeader(byte input);
+    void updateHeader(byte[] input);
+    void updateBody(byte input);
+    void updateBody(byte[] input);
+    byte[] digest();
 }

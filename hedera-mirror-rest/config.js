@@ -49,7 +49,7 @@ function load(configPath, configName) {
 
 function loadYaml(configFile) {
   try {
-    const doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
+    const doc = yaml.load(fs.readFileSync(configFile, 'utf8'));
     console.log(`Loaded configuration source: ${configFile}`);
     extend(true, config, doc);
   } catch (err) {
