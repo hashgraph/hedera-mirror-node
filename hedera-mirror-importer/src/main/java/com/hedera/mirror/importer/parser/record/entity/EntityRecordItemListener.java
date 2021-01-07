@@ -172,9 +172,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         if (isSuccessful) {
-            // Only add non-fee transfers on success as the data is assured to be valid
-            processNonFeeTransfers(consensusNs, body, txRecord);
-
             if (entityId != null) {
                 // Only insert entityId on successful transaction, as non null entityIds can be retrieved from
                 // transactionBody which may not yet exist on network. entityIds from successful transactions are
@@ -186,13 +183,16 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
             }
 
+            // Record token transfers can be populated for multiple transaction types
+            insertTokenTransfers(recordItem);
+
+            // Only add non-fee transfers on success as the data is assured to be valid
+            processNonFeeTransfers(consensusNs, body, txRecord);
+
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
-            } else if (body.hasCryptoTransfer()) {
-                //Token transfers can be present in CryptoTransferTransaction
-                insertTokenTransfers(recordItem);
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
             } else if (body.hasFileCreate()) {
