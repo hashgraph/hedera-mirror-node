@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
 @Named
-public class SignatureFileReaderV2 implements SignatureFileReader {
+public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
 
     private static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
     public static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file

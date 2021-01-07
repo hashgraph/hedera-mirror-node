@@ -31,19 +31,19 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
 @Named
-public class SignatureFileReaderV5 implements SignatureFileReader {
+public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
     public static final int SIGNATURE_FILE_FORMAT_VERSION = 5;
-    public static final int OBJECT_STREAM_SIGNATURE_VERSION = 1;
+    public static final int OBJECT_STREAM_SIGNATURE_VERSION = 1; //defines the format for the remainder of the file
 
     private static final long HASH_CLASS_ID = 0xf422da83a251741eL;
     private static final int HASH_CLASS_VERSION = 1;
-    private static final int HASH_DIGEST_TYPE = 0x58ff811b;
-    private static final int HASH_LENGTH = 48; // the length of the hash
+    private static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
+    private static final int HASH_LENGTH = 48; //48 bytes for SHA-384
 
     private static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
     private static final int SIGNATURE_CLASS_VERSION = 1;
-    private static final int SIGNATURE_TYPE = 1;
+    private static final int SIGNATURE_TYPE = 1; //denotes SHA384withRSA
 
     @Override
     public FileStreamSignature read(InputStream inputStream) {
@@ -51,22 +51,17 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
 
         try (DataInputStream dis = new DataInputStream(inputStream)) {
 
-            int fileVersion = dis.readInt();
-            validateLongValue(fileVersion, SIGNATURE_FILE_FORMAT_VERSION, "Invalid signature file version for " +
-                    "SignatureFileReaderV5: ");
+            byte fileVersion = dis.readByte();
+            validateLongValue(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "Unable to read signature file v5: file " +
+                    "version ");
 
             int signatureVersion = dis.readInt();
-            validateLongValue(OBJECT_STREAM_SIGNATURE_VERSION, signatureVersion, "Invalid signature object stream " +
-                    "version for " +
-                    "SignatureFileReaderV5: " + signatureVersion);
+            validateIntValue(OBJECT_STREAM_SIGNATURE_VERSION, signatureVersion, "Unable to read signature file v5: " +
+                    "object stream signature version ");
 
             fileStreamSignature.setHash(readHashObject(dis));
 
             fileStreamSignature.setSignature(readSignatureObject(dis));
-
-//            if (dis.available() != 0) {
-//                throw new SignatureFileParsingException("Extra data discovered in signature file");
-//            }
 
             return fileStreamSignature;
         } catch (IOException e) {
@@ -76,16 +71,21 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
 
     private byte[] readSignatureObject(DataInputStream dis) throws IOException {
         long signatureclassId = dis.readLong();
-        validateLongValue(SIGNATURE_CLASS_ID, signatureclassId, "");
+        validateLongValue(SIGNATURE_CLASS_ID, signatureclassId, "Unable to read signature file v5 signature: invalid " +
+                "signature class id ");
         int signatureClassVersion = dis.readInt();
-        validateIntValue(SIGNATURE_CLASS_VERSION, signatureClassVersion, "");
+        validateIntValue(SIGNATURE_CLASS_VERSION, signatureClassVersion, "Unable to read signature file v5 signature:" +
+                " invalid signature class version ");
         int signatureType = dis.readInt();
-        validateIntValue(SIGNATURE_TYPE, signatureType, "");
+        validateIntValue(SIGNATURE_TYPE, signatureType, "Unable to read signature file v5 signature: invalid " +
+                "signature type ");
 
         int sigLength = dis.readInt();
         byte[] sigBytes = new byte[sigLength];
         int actualSigLength = dis.read(sigBytes);
-        validateIntValue(sigLength, actualSigLength, "");
+        validateIntValue(sigLength, actualSigLength,
+                "Unable to read signature file v5 signature: listed signature length " + sigLength + " != actual " +
+                        "signature length ");
         return sigBytes;
     }
 
@@ -94,35 +94,20 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
 
         long hashClassId = dis.readLong();
         validateLongValue(HASH_CLASS_ID, hashClassId,
-                "Invalid hash class id for SignatureFileReaderV5: " + hashClassId);
+                "Unable to read signature file v5 hash: invalid class id ");
 
         int hashClassVersion = dis.readInt();
         validateIntValue(HASH_CLASS_VERSION, hashClassVersion,
-                "Invalid hash class id for SignatureFileReaderV5: " + hashClassId);
+                "Unable to read signature file v5 hash: invalid class version ");
         int hashType = dis.readInt();
         validateIntValue(HASH_DIGEST_TYPE, hashType,
-                "Invalid hash class id for SignatureFileReaderV5: " + hashClassId);
+                "Unable to read signature file v5 hash: invalid digest type: " + hashClassId);
         int hashLength = dis.readInt();
-        validateIntValue(fileHash.length, hashLength, "Unable to read signature file hash for " +
-                "SignatureFileReaderV5: hash length" + hashLength);
+        validateIntValue(fileHash.length, hashLength, "Unable to read signature file v5 hash: invalid length ");
 
         byte[] hash = new byte[hashLength];
         int actualHashLength = dis.read(hash);
-        validateIntValue(fileHash.length, actualHashLength, "Unable to read signature file hash for " +
-                "SignatureFileReaderV5: hash length" + actualHashLength);
+        validateIntValue(fileHash.length, actualHashLength, "Unable to read signature file v5 hash: invalid length ");
         return hash;
-    }
-
-    private void validateLongValue(long expected, long actual, String exceptionMessage) {
-        if (expected != actual) {
-            Long.compare(1, 2);
-            throw new SignatureFileParsingException(exceptionMessage + actual);
-        }
-    }
-
-    private void validateIntValue(int expected, int actual, String exceptionMessage) {
-        if (expected != actual) {
-            throw new SignatureFileParsingException(exceptionMessage + actual);
-        }
     }
 }
