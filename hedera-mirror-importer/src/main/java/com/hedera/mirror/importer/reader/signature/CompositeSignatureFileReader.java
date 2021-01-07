@@ -45,7 +45,7 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
     public FileStreamSignature read(InputStream inputStream) {
 
         try (DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream))) {
-            dataInputStream.mark(Integer.BYTES);
+            dataInputStream.mark(Byte.BYTES);
             byte version = dataInputStream.readByte();
             dataInputStream.reset();
             SignatureFileReader fileReader;
