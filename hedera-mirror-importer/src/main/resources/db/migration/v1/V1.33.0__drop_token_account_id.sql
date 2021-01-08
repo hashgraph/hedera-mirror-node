@@ -20,8 +20,10 @@ drop function if exists
     encodeentityid(bigint, bigint, bigint);
 
 -- add missing primary keys
+drop index if exists idx__t_file_data__consensus;
 alter table file_data
     add primary key (consensus_timestamp);
 
+drop index if exists idx__t_livehashes__consensus;
 alter table live_hash
     add primary key (consensus_timestamp);
