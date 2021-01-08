@@ -6,7 +6,7 @@
 alter table if exists token_account
     drop constraint token_account_pkey;
 alter table if exists token_account
-    add primary key (created_timestamp);
+    add primary key (created_timestamp, token_id);
 alter table if exists token_account
     drop column if exists id;
 
