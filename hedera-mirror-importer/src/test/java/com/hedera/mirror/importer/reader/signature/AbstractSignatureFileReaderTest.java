@@ -56,9 +56,7 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
                                                                List<SignatureFileSection> signatureFileSections) {
         List<DynamicTest> testCases = new ArrayList<>();
 
-        byte[] validSignatureBytes = new byte[0];
         //Add a test for an empty stream
-
         testCases.add(DynamicTest.dynamicTest(
                 "blankFile",
                 () -> {
@@ -70,20 +68,23 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
                     assertTrue(e.getMessage().contains("EOFException"));
                 }));
 
+        byte[] validSignatureBytes = new byte[0];
         for (int i = 0; i < signatureFileSections.size(); i++) {
-            //Add new valid section of the file
-            validSignatureBytes = i == 0 ? validSignatureBytes :
-                    Bytes.concat(validSignatureBytes, signatureFileSections.get(i - 1)
-                            .getValidDataBytes());
+            //Add new valid section of the signature file to the array
+            validSignatureBytes = i > 0 ? Bytes.concat(validSignatureBytes, signatureFileSections.get(i - 1)
+                    .getValidDataBytes()) : validSignatureBytes;
 
             SignatureFileSection sectionToCorrupt = signatureFileSections.get(i);
 
-            //Some sections are not validated
-            if (sectionToCorrupt.getInvalidExceptionMessage() == null) {
+            //Some sections are not validated by the reader and don't need a test
+            if (sectionToCorrupt.getCorruptTestName() == null) {
                 continue;
             }
 
+            //Add the corrupted section of the signature file to the valid sections
             byte[] fullSignatureBytes = Bytes.concat(validSignatureBytes, sectionToCorrupt.getCorruptBytes());
+
+            //Create a test that checks that an exception was thrown, and the message matches.
             testCases.add(DynamicTest.dynamicTest(
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
