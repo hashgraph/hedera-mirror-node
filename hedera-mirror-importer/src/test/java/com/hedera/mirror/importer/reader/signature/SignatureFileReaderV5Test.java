@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -69,8 +70,18 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     private static final int SIGNATURE_LENGTH = 48;
     private static final byte[] SIGNATURE_LENGTH_BYTES = TestUtils.intToByteArray(SIGNATURE_LENGTH);
 
+    @Test
+    void testReadValidFile() throws IOException {
+        try (InputStream stream = getInputStream(signatureFile)) {
+            FileStreamSignature answer = fileReaderV5.read(stream);
+            assertNotNull(answer);
+            assertNotNull(answer.getSignature());
+            assertNotNull(answer.getHash());
+        }
+    }
+
     @TestFactory
-    Iterable<DynamicTest> corruptSignatureFileV5() {
+    Iterable<DynamicTest> testReadCorruptSignatureFileV5() {
 
         SignatureFileSection fileVersion = new SignatureFileSection(
                 SIGNATURE_FILE_FORMAT_VERSION_BYTES,
@@ -143,26 +154,11 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 truncateLastByte,
                 "Unable to read signature file v5 signature: listed signature length");
 
-        signatureFileSections = Arrays
+        List<SignatureFileSection> signatureFileSections = Arrays
                 .asList(fileVersion, objectStreamSignatureVersion, hashClassId, hashClassVersion, hashDigestType,
                         hashLength, hash, signatureClassId, signatureClassVersion, signatureType, signatureLength,
                         signature);
 
-        return generateCorruptedFileTests();
-    }
-
-    @Test
-    void testReadValidFile() throws IOException {
-        try (InputStream stream = getInputStream(signatureFile)) {
-            FileStreamSignature answer = fileReaderV5.read(stream);
-            assertNotNull(answer);
-            assertNotNull(answer.getSignature());
-            assertNotNull(answer.getHash());
-        }
-    }
-
-    @Override
-    protected SignatureFileReader getFileReader() {
-        return fileReaderV5;
+        return generateCorruptedFileTests(fileReaderV5, signatureFileSections);
     }
 }

@@ -43,19 +43,6 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
 
-    protected List<SignatureFileSection> signatureFileSections;
-
-    protected static final SignatureFileSectionCorruptor incrementLastByte = (bytes -> {
-        byte[] corruptBytes = Arrays.copyOf(bytes, bytes.length);
-        corruptBytes[corruptBytes.length - 1] = (byte) (corruptBytes[corruptBytes.length - 1] + 1);
-        return corruptBytes;
-    });
-
-    protected static final SignatureFileSectionCorruptor truncateLastByte = (bytes -> Arrays
-            .copyOfRange(bytes, 0, bytes.length - 1));
-
-    protected abstract SignatureFileReader getFileReader();
-
     protected InputStream getInputStream(File file) throws FileNotFoundException {
         return new BufferedInputStream(new FileInputStream(file));
     }
@@ -64,7 +51,9 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
         return new ByteArrayInputStream(bytes);
     }
 
-    protected Iterable<DynamicTest> generateCorruptedFileTests() {
+    //Dynamically generate tests for corrupt/invalid signature file tests
+    protected Iterable<DynamicTest> generateCorruptedFileTests(SignatureFileReader fileReader,
+                                                               List<SignatureFileSection> signatureFileSections) {
         List<DynamicTest> testCases = new ArrayList<>();
 
         byte[] validSignatureBytes = new byte[0];
@@ -74,7 +63,6 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
                 "blankFile",
                 () -> {
                     InputStream blankInputStream = getInputStream(new byte[0]);
-                    SignatureFileReader fileReader = getFileReader();
                     SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                             () -> {
                                 fileReader.read(blankInputStream);
@@ -100,7 +88,6 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
                         InputStream corruptInputStream = getInputStream(fullSignatureBytes);
-                        SignatureFileReader fileReader = getFileReader();
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                                 () -> {
                                     fileReader.read(corruptInputStream);
@@ -111,12 +98,21 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
         return testCases;
     }
 
+    protected static final SignatureFileSectionCorrupter incrementLastByte = (bytes -> {
+        byte[] corruptBytes = Arrays.copyOf(bytes, bytes.length);
+        corruptBytes[corruptBytes.length - 1] = (byte) (corruptBytes[corruptBytes.length - 1] + 1);
+        return corruptBytes;
+    });
+
+    protected static final SignatureFileSectionCorrupter truncateLastByte = (bytes -> Arrays
+            .copyOfRange(bytes, 0, bytes.length - 1));
+
     @Value
     @AllArgsConstructor
     protected class SignatureFileSection {
         private final byte[] validDataBytes;
         private final String corruptTestName;
-        private final SignatureFileSectionCorruptor byteCorrupter;
+        private final SignatureFileSectionCorrupter byteCorrupter;
         private final String invalidExceptionMessage;
         @Getter(lazy = true)
         private final byte[] corruptBytes = byteCorrupter.corruptBytes(validDataBytes);
@@ -126,7 +122,7 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
         }
     }
 
-    protected interface SignatureFileSectionCorruptor {
+    protected interface SignatureFileSectionCorrupter {
         byte[] corruptBytes(byte[] bytes);
     }
 }

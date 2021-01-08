@@ -24,13 +24,12 @@ import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_SIGNATURE;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
@@ -62,18 +60,8 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         }
     }
 
-    @Test
-    void testReadBlankFile() throws IOException {
-        try (InputStream stream = getInputStream(new byte[0])) {
-            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-                fileReaderV2.read(stream);
-            });
-            assertTrue(exception.getCause() instanceof IOException);
-        }
-    }
-
     @TestFactory
-    Iterable<DynamicTest> corruptSignatureFileV2() {
+    Iterable<DynamicTest> testReadCorruptSignatureFileV2() {
         SignatureFileSection hashDelimiter = new SignatureFileSection(
                 new byte[] {SIGNATURE_TYPE_FILE_HASH},
                 "invalidHashDelimiter",
@@ -109,14 +97,9 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
                 bytes -> new byte[] {1},
                 "Extra data discovered in signature file");
 
-        signatureFileSections = Arrays
+        List<SignatureFileSection> signatureFileSections = Arrays
                 .asList(hashDelimiter, hash, signatureDelimiter, signatureLength, signature, invalidExtraData);
 
-        return generateCorruptedFileTests();
-    }
-
-    @Override
-    protected SignatureFileReader getFileReader() {
-        return fileReaderV2;
+        return generateCorruptedFileTests(fileReaderV2, signatureFileSections);
     }
 }
