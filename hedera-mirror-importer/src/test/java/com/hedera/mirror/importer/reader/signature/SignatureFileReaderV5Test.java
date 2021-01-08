@@ -111,8 +111,8 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         CorruptSignatureFileSection signatureClassVersion =
                 new CorruptSignatureFileSection("invalidSignatureClassVersion", SIGNATURE_CLASS_VERSION_BYTES,
-                        "Unable " +
-                        "to read signature file v5 signature: invalid signature class version", incrementLastByte);
+                        "Unable to read signature file v5 signature: invalid signature class version",
+                        incrementLastByte);
 
         CorruptSignatureFileSection signatureType = new CorruptSignatureFileSection("invalidSignatureType",
                 SIGNATURE_TYPE_BYTES,
