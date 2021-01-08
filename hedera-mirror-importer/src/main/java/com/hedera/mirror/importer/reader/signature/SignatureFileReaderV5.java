@@ -33,17 +33,17 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 @Named
 public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
-    public static final int SIGNATURE_FILE_FORMAT_VERSION = 5;
-    public static final int OBJECT_STREAM_SIGNATURE_VERSION = 1; //defines the format for the remainder of the file
+    protected static final byte SIGNATURE_FILE_FORMAT_VERSION = 5;
+    protected static final int OBJECT_STREAM_SIGNATURE_VERSION = 1; //defines the format for the remainder of the file
 
-    private static final long HASH_CLASS_ID = 0xf422da83a251741eL;
-    private static final int HASH_CLASS_VERSION = 1;
-    private static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
-    private static final int HASH_LENGTH = 48; //48 bytes for SHA-384
+    protected static final long HASH_CLASS_ID = 0xf422da83a251741eL;
+    protected static final int HASH_CLASS_VERSION = 1;
+    protected static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
+    protected static final int HASH_LENGTH = 48; //48 bytes for SHA-384
 
-    private static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
-    private static final int SIGNATURE_CLASS_VERSION = 1;
-    private static final int SIGNATURE_TYPE = 1; //denotes SHA384withRSA
+    protected static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
+    protected static final int SIGNATURE_CLASS_VERSION = 1;
+    protected static final int SIGNATURE_TYPE = 1; //denotes SHA384withRSA
 
     @Override
     public FileStreamSignature read(InputStream inputStream) {
@@ -55,9 +55,9 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             validateLongValue(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "Unable to read signature file v5: file " +
                     "version ");
 
-            int signatureVersion = dis.readInt();
-            validateIntValue(OBJECT_STREAM_SIGNATURE_VERSION, signatureVersion, "Unable to read signature file v5: " +
-                    "object stream signature version ");
+            int objectStreamSignatureVersion = dis.readInt();
+            validateIntValue(OBJECT_STREAM_SIGNATURE_VERSION, objectStreamSignatureVersion, "Unable to read signature" +
+                    " file v5: object stream signature version ");
 
             fileStreamSignature.setHash(readHashObject(dis));
 
@@ -107,7 +107,9 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
         byte[] hash = new byte[hashLength];
         int actualHashLength = dis.read(hash);
-        validateIntValue(fileHash.length, actualHashLength, "Unable to read signature file v5 hash: invalid length ");
+        validateIntValue(fileHash.length, actualHashLength,
+                "Unable to read signature file v5 hash: listed length " + hashLength + " does not equal actual hash " +
+                        "length ");
         return hash;
     }
 }

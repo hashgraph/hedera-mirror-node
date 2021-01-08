@@ -20,20 +20,24 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
+import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.HASH_SIZE;
+import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH;
+import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_SIGNATURE;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.primitives.Bytes;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import javax.annotation.Resource;
-import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.springframework.beans.factory.annotation.Value;
 
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
@@ -44,6 +48,9 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
     @Resource
     SignatureFileReaderV2 fileReaderV2;
+
+    private static final int SIGNATURE_LENGTH = 48;
+    private static final byte[] SIGNATURE_LENGTH_BYTES = TestUtils.intToByteArray(SIGNATURE_LENGTH);
 
     @Test
     void testReadValidFile() throws IOException {
@@ -65,60 +72,43 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         }
     }
 
-    @Test
-    void testReadStreamWithExtraData() throws IOException {
-        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
-        byte[] extraBytes = "extra".getBytes();
-        byte[] allBytes = Bytes.concat(bytes, extraBytes);
-        try (InputStream stream = getInputStream(allBytes)) {
-            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-                fileReaderV2.read(stream);
-            });
-            assertTrue(exception.getMessage().contains("Extra data discovered in signature file"));
-        }
+    @TestFactory
+    Iterable<DynamicTest> corruptSignatureFileV2() {
+
+        CorruptSignatureFileSection hashDelimiter =
+                new CorruptSignatureFileSection("invalidHashDelimiter", new byte[] {SIGNATURE_TYPE_FILE_HASH},
+                        "Unable " +
+                                "to read signature file hash: type delimiter", incrementLastByte);
+
+        CorruptSignatureFileSection hash = new CorruptSignatureFileSection("invalidHashLength",
+                generateRandomByteArray(HASH_SIZE),
+                "Unable to read " +
+                        "signature file hash: hash length", truncateLastByte);
+
+        CorruptSignatureFileSection signatureDelimiter =
+                new CorruptSignatureFileSection("invalidSignatureDelimiter", new byte[] {SIGNATURE_TYPE_SIGNATURE},
+                        "Unable to read signature file signature: type delimiter", incrementLastByte);
+
+        CorruptSignatureFileSection signatureLength = new CorruptSignatureFileSection(null, SIGNATURE_LENGTH_BYTES,
+                null,
+                null);
+
+        CorruptSignatureFileSection signature =
+                new CorruptSignatureFileSection("incorrectSignatureLength", generateRandomByteArray(SIGNATURE_LENGTH),
+                        "EOFException", truncateLastByte);
+
+        CorruptSignatureFileSection invalidExtraData = new CorruptSignatureFileSection("invalidExtraData",
+                new byte[] {1},
+                "Extra data discovered in signature file", returnValidBytes);
+
+        signatureFileSections = Arrays
+                .asList(hashDelimiter, hash, signatureDelimiter, signatureLength, signature, invalidExtraData);
+
+        return generateCorruptedFileTests();
     }
 
-    @Test
-    void testReadStreamHashWrongDelimiter() throws IOException {
-        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
-        byte[] invalidDelimiter = {1};
-        byte[] allBytes = Bytes.concat(invalidDelimiter, bytes);
-        try (InputStream stream = getInputStream(allBytes)) {
-            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-                fileReaderV2.read(stream);
-            });
-            assertTrue(exception.getMessage()
-                    .contains("Unable to read signature file hash: type delimiter " + invalidDelimiter[0]));
-        }
-    }
-
-    @Test
-    void testReadStreamHashTooShort() throws IOException {
-        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
-        //Creating a file with only the first 47 bytes of the original (one less than the expected hash length)
-        byte[] shortenedBytes = Arrays.copyOfRange(bytes, 0, 48);
-        try (InputStream stream = getInputStream(shortenedBytes)) {
-            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-                fileReaderV2.read(stream);
-            });
-            assertTrue(exception.getMessage()
-                    .contains("Unable to read signature file hash: hash length 47"));
-        }
-    }
-
-    @Test
-    void testReadStreamSignatureWrongDelimiter() throws IOException {
-        byte[] bytes = FileUtils.readFileToByteArray(signatureFile);
-        byte[] invalidDelimiter = {1};
-        byte[] hashBytes = Arrays.copyOfRange(bytes, 0, 49);
-        byte[] signatureBytes = Arrays.copyOfRange(bytes, 50, bytes.length);
-        byte[] allBytes = Bytes.concat(hashBytes, invalidDelimiter, signatureBytes);
-        try (InputStream stream = getInputStream(allBytes)) {
-            SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
-                fileReaderV2.read(stream);
-            });
-            assertTrue(exception.getMessage()
-                    .contains("Unable to read signature file signature: type delimiter " + invalidDelimiter[0]));
-        }
+    @Override
+    protected SignatureFileReader getFileReader() {
+        return fileReaderV2;
     }
 }

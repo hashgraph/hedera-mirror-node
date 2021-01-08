@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 
 import com.hedera.mirror.importer.util.Utility;
@@ -54,5 +55,13 @@ public final class TestUtils {
 
     public static byte[] toByteArray(Key key) {
         return (null == key) ? null : key.toByteArray();
+    }
+
+    public static byte[] longToByteArray(long value) {
+        return ByteBuffer.allocate(Long.BYTES).putLong(value).array();
+    }
+
+    public static byte[] intToByteArray(int value) {
+        return ByteBuffer.allocate(Integer.BYTES).putInt(value).array();
     }
 }
