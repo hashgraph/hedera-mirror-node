@@ -35,11 +35,11 @@ select create_hypertable('crypto_transfer', 'consensus_timestamp', chunk_time_in
 
 -- file_data
 select create_hypertable('file_data', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
-                        if_not_exists => true);
+                        create_default_indexes => false, if_not_exists => true);
 
 -- live_hash
 select create_hypertable('live_hash', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
-                        if_not_exists => true);
+                        create_default_indexes => false, if_not_exists => true);
 
 -- non_fee_transfer
 select create_hypertable('non_fee_transfer', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},

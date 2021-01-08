@@ -42,9 +42,13 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
     where entity_id != 98;
 -- id corresponding to treasury address 0.0.98
 
--- file_data, desc index on consensus_timestamp already created by hypertable
+-- file_data
+alter table file_data
+    add primary key (consensus_timestamp);
 
--- live_hash, desc index on consensus_timestamp already created by hypertable
+-- live_hash
+alter table live_hash
+    add primary key (consensus_timestamp);
 
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp
