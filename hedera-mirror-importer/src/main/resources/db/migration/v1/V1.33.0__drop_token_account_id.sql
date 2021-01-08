@@ -1,5 +1,7 @@
 -------------------
 -- Drop token_account id, replacing id primary key with unique index on (created_timestamp)
+-- Drop unused functions f_entity_create and encodeentityid
+-- Add missing primary keys on file_data and live_hash
 -------------------
 alter table if exists token_account
     drop constraint token_account_pkey;
@@ -16,3 +18,10 @@ drop function if exists
 
 drop function if exists
     encodeentityid(bigint, bigint, bigint);
+
+-- add missing primary keys
+alter table file_data
+    add primary key (consensus_timestamp);
+
+alter table live_hash
+    add primary key (consensus_timestamp);
