@@ -102,12 +102,12 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         validateIntValue(SIGNATURE_TYPE, signatureType, "Unable to read signature file v5 signature: invalid " +
                 "signature type ");
 
-        int sigLength = dis.readInt();
-        byte[] sigBytes = new byte[sigLength];
-        int actualSigLength = dis.read(sigBytes);
-        validateIntValue(sigLength, actualSigLength,
-                "Unable to read signature file v5 signature: listed signature length " + sigLength + " != actual " +
-                        "signature length ");
-        return sigBytes;
+        int signatureLength = dis.readInt();
+        byte[] signature = new byte[signatureLength];
+        int actualSignatureLength = dis.read(signature);
+        validateIntValue(signatureLength, actualSignatureLength,
+                "Unable to read signature file v5 signature: listed signature length " + signatureLength + " != " +
+                        "actual signature length ");
+        return signature;
     }
 }
