@@ -57,7 +57,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         this.expressionConverter = expressionConverter;
         this.properties = properties;
         this.transactionSupplier = Suppliers.memoize(this::convert);
-        this.rateLimiter = RateLimiter.create(properties.getTps());
+        this.rateLimiter = RateLimiter.create(properties.getTps(), properties.getWarmupPeriod());
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
