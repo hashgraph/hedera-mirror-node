@@ -84,31 +84,31 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 incrementLastByte,
                 "Unable to read signature file v5: object stream signature version");
 
-        SignatureFileSection entireHashClassId = new SignatureFileSection(
+        SignatureFileSection hashClassId = new SignatureFileSection(
                 HASH_CLASS_ID_BYTES,
                 "invalidHashClassId",
                 incrementLastByte,
                 "Unable to read signature file v5 hash: invalid class id");
 
-        SignatureFileSection entireHashClassVersion = new SignatureFileSection(
+        SignatureFileSection hashClassVersion = new SignatureFileSection(
                 HASH_CLASS_VERSION_BYTES,
                 "invalidHashClassVersion",
                 incrementLastByte,
                 "Unable to read signature file v5 hash: invalid class version");
 
-        SignatureFileSection entireHashDigestType = new SignatureFileSection(
+        SignatureFileSection hashDigestType = new SignatureFileSection(
                 HASH_DIGEST_TYPE_BYTES,
                 "invalidHashDigestType",
                 incrementLastByte,
                 "Unable to read signature file v5 hash: invalid digest type");
 
-        SignatureFileSection entireHashLegnthOfHash = new SignatureFileSection(
+        SignatureFileSection hashLength = new SignatureFileSection(
                 HASH_LENGTH_BYTES,
                 "invalidHashLength",
                 incrementLastByte,
                 "Unable to read signature file v5 hash: invalid length");
 
-        SignatureFileSection entireHashBytes = new SignatureFileSection(
+        SignatureFileSection hash = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(HASH_SIZE),
                 "incorrectHashLength",
                 truncateLastByte,
@@ -144,10 +144,9 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 "Unable to read signature file v5 signature: listed signature length");
 
         signatureFileSections = Arrays
-                .asList(fileVersion, objectStreamSignatureVersion, entireHashClassId,
-                        entireHashClassVersion,
-                        entireHashDigestType, entireHashLegnthOfHash, entireHashBytes, signatureClassId,
-                        signatureClassVersion, signatureType, signatureLength, signature);
+                .asList(fileVersion, objectStreamSignatureVersion, hashClassId, hashClassVersion, hashDigestType,
+                        hashLength, hash, signatureClassId, signatureClassVersion, signatureType, signatureLength,
+                        signature);
 
         return generateCorruptedFileTests();
     }

@@ -67,18 +67,19 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
     protected Iterable<DynamicTest> generateCorruptedFileTests() {
         List<DynamicTest> testCases = new ArrayList<>();
 
+        byte[] validSignatureBytes = new byte[0];
         //Add a test for an empty stream
+        InputStream blankInputStream = getInputStream(new byte[0]);
         testCases.add(DynamicTest.dynamicTest(
                 "blankFile",
                 () -> {
                     SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                             () -> {
-                                getFileReader().read(getInputStream(new byte[0]));
+                                getFileReader().read(blankInputStream);
                             });
                     assertTrue(e.getMessage().contains("EOFException"));
                 }));
 
-        byte[] validSignatureBytes = new byte[0];
         for (int i = 0; i < signatureFileSections.size(); i++) {
             //Add new valid section of the file
             validSignatureBytes = i == 0 ? validSignatureBytes :
@@ -93,12 +94,13 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
             }
 
             byte[] fullSignatureBytes = Bytes.concat(validSignatureBytes, sectionToCorrupt.getCorruptBytes());
+            InputStream corruptInputStream = getInputStream(fullSignatureBytes);
             testCases.add(DynamicTest.dynamicTest(
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                                 () -> {
-                                    getFileReader().read(getInputStream(fullSignatureBytes));
+                                    getFileReader().read(corruptInputStream);
                                 });
                         sectionToCorrupt.validateError(e.getMessage());
                     }));
