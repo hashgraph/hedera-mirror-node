@@ -24,7 +24,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.time.Instant;
 
@@ -56,10 +55,6 @@ public final class TestUtils {
 
     public static byte[] toByteArray(Key key) {
         return (null == key) ? null : key.toByteArray();
-    }
-
-    public static byte[] intToByteArray(int value) {
-        return ByteBuffer.allocate(Integer.BYTES).putInt(value).array();
     }
 
     public static byte[] generateRandomByteArray(int size) {
