@@ -79,7 +79,7 @@ alter table token
     set (timescaledb.compress, timescaledb.compress_segmentby = 'token_id');
 
 alter table token_account
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id');
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id, token_id');
 
 alter table token_balance
     set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id, token_id');

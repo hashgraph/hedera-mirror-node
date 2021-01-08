@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -56,7 +57,6 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.MissingFileException;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -240,7 +240,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
 
-        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null, 1L);
+        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null, 2L);
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
         sqlEntityListener.onEntityId(entityId); // duplicate across files
         completeFileAndCommit();
