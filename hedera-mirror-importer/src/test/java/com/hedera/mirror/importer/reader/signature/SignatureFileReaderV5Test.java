@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.reader.signature;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_CLASS_ID;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_CLASS_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_DIGEST_TYPE;
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_LENGTH;
+import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_SIZE;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.OBJECT_STREAM_SIGNATURE_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_CLASS_ID;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_CLASS_VERSION;
@@ -54,13 +54,13 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
     private final byte[] SIGNATURE_FILE_FORMAT_VERSION_BYTES = new byte[] {SIGNATURE_FILE_FORMAT_VERSION};
 
-    private static final byte[] OBJECT_STREAM_SIGNATURE_VERSION_BYTES =
-            TestUtils.intToByteArray(OBJECT_STREAM_SIGNATURE_VERSION);
+    private static final byte[] OBJECT_STREAM_SIGNATURE_VERSION_BYTES = TestUtils
+            .intToByteArray(OBJECT_STREAM_SIGNATURE_VERSION);
 
     private static final byte[] HASH_CLASS_ID_BYTES = TestUtils.longToByteArray(HASH_CLASS_ID);
     private static final byte[] HASH_CLASS_VERSION_BYTES = TestUtils.intToByteArray(HASH_CLASS_VERSION);
     private static final byte[] HASH_DIGEST_TYPE_BYTES = TestUtils.intToByteArray(HASH_DIGEST_TYPE);
-    private static final byte[] HASH_LENGTH_BYTES = TestUtils.intToByteArray(HASH_LENGTH);
+    private static final byte[] HASH_LENGTH_BYTES = TestUtils.intToByteArray(HASH_SIZE);
 
     private static final byte[] SIGNATURE_CLASS_ID_BYTES = TestUtils.longToByteArray(SIGNATURE_CLASS_ID);
     private static final byte[] SIGNATURE_CLASS_VERSION_BYTES = TestUtils.intToByteArray(SIGNATURE_CLASS_VERSION);
@@ -109,7 +109,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 "Unable to read signature file v5 hash: invalid length");
 
         SignatureFileSection entireHashBytes = new SignatureFileSection(
-                TestUtils.generateRandomByteArray(HASH_LENGTH),
+                TestUtils.generateRandomByteArray(HASH_SIZE),
                 "incorrectHashLength",
                 truncateLastByte,
                 "Unable to read signature file v5 hash: listed length");

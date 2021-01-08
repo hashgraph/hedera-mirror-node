@@ -39,7 +39,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
     protected static final long HASH_CLASS_ID = 0xf422da83a251741eL;
     protected static final int HASH_CLASS_VERSION = 1;
     protected static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
-    protected static final int HASH_LENGTH = 48; //48 bytes for SHA-384
+    protected static final int HASH_SIZE = 48; //48 bytes for SHA-384
 
     protected static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
     protected static final int SIGNATURE_CLASS_VERSION = 1;
@@ -52,7 +52,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         try (DataInputStream dis = new DataInputStream(inputStream)) {
 
             byte fileVersion = dis.readByte();
-            validateLongValue(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "Unable to read signature file v5: file " +
+            validateByteValue(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "Unable to read signature file v5: file " +
                     "version ");
 
             int objectStreamSignatureVersion = dis.readInt();
@@ -69,9 +69,31 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         }
     }
 
+    private byte[] readHashObject(DataInputStream dis) throws IOException {
+        long hashClassId = dis.readLong();
+        validateLongValue(HASH_CLASS_ID, hashClassId,
+                "Unable to read signature file v5 hash: invalid class id ");
+
+        int hashClassVersion = dis.readInt();
+        validateIntValue(HASH_CLASS_VERSION, hashClassVersion,
+                "Unable to read signature file v5 hash: invalid class version ");
+        int hashType = dis.readInt();
+        validateIntValue(HASH_DIGEST_TYPE, hashType,
+                "Unable to read signature file v5 hash: invalid digest type: " + hashClassId);
+        int hashLength = dis.readInt();
+        validateIntValue(HASH_SIZE, hashLength, "Unable to read signature file v5 hash: invalid length ");
+
+        byte[] hash = new byte[hashLength];
+        int actualHashLength = dis.read(hash);
+        validateIntValue(hashLength, actualHashLength,
+                "Unable to read signature file v5 hash: listed length " + hashLength + " does not equal actual hash " +
+                        "length ");
+        return hash;
+    }
+
     private byte[] readSignatureObject(DataInputStream dis) throws IOException {
-        long signatureclassId = dis.readLong();
-        validateLongValue(SIGNATURE_CLASS_ID, signatureclassId, "Unable to read signature file v5 signature: invalid " +
+        long signatureClassId = dis.readLong();
+        validateLongValue(SIGNATURE_CLASS_ID, signatureClassId, "Unable to read signature file v5 signature: invalid " +
                 "signature class id ");
         int signatureClassVersion = dis.readInt();
         validateIntValue(SIGNATURE_CLASS_VERSION, signatureClassVersion, "Unable to read signature file v5 signature:" +
@@ -87,29 +109,5 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
                 "Unable to read signature file v5 signature: listed signature length " + sigLength + " != actual " +
                         "signature length ");
         return sigBytes;
-    }
-
-    private byte[] readHashObject(DataInputStream dis) throws IOException {
-        byte[] fileHash = new byte[HASH_LENGTH];
-
-        long hashClassId = dis.readLong();
-        validateLongValue(HASH_CLASS_ID, hashClassId,
-                "Unable to read signature file v5 hash: invalid class id ");
-
-        int hashClassVersion = dis.readInt();
-        validateIntValue(HASH_CLASS_VERSION, hashClassVersion,
-                "Unable to read signature file v5 hash: invalid class version ");
-        int hashType = dis.readInt();
-        validateIntValue(HASH_DIGEST_TYPE, hashType,
-                "Unable to read signature file v5 hash: invalid digest type: " + hashClassId);
-        int hashLength = dis.readInt();
-        validateIntValue(fileHash.length, hashLength, "Unable to read signature file v5 hash: invalid length ");
-
-        byte[] hash = new byte[hashLength];
-        int actualHashLength = dis.read(hash);
-        validateIntValue(fileHash.length, actualHashLength,
-                "Unable to read signature file v5 hash: listed length " + hashLength + " does not equal actual hash " +
-                        "length ");
-        return hash;
     }
 }
