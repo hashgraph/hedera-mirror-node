@@ -33,10 +33,8 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -103,7 +101,8 @@ class PubSubMessageTest {
 
     @Test
     void testSerializationWithNullFields() throws Exception {
-        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10, new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
+        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10,
+                new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
                 getTransactionRecord(), null);
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
@@ -211,7 +210,8 @@ class PubSubMessageTest {
                 "    \"status\": \"SUCCESS\"," +
                 "    \"topicSequenceNumber\": \"100000000\"," +
                 "    \"topicRunningHash\": \"YWJjZGVm\"," +
-                "    \"topicRunningHashVersion\": \"0\"" +
+                "    \"topicRunningHashVersion\": \"0\"," +
+                "    \"newTotalSupply\": \"0\"" +
                 "  }," +
                 "  \"transactionHash\": \"YWJjZGVm\"," +
                 "  \"consensusTimestamp\": {" +

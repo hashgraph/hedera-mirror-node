@@ -486,7 +486,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 Token token = optionalToken.get();
                 token.setModifiedTimestamp(consensusTimeStamp);
                 // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(token.getTotalSupply() - tokenBurnTransactionBody.getAmount());
+                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
 
                 entityListener.onToken(token);
             }
@@ -607,7 +607,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 Token token = optionalToken.get();
                 token.setModifiedTimestamp(consensusTimeStamp);
                 // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(token.getTotalSupply() + tokenMintTransactionBody.getAmount());
+                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
 
                 entityListener.onToken(token);
             }
@@ -731,7 +731,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 Token token = optionalToken.get();
                 token.setModifiedTimestamp(consensusTimeStamp);
                 // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(token.getTotalSupply() - tokenWipeAccountTransactionBody.getAmount());
+                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
 
                 entityListener.onToken(token);
             }
