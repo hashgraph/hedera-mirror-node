@@ -23,14 +23,12 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 public abstract class AbstractSignatureFileReader implements SignatureFileReader {
     protected void validateByteValue(byte expected, byte actual, String exceptionMessage) {
         if (expected != actual) {
-            Long.compare(1, 2);
             throw new SignatureFileParsingException(exceptionMessage + actual);
         }
     }
 
     protected void validateLongValue(long expected, long actual, String exceptionMessage) {
         if (expected != actual) {
-            Long.compare(1, 2);
             throw new SignatureFileParsingException(exceptionMessage + actual);
         }
     }
