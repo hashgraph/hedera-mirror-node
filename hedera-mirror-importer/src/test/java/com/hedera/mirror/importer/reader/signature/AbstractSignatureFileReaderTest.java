@@ -69,13 +69,15 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
 
         byte[] validSignatureBytes = new byte[0];
         //Add a test for an empty stream
-        InputStream blankInputStream = getInputStream(new byte[0]);
+
         testCases.add(DynamicTest.dynamicTest(
                 "blankFile",
                 () -> {
+                    InputStream blankInputStream = getInputStream(new byte[0]);
+                    SignatureFileReader fileReader = getFileReader();
                     SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                             () -> {
-                                getFileReader().read(blankInputStream);
+                                fileReader.read(blankInputStream);
                             });
                     assertTrue(e.getMessage().contains("EOFException"));
                 }));
@@ -94,13 +96,14 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
             }
 
             byte[] fullSignatureBytes = Bytes.concat(validSignatureBytes, sectionToCorrupt.getCorruptBytes());
-            InputStream corruptInputStream = getInputStream(fullSignatureBytes);
             testCases.add(DynamicTest.dynamicTest(
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
+                        InputStream corruptInputStream = getInputStream(fullSignatureBytes);
+                        SignatureFileReader fileReader = getFileReader();
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                                 () -> {
-                                    getFileReader().read(corruptInputStream);
+                                    fileReader.read(corruptInputStream);
                                 });
                         sectionToCorrupt.validateError(e.getMessage());
                     }));
