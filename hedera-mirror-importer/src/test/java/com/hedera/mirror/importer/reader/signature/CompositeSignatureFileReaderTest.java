@@ -66,6 +66,19 @@ class CompositeSignatureFileReaderTest {
         try (InputStream stream = getInputStream(Bytes.concat(versionNumber, randomExtraBytes))) {
             compositeBalanceFileReader.read(stream);
             verify(signatureFileReaderV2, times(1)).read(any(InputStream.class));
+            verify(signatureFileReaderV5, times(0)).read(any(InputStream.class));
+        }
+    }
+
+    @Test
+    void testValidV5() throws IOException, NoSuchAlgorithmException {
+        byte[] versionNumber = {SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION};
+        byte[] randomExtraBytes = new byte[3];
+        SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
+        try (InputStream stream = getInputStream(Bytes.concat(versionNumber, randomExtraBytes))) {
+            compositeBalanceFileReader.read(stream);
+            verify(signatureFileReaderV5, times(1)).read(any(InputStream.class));
+            verify(signatureFileReaderV2, times(0)).read(any(InputStream.class));
         }
     }
 
