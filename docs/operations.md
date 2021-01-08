@@ -93,6 +93,49 @@ systemctl status hedera-mirror-importer.service
 sudo journalctl -fu hedera-mirror-importer.service
 ```
 
+### v1 to v2 Data Migration
+
+To support time series logic the Mirror Node DB schema shifted from PostgeSQL (v1) to TimescaleDB (v2).
+[Migrating from a Different PostgreSQL Database](https://docs.timescale.com/latest/getting-started/migrating-data#different-db) highlights the general recommended data migration steps when moving to TimescaleDB.
+
+For mirror node operators running v1 db schema, the following steps can be taken to upgrade to v2.
+
+1. Set up a new TimescaleDB database
+
+    A new TimescaleDB server must be spun up.
+
+    Refer to Mirror Node [DB Installation](installation.md#database-setup) for manual instructions.
+
+    To use the Mirror Node configured docker container, simply run:
+
+    ```shell script
+    $ docker-compose up timescaledb
+    ```
+
+    Refer to [TimescaleDB Installation Instructions](https://docs.timescale.com/latest/getting-started/installation) for other installation options.
+
+    > **_NOTE:_** The following steps assume the database, users and schema have been created as detailed above
+
+2. Configure migration properties
+
+    The configuration file `hedera-mirror-importer/src/main/resources/db/scripts/timescaledb/migration.config` contains db variables for easy running.
+    These options include variables such as db names, passwords, users, hosts for both the existing db and the new db.
+
+    Update these values appropriately for your db setup.
+
+3. Run migration script
+
+    From the `hedera-mirror-importer/src/main/resources/db` directory run the `migration.sh` script
+    ```shell script
+    $ ./scripts/timescaledb/migration.sh
+    ```
+
+   The script uses successive `psql` connections to back up, configure and restore data on the new database nodes.
+   First it copies over the `flyway_schema_history` table, to maintain migration history.
+   It then utilizes the migration sql script used by normal flyway operations to create the new tables and then creates the Timescale hypertables based on these.
+   Following this the tables from the old database are backed up as csv files using `\COPY` and then the data inserted into the new database also using `\COPY`.
+   Finally the schema of the `flyway_schema_history` is updated and the sequence values are updated to ensure continuation.
+
 ## Monitor
 
 The monitor is a Java-based application and should be able to run on any platform that Java supports. That said, we

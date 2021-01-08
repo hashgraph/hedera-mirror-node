@@ -4,27 +4,29 @@
 
 -- account_balance
 alter table account_balance
-    add constraint account_balance_timestamp_id primary key (consensus_timestamp, account_id);
+    add primary key (consensus_timestamp, account_id);
 create index if not exists account_balance__account_timestamp
     on account_balance (account_id desc, consensus_timestamp desc);
 
 -- account_balance_sets
 alter table account_balance_sets
-    add constraint account_balance_sets_timestamp primary key (consensus_timestamp);
+    add primary key (consensus_timestamp);
 create index if not exists balance_sets__completed
     on account_balance_sets (is_complete, consensus_timestamp desc);
 
 -- account_balance_file
+alter table account_balance_file
+    add primary key (consensus_timestamp);
 create unique index if not exists account_balance_file__name
     on account_balance_file (name, consensus_timestamp desc);
-alter table account_balance_file
-    add constraint account_balance_file_timestamp primary key (consensus_timestamp);
 
 -- address_book
 alter table address_book
-    add constraint address_book_start_timestamp primary key (start_consensus_timestamp);
+    add primary key (start_consensus_timestamp);
 
 -- address_book_entry
+alter table address_book_entry
+    add primary key (consensus_timestamp, memo);
 create index if not exists address_book_entry__timestamp
     on address_book_entry (consensus_timestamp);
 
@@ -41,30 +43,32 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
 -- id corresponding to treasury address 0.0.98
 
 -- file_data
-create index if not exists file_data__consensus
-    on file_data (consensus_timestamp desc);
+alter table file_data
+    add primary key (consensus_timestamp);
 
 -- live_hash
-create index if not exists livehashes__consensus
-    on live_hash (consensus_timestamp desc);
+alter table live_hash
+    add primary key (consensus_timestamp);
 
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp
     on non_fee_transfer (consensus_timestamp);
 
 -- record_file
+alter table record_file
+    add primary key (consensus_start);
 create unique index if not exists record_file_name
     on record_file (name, consensus_start); -- have to add consensus_start due to partitioning
 create unique index if not exists record_file_hash
     on record_file (file_hash, consensus_start); -- have to add consensus_start due to partitioning
-create index if not exists record_file__consensus_start
-    on record_file (consensus_start);
 create index if not exists record_file__consensus_end
     on record_file (consensus_end);
 create index if not exists record_file__prev_hash
     on record_file (prev_hash);
 
 -- t_entities
+alter table t_entities
+    add primary key (id);
 -- Enforce lowercase hex representation by constraint rather than making indexes on lower(ed25519).
 alter table t_entities
     add constraint c__t_entities__lower_ed25519
@@ -73,23 +77,39 @@ create index if not exists entities__ed25519_public_key_hex_natural_id
     on t_entities (ed25519_public_key_hex, fk_entity_type_id, entity_shard, entity_realm, entity_num);
 create unique index if not exists entities_unq
     on t_entities (entity_shard, entity_realm, entity_num, id);
--- have to add id due to partitioning
+-- have to add id when creating unique indexes due to partitioning
+
+-- t_entity_types
+alter table t_entity_types
+    add primary key (id);
+
+-- t_transaction_results
+alter table t_transaction_results
+    add primary key (proto_id);
+create unique index if not exists t_transaction_results_name
+    on t_transaction_results (result);
+
+-- t_transaction_types
+alter table t_transaction_types
+    add primary key (proto_id);
+create unique index if not exists t_transaction_types_name
+    on t_transaction_types (name);
 
 -- token
-alter table if exists token
-    add constraint token_timestamp primary key (created_timestamp);
-create index if not exists token_id
-    on token (token_id);
+alter table token
+    add primary key (created_timestamp);
+create unique index if not exists token__id_timestamp
+    on token (token_id, created_timestamp);
 
 -- token_account
-alter table if exists token_account
-    add constraint token_account_timestamp primary key (created_timestamp);
-create unique index if not exists token_account__token_account
+alter table token_account
+    add primary key (created_timestamp);
+create unique index if not exists token_account__token_account_timestamp
     on token_account (token_id, account_id, created_timestamp);
 
 -- token_balance
-alter table if exists token_balance
-    add constraint token_balance_timestamp_ids primary key (consensus_timestamp, account_id, token_id);
+alter table token_balance
+    add primary key (consensus_timestamp, account_id, token_id);
 
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp
@@ -97,15 +117,17 @@ create index if not exists token_transfer__token_account_timestamp
 
 -- topic_message
 alter table if exists topic_message
-    add constraint topic_message_timestamp primary key (consensus_timestamp);
+    add primary key (consensus_timestamp);
 create index if not exists topic_message__realm_num_timestamp
     on topic_message (realm_num, topic_num, consensus_timestamp);
 create unique index if not exists topic_message__topic_num_realm_num_seqnum
     on topic_message (realm_num, topic_num, sequence_number, consensus_timestamp);
--- have to add consensus_timestamp due to partitioning
+-- have to add consensus_timestamp when creating unique indexes due to partitioning
 
 -- transaction
-create index transaction__transaction_id
+alter table if exists transaction
+    add primary key (consensus_ns);
+create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
-create index transaction__payer_account_id
+create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);

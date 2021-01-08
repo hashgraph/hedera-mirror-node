@@ -185,6 +185,9 @@ timescaledb:
     dataNode:
       superuser: mirror_node_pass
   enabled: false
+  image:
+    repository: timescaledev/timescaledb-ha
+    tag: pg12.5-ts2.0.0-p0
   persistentVolume:
     size: 500Gi
   resources:
@@ -200,7 +203,5 @@ timescaledb:
     parameters:
       max_wal_size: 8GB  # recommended to be 80% of the Volume Size
       min_wal_size: 2GB  # 80% of the WAL Volume Size
-      shared_buffers: 1GB # recommended to be 25% of available instance memory
+      shared_buffers: 1GB  # recommended to be 25% of available instance memory
       work_mem: 50MB
-
-
