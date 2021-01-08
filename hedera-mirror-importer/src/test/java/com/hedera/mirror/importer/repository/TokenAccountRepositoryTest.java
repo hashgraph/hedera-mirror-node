@@ -1,6 +1,5 @@
 package com.hedera.mirror.importer.repository;
 
-import java.util.Optional;
 import javax.annotation.Resource;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
 
         Assertions.assertThat(tokenAccountRepository
                 .findByTokenIdAndAccountId(EntityId.of("1.2.3", EntityTypeEnum.TOKEN).getId(), EntityId
-                        .of("0.2.44", EntityTypeEnum.ACCOUNT).getId())).isEqualTo(Optional.empty());
+                        .of("0.2.44", EntityTypeEnum.ACCOUNT).getId())).isNotPresent();
     }
 
     @Test
@@ -63,7 +62,7 @@ public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
 
         Assertions.assertThat(tokenAccountRepository
                 .findByTokenIdAndAccountId(EntityId.of(tokenId2, EntityTypeEnum.TOKEN).getId(), EntityId
-                        .of(accountId2, EntityTypeEnum.ACCOUNT).getId())).isEqualTo(Optional.empty());
+                        .of(accountId2, EntityTypeEnum.ACCOUNT).getId())).isNotPresent();
     }
 
     private TokenAccount tokenAccount(String tokenId, String accountId, long createdTimestamp) {
