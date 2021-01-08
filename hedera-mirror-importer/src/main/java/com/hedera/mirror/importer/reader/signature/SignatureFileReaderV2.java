@@ -46,17 +46,15 @@ public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
             byte[] fileHash = new byte[HASH_SIZE];
 
             byte hashTypeDelimiter = dis.readByte();
-            validateByteValue(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, "Unable to read signature file hash: type " +
-                    "delimiter " + hashTypeDelimiter);
+            validate(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, "hashDelimiter");
 
             int length = dis.read(fileHash);
-            validateIntValue(fileHash.length, length, "Unable to read signature file hash: hash length " + length);
+            validate(fileHash.length, length, "hashLength");
 
             fileStreamSignature.setHash(fileHash);
 
             byte signatureTypeDelimiter = dis.readByte();
-            validateByteValue(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "Unable to read signature file " +
-                    "signature: type delimiter " + signatureTypeDelimiter);
+            validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "signatureDelimiter");
 
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];

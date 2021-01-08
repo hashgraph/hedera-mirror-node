@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reader.signature;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,12 +52,10 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         try (DataInputStream dis = new DataInputStream(inputStream)) {
 
             byte fileVersion = dis.readByte();
-            validateByteValue(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "Unable to read signature file v5: file " +
-                    "version ");
+            validate(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "fileVersion");
 
             int objectStreamSignatureVersion = dis.readInt();
-            validateIntValue(OBJECT_STREAM_SIGNATURE_VERSION, objectStreamSignatureVersion, "Unable to read signature" +
-                    " file v5: object stream signature version ");
+            validate(OBJECT_STREAM_SIGNATURE_VERSION, objectStreamSignatureVersion, "objectStreamSignatureVersion");
 
             fileStreamSignature.setHash(readHashObject(dis));
 
@@ -70,44 +68,36 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
     }
 
     private byte[] readHashObject(DataInputStream dis) throws IOException {
-        long hashClassId = dis.readLong();
-        validateLongValue(HASH_CLASS_ID, hashClassId,
-                "Unable to read signature file v5 hash: invalid class id ");
+        //Read the hashClassId and hashClassVersion, which are not used
+        dis.readLong();
+        dis.readInt();
 
-        int hashClassVersion = dis.readInt();
-        validateIntValue(HASH_CLASS_VERSION, hashClassVersion,
-                "Unable to read signature file v5 hash: invalid class version ");
         int hashType = dis.readInt();
-        validateIntValue(HASH_DIGEST_TYPE, hashType,
-                "Unable to read signature file v5 hash: invalid digest type: " + hashClassId);
+        validate(HASH_DIGEST_TYPE, hashType,
+                "hashDigestType");
         int hashLength = dis.readInt();
-        validateIntValue(HASH_SIZE, hashLength, "Unable to read signature file v5 hash: invalid length ");
+        validate(HASH_SIZE, hashLength, "hashLength");
 
         byte[] hash = new byte[hashLength];
         int actualHashLength = dis.read(hash);
-        validateIntValue(hashLength, actualHashLength,
-                "Unable to read signature file v5 hash: listed length " + hashLength + " does not equal actual hash " +
-                        "length ");
+        validate(hashLength, actualHashLength,
+                "actualHashLength");
         return hash;
     }
 
     private byte[] readSignatureObject(DataInputStream dis) throws IOException {
-        long signatureClassId = dis.readLong();
-        validateLongValue(SIGNATURE_CLASS_ID, signatureClassId, "Unable to read signature file v5 signature: invalid " +
-                "signature class id ");
-        int signatureClassVersion = dis.readInt();
-        validateIntValue(SIGNATURE_CLASS_VERSION, signatureClassVersion, "Unable to read signature file v5 signature:" +
-                " invalid signature class version ");
+        //Read the signatureClassId and signatureClassVersion, which are not used
+        dis.readLong();
+        dis.readInt();
+
         int signatureType = dis.readInt();
-        validateIntValue(SIGNATURE_TYPE, signatureType, "Unable to read signature file v5 signature: invalid " +
-                "signature type ");
+        validate(SIGNATURE_TYPE, signatureType, "signatureType");
 
         int signatureLength = dis.readInt();
         byte[] signature = new byte[signatureLength];
         int actualSignatureLength = dis.read(signature);
-        validateIntValue(signatureLength, actualSignatureLength,
-                "Unable to read signature file v5 signature: listed signature length " + signatureLength + " != " +
-                        "actual signature length ");
+        validate(signatureLength, actualSignatureLength,
+                "actualSignatureLength");
         return signature;
     }
 }

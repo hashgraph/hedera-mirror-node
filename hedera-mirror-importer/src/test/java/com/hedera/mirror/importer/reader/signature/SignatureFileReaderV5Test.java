@@ -31,6 +31,8 @@ import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_TYPE;
 import static org.junit.Assert.assertNotNull;
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,22 +55,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     @Resource
     SignatureFileReaderV5 fileReaderV5;
 
-    private final byte[] SIGNATURE_FILE_FORMAT_VERSION_BYTES = new byte[] {SIGNATURE_FILE_FORMAT_VERSION};
-
-    private static final byte[] OBJECT_STREAM_SIGNATURE_VERSION_BYTES = TestUtils
-            .intToByteArray(OBJECT_STREAM_SIGNATURE_VERSION);
-
-    private static final byte[] HASH_CLASS_ID_BYTES = TestUtils.longToByteArray(HASH_CLASS_ID);
-    private static final byte[] HASH_CLASS_VERSION_BYTES = TestUtils.intToByteArray(HASH_CLASS_VERSION);
-    private static final byte[] HASH_DIGEST_TYPE_BYTES = TestUtils.intToByteArray(HASH_DIGEST_TYPE);
-    private static final byte[] HASH_LENGTH_BYTES = TestUtils.intToByteArray(HASH_SIZE);
-
-    private static final byte[] SIGNATURE_CLASS_ID_BYTES = TestUtils.longToByteArray(SIGNATURE_CLASS_ID);
-    private static final byte[] SIGNATURE_CLASS_VERSION_BYTES = TestUtils.intToByteArray(SIGNATURE_CLASS_VERSION);
-    private static final byte[] SIGNATURE_TYPE_BYTES = TestUtils.intToByteArray(SIGNATURE_TYPE);
-
     private static final int SIGNATURE_LENGTH = 48;
-    private static final byte[] SIGNATURE_LENGTH_BYTES = TestUtils.intToByteArray(SIGNATURE_LENGTH);
 
     @Test
     void testReadValidFile() throws IOException {
@@ -84,66 +71,67 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     Iterable<DynamicTest> testReadCorruptSignatureFileV5() {
 
         SignatureFileSection fileVersion = new SignatureFileSection(
-                SIGNATURE_FILE_FORMAT_VERSION_BYTES,
+                new byte[] {SIGNATURE_FILE_FORMAT_VERSION},
                 "invalidFileFormatVersion",
                 incrementLastByte,
-                "Unable to read signature file v5: file version");
+                "fileVersion");
 
         SignatureFileSection objectStreamSignatureVersion = new SignatureFileSection(
-                OBJECT_STREAM_SIGNATURE_VERSION_BYTES,
+                Ints.toByteArray(OBJECT_STREAM_SIGNATURE_VERSION),
                 "invalidObjectStreamSignatureVersion",
                 incrementLastByte,
-                "Unable to read signature file v5: object stream signature version");
+                "objectStreamSignatureVersion");
 
         SignatureFileSection hashClassId = new SignatureFileSection(
-                HASH_CLASS_ID_BYTES,
-                "invalidHashClassId",
-                incrementLastByte,
-                "Unable to read signature file v5 hash: invalid class id");
+                Longs.toByteArray(HASH_CLASS_ID),
+                null,
+                null,
+                null);
 
         SignatureFileSection hashClassVersion = new SignatureFileSection(
-                HASH_CLASS_VERSION_BYTES,
-                "invalidHashClassVersion",
-                incrementLastByte,
-                "Unable to read signature file v5 hash: invalid class version");
+                Ints.toByteArray(HASH_CLASS_VERSION),
+                null,
+                null,
+                null);
 
         SignatureFileSection hashDigestType = new SignatureFileSection(
-                HASH_DIGEST_TYPE_BYTES,
-                "invalidHashDigestType",
+                Ints.toByteArray(HASH_DIGEST_TYPE),
+                "hashDigestType",
                 incrementLastByte,
-                "Unable to read signature file v5 hash: invalid digest type");
+                "hashDigestType");
 
         SignatureFileSection hashLength = new SignatureFileSection(
-                HASH_LENGTH_BYTES,
+                Ints.toByteArray(HASH_SIZE),
                 "invalidHashLength",
                 incrementLastByte,
-                "Unable to read signature file v5 hash: invalid length");
+                "hashLength");
 
         SignatureFileSection hash = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(HASH_SIZE),
                 "incorrectHashLength",
                 truncateLastByte,
-                "Unable to read signature file v5 hash: listed length");
+                "actualHashLength");
 
         SignatureFileSection signatureClassId = new SignatureFileSection(
-                SIGNATURE_CLASS_ID_BYTES,
-                "invalidSignatureClassId",
-                incrementLastByte,
-                "Unable to read signature file v5 signature: invalid signature class id");
+                Longs.toByteArray(SIGNATURE_CLASS_ID),
+                null,
+                null,
+                null);
 
         SignatureFileSection signatureClassVersion = new SignatureFileSection(
-                SIGNATURE_CLASS_VERSION_BYTES,
-                "invalidSignatureClassVersion",
-                incrementLastByte,
-                "Unable to read signature file v5 signature: invalid signature class version");
+                Ints.toByteArray(SIGNATURE_CLASS_VERSION),
+                null,
+                null,
+                null);
 
         SignatureFileSection signatureType = new SignatureFileSection(
-                SIGNATURE_TYPE_BYTES,
+                Ints.toByteArray(SIGNATURE_TYPE),
                 "invalidSignatureType",
                 incrementLastByte,
-                "Unable to read signature file v5 signature: invalid signature type");
+                "signatureType");
 
-        SignatureFileSection signatureLength = new SignatureFileSection(SIGNATURE_LENGTH_BYTES,
+        SignatureFileSection signatureLength = new SignatureFileSection(
+                Ints.toByteArray(SIGNATURE_LENGTH),
                 null,
                 null,
                 null);
@@ -152,7 +140,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 TestUtils.generateRandomByteArray(SIGNATURE_LENGTH),
                 "incorrectSignatureLength",
                 truncateLastByte,
-                "Unable to read signature file v5 signature: listed signature length");
+                "actualSignature");
 
         List<SignatureFileSection> signatureFileSections = Arrays
                 .asList(fileVersion, objectStreamSignatureVersion, hashClassId, hashClassVersion, hashDigestType,

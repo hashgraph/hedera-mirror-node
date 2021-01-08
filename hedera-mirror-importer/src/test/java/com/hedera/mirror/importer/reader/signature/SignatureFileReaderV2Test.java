@@ -25,6 +25,7 @@ import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_SIGNATURE;
 import static org.junit.Assert.assertNotNull;
 
+import com.google.common.primitives.Ints;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +49,6 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     SignatureFileReaderV2 fileReaderV2;
 
     private static final int SIGNATURE_LENGTH = 48;
-    private static final byte[] SIGNATURE_LENGTH_BYTES = TestUtils.intToByteArray(SIGNATURE_LENGTH);
 
     @Test
     void testReadValidFile() throws IOException {
@@ -66,21 +66,22 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
                 new byte[] {SIGNATURE_TYPE_FILE_HASH},
                 "invalidHashDelimiter",
                 incrementLastByte,
-                "Unable to read signature file hash: type delimiter");
+                "hashDelimiter");
 
         SignatureFileSection hash = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(HASH_SIZE),
                 "invalidHashLength",
                 truncateLastByte,
-                "Unable to read signature file hash: hash length");
+                "hash");
 
         SignatureFileSection signatureDelimiter = new SignatureFileSection(
                 new byte[] {SIGNATURE_TYPE_SIGNATURE},
                 "invalidSignatureDelimiter",
                 incrementLastByte,
-                "Unable to read signature file signature: type delimiter");
+                "signatureDelimiter");
 
-        SignatureFileSection signatureLength = new SignatureFileSection(SIGNATURE_LENGTH_BYTES,
+        SignatureFileSection signatureLength = new SignatureFileSection(
+                Ints.toByteArray(SIGNATURE_LENGTH),
                 null,
                 null,
                 null);

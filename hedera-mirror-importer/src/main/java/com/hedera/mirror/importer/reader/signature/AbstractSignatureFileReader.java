@@ -1,8 +1,10 @@
-package com.hedera.mirror.importer.reader.signature;/*
+package com.hedera.mirror.importer.reader.signature;
+
+/*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +20,17 @@ package com.hedera.mirror.importer.reader.signature;/*
  * ‍
  */
 
+import java.util.Objects;
+
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 public abstract class AbstractSignatureFileReader implements SignatureFileReader {
-    protected void validateByteValue(byte expected, byte actual, String exceptionMessage) {
-        if (expected != actual) {
-            throw new SignatureFileParsingException(exceptionMessage + actual);
-        }
-    }
 
-    protected void validateLongValue(long expected, long actual, String exceptionMessage) {
-        if (expected != actual) {
-            throw new SignatureFileParsingException(exceptionMessage + actual);
-        }
-    }
+    private static final String ERROR_MESSAGE = "Unable to read signature file %s: Expected %s but got %s";
 
-    protected void validateIntValue(int expected, int actual, String exceptionMessage) {
-        if (expected != actual) {
-            throw new SignatureFileParsingException(exceptionMessage + actual);
+    protected void validate(Object expected, Object actual, String fieldName) {
+        if (!Objects.equals(expected, actual)) {
+            throw new SignatureFileParsingException(String.format(ERROR_MESSAGE, fieldName, expected, actual));
         }
     }
 }
