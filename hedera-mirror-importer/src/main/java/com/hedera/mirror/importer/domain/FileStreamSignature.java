@@ -35,6 +35,8 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     private EntityId nodeAccountId;
     private byte[] signature;
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
+    private byte[] metadataHash;
+    private byte[] metadataSignature;
 
     @Override
     public int compareTo(FileStreamSignature other) {

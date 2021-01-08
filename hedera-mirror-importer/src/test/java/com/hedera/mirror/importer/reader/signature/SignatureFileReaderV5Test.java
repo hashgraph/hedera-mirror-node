@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reader.signature;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,9 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_CLASS_ID;
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_CLASS_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_DIGEST_TYPE;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_SIZE;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.OBJECT_STREAM_SIGNATURE_VERSION;
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_CLASS_ID;
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_CLASS_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_TYPE;
 import static org.junit.Assert.assertNotNull;
@@ -36,6 +32,7 @@ import com.google.common.primitives.Longs;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
@@ -56,6 +53,10 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     SignatureFileReaderV5 fileReaderV5;
 
     private static final int SIGNATURE_LENGTH = 48;
+    private static final long HASH_CLASS_ID = 0xf422da83a251741eL;
+    private static final int HASH_CLASS_VERSION = 1;
+    private static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
+    private static final int SIGNATURE_CLASS_VERSION = 1;
 
     @Test
     void testReadValidFile() throws IOException {
@@ -82,6 +83,19 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 incrementLastByte,
                 "objectStreamSignatureVersion");
 
+        List<SignatureFileSection> signatureFileSections = new ArrayList<>();
+        signatureFileSections.add(fileVersion);
+        signatureFileSections.add(objectStreamSignatureVersion);
+
+        signatureFileSections.addAll(buildHashSections("entire"));
+        signatureFileSections.addAll(buildSignatureSections("entire"));
+        signatureFileSections.addAll(buildHashSections("metadata"));
+        signatureFileSections.addAll(buildSignatureSections("metadata"));
+
+        return generateCorruptedFileTests(fileReaderV5, signatureFileSections);
+    }
+
+    private List<SignatureFileSection> buildHashSections(String hashName) {
         SignatureFileSection hashClassId = new SignatureFileSection(
                 Longs.toByteArray(HASH_CLASS_ID),
                 null,
@@ -96,22 +110,25 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         SignatureFileSection hashDigestType = new SignatureFileSection(
                 Ints.toByteArray(HASH_DIGEST_TYPE),
-                "hashDigestType",
+                "invalidHashDigestType:" + hashName,
                 incrementLastByte,
-                "hashDigestType");
+                "hashDigestType:" + hashName);
 
         SignatureFileSection hashLength = new SignatureFileSection(
                 Ints.toByteArray(HASH_SIZE),
-                "invalidHashLength",
+                "invalidHashLength:" + hashName,
                 incrementLastByte,
-                "hashLength");
+                "hashLength:" + hashName);
 
         SignatureFileSection hash = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(HASH_SIZE),
-                "incorrectHashLength",
+                "incorrectHashLength:" + hashName,
                 truncateLastByte,
-                "actualHashLength");
+                "actualHashLength:" + hashName);
+        return Arrays.asList(hashClassId, hashClassVersion, hashDigestType, hashLength, hash);
+    }
 
+    private List<SignatureFileSection> buildSignatureSections(String hashName) {
         SignatureFileSection signatureClassId = new SignatureFileSection(
                 Longs.toByteArray(SIGNATURE_CLASS_ID),
                 null,
@@ -126,9 +143,9 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         SignatureFileSection signatureType = new SignatureFileSection(
                 Ints.toByteArray(SIGNATURE_TYPE),
-                "invalidSignatureType",
+                "invalidSignatureType:" + hashName,
                 incrementLastByte,
-                "signatureType");
+                "signatureType:" + hashName);
 
         SignatureFileSection signatureLength = new SignatureFileSection(
                 Ints.toByteArray(SIGNATURE_LENGTH),
@@ -138,15 +155,9 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         SignatureFileSection signature = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(SIGNATURE_LENGTH),
-                "incorrectSignatureLength",
+                "incorrectSignatureLength:" + hashName,
                 truncateLastByte,
-                "actualSignature");
-
-        List<SignatureFileSection> signatureFileSections = Arrays
-                .asList(fileVersion, objectStreamSignatureVersion, hashClassId, hashClassVersion, hashDigestType,
-                        hashLength, hash, signatureClassId, signatureClassVersion, signatureType, signatureLength,
-                        signature);
-
-        return generateCorruptedFileTests(fileReaderV5, signatureFileSections);
+                "actualSignatureLength:" + hashName);
+        return Arrays.asList(signatureClassId, signatureClassVersion, signatureType, signatureLength, signature);
     }
 }
