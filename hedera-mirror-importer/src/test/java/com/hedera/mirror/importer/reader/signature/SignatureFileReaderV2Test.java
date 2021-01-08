@@ -74,32 +74,40 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
     @TestFactory
     Iterable<DynamicTest> corruptSignatureFileV2() {
+        SignatureFileSection hashDelimiter = new SignatureFileSection(
+                new byte[] {SIGNATURE_TYPE_FILE_HASH},
+                "invalidHashDelimiter",
+                incrementLastByte,
+                "Unable to read signature file hash: type delimiter");
 
-        CorruptSignatureFileSection hashDelimiter =
-                new CorruptSignatureFileSection("invalidHashDelimiter", new byte[] {SIGNATURE_TYPE_FILE_HASH},
-                        "Unable " +
-                                "to read signature file hash: type delimiter", incrementLastByte);
+        SignatureFileSection hash = new SignatureFileSection(
+                TestUtils.generateRandomByteArray(HASH_SIZE),
+                "invalidHashLength",
+                truncateLastByte,
+                "Unable to read signature file hash: hash length");
 
-        CorruptSignatureFileSection hash = new CorruptSignatureFileSection("invalidHashLength",
-                generateRandomByteArray(HASH_SIZE),
-                "Unable to read " +
-                        "signature file hash: hash length", truncateLastByte);
+        SignatureFileSection signatureDelimiter = new SignatureFileSection(
+                new byte[] {SIGNATURE_TYPE_SIGNATURE},
+                "invalidSignatureDelimiter",
+                incrementLastByte,
+                "Unable to read signature file signature: type delimiter");
 
-        CorruptSignatureFileSection signatureDelimiter =
-                new CorruptSignatureFileSection("invalidSignatureDelimiter", new byte[] {SIGNATURE_TYPE_SIGNATURE},
-                        "Unable to read signature file signature: type delimiter", incrementLastByte);
-
-        CorruptSignatureFileSection signatureLength = new CorruptSignatureFileSection(null, SIGNATURE_LENGTH_BYTES,
+        SignatureFileSection signatureLength = new SignatureFileSection(SIGNATURE_LENGTH_BYTES,
+                null,
                 null,
                 null);
 
-        CorruptSignatureFileSection signature =
-                new CorruptSignatureFileSection("incorrectSignatureLength", generateRandomByteArray(SIGNATURE_LENGTH),
-                        "EOFException", truncateLastByte);
+        SignatureFileSection signature = new SignatureFileSection(
+                TestUtils.generateRandomByteArray(SIGNATURE_LENGTH),
+                "incorrectSignatureLength",
+                truncateLastByte,
+                "EOFException");
 
-        CorruptSignatureFileSection invalidExtraData = new CorruptSignatureFileSection("invalidExtraData",
-                new byte[] {1},
-                "Extra data discovered in signature file", returnValidBytes);
+        SignatureFileSection invalidExtraData = new SignatureFileSection(
+                new byte[0],
+                "invalidExtraData",
+                bytes -> new byte[] {1},
+                "Extra data discovered in signature file");
 
         signatureFileSections = Arrays
                 .asList(hashDelimiter, hash, signatureDelimiter, signatureLength, signature, invalidExtraData);

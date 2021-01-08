@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 import java.time.Instant;
 
 import com.hedera.mirror.importer.util.Utility;
@@ -63,5 +64,11 @@ public final class TestUtils {
 
     public static byte[] intToByteArray(int value) {
         return ByteBuffer.allocate(Integer.BYTES).putInt(value).array();
+    }
+
+    public static byte[] generateRandomByteArray(int size) {
+        byte[] hashBytes = new byte[size];
+        new SecureRandom().nextBytes(hashBytes);
+        return hashBytes;
     }
 }

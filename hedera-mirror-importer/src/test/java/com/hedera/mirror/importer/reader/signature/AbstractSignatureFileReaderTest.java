@@ -30,12 +30,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Value;
 import org.junit.jupiter.api.DynamicTest;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -43,23 +43,16 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
 
-    protected List<CorruptSignatureFileSection> signatureFileSections;
+    protected List<SignatureFileSection> signatureFileSections;
 
-    protected static final ByteCorrupter incrementLastByte = (bytes -> {
+    protected static final SignatureFileSectionCorruptor incrementLastByte = (bytes -> {
         byte[] corruptBytes = Arrays.copyOf(bytes, bytes.length);
         corruptBytes[corruptBytes.length - 1] = (byte) (corruptBytes[corruptBytes.length - 1] + 1);
         return corruptBytes;
     });
 
-    protected static final ByteCorrupter truncateLastByte = (bytes -> Arrays.copyOfRange(bytes, 0, bytes.length - 1));
-
-    protected static final ByteCorrupter returnValidBytes = (bytes -> bytes);
-
-    protected byte[] generateRandomByteArray(int size) {
-        byte[] hashBytes = new byte[size];
-        new SecureRandom().nextBytes(hashBytes);
-        return hashBytes;
-    }
+    protected static final SignatureFileSectionCorruptor truncateLastByte = (bytes -> Arrays
+            .copyOfRange(bytes, 0, bytes.length - 1));
 
     protected abstract SignatureFileReader getFileReader();
 
@@ -72,50 +65,63 @@ abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
     }
 
     protected Iterable<DynamicTest> generateCorruptedFileTests() {
-        List<DynamicTest> test = new ArrayList<>();
+        List<DynamicTest> testCases = new ArrayList<>();
 
-        byte[] validSignatureBytes = new byte[] {};
+        //Add a test for an empty stream
+        testCases.add(DynamicTest.dynamicTest(
+                "blankFile",
+                () -> {
+                    SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
+                            () -> {
+                                getFileReader().read(getInputStream(new byte[0]));
+                            });
+                    assertTrue(e.getMessage().contains("EOFException"));
+                }));
 
+        byte[] validSignatureBytes = new byte[0];
         for (int i = 0; i < signatureFileSections.size(); i++) {
+            //Add new valid section of the file
+            validSignatureBytes = i == 0 ? validSignatureBytes :
+                    Bytes.concat(validSignatureBytes, signatureFileSections.get(i - 1)
+                            .getValidDataBytes());
 
-            validSignatureBytes = Bytes
-                    .concat(validSignatureBytes, i > 0 ? signatureFileSections.get(i - 1)
-                            .getValidDataBytes() : new byte[0]);
-            CorruptSignatureFileSection corruptSection = signatureFileSections.get(i);
-            if (corruptSection.getByteCorrupter() == null) {
+            SignatureFileSection sectionToCorrupt = signatureFileSections.get(i);
+
+            //Some sections are not validated
+            if (sectionToCorrupt.getInvalidExceptionMessage() == null) {
                 continue;
             }
-            byte[] fullSignatureBytes = Bytes.concat(validSignatureBytes, corruptSection.corruptSection());
-            test.add(DynamicTest
-                    .dynamicTest("testReader 2 " + signatureFileSections.get(i).getInvalidExceptionMessage(), () -> {
+
+            byte[] fullSignatureBytes = Bytes.concat(validSignatureBytes, sectionToCorrupt.getCorruptBytes());
+            testCases.add(DynamicTest.dynamicTest(
+                    signatureFileSections.get(i).getCorruptTestName(),
+                    () -> {
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                                 () -> {
                                     getFileReader().read(getInputStream(fullSignatureBytes));
                                 });
-                        corruptSection.validateError(e.getMessage());
+                        sectionToCorrupt.validateError(e.getMessage());
                     }));
         }
-        return test;
+        return testCases;
     }
 
-    @Data
+    @Value
     @AllArgsConstructor
-    protected class CorruptSignatureFileSection {
-        String corruptTestName;
-        private byte[] validDataBytes;
-        private String invalidExceptionMessage;
-        private ByteCorrupter byteCorrupter;
+    protected class SignatureFileSection {
+        private final byte[] validDataBytes;
+        private final String corruptTestName;
+        private final SignatureFileSectionCorruptor byteCorrupter;
+        private final String invalidExceptionMessage;
+        @Getter(lazy = true)
+        private final byte[] corruptBytes = byteCorrupter.corruptBytes(validDataBytes);
 
         public void validateError(String errorMessage) {
             assertTrue(errorMessage.contains(invalidExceptionMessage));
         }
-
-        public byte[] corruptSection() {
-            return byteCorrupter.corruptBytes(validDataBytes);
-        }
     }
 
-    protected interface ByteCorrupter {
+    protected interface SignatureFileSectionCorruptor {
         byte[] corruptBytes(byte[] bytes);
     }
 }

@@ -72,67 +72,79 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     @TestFactory
     Iterable<DynamicTest> corruptSignatureFileV5() {
 
-        CorruptSignatureFileSection blankStart = new CorruptSignatureFileSection("blankFile", new byte[0],
-                "EOFException",
-                returnValidBytes);
+        SignatureFileSection fileVersion = new SignatureFileSection(
+                SIGNATURE_FILE_FORMAT_VERSION_BYTES,
+                "invalidFileFormatVersion",
+                incrementLastByte,
+                "Unable to read signature file v5: file version");
 
-        CorruptSignatureFileSection fileVersion = new CorruptSignatureFileSection("invalidFileFormatVersion",
-                SIGNATURE_FILE_FORMAT_VERSION_BYTES, "Unable to read signature file v5: file version",
-                incrementLastByte);
+        SignatureFileSection objectStreamSignatureVersion = new SignatureFileSection(
+                OBJECT_STREAM_SIGNATURE_VERSION_BYTES,
+                "invalidObjectStreamSignatureVersion",
+                incrementLastByte,
+                "Unable to read signature file v5: object stream signature version");
 
-        CorruptSignatureFileSection objectStreamSignatureVersion =
-                new CorruptSignatureFileSection("invalidObjectStreamSignatureVersion",
-                        OBJECT_STREAM_SIGNATURE_VERSION_BYTES, "Unable to read signature file v5: object stream " +
-                        "signature version", incrementLastByte);
+        SignatureFileSection entireHashClassId = new SignatureFileSection(
+                HASH_CLASS_ID_BYTES,
+                "invalidHashClassId",
+                incrementLastByte,
+                "Unable to read signature file v5 hash: invalid class id");
 
-        CorruptSignatureFileSection entireHashClassId = new CorruptSignatureFileSection("invalidHashClassId",
-                HASH_CLASS_ID_BYTES, "Unable to read signature file v5 hash: invalid class id", incrementLastByte);
+        SignatureFileSection entireHashClassVersion = new SignatureFileSection(
+                HASH_CLASS_VERSION_BYTES,
+                "invalidHashClassVersion",
+                incrementLastByte,
+                "Unable to read signature file v5 hash: invalid class version");
 
-        CorruptSignatureFileSection entireHashClassVersion = new CorruptSignatureFileSection("invalidHashClassVersion",
-                HASH_CLASS_VERSION_BYTES, "Unable to " + "read signature file v5 hash: invalid class version",
-                incrementLastByte);
-        CorruptSignatureFileSection entireHashDigestType = new CorruptSignatureFileSection("invalidHashDigestType",
+        SignatureFileSection entireHashDigestType = new SignatureFileSection(
                 HASH_DIGEST_TYPE_BYTES,
-                "Unable to read " +
-                        "signature file v5 hash: invalid digest type", incrementLastByte);
-        CorruptSignatureFileSection entireHashLegnthOfHash = new CorruptSignatureFileSection("invalidHashLength",
+                "invalidHashDigestType",
+                incrementLastByte,
+                "Unable to read signature file v5 hash: invalid digest type");
+
+        SignatureFileSection entireHashLegnthOfHash = new SignatureFileSection(
                 HASH_LENGTH_BYTES,
-                "Unable to read " +
-                        "signature file v5 hash: invalid length", incrementLastByte);
+                "invalidHashLength",
+                incrementLastByte,
+                "Unable to read signature file v5 hash: invalid length");
 
-        CorruptSignatureFileSection entireHashBytes =
-                new CorruptSignatureFileSection("incorrectHashLength", generateRandomByteArray(HASH_LENGTH), "Unable" +
-                        " to read signature file v5 hash: listed length", truncateLastByte);
+        SignatureFileSection entireHashBytes = new SignatureFileSection(
+                TestUtils.generateRandomByteArray(HASH_LENGTH),
+                "incorrectHashLength",
+                truncateLastByte,
+                "Unable to read signature file v5 hash: listed length");
 
-        CorruptSignatureFileSection signatureClassId = new CorruptSignatureFileSection("invalidSignatureClassId",
+        SignatureFileSection signatureClassId = new SignatureFileSection(
                 SIGNATURE_CLASS_ID_BYTES,
-                "Unable to read " +
-                        "signature file v5 signature: invalid signature class id", incrementLastByte);
+                "invalidSignatureClassId",
+                incrementLastByte,
+                "Unable to read signature file v5 signature: invalid signature class id");
 
-        CorruptSignatureFileSection signatureClassVersion =
-                new CorruptSignatureFileSection("invalidSignatureClassVersion", SIGNATURE_CLASS_VERSION_BYTES,
-                        "Unable to read signature file v5 signature: invalid signature class version",
-                        incrementLastByte);
+        SignatureFileSection signatureClassVersion = new SignatureFileSection(
+                SIGNATURE_CLASS_VERSION_BYTES,
+                "invalidSignatureClassVersion",
+                incrementLastByte,
+                "Unable to read signature file v5 signature: invalid signature class version");
 
-        CorruptSignatureFileSection signatureType = new CorruptSignatureFileSection("invalidSignatureType",
+        SignatureFileSection signatureType = new SignatureFileSection(
                 SIGNATURE_TYPE_BYTES,
-                "Unable to " +
-                        "read signature" +
-                        " file v5 signature: invalid signature type", incrementLastByte);
+                "invalidSignatureType",
+                incrementLastByte,
+                "Unable to read signature file v5 signature: invalid signature type");
 
-        CorruptSignatureFileSection signatureLength = new CorruptSignatureFileSection(null,
-                SIGNATURE_LENGTH_BYTES, null,
+        SignatureFileSection signatureLength = new SignatureFileSection(SIGNATURE_LENGTH_BYTES,
+                null,
+                null,
                 null);
 
-        CorruptSignatureFileSection signature =
-                new CorruptSignatureFileSection("incorrectSignatureLength", generateRandomByteArray(SIGNATURE_LENGTH)
-                        , "Unable " +
-                        "to read signature file v5 " +
-                        "signature: listed signature length",
-                        truncateLastByte);
+        SignatureFileSection signature = new SignatureFileSection(
+                TestUtils.generateRandomByteArray(SIGNATURE_LENGTH),
+                "incorrectSignatureLength",
+                truncateLastByte,
+                "Unable to read signature file v5 signature: listed signature length");
 
         signatureFileSections = Arrays
-                .asList(blankStart, fileVersion, objectStreamSignatureVersion, entireHashClassId,
+                .asList(fileVersion, objectStreamSignatureVersion, entireHashClassId,
                         entireHashClassVersion,
                         entireHashDigestType, entireHashLegnthOfHash, entireHashBytes, signatureClassId,
                         signatureClassVersion, signatureType, signatureLength, signature);
