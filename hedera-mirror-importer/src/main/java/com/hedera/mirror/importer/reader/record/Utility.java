@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.reader.record;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Objects;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
@@ -30,8 +31,8 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 @UtilityClass
 public class Utility {
 
-    public <T> void checkField(@NonNull T actual, @NonNull T expected, String name, String filename) {
-        if (!actual.equals(expected)) {
+    public <T> void checkField(T actual, T expected, String name, String filename) {
+        if (!Objects.equals(actual, expected)) {
             throw new InvalidStreamFileException(String.format("Expect %s (%s) got %s for record file %s",
                     name, expected, actual, filename));
         }

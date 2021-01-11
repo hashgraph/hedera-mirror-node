@@ -38,9 +38,11 @@ public class UtilityTest {
     @ParameterizedTest(name = "check byte field actual ({0}) expected ({1})")
     @CsvSource({
             "0, 0, false",
+            ", , false",
+            ", 0, true",
             "0, 1, true"
     })
-    void checkByteField(byte actual, byte expected, boolean expectThrown) {
+    void checkByteField(Byte actual, Byte expected, boolean expectThrown) {
         if (expectThrown) {
             assertThrows(InvalidStreamFileException.class, () -> {
                 Utility.checkField(actual, expected, "test field", "testfile");
@@ -53,9 +55,11 @@ public class UtilityTest {
     @ParameterizedTest(name = "check int field actual ({0}) expected ({1})")
     @CsvSource({
             "0, 0, false",
+            ", , false",
+            ", 0, true",
             "0, 1, true"
     })
-    void checkByteField(int actual, int expected, boolean expectThrown) {
+    void checkIntField(Integer actual, Integer expected, boolean expectThrown) {
         if (expectThrown) {
             assertThrows(InvalidStreamFileException.class, () -> {
                 Utility.checkField(actual, expected, "test field", "testfile");
@@ -68,9 +72,11 @@ public class UtilityTest {
     @ParameterizedTest(name = "check int field actual ({0}) expected ({1})")
     @CsvSource({
             "0, 0, false",
+            ", , false",
+            ", 0, true",
             "0, 1, true"
     })
-    void checkLongField(long actual, long expected, boolean expectThrown) {
+    void checkLongField(Long actual, Long expected, boolean expectThrown) {
         if (expectThrown) {
             assertThrows(InvalidStreamFileException.class, () -> {
                 Utility.checkField(actual, expected, "test field", "testfile");

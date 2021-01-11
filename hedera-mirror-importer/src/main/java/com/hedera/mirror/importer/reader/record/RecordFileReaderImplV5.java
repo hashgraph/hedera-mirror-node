@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.record;
  *
  */
 
-
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import java.io.BufferedInputStream;
@@ -44,17 +43,12 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class RecordFileReaderImplV5 implements RecordFileReader {
 
     private static final int VERSION = 5;
-    private static final int HAPI_PROTO_VERSION_MAJOR = 0;
-    private static final int HAPI_PROTO_VERSION_MINOR = 9;
-    private static final int HAPI_PROTO_VERSION_PATCH = 0;
     private static final int OBJECT_STREAM_VERSION = 1;
     private static final long HASH_OBJECT_CLASS_ID = 0xf422da83a251741eL;
     private static final String HASH_ALGORITHM = "SHA-384";
-    private static final int HASH_OBJECT_CLASS_VERSION = 1;
-    private static final int HASH_OBJECT_DIGEST_TYPE = 0x58ff811b;
+    private static final int HASH_OBJECT_DIGEST_TYPE_SHA384 = 0x58ff811b;
     private static final int HASH_OBJECT_HASH_LENGTH = 48;
     private static final long RECORD_STREAM_OBJECT_CLASS_ID = 0xe370929ba5429d8bL;
-    private static final int RECORD_STREAM_OBJECT_CLASS_VERSION = 1;
 
     @Override
     public RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
@@ -78,17 +72,14 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         }
     }
 
-    private void readHeader(DataInputStream dis, MessageDigest mdForMetadata, RecordFile recordFile) throws IOException {
-        String filename = recordFile.getName();
+    private void readHeader(DataInputStream dis, MessageDigest mdForMetadata,
+            RecordFile recordFile) throws IOException {
         int version = dis.readInt();
-        Utility.checkField(version, VERSION, "Record file version", filename);
+        Utility.checkField(version, VERSION, "Record file version", recordFile.getName());
 
         int hapiVersionMajor = dis.readInt();
-        Utility.checkField(hapiVersionMajor, HAPI_PROTO_VERSION_MAJOR, "HAPI proto major version", filename);
         int hapiVersionMinor = dis.readInt();
-        Utility.checkField(hapiVersionMinor, HAPI_PROTO_VERSION_MINOR, "HAPI proto minor version", filename);
         int hapiVersionPatch = dis.readInt();
-        Utility.checkField(hapiVersionPatch, HAPI_PROTO_VERSION_PATCH, "HAPI proto patch version", filename);
 
         mdForMetadata.update(Ints.toByteArray(version));
         mdForMetadata.update(Ints.toByteArray(hapiVersionMajor));
@@ -99,7 +90,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     }
 
     private void readBody(DataInputStream dis, Consumer<RecordItem> itemConsumer, MessageDigest mdForMetadata,
-                          RecordFile recordFile) throws IOException {
+            RecordFile recordFile) throws IOException {
         String filename = recordFile.getName();
 
         int objectStreamVersion = dis.readInt();
@@ -118,7 +109,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         while (dis.available() != 0) {
             long classID = peakClassID(dis);
             if (classID != RECORD_STREAM_OBJECT_CLASS_ID) {
-                 break;
+                break;
             }
 
             recordStreamObjectBytes = readRecordStreamObjectBytes(dis, filename);
@@ -126,7 +117,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             RecordItem recordItem = null;
 
             if (itemConsumer != null || isFirstTransaction) {
-                recordItem = new RecordItem(recordStreamObjectBytes.getTransactionBytes(), recordStreamObjectBytes.getRecordBytes());
+                recordItem = recordItemFromObjectBytes(recordStreamObjectBytes);
 
                 if (itemConsumer != null) {
                     itemConsumer.accept(recordItem);
@@ -145,7 +136,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             if (recordStreamObjectBytes == null) {
                 throw new StreamFileReaderException("No record stream object in record file " + filename);
             }
-            lastRecordItem = new RecordItem(recordStreamObjectBytes.getTransactionBytes(), recordStreamObjectBytes.getRecordBytes());
+            lastRecordItem = recordItemFromObjectBytes(recordStreamObjectBytes);
         }
         long consensusEnd = lastRecordItem.getConsensusTimestamp();
 
@@ -176,13 +167,13 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     }
 
     private byte[] readHashFromHashObject(DataInputStream dis, MessageDigest mdForMetadata,
-                                          String filename) throws IOException {
+            String filename) throws IOException {
         long classID = dis.readLong();
         Utility.checkField(classID, HASH_OBJECT_CLASS_ID, "Hash object class ID", filename);
         int classVersion = dis.readInt();
-        Utility.checkField(classVersion, HASH_OBJECT_CLASS_VERSION, "Hash object class version", filename);
+
         int digestType = dis.readInt();
-        Utility.checkField(digestType, HASH_OBJECT_DIGEST_TYPE, "Hash object digest type", filename);
+        Utility.checkField(digestType, HASH_OBJECT_DIGEST_TYPE_SHA384, "Hash object digest type", filename);
         int hashLength = dis.readInt();
         Utility.checkField(hashLength, HASH_OBJECT_HASH_LENGTH, "Hash object hash length", filename);
         byte[] hash = dis.readNBytes(HASH_OBJECT_HASH_LENGTH);
@@ -198,15 +189,18 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     }
 
     private RecordStreamObjectBytes readRecordStreamObjectBytes(DataInputStream dis,
-                                                                String filename) throws IOException {
+            String filename) throws IOException {
         long classID = dis.readLong();
         Utility.checkField(classID, RECORD_STREAM_OBJECT_CLASS_ID, "Record stream object class ID", filename);
-        int classVersion = dis.readInt();
-        Utility.checkField(classVersion, RECORD_STREAM_OBJECT_CLASS_VERSION, "Record stream object class version", filename);
+        dis.readInt(); // class version
         byte[] recordBytes = Utility.readLengthAndBytes(dis);
         byte[] transactionBytes = Utility.readLengthAndBytes(dis);
 
         return new RecordStreamObjectBytes(recordBytes, transactionBytes);
+    }
+
+    private RecordItem recordItemFromObjectBytes(RecordStreamObjectBytes objectBytes) {
+        return new RecordItem(objectBytes.getTransactionBytes(), objectBytes.getRecordBytes());
     }
 
     @Value

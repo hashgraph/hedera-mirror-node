@@ -157,4 +157,12 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setCount(count);
     }
+
+    protected interface RecordFileDigest {
+        void updateHeader(byte input);
+        void updateHeader(byte[] input);
+        void updateBody(byte input);
+        void updateBody(byte[] input);
+        byte[] digest();
+    }
 }
