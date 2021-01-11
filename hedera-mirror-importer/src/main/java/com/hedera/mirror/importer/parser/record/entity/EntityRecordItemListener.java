@@ -478,18 +478,11 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenBurn(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenBurnTransactionBody tokenBurnTransactionBody = recordItem.getTransactionBody().getTokenBurn();
-            TokenID tokenID = tokenBurnTransactionBody.getToken();
-            long consensusTimeStamp = recordItem.getConsensusTimestamp();
 
-            Optional<Token> optionalToken = retrieveToken(tokenID, TransactionTypeEnum.TOKENBURN, consensusTimeStamp);
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setModifiedTimestamp(consensusTimeStamp);
-                // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
-
-                entityListener.onToken(token);
-            }
+            updateTokenSupply(
+                    tokenBurnTransactionBody.getToken(),
+                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
+                    recordItem.getConsensusTimestamp());
         }
     }
 
@@ -507,6 +500,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setName(tokenCreateTransactionBody.getName());
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
             token.setTokenId(new Token.Id(EntityId.of(recordItem.getRecord().getReceipt().getTokenID())));
+            token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
 
             if (tokenCreateTransactionBody.hasFreezeKey()) {
                 token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
@@ -599,18 +593,11 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenMint(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenMintTransactionBody tokenMintTransactionBody = recordItem.getTransactionBody().getTokenMint();
-            TokenID tokenID = tokenMintTransactionBody.getToken();
-            long consensusTimeStamp = recordItem.getConsensusTimestamp();
 
-            Optional<Token> optionalToken = retrieveToken(tokenID, TransactionTypeEnum.TOKENMINT, consensusTimeStamp);
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setModifiedTimestamp(consensusTimeStamp);
-                // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
-
-                entityListener.onToken(token);
-            }
+            updateTokenSupply(
+                    tokenMintTransactionBody.getToken(),
+                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
+                    recordItem.getConsensusTimestamp());
         }
     }
 
@@ -723,19 +710,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenWipeAccountTransactionBody tokenWipeAccountTransactionBody = recordItem.getTransactionBody()
                     .getTokenWipe();
-            TokenID tokenID = tokenWipeAccountTransactionBody.getToken();
-            long consensusTimeStamp = recordItem.getConsensusTimestamp();
 
-            Optional<Token> optionalToken = retrieveToken(tokenID, TransactionTypeEnum.TOKENWIPE, consensusTimeStamp);
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setModifiedTimestamp(consensusTimeStamp);
-                // mirror will calculate new totalSupply as an interim solution until network returns it
-                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
-
-                entityListener.onToken(token);
-            }
+            updateTokenSupply(
+                    tokenWipeAccountTransactionBody.getToken(),
+                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
+                    recordItem.getConsensusTimestamp());
         }
+    }
+
+    private void updateTokenSupply(TokenID tokenID, long newTotalSupply, long modifiedTimestamp) {
+        tokenRepository.updateTokenSupply(new Token.Id(EntityId.of(tokenID)), newTotalSupply, modifiedTimestamp);
     }
 
     private Optional<TokenAccount> retrieveTokenAccount(TokenID tokenID, AccountID accountID,

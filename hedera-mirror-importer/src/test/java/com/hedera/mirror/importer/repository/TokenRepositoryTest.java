@@ -1,6 +1,7 @@
 package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.from;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
@@ -20,6 +21,7 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
     private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
     String key = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
     private final EntityId treasuryAccount = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private static final long INITIAL_SUPPLY = 1_000_000L;
 
     @Test
     void save() throws DecoderException {
@@ -28,20 +30,45 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
                 .get()).isEqualTo(token);
     }
 
+    @Test
+    void updateSupply() throws DecoderException {
+        Token token = tokenRepository.save(token(1));
+        long newTotalSupply = INITIAL_SUPPLY - 1000;
+        long modifiedTimestamp = 5L;
+        tokenRepository.updateTokenSupply(new Token.Id(FOO_COIN_ID), newTotalSupply, modifiedTimestamp);
+        assertThat(tokenRepository.findById(token.getTokenId()).get())
+                .returns(modifiedTimestamp, from(Token::getModifiedTimestamp))
+                .returns(newTotalSupply, from(Token::getTotalSupply));
+    }
+
+    @Test
+    void updateSupplyOnMissingToken() throws DecoderException {
+        long createdTimestamp = 1L;
+        Token token = tokenRepository.save(token(createdTimestamp));
+        long newTotalSupply = INITIAL_SUPPLY - 1000;
+        long modifiedTimestamp = 5L;
+        tokenRepository.updateTokenSupply(new Token.Id(EntityId
+                .of("0.0.555", EntityTypeEnum.TOKEN)), newTotalSupply, modifiedTimestamp);
+        assertThat(tokenRepository.findById(token.getTokenId()).get())
+                .returns(createdTimestamp, from(Token::getModifiedTimestamp))
+                .returns(INITIAL_SUPPLY, from(Token::getTotalSupply));
+    }
+
     private Token token(long consensusTimestamp) throws DecoderException {
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(key))).build().toByteArray();
         Token token = new Token();
-        token.setCreatedTimestamp(1L);
+        token.setCreatedTimestamp(consensusTimestamp);
         token.setDecimals(1000);
         token.setFreezeDefault(false);
         token.setFreezeKey(hexKey);
-        token.setInitialSupply(1_000_000_000L);
+        token.setInitialSupply(INITIAL_SUPPLY);
         token.setKycKey(hexKey);
-        token.setModifiedTimestamp(3L);
+        token.setModifiedTimestamp(consensusTimestamp);
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(hexKey);
         token.setSymbol("FOOTOK");
         token.setTokenId(new Token.Id(FOO_COIN_ID));
+        token.setTotalSupply(INITIAL_SUPPLY);
         token.setTreasuryAccountId(treasuryAccount);
         token.setWipeKey(hexKey);
         return token;
