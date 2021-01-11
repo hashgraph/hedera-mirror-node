@@ -5,7 +5,7 @@ hedera:
         scenarios:
           - name: HCS Pinger
             enabled: true
-            logResponse: false
+            logResponse: true
             properties:
               topicId: ${topic.ping}
             record: 1.0
@@ -17,8 +17,8 @@ hedera:
             enabled: true
             topicId: ${topic.ping}
         rest:
-          - name: REST
-            enabled: false
+          - name: HCS REST
+            enabled: true
             samplePercent: 1.0
 logging:
   level:
