@@ -44,21 +44,6 @@ spec:
                 rest:
                   host: dev-mirror-rest
                   port: 80
-              publish:
-                scenarios:
-                  - name: HCS pinger
-                    logResponse: true
-                    properties:
-                      topicId: 0.0.103736
-                    record: 1
-                    tps: 0.1
-                    type: CONSENSUS_SUBMIT_MESSAGE
-              subscribe:
-                grpc:
-                  - name: HCS subscribe
-                    topicId: 0.0.103736
-                rest:
-                  - name: REST subscribe
       image:
         tag: master-5d171ba0a959691fde72d0cedf12fba7e93dc0a0
     postgresql:
