@@ -38,7 +38,8 @@ create table if not exists schedule
 ```
 
 - Add a unique constraint to `schedule` for `schedule_id`.
-- Add a new `schedule_signature` table:
+- Add a new `schedule_signature` table that represents the signatories that have signed and are present in the `sigMap`
+  field of `ScheduleCreate` or `ScheduleSign`:
 
 ```sql
 create table if not exists schedule_signature
@@ -83,18 +84,32 @@ Add a `ScheduleIdConverter`.
 
 - Insert a `Transaction` with `scheduled` set to false.
 - Upsert an `Entities` for the `scheduleID` and the `payerAccountID`.
-- If the `scheduleID` does not exist, insert a `Schedule` with `payerAccountID` set to the one in the transaction body
-  if present. Otherwise, set it to the payer account in the transaction ID.
-- Insert a `ScheduleSignature` for every entry in the `sigMap`.
+- If the `scheduleID` does not exist, insert a `Schedule`:
+  - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
+  - Set `creatorAccountId` to the payer account from the transaction ID.
+  - Set `payerAccountId` to the one in the transaction body else use the payer account from the transaction ID.
+  - Set `scheduleId` to the `scheduleID` in the transaction receipt.
+  - Set `transactionBody` to the `transactionBody` field within the `ScheduleCreateTransactionBody`.
+- Insert a `ScheduleSignature` for every entry in the `sigMap`:
+  - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
+  - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
+  - Set `scheduleId` to the `scheduleID` in the transaction receipt.
+  - Set `signature` to the `sigPair.signature` `oneof` field.
+  - Set `type` to the protobuf index of `sigPair.signature` `oneof` field.
 
-> **_Note:_** Currently a `ScheduleCreate` can potentially cause an update or a create on the node, so only update
-> signatures for an update.
+> **_Note:_** Currently a `ScheduleCreate` can potentially cause an update or a create, so don't create a schedule and
+> only update signatures for an update.
 
 #### Schedule Sign
 
 - Insert a `Transaction` with `scheduled` set to false.
 - Upsert an `Entities` for the `scheduleID`.
-- Insert a `ScheduleSignature` for every entry in the `sigMap`.
+- Insert a `ScheduleSignature` for every entry in the `sigMap`:
+  - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
+  - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
+  - Set `scheduleId` to the `scheduleID` in the transaction receipt.
+  - Set `signature` to the `sigPair.signature` `oneof` field.
+  - Set `type` to the protobuf index of `sigPair.signature` `oneof` field.
 
 #### Scheduled Transaction
 
@@ -200,11 +215,13 @@ GET `/api/v1/schedules`
       "schedule_id": "0.0.102",
       "signatures": [
         {
+          "consensus_timestamp": "1234567890.000000001",
           "public_key_prefix": "1f4be98a",
           "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71",
           "type": 2
         },
         {
+          "consensus_timestamp": "1234567890.000000002",
           "public_key_prefix": "1afc6e5e",
           "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0",
           "type": 3
@@ -245,11 +262,13 @@ GET `/api/v1/schedules/{scheduleId}`
   "schedule_id": "0.0.102",
   "signatures": [
     {
+      "consensus_timestamp": "1234567890.000000001",
       "public_key_prefix": "1f4be98a",
       "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71",
       "type": 2
     },
     {
+      "consensus_timestamp": "1234567890.000000002",
       "public_key_prefix": "1afc6e5e",
       "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0",
       "type": 3
