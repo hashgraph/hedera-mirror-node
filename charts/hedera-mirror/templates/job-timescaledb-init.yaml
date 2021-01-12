@@ -21,7 +21,18 @@ spec:
             - |
               set -e
 
-              while ! pg_isready -U postgres -h {{ include "hedera-mirror.dbHost" . }}-data; do sleep 1; done;
+              # wait for the access node to allow connections
+              while ! pg_isready -U postgres -h {{ include "hedera-mirror.dbHost" . }}; do sleep 1; done;
+
+              # wait for all data nodes to be added to the access node
+              seconds=0
+              until [ "$(psql -d "${ACCESS_SVC_CONNSTR_POSTGRES}" --set ON_ERROR_STOP=1 -At -c 'select count(*) from pg_foreign_server')" = "{{ .Values.timescaledb.dataNodes }}" ]; do
+                sleep 1
+                seconds=$((seconds+1))
+                [ $((seconds % 10)) -eq 0 ] && echo "${seconds} seconds elapsed, still waiting for all data nodes to be added to the access node"
+              done
+              echo 'All {{ .Values.timescaledb.dataNodes }} data nodes have been added to the access node'
+
               psql --echo-queries -d "${ACCESS_SVC_CONNSTR_POSTGRES}" --set ON_ERROR_STOP=1 -f ${DB_INIT_DIR}/users_v2.sql
               echo 'Completed db initialization and user creation for mirror node'
 
