@@ -35,7 +35,7 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         Token token = tokenRepository.save(token(1));
         long newTotalSupply = INITIAL_SUPPLY - 1000;
         long modifiedTimestamp = 5L;
-        tokenRepository.updateTokenSupply(new Token.Id(FOO_COIN_ID), newTotalSupply, modifiedTimestamp);
+        tokenRepository.updateTokenSupply(token.getTokenId(), newTotalSupply, modifiedTimestamp);
         assertThat(tokenRepository.findById(token.getTokenId()).get())
                 .returns(modifiedTimestamp, from(Token::getModifiedTimestamp))
                 .returns(newTotalSupply, from(Token::getTotalSupply));
@@ -47,8 +47,8 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         Token token = tokenRepository.save(token(createdTimestamp));
         long newTotalSupply = INITIAL_SUPPLY - 1000;
         long modifiedTimestamp = 5L;
-        tokenRepository.updateTokenSupply(new Token.Id(EntityId
-                .of("0.0.555", EntityTypeEnum.TOKEN)), newTotalSupply, modifiedTimestamp);
+        Token.Id missingTokenId = new Token.Id(EntityId.of("0.0.555", EntityTypeEnum.TOKEN));
+        tokenRepository.updateTokenSupply(missingTokenId, newTotalSupply, modifiedTimestamp);
         assertThat(tokenRepository.findById(token.getTokenId()).get())
                 .returns(createdTimestamp, from(Token::getModifiedTimestamp))
                 .returns(INITIAL_SUPPLY, from(Token::getTotalSupply));

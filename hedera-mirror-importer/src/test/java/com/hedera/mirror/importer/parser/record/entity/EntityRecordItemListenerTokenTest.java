@@ -366,6 +366,49 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
     }
 
+    @Test
+    void tokenCreateAndAssociateAndWipeInSameRecordFile() throws InvalidProtocolBufferException {
+        long transferAmount = -1000L;
+        long wipeAmount = 100L;
+        long wipeTimestamp = 10L;
+        long newTotalSupply = INITIAL_SUPPLY - wipeAmount;
+
+        // create token with a transfer
+        Transaction createTransaction = tokenCreateTransaction(false, false, SYMBOL);
+        TransactionBody createTransactionBody = getTransactionBody(createTransaction);
+        TokenTransferList createTokenTransfer = tokenTransfer(TOKEN_ID, PAYER, INITIAL_SUPPLY);
+        var createTransactionRecord = createTransactionRecord(CREATE_TIMESTAMP, TOKEN_ID
+                .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, createTokenTransfer);
+
+        // associate with token
+        Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
+        TransactionBody associateTransactionBody = getTransactionBody(associateTransaction);
+        var associateRecord = createTransactionRecord(ASSOCIATE_TIMESTAMP, TOKEN_ID
+                .getTokenNum(), associateTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, null);
+
+        // wipe amount from token with a transfer
+        TokenTransferList wipeTokenTransfer = tokenTransfer(TOKEN_ID, PAYER, transferAmount);
+        Transaction wipeTransaction = tokenWipeTransaction(TOKEN_ID, wipeAmount);
+        TransactionBody wipeTransactionBody = getTransactionBody(wipeTransaction);
+        var wipeRecord = createTransactionRecord(wipeTimestamp, TOKEN_ID
+                        .getTokenNum(), wipeTransactionBody, ResponseCodeEnum.SUCCESS, newTotalSupply,
+                wipeTokenTransfer);
+
+        // process all record items in a single file
+        parseRecordItemsAndCommit(
+                new RecordItem(createTransaction, createTransactionRecord),
+                new RecordItem(associateTransaction, associateRecord),
+                new RecordItem(wipeTransaction, wipeRecord));
+
+        // Verify token, tokenAccount and tokenTransfer
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, newTotalSupply);
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, true,
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
+        assertThat(tokenTransferRepository.count()).isEqualTo(2L);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, wipeTimestamp, transferAmount);
+    }
+
     private void insertAndParseTransaction(Transaction transaction, long timeStamp, long newTotalSupply,
                                            TokenTransferList... tokenTransferLists) throws InvalidProtocolBufferException {
         TransactionBody transactionBody = getTransactionBody(transaction);

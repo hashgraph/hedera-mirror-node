@@ -55,9 +55,9 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -186,6 +186,24 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         recordFileRepository.save(recordFile);
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         entityRecordItemListener.onItem(recordItem);
+        // commit, close connection
+        recordStreamFileListener.onEnd(recordFile);
+    }
+
+    protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
+        String fileName = UUID.randomUUID().toString();
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        RecordFile recordFile = new RecordFile(recordItems[0].getConsensusTimestamp(),
+                recordItems[recordItems.length - 1].getConsensusTimestamp() + 1, null, fileName, 0L, 0L,
+                UUID.randomUUID().toString(), "", nodeAccountId, 0L, 0);
+        recordFileRepository.save(recordFile);
+        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
+
+        // process each record item
+        for (RecordItem recordItem : recordItems) {
+            entityRecordItemListener.onItem(recordItem);
+        }
+
         // commit, close connection
         recordStreamFileListener.onEnd(recordFile);
     }
