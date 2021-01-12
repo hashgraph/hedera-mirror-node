@@ -47,7 +47,7 @@ public interface TokenRepository extends CrudRepository<Token, Token.Id> {
     <S extends Token> S save(S entity);
 
     @Modifying
-    @CacheEvict(key = "#p0.tokenId.id")
+    @CacheEvict(key = "{#p0.tokenId.id}")
     @Query("update Token set totalSupply = :supply, modifiedTimestamp = :timestamp where tokenId = :token")
     void updateTokenSupply(@Param("token") Token.Id tokenId, @Param("supply") long newTotalSupply,
                            @Param("timestamp") long modifiedTimestamp);

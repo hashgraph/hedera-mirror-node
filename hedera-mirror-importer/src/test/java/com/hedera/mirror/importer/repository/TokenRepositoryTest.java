@@ -18,9 +18,9 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
     @Resource
     protected TokenRepository tokenRepository;
 
-    private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
-    String key = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-    private final EntityId treasuryAccount = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private static final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
+    private static final String key = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
+    private static final EntityId treasuryAccount = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
     private static final long INITIAL_SUPPLY = 1_000_000L;
 
     @Test
