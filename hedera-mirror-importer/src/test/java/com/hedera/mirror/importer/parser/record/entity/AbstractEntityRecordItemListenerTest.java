@@ -51,13 +51,14 @@ import org.junit.jupiter.api.TestInfo;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -184,6 +185,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .consensusStart(recordItem.getConsensusTimestamp())
                 .consensusEnd(recordItem.getConsensusTimestamp() + 1)
                 .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
                 .name(fileName)
                 .nodeAccountId(nodeAccountId)
                 .fileHash(UUID.randomUUID().toString())

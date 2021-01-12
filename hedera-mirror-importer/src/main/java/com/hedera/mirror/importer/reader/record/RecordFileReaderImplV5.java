@@ -34,6 +34,7 @@ import lombok.Value;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
@@ -45,15 +46,15 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     private static final int VERSION = 5;
     private static final int OBJECT_STREAM_VERSION = 1;
     private static final long HASH_OBJECT_CLASS_ID = 0xf422da83a251741eL;
-    private static final String HASH_ALGORITHM = "SHA-384";
     private static final int HASH_OBJECT_DIGEST_TYPE_SHA384 = 0x58ff811b;
     private static final int HASH_OBJECT_HASH_LENGTH = 48;
     private static final long RECORD_STREAM_OBJECT_CLASS_ID = 0xe370929ba5429d8bL;
 
     @Override
     public RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
-        MessageDigest mdForFile = createMessageDigest(HASH_ALGORITHM);
-        MessageDigest mdForMetadata = createMessageDigest(HASH_ALGORITHM);
+        DigestAlgorithm digestAlgorithm = DigestAlgorithm.SHA384;
+        MessageDigest mdForFile = createMessageDigest(digestAlgorithm.getName());
+        MessageDigest mdForMetadata = createMessageDigest(digestAlgorithm.getName());
 
         try (DataInputStream dis = new DataInputStream(
                 new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), mdForFile)))) {
@@ -61,8 +62,11 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             String filename = FilenameUtils.getName(streamFileData.getFilename());
 
             recordFile.setName(filename);
+            recordFile.setDigestAlgorithm(digestAlgorithm);
+
             readHeader(dis, mdForMetadata, recordFile);
             readBody(dis, itemConsumer, mdForMetadata, recordFile);
+
             recordFile.setFileHash(Hex.encodeHexString(mdForFile.digest()));
             recordFile.setMetadataHash(Hex.encodeHexString(mdForMetadata.digest()));
 
@@ -86,6 +90,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         mdForMetadata.update(Ints.toByteArray(hapiVersionMinor));
         mdForMetadata.update(Ints.toByteArray(hapiVersionPatch));
 
+        recordFile.setHapiVersionMajor(hapiVersionMajor);
+        recordFile.setHapiVersionMinor(hapiVersionMinor);
+        recordFile.setHapiVersionPatch(hapiVersionPatch);
         recordFile.setVersion(version);
     }
 

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,8 +48,8 @@ public class RecordFileReaderImplV2 extends AbstractPreV5RecordFileReader {
         private final MessageDigest mdForBody;
 
         RecordFileDigestV2() throws NoSuchAlgorithmException {
-            mdForFile = MessageDigest.getInstance(HASH_ALGORITHM);
-            mdForBody = MessageDigest.getInstance(HASH_ALGORITHM);
+            mdForFile = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
+            mdForBody = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
         }
 
         @Override

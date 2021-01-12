@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -39,7 +40,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @RequiredArgsConstructor
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
 
-    protected static final String HASH_ALGORITHM = "SHA-384";
+    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
     protected static final int HASH_SIZE = 48; // 48-byte SHA-384 hash
     protected static final byte PREV_HASH_MARKER = 1;
     protected static final byte RECORD_MARKER = 2;
@@ -53,6 +54,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             RecordFileDigest digest = getRecordFileDigest();
 
             recordFile.setName(FilenameUtils.getName(streamFileData.getFilename()));
+            recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
             readHeader(dis, digest, recordFile);
             readBody(dis, digest, itemConsumer, recordFile);
             recordFile.setFileHash(Hex.encodeHexString(digest.digest()));

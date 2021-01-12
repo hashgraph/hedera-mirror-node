@@ -41,6 +41,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -354,6 +355,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
                 .consensusStart(consensusStart)
                 .consensusEnd(consensusStart + 1)
                 .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(fileHash)
                 .name(filename)
                 .nodeAccountId(nodeAccountId)
