@@ -73,15 +73,13 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         dis.readInt();
 
         int hashType = dis.readInt();
-        validate(HASH_DIGEST_TYPE, hashType,
-                "hashDigestType:" + hashName);
+        validate(HASH_DIGEST_TYPE, hashType, "hashDigestType:" + hashName);
         int hashLength = dis.readInt();
         validate(HASH_SIZE, hashLength, "hashLength:" + hashName);
 
         byte[] hash = new byte[hashLength];
         int actualHashLength = dis.read(hash);
-        validate(hashLength, actualHashLength,
-                "actualHashLength:" + hashName);
+        validate(hashLength, actualHashLength, "actualHashLength:" + hashName);
         return hash;
     }
 
@@ -96,8 +94,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         int signatureLength = dis.readInt();
         byte[] signature = new byte[signatureLength];
         int actualSignatureLength = dis.read(signature);
-        validate(signatureLength, actualSignatureLength,
-                "actualSignatureLength:" + hashName);
+        validate(signatureLength, actualSignatureLength, "actualSignatureLength:" + hashName);
         return signature;
     }
 }
