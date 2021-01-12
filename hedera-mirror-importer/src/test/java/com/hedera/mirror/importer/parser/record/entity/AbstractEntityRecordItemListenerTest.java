@@ -181,12 +181,12 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         String fileName = UUID.randomUUID().toString();
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
         RecordFile recordFile = RecordFile.builder()
-                .consensusStart(0L)
-                .consensusEnd(0L)
+                .consensusStart(recordItem.getConsensusTimestamp())
+                .consensusEnd(recordItem.getConsensusTimestamp() + 1)
                 .count(0L)
-                .fileHash(UUID.randomUUID().toString())
                 .name(fileName)
                 .nodeAccountId(nodeAccountId)
+                .fileHash(UUID.randomUUID().toString())
                 .previousHash("")
                 .build();
         recordFileRepository.save(recordFile);

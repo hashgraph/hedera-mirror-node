@@ -4,14 +4,14 @@ package com.hedera.mirror.monitor.generator;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,7 +57,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         this.expressionConverter = expressionConverter;
         this.properties = properties;
         this.transactionSupplier = Suppliers.memoize(this::convert);
-        this.rateLimiter = RateLimiter.create(properties.getTps());
+        this.rateLimiter = RateLimiter.create(properties.getTps(), properties.getWarmupPeriod());
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()

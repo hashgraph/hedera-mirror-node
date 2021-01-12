@@ -4,7 +4,7 @@ package com.hedera.mirror.monitor;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,13 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.9", "35.197.192.225"),
                 new NodeProperties("0.0.10", "35.242.233.154"),
                 new NodeProperties("0.0.11", "35.240.118.96"),
-                new NodeProperties("0.0.12", "35.204.86.32")
+                new NodeProperties("0.0.12", "35.204.86.32"),
+                new NodeProperties("0.0.13", "35.234.132.107"),
+                new NodeProperties("0.0.14", "35.236.2.27"),
+                new NodeProperties("0.0.15", "35.228.11.53"),
+                new NodeProperties("0.0.16", "34.91.181.183"),
+                new NodeProperties("0.0.17", "34.86.212.247"),
+                new NodeProperties("0.0.18", "172.105.247.67")
         );
     }
 

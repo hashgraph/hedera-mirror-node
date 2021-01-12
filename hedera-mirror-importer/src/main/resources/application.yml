@@ -5,10 +5,13 @@ hedera:
         host: 127.0.0.1
         loadBalance: true
         name: mirror_node
+        owner: ${hedera.mirror.importer.db.username}
+        ownerPassword: ${hedera.mirror.importer.db.password}
         password: mirror_node_pass
         port: 5432
         restPassword: mirror_api_pass
         restUsername: mirror_api
+        schema: public
         username: mirror_node
 logging:
   level:
@@ -73,6 +76,7 @@ spring:
     baselineOnMigrate: true
     connectRetries: 20
     ignoreMissingMigrations: true
+    password: ${hedera.mirror.importer.db.ownerPassword}
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}
       api-user: ${hedera.mirror.importer.db.restUsername}
@@ -81,6 +85,7 @@ spring:
       compressionAge: 604800000000000
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
+    user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:
       hibernate:

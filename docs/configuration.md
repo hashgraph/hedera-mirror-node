@@ -5,7 +5,7 @@ configuration from an `application.yml` file or via the environment.
 
 Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
 should be changed is `hedera.mirror.importer.network` as it controls which Hedera network to mirror. Additionally, the
-password properties have a default, but it is recommended they be changed from the default.
+password properties have a default, but it is **strongly recommended passwords be changed from the default**.
 
 ## Importer
 
@@ -21,14 +21,17 @@ value, it is recommended to only populate overridden properties in the custom `a
 | Name                                                                 | Default                 | Description                                                                                    |
 | -------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
 | `hedera.mirror.importer.dataPath`                                    | ./data                  | The data directory used to store downloaded files and other application state                  |
-| `hedera.mirror.importer.db.restPassword`                             | mirror_api_pass         | The database password the API uses to connect. **Should be changed from default**              |
+| `hedera.mirror.importer.db.restPassword`                             | mirror_api_pass         | The database password the API uses to connect.                                                 |
 | `hedera.mirror.importer.db.restUsername`                             | mirror_api              | The username the API uses to connect to the database                                           |
 | `hedera.mirror.importer.db.host`                                     | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.importer.db.loadBalance`                              | true                    | Whether to enable pgpool load balancing. If false, it sends all reads to the primary db backend instead of load balancing them across the primary and replicas. |
 | `hedera.mirror.importer.db.name`                                     | mirror_node             | The name of the database                                                                       |
-| `hedera.mirror.importer.db.password`                                 | mirror_node_pass        | The database password the processor uses to connect. **Should be changed from default**        |
+| `hedera.mirror.importer.db.owner`                                    | mirror_node             | The username of the db user with owner permissions to create and modify the schema             |
+| `hedera.mirror.importer.db.ownerPassword`                            | mirror_node_pass        | The password for the owner user the processor uses to connect.                                 |
+| `hedera.mirror.importer.db.password`                                 | mirror_node_pass        | The database password for the Importer user the processor uses to connect.                     |
 | `hedera.mirror.importer.db.port`                                     | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.importer.db.username`                                 | mirror_node             | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.importer.db.schema`                                   | public                  | The name of the custom schema database objects will be created in. This is applicable from v2 of the data schema |
+| `hedera.mirror.importer.db.username`                                 | mirror_node             | The Importer username the processor uses to connect to the database                            |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |
 | `hedera.mirror.importer.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
@@ -142,7 +145,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.checkTopicExists`                       | true             | Whether to throw an error when the topic doesn't exist                                         |
 | `hedera.mirror.grpc.db.host`                                | 127.0.0.1        | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.grpc.db.name`                                | mirror_node      | The name of the database                                                                       |
-| `hedera.mirror.grpc.db.password`                            | mirror_grpc_pass | The database password the GRPC API uses to connect. **Should be changed from default**         |
+| `hedera.mirror.grpc.db.password`                            | mirror_grpc_pass | The database password the GRPC API uses to connect.                                            |
 | `hedera.mirror.grpc.db.port`                                | 5432             | The port used to connect to the database                                                       |
 | `hedera.mirror.grpc.db.username`                            | mirror_grpc      | The username the GRPC API uses to connect to the database                                      |
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
@@ -205,6 +208,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].record`          | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].tps`             | 1.0        | The rate at which transactions will publish
 `hedera.mirror.monitor.publish.scenarios[].type`            |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
+`hedera.mirror.monitor.publish.scenarios[].warmupPeriod`    | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
 `hedera.mirror.monitor.publish.statusFrequency`             | 10s        | How often to log publishing statistics
 `hedera.mirror.monitor.subscribe.grpc[].duration`           |            | How long to stay subscribed to the gRPC API
 `hedera.mirror.monitor.subscribe.grpc[].enabled`            | true       | Whether this subscribe scenario is enabled
@@ -249,7 +253,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
 | `hedera.mirror.rest.db.host`                             | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.rest.db.name`                             | mirror_node             | The name of the database                                                                       |
-| `hedera.mirror.rest.db.password`                         | mirror_api_pass         | The database password the processor uses to connect. **Should be changed from default**        |
+| `hedera.mirror.rest.db.password`                         | mirror_api_pass         | The database password the processor uses to connect.                                           |
 | `hedera.mirror.rest.db.pool.connectionTimeout`           | 3000                    | The number of milliseconds to wait before timing out when connecting a new database client     |
 | `hedera.mirror.rest.db.pool.maxConnections`              | 10                      | The maximum number of clients the database pool can contain                                    |
 | `hedera.mirror.rest.db.pool.statementTimeout`            | 5000                    | The number of milliseconds to wait before timing out a query statement                         |
