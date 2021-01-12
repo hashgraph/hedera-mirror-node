@@ -43,18 +43,18 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @Named
 public class RecordFileReaderImplV5 implements RecordFileReader {
 
-    private static final int VERSION = 5;
-    private static final int OBJECT_STREAM_VERSION = 1;
+    private static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
     private static final long HASH_OBJECT_CLASS_ID = 0xf422da83a251741eL;
     private static final int HASH_OBJECT_DIGEST_TYPE_SHA384 = 0x58ff811b;
-    private static final int HASH_OBJECT_HASH_LENGTH = 48;
+    private static final int HASH_OBJECT_HASH_LENGTH = DIGEST_ALGORITHM.getSize();
+    private static final int OBJECT_STREAM_VERSION = 1;
     private static final long RECORD_STREAM_OBJECT_CLASS_ID = 0xe370929ba5429d8bL;
+    private static final int VERSION = 5;
 
     @Override
     public RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
-        DigestAlgorithm digestAlgorithm = DigestAlgorithm.SHA384;
-        MessageDigest mdForFile = createMessageDigest(digestAlgorithm.getName());
-        MessageDigest mdForMetadata = createMessageDigest(digestAlgorithm.getName());
+        MessageDigest mdForFile = createMessageDigest(DIGEST_ALGORITHM);
+        MessageDigest mdForMetadata = createMessageDigest(DIGEST_ALGORITHM);
 
         try (DataInputStream dis = new DataInputStream(
                 new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), mdForFile)))) {
@@ -62,7 +62,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             String filename = FilenameUtils.getName(streamFileData.getFilename());
 
             recordFile.setName(filename);
-            recordFile.setDigestAlgorithm(digestAlgorithm);
+            recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
 
             readHeader(dis, mdForMetadata, recordFile);
             readBody(dis, itemConsumer, mdForMetadata, recordFile);
@@ -158,9 +158,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setPreviousHash(Hex.encodeHexString(startHash));
     }
 
-    private MessageDigest createMessageDigest(String algorithm) {
+    private MessageDigest createMessageDigest(DigestAlgorithm digestAlgorithm) {
         try {
-            return MessageDigest.getInstance(algorithm);
+            return MessageDigest.getInstance(digestAlgorithm.getName());
         } catch (NoSuchAlgorithmException e) {
             throw new StreamFileReaderException(e);
         }
@@ -200,8 +200,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         long classID = dis.readLong();
         Utility.checkField(classID, RECORD_STREAM_OBJECT_CLASS_ID, "Record stream object class ID", filename);
         dis.readInt(); // class version
-        byte[] recordBytes = Utility.readLengthAndBytes(dis);
-        byte[] transactionBytes = Utility.readLengthAndBytes(dis);
+        byte[] recordBytes = Utility.readLengthAndBytes(dis, Utility.MAX_RECORD_LENGTH);
+        byte[] transactionBytes = Utility.readLengthAndBytes(dis, Utility.MAX_TRANSACTION_LENGTH);
 
         return new RecordStreamObjectBytes(recordBytes, transactionBytes);
     }

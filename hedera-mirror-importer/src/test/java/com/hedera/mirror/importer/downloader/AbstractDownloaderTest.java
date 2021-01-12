@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.primitives.Bytes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -43,7 +42,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -121,6 +119,7 @@ public abstract class AbstractDownloaderTest {
     protected EntityId corruptedNodeAccountId;
     protected NodeSignatureVerifier nodeSignatureVerifier;
     protected SignatureFileReader signatureFileReader;
+    protected StreamType streamType;
 
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
@@ -199,10 +198,11 @@ public abstract class AbstractDownloaderTest {
         signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2());
         nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         downloader = prepareDownloader();
+        streamType = downloaderProperties.getStreamType();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
-                .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
+                .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
 
         validPath = downloaderProperties.getValidPath();
 
@@ -298,17 +298,11 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Exactly 1/3 consensus")
     void oneThirdConsensus() throws Exception {
-        MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-        Path addressBookPath = ResourceUtils.getFile(String
-                .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
-        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
-        int index = Bytes.lastIndexOf(addressBookBytes, (byte) '\n');
-        addressBookBytes = Arrays.copyOfRange(addressBookBytes, 0, index);
-        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
-        long now = Instant.now().getEpochSecond();
-        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
+        List<AddressBookEntry> entries = addressBook.getEntries().stream().limit(3).collect(Collectors.toList());
+        AddressBook addressBookWith3Nodes = addressBook.toBuilder().entries(entries).nodeCount(entries.size()).build();
+        doReturn(addressBookWith3Nodes).when(addressBookService).getCurrent();
 
-        fileCopier.filterDirectories("*0.0.3").copy();
+        fileCopier.filterDirectories("*" + entries.get(0).getNodeAccountIdString()).copy();
         prepareDownloader().download();
 
         verifyForSuccess();
@@ -444,8 +438,7 @@ public abstract class AbstractDownloaderTest {
         // the difference between file1 and file2.
         Duration interval = getCloseInterval().multipliedBy(2);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
-        String lastFileName = Utility
-                .getStreamFilenameFromInstant(downloaderProperties.getStreamType(), lastFileInstant);
+        String lastFileName = Utility.getStreamFilenameFromInstant(streamType, lastFileInstant);
 
         doReturn(lastFileName).when(applicationStatusRepository)
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
@@ -460,7 +453,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), Instant.now()))
+        doReturn(Utility.getStreamFilenameFromInstant(streamType, Instant.now()))
                 .when(applicationStatusRepository)
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         fileCopier.copy();
@@ -478,7 +471,7 @@ public abstract class AbstractDownloaderTest {
     })
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
-        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), startDate))
+        doReturn(Utility.getStreamFilenameFromInstant(streamType, startDate))
                 .when(applicationStatusRepository)
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         List<String> expectedFiles = List.of(file1, file2)
@@ -543,18 +536,18 @@ public abstract class AbstractDownloaderTest {
 
     private void differentFilenames(Duration offset) throws Exception {
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
-        StreamType type = downloaderProperties.getStreamType();
         fileCopier.filterFiles(file2 + "*").copy();
-        Path basePath = fileCopier.getTo().resolve(type.getNodePrefix() + "0.0.3");
+        Path basePath = fileCopier.getTo().resolve(streamType.getNodePrefix() + "0.0.3");
 
         // Construct a new filename with the offset added to the last valid file
         long nanoOffset = getCloseInterval().plus(offset).toNanos();
         long timestamp = Utility.getTimestampFromFilename(file1) + nanoOffset;
-        String baseFilename = Instant.ofEpochSecond(0, timestamp).toString().replace(':', '_') + type.getSuffix() + ".";
+        String baseFilename = Instant.ofEpochSecond(0, timestamp) + streamType.getSuffix() + ".";
+        baseFilename = baseFilename.replace(':', '_');
 
         // Rename the good files to have a bad timestamp
-        String signature = baseFilename + type.getSignatureExtension();
-        String signed = baseFilename + type.getExtension();
+        String signature = baseFilename + streamType.getSignatureExtension();
+        String signed = baseFilename + streamType.getExtension();
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 

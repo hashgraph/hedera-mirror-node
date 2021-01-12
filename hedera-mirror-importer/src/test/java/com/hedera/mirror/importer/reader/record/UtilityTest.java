@@ -88,25 +88,25 @@ public class UtilityTest {
 
     @ParameterizedTest(name = "read {0}-byte data from {1}-byte value field")
     @CsvSource({
-            "0, 0, false",
-            "0, 2, false",
-            "6, 6, false",
-            "6, 10, false",
-            "6, 5, true"
+            "1, 2, 10, false",
+            "6, 6, 10, false",
+            "6, 10, 10, false",
+            "6, 5, 10, true",
+            "0, 2, 10, true",
+            "-1, 2, 10, true",
+            "11, 10, 10, true"
     })
-    void readLengthAndBytes(int length, int dataSize, boolean expectThrown) throws IOException {
+    void readLengthAndBytes(int length, int dataSize, int maxLength, boolean expectThrown) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              DataOutputStream dos = new DataOutputStream(bos)) {
             dos.writeInt(length);
             dos.write(new byte[dataSize]);
+            DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bos.toByteArray()));
 
             if (expectThrown) {
-                assertThrows(IOException.class, () -> {
-                    Utility.readLengthAndBytes(new DataInputStream(new ByteArrayInputStream(bos.toByteArray())));
-                });
+                assertThrows(InvalidStreamFileException.class, () -> Utility.readLengthAndBytes(dis, maxLength));
             } else {
-                byte[] actual = Utility
-                        .readLengthAndBytes(new DataInputStream(new ByteArrayInputStream(bos.toByteArray())));
+                byte[] actual = Utility.readLengthAndBytes(dis, maxLength);
 
                 byte[] expected = new byte[length];
                 assertArrayEquals(actual, expected);
@@ -115,11 +115,9 @@ public class UtilityTest {
     }
 
     @Test
-    void readLengthAndBytesFromTruncatedInput() throws IOException {
+    void readLengthAndBytesWithTruncatedLengthField() throws IOException {
         try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(new byte[1]))) {
-            assertThrows(IOException.class, () -> {
-                Utility.readLengthAndBytes(dis);
-            });
+            assertThrows(IOException.class, () -> Utility.readLengthAndBytes(dis, 10));
         }
     }
 }

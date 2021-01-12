@@ -31,6 +31,9 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 @UtilityClass
 public class Utility {
 
+    public static final int MAX_RECORD_LENGTH = 64 * 1024;
+    public static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
+
     public <T> void checkField(T actual, T expected, String name, String filename) {
         if (!Objects.equals(actual, expected)) {
             throw new InvalidStreamFileException(String.format("Expect %s (%s) got %s for record file %s",
@@ -38,10 +41,18 @@ public class Utility {
         }
     }
 
-    public byte[] readLengthAndBytes(@NonNull DataInputStream dis) throws IOException {
-        int len = dis.readInt();
-        byte[] bytes = new byte[len];
-        dis.readFully(bytes);
-        return bytes;
+    public byte[] readLengthAndBytes(@NonNull DataInputStream dis, int maxLength) {
+        try {
+            int len = dis.readInt();
+            if (len <= 0 || len > maxLength) {
+                throw new InvalidStreamFileException(String.format("Length %d out of bound (0, %d]", len, maxLength));
+            }
+
+            byte[] bytes = new byte[len];
+            dis.readFully(bytes);
+            return bytes;
+        } catch (IOException e) {
+            throw new InvalidStreamFileException(e);
+        }
     }
 }

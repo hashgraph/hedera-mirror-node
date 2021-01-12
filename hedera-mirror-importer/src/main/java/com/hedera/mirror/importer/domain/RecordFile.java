@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.domain;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -33,7 +35,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.DigestAlgorithmConverter;
 
 @Builder(toBuilder = true)
 @Data
@@ -48,7 +49,7 @@ public class RecordFile implements StreamFile {
 
     private Long count;
 
-    @Convert(converter = DigestAlgorithmConverter.class)
+    @Enumerated(EnumType.ORDINAL)
     private DigestAlgorithm digestAlgorithm;
 
     private String fileHash;

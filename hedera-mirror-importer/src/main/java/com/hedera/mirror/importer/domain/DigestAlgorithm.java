@@ -22,23 +22,27 @@ package com.hedera.mirror.importer.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import java.util.Objects;
 
 @Getter
 @RequiredArgsConstructor
 public enum DigestAlgorithm {
-    SHA384(0, "SHA-384");
+    SHA384("SHA-384", 48);
 
-    private final int id;
     private final String name;
 
-    public static DigestAlgorithm from(Integer id) {
-        for (DigestAlgorithm digestAlgorithm : values()) {
-            if (Objects.equals(digestAlgorithm.getId(), id)) {
-                return digestAlgorithm;
-            }
+    private final int size;
+
+    private static final DigestAlgorithm[] ORDINAL_LOOKUP = values();
+
+    public static DigestAlgorithm from(Integer ordinal) {
+        if (ordinal == null) {
+            return null;
         }
 
-        return null;
+        if (ordinal < 0 || ordinal > ORDINAL_LOOKUP.length) {
+            return null;
+        }
+
+        return ORDINAL_LOOKUP[ordinal];
     }
 }

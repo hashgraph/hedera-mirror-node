@@ -41,7 +41,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
 
     protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
-    protected static final int HASH_SIZE = 48; // 48-byte SHA-384 hash
+    protected static final int HASH_SIZE = DIGEST_ALGORITHM.getSize();
     protected static final byte PREV_HASH_MARKER = 1;
     protected static final byte RECORD_MARKER = 2;
 
@@ -123,8 +123,8 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             byte marker = dis.readByte();
             Utility.checkField(marker, RECORD_MARKER, "record marker", recordFile.getName());
 
-            byte[] transactionBytes = Utility.readLengthAndBytes(dis);
-            byte[] recordBytes = Utility.readLengthAndBytes(dis);
+            byte[] transactionBytes = Utility.readLengthAndBytes(dis, Utility.MAX_TRANSACTION_LENGTH);
+            byte[] recordBytes = Utility.readLengthAndBytes(dis, Utility.MAX_RECORD_LENGTH);
 
             digest.updateBody(marker);
             digest.updateBody(Ints.toByteArray(transactionBytes.length));
