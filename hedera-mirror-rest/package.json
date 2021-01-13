@@ -48,6 +48,7 @@
     "compression",
     "cors",
     "express",
+    "express-http-context",
     "express-oas-generator",
     "@godaddy/terminus",
     "extend",
