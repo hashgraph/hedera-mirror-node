@@ -33,19 +33,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
-    @Value("classpath:data/signature/v2/2019-08-30T18_10_00.419072Z.rcd_sig")
-    private File signatureFile;
+    private final File signatureFile = Utility.getResource("data/signature/v2/2019-08-30T18_10_00.419072Z.rcd_sig");
 
     private static final String entireFileHashBase64 = "WRVY4Fm9FinuOGxONaaHW0xnoJZxj10iV3KmUQQnFRiUFN99tViEle" +
             "+yqF3EoP/a";
@@ -56,10 +55,14 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             "/oUesRi5pnATgjqZOXycMegavb1Ikf3GoQAvn1Bx6EO14Uh7hVMxa/NYMtSVNQ17QG6QtA4j7viVvJ9EPSiCsmg3Cp2PhBW5ZPshq" +
             "+ExciGbnXFu+ytLZGSwKhePwuLQsBNTbGUcDFy1IJge95tEweR51Y1Nfh6PqPTnkdirRGO";
 
-    @Resource
-    SignatureFileReaderV2 fileReaderV2;
+    private static SignatureFileReaderV2 fileReaderV2;
 
     private static final int SIGNATURE_LENGTH = 48;
+
+    @BeforeAll
+    static void setup() {
+        fileReaderV2 = new SignatureFileReaderV2();
+    }
 
     @Test
     void testReadValidFile() throws IOException {

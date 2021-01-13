@@ -38,10 +38,9 @@ import lombok.Getter;
 import lombok.Value;
 import org.junit.jupiter.api.DynamicTest;
 
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
-abstract class AbstractSignatureFileReaderTest extends IntegrationTest {
+abstract class AbstractSignatureFileReaderTest {
 
     protected InputStream getInputStream(File file) throws FileNotFoundException {
         return new BufferedInputStream(new FileInputStream(file));
