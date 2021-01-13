@@ -25,8 +25,10 @@ import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.OBJECT_STREAM_SIGNATURE_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_TYPE;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 
+import com.google.api.client.util.Base64;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import java.io.File;
@@ -46,7 +48,7 @@ import com.hedera.mirror.importer.domain.FileStreamSignature;
 
 class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
-    @Value("classpath:data/signature/v5/2020-12-29T21_28_40.972713000Z.rcd_sig")
+    @Value("classpath:data/signature/v5/2021-01-11T22_16_11.299356001Z.rcd_sig")
     private File signatureFile;
 
     @Resource
@@ -58,13 +60,39 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     private static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
     private static final int SIGNATURE_CLASS_VERSION = 1;
 
+    private static final String entireFileHashBase64 = "L+OAVq+qeyicnL+lVSL5XIBy8JSYGaTVGa9ADG59s" +
+            "+ZOUHcTaAHR3KxX0Cooc5Jo";
+    private static final String entireFileSignatureBase64 = "LN5tEHPqE6VRQPGXSWWEG1LOquVtOgHRu5LFGNCLrH7" +
+            "/cCd4xbC1RnOeQ+E9czLwdZaHWxQsc80ooD62oRLcw33XFMZGgVvXRWvG9lltUP0TRfDSRNAxz" +
+            "+31CAnvVa9ds7Q3eKGUHskB7rwIeJRQXVz6UHonA7WAmypeRbKFJ3x7AdLef8EaH6X83Bs3vmX5LnUWVQ" +
+            "/m8vPNwC089hheWhbkRIZlwJ1lN6Jy+rQev/5kAGGhxUgfQls4nQwNq4OjleVQTChwLKi0nHVhdbEouoMOBS" +
+            "YW2tZhgP0iLcWK0eg1AQF10cAwevdlxiY1WXU21L76KZOmTYYo5Esxke++ntA2XiWzOmcBGud" +
+            "/4xDq1LvssNlKSKKrMYMsdcS4nTz3AkdSAMLxkIq7hB+ZC12RcODEaqyglnNawWHY4ril7L1lo0Bt" +
+            "/TtFQsK7JcBGVPBqb5MO5DtSWfFAkxpOwFSOc63gyyqZwYx6ieC+mgFToLjxh/7rbG1+spLN4YhfMosr";
+
+    private static final String metadataHashBase64 = "yySh8+IzClpzk6Q/TQK18D33jqVNN6iZmZqd5p9QN21tUs2ESCGeim32ANIfoapi";
+    private static final String metadataSignatureBase64 = "g6xHyKexXgyFWLxcnnQ/8H7efoswLAWRS9T0KGLBSdUVV0cu9d+cQr3" +
+            "/8gwrTb7yGN/7fvHrNoGtXDlEK9TiBHeqn6iVG/EIkJqpBZLUReGrZRwDPMO+stj1aDlEOl143jOesMiMNYsl" +
+            "+27uerYfXLrkrdW3dlznCYu16frBMugQKuH2oTck2cT0AZmtHqLFkKKsjBWnxlmx+z2dlp" +
+            "/LhIg4ajM0ZZmYU7GBL8akE4iIljwOVbrQpHmvhhNS6uCuUW0qAg/JIoR8a6fXRki4USyRCrv" +
+            "+2z1HXjsMM497WSfIvHugvLFOII3GUCMeVjKWPeXM7UZ6lqa6jyd+uXhmgOaBnzGfOCcfwalGejgeBiphkQBNVdiZ" +
+            "+xFHwmKhAvsKXyp2ZFIrB+PGMQI8wr1cCMYLKYpI4VceCkLTIB3XOOVKZPWZaOs8MK9Aj9ZeT3REqf" +
+            "d252N19j2yA45x8Zs2kRIC2iKNNEPwcaUbGNHiPmsZ5Ezq0lnNKuomJECMsYHu";
+
     @Test
     void testReadValidFile() throws IOException {
         try (InputStream stream = getInputStream(signatureFile)) {
-            FileStreamSignature answer = fileReaderV5.read(stream);
-            assertNotNull(answer);
-            assertNotNull(answer.getEntireFilesignature());
-            assertNotNull(answer.getEntireFileHash());
+            FileStreamSignature fileStreamSignature = fileReaderV5.read(stream);
+
+            assertNotNull(fileStreamSignature);
+            assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature
+                    .getEntireFileHash());
+            assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
+                    .getEntireFilesignature());
+            assertArrayEquals(Base64.decodeBase64(metadataHashBase64.getBytes()), fileStreamSignature
+                    .getMetadataHash());
+            assertArrayEquals(Base64.decodeBase64(metadataSignatureBase64.getBytes()), fileStreamSignature
+                    .getMetadataSignature());
         }
     }
 
@@ -79,9 +107,9 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         SignatureFileSection objectStreamSignatureVersion = new SignatureFileSection(
                 Ints.toByteArray(OBJECT_STREAM_SIGNATURE_VERSION),
-                "invalidObjectStreamSignatureVersion",
-                incrementLastByte,
-                "objectStreamSignatureVersion");
+                null,
+                null,
+                null);
 
         List<SignatureFileSection> signatureFileSections = new ArrayList<>();
         signatureFileSections.add(fileVersion);
@@ -153,11 +181,18 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 null,
                 null);
 
+        SignatureFileSection checkSum = new SignatureFileSection(
+                Ints.toByteArray(101 - SIGNATURE_LENGTH),
+                "incorrectCheckSum:" + hashName,
+                incrementLastByte,
+                "checkSum:" + hashName);
+
         SignatureFileSection signature = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(SIGNATURE_LENGTH),
                 "incorrectSignatureLength:" + hashName,
                 truncateLastByte,
                 "actualSignatureLength:" + hashName);
-        return Arrays.asList(signatureClassId, signatureClassVersion, signatureType, signatureLength, signature);
+        return Arrays
+                .asList(signatureClassId, signatureClassVersion, signatureType, signatureLength, checkSum, signature);
     }
 }

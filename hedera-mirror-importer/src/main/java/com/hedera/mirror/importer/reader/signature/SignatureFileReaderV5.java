@@ -37,7 +37,6 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
     protected static final byte SIGNATURE_FILE_FORMAT_VERSION = 5;
     protected static final int OBJECT_STREAM_SIGNATURE_VERSION = 1; //defines the format for the remainder of the file
 
-    protected static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
     protected static final int HASH_SIZE = 48; //48 bytes for SHA-384
 
     protected static final int SIGNATURE_TYPE = 1; //denotes SHA384withRSA
@@ -51,8 +50,8 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             byte fileVersion = dis.readByte();
             validate(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "fileVersion");
 
-            int objectStreamSignatureVersion = dis.readInt();
-            validate(OBJECT_STREAM_SIGNATURE_VERSION, objectStreamSignatureVersion, "objectStreamSignatureVersion");
+            //Read the objectStreamSignatureVersion, which is not used
+            dis.readInt();
 
             fileStreamSignature.setEntireFileHash(readHashObject(dis, "entire"));
 
@@ -71,9 +70,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
     }
 
     private byte[] readHashObject(DataInputStream dis, String hashName) throws IOException {
-        //Read the hashClassId and hashClassVersion, which are not used
-        dis.readLong();
-        dis.readInt();
+        readClassIdAndVersion(dis);
 
         int hashType = dis.readInt();
         validate(HASH_DIGEST_TYPE, hashType, "hashDigestType:" + hashName);
@@ -86,18 +83,25 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         return hash;
     }
 
-    private byte[] readSignatureObject(DataInputStream dis, String hashName) throws IOException {
-        //Read the signatureClassId and signatureClassVersion, which are not used
-        dis.readLong();
-        dis.readInt();
+    private byte[] readSignatureObject(DataInputStream dis, String signatureName) throws IOException {
+        readClassIdAndVersion(dis);
 
         int signatureType = dis.readInt();
-        validate(SIGNATURE_TYPE, signatureType, "signatureType:" + hashName);
+        validate(SIGNATURE_TYPE, signatureType, "signatureType:" + signatureName);
 
         int signatureLength = dis.readInt();
+        //Checksum is calculated as 101 - length of signature bytes
+        int checkSum = dis.readInt();
+        validate(101 - signatureLength, checkSum, "checkSum:" + signatureName);
         byte[] signature = new byte[signatureLength];
         int actualSignatureLength = dis.read(signature);
-        validate(signatureLength, actualSignatureLength, "actualSignatureLength:" + hashName);
+        validate(signatureLength, actualSignatureLength, "actualSignatureLength:" + signatureName);
         return signature;
+    }
+
+    private void readClassIdAndVersion(DataInputStream dis) throws IOException {
+        //Read the ClassId and ClassVersion, which are not used
+        dis.readLong();
+        dis.readInt();
     }
 }
