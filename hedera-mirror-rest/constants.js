@@ -50,6 +50,7 @@ const transactionColumns = {
   TYPE: 'type',
 };
 
+const requestIdLabel = 'requestId';
 const responseDataLabel = 'mirrorRestData';
 
 const orderFilterValues = {
@@ -112,6 +113,7 @@ module.exports = {
   networks,
   orderFilterValues,
   recordStreamPrefix,
+  requestIdLabel,
   responseDataLabel,
   transactionColumns,
   transactionResultFilter,
