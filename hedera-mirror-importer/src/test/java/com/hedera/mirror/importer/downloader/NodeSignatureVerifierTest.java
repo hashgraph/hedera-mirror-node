@@ -32,6 +32,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,8 +112,9 @@ class NodeSignatureVerifierTest {
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
 
+        List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
-                .verify(Arrays.asList(buildBareBonesFileStreamSignature())));
+                .verify(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Require at least 1/3 signature files to reach consensus"));
     }
 
@@ -145,8 +147,9 @@ class NodeSignatureVerifierTest {
                 null, null);
         fileStreamSignature.setSignatureType(null);
 
+        List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
-                .verify(Arrays.asList(fileStreamSignature)));
+                .verify(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Signature verification failed for file"));
     }
 
@@ -158,8 +161,9 @@ class NodeSignatureVerifierTest {
         FileStreamSignature fileStreamSignature = buildFileStreamSignature(entireFileHash, null,
                 null, null);
 
+        List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
-                .verify(Arrays.asList(fileStreamSignature)));
+                .verify(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Signature verification failed for file"));
     }
 
@@ -171,8 +175,9 @@ class NodeSignatureVerifierTest {
         FileStreamSignature fileStreamSignature = buildFileStreamSignature(null, signHash(entireFileHash),
                 null, null);
 
+        List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
-                .verify(Arrays.asList(fileStreamSignature)));
+                .verify(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Signature verification failed for file"));
     }
 
@@ -186,8 +191,9 @@ class NodeSignatureVerifierTest {
         FileStreamSignature fileStreamSignature = buildFileStreamSignature(entireFileHash, signHash(entireFileHash),
                 null, null);
 
+        List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
-                .verify(Arrays.asList(fileStreamSignature)));
+                .verify(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Signature verification failed for file"));
     }
 
