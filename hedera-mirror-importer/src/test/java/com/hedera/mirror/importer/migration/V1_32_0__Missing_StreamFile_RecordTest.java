@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -122,7 +122,7 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
                 .fileHash("591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda")
                 .name("2019-08-30T18_10_00.419072Z.rcd")
                 .nodeAccountId(nodeAccountId)
-                .previousHash(Utility.EMPTY_HASH)
+                .previousHash(Utility.EMPTY_SHA_384_HASH)
                 .build();
         allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(
                 recordFileCopier, recordFile, recordFileRepositoryCompat

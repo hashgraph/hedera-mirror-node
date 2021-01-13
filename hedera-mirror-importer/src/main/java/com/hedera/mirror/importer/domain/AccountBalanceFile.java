@@ -52,9 +52,4 @@ public class AccountBalanceFile implements StreamFile {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
-
-    @Override
-    public String getCurrentHash() {
-        return fileHash;
-    }
 }

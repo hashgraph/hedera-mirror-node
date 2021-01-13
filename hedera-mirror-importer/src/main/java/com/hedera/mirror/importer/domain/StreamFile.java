@@ -24,7 +24,9 @@ import lombok.NonNull;
 
 public interface StreamFile {
 
-    String getCurrentHash();
+    default String getCurrentHash() {
+        return getFileHash();
+    }
 
     String getFileHash();
 
