@@ -55,7 +55,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
             fileStreamSignature.setEntireFileHash(readHashObject(dis, "entire"));
 
-            fileStreamSignature.setEntireFilesignature(readSignatureObject(dis, "entire"));
+            fileStreamSignature.setEntireFileSignature(readSignatureObject(dis, "entire"));
 
             fileStreamSignature.setMetadataHash(readHashObject(dis, "metadata"));
 

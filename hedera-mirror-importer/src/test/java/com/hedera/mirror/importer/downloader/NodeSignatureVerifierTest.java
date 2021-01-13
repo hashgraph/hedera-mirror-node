@@ -209,7 +209,7 @@ class NodeSignatureVerifierTest {
         fileStreamSignature.setEntireFileHash(entireFileHash);
         fileStreamSignature.setMetadataHash(metadataHash);
 
-        fileStreamSignature.setEntireFilesignature(entireFileSignature);
+        fileStreamSignature.setEntireFileSignature(entireFileSignature);
         fileStreamSignature.setMetadataSignature(metadataSignature);
 
         return fileStreamSignature;

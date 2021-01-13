@@ -60,7 +60,7 @@ public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
             dis.readFully(sigBytes);
-            fileStreamSignature.setEntireFilesignature(sigBytes);
+            fileStreamSignature.setEntireFileSignature(sigBytes);
 
             if (dis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file");

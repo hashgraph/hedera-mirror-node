@@ -27,14 +27,14 @@ import lombok.ToString;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
-@ToString(exclude = {"hash", "signature", "metadataHash", "metadataSignature"})
+@ToString(exclude = {"entireFileHash", "entireFileSignatureg", "metadataHash", "metadataSignature"})
 public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
     private File file;
     private byte[] entireFileHash;
     private EntityId nodeAccountId;
     private SignatureType signatureType;
-    private byte[] entireFilesignature;
+    private byte[] entireFileSignature;
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
     private byte[] metadataHash;
     private byte[] metadataSignature;

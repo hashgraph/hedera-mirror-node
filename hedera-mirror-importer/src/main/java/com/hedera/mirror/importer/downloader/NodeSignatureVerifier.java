@@ -126,7 +126,7 @@ public class NodeSignatureVerifier {
             return false;
         }
 
-        if (fileStreamSignature.getEntireFilesignature() == null) {
+        if (fileStreamSignature.getEntireFileSignature() == null) {
             log.error("Missing signature data: {}", fileStreamSignature);
             return false;
         }
@@ -142,7 +142,7 @@ public class NodeSignatureVerifier {
             }
             sig.initVerify(publicKey);
             sig.update(fileStreamSignature.getEntireFileHash());
-            if (!sig.verify(fileStreamSignature.getEntireFilesignature())) {
+            if (!sig.verify(fileStreamSignature.getEntireFileSignature())) {
                 return false;
             } else if (fileStreamSignature.getMetadataSignature() != null) {
                 sig.update(fileStreamSignature.getMetadataHash());

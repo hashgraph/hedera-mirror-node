@@ -93,7 +93,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature
                     .getEntireFileHash());
             assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
-                    .getEntireFilesignature());
+                    .getEntireFileSignature());
             assertArrayEquals(Base64.decodeBase64(metadataHashBase64.getBytes()), fileStreamSignature
                     .getMetadataHash());
             assertArrayEquals(Base64.decodeBase64(metadataSignatureBase64.getBytes()), fileStreamSignature
