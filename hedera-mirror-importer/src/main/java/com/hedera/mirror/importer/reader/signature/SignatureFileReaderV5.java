@@ -27,6 +27,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
@@ -53,13 +54,15 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             int objectStreamSignatureVersion = dis.readInt();
             validate(OBJECT_STREAM_SIGNATURE_VERSION, objectStreamSignatureVersion, "objectStreamSignatureVersion");
 
-            fileStreamSignature.setHash(readHashObject(dis, "entire"));
+            fileStreamSignature.setEntireFileHash(readHashObject(dis, "entire"));
 
-            fileStreamSignature.setSignature(readSignatureObject(dis, "entire"));
+            fileStreamSignature.setEntireFilesignature(readSignatureObject(dis, "entire"));
 
             fileStreamSignature.setMetadataHash(readHashObject(dis, "metadata"));
 
             fileStreamSignature.setMetadataSignature(readSignatureObject(dis, "metadata"));
+
+            fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
 
             return fileStreamSignature;
         } catch (IOException e) {

@@ -28,6 +28,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
@@ -51,7 +52,7 @@ public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
             int length = dis.read(fileHash);
             validate(fileHash.length, length, "hashLength");
 
-            fileStreamSignature.setHash(fileHash);
+            fileStreamSignature.setEntireFileHash(fileHash);
 
             byte signatureTypeDelimiter = dis.readByte();
             validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "signatureDelimiter");
@@ -59,11 +60,13 @@ public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
             dis.readFully(sigBytes);
-            fileStreamSignature.setSignature(sigBytes);
+            fileStreamSignature.setEntireFilesignature(sigBytes);
 
             if (dis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file");
             }
+
+            fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
 
             return fileStreamSignature;
         } catch (IOException e) {

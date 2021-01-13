@@ -55,8 +55,8 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         try (InputStream stream = getInputStream(signatureFile)) {
             FileStreamSignature answer = fileReaderV2.read(stream);
             assertNotNull(answer);
-            assertNotNull(answer.getSignature());
-            assertNotNull(answer.getHash());
+            assertNotNull(answer.getEntireFilesignature());
+            assertNotNull(answer.getEntireFileHash());
         }
     }
 
