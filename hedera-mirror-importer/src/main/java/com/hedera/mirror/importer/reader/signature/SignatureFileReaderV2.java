@@ -28,15 +28,16 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
 @Named
-public class SignatureFileReaderV2 implements SignatureFileReader {
+public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
 
-    private static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
-    public static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
-    public static final byte HASH_SIZE = 48; // the size of the hash
+    protected static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
+    protected static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
+    protected static final byte HASH_SIZE = 48; // the size of the hash
 
     @Override
     public FileStreamSignature read(InputStream inputStream) {
@@ -46,27 +47,26 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
             byte[] fileHash = new byte[HASH_SIZE];
 
             byte hashTypeDelimiter = dis.readByte();
-            if (hashTypeDelimiter != SIGNATURE_TYPE_FILE_HASH) {
-                throw new SignatureFileParsingException("Unable to read signature file hash: type delimiter " + hashTypeDelimiter);
-            }
+            validate(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, "hashDelimiter");
+
             int length = dis.read(fileHash);
-            if (length != fileHash.length) {
-                throw new SignatureFileParsingException("Unable to read signature file hash: hash length " + length);
-            }
-            fileStreamSignature.setHash(fileHash);
+            validate(fileHash.length, length, "hashLength");
+
+            fileStreamSignature.setEntireFileHash(fileHash);
 
             byte signatureTypeDelimiter = dis.readByte();
-            if (signatureTypeDelimiter != SIGNATURE_TYPE_SIGNATURE) {
-                throw new SignatureFileParsingException("Unable to read signature file signature: type delimiter " + signatureTypeDelimiter);
-            }
+            validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "signatureDelimiter");
+
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
             dis.readFully(sigBytes);
-            fileStreamSignature.setSignature(sigBytes);
+            fileStreamSignature.setEntireFilesignature(sigBytes);
 
             if (dis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file");
             }
+
+            fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
 
             return fileStreamSignature;
         } catch (IOException e) {

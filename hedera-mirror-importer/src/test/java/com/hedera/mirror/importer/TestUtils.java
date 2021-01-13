@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -146,5 +147,11 @@ public class TestUtils {
                 recordFileV2_1, recordFileV2_2,
                 recordFileV5_1, recordFileV5_2);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
+    }
+
+    public byte[] generateRandomByteArray(int size) {
+        byte[] hashBytes = new byte[size];
+        new SecureRandom().nextBytes(hashBytes);
+        return hashBytes;
     }
 }

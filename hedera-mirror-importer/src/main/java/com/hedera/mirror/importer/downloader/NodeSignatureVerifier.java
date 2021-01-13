@@ -39,6 +39,7 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
+import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
 @Named
@@ -74,7 +75,6 @@ public class NodeSignatureVerifier {
         String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
                 .orElse(null);
         int consensusCount = 0;
-
         long sigFileCount = signatures.size();
         long nodeCount = nodeAccountIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
@@ -86,7 +86,7 @@ public class NodeSignatureVerifier {
         for (FileStreamSignature fileStreamSignature : signatures) {
             if (verifySignature(fileStreamSignature, nodeAccountIDPubKeyMap)) {
                 fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
-                signatureHashMap.put(fileStreamSignature.getHashAsHex(), fileStreamSignature);
+                signatureHashMap.put(fileStreamSignature.getEntireFileHashAsHex(), fileStreamSignature);
             }
         }
 
@@ -126,7 +126,7 @@ public class NodeSignatureVerifier {
             return false;
         }
 
-        if (fileStreamSignature.getSignature() == null) {
+        if (fileStreamSignature.getEntireFilesignature() == null) {
             log.error("Missing signature data: {}", fileStreamSignature);
             return false;
         }
@@ -136,10 +136,26 @@ public class NodeSignatureVerifier {
                 log.trace("Verifying signature: {}", fileStreamSignature);
             }
 
-            Signature sig = Signature.getInstance("SHA384withRSA", "SunRsaSign");
+            Signature sig;
+            if (fileStreamSignature.getSignatureType() == SignatureType.SHA_384_WITH_RSA) {
+                sig = Signature.getInstance("SHA384withRSA", "SunRsaSign");
+            } else {
+                log.error("Signature type not valid: {}", fileStreamSignature);
+                return false;
+            }
+
             sig.initVerify(publicKey);
-            sig.update(fileStreamSignature.getHash());
-            return sig.verify(fileStreamSignature.getSignature());
+            sig.update(fileStreamSignature.getEntireFileHash());
+            if (!sig.verify(fileStreamSignature.getEntireFilesignature())) {
+                return false;
+            }
+
+            if (fileStreamSignature.getMetadataSignature() != null) {
+                sig.update(fileStreamSignature.getMetadataHash());
+                return sig.verify(fileStreamSignature.getMetadataSignature());
+            }
+
+            return true;
         } catch (Exception e) {
             log.error("Failed to verify signature with public key {}: {}", publicKey, fileStreamSignature, e);
         }

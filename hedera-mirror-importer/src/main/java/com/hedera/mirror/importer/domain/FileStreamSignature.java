@@ -27,22 +27,29 @@ import lombok.ToString;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
-@ToString(exclude = {"hash", "signature"})
+@ToString(exclude = {"hash", "signature", "metadataHash", "metadataSignature"})
 public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
     private File file;
-    private byte[] hash;
+    private byte[] entireFileHash;
     private EntityId nodeAccountId;
-    private byte[] signature;
+    private SignatureType signatureType;
+    private byte[] entireFilesignature;
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
+    private byte[] metadataHash;
+    private byte[] metadataSignature;
 
     @Override
     public int compareTo(FileStreamSignature other) {
         return file.compareTo(other.getFile());
     }
 
-    public String getHashAsHex() {
-        return Utility.bytesToHex(hash);
+    public String getEntireFileHashAsHex() {
+        return Utility.bytesToHex(entireFileHash);
+    }
+
+    public String getMetadataHashAsHex() {
+        return Utility.bytesToHex(metadataHash);
     }
 
     public String getNodeAccountIdString() {
@@ -53,5 +60,9 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
         DOWNLOADED,        // Signature has been downloaded and parsed but not verified
         VERIFIED,          // Signature has been verified against the node's public key
         CONSENSUS_REACHED  // At least 1/3 of all nodes have been verified
+    }
+
+    public enum SignatureType {
+        SHA_384_WITH_RSA
     }
 }
