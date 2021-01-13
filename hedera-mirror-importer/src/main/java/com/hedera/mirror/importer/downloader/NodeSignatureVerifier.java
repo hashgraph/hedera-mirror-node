@@ -142,13 +142,14 @@ public class NodeSignatureVerifier {
             }
             sig.initVerify(publicKey);
             sig.update(fileStreamSignature.getEntireFileHash());
-            boolean isMatch = sig.verify(fileStreamSignature.getEntireFilesignature());
-            if (fileStreamSignature.getMetadataSignature() != null) {
+            if (!sig.verify(fileStreamSignature.getEntireFilesignature())) {
+                return false;
+            } else if (fileStreamSignature.getMetadataSignature() != null) {
                 sig.update(fileStreamSignature.getMetadataHash());
-                isMatch = isMatch && sig.verify(fileStreamSignature.getMetadataSignature());
+                return sig.verify(fileStreamSignature.getMetadataSignature());
+            } else {
+                return true;
             }
-
-            return isMatch;
         } catch (Exception e) {
             log.error("Failed to verify signature with public key {}: {}", publicKey, fileStreamSignature, e);
         }
