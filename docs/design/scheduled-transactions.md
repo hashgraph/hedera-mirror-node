@@ -44,11 +44,10 @@ create table if not exists schedule
 ```sql
 create table if not exists schedule_signature
 (
-  consensus_timestamp bigint   not null,
-  public_key_prefix   bytea    not null,
-  schedule_id         bigint   not null,
-  signature           bytea    not null,
-  type                smallint not null
+  consensus_timestamp bigint not null,
+  public_key_prefix   bytea  not null,
+  schedule_id         bigint not null,
+  signature           bytea  not null
 );
 ```
 
@@ -94,8 +93,7 @@ Add a `ScheduleIdConverter`.
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
   - Set `scheduleId` to the `scheduleID` in the transaction receipt.
-  - Set `signature` to the `sigPair.signature` `oneof` field.
-  - Set `type` to the protobuf index of `sigPair.signature` `oneof` field.
+  - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
 
 > **_Note:_** Currently a `ScheduleCreate` can potentially cause an update or a create, so don't create a schedule and
 > only update signatures for an update.
@@ -108,8 +106,7 @@ Add a `ScheduleIdConverter`.
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
   - Set `scheduleId` to the `scheduleID` in the transaction receipt.
-  - Set `signature` to the `sigPair.signature` `oneof` field.
-  - Set `type` to the protobuf index of `sigPair.signature` `oneof` field.
+  - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
 
 #### Scheduled Transaction
 
@@ -217,14 +214,12 @@ GET `/api/v1/schedules`
         {
           "consensus_timestamp": "1234567890.000000001",
           "public_key_prefix": "1f4be98a",
-          "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71",
-          "type": 2
+          "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71"
         },
         {
           "consensus_timestamp": "1234567890.000000002",
           "public_key_prefix": "1afc6e5e",
-          "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0",
-          "type": 3
+          "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0"
         }
       ],
       "transaction_body": "29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c=="
@@ -264,14 +259,12 @@ GET `/api/v1/schedules/{scheduleId}`
     {
       "consensus_timestamp": "1234567890.000000001",
       "public_key_prefix": "1f4be98a",
-      "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71",
-      "type": 2
+      "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71"
     },
     {
       "consensus_timestamp": "1234567890.000000002",
       "public_key_prefix": "1afc6e5e",
-      "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0",
-      "type": 3
+      "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0"
     }
   ],
   "transaction_body": "29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c=="
