@@ -37,6 +37,7 @@ import org.apache.commons.io.FilenameUtils;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
@@ -112,8 +113,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         RecordItem lastRecordItem = null;
         RecordStreamObjectBytes recordStreamObjectBytes = null;
 
-        // record stream objects
-        while (dis.available() != 0) {
+        // read record stream objects
+        while (true) {
             long classID = peakClassID(dis);
             if (classID != RECORD_STREAM_OBJECT_CLASS_ID) {
                 break;
@@ -141,7 +142,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         if (lastRecordItem == null) {
             if (recordStreamObjectBytes == null) {
-                throw new StreamFileReaderException("No record stream object in record file " + filename);
+                throw new InvalidStreamFileException("No record stream objects in record file " + filename);
             }
             lastRecordItem = recordItemFromObjectBytes(recordStreamObjectBytes);
         }

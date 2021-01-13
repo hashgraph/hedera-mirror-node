@@ -8,4 +8,3 @@ alter table if exists record_file add column if not exists version int not null 
 
 alter table if exists record_file alter column digest_algorithm drop default;
 alter table if exists record_file alter column version drop default;
-
