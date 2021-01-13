@@ -26,6 +26,7 @@ const {createTerminus} = require('@godaddy/terminus');
 const {addAsync} = require('@awaitjs/express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const httpContext = require('express-http-context');
 const log4js = require('log4js');
 const compression = require('compression');
 const _ = require('lodash');
@@ -34,6 +35,7 @@ const _ = require('lodash');
 const accounts = require('./accounts');
 const balances = require('./balances');
 const config = require('./config');
+const constants = require('./constants');
 const health = require('./health');
 const stateproof = require('./stateproof');
 const tokens = require('./tokens');
@@ -51,8 +53,11 @@ log4js.configure({
   appenders: {
     console: {
       layout: {
-        pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %m%n',
+        pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %x{requestId} %m',
         type: 'pattern',
+        tokens: {
+          requestId: (e) => httpContext.get(constants.requestIdLabel) || 'Startup',
+        },
       },
       type: 'stdout',
     },
@@ -118,6 +123,7 @@ app.use(compression());
 app.use(cors());
 
 // logging middleware
+app.use(httpContext.middleware);
 app.use(requestLogger);
 
 // metrics middleware

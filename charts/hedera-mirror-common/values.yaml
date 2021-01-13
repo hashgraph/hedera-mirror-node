@@ -77,7 +77,7 @@ loki:
               summary: "High rate of log errors"
             expr: >
               sum(rate({app_kubernetes_io_component="rest"}
-                | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<message>.+)`
+                | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<requestId>\S+) (?P<message>.+)`
                 | level = "ERROR" or level = "FATAL"
               [1m])) by (namespace, pod) > 0.04
             for: 1m
