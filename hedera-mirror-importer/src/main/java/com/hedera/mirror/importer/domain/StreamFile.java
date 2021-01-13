@@ -30,6 +30,10 @@ public interface StreamFile {
 
     String getFileHash();
 
+    default String getMetadataHash() {
+        return null;
+    }
+
     String getName();
 
     default String getPreviousHash() {

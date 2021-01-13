@@ -40,6 +40,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -485,19 +486,30 @@ public abstract class Downloader {
      * @param signature  the signature object corresponding to the stream file
      */
     private void verify(StreamFile streamFile, FileStreamSignature signature) {
-        String fileName = streamFile.getName();
+        String filename = streamFile.getName();
 
         if (lastValidDownloadedFileHashKey != null) {
             String expectedPrevHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
             Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-            if (!verifyHashChain(streamFile.getPreviousHash(), expectedPrevHash, verifyHashAfter, fileName)) {
-                throw new HashMismatchException(fileName, expectedPrevHash, streamFile.getPreviousHash());
+            if (!verifyHashChain(streamFile.getPreviousHash(), expectedPrevHash, verifyHashAfter, filename)) {
+                throw new HashMismatchException(filename, expectedPrevHash, streamFile.getPreviousHash());
             }
         }
 
-        String expectedFileHash = signature.getEntireFileHashAsHex();
-        if (!streamFile.getFileHash().contentEquals(expectedFileHash)) {
-            throw new HashMismatchException(fileName, expectedFileHash, streamFile.getFileHash());
+        verifyHash(filename, streamFile.getFileHash(), signature.getEntireFileHashAsHex());
+        verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex());
+    }
+
+    /**
+     * Verifies if the two hashes match.
+     *
+     * @param filename filename the hash is from
+     * @param actual the actual hash
+     * @param expected the expected hash
+     */
+    private void verifyHash(String filename, String actual, String expected) {
+        if (!Objects.equals(actual, expected)) {
+            throw new HashMismatchException(filename, expected, actual);
         }
     }
 
