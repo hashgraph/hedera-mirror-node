@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,21 +31,19 @@ import com.google.common.primitives.Ints;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
-
-    @Value("classpath:data/signature/v2/2019-08-30T18_10_00.419072Z.rcd_sig")
-    private File signatureFile;
 
     private static final String entireFileHashBase64 = "WRVY4Fm9FinuOGxONaaHW0xnoJZxj10iV3KmUQQnFRiUFN99tViEle" +
             "+yqF3EoP/a";
@@ -55,12 +53,18 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             "YJmlLLKUB9brEUpdSm8RRLs+jzEY76YT7Uv6WzIq04SetI+GUOMkEXDNvtcSKnE8625L7qmhbiiX4Ub90jCxCqt6JHXrCM1VsYWEn" +
             "/oUesRi5pnATgjqZOXycMegavb1Ikf3GoQAvn1Bx6EO14Uh7hVMxa/NYMtSVNQ17QG6QtA4j7viVvJ9EPSiCsmg3Cp2PhBW5ZPshq" +
             "+ExciGbnXFu+ytLZGSwKhePwuLQsBNTbGUcDFy1IJge95tEweR51Y1Nfh6PqPTnkdirRGO";
-
-    @Resource
-    SignatureFileReaderV2 fileReaderV2;
-
     private static final int SIGNATURE_LENGTH = 48;
 
+    SignatureFileReaderV2 fileReaderV2;
+    private File signatureFile;
+
+    @BeforeEach
+    void setup() {
+        //@Value("classpath:data/signature/v2/2019-08-30T18_10_00.419072Z.rcd_sig")
+        Path path = Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig");
+        signatureFile = Utility.getResource(path.toString());
+        fileReaderV2 = new SignatureFileReaderV2();
+    }
     @Test
     void testReadValidFile() throws IOException {
         try (InputStream stream = getInputStream(signatureFile)) {

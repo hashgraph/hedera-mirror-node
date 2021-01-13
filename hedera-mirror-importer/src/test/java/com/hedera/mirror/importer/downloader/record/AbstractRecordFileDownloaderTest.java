@@ -27,6 +27,8 @@ import static org.mockito.Mockito.verify;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +36,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -54,6 +57,18 @@ public abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStr
     private ArgumentCaptor<RecordFile> valueCaptor;
 
     protected final Map<String, RecordFile> recordFileMap = new HashMap<>();
+
+    @BeforeEach
+    void beforeEach() {
+        Pair<String, String> testFiles = getTestFiles();
+        setTestFilesAndInstants(testFiles.getLeft(), testFiles.getRight());
+        RecordFile recordFile1 = TestUtils.getRecordFilesMap().get(file1);
+        RecordFile recordFile2 = TestUtils.getRecordFilesMap().get(file2);
+        recordFileMap.put(recordFile1.getName(), recordFile1);
+        recordFileMap.put(recordFile2.getName(), recordFile2);
+    }
+
+    protected abstract Pair<String, String> getTestFiles();
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {

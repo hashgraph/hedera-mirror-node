@@ -71,4 +71,9 @@ public class RecordFileV1_33_0 implements StreamFile {
 
     @Transient
     private int recordFormatVersion;
+
+    @Override
+    public String getCurrentHash() {
+        return fileHash;
+    }
 }

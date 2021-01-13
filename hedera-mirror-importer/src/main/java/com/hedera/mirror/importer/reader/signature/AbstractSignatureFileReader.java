@@ -26,6 +26,7 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 public abstract class AbstractSignatureFileReader implements SignatureFileReader {
 
+    protected static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
     private static final String ERROR_MESSAGE = "Unable to read signature file %s: Expected %s but got %s";
 
     protected void validate(Object expected, Object actual, String fieldName) {

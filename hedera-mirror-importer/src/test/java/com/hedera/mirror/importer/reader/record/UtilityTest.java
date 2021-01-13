@@ -117,7 +117,7 @@ public class UtilityTest {
     @Test
     void readLengthAndBytesWithTruncatedLengthField() throws IOException {
         try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(new byte[1]))) {
-            assertThrows(IOException.class, () -> Utility.readLengthAndBytes(dis, 10));
+            assertThrows(InvalidStreamFileException.class, () -> Utility.readLengthAndBytes(dis, 10));
         }
     }
 }

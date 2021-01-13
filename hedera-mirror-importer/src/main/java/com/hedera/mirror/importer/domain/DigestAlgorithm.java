@@ -39,7 +39,7 @@ public enum DigestAlgorithm {
             return null;
         }
 
-        if (ordinal < 0 || ordinal > ORDINAL_LOOKUP.length) {
+        if (ordinal < 0 || ordinal >= ORDINAL_LOOKUP.length) {
             return null;
         }
 

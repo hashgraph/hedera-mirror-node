@@ -30,29 +30,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.util.Utility;
 
 public class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
-    @BeforeEach
-    void beforeEach() {
-        setTestFilesAndInstants(
-                "2019-08-30T18_10_00.419072Z.rcd",
-                "2019-08-30T18_10_05.249678Z.rcd"
-        );
-
-        RecordFile recordFile1 = TestUtils.getRecordFilesMap().get(file1);
-        RecordFile recordFile2 = TestUtils.getRecordFilesMap().get(file2);
-        recordFileMap.put(recordFile1.getName(), recordFile1);
-        recordFileMap.put(recordFile2.getName(), recordFile2);
+    @Override
+    protected Pair<String, String> getTestFiles() {
+        return ImmutablePair.of("2019-08-30T18_10_00.419072Z.rcd", "2019-08-30T18_10_05.249678Z.rcd");
     }
 
     @Override
