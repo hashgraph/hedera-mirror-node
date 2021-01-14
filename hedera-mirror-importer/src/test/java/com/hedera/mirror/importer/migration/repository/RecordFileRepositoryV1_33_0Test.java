@@ -30,8 +30,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.migration.domain.RecordFileV1_33_0;
 import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
 
-// the flyway init-sqls to drop the db in drop-db.properties is a workaround for CCI environment
-@TestPropertySource(locations= "classpath:config/drop-db.properties", properties="spring.flyway.target=1.33.0")
+@TestPropertySource(properties = "spring.flyway.target=1.33.0")
 public class RecordFileRepositoryV1_33_0Test extends AbstractRepositoryTest {
 
     private RecordFileV1_33_0 recordFile;
