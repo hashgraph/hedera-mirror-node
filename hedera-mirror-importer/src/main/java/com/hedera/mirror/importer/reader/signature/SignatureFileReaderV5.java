@@ -35,7 +35,6 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
     protected static final byte SIGNATURE_FILE_FORMAT_VERSION = 5;
-    protected static final int OBJECT_STREAM_SIGNATURE_VERSION = 1; //defines the format for the remainder of the file
 
     protected static final int HASH_SIZE = 48; //48 bytes for SHA-384
 

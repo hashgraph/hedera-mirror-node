@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_DIGEST_TYPE;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_SIZE;
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.OBJECT_STREAM_SIGNATURE_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
@@ -111,7 +110,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 "fileVersion");
 
         SignatureFileSection objectStreamSignatureVersion = new SignatureFileSection(
-                Ints.toByteArray(OBJECT_STREAM_SIGNATURE_VERSION),
+                Ints.toByteArray(SignatureType.SHA_384_WITH_RSA.getFileMarker()),
                 null,
                 null,
                 null);
