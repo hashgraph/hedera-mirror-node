@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import lombok.experimental.UtilityClass;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
@@ -39,9 +38,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 @UtilityClass
 public class TestUtils {
-
-    @Getter
-    private final Map<String, RecordFile> recordFilesMap = createRecordFilesMap();
 
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
@@ -70,7 +66,7 @@ public class TestUtils {
         return (null == key) ? null : key.toByteArray();
     }
 
-    private Map<String, RecordFile> createRecordFilesMap() {
+    public Map<String, RecordFile> getRecordFilesMap() {
         DigestAlgorithm digestAlgorithm = DigestAlgorithm.SHA384;
 
         RecordFile recordFileV1_1 = RecordFile.builder()
