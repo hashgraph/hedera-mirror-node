@@ -151,8 +151,9 @@ class NodeSignatureVerifierTest {
                 corruptSignature(signHash(fileHash)),
                 null, null);
 
+        List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
-                .verify(Arrays.asList(fileStreamSignature)));
+                .verify(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Signature verification failed for file"));
     }
 
@@ -165,8 +166,9 @@ class NodeSignatureVerifierTest {
         FileStreamSignature fileStreamSignature = buildFileStreamSignature(fileHash, signHash(fileHash),
                 metadataHash, corruptSignature(signHash(fileHash)));
 
+        List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
-                .verify(Arrays.asList(fileStreamSignature)));
+                .verify(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Signature verification failed for file"));
     }
 
