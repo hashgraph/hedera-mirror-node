@@ -201,12 +201,16 @@ class NodeSignatureVerifierTest {
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
-        //Node 4 will not verify due to missing signature, but 1/2 verified will confirm consensus reached
+
+        //Node 4 and 5 will not verify due to missing signature, but 1/3 verified will confirm consensus reached
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(fileHash, null,
                 null, null);
         fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityTypeEnum.ACCOUNT.getId()));
+        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature(fileHash, null,
+                null, null);
+        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityTypeEnum.ACCOUNT.getId()));
 
-        nodeSignatureVerifier.verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode3));
+        nodeSignatureVerifier.verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode5));
     }
 
     @Test
