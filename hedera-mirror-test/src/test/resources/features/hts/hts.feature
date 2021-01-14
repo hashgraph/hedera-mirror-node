@@ -55,19 +55,3 @@ Feature: HTS Base Coverage Feature
         Examples:
             | httpStatusCode |
             | 200            |
-
-#    @Negative @Acceptance
-    Scenario Outline: Validate Negative Association
-        Given I successfully create a new token
-        Then the network should observe an error associating a token <errorCode>
-        Examples:
-            | errorCode                             |
-            | "TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT" |
-
-#    @Negative @Acceptance
-    Scenario Outline: Validate token creation with bad symbols
-        Given I provide a token symbol <tokenId>
-        Then the network should observe an error creating a token <errorCode>
-        Examples:
-            | tokenId | errorCode              |
-            | ""      | "MISSING_TOKEN_SYMBOL" |
