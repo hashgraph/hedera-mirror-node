@@ -10,6 +10,7 @@ jobs:
   grpc-build:
     name: GRPC UTs
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
       MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
@@ -60,6 +61,7 @@ jobs:
   importer-build:
     name: Importer UTs
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
       MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
@@ -105,6 +107,7 @@ jobs:
   rest-test:
     name: REST UTs
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       working-directory: ./hedera-mirror-rest
       MIRROR_NODE_INT_DB: v2

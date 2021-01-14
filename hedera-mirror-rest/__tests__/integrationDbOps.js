@@ -70,11 +70,15 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
 const instantiateDatabase = async function () {
   console.log(`*** process.env.CIRCLECI: ${process.env.CIRCLECI}`);
   if (process.env.CIRCLECI === undefined) {
+    console.log(`*** will create docker container in no CircleCI flow`);
     if (!(await isDockerInstalled())) {
       console.log('Docker not found. Integration tests will fail.');
       return;
     }
 
+    console.log(
+      `*** Docker present, creating docker container ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`
+    );
     dockerDb = await new GenericContainer(schemaConfigs.docker.imageName, schemaConfigs.docker.tagName)
       .withEnv('POSTGRES_DB', config.db.name)
       .withEnv('POSTGRES_USER', dbUser)
