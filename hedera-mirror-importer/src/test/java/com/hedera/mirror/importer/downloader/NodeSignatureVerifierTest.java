@@ -25,19 +25,16 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,37 +54,6 @@ import com.hedera.mirror.importer.exception.SignatureVerificationException;
 @ExtendWith(MockitoExtension.class)
 class NodeSignatureVerifierTest {
 
-    private static final String privateKeyBase64String =
-            "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCXEhtKQJAZ32pYguWe" +
-                    "+2VR7XI2RzY4k4hK4MaQd7VqDzJV9nDh34M2nK+3TWDL29zAypyZx1v2cgdrnsdWRnD+ZubMCMedyB/SZRnBhaTp+MvWA" +
-                    "/Q3Bmf3VK5M3k4/EUUI92HbvOoj4dndcmwsKXfH/NlKP8UZ1ZmEm1LFPGgqHCtEZpfD8p" +
-                    "+uQRh8QURmT8m3XeaDQBsiOD8x4ZDo1PgKN0BxV9KWrnK125OjRn+CzCMWPCnMdSnsN" +
-                    "/YbPO6yqNS1wBwj14FDdoEvrTjeb5azlcvzNe+hayMzU6ITKm2/uKbwW+Zd1skuH/bx65HVVPME9Rni9" +
-                    "/xrqXC7ryGwqxi3AgMBAAECggEAPtSoBvzNMgWKnF9sku+p1yYzX0HE2kj54XKVAxbWm9LQM5J4pmiokPkf19PV01OQ" +
-                    "/5oFAaw5okkQrwDtlQNdEWHI0clBBG1sVrv3t1YXHbx9QniIhK4kZWiRyaSX1IEhPjZtO8/Zba0MSJ7DQKbKi6Gs2cWl" +
-                    "+zWsUMus5B1YkVJcQSTSggqz3V5pjNFdl8+70kVOxpNkALnHZHwDTgVlY46N/s67P3io1cQPCfUmGreCzfWCziF0peumgjIY" +
-                    "/1qbBu18KKs" +
-                    "/zqm6rhFGj1c6O4tHd7yeEQbdABrCwUOtTIdBqY3ZIvVnVVxFZ3OOtibGOl2kAoxLB5HVZFp9RDXRiQKBgQDKgqOM3a" +
-                    "+dqIJWh92xVx4sdUF1D6JTC2G3vBK9sBE5yMFsXvNOMm4xWp2+CgciWbo8m8MRL7MeTQ4CysCGQbFE" +
-                    "/yPFMwXofpJZPyOHPhoGdnmJnqW6xi7Me+eHhv+iR2VwIz0MwLSVy9hKNaBbhM//YtwSr7g+6McQHXbeWyxxNQKBgQC" +
-                    "++TiugsT59p8M/F9+ktSF/nfWS6bGFm1C9hTHgAZxINxif9dVuG7f7afdCXjEilQcDkrEaAJ1WEnVITNV9BMpQAV" +
-                    "+GEfKqSHxfHiOioS3N872T4dB9jEO/7S75zz2k+eFzMJBpG+BE9J97" +
-                    "/gqdH7v7AiR1b96AJRu0S6tYf6ruwKBgGRCNTKCdnV5fb3VWh54YQnlq1iHOvgeRGywgh7DUmPnTkuW3qIyOXfZwwrY8BtDjP" +
-                    "6ApxyVHvq7b1pWguZ1E4xzPIRe9GfcchwZND+6sSvN7/IAR1Cm2XiHR2NDpL/01PWlnI35we3" +
-                    "/k795uUBWCpwHl6jwsikDGbq" +
-                    "Su8zuGpyZAoGAGk00s0QrYMnIif9QH5yVTIcJdighJfL8xVYi8n79ZCNEdwRoYdPu4URX9CdTzK3Ie7y0K2yvuf2Y3ZOfAF2H" +
-                    "Lg01NHKfoJe+pwWfjPIi6SD0jhPR6xG/G/O3rpFgYg1ou5LBxkyhVsOmH9Ym9aHpwZ1eaMdpgaIGz2Rb62Ets" +
-                    "/UCgYARvEfr3NLtJHqRQQIdExWgqpi+emrblVM+F94IoXCGLY" +
-                    "6FJLKo+vujur/AeipC66IsPVfELCnjJLECFH6vdU5k/zchmEw" +
-                    "/7Lw7T6bK0ndvzPG2oC8ud4fsxyUxZu9sRe1fxI0CSgKQ9IUifUrTvY4u/Jj8bAPPIuNEnoupQs5TXQ==";
-
-    private static final String publicKeyBase64String =
-            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlxIbSkCQGd9qWILlnvtlUe1yNkc2OJOISuDGkHe1ag8yVfZw4d" +
-                    "+DNpyvt01gy9vcwMqcmcdb9nIHa57HVkZw/mbmzAjHncgf0mUZwYWk6fjL1gP0NwZn91SuTN5OPxFFCPdh27zqI" +
-                    "+HZ3XJsLCl3x/zZSj/FGdWZhJtSxTxoKhwrRGaXw/KfrkEYfEFEZk/Jt13mg0AbIjg/MeGQ6NT4CjdAcVfSlq5ytduTo0Z" +
-                    "/gswjFjwpzHUp7Df2GzzusqjUtcAcI9eBQ3aBL6043m+Ws5XL8zXvoWsjM1OiEyptv7im8FvmXdbJLh" +
-                    "/28euR1VTzBPUZ4vf8a6lwu68hsKsYtwIDAQAB";
-
     private static PrivateKey privateKey;
     private static PublicKey publicKey;
 
@@ -103,11 +69,10 @@ class NodeSignatureVerifierTest {
     NodeSignatureVerifier nodeSignatureVerifier;
 
     @BeforeAll
-    static void keys() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        privateKey = kf
-                .generatePrivate(new PKCS8EncodedKeySpec(Base64.decodeBase64(privateKeyBase64String)));
-        publicKey = kf.generatePublic(new X509EncodedKeySpec(Base64.decodeBase64(publicKeyBase64String)));
+    static void generateKeys() throws NoSuchAlgorithmException {
+        KeyPair nodeKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        privateKey = nodeKeyPair.getPrivate();
+        publicKey = nodeKeyPair.getPublic();
     }
 
     @BeforeEach
