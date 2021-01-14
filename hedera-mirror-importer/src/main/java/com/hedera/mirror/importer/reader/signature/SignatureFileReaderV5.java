@@ -24,8 +24,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.inject.Named;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
@@ -59,7 +57,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             fileStreamSignature.setFileHash(readHashObject(dis, "entire"));
             Signature fileHashSignature = readSignatureObject(dis, "entire");
             fileStreamSignature.setFileHashSignature(fileHashSignature.getSignatureBytes());
-            fileStreamSignature.setSignatureType(fileHashSignature.signatureType);
+            fileStreamSignature.setSignatureType(fileHashSignature.getSignatureType());
 
             fileStreamSignature.setMetadataHash(readHashObject(dis, "metadata"));
             Signature metadataSignature = readSignatureObject(dis, "metadata");
@@ -116,12 +114,5 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         //Read the ClassId and ClassVersion, which are not used
         dis.readLong();
         dis.readInt();
-    }
-
-    @Data
-    @RequiredArgsConstructor
-    private class Signature {
-        private final byte[] signatureBytes;
-        private final SignatureType signatureType;
     }
 }

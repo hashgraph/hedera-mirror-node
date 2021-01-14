@@ -21,7 +21,10 @@ package com.hedera.mirror.importer.reader.signature;
  */
 
 import java.util.Objects;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 public abstract class AbstractSignatureFileReader implements SignatureFileReader {
@@ -55,5 +58,12 @@ public abstract class AbstractSignatureFileReader implements SignatureFileReader
                     .format(NOT_IN_RANGE_ERROR_MESSAGE, fieldName, sectionName, minimumExpected, maximumExpected,
                             actual));
         }
+    }
+
+    @Data
+    @RequiredArgsConstructor
+    protected class Signature {
+        private final byte[] signatureBytes;
+        private final FileStreamSignature.SignatureType signatureType;
     }
 }
