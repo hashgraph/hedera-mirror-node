@@ -27,10 +27,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.primitives.Bytes;
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SecureRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,19 +46,37 @@ class CompositeSignatureFileReaderTest {
     @Mock
     SignatureFileReaderV2 signatureFileReaderV2;
 
+    @Mock
+    SignatureFileReaderV5 signatureFileReaderV5;
+
     private CompositeSignatureFileReader compositeBalanceFileReader;
 
     @BeforeEach
     void setUp() {
-        compositeBalanceFileReader = new CompositeSignatureFileReader(signatureFileReaderV2);
+        compositeBalanceFileReader = new CompositeSignatureFileReader(signatureFileReaderV2, signatureFileReaderV5);
     }
 
     @Test
-    void testValidV2() throws IOException {
+    void testValidV2() throws Exception {
         byte[] versionNumber = {SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH};
-        try (InputStream stream = getInputStream(versionNumber)) {
+        byte[] randomExtraBytes = new byte[3];
+        SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
+        try (InputStream stream = getInputStream(Bytes.concat(versionNumber, randomExtraBytes))) {
             compositeBalanceFileReader.read(stream);
             verify(signatureFileReaderV2, times(1)).read(any(InputStream.class));
+            verify(signatureFileReaderV5, times(0)).read(any(InputStream.class));
+        }
+    }
+
+    @Test
+    void testValidV5() throws Exception {
+        byte[] versionNumber = {SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION};
+        byte[] randomExtraBytes = new byte[3];
+        SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
+        try (InputStream stream = getInputStream(Bytes.concat(versionNumber, randomExtraBytes))) {
+            compositeBalanceFileReader.read(stream);
+            verify(signatureFileReaderV5, times(1)).read(any(InputStream.class));
+            verify(signatureFileReaderV2, times(0)).read(any(InputStream.class));
         }
     }
 
@@ -86,7 +105,7 @@ class CompositeSignatureFileReaderTest {
         }
     }
 
-    private InputStream getInputStream(byte[] bytes) throws FileNotFoundException {
+    private InputStream getInputStream(byte[] bytes) {
         return new ByteArrayInputStream(bytes);
     }
 }

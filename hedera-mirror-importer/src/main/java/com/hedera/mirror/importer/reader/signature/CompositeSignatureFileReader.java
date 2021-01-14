@@ -39,6 +39,7 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 public class CompositeSignatureFileReader implements SignatureFileReader {
 
     private final SignatureFileReaderV2 signatureFileReaderV2;
+    private final SignatureFileReaderV5 signatureFileReaderV5;
 
     @Override
     public FileStreamSignature read(InputStream inputStream) {
@@ -48,8 +49,12 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
             byte version = dataInputStream.readByte();
             dataInputStream.reset();
             SignatureFileReader fileReader;
+
+            if (version == SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION) {
+                fileReader = signatureFileReaderV5;
+            }
             // Version 2 of the signature file begins with a byte of value 4.
-            if (version <= SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH) {
+            else if (version <= SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH) {
                 fileReader = signatureFileReaderV2;
             } else {
                 throw new SignatureFileParsingException("Unsupported signature file version: " + version);

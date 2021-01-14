@@ -74,7 +74,6 @@ public class NodeSignatureVerifier {
         String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
                 .orElse(null);
         int consensusCount = 0;
-
         long sigFileCount = signatures.size();
         long nodeCount = nodeAccountIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
@@ -86,7 +85,7 @@ public class NodeSignatureVerifier {
         for (FileStreamSignature fileStreamSignature : signatures) {
             if (verifySignature(fileStreamSignature, nodeAccountIDPubKeyMap)) {
                 fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
-                signatureHashMap.put(fileStreamSignature.getHashAsHex(), fileStreamSignature);
+                signatureHashMap.put(fileStreamSignature.getFileHashAsHex(), fileStreamSignature);
             }
         }
 
@@ -126,17 +125,30 @@ public class NodeSignatureVerifier {
             return false;
         }
 
-        if (fileStreamSignature.getSignature() == null) {
+        if (fileStreamSignature.getFileHashSignature() == null) {
             log.error("Missing signature data: {}", fileStreamSignature);
             return false;
         }
 
         try {
             log.trace("Verifying signature: {}", fileStreamSignature);
-            Signature sig = Signature.getInstance("SHA384withRSA", "SunRsaSign");
+
+            Signature sig = Signature
+                    .getInstance(fileStreamSignature.getSignatureType().getAlgorithm(), fileStreamSignature
+                            .getSignatureType().getProvider());
             sig.initVerify(publicKey);
-            sig.update(fileStreamSignature.getHash());
-            return sig.verify(fileStreamSignature.getSignature());
+            sig.update(fileStreamSignature.getFileHash());
+
+            if (!sig.verify(fileStreamSignature.getFileHashSignature())) {
+                return false;
+            }
+
+            if (fileStreamSignature.getMetadataHashSignature() != null) {
+                sig.update(fileStreamSignature.getMetadataHash());
+                return sig.verify(fileStreamSignature.getMetadataHashSignature());
+            }
+
+            return true;
         } catch (Exception e) {
             log.error("Failed to verify signature with public key {}: {}", publicKey, fileStreamSignature, e);
         }
