@@ -7,7 +7,7 @@ spec:
   chart:
     repository: https://hashgraph.github.io/hedera-mirror-node/charts
     name: hedera-mirror
-    version: v0.26.0-alpha1
+    version: 0.13.0-alpha1
   rollback:
     enable: true
     force: true
