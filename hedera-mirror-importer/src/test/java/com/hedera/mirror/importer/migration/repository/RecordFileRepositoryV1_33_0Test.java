@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.migration.repository;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
 
@@ -30,6 +31,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.migration.domain.RecordFileV1_33_0;
 import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
 
+@Tag("failincci")
 @TestPropertySource(properties = "spring.flyway.target=1.33.0")
 public class RecordFileRepositoryV1_33_0Test extends AbstractRepositoryTest {
 

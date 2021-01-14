@@ -40,6 +40,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.data.repository.CrudRepository;
@@ -60,6 +61,7 @@ import com.hedera.mirror.importer.migration.repository.RecordFileRepositoryV1_33
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@Tag("failincci")
 @TestPropertySource(properties = "spring.flyway.target=1.31.3")
 class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
 
