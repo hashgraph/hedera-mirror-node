@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -46,11 +45,6 @@ import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
-
-    private static final File signatureFile = Utility
-            .getResource("data/signature/v5/2021-01-11T22_16_11.299356001Z.rcd_sig");
-
-    private static SignatureFileReaderV5 fileReaderV5;
 
     private static final long HASH_CLASS_ID = 0xf422da83a251741eL;
     private static final int HASH_CLASS_VERSION = 1;
@@ -77,15 +71,13 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             "+xFHwmKhAvsKXyp2ZFIrB+PGMQI8wr1cCMYLKYpI4VceCkLTIB3XOOVKZPWZaOs8MK9Aj9ZeT3REqf" +
             "d252N19j2yA45x8Zs2kRIC2iKNNEPwcaUbGNHiPmsZ5Ezq0lnNKuomJECMsYHu";
 
-    @BeforeAll
-    static void setup() {
-        fileReaderV5 = new SignatureFileReaderV5();
-    }
+    private  final File signatureFile = Utility
+            .getResource("data/signature/v5/2021-01-11T22_16_11.299356001Z.rcd_sig");
+    private final SignatureFileReaderV5 fileReaderV5 = new SignatureFileReaderV5();
 
     @Test
     void testReadValidFile() throws IOException {
         try (InputStream stream = getInputStream(signatureFile)) {
-            fileReaderV5 = new SignatureFileReaderV5();
             FileStreamSignature fileStreamSignature = fileReaderV5.read(stream);
 
             assertNotNull(fileStreamSignature);

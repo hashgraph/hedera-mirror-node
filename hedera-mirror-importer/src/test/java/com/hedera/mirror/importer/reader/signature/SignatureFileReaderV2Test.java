@@ -34,8 +34,6 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -46,9 +44,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
-    private final File signatureFile = Utility
-            .getResource(Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig").toString());
-
     private static final String entireFileHashBase64 = "WRVY4Fm9FinuOGxONaaHW0xnoJZxj10iV3KmUQQnFRiUFN99tViEle" +
             "+yqF3EoP/a";
     private static final String entireFileSignatureBase64 = "nOVITUEb1WfYLJN4Jp2/aIEYTiqEzfTSMU5Y6KDKbCi55" +
@@ -57,15 +52,12 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             "YJmlLLKUB9brEUpdSm8RRLs+jzEY76YT7Uv6WzIq04SetI+GUOMkEXDNvtcSKnE8625L7qmhbiiX4Ub90jCxCqt6JHXrCM1VsYWEn" +
             "/oUesRi5pnATgjqZOXycMegavb1Ikf3GoQAvn1Bx6EO14Uh7hVMxa/NYMtSVNQ17QG6QtA4j7viVvJ9EPSiCsmg3Cp2PhBW5ZPshq" +
             "+ExciGbnXFu+ytLZGSwKhePwuLQsBNTbGUcDFy1IJge95tEweR51Y1Nfh6PqPTnkdirRGO";
-
-    private static SignatureFileReaderV2 fileReaderV2;
-
     private static final int SIGNATURE_LENGTH = 48;
 
-    @BeforeAll
-    static void setup() {
-        fileReaderV2 = new SignatureFileReaderV2();
-    }
+
+    private final SignatureFileReaderV2 fileReaderV2 = new SignatureFileReaderV2();
+    private final File signatureFile = Utility
+            .getResource(Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig").toString());
 
     @Test
     void testReadValidFile() throws IOException {
