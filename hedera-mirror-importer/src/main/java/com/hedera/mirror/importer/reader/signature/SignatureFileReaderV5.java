@@ -54,8 +54,8 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             //Read the objectStreamSignatureVersion, which is not used
             dis.readInt();
 
-            fileStreamSignature.setFileHash(readHashObject(dis, "entire"));
-            Signature fileHashSignature = readSignatureObject(dis, "entire");
+            fileStreamSignature.setFileHash(readHashObject(dis, "file"));
+            Signature fileHashSignature = readSignatureObject(dis, "file");
             fileStreamSignature.setFileHashSignature(fileHashSignature.getSignatureBytes());
             fileStreamSignature.setSignatureType(fileHashSignature.getSignatureType());
 
@@ -66,8 +66,6 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             if (dis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file");
             }
-
-            fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
 
             return fileStreamSignature;
         } catch (IOException e) {
