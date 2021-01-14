@@ -35,6 +35,7 @@ let sqlConnection;
 config.db.name = process.env.POSTGRES_DB || 'mirror_node_integration';
 const dbUser = process.env.POSTGRES_USER || config.db.username + '_admin';
 const dbPassword = process.env.POSTGRES_PASSWORD || randomString(16);
+const dbHost = process.env.POSTGRES_HOST || config.db.host;
 
 const v1SchemaConfigs = {
   docker: {
@@ -67,7 +68,7 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
  * testContainers/dockerized postgresql instance.
  */
 const instantiateDatabase = async function () {
-  if (!process.env.CIRCLECI) {
+  if (process.env.CIRCLECI === undefined) {
     if (!(await isDockerInstalled())) {
       console.log('Docker not found. Integration tests will fail.');
       return;
@@ -84,9 +85,10 @@ const instantiateDatabase = async function () {
     console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`);
   }
 
+  console.log(`sqlConnection will use jdbc:postgresql://${dbHost}:${config.db.port}/${config.db.name}`);
   sqlConnection = new SqlConnectionPool({
     user: dbUser,
-    host: config.db.host,
+    host: dbHost,
     database: config.db.name,
     password: dbPassword,
     port: config.db.port,
