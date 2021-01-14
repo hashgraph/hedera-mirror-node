@@ -51,8 +51,8 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             //Read the objectStreamSignatureVersion, which is not used
             dis.readInt();
 
-            fileStreamSignature.setFileHash(readHashObject(dis, "file"));
-            Signature fileHashSignature = readSignatureObject(dis, "file");
+            fileStreamSignature.setFileHash(readHashObject(dis, "entireFile"));
+            Signature fileHashSignature = readSignatureObject(dis, "entireFile");
             fileStreamSignature.setFileHashSignature(fileHashSignature.getSignatureBytes());
             fileStreamSignature.setSignatureType(fileHashSignature.getSignatureType());
 

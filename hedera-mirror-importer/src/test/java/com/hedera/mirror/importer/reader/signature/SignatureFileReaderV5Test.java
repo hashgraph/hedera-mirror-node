@@ -120,8 +120,8 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
         signatureFileSections.add(fileVersion);
         signatureFileSections.add(objectStreamSignatureVersion);
 
-        signatureFileSections.addAll(buildHashSections("entire"));
-        signatureFileSections.addAll(buildSignatureSections("entire"));
+        signatureFileSections.addAll(buildHashSections("entireFile"));
+        signatureFileSections.addAll(buildSignatureSections("entireFile"));
         signatureFileSections.addAll(buildHashSections("metadata"));
         signatureFileSections.addAll(buildSignatureSections("metadata"));
 
@@ -136,7 +136,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
         return generateCorruptedFileTests(fileReaderV5, signatureFileSections);
     }
 
-    private List<SignatureFileSection> buildHashSections(String hashName) {
+    private List<SignatureFileSection> buildHashSections(String sectionName) {
         SignatureFileSection hashClassId = new SignatureFileSection(
                 Longs.toByteArray(HASH_CLASS_ID),
                 null,
@@ -151,25 +151,25 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         SignatureFileSection hashDigestType = new SignatureFileSection(
                 Ints.toByteArray(HASH_DIGEST_TYPE),
-                "invalidHashDigestType:" + hashName,
+                "invalidHashDigestType:" + sectionName,
                 incrementLastByte,
-                "hashDigestType");
+                sectionName + " hashDigestType");
 
         SignatureFileSection hashLength = new SignatureFileSection(
                 Ints.toByteArray(HASH_SIZE),
-                "invalidHashLength:" + hashName,
+                "invalidHashLength:" + sectionName,
                 incrementLastByte,
                 "hashLength");
 
         SignatureFileSection hash = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(HASH_SIZE),
-                "incorrectHashLength:" + hashName,
+                "incorrectHashLength:" + sectionName,
                 truncateLastByte,
-                "actualHashLength");
+                sectionName + " actualHashLength");
         return Arrays.asList(hashClassId, hashClassVersion, hashDigestType, hashLength, hash);
     }
 
-    private List<SignatureFileSection> buildSignatureSections(String hashName) {
+    private List<SignatureFileSection> buildSignatureSections(String sectionName) {
         SignatureFileSection signatureClassId = new SignatureFileSection(
                 Longs.toByteArray(SIGNATURE_CLASS_ID),
                 null,
@@ -184,27 +184,27 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         SignatureFileSection signatureFileMarker = new SignatureFileSection(
                 Ints.toByteArray(signatureType.getFileMarker()),
-                "invalidSignatureType:" + hashName,
+                "invalidSignatureType:" + sectionName,
                 incrementLastByte,
-                "signatureType");
+                sectionName + " signatureType");
 
         SignatureFileSection signatureLength = new SignatureFileSection(
                 Ints.toByteArray(signatureType.getMaxLength()),
                 "signatureLengthTooLong",
                 incrementLastByte,
-                "signatureLength");
+                sectionName + " signatureLength");
 
         SignatureFileSection checkSum = new SignatureFileSection(
                 Ints.toByteArray(101 - signatureType.getMaxLength()),
-                "incorrectCheckSum:" + hashName,
+                "incorrectCheckSum:" + sectionName,
                 incrementLastByte,
-                "checkSum");
+                sectionName + " checkSum");
 
         SignatureFileSection signature = new SignatureFileSection(
                 TestUtils.generateRandomByteArray(signatureType.getMaxLength()),
-                "incorrectSignatureLength:" + hashName,
+                "incorrectSignatureLength:" + sectionName,
                 truncateLastByte,
-                "actualSignatureLength");
+                sectionName + " actualSignatureLength");
 
         return Arrays
                 .asList(signatureClassId, signatureClassVersion, signatureFileMarker, signatureLength, checkSum,
