@@ -2,19 +2,21 @@
 
 The monitor verifies end-to-end functionality of the Hedera network and generates metrics from the results. It supports
 both publishing transactions to HAPI and subscribing to the mirror node API. Configuration is flexible and declarative,
-allowing one to express a mixture of transactions and their expected publish rates, and the tool will do its best to make
-it so. By default, the monitor is already set up with a basic scenario that creates a topic, submits a message every 10
-seconds to it, and verifies the messages are received via the mirror node's gRPC and REST APIs.
+allowing one to express a mixture of transactions and their expected publish rates, and the tool will do its best to
+make it so. By default, the monitor is already set up with a basic scenario that creates a topic, submits a message
+every 10 seconds to it, and verifies the messages are received via the mirror node's gRPC and REST APIs.
 
 ## Configuration
 
 This section covers the higher level properties to consider before diving into the specific publish and subscribe
-properties in the next sections. For a full list of configuration options see the [config](/docs/configuration.md#monitor)
+properties in the next sections. For a full list of configuration options see
+the [config](/docs/configuration.md#monitor)
 documentation.
 
-First, make sure the monitor is configured to talk to the correct Hedera network by setting `hedera.mirror.monitor.network` to
-`MAINNET`, `PREVIEWNET` or `TESTNET`. If you are not using one of these public environments, the network can be set to `OTHER`,
-and `hedera.mirror.monitor.nodes` and `hedera.mirror.monitor.mirrorNode` properties should be filled in.
+First, make sure the monitor is configured to talk to the correct Hedera network by
+setting `hedera.mirror.monitor.network` to
+`MAINNET`, `PREVIEWNET` or `TESTNET`. If you are not using one of these public environments, the network can be set
+to `OTHER`, and `hedera.mirror.monitor.nodes` and `hedera.mirror.monitor.mirrorNode` properties should be filled in.
 
 Additionally, the operator information in `hedera.mirror.monitor.operator` is required and needs to be populated with a
 valid payer account ID and its private key. Ensure this account has the necessary funds to publish transactions at the
@@ -57,9 +59,9 @@ verify transactions are reaching consensus.
 The monitor can be used to publish at very high TPS, with a single monitor being able to max out the current capability
 of the Hedera network. To publish at higher rates, the `hedera.mirror.monitor.publish.connections` property will need to
 be increased. For example, to achieve 10K TPS we set the number of connections to 1000. Please adjust accordingly per
-your needs. Each connection will open a persistent gRPC channel to one of configured Hedera nodes. The transaction
-publisher will round-robin this list of connections to determine which node to send to, ensuring the load is distributed
-evenly across all nodes.
+your needs. Each connection will open a persistent gRPC channel to one of the Hedera nodes. The transaction publisher
+will round-robin this list of connections to determine which node to send to, ensuring the load is distributed evenly
+across all nodes.
 
 The `type` property specifies which transaction type to publish. It also affects which `properties` need to be
 specified, with different transaction types requiring different properties to be set. See the
@@ -72,9 +74,9 @@ specified, but some are empty and may need to be populated.
 For example, if you want to publish a topic message, you would open the `TransactionType` class,
 find `CONSENSUS_SUBMIT_MESSAGE`, then open the
 [ConsensusSubmitMessageTransactionSupplier](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/consensus/ConsensusSubmitMessageTransactionSupplier.java)
-class that it references. From there, you can see that fields `maxTransactionFee`, `message`, `retry`,
-and `topicId` are available as properties. Only `topicId` doesn't have a default and will be required. Here's a YAML
-excerpt that specifies some of those properties:
+class that it references. From there, you can see that fields `maxTransactionFee`, `message`, `retry`, and `topicId` are
+available as properties. Only `topicId` doesn't have a default and will be required. Here's a YAML excerpt that
+specifies some of those properties:
 
 ```yaml
 publish:
@@ -92,9 +94,9 @@ publish:
 
 ### Expression Syntax
 
-The monitor can automatically create account, token, and topic entities on application startup using a special expression
-syntax. This is useful to avoid boilerplate configuration and manual entity creation steps that vary per environment.
-The syntax can currently only be used in `hedera.mirror.monitor.publish.scenarios.properties`
+The monitor can automatically create account, token, and topic entities on application startup using a special
+expression syntax. This is useful to avoid boilerplate configuration and manual entity creation steps that vary per
+environment. The syntax can currently only be used in `hedera.mirror.monitor.publish.scenarios.properties`
 and `hedera.mirror.monitor.subscribe.grpc.topicId`.
 
 The syntax takes the form of `${type.name}` where `type` is one of `account`, `token`, or `topic` and `name` is a
@@ -125,10 +127,10 @@ scenarios:
 
 ### Subscribe
 
-The monitor can optionally subscribe to the mirror node gRPC and REST APIs simultaneously. Each subscription type can have one or
-more scenarios. For the REST API, it can verify that a percentage of individual transactions have made it to the mirror node
-by querying the `/api/v1/transactions/{transactionId}` REST endpoint. The exact percentage to verify is controlled via
-the `samplePercent` property.
+The monitor can optionally subscribe to the mirror node gRPC and REST APIs simultaneously. Each subscription type can
+have one or more scenarios. For the REST API, it can verify that a percentage of individual transactions have made it to
+the mirror node by querying the `/api/v1/transactions/{transactionId}` REST endpoint. The exact percentage to verify is
+controlled via the `samplePercent` property.
 
 For gRPC, `topicId` is required and controls which topic should be registered for asynchronous notifications of topic
 messages. Below is an example of both types:
