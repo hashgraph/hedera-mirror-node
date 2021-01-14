@@ -44,7 +44,7 @@ public abstract class AbstractSignatureFileReader implements SignatureFileReader
     protected void validate(Object expected, Object actual, String fieldName, String sectionName) {
         if (!Objects.equals(expected, actual)) {
             throw new SignatureFileParsingException(String
-                    .format(NOT_EQUAL_ERROR_MESSAGE, fieldName, sectionName, expected, actual));
+                    .format(NOT_EQUAL_ERROR_MESSAGE_WITH_SECTION, fieldName, sectionName, expected, actual));
         }
     }
 
