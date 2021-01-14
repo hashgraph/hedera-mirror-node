@@ -1,0 +1,68 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: integration
+spec:
+  chart:
+    repository: https://hashgraph.github.io/hedera-mirror-node/charts
+    name: hedera-mirror
+    version: v0.26.0-alpha1
+  rollback:
+    enable: true
+    force: true
+    timeout: 500
+    wait: false
+  timeout: 500
+  wait: false
+  values:
+    global:
+      host: RELEASE-NAME-timescaledb
+    grpc:
+      prometheusRules:
+        GrpcNoSubscribers:
+          enabled: false
+    importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              db:
+                owner: mirror_node
+                schema: mirrornode
+                username: mirror_importer
+              downloader:
+                cloudProvider: S3
+              network: OTHER
+              startDate: 1970-01-01T00:00:00Z
+        spring:
+          flyway:
+            baselineVersion: 1.999.999
+            locations: "classpath:db/migration/v2"
+            target: 2.999.999
+      replicas: 0
+    monitor:
+      config:
+        hedera:
+          mirror:
+            monitor:
+              mirrorNode:
+                grpc:
+                  host: integration-mirror-grpc
+                rest:
+                  host: integration-mirror-rest
+                  port: 80
+    postgresql:
+      enabled: false
+    rest:
+      prometheusRules:
+        RestNoRequests:
+          enabled: false
+    timescaledb:
+      enabled: true
+  valuesFrom:
+    - chartFileRef:
+        path: values-prod.yaml
+    - secretKeyRef:
+        name: mirror
+
