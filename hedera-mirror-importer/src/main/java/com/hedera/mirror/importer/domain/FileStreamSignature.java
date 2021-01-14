@@ -74,7 +74,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
         private final String algorithm;
         private final String provider;
 
-        public static SignatureType fromSignatureTypeIndicator(int signatureTypeIndicator) {
+        public static SignatureType of(int signatureTypeIndicator) {
             for (SignatureType signatureType : SignatureType.values()) {
                 if (signatureType.fileMarker == signatureTypeIndicator) {
                     return signatureType;

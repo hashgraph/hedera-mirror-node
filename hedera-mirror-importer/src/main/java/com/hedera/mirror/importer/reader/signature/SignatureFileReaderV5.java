@@ -91,7 +91,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         validate(SignatureType.SHA_384_WITH_RSA
                 .getFileMarker(), signatureTypeIndicator, "signatureType", sectionName);
 
-        SignatureType signatureType = SignatureType.fromSignatureTypeIndicator(signatureTypeIndicator);
+        SignatureType signatureType = SignatureType.of(signatureTypeIndicator);
 
         int signatureLength = dis.readInt();
         validateBetween(1, signatureType.getMaxLength(), signatureLength, "signatureLength", sectionName);
