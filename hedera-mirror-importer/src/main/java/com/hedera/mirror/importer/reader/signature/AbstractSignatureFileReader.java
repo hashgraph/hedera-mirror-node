@@ -27,11 +27,33 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 public abstract class AbstractSignatureFileReader implements SignatureFileReader {
 
     protected static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
-    private static final String ERROR_MESSAGE = "Unable to read signature file %s: Expected %s but got %s";
+    private static final String NOT_EQUAL_ERROR_MESSAGE = "Unable to read signature file %s: Expected %s but got %s";
+    private static final String NOT_EQUAL_ERROR_MESSAGE_WITH_SECTION = "Unable to read signature file %s in section " +
+            "%s: Expected %s but got %s";
+    private static final String NOT_IN_RANGE_ERROR_MESSAGE = "Unable to read signature file %s in section %s: " +
+            "Expected value " +
+            "between %d and %d but got %d";
 
     protected void validate(Object expected, Object actual, String fieldName) {
         if (!Objects.equals(expected, actual)) {
-            throw new SignatureFileParsingException(String.format(ERROR_MESSAGE, fieldName, expected, actual));
+            throw new SignatureFileParsingException(String
+                    .format(NOT_EQUAL_ERROR_MESSAGE, fieldName, expected, actual));
+        }
+    }
+
+    protected void validate(Object expected, Object actual, String fieldName, String sectionName) {
+        if (!Objects.equals(expected, actual)) {
+            throw new SignatureFileParsingException(String
+                    .format(NOT_EQUAL_ERROR_MESSAGE, fieldName, sectionName, expected, actual));
+        }
+    }
+
+    protected void validateBetween(int minimumExpected, int maximumExpected, int actual, String fieldName,
+                                   String sectionName) {
+        if (Integer.compare(minimumExpected, actual) == 1 || Integer.compare(maximumExpected, actual) == -1) {
+            throw new SignatureFileParsingException(String
+                    .format(NOT_IN_RANGE_ERROR_MESSAGE, fieldName, sectionName, minimumExpected, maximumExpected,
+                            actual));
         }
     }
 }

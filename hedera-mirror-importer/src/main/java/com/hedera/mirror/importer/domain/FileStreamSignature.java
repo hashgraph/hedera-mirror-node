@@ -22,30 +22,32 @@ package com.hedera.mirror.importer.domain;
 
 import java.io.File;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
-@ToString(exclude = {"entireFileHash", "entireFileSignature", "metadataHash", "metadataSignature"})
+@ToString(exclude = {"fileHash", "fileHashSignature", "metadataHash", "metadataHashSignature"})
 public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
     private File file;
-    private byte[] entireFileHash;
+    private byte[] fileHash;
     private EntityId nodeAccountId;
     private SignatureType signatureType;
-    private byte[] entireFileSignature;
+    private byte[] fileHashSignature;
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
     private byte[] metadataHash;
-    private byte[] metadataSignature;
+    private byte[] metadataHashSignature;
 
     @Override
     public int compareTo(FileStreamSignature other) {
         return file.compareTo(other.getFile());
     }
 
-    public String getEntireFileHashAsHex() {
-        return Utility.bytesToHex(entireFileHash);
+    public String getFileHashAsHex() {
+        return Utility.bytesToHex(fileHash);
     }
 
     public String getMetadataHashAsHex() {
@@ -62,7 +64,22 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
         CONSENSUS_REACHED  // At least 1/3 of all nodes have been verified
     }
 
+    @Getter
+    @RequiredArgsConstructor
     public enum SignatureType {
-        SHA_384_WITH_RSA
+        SHA_384_WITH_RSA(1, "SHA384withRSA", "SunRsaSign");
+
+        private final int signatureTypeIndicator;
+        private final String algorithm;
+        private final String provider;
+
+        public static SignatureType fromSignatureTypeIndicator(int signatureTypeIndicator) {
+            for (SignatureType signatureType : SignatureType.values()) {
+                if (signatureType.signatureTypeIndicator == signatureTypeIndicator) {
+                    return signatureType;
+                }
+            }
+            return null;
+        }
     }
 }

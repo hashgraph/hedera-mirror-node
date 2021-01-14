@@ -25,15 +25,19 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +57,40 @@ import com.hedera.mirror.importer.exception.SignatureVerificationException;
 @ExtendWith(MockitoExtension.class)
 class NodeSignatureVerifierTest {
 
-    private static KeyPair nodeKeyPair;
+    private static final String privateKeyBase64String =
+            "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCXEhtKQJAZ32pYguWe" +
+                    "+2VR7XI2RzY4k4hK4MaQd7VqDzJV9nDh34M2nK+3TWDL29zAypyZx1v2cgdrnsdWRnD+ZubMCMedyB/SZRnBhaTp+MvWA" +
+                    "/Q3Bmf3VK5M3k4/EUUI92HbvOoj4dndcmwsKXfH/NlKP8UZ1ZmEm1LFPGgqHCtEZpfD8p" +
+                    "+uQRh8QURmT8m3XeaDQBsiOD8x4ZDo1PgKN0BxV9KWrnK125OjRn+CzCMWPCnMdSnsN" +
+                    "/YbPO6yqNS1wBwj14FDdoEvrTjeb5azlcvzNe+hayMzU6ITKm2/uKbwW+Zd1skuH/bx65HVVPME9Rni9" +
+                    "/xrqXC7ryGwqxi3AgMBAAECggEAPtSoBvzNMgWKnF9sku+p1yYzX0HE2kj54XKVAxbWm9LQM5J4pmiokPkf19PV01OQ" +
+                    "/5oFAaw5okkQrwDtlQNdEWHI0clBBG1sVrv3t1YXHbx9QniIhK4kZWiRyaSX1IEhPjZtO8/Zba0MSJ7DQKbKi6Gs2cWl" +
+                    "+zWsUMus5B1YkVJcQSTSggqz3V5pjNFdl8+70kVOxpNkALnHZHwDTgVlY46N/s67P3io1cQPCfUmGreCzfWCziF0peumgjIY" +
+                    "/1qbBu18KKs" +
+                    "/zqm6rhFGj1c6O4tHd7yeEQbdABrCwUOtTIdBqY3ZIvVnVVxFZ3OOtibGOl2kAoxLB5HVZFp9RDXRiQKBgQDKgqOM3a" +
+                    "+dqIJWh92xVx4sdUF1D6JTC2G3vBK9sBE5yMFsXvNOMm4xWp2+CgciWbo8m8MRL7MeTQ4CysCGQbFE" +
+                    "/yPFMwXofpJZPyOHPhoGdnmJnqW6xi7Me+eHhv+iR2VwIz0MwLSVy9hKNaBbhM//YtwSr7g+6McQHXbeWyxxNQKBgQC" +
+                    "++TiugsT59p8M/F9+ktSF/nfWS6bGFm1C9hTHgAZxINxif9dVuG7f7afdCXjEilQcDkrEaAJ1WEnVITNV9BMpQAV" +
+                    "+GEfKqSHxfHiOioS3N872T4dB9jEO/7S75zz2k+eFzMJBpG+BE9J97" +
+                    "/gqdH7v7AiR1b96AJRu0S6tYf6ruwKBgGRCNTKCdnV5fb3VWh54YQnlq1iHOvgeRGywgh7DUmPnTkuW3qIyOXfZwwrY8BtDjP" +
+                    "6ApxyVHvq7b1pWguZ1E4xzPIRe9GfcchwZND+6sSvN7/IAR1Cm2XiHR2NDpL/01PWlnI35we3" +
+                    "/k795uUBWCpwHl6jwsikDGbq" +
+                    "Su8zuGpyZAoGAGk00s0QrYMnIif9QH5yVTIcJdighJfL8xVYi8n79ZCNEdwRoYdPu4URX9CdTzK3Ie7y0K2yvuf2Y3ZOfAF2H" +
+                    "Lg01NHKfoJe+pwWfjPIi6SD0jhPR6xG/G/O3rpFgYg1ou5LBxkyhVsOmH9Ym9aHpwZ1eaMdpgaIGz2Rb62Ets" +
+                    "/UCgYARvEfr3NLtJHqRQQIdExWgqpi+emrblVM+F94IoXCGLY" +
+                    "6FJLKo+vujur/AeipC66IsPVfELCnjJLECFH6vdU5k/zchmEw" +
+                    "/7Lw7T6bK0ndvzPG2oC8ud4fsxyUxZu9sRe1fxI0CSgKQ9IUifUrTvY4u/Jj8bAPPIuNEnoupQs5TXQ==";
+
+    private static final String publicKeyBase64String =
+            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlxIbSkCQGd9qWILlnvtlUe1yNkc2OJOISuDGkHe1ag8yVfZw4d" +
+                    "+DNpyvt01gy9vcwMqcmcdb9nIHa57HVkZw/mbmzAjHncgf0mUZwYWk6fjL1gP0NwZn91SuTN5OPxFFCPdh27zqI" +
+                    "+HZ3XJsLCl3x/zZSj/FGdWZhJtSxTxoKhwrRGaXw/KfrkEYfEFEZk/Jt13mg0AbIjg/MeGQ6NT4CjdAcVfSlq5ytduTo0Z" +
+                    "/gswjFjwpzHUp7Df2GzzusqjUtcAcI9eBQ3aBL6043m+Ws5XL8zXvoWsjM1OiEyptv7im8FvmXdbJLh" +
+                    "/28euR1VTzBPUZ4vf8a6lwu68hsKsYtwIDAQAB";
+
+    private static PrivateKey privateKey;
+    private static PublicKey publicKey;
+
     private static final EntityId nodeId = new EntityId(0L, 0L, 3L, EntityTypeEnum.ACCOUNT.getId());
     private Signature signer;
 
@@ -66,27 +103,30 @@ class NodeSignatureVerifierTest {
     NodeSignatureVerifier nodeSignatureVerifier;
 
     @BeforeAll
-    static void key() throws NoSuchAlgorithmException {
-        nodeKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+    static void keys() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        privateKey = kf
+                .generatePrivate(new PKCS8EncodedKeySpec(Base64.decodeBase64(privateKeyBase64String)));
+        publicKey = kf.generatePublic(new X509EncodedKeySpec(Base64.decodeBase64(publicKeyBase64String)));
     }
 
     @BeforeEach
     void setup() throws GeneralSecurityException {
         nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         signer = Signature.getInstance("SHA384withRSA", "SunRsaSign");
-        signer.initSign(nodeKeyPair.getPrivate());
+        signer.initSign(privateKey);
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
-        nodeAccountIDPubKeyMap.put("0.0.3", nodeKeyPair.getPublic());
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
     }
 
     @Test
     void testV5FileStreamSignature() throws GeneralSecurityException {
-        byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] metadataHash = TestUtils.generateRandomByteArray(48);
 
-        FileStreamSignature fileStreamSignature = buildFileStreamSignature(entireFileHash, signHash(entireFileHash),
+        FileStreamSignature fileStreamSignature = buildFileStreamSignature(fileHash, signHash(fileHash),
                 metadataHash, signHash(metadataHash));
         nodeSignatureVerifier.verify(Arrays.asList(fileStreamSignature));
     }
@@ -94,21 +134,49 @@ class NodeSignatureVerifierTest {
     @Test
     void testV2FileStreamSignature() throws GeneralSecurityException {
 
-        byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
-        FileStreamSignature fileStreamSignature = buildFileStreamSignature(entireFileHash, signHash(entireFileHash),
+        FileStreamSignature fileStreamSignature = buildFileStreamSignature(fileHash, signHash(fileHash),
                 null, null);
 
         nodeSignatureVerifier.verify(Arrays.asList(fileStreamSignature));
     }
 
     @Test
+    void testInvalidFileSignature() throws GeneralSecurityException {
+
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
+
+        FileStreamSignature fileStreamSignature = buildFileStreamSignature(fileHash,
+                corruptSignature(signHash(fileHash)),
+                null, null);
+
+        Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
+                .verify(Arrays.asList(fileStreamSignature)));
+        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+    }
+
+    @Test
+    void testInvalidMetadataSignature() throws GeneralSecurityException {
+
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
+        byte[] metadataHash = TestUtils.generateRandomByteArray(48);
+
+        FileStreamSignature fileStreamSignature = buildFileStreamSignature(fileHash, signHash(fileHash),
+                metadataHash, corruptSignature(signHash(fileHash)));
+
+        Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
+                .verify(Arrays.asList(fileStreamSignature)));
+        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+    }
+
+    @Test
     void testCannotReachConsensus() {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
-        nodeAccountIDPubKeyMap.put("0.0.3", nodeKeyPair.getPublic());
-        nodeAccountIDPubKeyMap.put("0.0.4", nodeKeyPair.getPublic());
-        nodeAccountIDPubKeyMap.put("0.0.5", nodeKeyPair.getPublic());
-        nodeAccountIDPubKeyMap.put("0.0.6", nodeKeyPair.getPublic());
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.6", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
 
@@ -119,19 +187,20 @@ class NodeSignatureVerifierTest {
     }
 
     @Test
-    void testVerifiedWithPartialSuccess() throws GeneralSecurityException {
+    void testVerifiedWithOneThirdConsensus() throws GeneralSecurityException {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
-        nodeAccountIDPubKeyMap.put("0.0.3", nodeKeyPair.getPublic());
-        nodeAccountIDPubKeyMap.put("0.0.4", nodeKeyPair.getPublic());
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
 
-        byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
-        byte[] entireFileSignature = signHash(entireFileHash);
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHashSignature = signHash(fileHash);
 
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature(entireFileHash, entireFileSignature,
+        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
         //Node 4 will not verify due to missing signature, but 1/2 verified will confirm consensus reached
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(entireFileHash, null,
+        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(fileHash, null,
                 null, null);
         fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityTypeEnum.ACCOUNT.getId()));
 
@@ -141,9 +210,9 @@ class NodeSignatureVerifierTest {
     @Test
     void testNoSignatureType() throws GeneralSecurityException {
 
-        byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
-        FileStreamSignature fileStreamSignature = buildFileStreamSignature(entireFileHash, signHash(entireFileHash),
+        FileStreamSignature fileStreamSignature = buildFileStreamSignature(fileHash, signHash(fileHash),
                 null, null);
         fileStreamSignature.setSignatureType(null);
 
@@ -154,11 +223,11 @@ class NodeSignatureVerifierTest {
     }
 
     @Test
-    void testNoSignature() throws GeneralSecurityException {
+    void testNoFileHashSignature() throws GeneralSecurityException {
 
-        byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
-        FileStreamSignature fileStreamSignature = buildFileStreamSignature(entireFileHash, null,
+        FileStreamSignature fileStreamSignature = buildFileStreamSignature(fileHash, null,
                 null, null);
 
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
@@ -168,11 +237,11 @@ class NodeSignatureVerifierTest {
     }
 
     @Test
-    void testNoPublicKey() throws GeneralSecurityException {
+    void testNoFileHash() throws GeneralSecurityException {
 
-        byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
-        FileStreamSignature fileStreamSignature = buildFileStreamSignature(null, signHash(entireFileHash),
+        FileStreamSignature fileStreamSignature = buildFileStreamSignature(null, signHash(fileHash),
                 null, null);
 
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
@@ -185,7 +254,7 @@ class NodeSignatureVerifierTest {
     void testSignedWithWrongAlgorithm() throws GeneralSecurityException {
 
         signer = Signature.getInstance("SHA1withRSA", "SunRsaSign");
-        signer.initSign(nodeKeyPair.getPrivate());
+        signer.initSign(privateKey);
         byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
 
         FileStreamSignature fileStreamSignature = buildFileStreamSignature(entireFileHash, signHash(entireFileHash),
@@ -202,15 +271,15 @@ class NodeSignatureVerifierTest {
         return signer.sign();
     }
 
-    private FileStreamSignature buildFileStreamSignature(byte[] entireFileHash, byte[] entireFileSignature,
+    private FileStreamSignature buildFileStreamSignature(byte[] fileHash, byte[] fileHashSignature,
                                                          byte[] metadataHash, byte[] metadataSignature) {
         FileStreamSignature fileStreamSignature = buildBareBonesFileStreamSignature();
 
-        fileStreamSignature.setEntireFileHash(entireFileHash);
+        fileStreamSignature.setFileHash(fileHash);
         fileStreamSignature.setMetadataHash(metadataHash);
 
-        fileStreamSignature.setEntireFileSignature(entireFileSignature);
-        fileStreamSignature.setMetadataSignature(metadataSignature);
+        fileStreamSignature.setFileHashSignature(fileHashSignature);
+        fileStreamSignature.setMetadataHashSignature(metadataSignature);
 
         return fileStreamSignature;
     }
@@ -221,5 +290,10 @@ class NodeSignatureVerifierTest {
         fileStreamSignature.setNodeAccountId(nodeId);
         fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
         return fileStreamSignature;
+    }
+
+    private byte[] corruptSignature(byte[] signature) {
+        signature[0] = (byte) (signature[0] + 1);
+        return signature;
     }
 }

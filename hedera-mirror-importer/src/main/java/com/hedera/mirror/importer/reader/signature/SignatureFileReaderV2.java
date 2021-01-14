@@ -52,7 +52,7 @@ public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
             int length = dis.read(fileHash);
             validate(fileHash.length, length, "hashLength");
 
-            fileStreamSignature.setEntireFileHash(fileHash);
+            fileStreamSignature.setFileHash(fileHash);
 
             byte signatureTypeDelimiter = dis.readByte();
             validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "signatureDelimiter");
@@ -60,7 +60,7 @@ public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
             dis.readFully(sigBytes);
-            fileStreamSignature.setEntireFileSignature(sigBytes);
+            fileStreamSignature.setFileHashSignature(sigBytes);
 
             if (dis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file");

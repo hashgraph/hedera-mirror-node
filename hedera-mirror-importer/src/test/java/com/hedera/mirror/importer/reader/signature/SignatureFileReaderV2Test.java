@@ -31,6 +31,7 @@ import com.google.common.primitives.Ints;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,7 +45,8 @@ import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
-    private final File signatureFile = Utility.getResource("data/signature/v2/2019-08-30T18_10_00.419072Z.rcd_sig");
+    private final File signatureFile = Utility
+            .getResource(Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig").toString());
 
     private static final String entireFileHashBase64 = "WRVY4Fm9FinuOGxONaaHW0xnoJZxj10iV3KmUQQnFRiUFN99tViEle" +
             "+yqF3EoP/a";
@@ -70,9 +72,9 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             FileStreamSignature fileStreamSignature = fileReaderV2.read(stream);
             assertNotNull(fileStreamSignature);
             assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature
-                    .getEntireFileHash());
+                    .getFileHash());
             assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
-                    .getEntireFileSignature());
+                    .getFileHashSignature());
         }
     }
 

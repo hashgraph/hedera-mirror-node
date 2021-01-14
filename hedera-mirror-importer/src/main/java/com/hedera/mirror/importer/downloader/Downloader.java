@@ -495,7 +495,7 @@ public abstract class Downloader {
             }
         }
 
-        String expectedFileHash = signature.getEntireFileHashAsHex();
+        String expectedFileHash = signature.getFileHashAsHex();
         if (!streamFile.getFileHash().contentEquals(expectedFileHash)) {
             throw new HashMismatchException(fileName, expectedFileHash, streamFile.getFileHash());
         }

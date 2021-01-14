@@ -29,10 +29,8 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +57,7 @@ class CompositeSignatureFileReaderTest {
     }
 
     @Test
-    void testValidV2() throws IOException, NoSuchAlgorithmException {
+    void testValidV2() throws Exception {
         byte[] versionNumber = {SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH};
         byte[] randomExtraBytes = new byte[3];
         SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
@@ -71,7 +69,7 @@ class CompositeSignatureFileReaderTest {
     }
 
     @Test
-    void testValidV5() throws IOException, NoSuchAlgorithmException {
+    void testValidV5() throws Exception {
         byte[] versionNumber = {SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION};
         byte[] randomExtraBytes = new byte[3];
         SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
@@ -107,7 +105,7 @@ class CompositeSignatureFileReaderTest {
         }
     }
 
-    private InputStream getInputStream(byte[] bytes) throws FileNotFoundException {
+    private InputStream getInputStream(byte[] bytes) {
         return new ByteArrayInputStream(bytes);
     }
 }
