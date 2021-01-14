@@ -39,9 +39,6 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
     protected static final int HASH_SIZE = 48; //48 bytes for SHA-384
 
-    protected static final int SIGNATURE_TYPE = 1; //denotes SHA384withRSA
-    protected static final int MAX_SIGNATURE_LENGTH = 384; //48 bytes for SHA-384
-
     @Override
     public FileStreamSignature read(InputStream inputStream) {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
@@ -92,12 +89,12 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
         int signatureTypeIndicator = dis.readInt();
         validate(SignatureType.SHA_384_WITH_RSA
-                .getSignatureTypeIndicator(), signatureTypeIndicator, "signatureType", sectionName);
+                .getFileMarker(), signatureTypeIndicator, "signatureType", sectionName);
 
         SignatureType signatureType = SignatureType.fromSignatureTypeIndicator(signatureTypeIndicator);
 
         int signatureLength = dis.readInt();
-        validateBetween(1, MAX_SIGNATURE_LENGTH, signatureLength, "signatureLength", sectionName);
+        validateBetween(1, signatureType.getMaxLength(), signatureLength, "signatureLength", sectionName);
         //Checksum is calculated as 101 - length of signature bytes
         int checkSum = dis.readInt();
         validate(101 - signatureLength, checkSum, "checkSum", sectionName);

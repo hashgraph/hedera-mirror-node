@@ -67,15 +67,16 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     @Getter
     @RequiredArgsConstructor
     public enum SignatureType {
-        SHA_384_WITH_RSA(1, "SHA384withRSA", "SunRsaSign");
+        SHA_384_WITH_RSA(1, 384, "SHA384withRSA", "SunRsaSign");
 
-        private final int signatureTypeIndicator;
+        private final int fileMarker;
+        private final int maxLength;
         private final String algorithm;
         private final String provider;
 
         public static SignatureType fromSignatureTypeIndicator(int signatureTypeIndicator) {
             for (SignatureType signatureType : SignatureType.values()) {
-                if (signatureType.signatureTypeIndicator == signatureTypeIndicator) {
+                if (signatureType.fileMarker == signatureTypeIndicator) {
                     return signatureType;
                 }
             }

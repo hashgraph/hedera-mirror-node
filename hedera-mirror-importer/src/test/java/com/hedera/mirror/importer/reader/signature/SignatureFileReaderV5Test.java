@@ -22,10 +22,8 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_DIGEST_TYPE;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.HASH_SIZE;
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.MAX_SIGNATURE_LENGTH;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.OBJECT_STREAM_SIGNATURE_VERSION;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION;
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_TYPE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -45,6 +43,7 @@ import org.junit.jupiter.api.TestFactory;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
@@ -58,6 +57,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     private static final int HASH_CLASS_VERSION = 1;
     private static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
     private static final int SIGNATURE_CLASS_VERSION = 1;
+    private static final SignatureType signatureType = SignatureType.SHA_384_WITH_RSA;
 
     private static final String entireFileHashBase64 = "L+OAVq+qeyicnL+lVSL5XIBy8JSYGaTVGa9ADG59s" +
             "+ZOUHcTaAHR3KxX0Cooc5Jo";
@@ -182,31 +182,32 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 null,
                 null);
 
-        SignatureFileSection signatureType = new SignatureFileSection(
-                Ints.toByteArray(SIGNATURE_TYPE),
+        SignatureFileSection signatureFileMarker = new SignatureFileSection(
+                Ints.toByteArray(signatureType.getFileMarker()),
                 "invalidSignatureType:" + hashName,
                 incrementLastByte,
                 "signatureType");
 
         SignatureFileSection signatureLength = new SignatureFileSection(
-                Ints.toByteArray(MAX_SIGNATURE_LENGTH),
+                Ints.toByteArray(signatureType.getMaxLength()),
                 "signatureLengthTooLong",
                 incrementLastByte,
                 "signatureLength");
 
         SignatureFileSection checkSum = new SignatureFileSection(
-                Ints.toByteArray(101 - MAX_SIGNATURE_LENGTH),
+                Ints.toByteArray(101 - signatureType.getMaxLength()),
                 "incorrectCheckSum:" + hashName,
                 incrementLastByte,
                 "checkSum");
 
         SignatureFileSection signature = new SignatureFileSection(
-                TestUtils.generateRandomByteArray(MAX_SIGNATURE_LENGTH),
+                TestUtils.generateRandomByteArray(signatureType.getMaxLength()),
                 "incorrectSignatureLength:" + hashName,
                 truncateLastByte,
                 "actualSignatureLength");
 
         return Arrays
-                .asList(signatureClassId, signatureClassVersion, signatureType, signatureLength, checkSum, signature);
+                .asList(signatureClassId, signatureClassVersion, signatureFileMarker, signatureLength, checkSum,
+                        signature);
     }
 }
