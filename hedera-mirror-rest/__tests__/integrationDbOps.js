@@ -68,6 +68,7 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
  * testContainers/dockerized postgresql instance.
  */
 const instantiateDatabase = async function () {
+  console.log(`*** process.env.CIRCLECI: ${process.env.CIRCLECI}`);
   if (process.env.CIRCLECI === undefined) {
     if (!(await isDockerInstalled())) {
       console.log('Docker not found. Integration tests will fail.');

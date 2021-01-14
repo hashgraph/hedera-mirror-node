@@ -83,7 +83,7 @@ jobs:
           java-version: 11
 
       - name: Maven Verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -Djib.skip -pl hedera-mirror-importer/
+        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -Djib.skip -pl hedera-mirror-importer/ -P v2data
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

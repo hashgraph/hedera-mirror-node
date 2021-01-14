@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,6 +40,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.data.repository.CrudRepository;
@@ -60,6 +61,7 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@Tag("v1data")
 @TestPropertySource(properties = "spring.flyway.target=1.31.3")
 class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
 
@@ -91,9 +93,11 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         balanceDownloaderProperties.init();
         recordDownloaderProperties.init();
 
-        FileCopier accountBalanceFileCopier = FileCopier.create(Utility.getResource("data").toPath(), balanceDownloaderProperties.getValidPath())
+        FileCopier accountBalanceFileCopier = FileCopier
+                .create(Utility.getResource("data").toPath(), balanceDownloaderProperties.getValidPath())
                 .from(balanceDownloaderProperties.getStreamType().getPath(), "v1", "balance0.0.3");
-        FileCopier recordFileCopier = FileCopier.create(Utility.getResource("data").toPath(), recordDownloaderProperties.getValidPath())
+        FileCopier recordFileCopier = FileCopier
+                .create(Utility.getResource("data").toPath(), recordDownloaderProperties.getValidPath())
                 .from(recordDownloaderProperties.getStreamType().getPath(), "v2", "record0.0.3");
 
         EntityId nodeAccountId = V1_32_0__Missing_StreamFile_Record.DEFAULT_NODE_ACCOUNT_ID;
