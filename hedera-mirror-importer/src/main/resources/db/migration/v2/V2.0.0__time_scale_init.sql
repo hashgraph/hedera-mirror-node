@@ -110,16 +110,22 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 -- id seq from v1.0 no longer explicitly created as s_record_files_seq
 create table if not exists record_file
 (
-    id              serial,
-    name            character varying(250) not null,
-    load_start      bigint,
-    load_end        bigint,
-    file_hash       character varying(96),
-    prev_hash       character varying(96),
-    consensus_start bigint default 0       not null,
-    consensus_end   bigint default 0       not null,
-    node_account_id bigint                 not null,
-    count           bigint                 not null
+    id                 serial,
+    name               character varying(250) not null,
+    load_start         bigint,
+    load_end           bigint,
+    file_hash          character varying(96),
+    prev_hash          character varying(96),
+    consensus_start    bigint default 0       not null,
+    consensus_end      bigint default 0       not null,
+    node_account_id    bigint                 not null,
+    count              bigint                 not null,
+    digest_algorithm   int                    not null,
+    end_running_hash   character varying(96),
+    hapi_version_major int,
+    hapi_version_minor int,
+    hapi_version_patch int,
+    version            int                    not null
 );
 comment on table record_file is 'Network record file stream entries';
 
