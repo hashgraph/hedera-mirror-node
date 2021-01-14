@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,11 +33,12 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -69,8 +71,7 @@ import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordFileParserTest {
-
+abstract class AbstractRecordFileParserTest {
     @TempDir
     Path dataPath;
     @Mock
@@ -80,94 +81,59 @@ public class RecordFileParserTest {
     @Mock(lenient = true)
     private RecordStreamFileListener recordStreamFileListener;
     @Mock
-    private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    protected MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     private MirrorProperties mirrorProperties;
-    private FileCopier fileCopier;
     private RecordFileParser recordFileParser;
     private RecordParserProperties parserProperties;
 
-    private File file1;
-    private File file2;
-    private static final int NUM_TXNS_FILE_1 = 19;
-    private static final long[] FILE_CONSENSUS_TIMESTAMPS = {
-            1567188600419072000L,
-            1567188600762801000L,
-            1567188600883799000L,
-            1567188600963103000L,
-            1567188601371995000L,
-            1567188601739500000L,
-            1567188602108299000L,
-            1567188602118673001L,
-            1567188602450554001L,
-            1567188602838615000L,
-            1567188603175332000L,
-            1567188603277507000L,
-            1567188603609988000L,
-            1567188603706753001L,
-            1567188604084005000L,
-            1567188604429968000L,
-            1567188604524835000L,
-            1567188604856082001L,
-            1567188604906443001L,
-            1567188605249678000L,
-            1567188605824917000L,
-            1567188606171654000L,
-            1567188606181740000L,
-            1567188606499404000L,
-            1567188606576024000L,
-            1567188606932283000L,
-            1567188607246509000L,
-            1567188608065015001L,
-            1567188608413240000L,
-            1567188608566437000L,
-            1567188608878373000L,
-            1567188608972069001L,
-            1567188609337810002L,
-            1567188609705382001L
-    };
+    private StreamFileData streamFileData1;
+    private StreamFileData streamFileData2;
 
-    private static RecordFile recordFile1;
-    private static RecordFile recordFile2;
-    private static StreamFileData streamFileData1;
-    private static StreamFileData streamFileData2;
+    private final RecordFile recordFile1;
+    private final RecordFile recordFile2;
+    private final long[] fileConsensusTimestamps;
+
+    AbstractRecordFileParserTest(String filename1, String filename2, long[] fileConsensusTimestamps) {
+        Map<String, RecordFile> recordFilesMap = TestUtils.getRecordFilesMap();
+        recordFile1 = recordFilesMap.get(filename1);
+        recordFile2 = recordFilesMap.get(filename2);
+        this.fileConsensusTimestamps = fileConsensusTimestamps;
+    }
 
     @BeforeEach
-    void before() throws FileNotFoundException {
+    void before() {
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
         parserProperties.init();
+
         RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5());
         recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties, new SimpleMeterRegistry(),
                 recordFileReader, recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
-        StreamType streamType = StreamType.RECORD;
-        fileCopier = FileCopier
-                .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
-                .from(streamType.getPath(), "v2", "record0.0.3")
-                .filterFiles("*.rcd");
 
+        FileCopier fileCopier = FileCopier
+                .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
+                .from(StreamType.RECORD.getPath(), "v" + recordFile1.getVersion(), "record0.0.3")
+                .filterFiles("*.rcd");
         fileCopier.copy();
-        file1 = dataPath.resolve("2019-08-30T18_10_00.419072Z.rcd").toFile();
-        file2 = dataPath.resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
-        recordFile1 = TestUtils.getRecordFilesMap().get(file1.getName());
-        recordFile2 = TestUtils.getRecordFilesMap().get(file2.getName());
-        streamFileData1 = StreamFileData.from(file1);
-        streamFileData2 = StreamFileData.from(file2);
+
+        streamFileData1 = StreamFileData.from(dataPath.resolve(recordFile1.getName()).toFile());
+        streamFileData2 = StreamFileData.from(dataPath.resolve(recordFile2.getName()).toFile());
 
         doReturn(recordFile1).when(recordStreamFileListener).onStart(streamFileData1);
         doReturn(recordFile2).when(recordStreamFileListener).onStart(streamFileData2);
     }
 
     @Test
-    void parse() throws Exception {
+    void parse() {
         // given
 
         // when
         recordFileParser.parse(streamFileData1);
-        assertProcessedFile(streamFileData1, recordFile1, NUM_TXNS_FILE_1);
+        assertProcessedFile(streamFileData1, recordFile1);
 
         recordFileParser.parse(streamFileData2);
 
@@ -179,8 +145,9 @@ public class RecordFileParserTest {
     @Test
     void invalidFile() throws Exception {
         // given
-        FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
-        StreamFileData streamFileData = StreamFileData.from(file1);
+        File file = dataPath.resolve(recordFile1.getName()).toFile();
+        FileUtils.writeStringToFile(file, "corrupt", "UTF-8");
+        StreamFileData streamFileData = StreamFileData.from(file);
         doReturn(recordFile1).when(recordStreamFileListener).onStart(streamFileData);
 
         // when
@@ -209,9 +176,10 @@ public class RecordFileParserTest {
     }
 
     @Test
-    void bypassHashMismatch() throws Exception {
+    void bypassHashMismatch() {
         // given
-        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
+        Instant oneNanoAfter = Instant.ofEpochSecond(0, recordFile1.getConsensusStart() + 1L);
+        parserProperties.getMirrorProperties().setVerifyHashAfter(oneNanoAfter);
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
 
         // when
@@ -219,7 +187,7 @@ public class RecordFileParserTest {
 
         // then
         verify(recordStreamFileListener, never()).onError();
-        assertProcessedFile(streamFileData1, recordFile1, NUM_TXNS_FILE_1);
+        assertProcessedFile(streamFileData1, recordFile1);
     }
 
     @Test
@@ -239,17 +207,10 @@ public class RecordFileParserTest {
     }
 
     @ParameterizedTest(name = "parse with endDate set to {0}ns after the {1}th transaction")
-    @CsvSource(value = {
-            "-1, 0",
-            " 0, 0",
-            " 1, 0",
-            "-1, 19",
-            " 0, 19",
-            " 1, 19"
-    })
-    void parseWithEndDate(long nanos, int index) throws Exception {
+    @MethodSource("provideTimeOffsetArgument")
+    void parseWithEndDate(long nanos, int index) {
         // given
-        long end = FILE_CONSENSUS_TIMESTAMPS[index] + nanos;
+        long end = fileConsensusTimestamps[index] + nanos;
         DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
         doReturn(filter)
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
@@ -263,17 +224,10 @@ public class RecordFileParserTest {
     }
 
     @ParameterizedTest(name = "parse with startDate set to {0}ns after the {1}th transaction")
-    @CsvSource(value = {
-            "-1, 0",
-            " 0, 0",
-            " 1, 0",
-            "-1, 19",
-            " 0, 19",
-            " 1, 19"
-    })
-    void parseWithStartDate(long nanos, int index) throws Exception {
+    @MethodSource("provideTimeOffsetArgument")
+    void parseWithStartDate(long nanos, int index) {
         // given
-        long start = FILE_CONSENSUS_TIMESTAMPS[index] + nanos;
+        long start = fileConsensusTimestamps[index] + nanos;
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
         doReturn(filter)
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
@@ -305,28 +259,42 @@ public class RecordFileParserTest {
         for (int i = 0; i < recordFiles.length; i++) {
             RecordFile actual = actualArgs.get(i);
             RecordFile expected = recordFiles[i];
-            assertThat(actual).isEqualToIgnoringGivenFields(expected, "id", "loadEnd", "loadStart", "recordItems");
+            assertThat(actual).isEqualToIgnoringGivenFields(expected, "id", "loadEnd", "loadStart");
         }
     }
 
-    private void assertProcessedFile(StreamFileData streamFileData, RecordFile recordFile, int numTransactions) throws Exception {
+    private void assertProcessedFile(StreamFileData streamFileData, RecordFile recordFile) {
         // assert mock interactions
-        verify(recordItemListener, times(numTransactions)).onItem(any());
+        verify(recordItemListener, times(recordFile.getCount().intValue())).onItem(any());
         assertOnStart(streamFileData.getFilename());
         assertOnEnd(recordFile);
     }
 
-    private void assertAllProcessed() throws Exception {
+    private void assertAllProcessed() {
         assertAllProcessed(null);
     }
 
-    private void assertAllProcessed(DateRangeFilter dateRangeFilter) throws Exception {
+    protected void assertAllProcessed(DateRangeFilter dateRangeFilter) {
         // assert mock interactions
-        int expectedNumTxns = (int)Arrays.stream(FILE_CONSENSUS_TIMESTAMPS)
+        int expectedNumTxns = (int) Arrays.stream(fileConsensusTimestamps)
                 .filter(ts -> dateRangeFilter == null || dateRangeFilter.filter(ts)).count();
 
         verify(recordItemListener, times(expectedNumTxns)).onItem(any());
         assertOnStart(streamFileData1.getFilename(), streamFileData2.getFilename());
         assertOnEnd(recordFile1, recordFile2);
+    }
+
+    protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(String filename) {
+        RecordFile recordFile = TestUtils.getRecordFilesMap().get(filename);
+        int numTxns = recordFile.getCount().intValue();
+
+        return Stream.of(
+                Arguments.of(-1, 0),
+                Arguments.of(0, 0),
+                Arguments.of(1, 0),
+                Arguments.of(-1, numTxns),
+                Arguments.of(0, numTxns),
+                Arguments.of(1, numTxns)
+        );
     }
 }
