@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-public class UtilityTest {
+class UtilityTest {
 
     @ParameterizedTest(name = "check byte field actual ({0}) expected ({1})")
     @CsvSource({

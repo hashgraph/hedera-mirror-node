@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
 
 @Tag("failincci")
 @TestPropertySource(properties = "spring.flyway.target=1.33.0")
-public class RecordFileRepositoryV1_33_0Test extends AbstractRepositoryTest {
+class RecordFileRepositoryV1_33_0Test extends AbstractRepositoryTest {
 
     private RecordFileV1_33_0 recordFile;
 

@@ -39,7 +39,7 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
+class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
     protected Pair<String, String> getTestFiles() {

@@ -48,7 +48,7 @@ import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
-public abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Mock
     private RecordFileRepository recordFileRepository;
