@@ -32,6 +32,7 @@ import com.google.common.primitives.Longs;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,9 +72,10 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             "+xFHwmKhAvsKXyp2ZFIrB+PGMQI8wr1cCMYLKYpI4VceCkLTIB3XOOVKZPWZaOs8MK9Aj9ZeT3REqf" +
             "d252N19j2yA45x8Zs2kRIC2iKNNEPwcaUbGNHiPmsZ5Ezq0lnNKuomJECMsYHu";
 
-    private  final File signatureFile = Utility
-            .getResource("data/signature/v5/2021-01-11T22_16_11.299356001Z.rcd_sig");
+
     private final SignatureFileReaderV5 fileReaderV5 = new SignatureFileReaderV5();
+    private final File signatureFile = Utility
+            .getResource(Path.of("data", "signature", "v5", "2021-01-11T22_16_11.299356001Z.rcd_sig").toString());
 
     @Test
     void testReadValidFile() throws IOException {

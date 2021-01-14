@@ -21,6 +21,7 @@
 'use strict';
 
 const _ = require('lodash');
+const crypto = require('crypto');
 const math = require('mathjs');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -530,6 +531,10 @@ const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
 };
 
+const randomString = (length) => {
+  return crypto.randomBytes(Math.max(2, length) / 2).toString('hex');
+};
+
 /**
  * Returns the limit on how many result entries should be in the API
  * @param {String} type of API (e.g. transactions, balances, etc.). Currently unused.
@@ -793,6 +798,7 @@ module.exports = {
   parseTimestampParam,
   nsToSecNs,
   nsToSecNsWithHyphen,
+  randomString,
   returnEntriesLimit,
   secNsToNs,
   secNsToSeconds,

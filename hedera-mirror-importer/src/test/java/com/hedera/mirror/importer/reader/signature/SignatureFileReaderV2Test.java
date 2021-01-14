@@ -26,7 +26,6 @@ import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 
-import com.google.api.client.util.Base64;
 import com.google.common.primitives.Ints;
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +33,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;

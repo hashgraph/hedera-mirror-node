@@ -20,10 +20,14 @@
 
 'use strict';
 
+const constants = require('../constants');
+const httpContext = require('express-http-context');
 const qs = require('qs');
+const {randomString} = require('../utils');
 
-const requestLogger = function (req, res, next) {
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+const requestLogger = async (req, res, next) => {
+  httpContext.set(constants.requestIdLabel, randomString(8));
+  logger.debug(`${req.ip} ${req.method} ${req.originalUrl}`);
   return next();
 };
 

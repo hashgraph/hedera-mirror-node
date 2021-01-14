@@ -74,6 +74,7 @@ public class NodeSignatureVerifier {
         String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
                 .orElse(null);
         int consensusCount = 0;
+
         long sigFileCount = signatures.size();
         long nodeCount = nodeAccountIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {

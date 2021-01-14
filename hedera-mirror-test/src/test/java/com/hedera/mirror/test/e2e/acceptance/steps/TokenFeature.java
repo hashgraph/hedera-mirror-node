@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,6 @@ import com.hedera.hashgraph.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.proto.TokenKycStatus;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
@@ -312,48 +311,6 @@ public class TokenFeature {
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
-        }
-    }
-
-    @Then("the network should observe an error creating a token {string}")
-    public void verifyTokenCreation(String errorCode) throws Throwable {
-        try {
-            networkTransactionResponse = tokenClient.createToken(tokenClient.getSdkClient()
-                            .getExpandedOperatorAccountId(), symbol, TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                    TokenKycStatus.KycNotApplicable_VALUE);
-            assertNotNull(networkTransactionResponse.getTransactionId());
-            TransactionReceipt receipt = networkTransactionResponse.getReceipt();
-            assertNotNull(receipt);
-            assertTrue(errorCode.isEmpty());
-            TokenId tokenId = receipt.getTokenId();
-            assertNotNull(tokenId);
-        } catch (Exception ex) {
-            if (!ex.getMessage().contains(errorCode)) {
-                log.info("Exception mismatch : {}", ex.getMessage());
-                throw new Exception("Unexpected error code returned");
-            } else {
-                log.warn("Expected error found");
-            }
-        }
-    }
-
-    @Then("the network should observe an error associating a token {string}")
-    public void verifyTokenAssociation(String errorCode) throws Throwable {
-        try {
-            ExpandedAccountId accountToAssociate = recipient == null ? tokenClient.getSdkClient()
-                    .getExpandedOperatorAccountId() : recipient;
-            networkTransactionResponse = tokenClient
-                    .asssociate(accountToAssociate, tokenId);
-            assertNotNull(networkTransactionResponse.getTransactionId());
-            assertNotNull(networkTransactionResponse.getReceipt());
-            assertTrue(errorCode.isEmpty());
-        } catch (Exception ex) {
-            if (!ex.getMessage().contains(errorCode)) {
-                log.info("Exception mismatch : {}", ex.getMessage());
-                throw new Exception("Unexpected error code returned");
-            } else {
-                log.warn("Expected error found");
-            }
         }
     }
 

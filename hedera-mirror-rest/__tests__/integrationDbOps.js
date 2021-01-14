@@ -25,7 +25,7 @@ const {exec} = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const SqlConnectionPool = require('pg').Pool;
-const {randomString} = require('./testutils');
+const {randomString} = require('../utils');
 const {isDockerInstalled} = require('./integrationUtils');
 
 let oldPool;

@@ -19,8 +19,6 @@
  */
 'use strict';
 
-const crypto = require('crypto');
-
 const checkSql = (parsedparams, condition) => {
   for (const p of parsedparams) {
     if (p.field == condition.field && p.operator == condition.operator && p.value == condition.value) {
@@ -164,14 +162,9 @@ const badParamsList = () => {
   ];
 };
 
-const randomString = (length) => {
-  return crypto.randomBytes(length / 2).toString('hex');
-};
-
 module.exports = {
   badParamsList,
   checkSql,
   parseSqlQueryAndParams,
-  randomString,
   testBadParams,
 };

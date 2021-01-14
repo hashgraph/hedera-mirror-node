@@ -198,6 +198,31 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         recordStreamFileListener.onEnd(recordFile);
     }
 
+    protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
+        String fileName = UUID.randomUUID().toString();
+        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        RecordFile recordFile = RecordFile.builder()
+                .consensusStart(recordItems[0].getConsensusTimestamp())
+                .consensusEnd(recordItems[recordItems.length - 1].getConsensusTimestamp())
+                .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .name(fileName)
+                .nodeAccountId(nodeAccountId)
+                .fileHash(UUID.randomUUID().toString())
+                .previousHash("")
+                .build();
+        recordFileRepository.save(recordFile);
+        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
+
+        // process each record item
+        for (RecordItem recordItem : recordItems) {
+            entityRecordItemListener.onItem(recordItem);
+        }
+
+        // commit, close connection
+        recordStreamFileListener.onEnd(recordFile);
+    }
+
     protected void assertRecordTransfers(TransactionRecord record) {
         long consensusTimestamp = Utility.timeStampInNanos(record.getConsensusTimestamp());
         if (entityProperties.getPersist().isCryptoTransferAmounts()) {
