@@ -496,7 +496,7 @@ public abstract class Downloader {
             }
         }
 
-        verifyHash(filename, streamFile.getFileHash(), signature.getEntireFileHashAsHex());
+        verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex());
         verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex());
     }
 

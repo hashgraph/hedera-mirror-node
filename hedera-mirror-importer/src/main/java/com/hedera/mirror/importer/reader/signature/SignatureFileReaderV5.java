@@ -35,11 +35,8 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
 
     protected static final byte SIGNATURE_FILE_FORMAT_VERSION = 5;
-    protected static final int OBJECT_STREAM_SIGNATURE_VERSION = 1; //defines the format for the remainder of the file
 
     protected static final int HASH_SIZE = 48; //48 bytes for SHA-384
-
-    protected static final int SIGNATURE_TYPE = 1; //denotes SHA384withRSA
 
     @Override
     public FileStreamSignature read(InputStream inputStream) {
@@ -53,12 +50,18 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             //Read the objectStreamSignatureVersion, which is not used
             dis.readInt();
 
-            fileStreamSignature.setEntireFileHash(readHashObject(dis, "entire"));
-            fileStreamSignature.setEntireFilesignature(readSignatureObject(dis, "entire"));
+            fileStreamSignature.setFileHash(readHashObject(dis, "entireFile"));
+            Signature fileHashSignature = readSignatureObject(dis, "entireFile");
+            fileStreamSignature.setFileHashSignature(fileHashSignature.getSignatureBytes());
+            fileStreamSignature.setSignatureType(fileHashSignature.getSignatureType());
+
             fileStreamSignature.setMetadataHash(readHashObject(dis, "metadata"));
-            fileStreamSignature.setMetadataSignature(readSignatureObject(dis, "metadata"));
-            fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
-            validate(0, dis.available(), "remaining data size");
+            Signature metadataSignature = readSignatureObject(dis, "metadata");
+            fileStreamSignature.setMetadataHashSignature(metadataSignature.getSignatureBytes());
+
+            if (dis.available() != 0) {
+                throw new SignatureFileParsingException("Extra data discovered in signature file");
+            }
 
             return fileStreamSignature;
         } catch (IOException e) {
@@ -66,34 +69,39 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         }
     }
 
-    private byte[] readHashObject(DataInputStream dis, String hashName) throws IOException {
+    private byte[] readHashObject(DataInputStream dis, String sectionName) throws IOException {
         readClassIdAndVersion(dis);
 
         int hashType = dis.readInt();
-        validate(HASH_DIGEST_TYPE, hashType, "hashDigestType:" + hashName);
+        validate(HASH_DIGEST_TYPE, hashType, "hashDigestType", sectionName);
         int hashLength = dis.readInt();
-        validate(HASH_SIZE, hashLength, "hashLength:" + hashName);
+        validate(HASH_SIZE, hashLength, "hashLength", sectionName);
 
         byte[] hash = new byte[hashLength];
         int actualHashLength = dis.read(hash);
-        validate(hashLength, actualHashLength, "actualHashLength:" + hashName);
+        validate(hashLength, actualHashLength, "actualHashLength", sectionName);
         return hash;
     }
 
-    private byte[] readSignatureObject(DataInputStream dis, String signatureName) throws IOException {
+    private Signature readSignatureObject(DataInputStream dis, String sectionName) throws IOException {
         readClassIdAndVersion(dis);
 
-        int signatureType = dis.readInt();
-        validate(SIGNATURE_TYPE, signatureType, "signatureType:" + signatureName);
+        int signatureTypeIndicator = dis.readInt();
+        validate(SignatureType.SHA_384_WITH_RSA
+                .getFileMarker(), signatureTypeIndicator, "signatureType", sectionName);
+
+        SignatureType signatureType = SignatureType.of(signatureTypeIndicator);
 
         int signatureLength = dis.readInt();
+        validateBetween(1, signatureType.getMaxLength(), signatureLength, "signatureLength", sectionName);
         //Checksum is calculated as 101 - length of signature bytes
         int checkSum = dis.readInt();
-        validate(101 - signatureLength, checkSum, "checkSum:" + signatureName);
+        validate(101 - signatureLength, checkSum, "checkSum", sectionName);
         byte[] signature = new byte[signatureLength];
         int actualSignatureLength = dis.read(signature);
-        validate(signatureLength, actualSignatureLength, "actualSignatureLength:" + signatureName);
-        return signature;
+        validate(signatureLength, actualSignatureLength, "actualSignatureLength", sectionName);
+
+        return new Signature(signature, signatureType);
     }
 
     private void readClassIdAndVersion(DataInputStream dis) throws IOException {

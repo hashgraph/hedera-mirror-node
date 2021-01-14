@@ -39,7 +39,6 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
-import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
 @Named
@@ -86,7 +85,7 @@ public class NodeSignatureVerifier {
         for (FileStreamSignature fileStreamSignature : signatures) {
             if (verifySignature(fileStreamSignature, nodeAccountIDPubKeyMap)) {
                 fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
-                signatureHashMap.put(fileStreamSignature.getEntireFileHashAsHex(), fileStreamSignature);
+                signatureHashMap.put(fileStreamSignature.getFileHashAsHex(), fileStreamSignature);
             }
         }
 
@@ -126,7 +125,7 @@ public class NodeSignatureVerifier {
             return false;
         }
 
-        if (fileStreamSignature.getEntireFilesignature() == null) {
+        if (fileStreamSignature.getFileHashSignature() == null) {
             log.error("Missing signature data: {}", fileStreamSignature);
             return false;
         }
@@ -136,23 +135,19 @@ public class NodeSignatureVerifier {
                 log.trace("Verifying signature: {}", fileStreamSignature);
             }
 
-            Signature sig;
-            if (fileStreamSignature.getSignatureType() == SignatureType.SHA_384_WITH_RSA) {
-                sig = Signature.getInstance("SHA384withRSA", "SunRsaSign");
-            } else {
-                log.error("Signature type not valid: {}", fileStreamSignature);
-                return false;
-            }
-
+            Signature sig = Signature
+                    .getInstance(fileStreamSignature.getSignatureType().getAlgorithm(), fileStreamSignature
+                            .getSignatureType().getProvider());
             sig.initVerify(publicKey);
-            sig.update(fileStreamSignature.getEntireFileHash());
-            if (!sig.verify(fileStreamSignature.getEntireFilesignature())) {
+            sig.update(fileStreamSignature.getFileHash());
+
+            if (!sig.verify(fileStreamSignature.getFileHashSignature())) {
                 return false;
             }
 
-            if (fileStreamSignature.getMetadataSignature() != null) {
+            if (fileStreamSignature.getMetadataHashSignature() != null) {
                 sig.update(fileStreamSignature.getMetadataHash());
-                return sig.verify(fileStreamSignature.getMetadataSignature());
+                return sig.verify(fileStreamSignature.getMetadataHashSignature());
             }
 
             return true;

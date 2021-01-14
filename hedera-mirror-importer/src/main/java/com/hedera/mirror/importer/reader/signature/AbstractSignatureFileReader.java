@@ -21,17 +21,52 @@ package com.hedera.mirror.importer.reader.signature;
  */
 
 import java.util.Objects;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 public abstract class AbstractSignatureFileReader implements SignatureFileReader {
 
     protected static final int HASH_DIGEST_TYPE = 0x58ff811b; //denotes SHA-384
-    private static final String ERROR_MESSAGE = "Unable to read signature file %s: Expected %s but got %s";
+    private static final String NOT_EQUAL_ERROR_MESSAGE = "Unable to read signature file field %s: Expected %s but " +
+            "got %s";
+    private static final String NOT_IN_RANGE_ERROR_MESSAGE = "Unable to read signature file field %s: " +
+            "Expected value between %d and %d but got %d";
+    private static final String SECTION_ERROR_MESSAGE_ADDENDUM = "%s %s";
 
     protected void validate(Object expected, Object actual, String fieldName) {
+        validate(expected, actual, fieldName, null);
+    }
+
+    protected void validate(Object expected, Object actual, String fieldName, String sectionName) {
         if (!Objects.equals(expected, actual)) {
-            throw new SignatureFileParsingException(String.format(ERROR_MESSAGE, fieldName, expected, actual));
+            throw new SignatureFileParsingException(String
+                    .format(NOT_EQUAL_ERROR_MESSAGE, formatErrorMessageFieldName(fieldName, sectionName), expected,
+                            actual));
         }
+    }
+
+    protected void validateBetween(int minimumExpected, int maximumExpected, int actual, String fieldName,
+                                   String sectionName) {
+        if (actual < minimumExpected || actual > maximumExpected) {
+
+            throw new SignatureFileParsingException(String
+                    .format(NOT_IN_RANGE_ERROR_MESSAGE, formatErrorMessageFieldName(fieldName, sectionName),
+                            minimumExpected, maximumExpected, actual));
+        }
+    }
+
+    private String formatErrorMessageFieldName(String fieldName, String sectionName) {
+        return sectionName != null ? String
+                .format(SECTION_ERROR_MESSAGE_ADDENDUM, sectionName, fieldName) : fieldName;
+    }
+
+    @Data
+    @RequiredArgsConstructor
+    protected class Signature {
+        private final byte[] signatureBytes;
+        private final FileStreamSignature.SignatureType signatureType;
     }
 }
