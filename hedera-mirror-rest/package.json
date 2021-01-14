@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.20.0-alpha1",
+  "version": "0.26.0-alpha1",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "private": true,
@@ -11,29 +11,34 @@
     "test": "jest --testPathPattern='__tests__/*'",
     "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js",
-    "lint": "eslint \"**/*.js\""
+    "lint": "eslint \"**/*.js\"",
+    "integrationtest": "jest --testPathPattern='__tests__/integration.test.js' --collectCoverage=false"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
-    "@awaitjs/express": "^0.6.1",
+    "@awaitjs/express": "^0.6.3",
+    "@godaddy/terminus": "^4.5.0",
     "asn1js": "^2.0.26",
-    "aws-sdk": "^2.773.0",
+    "aws-sdk": "^2.824.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "@godaddy/terminus": "^4.4.1",
+    "express-http-context": "^1.2.4",
+    "express-oas-generator": "^1.0.30",
     "extend": "^3.0.2",
-    "js-yaml": "^3.14.0",
+    "js-yaml": "^4.0.0",
     "lodash": "^4.17.20",
     "log4js": "^6.3.0",
     "long": "^4.0.0",
-    "mathjs": "^7.3.0",
+    "mathjs": "^8.1.1",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
-    "pg": "~8.4.1",
-    "swagger-stats": "^0.95.17"
+    "pg": "~8.5.1",
+    "qs": "^6.9.4",
+    "swagger-stats": "^0.95.18",
+    "swagger-ui-express": "^4.1.6"
   },
   "bundledDependencies": [
     "asn1js",
@@ -43,6 +48,8 @@
     "compression",
     "cors",
     "express",
+    "express-http-context",
+    "express-oas-generator",
     "@godaddy/terminus",
     "extend",
     "js-yaml",
@@ -53,32 +60,34 @@
     "node-cache",
     "node-fetch",
     "pg",
-    "swagger-stats"
+    "qs",
+    "swagger-stats",
+    "swagger-ui-express"
   ],
   "devDependencies": {
     "aws-sdk-mock": "^5.1.0",
-    "axios": "^0.20.0",
-    "codecov": "^3.8.0",
-    "eslint-config-airbnb-base": "^14.2.0",
-    "eslint-config-prettier": "^6.12.0",
+    "axios": "^0.21.1",
+    "codecov": "^3.8.1",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-jest": "^24.1.0",
+    "eslint-plugin-jest": "^24.1.3",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^3.1.4",
+    "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-security": "^1.4.0",
-    "husky": "^4.3.0",
-    "jest": "^26.5.3",
+    "husky": "^4.3.7",
+    "jest": "^26.6.3",
     "jest-junit": "^12.0.0",
     "mock-req-res": "^1.2.0",
-    "node-flywaydb": "^3.0.3",
-    "nodemon": "^2.0.5",
-    "prettier": "^2.1.2",
+    "node-flywaydb": "^3.0.5",
+    "nodemon": "^2.0.7",
     "pg-format": "^1.0.4",
+    "prettier": "^2.2.1",
     "pretty-quick": "^3.1.0",
     "rewire": "^5.0.0",
-    "sinon": "^9.2.0",
-    "supertest": "^5.0.0",
-    "testcontainers": "^4.3.0"
+    "sinon": "^9.2.3",
+    "supertest": "^6.0.1",
+    "testcontainers": "^6.4.1"
   },
   "husky": {
     "hooks": {
@@ -119,5 +128,6 @@
     "tabWidth": 2,
     "semi": true,
     "singleQuote": true
-  }
+  },
+  "baseUrlPath": "/api/v1"
 }
