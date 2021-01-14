@@ -8,9 +8,9 @@ package com.hedera.datagenerator.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -106,8 +106,20 @@ public class DomainDriver implements ApplicationRunner {
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
         log.info("Writing data to db");
-        sqlEntityListener
-                .onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", nodeAccountId, 0L, 0)); // writes data to db
+        RecordFile recordFile = RecordFile.builder()
+                .consensusStart(0L)
+                .consensusEnd(1L)
+                .count(0L)
+                .id(1L)
+                .name("")
+                .loadStart(0L)
+                .loadEnd(1L)
+                .fileHash("")
+                .previousHash("")
+                .nodeAccountId(nodeAccountId)
+                .version(2)
+                .build();
+        sqlEntityListener.onEnd(recordFile); // writes data to db
         domainWriter.flush(); // writes data to db
         log.info("Total time taken: {}", stopwatch);
     }

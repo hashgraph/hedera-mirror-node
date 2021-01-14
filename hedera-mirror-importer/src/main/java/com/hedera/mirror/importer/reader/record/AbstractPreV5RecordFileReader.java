@@ -41,7 +41,6 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
 
     protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
-    protected static final int HASH_SIZE = DIGEST_ALGORITHM.getSize();
     protected static final byte PREV_HASH_MARKER = 1;
     protected static final byte RECORD_MARKER = 2;
 
@@ -89,8 +88,8 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         // previous record file hash
         byte marker = dis.readByte();
         Utility.checkField(marker, PREV_HASH_MARKER, "previous hash marker", recordFile.getName());
-        byte[] prevHash = dis.readNBytes(HASH_SIZE);
-        Utility.checkField(prevHash.length, HASH_SIZE, "previous hash size", recordFile.getName());
+        byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
+        Utility.checkField(prevHash.length, DIGEST_ALGORITHM.getSize(), "previous hash size", recordFile.getName());
 
         digest.updateHeader(Ints.toByteArray(version));
         digest.updateHeader(Ints.toByteArray(hapiVersion));

@@ -26,11 +26,11 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum DigestAlgorithm {
-    SHA384("SHA-384", 48);
+    SHA384("SHA-384", 48, 0x58ff811b);
 
     private final String name;
-
     private final int size;
+    private final int type; // as defined in the stream file v5 format document
 
     private static final DigestAlgorithm[] ORDINAL_LOOKUP = values();
 

@@ -46,8 +46,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
     private static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
     private static final long HASH_OBJECT_CLASS_ID = 0xf422da83a251741eL;
-    private static final int HASH_OBJECT_DIGEST_TYPE_SHA384 = 0x58ff811b;
-    private static final int HASH_OBJECT_HASH_LENGTH = DIGEST_ALGORITHM.getSize();
     private static final int OBJECT_STREAM_VERSION = 1;
     private static final long RECORD_STREAM_OBJECT_CLASS_ID = 0xe370929ba5429d8bL;
     private static final int VERSION = 5;
@@ -181,11 +179,11 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         int classVersion = dis.readInt();
 
         int digestType = dis.readInt();
-        Utility.checkField(digestType, HASH_OBJECT_DIGEST_TYPE_SHA384, "Hash object digest type", filename);
+        Utility.checkField(digestType, DIGEST_ALGORITHM.getType(), "Hash object digest type", filename);
         int hashLength = dis.readInt();
-        Utility.checkField(hashLength, HASH_OBJECT_HASH_LENGTH, "Hash object hash length", filename);
-        byte[] hash = dis.readNBytes(HASH_OBJECT_HASH_LENGTH);
-        Utility.checkField(hash.length, HASH_OBJECT_HASH_LENGTH, "Hash object hash bytes length", filename);
+        Utility.checkField(hashLength, DIGEST_ALGORITHM.getSize(), "Hash object hash length", filename);
+        byte[] hash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
+        Utility.checkField(hash.length, DIGEST_ALGORITHM.getSize(), "Hash object hash bytes length", filename);
 
         mdForMetadata.update(Longs.toByteArray(classID));
         mdForMetadata.update(Ints.toByteArray(classVersion));
