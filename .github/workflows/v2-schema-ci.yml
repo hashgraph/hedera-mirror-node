@@ -111,6 +111,28 @@ jobs:
     env:
       working-directory: ./hedera-mirror-rest
 
+    services:
+      localstack:
+        image: localstack/localstack:0.11.3
+        env:
+          SERVICES: s3
+        ports:
+          - 4566:4566
+      timescaledb:
+        image: timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3
+        env:
+          POSTGRES_DB: mirror_node_integration
+          POSTGRES_PASSWORD: mirror_api_pass
+          POSTGRES_USER: mirror_api
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -133,6 +155,18 @@ jobs:
         working-directory: ${{env.working-directory}}
         env:
           MIRROR_NODE_INT_DB: v2
+
+      - name: Run tests w github services
+        if: always()
+        run: npm test
+        working-directory: ${{env.working-directory}}
+        env:
+          CI_CONTAINERS: true
+          MIRROR_NODE_INT_DB: v2
+          POSTGRES_DB: mirror_node_integration
+          POSTGRES_PASSWORD: mirror_api_pass
+          POSTGRES_USER: mirror_api
+          TEST_S3_HOST: "127.0.0.1"
 
       - name: Upload importer test results
         if: always()

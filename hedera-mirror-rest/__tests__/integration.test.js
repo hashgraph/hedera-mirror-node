@@ -65,11 +65,6 @@ let sqlConnection;
 beforeAll(async () => {
   jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
-  console.log(
-    `*** beforeAll sqlConnection, isDefined: ${sqlConnection !== undefined}, sqlConnection.options.database: ${
-      sqlConnection.options.database
-    }`
-  );
 });
 
 afterAll(() => {
@@ -80,8 +75,6 @@ beforeEach(async () => {
   if (!sqlConnection) {
     console.log(`sqlConnection undefined, acquire new connection`);
     sqlConnection = await integrationDbOps.instantiateDatabase();
-    console.log(`*** beforeAll sqlConnection, isDefined: ${sqlConnection !== undefined}`);
-    console.log(`*** beforeAll sqlConnection, sqlConnection.options.database: ${sqlConnection.options.database}`);
   }
 
   await integrationDbOps.cleanUp();
@@ -108,8 +101,6 @@ const setupData = async function () {
 
   await integrationDomainOps.setUp(testDataJson.setup, sqlConnection);
 
-  console.log(`*** setupData sqlConnection, isDefined: ${sqlConnection !== undefined}`);
-  console.log(`*** setupData sqlConnection, sqlConnection.options.database: ${sqlConnection.options.database}`);
   console.log('Finished initializing DB data');
 };
 
@@ -466,8 +457,6 @@ describe('DB integration test - spec based', () => {
 
   const specSetupSteps = async (spec) => {
     await integrationDbOps.cleanUp();
-    console.log(`*** specSetupSteps sqlConnection, isDefined: ${sqlConnection !== undefined}`);
-    console.log(`*** specSetupSteps sqlConnection, sqlConnection.options.database: ${sqlConnection.options.database}`);
     await integrationDomainOps.setUp(spec, sqlConnection);
     await loadSqlScripts(spec.sqlscripts);
     overrideConfig(spec.config);
