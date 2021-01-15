@@ -96,6 +96,11 @@ const setupData = async function () {
 
   await integrationDomainOps.setUp(testDataJson.setup, sqlConnection);
 
+  console.log(
+    `*** setupData sqlConnection, isDefined: ${sqlConnection !== undefined}, sqlConnection.options.database: ${
+      sqlConnection.options.database
+    }`
+  );
   console.log('Finished initializing DB data');
 };
 
@@ -452,6 +457,11 @@ describe('DB integration test - spec based', () => {
 
   const specSetupSteps = async (spec) => {
     await integrationDbOps.cleanUp();
+    console.log(
+      `*** specSetupSteps sqlConnection, isDefined: ${sqlConnection !== undefined}, sqlConnection.options.database: ${
+        sqlConnection.options.database
+      }`
+    );
     await integrationDomainOps.setUp(spec, sqlConnection);
     await loadSqlScripts(spec.sqlscripts);
     overrideConfig(spec.config);
