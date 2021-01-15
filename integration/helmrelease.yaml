@@ -5,9 +5,9 @@ metadata:
   namespace: integration
 spec:
   chart:
-    repository: https://hashgraph.github.io/hedera-mirror-node/charts
-    name: hedera-mirror
-    version: 0.13.0-alpha1
+    git: https://github.com/hashgraph/hedera-mirror-node.git
+    path: charts/hedera-mirror
+    ref: tags/0.13.0-alpha1
   rollback:
     enable: true
     force: true
