@@ -11,7 +11,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.14.2</version>
+        <version>0.14.3</version>
     </parent>
 
     <dependencies>

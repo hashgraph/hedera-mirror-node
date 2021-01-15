@@ -1,10 +1,10 @@
 dependencies:
 - name: hedera-mirror-grpc
   repository: file://../hedera-mirror-grpc
-  version: 0.3.1
+  version: 0.3.2
 - name: hedera-mirror-importer
   repository: file://../hedera-mirror-importer
-  version: 0.3.1
+  version: 0.3.2
 - name: loki-stack
   repository: https://grafana.github.io/loki/charts
   version: 0.37.4
@@ -12,16 +12,16 @@ dependencies:
   repository: https://charts.bitnami.com/bitnami
   version: 3.2.10
 - name: prometheus-adapter
-  repository: https://kubernetes-charts.storage.googleapis.com/
+  repository: https://charts.helm.sh/stable
   version: 2.4.0
 - name: prometheus-operator
-  repository: https://kubernetes-charts.storage.googleapis.com
+  repository: https://charts.helm.sh/stable
   version: 8.15.5
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
-  version: 0.3.1
+  version: 0.3.2
 - name: traefik
   repository: https://containous.github.io/traefik-helm-chart
   version: 8.6.0
-digest: sha256:2a606fba565663a42d31008efdfb357f55282b933257b7ace4faa44a412277d0
-generated: "2020-12-04T14:44:56.358668-06:00"
+digest: sha256:0bac463da5f8607c39a9639caa582ecdfd77b5bb9bd570c8710f7dd5aca498f9
+generated: "2021-01-15T13:42:19.244832-06:00"
