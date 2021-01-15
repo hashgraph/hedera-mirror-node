@@ -20,25 +20,10 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
+class RecordFileV5ParserIntegrationTest extends AbstractRecordFileParserIntegrationTest {
 
-class RecordFileV5ParserTest extends AbstractRecordFileParserTest {
-
-    private final static String[] FILENAMES = {
-            "2021-01-11T22_09_24.063739000Z.rcd",
-            "2021-01-11T22_09_34.097416003Z.rcd"
-    };
-    private final static long[] FILE_CONSENSUS_TIMESTAMPS = {
-            1610402964063739000L,
-            1610402974097416003L
-    };
-
-    RecordFileV5ParserTest() {
-        super(FILENAMES[0], FILENAMES[1], FILE_CONSENSUS_TIMESTAMPS);
-    }
-
-    private static Stream<Arguments> provideTimeOffsetArgument() {
-        return provideTimeOffsetArgumentFromRecordFile(FILENAMES[0]);
+    RecordFileV5ParserIntegrationTest() {
+        super(new RecordFileDescriptor(2, 2, RECORD_FILES_MAP.get("2021-01-11T22_09_24.063739000Z.rcd")),
+                new RecordFileDescriptor(2, 0, RECORD_FILES_MAP.get("2021-01-11T22_09_34.097416003Z.rcd")));
     }
 }
