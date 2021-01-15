@@ -17,7 +17,8 @@ spec:
   wait: false
   values:
     global:
-      host: RELEASE-NAME-timescaledb
+      db:
+        host: RELEASE-NAME-timescaledb
     grpc:
       prometheusRules:
         GrpcNoSubscribers:
