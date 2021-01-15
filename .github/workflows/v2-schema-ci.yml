@@ -1,14 +1,14 @@
-name: "Standalone Module UTs v2 Schema"
+name: "Module Tests v2 Schema"
 
 on:
   push:
-    branches: [ v2-schema-gitactions, master, release/** ]
+    branches: [ master, release/** ]
   pull_request:
     branches: [ master, release/** ]
 
 jobs:
   grpc-build:
-    name: GRPC UTs
+    name: GRPC Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -59,7 +59,7 @@ jobs:
           retention-days: 7
 
   importer-build:
-    name: Importer UTs
+    name: Importer Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -105,7 +105,7 @@ jobs:
           retention-days: 7
 
   rest-test:
-    name: REST UTs
+    name: REST Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -143,7 +143,7 @@ jobs:
           retention-days: 7
 
   rest-test-2:
-    name: REST UTs w services
+    name: REST Tests w CI_CONTAINERS
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
