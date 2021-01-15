@@ -23,13 +23,10 @@
 const {exec} = require('child_process');
 
 const isDockerInstalled = function () {
-  console.log(`*** checking docker presence`);
   return new Promise((resolve) => {
     exec('docker --version', (err) => {
-      console.log(`*** error: ${err}`);
       resolve(!err);
     });
-    console.log(`*** docker present, no issues`);
   });
 };
 
