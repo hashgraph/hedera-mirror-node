@@ -40,6 +40,7 @@ class S3Ops {
         .withEnv('SERVICES', 's3')
         .withExposedPorts(defaultS3Port)
         .start();
+      console.log(`Started dockerized localStack ${localStackImageName}:${localstackImageTag}`);
       this.container = container;
       this.hostname = 'localhost';
       this.port = container.getMappedPort(defaultS3Port);
@@ -48,6 +49,7 @@ class S3Ops {
       this.port = defaultS3Port;
     }
 
+    console.log(`S3Ops endpoint: ${this.getEndpointUrl()}`);
     const {CancelToken} = axios;
     const source = CancelToken.source();
     const timeout = setTimeout(() => {

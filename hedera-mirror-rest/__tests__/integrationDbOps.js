@@ -73,9 +73,6 @@ const instantiateDatabase = async function () {
       return;
     }
 
-    console.log(
-      `Docker present, creating docker container ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`
-    );
     dockerDb = await new GenericContainer(schemaConfigs.docker.imageName, schemaConfigs.docker.tagName)
       .withEnv('POSTGRES_DB', config.db.name)
       .withEnv('POSTGRES_USER', dbUser)
@@ -84,7 +81,7 @@ const instantiateDatabase = async function () {
       .start();
     config.db.port = dockerDb.getMappedPort(config.db.port);
     config.db.host = dockerDb.getHost();
-    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`);
+    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`);
   }
 
   console.log(`sqlConnection will use jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}`);
