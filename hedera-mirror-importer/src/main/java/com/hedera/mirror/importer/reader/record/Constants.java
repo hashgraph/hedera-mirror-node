@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.reader.record;
  *
  */
 
-public class Constants {
+public final class Constants {
     public static final int MAX_RECORD_LENGTH = 64 * 1024;
     public static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 }

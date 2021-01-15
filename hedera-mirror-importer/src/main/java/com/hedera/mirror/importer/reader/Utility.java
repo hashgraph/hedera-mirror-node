@@ -60,11 +60,13 @@ public class Utility {
     public byte[] readLengthAndBytes(DataInputStream dis, int minLength, int maxLength, boolean hasChecksum,
             String section, String type) {
         try {
+            String typeLength = type + " length";
+
             int len = dis.readInt();
             if (minLength == maxLength) {
-                validate(minLength, len, type + " length", section);
+                validate(minLength, len, typeLength, section);
             } else {
-                validateBetween(1, maxLength, len, type + " length", section);
+                validateBetween(1, maxLength, len, typeLength, section);
             }
 
             if (hasChecksum) {
@@ -73,7 +75,7 @@ public class Utility {
             }
 
             byte[] bytes = dis.readNBytes(len);
-            validate(len, bytes.length, "actual " + type + " length", section);
+            validate(len, bytes.length, "actual " + typeLength, section);
             return bytes;
         } catch (IOException e) {
             throw new InvalidStreamFileException(e);
