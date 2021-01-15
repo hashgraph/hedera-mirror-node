@@ -40,6 +40,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.reader.Utility;
 
 @Named
 public class RecordFileReaderImplV5 implements RecordFileReader {
@@ -78,7 +79,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     private void readHeader(DataInputStream dis, MessageDigest mdForMetadata,
             RecordFile recordFile) throws IOException {
         int version = dis.readInt();
-        Utility.checkField(version, VERSION, "Record file version", recordFile.getName());
+        Utility.validate(VERSION, version, "record file version");
 
         int hapiVersionMajor = dis.readInt();
         int hapiVersionMinor = dis.readInt();
@@ -100,7 +101,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         String filename = recordFile.getName();
 
         int objectStreamVersion = dis.readInt();
-        Utility.checkField(objectStreamVersion, OBJECT_STREAM_VERSION, "Object stream version", filename);
+        Utility.validate(OBJECT_STREAM_VERSION, objectStreamVersion, "object stream version", filename);
         mdForMetadata.update(Ints.toByteArray(objectStreamVersion));
 
         // start object running hash
@@ -148,7 +149,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         // end object running hash
         byte[] endHash = readHashFromHashObject(dis, mdForMetadata, filename);
-        Utility.checkField(dis.available(), 0, "remaining data size", filename);
+        Utility.validate(0, dis.available(), "remaining data size", filename);
 
         recordFile.setCount(count);
         recordFile.setConsensusEnd(consensusEnd);
@@ -175,20 +176,19 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     private byte[] readHashFromHashObject(DataInputStream dis, MessageDigest mdForMetadata,
             String filename) throws IOException {
         long classID = dis.readLong();
-        Utility.checkField(classID, HASH_OBJECT_CLASS_ID, "Hash object class ID", filename);
+        Utility.validate(HASH_OBJECT_CLASS_ID, classID, "hash object class ID", filename);
         int classVersion = dis.readInt();
 
         int digestType = dis.readInt();
-        Utility.checkField(digestType, DIGEST_ALGORITHM.getType(), "Hash object digest type", filename);
-        int hashLength = dis.readInt();
-        Utility.checkField(hashLength, DIGEST_ALGORITHM.getSize(), "Hash object hash length", filename);
-        byte[] hash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
-        Utility.checkField(hash.length, DIGEST_ALGORITHM.getSize(), "Hash object hash bytes length", filename);
+        Utility.validate(DIGEST_ALGORITHM.getType(), digestType, "hash object digest type");
+        byte[] hash = Utility
+                .readLengthAndBytes(dis, DIGEST_ALGORITHM.getSize(), DIGEST_ALGORITHM.getSize(), false, filename,
+                        "hash");
 
         mdForMetadata.update(Longs.toByteArray(classID));
         mdForMetadata.update(Ints.toByteArray(classVersion));
         mdForMetadata.update(Ints.toByteArray(digestType));
-        mdForMetadata.update(Ints.toByteArray(hashLength));
+        mdForMetadata.update(Ints.toByteArray(DIGEST_ALGORITHM.getSize()));
         mdForMetadata.update(hash);
 
         return hash;
@@ -197,10 +197,12 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     private RecordStreamObjectBytes readRecordStreamObjectBytes(DataInputStream dis,
             String filename) throws IOException {
         long classID = dis.readLong();
-        Utility.checkField(classID, RECORD_STREAM_OBJECT_CLASS_ID, "Record stream object class ID", filename);
+        Utility.validate(RECORD_STREAM_OBJECT_CLASS_ID, classID, "record stream object class ID");
         dis.readInt(); // class version
-        byte[] recordBytes = Utility.readLengthAndBytes(dis, Utility.MAX_RECORD_LENGTH);
-        byte[] transactionBytes = Utility.readLengthAndBytes(dis, Utility.MAX_TRANSACTION_LENGTH);
+        byte[] recordBytes = Utility
+                .readLengthAndBytes(dis, 1, Constants.MAX_RECORD_LENGTH, false, filename, "record bytes");
+        byte[] transactionBytes = Utility
+                .readLengthAndBytes(dis, 1, Constants.MAX_TRANSACTION_LENGTH, false, filename, "transaction bytes");
 
         return new RecordStreamObjectBytes(recordBytes, transactionBytes);
     }

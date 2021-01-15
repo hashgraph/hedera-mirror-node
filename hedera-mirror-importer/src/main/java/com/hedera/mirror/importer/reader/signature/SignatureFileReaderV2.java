@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,37 +25,37 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
+import com.hedera.mirror.importer.reader.Utility;
 
-@Log4j2
 @Named
-public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
+public class SignatureFileReaderV2 implements SignatureFileReader {
 
     protected static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
     protected static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
-    protected static final byte HASH_SIZE = 48; // the size of the hash
 
     @Override
     public FileStreamSignature read(InputStream inputStream) {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
-            byte[] fileHash = new byte[HASH_SIZE];
+            byte[] fileHash = new byte[DigestAlgorithm.SHA384.getSize()];
 
             byte hashTypeDelimiter = dis.readByte();
-            validate(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, "hashDelimiter");
+            Utility.validate(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, "hash delimiter");
 
             int length = dis.read(fileHash);
-            validate(fileHash.length, length, "hashLength");
+            Utility.validate(fileHash.length, length, "hash length");
 
             fileStreamSignature.setFileHash(fileHash);
 
             byte signatureTypeDelimiter = dis.readByte();
-            validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "signatureDelimiter");
+            Utility.validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "signature delimiter");
 
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
@@ -69,7 +69,7 @@ public class SignatureFileReaderV2 extends AbstractSignatureFileReader {
             fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
 
             return fileStreamSignature;
-        } catch (IOException e) {
+        } catch (InvalidStreamFileException | IOException e) {
             throw new SignatureFileParsingException(e);
         }
     }

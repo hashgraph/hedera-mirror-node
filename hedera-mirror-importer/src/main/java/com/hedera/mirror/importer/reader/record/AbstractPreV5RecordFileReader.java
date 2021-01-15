@@ -36,6 +36,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.reader.Utility;
 
 @RequiredArgsConstructor
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
@@ -61,7 +62,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             return recordFile;
         } catch (ImporterException e) {
             throw e;
-        }  catch (Exception e) {
+        } catch (Exception e) {
             throw new StreamFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
         }
     }
@@ -79,17 +80,20 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * @throws IOException
      */
     private void readHeader(DataInputStream dis, RecordFileDigest digest, RecordFile recordFile) throws IOException {
+        String filename = recordFile.getName();
+
         // record file version
         int version = dis.readInt();
-        Utility.checkField(version, readerVersion, "record file version", recordFile.getName());
+        Utility.validate(readerVersion, version, "record file version", filename);
 
         int hapiVersion = dis.readInt();
 
         // previous record file hash
         byte marker = dis.readByte();
-        Utility.checkField(marker, PREV_HASH_MARKER, "previous hash marker", recordFile.getName());
+        Utility.validate(PREV_HASH_MARKER, marker, "previous hash marker", filename);
+
         byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
-        Utility.checkField(prevHash.length, DIGEST_ALGORITHM.getSize(), "previous hash size", recordFile.getName());
+        Utility.validate(DIGEST_ALGORITHM.getSize(), prevHash.length, "previous hash size", filename);
 
         digest.updateHeader(Ints.toByteArray(version));
         digest.updateHeader(Ints.toByteArray(hapiVersion));
@@ -114,16 +118,19 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      */
     private void readBody(DataInputStream dis, RecordFileDigest digest, Consumer<RecordItem> itemConsumer,
             RecordFile recordFile) throws IOException {
+        String filename = recordFile.getName();
         long count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;
 
         while (dis.available() != 0) {
             byte marker = dis.readByte();
-            Utility.checkField(marker, RECORD_MARKER, "record marker", recordFile.getName());
+            Utility.validate(RECORD_MARKER, marker, "record marker", filename);
 
-            byte[] transactionBytes = Utility.readLengthAndBytes(dis, Utility.MAX_TRANSACTION_LENGTH);
-            byte[] recordBytes = Utility.readLengthAndBytes(dis, Utility.MAX_RECORD_LENGTH);
+            byte[] transactionBytes = Utility.readLengthAndBytes(dis, 1, Constants.MAX_TRANSACTION_LENGTH,
+                    false, filename, "transaction bytes");
+            byte[] recordBytes = Utility.readLengthAndBytes(dis, 1, Constants.MAX_TRANSACTION_LENGTH,
+                    false, filename, "record bytes");
 
             digest.updateBody(marker);
             digest.updateBody(Ints.toByteArray(transactionBytes.length));

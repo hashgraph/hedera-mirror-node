@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.HASH_SIZE;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_SIGNATURE;
 import static org.junit.Assert.assertArrayEquals;
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -74,22 +74,22 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     @TestFactory
     Iterable<DynamicTest> testReadCorruptSignatureFileV2() {
         SignatureFileSection hashDelimiter = new SignatureFileSection(
-                new byte[] {SIGNATURE_TYPE_FILE_HASH},
+                new byte[] { SIGNATURE_TYPE_FILE_HASH },
                 "invalidHashDelimiter",
                 incrementLastByte,
-                "hashDelimiter");
+                "hash delimiter");
 
         SignatureFileSection hash = new SignatureFileSection(
-                TestUtils.generateRandomByteArray(HASH_SIZE),
+                TestUtils.generateRandomByteArray(DigestAlgorithm.SHA384.getSize()),
                 "invalidHashLength",
                 truncateLastByte,
                 "hash");
 
         SignatureFileSection signatureDelimiter = new SignatureFileSection(
-                new byte[] {SIGNATURE_TYPE_SIGNATURE},
+                new byte[] { SIGNATURE_TYPE_SIGNATURE },
                 "invalidSignatureDelimiter",
                 incrementLastByte,
-                "signatureDelimiter");
+                "signature delimiter");
 
         SignatureFileSection signatureLength = new SignatureFileSection(
                 Ints.toByteArray(SIGNATURE_LENGTH),
@@ -106,7 +106,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         SignatureFileSection invalidExtraData = new SignatureFileSection(
                 new byte[0],
                 "invalidExtraData",
-                bytes -> new byte[] {1},
+                bytes -> new byte[] { 1 },
                 "Extra data discovered in signature file");
 
         List<SignatureFileSection> signatureFileSections = Arrays

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -33,7 +34,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
 import org.junit.jupiter.api.DynamicTest;
@@ -108,17 +108,16 @@ abstract class AbstractSignatureFileReaderTest {
             .copyOfRange(bytes, 0, bytes.length - 1));
 
     @Value
-    @AllArgsConstructor
     protected class SignatureFileSection {
-        private final byte[] validDataBytes;
-        private final String corruptTestName;
-        private final SignatureFileSectionCorrupter byteCorrupter;
-        private final String invalidExceptionMessage;
+        byte[] validDataBytes;
+        String corruptTestName;
+        SignatureFileSectionCorrupter byteCorrupter;
+        String invalidExceptionMessage;
         @Getter(lazy = true)
-        private final byte[] corruptBytes = byteCorrupter.corruptBytes(validDataBytes);
+        byte[] corruptBytes = byteCorrupter.corruptBytes(validDataBytes);
 
         public void validateError(String errorMessage) {
-            assertTrue(errorMessage.contains(invalidExceptionMessage));
+            assertThat(errorMessage).contains(invalidExceptionMessage);
         }
     }
 

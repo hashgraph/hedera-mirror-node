@@ -20,23 +20,24 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
+import com.hedera.mirror.importer.reader.Utility;
 
-@Log4j2
 @Named
-public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
+public class SignatureFileReaderV5 implements SignatureFileReader {
 
     protected static final byte SIGNATURE_FILE_FORMAT_VERSION = 5;
-
-    protected static final int HASH_SIZE = 48; //48 bytes for SHA-384
 
     @Override
     public FileStreamSignature read(InputStream inputStream) {
@@ -45,7 +46,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         try (DataInputStream dis = new DataInputStream(inputStream)) {
 
             byte fileVersion = dis.readByte();
-            validate(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "fileVersion");
+            Utility.validate(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, "fileVersion");
 
             //Read the objectStreamSignatureVersion, which is not used
             dis.readInt();
@@ -64,7 +65,7 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
             }
 
             return fileStreamSignature;
-        } catch (IOException e) {
+        } catch (InvalidStreamFileException | IOException e) {
             throw new SignatureFileParsingException(e);
         }
     }
@@ -73,33 +74,19 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         readClassIdAndVersion(dis);
 
         int hashType = dis.readInt();
-        validate(HASH_DIGEST_TYPE, hashType, "hashDigestType", sectionName);
-        int hashLength = dis.readInt();
-        validate(HASH_SIZE, hashLength, "hashLength", sectionName);
-
-        byte[] hash = new byte[hashLength];
-        int actualHashLength = dis.read(hash);
-        validate(hashLength, actualHashLength, "actualHashLength", sectionName);
-        return hash;
+        Utility.validate(SHA384.getType(), hashType, "hash digest type", sectionName);
+        return Utility.readLengthAndBytes(dis, SHA384.getSize(), SHA384.getSize(), false, sectionName, "hash");
     }
 
     private Signature readSignatureObject(DataInputStream dis, String sectionName) throws IOException {
         readClassIdAndVersion(dis);
 
         int signatureTypeIndicator = dis.readInt();
-        validate(SignatureType.SHA_384_WITH_RSA
-                .getFileMarker(), signatureTypeIndicator, "signatureType", sectionName);
+        Utility.validate(SignatureType.SHA_384_WITH_RSA.getFileMarker(), signatureTypeIndicator, "signature type",
+                sectionName);
 
         SignatureType signatureType = SignatureType.of(signatureTypeIndicator);
-
-        int signatureLength = dis.readInt();
-        validateBetween(1, signatureType.getMaxLength(), signatureLength, "signatureLength", sectionName);
-        //Checksum is calculated as 101 - length of signature bytes
-        int checkSum = dis.readInt();
-        validate(101 - signatureLength, checkSum, "checkSum", sectionName);
-        byte[] signature = new byte[signatureLength];
-        int actualSignatureLength = dis.read(signature);
-        validate(signatureLength, actualSignatureLength, "actualSignatureLength", sectionName);
+        byte[] signature = Utility.readLengthAndBytes(dis, 1, signatureType.getMaxLength(), true, sectionName, "signature");
 
         return new Signature(signature, signatureType);
     }
@@ -108,5 +95,11 @@ public class SignatureFileReaderV5 extends AbstractSignatureFileReader {
         //Read the ClassId and ClassVersion, which are not used
         dis.readLong();
         dis.readInt();
+    }
+
+    @Value
+    private static class Signature {
+        byte[] signatureBytes;
+        FileStreamSignature.SignatureType signatureType;
     }
 }
