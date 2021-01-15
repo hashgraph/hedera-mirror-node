@@ -35,7 +35,6 @@ let sqlConnection;
 config.db.name = process.env.POSTGRES_DB || 'mirror_node_integration';
 const dbUser = process.env.POSTGRES_USER || config.db.username + '_admin';
 const dbPassword = process.env.POSTGRES_PASSWORD || randomString(16);
-const dbHost = process.env.POSTGRES_HOST || config.db.host;
 
 const v1SchemaConfigs = {
   docker: {
@@ -74,27 +73,24 @@ const instantiateDatabase = async function () {
       return;
     }
 
-    console.log(`*** Docker present, create ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`);
-    try {
-      dockerDb = await new GenericContainer(schemaConfigs.docker.imageName, schemaConfigs.docker.tagName)
-        .withEnv('POSTGRES_DB', config.db.name)
-        .withEnv('POSTGRES_USER', dbUser)
-        .withEnv('POSTGRES_PASSWORD', dbPassword)
-        .withExposedPorts(config.db.port)
-        .start();
-    } catch (err) {
-      console.log(`*** error starting docker container: ${err}`);
-    }
-
+    console.log(
+      `Docker present, creating docker container ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`
+    );
+    dockerDb = await new GenericContainer(schemaConfigs.docker.imageName, schemaConfigs.docker.tagName)
+      .withEnv('POSTGRES_DB', config.db.name)
+      .withEnv('POSTGRES_USER', dbUser)
+      .withEnv('POSTGRES_PASSWORD', dbPassword)
+      .withExposedPorts(config.db.port)
+      .start();
     config.db.port = dockerDb.getMappedPort(config.db.port);
     config.db.host = dockerDb.getHost();
     console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`);
   }
 
-  console.log(`sqlConnection will use jdbc:postgresql://${dbHost}:${config.db.port}/${config.db.name}`);
+  console.log(`sqlConnection will use jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}`);
   sqlConnection = new SqlConnectionPool({
     user: dbUser,
-    host: dbHost,
+    host: config.db.host,
     database: config.db.name,
     password: dbPassword,
     port: config.db.port,

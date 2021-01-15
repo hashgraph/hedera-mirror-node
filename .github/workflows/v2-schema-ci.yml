@@ -133,10 +133,6 @@ jobs:
         working-directory: ${{env.working-directory}}
         env:
           MIRROR_NODE_INT_DB: v2
-          POSTGRES_DB: mirror_node_integration
-          POSTGRES_HOST: 127.0.0.1
-          POSTGRES_PASSWORD: mirror_api_pass
-          POSTGRES_USER: mirror_api
 
       - name: Upload importer test results
         if: always()
