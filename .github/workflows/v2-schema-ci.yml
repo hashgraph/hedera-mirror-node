@@ -111,6 +111,44 @@ jobs:
     env:
       working-directory: ./hedera-mirror-rest
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install npm dependencies
+        run: npm ci
+        working-directory: ${{env.working-directory}}
+
+      - name: Cache Node packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-
+
+      - name: Run tests
+        run: npm test
+        working-directory: ${{env.working-directory}}
+        env:
+          MIRROR_NODE_INT_DB: v2
+
+      - name: Upload importer test results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: rest-test-results
+          path: ${{env.working-directory}}/target/jest-junit/*
+          retention-days: 7
+
+  rest-test-2:
+    name: REST UTs w services
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      working-directory: ./hedera-mirror-rest
+
     services:
       localstack:
         image: localstack/localstack:0.11.3
@@ -154,13 +192,6 @@ jobs:
         run: npm test
         working-directory: ${{env.working-directory}}
         env:
-          MIRROR_NODE_INT_DB: v2
-
-      - name: Run tests w github services
-        if: always()
-        run: npm test
-        working-directory: ${{env.working-directory}}
-        env:
           CI_CONTAINERS: true
           MIRROR_NODE_INT_DB: v2
           POSTGRES_DB: mirror_node_integration
@@ -172,6 +203,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: rest-test-results
+          name: rest-test-2-results
           path: ${{env.working-directory}}/target/jest-junit/*
           retention-days: 7
