@@ -28,7 +28,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Resource;
+import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +42,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
+@Disabled
 public class PubSubRecordParserTest extends PubSubIntegrationTest {
     private static final int NUM_TXNS = 34; // number of transactions in test record files
 
