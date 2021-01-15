@@ -65,6 +65,11 @@ let sqlConnection;
 beforeAll(async () => {
   jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
+  console.log(
+    `*** beforeAll sqlConnection, isDefined: ${sqlConnection !== undefined}, sqlConnection.options.database: ${
+      sqlConnection.options.database
+    }`
+  );
 });
 
 afterAll(() => {
@@ -497,6 +502,11 @@ describe('DB integration test - spec based', () => {
     const specText = fs.readFileSync(p, 'utf8');
     const spec = JSON.parse(specText);
     test(`DB integration test - ${file} - ${spec.url}`, async () => {
+      console.log(
+        `*** test level sqlConnection, isDefined: ${sqlConnection !== undefined}, sqlConnection.options.database: ${
+          sqlConnection.options.database
+        }`
+      );
       await specSetupSteps(spec.setup);
       const response = await request(server).get(spec.url);
 
