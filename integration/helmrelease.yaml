@@ -34,6 +34,7 @@ spec:
                 username: mirror_importer
               downloader:
                 cloudProvider: S3
+              initialAddressBook: "/usr/etc/addressbook/addressbook.bin"
               network: OTHER
               startDate: 1970-01-01T00:00:00Z
         spring:
@@ -41,6 +42,14 @@ spec:
             baselineVersion: 1.999.999
             locations: "classpath:db/migration/v2"
             target: 2.999.999
+      extraVolumeMounts:
+        - name: addressbook
+          mountPath: /usr/etc/addressbook
+      extraVolumes:
+        - name: addressbook
+          secret:
+            defaultMode: 420
+            secretName: mirror-importer-addressbook
       replicas: 0
     monitor:
       config:
