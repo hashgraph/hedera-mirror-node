@@ -110,8 +110,8 @@ public class RecordFileParser implements FileParser {
 
         latencyMetrics = latencyMetricsBuilder.build();
         sizeMetrics = sizeMetricsBuilder.build();
-        unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN);
-        unknownSizeMetric = sizeMetrics.get(TransactionTypeEnum.UNKNOWN);
+        unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN.getProtoId());
+        unknownSizeMetric = sizeMetrics.get(TransactionTypeEnum.UNKNOWN.getProtoId());
     }
 
     /**
