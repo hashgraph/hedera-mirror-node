@@ -110,15 +110,6 @@ jobs:
     timeout-minutes: 10
     env:
       working-directory: ./hedera-mirror-rest
-      MIRROR_NODE_INT_DB: v2
-
-    services:
-      localstack:
-        image: localstack/localstack:0.11.3
-        env:
-          SERVICES: s3
-        ports:
-          - 4566:4566
 
     steps:
       - name: Checkout repository
@@ -141,11 +132,11 @@ jobs:
         run: npm test
         working-directory: ${{env.working-directory}}
         env:
+          MIRROR_NODE_INT_DB: v2
           POSTGRES_DB: mirror_node_integration
           POSTGRES_HOST: 127.0.0.1
           POSTGRES_PASSWORD: mirror_api_pass
           POSTGRES_USER: mirror_api
-          TEST_S3_HOST: "127.0.0.1"
 
       - name: Upload importer test results
         if: always()
