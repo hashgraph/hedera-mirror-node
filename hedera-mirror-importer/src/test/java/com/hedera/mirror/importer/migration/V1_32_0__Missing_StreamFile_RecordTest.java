@@ -61,7 +61,8 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@Tag("v1data")
+@Tag("migration")
+@Tag("v1")
 @TestPropertySource(properties = "spring.flyway.target=1.31.3")
 class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
 

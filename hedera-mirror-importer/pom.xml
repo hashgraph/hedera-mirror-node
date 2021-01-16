@@ -298,25 +298,6 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>v2data</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-test</id>
-                                <configuration>
-                                    <excludedGroups>performance, largedbperf, v1data</excludedGroups>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 
     <build>

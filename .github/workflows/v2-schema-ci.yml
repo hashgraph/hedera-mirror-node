@@ -1,21 +1,21 @@
 name: "Module Tests v2 Schema"
 
 on:
-  push:
-    branches: [ master, release/** ]
   pull_request:
     branches: [ master, release/** ]
+
+env:
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version
+    -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Djib.skip -Ddocker.skip
+  MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0 -Dgroups=!v1
+    -Dspring.flyway.locations=filesystem:classpath:/db/migration/v2,../hedera-mirror-importer/src/main/resources/db/migration/v2
+    -Dspring.flyway.baseline-version=1.999.999 -Dspring.flyway.target=2.999.999
 
 jobs:
   grpc-build:
     name: GRPC Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-      MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
-        -Dspring.flyway.baseline-version=1.999.999 -Dspring.flyway.locations=filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2
-        -Dspring.flyway.target=2.999.999
 
     steps:
       - name: Checkout repository
@@ -33,22 +33,18 @@ jobs:
         with:
           java-version: 11
 
-      - name: Maven Package
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} install -Djib.skip -Ddocker.skip -DskipTests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Cache Maven packages
         uses: actions/cache@v1
         with:
-          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('hedera-mirror-grpc/pom.xml') }}
           path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Maven Install
+        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} install -DskipTests
 
       - name: Maven Verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -Djib.skip -pl hedera-mirror-grpc/
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -pl hedera-mirror-grpc/
 
       - name: Upload grpc test results
         if: always()
@@ -62,11 +58,6 @@ jobs:
     name: Importer Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-      MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
-        -Dspring.flyway.baseline-version=1.999.999 -Dspring.flyway.locations=classpath:/db/migration/v2
-        -Dspring.flyway.target=2.999.999
 
     steps:
       - name: Checkout repository
@@ -84,17 +75,15 @@ jobs:
         with:
           java-version: 11
 
-      - name: Maven Verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -Djib.skip -pl hedera-mirror-importer/ -P v2data
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Cache Maven packages
         uses: actions/cache@v1
         with:
-          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('hedera-mirror-importer/pom.xml') }}
           path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Maven Verify
+        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -pl hedera-mirror-importer/
 
       - name: Upload importer test results
         if: always()
@@ -106,44 +95,6 @@ jobs:
 
   rest-test:
     name: REST Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      working-directory: ./hedera-mirror-rest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Install npm dependencies
-        run: npm ci
-        working-directory: ${{env.working-directory}}
-
-      - name: Cache Node packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-
-
-      - name: Run tests
-        run: npm test
-        working-directory: ${{env.working-directory}}
-        env:
-          MIRROR_NODE_INT_DB: v2
-
-      - name: Upload importer test results
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: rest-test-results
-          path: ${{env.working-directory}}/target/jest-junit/*
-          retention-days: 7
-
-  rest-test-2:
-    name: REST Tests w CI_CONTAINERS
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -199,7 +150,7 @@ jobs:
           POSTGRES_USER: mirror_api
           TEST_S3_HOST: "127.0.0.1"
 
-      - name: Upload importer test results
+      - name: Upload rest test results
         if: always()
         uses: actions/upload-artifact@v2
         with:

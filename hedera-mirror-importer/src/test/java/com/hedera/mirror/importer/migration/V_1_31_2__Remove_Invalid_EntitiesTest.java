@@ -51,7 +51,8 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
-@Tag("v1data")
+@Tag("migration")
+@Tag("v1")
 @TestPropertySource(properties = "spring.flyway.target=1.31.1")
 class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
 

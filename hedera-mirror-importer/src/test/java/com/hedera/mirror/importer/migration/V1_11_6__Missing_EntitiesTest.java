@@ -58,7 +58,8 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
         "use due to the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
-@Tag("v1data")
+@Tag("migration")
+@Tag("v1")
 @TestPropertySource(properties = "spring.flyway.target=1.11.5")
 public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 

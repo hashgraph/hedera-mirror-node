@@ -37,7 +37,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 
-@Tag("v1data")
+@Tag("migration")
+@Tag("v1")
 public class V1_31_0_fix_address_book_102Test extends IntegrationTest {
 
     @Resource
