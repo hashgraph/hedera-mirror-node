@@ -54,6 +54,8 @@ spring:
     name: hedera-mirror-importer
   cloud:
     gcp:
+      core:
+        enabled: false
       pubsub:
         enabled: false
     kubernetes:

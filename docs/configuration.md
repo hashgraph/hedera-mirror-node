@@ -4,8 +4,9 @@ The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and 
 configuration from an `application.yml` file or via the environment.
 
 Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
-should be changed is `hedera.mirror.importer.network` as it controls which Hedera network to mirror. Additionally, the
-password properties have a default, but it is **strongly recommended passwords be changed from the default**.
+should be changed is `hedera.mirror.importer.network` as it controls which of the Hedera networks to mirror.
+Additionally, the password properties have a default, but it is **strongly recommended passwords be changed from the
+default**.
 
 ## Importer
 
