@@ -62,6 +62,7 @@ spec:
                 rest:
                   host: integration-mirror-rest
                   port: 80
+              network: OTHER
     postgresql:
       enabled: false
     rest:
