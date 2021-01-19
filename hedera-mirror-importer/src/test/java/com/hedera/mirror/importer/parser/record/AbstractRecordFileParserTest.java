@@ -81,9 +81,8 @@ abstract class AbstractRecordFileParserTest {
     @Mock(lenient = true)
     private RecordStreamFileListener recordStreamFileListener;
     @Mock
-    protected MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
-    private MirrorProperties mirrorProperties;
     private RecordFileParser recordFileParser;
     private RecordParserProperties parserProperties;
 
@@ -103,7 +102,7 @@ abstract class AbstractRecordFileParserTest {
 
     @BeforeEach
     void before() {
-        mirrorProperties = new MirrorProperties();
+        MirrorProperties mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
@@ -286,15 +285,15 @@ abstract class AbstractRecordFileParserTest {
 
     protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(String filename) {
         RecordFile recordFile = TestUtils.getRecordFilesMap().get(filename);
-        int numTxns = recordFile.getCount().intValue();
+        int numTransactions = recordFile.getCount().intValue();
 
         return Stream.of(
                 Arguments.of(-1, 0),
                 Arguments.of(0, 0),
                 Arguments.of(1, 0),
-                Arguments.of(-1, numTxns),
-                Arguments.of(0, numTxns),
-                Arguments.of(1, numTxns)
+                Arguments.of(-1, numTransactions),
+                Arguments.of(0, numTransactions),
+                Arguments.of(1, numTransactions)
         );
     }
 }

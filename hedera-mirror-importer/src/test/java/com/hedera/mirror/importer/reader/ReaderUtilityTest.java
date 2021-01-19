@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-class UtilityTest {
+class ReaderUtilityTest {
 
     @ParameterizedTest(name = "validate byte field actual ({0}) expected ({1})")
     @CsvSource({
@@ -44,9 +44,10 @@ class UtilityTest {
     })
     void validateByte(Byte actual, Byte expected, boolean expectThrown) {
         if (expectThrown) {
-            assertThrows(InvalidStreamFileException.class, () -> Utility.validate(expected, actual, "test field", "test section"));
+            assertThrows(InvalidStreamFileException.class, () -> ReaderUtility
+                    .validate(expected, actual, "test field", "test section"));
         } else {
-            Utility.validate(expected, actual, "test field", "test section");
+            ReaderUtility.validate(expected, actual, "test field", "test section");
         }
     }
 
@@ -59,9 +60,10 @@ class UtilityTest {
     })
     void validateInt(Integer actual, Integer expected, boolean expectThrown) {
         if (expectThrown) {
-            assertThrows(InvalidStreamFileException.class, () -> Utility.validate(expected, actual, "test field", "test section"));
+            assertThrows(InvalidStreamFileException.class, () -> ReaderUtility
+                    .validate(expected, actual, "test field", "test section"));
         } else {
-            Utility.validate(expected, actual, "test field", "test section");
+            ReaderUtility.validate(expected, actual, "test field", "test section");
         }
     }
 
@@ -74,9 +76,10 @@ class UtilityTest {
     })
     void validateLong(Long actual, Long expected, boolean expectThrown) {
         if (expectThrown) {
-            assertThrows(InvalidStreamFileException.class, () -> Utility.validate(expected, actual, "test field", "test section"));
+            assertThrows(InvalidStreamFileException.class, () -> ReaderUtility
+                    .validate(expected, actual, "test field", "test section"));
         } else {
-            Utility.validate(expected, actual, "test field", "test section");
+            ReaderUtility.validate(expected, actual, "test field", "test section");
         }
     }
 
@@ -91,9 +94,10 @@ class UtilityTest {
     })
     void validateBetween(int min, int max, int actual, boolean expectThrown) {
         if (expectThrown) {
-            assertThrows(InvalidStreamFileException.class, () -> Utility.validateBetween(min, max, actual, "test", null));
+            assertThrows(InvalidStreamFileException.class, () -> ReaderUtility
+                    .validateBetween(min, max, actual, "testfile", null, "testfield"));
         } else {
-            Utility.validateBetween(min, max, actual, "test", null);
+            ReaderUtility.validateBetween(min, max, actual, "testfile", null, "testfield");
         }
     }
 
@@ -119,9 +123,9 @@ class UtilityTest {
 
             if (expectThrown) {
                 assertThrows(InvalidStreamFileException.class,
-                        () -> Utility.readLengthAndBytes(dis, minLength, maxLength, false, null, "test"));
+                        () -> ReaderUtility.readLengthAndBytes(dis, minLength, maxLength, false, "testfile", null, "testfield"));
             } else {
-                byte[] actual = Utility.readLengthAndBytes(dis, minLength, maxLength, false, null, "test");
+                byte[] actual = ReaderUtility.readLengthAndBytes(dis, minLength, maxLength, false, "testfile",  null, "testfield");
 
                 byte[] expected = new byte[length];
                 assertArrayEquals(actual, expected);
@@ -134,7 +138,7 @@ class UtilityTest {
             "101, 0, false",
             "101, 100, true"
     })
-    void readLengthAdnBytesWithChecksum(int length, int checksum, boolean expectThrown) throws IOException {
+    void readLengthAndBytesWithChecksum(int length, int checksum, boolean expectThrown) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              DataOutputStream dos = new DataOutputStream(bos)) {
             dos.writeInt(length);
@@ -144,9 +148,9 @@ class UtilityTest {
 
             if (expectThrown) {
                 assertThrows(InvalidStreamFileException.class,
-                        () -> Utility.readLengthAndBytes(dis, length, length, true, null, "test"));
+                        () -> ReaderUtility.readLengthAndBytes(dis, length, length, true, "testfile", null, "testfield"));
             } else {
-                byte[] actual = Utility.readLengthAndBytes(dis, length, length, true, null, "test");
+                byte[] actual = ReaderUtility.readLengthAndBytes(dis, length, length, true, "testfile", null, "testfield");
 
                 byte[] expected = new byte[length];
                 assertArrayEquals(actual, expected);
@@ -158,7 +162,7 @@ class UtilityTest {
     void readLengthAndBytesWithTruncatedLengthField() throws IOException {
         try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(new byte[1]))) {
             assertThrows(InvalidStreamFileException.class,
-                    () -> Utility.readLengthAndBytes(dis, 10, 10, false, null, "test"));
+                    () -> ReaderUtility.readLengthAndBytes(dis, 10, 10, false, "testfile",  null, "testfield"));
         }
     }
 }

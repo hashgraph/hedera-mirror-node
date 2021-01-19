@@ -25,11 +25,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.primitives.Bytes;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,13 +34,10 @@ import lombok.Getter;
 import lombok.Value;
 import org.junit.jupiter.api.DynamicTest;
 
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 abstract class AbstractSignatureFileReaderTest {
-
-    protected InputStream getInputStream(File file) throws FileNotFoundException {
-        return new BufferedInputStream(new FileInputStream(file));
-    }
 
     protected InputStream getInputStream(byte[] bytes) {
         return new ByteArrayInputStream(bytes);
@@ -59,11 +52,9 @@ abstract class AbstractSignatureFileReaderTest {
         testCases.add(DynamicTest.dynamicTest(
                 "blankFile",
                 () -> {
-                    InputStream blankInputStream = getInputStream(new byte[0]);
+                    StreamFileData blankFileData = new StreamFileData("blankFile", getInputStream(new byte[0]));
                     SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
-                            () -> {
-                                fileReader.read(blankInputStream);
-                            });
+                            () -> fileReader.read(blankFileData));
                     assertTrue(e.getMessage().contains("EOFException"));
                 }));
 
@@ -87,11 +78,10 @@ abstract class AbstractSignatureFileReaderTest {
             testCases.add(DynamicTest.dynamicTest(
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
-                        InputStream corruptInputStream = getInputStream(fullSignatureBytes);
+                        StreamFileData corruptedFileData = new StreamFileData("corruptedFile",
+                                getInputStream(fullSignatureBytes));
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
-                                () -> {
-                                    fileReader.read(corruptInputStream);
-                                });
+                                () -> fileReader.read(corruptedFileData));
                         sectionToCorrupt.validateError(e.getMessage());
                     }));
         }

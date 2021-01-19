@@ -105,7 +105,6 @@ public class DomainDriver implements ApplicationRunner {
         }
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
-        log.info("Writing data to db");
         RecordFile recordFile = RecordFile.builder()
                 .consensusStart(0L)
                 .consensusEnd(1L)
@@ -119,6 +118,7 @@ public class DomainDriver implements ApplicationRunner {
                 .nodeAccountId(nodeAccountId)
                 .version(2)
                 .build();
+        log.info("Writing data to db");
         sqlEntityListener.onEnd(recordFile); // writes data to db
         domainWriter.flush(); // writes data to db
         log.info("Total time taken: {}", stopwatch);

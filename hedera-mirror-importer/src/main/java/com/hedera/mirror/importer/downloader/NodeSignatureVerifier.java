@@ -132,13 +132,10 @@ public class NodeSignatureVerifier {
         }
 
         try {
-            if (log.isTraceEnabled()) {
-                log.trace("Verifying signature: {}", fileStreamSignature);
-            }
+            log.trace("Verifying signature: {}", fileStreamSignature);
 
-            Signature sig = Signature
-                    .getInstance(fileStreamSignature.getSignatureType().getAlgorithm(), fileStreamSignature
-                            .getSignatureType().getProvider());
+            Signature sig = Signature.getInstance(fileStreamSignature.getSignatureType().getAlgorithm(),
+                    fileStreamSignature.getSignatureType().getProvider());
             sig.initVerify(publicKey);
             sig.update(fileStreamSignature.getFileHash());
 

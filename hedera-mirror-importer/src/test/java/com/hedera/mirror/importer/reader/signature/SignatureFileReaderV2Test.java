@@ -27,8 +27,6 @@ import static org.junit.Assert.assertNotNull;
 
 import com.google.common.primitives.Ints;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -40,6 +38,7 @@ import org.junit.jupiter.api.TestFactory;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
@@ -59,15 +58,12 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             .getResource(Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig").toString());
 
     @Test
-    void testReadValidFile() throws IOException {
-        try (InputStream stream = getInputStream(signatureFile)) {
-            FileStreamSignature fileStreamSignature = fileReaderV2.read(stream);
-            assertNotNull(fileStreamSignature);
-            assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature
-                    .getFileHash());
-            assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
-                    .getFileHashSignature());
-        }
+    void testReadValidFile() {
+        FileStreamSignature fileStreamSignature = fileReaderV2.read(StreamFileData.from(signatureFile));
+        assertNotNull(fileStreamSignature);
+        assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
+        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
+                .getFileHashSignature());
     }
 
     @TestFactory

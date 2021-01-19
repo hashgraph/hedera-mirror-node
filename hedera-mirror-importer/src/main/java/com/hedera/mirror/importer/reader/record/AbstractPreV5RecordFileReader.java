@@ -36,7 +36,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.reader.Utility;
+import com.hedera.mirror.importer.reader.ReaderUtility;
 
 @RequiredArgsConstructor
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
@@ -84,16 +84,16 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
         // record file version
         int version = dis.readInt();
-        Utility.validate(readerVersion, version, "record file version", filename);
+        ReaderUtility.validate(readerVersion, version, "record file version", filename);
 
         int hapiVersion = dis.readInt();
 
         // previous record file hash
         byte marker = dis.readByte();
-        Utility.validate(PREV_HASH_MARKER, marker, "previous hash marker", filename);
+        ReaderUtility.validate(PREV_HASH_MARKER, marker, "previous hash marker", filename);
 
         byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
-        Utility.validate(DIGEST_ALGORITHM.getSize(), prevHash.length, "previous hash size", filename);
+        ReaderUtility.validate(DIGEST_ALGORITHM.getSize(), prevHash.length, "previous hash size", filename);
 
         digest.updateHeader(Ints.toByteArray(version));
         digest.updateHeader(Ints.toByteArray(hapiVersion));
@@ -122,15 +122,16 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         long count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;
+        boolean hasItemConsumer = itemConsumer != null;
 
         while (dis.available() != 0) {
             byte marker = dis.readByte();
-            Utility.validate(RECORD_MARKER, marker, "record marker", filename);
+            ReaderUtility.validate(RECORD_MARKER, marker, "record marker", filename);
 
-            byte[] transactionBytes = Utility.readLengthAndBytes(dis, 1, Constants.MAX_TRANSACTION_LENGTH,
-                    false, filename, "transaction bytes");
-            byte[] recordBytes = Utility.readLengthAndBytes(dis, 1, Constants.MAX_TRANSACTION_LENGTH,
-                    false, filename, "record bytes");
+            byte[] transactionBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
+                    filename, null, "transaction bytes");
+            byte[] recordBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
+                    filename, null, "record bytes");
 
             digest.updateBody(marker);
             digest.updateBody(Ints.toByteArray(transactionBytes.length));
@@ -142,10 +143,10 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             boolean isLastTransaction = dis.available() == 0;
 
             // We need the first and last transaction timestamps for metrics
-            if (itemConsumer != null || isFirstTransaction || isLastTransaction) {
+            if (hasItemConsumer || isFirstTransaction || isLastTransaction) {
                 RecordItem recordItem = new RecordItem(transactionBytes, recordBytes);
 
-                if (itemConsumer != null) {
+                if (hasItemConsumer) {
                     itemConsumer.accept(recordItem);
                 }
 

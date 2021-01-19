@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,9 +56,10 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @ExtendWith(MockitoExtension.class)
 abstract class RecordFileReaderTest {
 
+    private static final Collection<RecordFile> ALL_RECORD_FILES = TestUtils.getRecordFilesMap().values();
+
     protected FileCopier fileCopier;
     protected RecordFileReader recordFileReader;
-    protected Collection<RecordFile> allRecordFiles;
 
     @TempDir
     Path dataPath;
@@ -97,7 +98,6 @@ abstract class RecordFileReaderTest {
                 .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
                 .from("recordstreams");
         recordFileReader = getRecordFileReader();
-        allRecordFiles = TestUtils.getRecordFilesMap().values();
     }
 
     @TestFactory
@@ -198,7 +198,7 @@ abstract class RecordFileReaderTest {
     }
 
     protected Iterator<RecordFile> getFilteredFiles(boolean negate) {
-        return allRecordFiles.stream()
+        return ALL_RECORD_FILES.stream()
                 .filter((recordFile) -> negate ^ filterFile(recordFile.getVersion()))
                 .collect(Collectors.toList())
                 .iterator();

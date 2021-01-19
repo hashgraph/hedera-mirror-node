@@ -28,8 +28,6 @@ import com.google.api.client.util.Base64;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +40,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
@@ -77,20 +76,16 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             .getResource(Path.of("data", "signature", "v5", "2021-01-11T22_16_11.299356001Z.rcd_sig").toString());
 
     @Test
-    void testReadValidFile() throws IOException {
-        try (InputStream stream = getInputStream(signatureFile)) {
-            FileStreamSignature fileStreamSignature = fileReaderV5.read(stream);
+    void testReadValidFile() {
+        FileStreamSignature fileStreamSignature = fileReaderV5.read(StreamFileData.from(signatureFile));
 
-            assertNotNull(fileStreamSignature);
-            assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature
-                    .getFileHash());
-            assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
-                    .getFileHashSignature());
-            assertArrayEquals(Base64.decodeBase64(metadataHashBase64.getBytes()), fileStreamSignature
-                    .getMetadataHash());
-            assertArrayEquals(Base64.decodeBase64(metadataSignatureBase64.getBytes()), fileStreamSignature
-                    .getMetadataHashSignature());
-        }
+        assertNotNull(fileStreamSignature);
+        assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
+        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()),fileStreamSignature
+                .getFileHashSignature());
+        assertArrayEquals(Base64.decodeBase64(metadataHashBase64.getBytes()), fileStreamSignature.getMetadataHash());
+        assertArrayEquals(Base64.decodeBase64(metadataSignatureBase64.getBytes()), fileStreamSignature
+                .getMetadataHashSignature());
     }
 
     @TestFactory

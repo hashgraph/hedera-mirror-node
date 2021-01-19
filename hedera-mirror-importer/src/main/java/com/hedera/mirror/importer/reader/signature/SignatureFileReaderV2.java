@@ -25,13 +25,15 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.inject.Named;
+import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
-import com.hedera.mirror.importer.reader.Utility;
+import com.hedera.mirror.importer.reader.ReaderUtility;
 
 @Named
 public class SignatureFileReaderV2 implements SignatureFileReader {
@@ -40,22 +42,24 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
     protected static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
 
     @Override
-    public FileStreamSignature read(InputStream inputStream) {
+    public FileStreamSignature read(StreamFileData signatureFileData) {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
+        String filename = FilenameUtils.getName(signatureFileData.getFilename());
+        InputStream inputStream = signatureFileData.getInputStream();
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
             byte[] fileHash = new byte[DigestAlgorithm.SHA384.getSize()];
 
             byte hashTypeDelimiter = dis.readByte();
-            Utility.validate(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, "hash delimiter");
+            ReaderUtility.validate(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, filename, "hash delimiter");
 
             int length = dis.read(fileHash);
-            Utility.validate(fileHash.length, length, "hash length");
+            ReaderUtility.validate(fileHash.length, length, filename, "hash length");
 
             fileStreamSignature.setFileHash(fileHash);
 
             byte signatureTypeDelimiter = dis.readByte();
-            Utility.validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, "signature delimiter");
+            ReaderUtility.validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, filename, "signature delimiter");
 
             int sigLength = dis.readInt();
             byte[] sigBytes = new byte[sigLength];
@@ -63,7 +67,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
             fileStreamSignature.setFileHashSignature(sigBytes);
 
             if (dis.available() != 0) {
-                throw new SignatureFileParsingException("Extra data discovered in signature file");
+                throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 
             fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);

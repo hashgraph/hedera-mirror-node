@@ -32,7 +32,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -70,6 +69,7 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
@@ -290,8 +290,7 @@ public abstract class Downloader {
 
     private FileStreamSignature parseSignatureFile(EntityId nodeAccountId, File sigFile) {
         try {
-            InputStream inputStream = Utility.openQuietly(sigFile);
-            FileStreamSignature fileStreamSignature = signatureFileReader.read(inputStream);
+            FileStreamSignature fileStreamSignature = signatureFileReader.read(StreamFileData.from(sigFile));
             fileStreamSignature.setFile(sigFile);
             fileStreamSignature.setNodeAccountId(nodeAccountId);
             return fileStreamSignature;

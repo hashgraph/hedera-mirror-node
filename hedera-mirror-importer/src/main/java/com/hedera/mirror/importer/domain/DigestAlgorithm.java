@@ -31,18 +31,4 @@ public enum DigestAlgorithm {
     private final String name;
     private final int size;
     private final int type; // as defined in the stream file v5 format document
-
-    private static final DigestAlgorithm[] ORDINAL_LOOKUP = values();
-
-    public static DigestAlgorithm from(Integer ordinal) {
-        if (ordinal == null) {
-            return null;
-        }
-
-        if (ordinal < 0 || ordinal >= ORDINAL_LOOKUP.length) {
-            return null;
-        }
-
-        return ORDINAL_LOOKUP[ordinal];
-    }
 }
