@@ -24,8 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 
 public class RecordFileV5DownloaderTest extends AbstractRecordFileDownloaderTest {
@@ -37,8 +36,8 @@ public class RecordFileV5DownloaderTest extends AbstractRecordFileDownloaderTest
     }
 
     @Override
-    protected Pair<String, String> getTestFiles() {
-        return ImmutablePair.of("2021-01-11T22_09_24.063739000Z.rcd", "2021-01-11T22_09_34.097416003Z.rcd");
+    protected List<String> getTestFiles() {
+        return List.of("2021-01-11T22_09_24.063739000Z.rcd", "2021-01-11T22_09_34.097416003Z.rcd");
     }
 
     @Override

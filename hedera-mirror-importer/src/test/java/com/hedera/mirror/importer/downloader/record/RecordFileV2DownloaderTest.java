@@ -30,8 +30,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -42,8 +40,8 @@ import com.hedera.mirror.importer.util.Utility;
 class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
-    protected Pair<String, String> getTestFiles() {
-        return ImmutablePair.of("2019-08-30T18_10_00.419072Z.rcd", "2019-08-30T18_10_05.249678Z.rcd");
+    protected List<String> getTestFiles() {
+        return List.of("2019-08-30T18_10_00.419072Z.rcd", "2019-08-30T18_10_05.249678Z.rcd");
     }
 
     @Override

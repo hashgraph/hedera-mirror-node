@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.record;
  *
  */
 
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -32,7 +31,6 @@ import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 
@@ -42,6 +40,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ReaderUtility;
 
 @Named
@@ -77,34 +76,29 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
     private void readHeader(DataInputStream dis, MessageDigest messageDigestMetadata,
             RecordFile recordFile) throws IOException {
-        int version = dis.readInt();
+        DataInputStream disWithMessageDigest = new DataInputStream(new DigestInputStream(dis, messageDigestMetadata));
+
+        int version = disWithMessageDigest.readInt();
         ReaderUtility.validate(VERSION, version, recordFile.getName(), "record file version");
 
-        int hapiVersionMajor = dis.readInt();
-        int hapiVersionMinor = dis.readInt();
-        int hapiVersionPatch = dis.readInt();
-
-        messageDigestMetadata.update(Ints.toByteArray(version));
-        messageDigestMetadata.update(Ints.toByteArray(hapiVersionMajor));
-        messageDigestMetadata.update(Ints.toByteArray(hapiVersionMinor));
-        messageDigestMetadata.update(Ints.toByteArray(hapiVersionPatch));
-
-        recordFile.setHapiVersionMajor(hapiVersionMajor);
-        recordFile.setHapiVersionMinor(hapiVersionMinor);
-        recordFile.setHapiVersionPatch(hapiVersionPatch);
+        recordFile.setHapiVersionMajor(disWithMessageDigest.readInt());
+        recordFile.setHapiVersionMinor(disWithMessageDigest.readInt());
+        recordFile.setHapiVersionPatch(disWithMessageDigest.readInt());
         recordFile.setVersion(version);
     }
 
     private void readBody(DataInputStream dis, Consumer<RecordItem> itemConsumer, MessageDigest messageDigestMetadata,
             RecordFile recordFile) throws IOException {
         String filename = recordFile.getName();
+        DigestInputStream digestInputStream = new DigestInputStream(dis, messageDigestMetadata);
+        DataInputStream disWithMessageDigest = new DataInputStream(digestInputStream);
 
-        int objectStreamVersion = dis.readInt();
-        messageDigestMetadata.update(Ints.toByteArray(objectStreamVersion));
+        disWithMessageDigest.readInt(); // object stream version
 
         // start object running hash
-        Hash startHash = readHashObject(dis, messageDigestMetadata, filename);
-        long hashObjectClassId = startHash.getClassId();
+        HashObject startHashObject = HashObject.read(disWithMessageDigest, filename, DIGEST_ALGORITHM);
+        digestInputStream.on(false);
+        long hashObjectClassId = startHashObject.getClassId();
 
         long count = 0;
         long consensusStart = 0;
@@ -112,8 +106,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         RecordStreamObject lastRecordStreamObject = null;
 
         // read record stream objects
-        while (!isHashObject(dis, hashObjectClassId)) {
-            RecordStreamObject recordStreamObject = readRecordStreamObject(dis, filename);
+        while (!isHashObject(disWithMessageDigest, hashObjectClassId)) {
+            RecordStreamObject recordStreamObject = readRecordStreamObject(disWithMessageDigest, filename);
             boolean isFirstTransaction = count == 0;
 
             if (hasItemConsumer || isFirstTransaction) {
@@ -138,17 +132,18 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         long consensusEnd = lastRecordStreamObject.getRecordItem().getConsensusTimestamp();
 
         // end object running hash
-        Hash endHash = readHashObject(dis, messageDigestMetadata, filename);
+        digestInputStream.on(true);
+        HashObject endHashObject = HashObject.read(disWithMessageDigest, filename, DIGEST_ALGORITHM);
 
-        if (dis.available() != 0) {
+        if (disWithMessageDigest.available() != 0) {
             throw new InvalidStreamFileException("Extra data discovered in record file " + filename);
         }
 
         recordFile.setCount(count);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setConsensusStart(consensusStart);
-        recordFile.setEndRunningHash(Hex.encodeHexString(endHash.getHash()));
-        recordFile.setPreviousHash(Hex.encodeHexString(startHash.getHash()));
+        recordFile.setEndRunningHash(Hex.encodeHexString(endHashObject.getHash()));
+        recordFile.setPreviousHash(Hex.encodeHexString(startHashObject.getHash()));
     }
 
     private MessageDigest createMessageDigest(DigestAlgorithm digestAlgorithm) {
@@ -157,24 +152,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         } catch (NoSuchAlgorithmException e) {
             throw new StreamFileReaderException(e);
         }
-    }
-
-    private Hash readHashObject(DataInputStream dis, MessageDigest mdForMetadata, String filename) throws IOException {
-        long classId = dis.readLong();
-        int classVersion = dis.readInt();
-
-        int digestType = dis.readInt();
-        ReaderUtility.validate(DIGEST_ALGORITHM.getType(), digestType, filename, "hash object digest type");
-        byte[] hash = ReaderUtility.readLengthAndBytes(dis, DIGEST_ALGORITHM.getSize(), DIGEST_ALGORITHM.getSize(),
-                false, filename, null, "hash");
-
-        mdForMetadata.update(Longs.toByteArray(classId));
-        mdForMetadata.update(Ints.toByteArray(classVersion));
-        mdForMetadata.update(Ints.toByteArray(digestType));
-        mdForMetadata.update(Ints.toByteArray(DIGEST_ALGORITHM.getSize()));
-        mdForMetadata.update(hash);
-
-        return new Hash(classId, hash);
     }
 
     private boolean isHashObject(DataInputStream dis, long hashObjectClassId) throws IOException {
@@ -195,12 +172,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
                 filename, null, "transaction bytes");
 
         return new RecordStreamObject(recordBytes, transactionBytes);
-    }
-
-    @Value
-    private static class Hash {
-        long classId;
-        byte[] hash;
     }
 
     @Getter

@@ -611,9 +611,9 @@ public abstract class AbstractDownloaderTest {
         }
     }
 
-    protected void setTestFilesAndInstants(String file1, String file2) {
-        this.file1 = file1;
-        this.file2 = file2;
+    protected void setTestFilesAndInstants(List<String> files) {
+        this.file1 = files.get(0);
+        this.file2 = files.get(1);
 
         file1Instant = Utility.getInstantFromFilename(file1);
         file2Instant = Utility.getInstantFromFilename(file2);

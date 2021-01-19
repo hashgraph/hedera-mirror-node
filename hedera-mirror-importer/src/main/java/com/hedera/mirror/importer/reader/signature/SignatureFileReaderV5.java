@@ -34,6 +34,7 @@ import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
+import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ReaderUtility;
 
 @Named
@@ -55,12 +56,14 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
             //Read the objectStreamSignatureVersion, which is not used
             dis.readInt();
 
-            fileStreamSignature.setFileHash(readHashObject(dis, filename, "entireFile"));
+            HashObject fileHashObject = HashObject.read(dis, filename, "entireFile", SHA384);
+            fileStreamSignature.setFileHash(fileHashObject.getHash());
             Signature fileHashSignature = readSignatureObject(dis, filename, "entireFile");
             fileStreamSignature.setFileHashSignature(fileHashSignature.getSignatureBytes());
             fileStreamSignature.setSignatureType(fileHashSignature.getSignatureType());
 
-            fileStreamSignature.setMetadataHash(readHashObject(dis, filename, "metadata"));
+            HashObject metadataHashObject = HashObject.read(dis, filename, "metadata", SHA384);
+            fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
             Signature metadataSignature = readSignatureObject(dis, filename, "metadata");
             fileStreamSignature.setMetadataHashSignature(metadataSignature.getSignatureBytes());
 
@@ -72,15 +75,6 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         } catch (InvalidStreamFileException | IOException e) {
             throw new SignatureFileParsingException(e);
         }
-    }
-
-    private byte[] readHashObject(DataInputStream dis, String filename, String sectionName) throws IOException {
-        readClassIdAndVersion(dis);
-
-        int hashType = dis.readInt();
-        ReaderUtility.validate(SHA384.getType(), hashType, filename, sectionName, "hash digest type");
-        return ReaderUtility.readLengthAndBytes(dis, SHA384.getSize(), SHA384.getSize(), false, filename,
-                sectionName, "hash");
     }
 
     private Signature readSignatureObject(DataInputStream dis, String filename, String sectionName) throws IOException {

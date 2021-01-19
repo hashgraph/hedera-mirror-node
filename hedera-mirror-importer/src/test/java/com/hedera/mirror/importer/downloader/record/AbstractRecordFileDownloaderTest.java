@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,15 +59,14 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
 
     @BeforeEach
     void beforeEach() {
-        Pair<String, String> testFiles = getTestFiles();
-        setTestFilesAndInstants(testFiles.getLeft(), testFiles.getRight());
+        setTestFilesAndInstants(getTestFiles());
         RecordFile recordFile1 = TestUtils.getRecordFilesMap().get(file1);
         RecordFile recordFile2 = TestUtils.getRecordFilesMap().get(file2);
         recordFileMap.put(recordFile1.getName(), recordFile1);
         recordFileMap.put(recordFile2.getName(), recordFile2);
     }
 
-    protected abstract Pair<String, String> getTestFiles();
+    protected abstract List<String> getTestFiles();
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
