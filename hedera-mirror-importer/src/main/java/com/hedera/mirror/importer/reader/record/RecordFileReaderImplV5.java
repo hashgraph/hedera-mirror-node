@@ -164,19 +164,22 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
     private RecordStreamObject readRecordStreamObject(DataInputStream dis,
             String filename) throws IOException {
-        dis.readLong(); // class ID
-        dis.readInt(); // class version
+        long classId = dis.readLong();
+        int classVersion = dis.readInt();
         byte[] recordBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_RECORD_LENGTH, false,
                 filename, null, "record bytes");
         byte[] transactionBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
                 filename, null, "transaction bytes");
 
-        return new RecordStreamObject(recordBytes, transactionBytes);
+        return new RecordStreamObject(classId, classVersion, recordBytes, transactionBytes);
     }
 
     @Getter
     @RequiredArgsConstructor
     private static class RecordStreamObject {
+
+        private final long classId;
+        private final int classVersion;
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
         private RecordItem recordItem;

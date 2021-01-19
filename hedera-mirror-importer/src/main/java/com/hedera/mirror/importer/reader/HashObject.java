@@ -31,21 +31,24 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 public class HashObject {
 
     private final long classId;
+    private final int classVersion;
+    private final int digestType;
     private final byte[] hash;
 
     public static HashObject read(DataInputStream dis, String filename, String sectionName,
             DigestAlgorithm digestAlgorithm) {
         try {
             long classId = dis.readLong();
-            dis.readInt(); // class version
+            int classVersion = dis.readInt();
 
-            ReaderUtility.validate(digestAlgorithm.getType(), dis.readInt(), filename, sectionName, "hash digest type");
+            int digestType = dis.readInt();
+            ReaderUtility.validate(digestAlgorithm.getType(), digestType, filename, sectionName, "hash digest type");
 
-            int digestSize = digestAlgorithm.getSize();
-            byte[] hash = ReaderUtility.readLengthAndBytes(dis, digestSize, digestSize, false, filename,
+            int hashLength = digestAlgorithm.getSize();
+            byte[] hash = ReaderUtility.readLengthAndBytes(dis, hashLength, hashLength, false, filename,
                     sectionName, "hash");
 
-            return new HashObject(classId, hash);
+            return new HashObject(classId, classVersion, digestType, hash);
         } catch (IOException e) {
             throw new InvalidStreamFileException(e);
         }

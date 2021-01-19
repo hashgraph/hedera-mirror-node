@@ -56,10 +56,11 @@ public class HashObjectTest {
             // given
             dos.writeLong(classId);
             dos.writeInt(classVersion);
-            dos.writeInt(Objects.requireNonNullElseGet(digestType, SHA384::getType));
+            digestType = Objects.requireNonNullElseGet(digestType, SHA384::getType);
+            dos.writeInt(digestType);
             dos.writeInt(SHA384.getSize());
-            byte[] expected = TestUtils.generateRandomByteArray(SHA384.getSize());
-            dos.write(expected);
+            byte[] hash = TestUtils.generateRandomByteArray(SHA384.getSize());
+            dos.write(hash);
 
             byte[] data = bos.toByteArray();
             if (bytesToTruncate > 0) {
@@ -71,9 +72,9 @@ public class HashObjectTest {
                 if (expectThrown) {
                     assertThrows(InvalidStreamFileException.class, () -> HashObject.read(dis, "testfile", SHA384));
                 } else {
-                    HashObject hashObject = HashObject.read(dis, "testfile", SHA384);
-                    assertThat(hashObject.getClassId()).isEqualTo(classId);
-                    assertThat(hashObject.getHash()).isEqualTo(expected);
+                    HashObject expected = new HashObject(classId, classVersion, digestType, hash);
+                    HashObject actual = HashObject.read(dis, "testfile", SHA384);
+                    assertThat(actual).isEqualTo(expected);
                 }
             }
 
