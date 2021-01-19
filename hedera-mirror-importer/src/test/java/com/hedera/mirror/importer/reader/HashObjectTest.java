@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-public class HashObjectTest {
+class HashObjectTest {
 
     @ParameterizedTest
     @CsvSource({
