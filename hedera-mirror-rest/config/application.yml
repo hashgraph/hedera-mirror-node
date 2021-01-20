@@ -7,9 +7,9 @@ hedera:
         name: mirror_node
         password: mirror_api_pass
         pool:
-          connectionTimeout: 3000
+          connectionTimeout: 20000
           maxConnections: 10
-          statementTimeout: 5000
+          statementTimeout: 20000
         port: 5432
         username: mirror_api
       includeHostInLink: false
