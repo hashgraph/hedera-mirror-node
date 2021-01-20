@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -57,7 +58,6 @@ import com.hedera.mirror.importer.exception.FileOperationException;
 public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
-    public static final String EMPTY_SHA_384_HASH = Hex.encodeHexString(new byte[DigestAlgorithm.SHA384.getSize()]);
 
     private static final Long SCALAR = 1_000_000_000L;
 
@@ -69,7 +69,7 @@ public class Utility {
      */
     public static String getBalanceFileHash(String fileName) {
         try {
-            MessageDigest md = MessageDigest.getInstance(DigestAlgorithm.SHA384.getName());
+            MessageDigest md = MessageDigest.getInstance(SHA384.getName());
             byte[] array = Files.readAllBytes(Paths.get(fileName));
             return Utility.bytesToHex(md.digest(array));
         } catch (NoSuchAlgorithmException | IOException e) {
@@ -164,10 +164,6 @@ public class Utility {
             return null;
         }
         return convertToNanosMax(timestamp.getSeconds(), timestamp.getNanos());
-    }
-
-    public static boolean hashIsEmpty(String hash) {
-        return StringUtils.isBlank(hash) || hash.equals(EMPTY_SHA_384_HASH);
     }
 
     // Moves a file in the form 2019-08-30T18_10_00.419072Z.rcd to destinationRoot/2019/08/30
@@ -349,7 +345,7 @@ public class Utility {
             return true;
         }
 
-        if (Utility.hashIsEmpty(expectedPrevHash)) {
+        if (SHA384.isHashEmpty(expectedPrevHash)) {
             log.warn("Previous hash not available");
             return true;
         }

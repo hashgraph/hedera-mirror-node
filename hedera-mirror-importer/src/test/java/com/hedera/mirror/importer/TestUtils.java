@@ -96,7 +96,7 @@ public class TestUtils {
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash("591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda")
                 .name("2019-08-30T18_10_00.419072Z.rcd")
-                .previousHash(Utility.EMPTY_SHA_384_HASH)
+                .previousHash(digestAlgorithm.getEmptyHash())
                 .version(2)
                 .build();
         RecordFile recordFileV2_2 = RecordFile.builder()
@@ -121,7 +121,7 @@ public class TestUtils {
                 .hapiVersionPatch(0)
                 .metadataHash("ffe56840b99145f7b3370367fa5784cbe225278afd1c4c078dfe5b950fee22e2b9e9a04bde32023c3ba07c057cb54406")
                 .name("2021-01-11T22_09_24.063739000Z.rcd")
-                .previousHash(Utility.EMPTY_SHA_384_HASH)
+                .previousHash(digestAlgorithm.getEmptyHash())
                 .version(5)
                 .build();
         RecordFile recordFileV5_2 = RecordFile.builder()
