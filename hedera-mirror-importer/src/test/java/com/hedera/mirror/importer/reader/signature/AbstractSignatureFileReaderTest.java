@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,31 +20,24 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.primitives.Bytes;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
 import org.junit.jupiter.api.DynamicTest;
 
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 abstract class AbstractSignatureFileReaderTest {
-
-    protected InputStream getInputStream(File file) throws FileNotFoundException {
-        return new BufferedInputStream(new FileInputStream(file));
-    }
 
     protected InputStream getInputStream(byte[] bytes) {
         return new ByteArrayInputStream(bytes);
@@ -59,11 +52,9 @@ abstract class AbstractSignatureFileReaderTest {
         testCases.add(DynamicTest.dynamicTest(
                 "blankFile",
                 () -> {
-                    InputStream blankInputStream = getInputStream(new byte[0]);
+                    StreamFileData blankFileData = new StreamFileData("blankFile", getInputStream(new byte[0]));
                     SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
-                            () -> {
-                                fileReader.read(blankInputStream);
-                            });
+                            () -> fileReader.read(blankFileData));
                     assertTrue(e.getMessage().contains("EOFException"));
                 }));
 
@@ -87,11 +78,10 @@ abstract class AbstractSignatureFileReaderTest {
             testCases.add(DynamicTest.dynamicTest(
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
-                        InputStream corruptInputStream = getInputStream(fullSignatureBytes);
+                        StreamFileData corruptedFileData = new StreamFileData("corruptedFile",
+                                getInputStream(fullSignatureBytes));
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
-                                () -> {
-                                    fileReader.read(corruptInputStream);
-                                });
+                                () -> fileReader.read(corruptedFileData));
                         sectionToCorrupt.validateError(e.getMessage());
                     }));
         }
@@ -108,17 +98,16 @@ abstract class AbstractSignatureFileReaderTest {
             .copyOfRange(bytes, 0, bytes.length - 1));
 
     @Value
-    @AllArgsConstructor
     protected class SignatureFileSection {
-        private final byte[] validDataBytes;
-        private final String corruptTestName;
-        private final SignatureFileSectionCorrupter byteCorrupter;
-        private final String invalidExceptionMessage;
+        byte[] validDataBytes;
+        String corruptTestName;
+        SignatureFileSectionCorrupter byteCorrupter;
+        String invalidExceptionMessage;
         @Getter(lazy = true)
-        private final byte[] corruptBytes = byteCorrupter.corruptBytes(validDataBytes);
+        byte[] corruptBytes = byteCorrupter.corruptBytes(validDataBytes);
 
         public void validateError(String errorMessage) {
-            assertTrue(errorMessage.contains(invalidExceptionMessage));
+            assertThat(errorMessage).contains(invalidExceptionMessage);
         }
     }
 

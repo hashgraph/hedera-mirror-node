@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -40,6 +39,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -69,6 +69,7 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
@@ -289,8 +290,7 @@ public abstract class Downloader {
 
     private FileStreamSignature parseSignatureFile(EntityId nodeAccountId, File sigFile) {
         try {
-            InputStream inputStream = Utility.openQuietly(sigFile);
-            FileStreamSignature fileStreamSignature = signatureFileReader.read(inputStream);
+            FileStreamSignature fileStreamSignature = signatureFileReader.read(StreamFileData.from(sigFile));
             fileStreamSignature.setFile(sigFile);
             fileStreamSignature.setNodeAccountId(nodeAccountId);
             return fileStreamSignature;
@@ -485,19 +485,30 @@ public abstract class Downloader {
      * @param signature  the signature object corresponding to the stream file
      */
     private void verify(StreamFile streamFile, FileStreamSignature signature) {
-        String fileName = streamFile.getName();
+        String filename = streamFile.getName();
 
         if (lastValidDownloadedFileHashKey != null) {
-            String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
+            String expectedPrevHash = applicationStatusRepository.findByStatusCode(lastValidDownloadedFileHashKey);
             Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-            if (!verifyHashChain(streamFile.getPreviousHash(), expectedPrevFileHash, verifyHashAfter, fileName)) {
-                throw new HashMismatchException(fileName, expectedPrevFileHash, streamFile.getPreviousHash());
+            if (!verifyHashChain(streamFile.getPreviousHash(), expectedPrevHash, verifyHashAfter, filename)) {
+                throw new HashMismatchException(filename, expectedPrevHash, streamFile.getPreviousHash());
             }
         }
 
-        String expectedFileHash = signature.getFileHashAsHex();
-        if (!streamFile.getFileHash().contentEquals(expectedFileHash)) {
-            throw new HashMismatchException(fileName, expectedFileHash, streamFile.getFileHash());
+        verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex());
+        verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex());
+    }
+
+    /**
+     * Verifies if the two hashes match.
+     *
+     * @param filename filename the hash is from
+     * @param actual the actual hash
+     * @param expected the expected hash
+     */
+    private void verifyHash(String filename, String actual, String expected) {
+        if (!Objects.equals(actual, expected)) {
+            throw new HashMismatchException(filename, expected, actual);
         }
     }
 
@@ -513,7 +524,7 @@ public abstract class Downloader {
         transactionTemplate.executeWithoutResult(status -> {
             if (lastValidDownloadedFileHashKey != null) {
                 applicationStatusRepository
-                        .updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getFileHash());
+                        .updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getCurrentHash());
             }
             applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
 

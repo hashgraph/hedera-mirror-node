@@ -159,7 +159,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executeBatches();
         recordFileRepository.save(recordFile);
         applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getCurrentHash());
     }
 
     @Override

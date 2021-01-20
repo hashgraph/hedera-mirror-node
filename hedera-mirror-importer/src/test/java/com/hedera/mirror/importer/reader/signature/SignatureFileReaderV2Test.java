@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,33 +20,28 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.HASH_SIZE;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_SIGNATURE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 
-import com.google.api.client.util.Base64;
 import com.google.common.primitives.Ints;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
+import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
-
-    private final File signatureFile = Utility
-            .getResource(Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig").toString());
 
     private static final String entireFileHashBase64 = "WRVY4Fm9FinuOGxONaaHW0xnoJZxj10iV3KmUQQnFRiUFN99tViEle" +
             "+yqF3EoP/a";
@@ -56,47 +51,40 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             "YJmlLLKUB9brEUpdSm8RRLs+jzEY76YT7Uv6WzIq04SetI+GUOMkEXDNvtcSKnE8625L7qmhbiiX4Ub90jCxCqt6JHXrCM1VsYWEn" +
             "/oUesRi5pnATgjqZOXycMegavb1Ikf3GoQAvn1Bx6EO14Uh7hVMxa/NYMtSVNQ17QG6QtA4j7viVvJ9EPSiCsmg3Cp2PhBW5ZPshq" +
             "+ExciGbnXFu+ytLZGSwKhePwuLQsBNTbGUcDFy1IJge95tEweR51Y1Nfh6PqPTnkdirRGO";
-
-    private static SignatureFileReaderV2 fileReaderV2;
-
     private static final int SIGNATURE_LENGTH = 48;
 
-    @BeforeAll
-    static void setup() {
-        fileReaderV2 = new SignatureFileReaderV2();
-    }
+    private final SignatureFileReaderV2 fileReaderV2 = new SignatureFileReaderV2();
+    private final File signatureFile = Utility
+            .getResource(Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig").toString());
 
     @Test
-    void testReadValidFile() throws IOException {
-        try (InputStream stream = getInputStream(signatureFile)) {
-            FileStreamSignature fileStreamSignature = fileReaderV2.read(stream);
-            assertNotNull(fileStreamSignature);
-            assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature
-                    .getFileHash());
-            assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
-                    .getFileHashSignature());
-        }
+    void testReadValidFile() {
+        FileStreamSignature fileStreamSignature = fileReaderV2.read(StreamFileData.from(signatureFile));
+        assertNotNull(fileStreamSignature);
+        assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
+        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
+                .getFileHashSignature());
     }
 
     @TestFactory
     Iterable<DynamicTest> testReadCorruptSignatureFileV2() {
         SignatureFileSection hashDelimiter = new SignatureFileSection(
-                new byte[] {SIGNATURE_TYPE_FILE_HASH},
+                new byte[] { SIGNATURE_TYPE_FILE_HASH },
                 "invalidHashDelimiter",
                 incrementLastByte,
-                "hashDelimiter");
+                "hash delimiter");
 
         SignatureFileSection hash = new SignatureFileSection(
-                TestUtils.generateRandomByteArray(HASH_SIZE),
+                TestUtils.generateRandomByteArray(DigestAlgorithm.SHA384.getSize()),
                 "invalidHashLength",
                 truncateLastByte,
                 "hash");
 
         SignatureFileSection signatureDelimiter = new SignatureFileSection(
-                new byte[] {SIGNATURE_TYPE_SIGNATURE},
+                new byte[] { SIGNATURE_TYPE_SIGNATURE },
                 "invalidSignatureDelimiter",
                 incrementLastByte,
-                "signatureDelimiter");
+                "signature delimiter");
 
         SignatureFileSection signatureLength = new SignatureFileSection(
                 Ints.toByteArray(SIGNATURE_LENGTH),
@@ -113,7 +101,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         SignatureFileSection invalidExtraData = new SignatureFileSection(
                 new byte[0],
                 "invalidExtraData",
-                bytes -> new byte[] {1},
+                bytes -> new byte[] { 1 },
                 "Extra data discovered in signature file");
 
         List<SignatureFileSection> signatureFileSections = Arrays

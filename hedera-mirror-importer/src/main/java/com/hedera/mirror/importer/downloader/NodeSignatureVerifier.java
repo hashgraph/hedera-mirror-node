@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,6 +74,7 @@ public class NodeSignatureVerifier {
         String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
                 .orElse(null);
         int consensusCount = 0;
+
         long sigFileCount = signatures.size();
         long nodeCount = nodeAccountIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
@@ -133,9 +134,8 @@ public class NodeSignatureVerifier {
         try {
             log.trace("Verifying signature: {}", fileStreamSignature);
 
-            Signature sig = Signature
-                    .getInstance(fileStreamSignature.getSignatureType().getAlgorithm(), fileStreamSignature
-                            .getSignatureType().getProvider());
+            Signature sig = Signature.getInstance(fileStreamSignature.getSignatureType().getAlgorithm(),
+                    fileStreamSignature.getSignatureType().getProvider());
             sig.initVerify(publicKey);
             sig.update(fileStreamSignature.getFileHash());
 

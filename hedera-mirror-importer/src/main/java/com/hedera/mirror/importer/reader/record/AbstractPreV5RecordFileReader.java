@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,25 +29,22 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.reader.ReaderUtility;
 
 @RequiredArgsConstructor
-public abstract class AbstractRecordFileReader implements RecordFileReader {
+public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
 
-    protected static final String HASH_ALGORITHM = "SHA-384";
-    protected static final int HASH_SIZE = 48; // 48-byte SHA-384 hash
+    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
     protected static final byte PREV_HASH_MARKER = 1;
     protected static final byte RECORD_MARKER = 2;
 
-    protected final Logger log = LogManager.getLogger(getClass());
     private final int readerVersion;
 
     @Override
@@ -57,6 +54,7 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
             RecordFileDigest digest = getRecordFileDigest();
 
             recordFile.setName(FilenameUtils.getName(streamFileData.getFilename()));
+            recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
             readHeader(dis, digest, recordFile);
             readBody(dis, digest, itemConsumer, recordFile);
             recordFile.setFileHash(Hex.encodeHexString(digest.digest()));
@@ -64,7 +62,7 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
             return recordFile;
         } catch (ImporterException e) {
             throw e;
-        }  catch (Exception e) {
+        } catch (Exception e) {
             throw new StreamFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
         }
     }
@@ -82,24 +80,27 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
      * @throws IOException
      */
     private void readHeader(DataInputStream dis, RecordFileDigest digest, RecordFile recordFile) throws IOException {
+        String filename = recordFile.getName();
+
         // record file version
         int version = dis.readInt();
-        checkField(version, readerVersion, "record file version", recordFile.getName());
+        ReaderUtility.validate(readerVersion, version, filename, "record file version");
 
         int hapiVersion = dis.readInt();
 
         // previous record file hash
         byte marker = dis.readByte();
-        checkField(marker, PREV_HASH_MARKER, "previous hash marker", recordFile.getName());
-        byte[] prevHash = dis.readNBytes(HASH_SIZE);
-        checkField(prevHash.length, HASH_SIZE, "previous hash size", recordFile.getName());
+        ReaderUtility.validate(PREV_HASH_MARKER, marker, filename, "previous hash marker");
+
+        byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
+        ReaderUtility.validate(DIGEST_ALGORITHM.getSize(), prevHash.length, filename, "previous hash size");
 
         digest.updateHeader(Ints.toByteArray(version));
         digest.updateHeader(Ints.toByteArray(hapiVersion));
         digest.updateHeader(marker);
         digest.updateHeader(prevHash);
 
-        recordFile.setRecordFormatVersion(version);
+        recordFile.setVersion(version);
         recordFile.setPreviousHash(Hex.encodeHexString(prevHash));
     }
 
@@ -117,16 +118,20 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
      */
     private void readBody(DataInputStream dis, RecordFileDigest digest, Consumer<RecordItem> itemConsumer,
             RecordFile recordFile) throws IOException {
+        String filename = recordFile.getName();
         long count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;
+        boolean hasItemConsumer = itemConsumer != null;
 
         while (dis.available() != 0) {
             byte marker = dis.readByte();
-            checkField(marker, RECORD_MARKER, "record marker", recordFile.getName());
+            ReaderUtility.validate(RECORD_MARKER, marker, filename, "record marker");
 
-            byte[] transactionBytes = readLengthAndBytes(dis);
-            byte[] recordBytes = readLengthAndBytes(dis);
+            byte[] transactionBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
+                    filename, null, "transaction bytes");
+            byte[] recordBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
+                    filename, null, "record bytes");
 
             digest.updateBody(marker);
             digest.updateBody(Ints.toByteArray(transactionBytes.length));
@@ -138,10 +143,10 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
             boolean isLastTransaction = dis.available() == 0;
 
             // We need the first and last transaction timestamps for metrics
-            if (itemConsumer != null || isFirstTransaction || isLastTransaction) {
+            if (hasItemConsumer || isFirstTransaction || isLastTransaction) {
                 RecordItem recordItem = new RecordItem(transactionBytes, recordBytes);
 
-                if (itemConsumer != null) {
+                if (hasItemConsumer) {
                     itemConsumer.accept(recordItem);
                 }
 
@@ -162,17 +167,11 @@ public abstract class AbstractRecordFileReader implements RecordFileReader {
         recordFile.setCount(count);
     }
 
-    private byte[] readLengthAndBytes(DataInputStream dis) throws IOException {
-        int len = dis.readInt();
-        byte[] bytes = new byte[len];
-        dis.readFully(bytes);
-        return bytes;
-    }
-
-    private <T> void checkField(T actual, T expected, String name, String filename) {
-        if (actual != expected) {
-            throw new InvalidStreamFileException(String.format("Expect %s (%s) got %s for record file %s",
-                    name, expected, actual, filename));
-        }
+    protected interface RecordFileDigest {
+        void updateHeader(byte input);
+        void updateHeader(byte[] input);
+        void updateBody(byte input);
+        void updateBody(byte[] input);
+        byte[] digest();
     }
 }

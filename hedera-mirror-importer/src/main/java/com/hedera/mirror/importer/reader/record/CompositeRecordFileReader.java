@@ -44,6 +44,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
 
     private final RecordFileReaderImplV1 version1Reader;
     private final RecordFileReaderImplV2 version2Reader;
+    private final RecordFileReaderImplV5 version5Reader;
 
     @Override
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
@@ -62,6 +63,9 @@ public class CompositeRecordFileReader implements RecordFileReader {
                     break;
                 case 2:
                     reader = version2Reader;
+                    break;
+                case 5:
+                    reader = version5Reader;
                     break;
                 default:
                     throw new InvalidStreamFileException(String.format("Unsupported record file version %d in file %s",

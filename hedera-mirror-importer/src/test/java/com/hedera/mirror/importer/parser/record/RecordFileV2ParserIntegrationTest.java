@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.reader.record;
+package com.hedera.mirror.importer.parser.record;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,13 +20,10 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-/**
- * Calculates digest for record file.
- */
-public interface RecordFileDigest {
-    void updateHeader(byte input);
-    void updateHeader(byte[] input);
-    void updateBody(byte input);
-    void updateBody(byte[] input);
-    byte[] digest();
+class RecordFileV2ParserIntegrationTest extends AbstractRecordFileParserIntegrationTest {
+
+    RecordFileV2ParserIntegrationTest() {
+        super(new RecordFileDescriptor(93, 8, RECORD_FILES_MAP.get("2019-08-30T18_10_00.419072Z.rcd")),
+                new RecordFileDescriptor(75, 5, RECORD_FILES_MAP.get("2019-08-30T18_10_05.249678Z.rcd")));
+    }
 }

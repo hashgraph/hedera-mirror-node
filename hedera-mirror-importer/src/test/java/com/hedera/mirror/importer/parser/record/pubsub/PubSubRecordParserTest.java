@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,7 @@ import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
@@ -78,7 +79,17 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
                 .filter(p -> p.toString().endsWith(".rcd"))
                 .forEach(p -> {
                     String filename = FilenameUtils.getName(p.toString());
-                    RecordFile rf = new RecordFile(Utility.getTimestampFromFilename(filename), 0L, null, filename, 0L, 0L, filename, filename, nodeAccountId, 0L, 2);
+                    RecordFile rf = RecordFile.builder()
+                            .consensusStart(Utility.getTimestampFromFilename(filename))
+                            .consensusEnd(0L)
+                            .count(0L)
+                            .digestAlgorithm(DigestAlgorithm.SHA384)
+                            .fileHash(filename)
+                            .name(filename)
+                            .nodeAccountId(nodeAccountId)
+                            .previousHash(filename)
+                            .version(2)
+                            .build();
                     recordFileRepository.save(rf);
                 });
     }

@@ -26,7 +26,8 @@ public class CompositeRecordFileReaderTest extends RecordFileReaderTest {
     protected RecordFileReader getRecordFileReader() {
         RecordFileReaderImplV1 v1Reader = new RecordFileReaderImplV1();
         RecordFileReaderImplV2 v2Reader = new RecordFileReaderImplV2();
-        return new CompositeRecordFileReader(v1Reader, v2Reader);
+        RecordFileReaderImplV5 v5Reader = new RecordFileReaderImplV5();
+        return new CompositeRecordFileReader(v1Reader, v2Reader, v5Reader);
     }
 
     @Override

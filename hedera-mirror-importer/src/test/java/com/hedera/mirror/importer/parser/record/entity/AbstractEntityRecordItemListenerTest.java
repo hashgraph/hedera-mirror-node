@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,6 +51,7 @@ import org.junit.jupiter.api.TestInfo;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -180,9 +181,16 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
         String fileName = UUID.randomUUID().toString();
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile recordFile = new RecordFile(recordItem.getConsensusTimestamp(),
-                recordItem.getConsensusTimestamp() + 1, null, fileName, 0L, 0L,
-                UUID.randomUUID().toString(), "", nodeAccountId, 0L, 0);
+        RecordFile recordFile = RecordFile.builder()
+                .consensusStart(recordItem.getConsensusTimestamp())
+                .consensusEnd(recordItem.getConsensusTimestamp() + 1)
+                .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .name(fileName)
+                .nodeAccountId(nodeAccountId)
+                .fileHash(UUID.randomUUID().toString())
+                .previousHash("")
+                .build();
         recordFileRepository.save(recordFile);
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         entityRecordItemListener.onItem(recordItem);
@@ -193,9 +201,16 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
         String fileName = UUID.randomUUID().toString();
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile recordFile = new RecordFile(recordItems[0].getConsensusTimestamp(),
-                recordItems[recordItems.length - 1].getConsensusTimestamp() + 1, null, fileName, 0L, 0L,
-                UUID.randomUUID().toString(), "", nodeAccountId, 0L, 0);
+        RecordFile recordFile = RecordFile.builder()
+                .consensusStart(recordItems[0].getConsensusTimestamp())
+                .consensusEnd(recordItems[recordItems.length - 1].getConsensusTimestamp())
+                .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .name(fileName)
+                .nodeAccountId(nodeAccountId)
+                .fileHash(UUID.randomUUID().toString())
+                .previousHash("")
+                .build();
         recordFileRepository.save(recordFile);
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
 

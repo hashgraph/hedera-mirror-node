@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
 
@@ -35,7 +36,18 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
     @BeforeEach
     void setUp() {
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", nodeAccountId, 0L, 0);
+        recordFile = RecordFile.builder()
+                .consensusStart(0L)
+                .consensusEnd(0L)
+                .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .endRunningHash("hash")
+                .fileHash("fileHash")
+                .name("fileName")
+                .nodeAccountId(nodeAccountId)
+                .previousHash("previousHash")
+                .version(1)
+                .build();
     }
 
     @Test

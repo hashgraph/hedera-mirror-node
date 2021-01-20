@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,6 +41,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -350,8 +351,16 @@ public class SqlEntityListenerTest extends IntegrationTest {
         }
 
         EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile rf = new RecordFile(consensusStart, consensusStart + 1, null, filename, 0L, 0L, fileHash, prevHash
-                , nodeAccountId, 0L, 0);
+        RecordFile rf = RecordFile.builder()
+                .consensusStart(consensusStart)
+                .consensusEnd(consensusStart + 1)
+                .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .fileHash(fileHash)
+                .name(filename)
+                .nodeAccountId(nodeAccountId)
+                .previousHash(prevHash)
+                .build();
         recordFileRepository.save(rf);
         return rf;
     }

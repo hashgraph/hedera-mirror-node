@@ -38,12 +38,12 @@ abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
 
         return DynamicTest.stream(
                 getFilteredFiles(true),
-                (recordFile) -> String.format(template, recordFile.getRecordFormatVersion(), recordFile.getName()),
+                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
                 (recordFile) -> {
                     String filename = recordFile.getName();
 
                     // given
-                    fileCopier.from(getSubPath(recordFile.getRecordFormatVersion())).filterFiles(filename).copy();
+                    fileCopier.from(getSubPath(recordFile.getVersion())).filterFiles(filename).copy();
                     File file = fileCopier.getTo().resolve(filename).toFile();
                     StreamFileData streamFileData = StreamFileData.from(file);
 
