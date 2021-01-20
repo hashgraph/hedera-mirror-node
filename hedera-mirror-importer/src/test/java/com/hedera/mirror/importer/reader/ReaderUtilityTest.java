@@ -107,6 +107,7 @@ class ReaderUtilityTest {
             "6, 6, 1, 10, false",
             "6, 10, 1, 10, false",
             "6, 6, 6, 6, false",
+            "6, 6, 7, 10, true",
             "5, 6, 6, 6, true",
             "6, 5, 1, 10, true",
             "0, 2, 1, 10, true",

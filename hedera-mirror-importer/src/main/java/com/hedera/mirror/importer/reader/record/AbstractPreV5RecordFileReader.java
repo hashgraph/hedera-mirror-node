@@ -84,16 +84,16 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
         // record file version
         int version = dis.readInt();
-        ReaderUtility.validate(readerVersion, version, "record file version", filename);
+        ReaderUtility.validate(readerVersion, version, filename, "record file version");
 
         int hapiVersion = dis.readInt();
 
         // previous record file hash
         byte marker = dis.readByte();
-        ReaderUtility.validate(PREV_HASH_MARKER, marker, "previous hash marker", filename);
+        ReaderUtility.validate(PREV_HASH_MARKER, marker, filename, "previous hash marker");
 
         byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
-        ReaderUtility.validate(DIGEST_ALGORITHM.getSize(), prevHash.length, "previous hash size", filename);
+        ReaderUtility.validate(DIGEST_ALGORITHM.getSize(), prevHash.length, filename, "previous hash size");
 
         digest.updateHeader(Ints.toByteArray(version));
         digest.updateHeader(Ints.toByteArray(hapiVersion));
@@ -126,7 +126,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
         while (dis.available() != 0) {
             byte marker = dis.readByte();
-            ReaderUtility.validate(RECORD_MARKER, marker, "record marker", filename);
+            ReaderUtility.validate(RECORD_MARKER, marker, filename, "record marker");
 
             byte[] transactionBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
                     filename, null, "transaction bytes");

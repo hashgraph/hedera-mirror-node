@@ -69,7 +69,7 @@ public class ReaderUtility {
             if (minLength == maxLength) {
                 validate(minLength, len, typeLength, sectionName);
             } else {
-                validateBetween(1, maxLength, len, filename, sectionName, typeLength);
+                validateBetween(minLength, maxLength, len, filename, sectionName, typeLength);
             }
 
             if (hasChecksum) {

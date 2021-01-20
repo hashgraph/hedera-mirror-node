@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +49,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
         InputStream inputStream = signatureFileData.getInputStream();
 
-        try (DataInputStream dis = new DataInputStream(inputStream)) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
 
             byte fileVersion = dis.readByte();
             ReaderUtility.validate(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, filename, "fileVersion");
