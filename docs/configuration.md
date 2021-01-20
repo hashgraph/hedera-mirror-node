@@ -254,9 +254,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.db.host`                             | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.rest.db.name`                             | mirror_node             | The name of the database                                                                       |
 | `hedera.mirror.rest.db.password`                         | mirror_api_pass         | The database password the processor uses to connect.                                           |
-| `hedera.mirror.rest.db.pool.connectionTimeout`           | 3000                    | The number of milliseconds to wait before timing out when connecting a new database client     |
+| `hedera.mirror.rest.db.pool.connectionTimeout`           | 20000                   | The number of milliseconds to wait before timing out when connecting a new database client     |
 | `hedera.mirror.rest.db.pool.maxConnections`              | 10                      | The maximum number of clients the database pool can contain                                    |
-| `hedera.mirror.rest.db.pool.statementTimeout`            | 5000                    | The number of milliseconds to wait before timing out a query statement                         |
+| `hedera.mirror.rest.db.pool.statementTimeout`            | 20000                   | The number of milliseconds to wait before timing out a query statement                         |
 | `hedera.mirror.rest.db.port`                             | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
 | `hedera.mirror.rest.includeHostInLink`                   | false                   | Whether to include the hostname and port in the next link in the response                      |
