@@ -69,13 +69,13 @@ fi
 
 OLD_DB_HAS_DATA=$(PGPASSWORD="${OLD_DB_PASSWORD}" psql -X -t -h "${OLD_DB_HOST}" -d "${OLD_DB_NAME}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select exists (select from information_schema.tables where table_name = 'flyway_schema_history');" | xargs)
 if [[ "${OLD_DB_HAS_DATA}" != "t" ]]; then
-  echo "New database already contains data. The migration might have already been ran or the importer might've initialized it. Please remove the data and rerun the migration"
+  echo "Unable to verify the state of the old database. Either the connection information is wrong or the mirror node data is missing"
   exit 1
 fi
 
 NEW_DB_HAS_DATA=$(PGPASSWORD="${NEW_DB_PASSWORD}" psql -X -t -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -c "select exists (select from information_schema.tables where table_name = 'flyway_schema_history');" | xargs)
 if [[ "${NEW_DB_HAS_DATA}" != "f" ]]; then
-  echo "New database already contains data. The migration might have already been ran or the importer might've initialized it. Please remove the data and rerun the migration"
+  echo "Unable to verify the state of the new database. Either the connection information is wrong, the migration might have already been ran, or the importer might've already initialized it."
   exit 1
 fi
 

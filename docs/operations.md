@@ -143,7 +143,7 @@ For mirror node operators running the v1 database schema, the following steps ca
 
 5. Run migration
 
-   Run the migration script in the folder `hedera-mirror-importer/src/main/resources/db/scripts/timescaledb/`:
+   Run the migration script that was previously extracted:
 
     ```shell
     $ ./migration.sh
