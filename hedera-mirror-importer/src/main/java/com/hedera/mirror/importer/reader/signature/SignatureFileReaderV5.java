@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +36,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.mirror.importer.reader.HashObject;
-import com.hedera.mirror.importer.reader.ReaderUtility;
+import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
 @Named
 public class SignatureFileReaderV5 implements SignatureFileReader {
@@ -48,23 +49,22 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
         InputStream inputStream = signatureFileData.getInputStream();
 
-        try (DataInputStream dis = new DataInputStream(inputStream)) {
+        try (ValidatedDataInputStream dis = new ValidatedDataInputStream(new BufferedInputStream(inputStream),
+                filename)) {
+            dis.readByte(SIGNATURE_FILE_FORMAT_VERSION, "fileVersion");
 
-            byte fileVersion = dis.readByte();
-            ReaderUtility.validate(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, filename, "fileVersion");
-
-            //Read the objectStreamSignatureVersion, which is not used
+            // Read the objectStreamSignatureVersion, which is not used
             dis.readInt();
 
-            HashObject fileHashObject = HashObject.read(dis, filename, "entireFile", SHA384);
+            HashObject fileHashObject = HashObject.read(dis, "entireFile", SHA384);
             fileStreamSignature.setFileHash(fileHashObject.getHash());
-            Signature fileHashSignature = readSignatureObject(dis, filename, "entireFile");
+            Signature fileHashSignature = readSignatureObject(dis, "entireFile");
             fileStreamSignature.setFileHashSignature(fileHashSignature.getSignatureBytes());
             fileStreamSignature.setSignatureType(fileHashSignature.getSignatureType());
 
-            HashObject metadataHashObject = HashObject.read(dis, filename, "metadata", SHA384);
+            HashObject metadataHashObject = HashObject.read(dis, "metadata", SHA384);
             fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
-            Signature metadataSignature = readSignatureObject(dis, filename, "metadata");
+            Signature metadataSignature = readSignatureObject(dis, "metadata");
             fileStreamSignature.setMetadataHashSignature(metadataSignature.getSignatureBytes());
 
             if (dis.available() != 0) {
@@ -77,18 +77,14 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         }
     }
 
-    private Signature readSignatureObject(DataInputStream dis, String filename, String sectionName) throws IOException {
+    private Signature readSignatureObject(ValidatedDataInputStream dis, String sectionName) throws IOException {
         readClassIdAndVersion(dis);
 
-        int signatureTypeIndicator = dis.readInt();
-        ReaderUtility.validate(SignatureType.SHA_384_WITH_RSA.getFileMarker(), signatureTypeIndicator, filename,
-                sectionName, "signature type");
+        dis.readInt(SignatureType.SHA_384_WITH_RSA.getFileMarker(), sectionName, "signature type");
+        byte[] signature = dis.readLengthAndBytes(1, SignatureType.SHA_384_WITH_RSA.getMaxLength(),
+                true, sectionName, "signature");
 
-        SignatureType signatureType = SignatureType.of(signatureTypeIndicator);
-        byte[] signature = ReaderUtility.readLengthAndBytes(dis, 1, signatureType.getMaxLength(),
-                true, filename, sectionName, "signature");
-
-        return new Signature(signature, signatureType);
+        return new Signature(signature, SignatureType.SHA_384_WITH_RSA);
     }
 
     private void readClassIdAndVersion(DataInputStream dis) throws IOException {

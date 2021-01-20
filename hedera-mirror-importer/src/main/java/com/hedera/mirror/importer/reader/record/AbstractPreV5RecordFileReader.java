@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.reader.record;
 
 import com.google.common.primitives.Ints;
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.function.Consumer;
 import lombok.NonNull;
@@ -36,7 +35,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.reader.ReaderUtility;
+import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
 @RequiredArgsConstructor
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
@@ -49,11 +48,13 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
     @Override
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFileData.getInputStream()))) {
+        String filename = FilenameUtils.getName(streamFileData.getFilename());
+
+        try (ValidatedDataInputStream dis = new ValidatedDataInputStream(new BufferedInputStream(streamFileData.getInputStream()), filename)) {
             RecordFile recordFile = new RecordFile();
             RecordFileDigest digest = getRecordFileDigest();
 
-            recordFile.setName(FilenameUtils.getName(streamFileData.getFilename()));
+            recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
             readHeader(dis, digest, recordFile);
             readBody(dis, digest, itemConsumer, recordFile);
@@ -63,7 +64,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         } catch (ImporterException e) {
             throw e;
         } catch (Exception e) {
-            throw new StreamFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
+            throw new StreamFileReaderException("Error reading record file " + filename, e);
         }
     }
 
@@ -74,26 +75,17 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * {@link RecordFile} fields. {@code dis} should point at the beginning of the stream. The header should contain
      * file version, HAPI version, and the previous file hash.
      *
-     * @param dis the {@link DataInputStream} of the record file
+     * @param dis the {@link ValidatedDataInputStream} of the record file
      * @param digest the {@link RecordFileDigest} to update the digest with
      * @param recordFile the {@link RecordFile} object
      * @throws IOException
      */
-    private void readHeader(DataInputStream dis, RecordFileDigest digest, RecordFile recordFile) throws IOException {
-        String filename = recordFile.getName();
-
-        // record file version
-        int version = dis.readInt();
-        ReaderUtility.validate(readerVersion, version, "record file version", filename);
-
-        int hapiVersion = dis.readInt();
-
-        // previous record file hash
-        byte marker = dis.readByte();
-        ReaderUtility.validate(PREV_HASH_MARKER, marker, "previous hash marker", filename);
-
-        byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize());
-        ReaderUtility.validate(DIGEST_ALGORITHM.getSize(), prevHash.length, "previous hash size", filename);
+    private void readHeader(ValidatedDataInputStream dis, RecordFileDigest digest,
+            RecordFile recordFile) throws IOException {
+        int version = dis.readInt(readerVersion, "record file version");
+        int hapiVersion = dis.readInt(); // not used
+        byte marker = dis.readByte(PREV_HASH_MARKER, "previous hash marker");
+        byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize(), "previous hash size");
 
         digest.updateHeader(Ints.toByteArray(version));
         digest.updateHeader(Ints.toByteArray(hapiVersion));
@@ -110,13 +102,13 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * a variable number of transaction and record pairs ordered by consensus timestamp. The body may also contain
      * metadata to mark the boundary of the pairs.
      *
-     * @param dis the {@link DataInputStream} of the record file
+     * @param dis the {@link ValidatedDataInputStream} of the record file
      * @param digest the {@link RecordFileDigest} to update the digest with
      * @param itemConsumer the {@link Consumer} to process individual {@link RecordItem}s
      * @param recordFile the {@link RecordFile} object
      * @throws IOException
      */
-    private void readBody(DataInputStream dis, RecordFileDigest digest, Consumer<RecordItem> itemConsumer,
+    private void readBody(ValidatedDataInputStream dis, RecordFileDigest digest, Consumer<RecordItem> itemConsumer,
             RecordFile recordFile) throws IOException {
         String filename = recordFile.getName();
         long count = 0;
@@ -125,13 +117,9 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         boolean hasItemConsumer = itemConsumer != null;
 
         while (dis.available() != 0) {
-            byte marker = dis.readByte();
-            ReaderUtility.validate(RECORD_MARKER, marker, "record marker", filename);
-
-            byte[] transactionBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
-                    filename, null, "transaction bytes");
-            byte[] recordBytes = ReaderUtility.readLengthAndBytes(dis, 1, MAX_TRANSACTION_LENGTH, false,
-                    filename, null, "record bytes");
+            byte marker = dis.readByte(RECORD_MARKER, "record marker");
+            byte[] transactionBytes = dis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false,"transaction bytes");
+            byte[] recordBytes = dis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false,"record bytes");
 
             digest.updateBody(marker);
             digest.updateBody(Ints.toByteArray(transactionBytes.length));

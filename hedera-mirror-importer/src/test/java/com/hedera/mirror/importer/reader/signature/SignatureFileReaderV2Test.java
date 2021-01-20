@@ -96,7 +96,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
                 TestUtils.generateRandomByteArray(SIGNATURE_LENGTH),
                 "incorrectSignatureLength",
                 truncateLastByte,
-                "EOFException");
+                "actual signature length");
 
         SignatureFileSection invalidExtraData = new SignatureFileSection(
                 new byte[0],

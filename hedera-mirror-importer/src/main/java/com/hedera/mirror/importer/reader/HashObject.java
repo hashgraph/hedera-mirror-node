@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader;
  * ‍
  */
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import lombok.Data;
 
@@ -35,26 +34,22 @@ public class HashObject {
     private final int digestType;
     private final byte[] hash;
 
-    public static HashObject read(DataInputStream dis, String filename, String sectionName,
-            DigestAlgorithm digestAlgorithm) {
+    public static HashObject read(ValidatedDataInputStream dis, String sectionName, DigestAlgorithm digestAlgorithm) {
         try {
             long classId = dis.readLong();
             int classVersion = dis.readInt();
 
-            int digestType = dis.readInt();
-            ReaderUtility.validate(digestAlgorithm.getType(), digestType, filename, sectionName, "hash digest type");
-
+            dis.readInt(digestAlgorithm.getType(), sectionName, "hash digest type");
             int hashLength = digestAlgorithm.getSize();
-            byte[] hash = ReaderUtility.readLengthAndBytes(dis, hashLength, hashLength, false, filename,
-                    sectionName, "hash");
+            byte[] hash = dis.readLengthAndBytes(hashLength, hashLength, false, sectionName, "hash");
 
-            return new HashObject(classId, classVersion, digestType, hash);
+            return new HashObject(classId, classVersion, digestAlgorithm.getType(), hash);
         } catch (IOException e) {
             throw new InvalidStreamFileException(e);
         }
     }
 
-    public static HashObject read(DataInputStream dis, String filename, DigestAlgorithm digestAlgorithm) {
-        return read(dis, filename, null, digestAlgorithm);
+    public static HashObject read(ValidatedDataInputStream dis, DigestAlgorithm digestAlgorithm) {
+        return read(dis, null, digestAlgorithm);
     }
 }

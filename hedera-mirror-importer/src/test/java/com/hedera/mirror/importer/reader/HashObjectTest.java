@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -67,10 +66,10 @@ class HashObjectTest {
                 data = Arrays.copyOfRange(data, 0, data.length - bytesToTruncate);
             }
 
-            try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data))) {
+            try (ValidatedDataInputStream dis = new ValidatedDataInputStream(new ByteArrayInputStream(data), "test")) {
                 // when, then
                 if (expectThrown) {
-                    assertThrows(InvalidStreamFileException.class, () -> HashObject.read(dis, "testfile", SHA384));
+                    assertThrows(InvalidStreamFileException.class, () -> HashObject.read(dis, SHA384));
                 } else {
                     HashObject expected = new HashObject(classId, classVersion, digestType, hash);
                     HashObject actual = HashObject.read(dis, "testfile", SHA384);
