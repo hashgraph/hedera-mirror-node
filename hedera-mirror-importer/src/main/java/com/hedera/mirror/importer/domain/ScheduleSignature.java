@@ -44,9 +44,11 @@ public class ScheduleSignature {
     @ToString.Exclude
     private byte[] signature;
 
-    @Convert(converter = ScheduleIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
-    private EntityId scheduleId;
+    @Data
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id implements Serializable {
 
     @Data
     @Embeddable

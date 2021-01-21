@@ -135,6 +135,7 @@ create table if not exists schedule
     consensus_timestamp bigint primary key not null,
     creator_account_id  bigint             not null,
     executed_timestamp  bigint             null,
+    memo                bytea              not null,
     payer_account_id    bigint             not null,
     schedule_id         bigint             not null,
     transaction_body    bytea              not null
