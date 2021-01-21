@@ -22,12 +22,9 @@ package com.hedera.mirror.importer.converter;
 
 import org.junit.jupiter.api.BeforeAll;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-
 class ScheduleIdConverterTest extends AbstractEntityConverterTest {
     @BeforeAll
     static void beforeAll() {
         converter = new ScheduleIdConverter();
-        entityTypeEnum = EntityTypeEnum.SCHEDULE;
     }
 }

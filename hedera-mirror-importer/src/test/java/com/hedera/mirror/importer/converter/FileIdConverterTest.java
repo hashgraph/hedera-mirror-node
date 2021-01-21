@@ -22,12 +22,9 @@ package com.hedera.mirror.importer.converter;
 
 import org.junit.jupiter.api.BeforeAll;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-
 class FileIdConverterTest extends AbstractEntityConverterTest {
     @BeforeAll
     static void beforeAll() {
         converter = new FileIdConverter();
-        entityTypeEnum = EntityTypeEnum.FILE;
     }
 }

@@ -31,25 +31,22 @@ import com.hedera.mirror.importer.domain.ScheduleSignature;
 
 public class ScheduleSignatureRepositoryTest extends AbstractRepositoryTest {
     @Resource
-    protected ScheduleSignatureRepository scheduleSignatureRepository;
-
-    private static final EntityId SCHEDULE_ID = EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE);
-    private static final byte[] PUBLIC_KEY_PREFIX = "signatory public key prefix".getBytes();
-    private static final byte[] SIGNATURE = "scheduled transaction signature".getBytes();
+    private ScheduleSignatureRepository scheduleSignatureRepository;
 
     @Test
     void save() {
         ScheduleSignature scheduleSignature = scheduleSignatureRepository.save(scheduleSignature(1));
-        assertThat(scheduleSignatureRepository.findById(scheduleSignature.getConsensusTimestamp())
+        assertThat(scheduleSignatureRepository.findById(scheduleSignature.getScheduleSignatureId())
                 .get()).isEqualTo(scheduleSignature);
     }
 
     private ScheduleSignature scheduleSignature(long consensusTimestamp) {
         ScheduleSignature scheduleSignature = new ScheduleSignature();
-        scheduleSignature.setConsensusTimestamp(consensusTimestamp);
-        scheduleSignature.setPublicKeyPrefix(PUBLIC_KEY_PREFIX);
-        scheduleSignature.setScheduleId(SCHEDULE_ID);
-        scheduleSignature.setSignature(SIGNATURE);
+        scheduleSignature.setScheduleSignatureId(new ScheduleSignature.Id(
+                consensusTimestamp,
+                "signatory public key prefix".getBytes(),
+                EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE)));
+        scheduleSignature.setSignature("scheduled transaction signature".getBytes());
         return scheduleSignature;
     }
 }

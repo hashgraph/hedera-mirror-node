@@ -32,12 +32,7 @@ import com.hedera.mirror.importer.domain.Schedule;
 
 public class ScheduleRepositoryTest extends AbstractRepositoryTest {
     @Resource
-    protected ScheduleRepository scheduleRepository;
-
-    private static final EntityId CREATOR_ACCOUNT = EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT);
-    private static final EntityId PAYER_ACCOUNT = EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT);
-    private static final EntityId SCHEDULE_ID = EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE);
-    private static final byte[] TRANSACTION_BODY = "transaction memo".getBytes();
+    private ScheduleRepository scheduleRepository;
 
     @Test
     void save() {
@@ -58,10 +53,11 @@ public class ScheduleRepositoryTest extends AbstractRepositoryTest {
     private Schedule schedule(long consensusTimestamp) {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(consensusTimestamp);
-        schedule.setCreatorAccountId(CREATOR_ACCOUNT);
-        schedule.setPayerAccountId(PAYER_ACCOUNT);
-        schedule.setScheduleId(SCHEDULE_ID);
-        schedule.setTransactionBody(TRANSACTION_BODY);
+        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
+        schedule.setMemo("schedule memo".getBytes());
+        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
+        schedule.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
+        schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }
 }

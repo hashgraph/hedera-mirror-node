@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.converter;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.converter;
  */
 
 import javax.persistence.AttributeConverter;
+import lombok.Getter;
 import org.springframework.core.convert.converter.Converter;
 
 import com.hedera.mirror.importer.domain.EntityId;
@@ -29,6 +30,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 
 public abstract class AbstractEntityIdConverter implements AttributeConverter<EntityId, Long>, Converter<String,
         EntityId> {
+    @Getter
     private final EntityTypeEnum entityTypeEnum;
 
     public AbstractEntityIdConverter(EntityTypeEnum entityTypeEnum) {

@@ -24,5 +24,5 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.ScheduleSignature;
 
-public interface ScheduleSignatureRepository extends CrudRepository<ScheduleSignature, Long> {
+public interface ScheduleSignatureRepository extends CrudRepository<ScheduleSignature, ScheduleSignature.Id> {
 }

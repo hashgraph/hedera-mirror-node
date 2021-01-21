@@ -21,32 +21,44 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serializable;
 import javax.persistence.Convert;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 
 @Data
 @Entity
-@Log4j2
 @NoArgsConstructor
 public class ScheduleSignature {
-    @Id
-    private Long consensusTimestamp;
-
-    @ToString.Exclude
-    private byte[] publicKeyPrefix;
-
-    @Convert(converter = ScheduleIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
-    private EntityId scheduleId;
+    @EmbeddedId
+    private ScheduleSignature.Id scheduleSignatureId;
 
     @ToString.Exclude
     private byte[] signature;
+
+    @Data
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id implements Serializable {
+
+        private static final long serialVersionUID = -8758644338990079234L;
+
+        private Long consensusTimestamp;
+
+        @ToString.Exclude
+        private byte[] publicKeyPrefix;
+
+        @Convert(converter = ScheduleIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId scheduleId;
+    }
 }

@@ -135,6 +135,7 @@ create table if not exists schedule
     consensus_timestamp bigint primary key not null,
     creator_account_id  bigint             not null,
     executed_timestamp  bigint             null,
+    memo                bytea              not null,
     payer_account_id    bigint             not null,
     schedule_id         bigint             not null,
     transaction_body    bytea              not null
@@ -371,7 +372,11 @@ values ('OK', 0),
        ('TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED', 198),
        ('EMPTY_TOKEN_TRANSFER_BODY', 199),
        ('EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS', 200),
-       ('INVALID_SCHEDULE_ID', 201);
+       ('INVALID_SCHEDULE_ID', 201),
+       ('SCHEDULE_IS_IMMUTABLE', 202),
+       ('SCHEDULE_WAS_DELETED', 203),
+       ('INVALID_SCHEDULE_PAYER_ID', 204),
+       ('INVALID_SCHEDULE_ACCOUNT_ID', 205);
 
 -- t_transaction_types
 create table if not exists t_transaction_types
@@ -417,9 +422,9 @@ values (7, 'CONTRACTCALL', 2),
        (39, 'TOKENWIPE', 5),
        (40, 'TOKENASSOCIATE', 1),
        (41, 'TOKENDISSOCIATE', 1),
-       (42, 'SCHEDULECREATE', 5),
-       (43, 'SCHEDULEDELETE', 5),
-       (44, 'SCHEDULESIGN', 5);
+       (42, 'SCHEDULECREATE', 6),
+       (43, 'SCHEDULEDELETE', 6),
+       (44, 'SCHEDULESIGN', 6);
 
 -- token
 create table if not exists token

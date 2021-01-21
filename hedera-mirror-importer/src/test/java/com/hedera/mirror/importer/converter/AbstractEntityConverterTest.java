@@ -25,27 +25,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 public abstract class AbstractEntityConverterTest {
     protected static AbstractEntityIdConverter converter;
-    protected static EntityTypeEnum entityTypeEnum;
-
-    @Test
-    void testForNulls() {
-        assertThat(converter.convertToDatabaseColumn(null)).isNull();
-        assertThat(converter.convertToEntityAttribute(null)).isNull();
-    }
 
     @Test
     void testToDatabaseColumn() {
-        assertThat(converter.convertToDatabaseColumn(EntityId.of(10L, 10L, 10L, entityTypeEnum)))
+        assertThat(converter.convertToDatabaseColumn(null)).isNull();
+        assertThat(converter.convertToDatabaseColumn(EntityId.of(10L, 10L, 10L, converter.getEntityTypeEnum())))
                 .isEqualTo(2814792716779530L);
     }
 
     @Test
     void testToEntityAttribute() {
+        assertThat(converter.convertToEntityAttribute(null)).isNull();
         assertThat(converter.convertToEntityAttribute(9223372036854775807L))
-                .isEqualTo(EntityId.of(32767L, 65535L, 4294967295L, entityTypeEnum));
+                .isEqualTo(EntityId.of(32767L, 65535L, 4294967295L, converter.getEntityTypeEnum()));
     }
 }
