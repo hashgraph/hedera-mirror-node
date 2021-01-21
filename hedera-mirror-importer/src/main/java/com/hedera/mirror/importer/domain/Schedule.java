@@ -55,6 +55,6 @@ public class Schedule {
     @Convert(converter = ScheduleIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId scheduleId;
-    
+
     private byte[] transactionBody;
 }

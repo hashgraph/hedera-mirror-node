@@ -36,8 +36,8 @@ public class ScheduleSignatureRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         ScheduleSignature scheduleSignature = scheduleSignatureRepository.save(scheduleSignature(1));
-        assertThat(scheduleSignatureRepository.findById(scheduleSignature.getScheduleSignatureId())
-                .get()).isEqualTo(scheduleSignature);
+        assertThat(scheduleSignatureRepository.findById(scheduleSignature.getScheduleSignatureId()))
+                .get().isEqualTo(scheduleSignature);
     }
 
     private ScheduleSignature scheduleSignature(long consensusTimestamp) {
