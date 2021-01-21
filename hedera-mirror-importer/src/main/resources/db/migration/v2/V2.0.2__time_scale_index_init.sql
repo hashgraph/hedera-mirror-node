@@ -66,6 +66,14 @@ create index if not exists record_file__consensus_end
 create index if not exists record_file__prev_hash
     on record_file (prev_hash);
 
+-- schedule
+create unique index if not exists schedule__schedule_id
+    on schedule (schedule_id);
+
+-- schedule_signature
+create index if not exists schedule_signature__schedule_id
+    on schedule_signature (schedule_id desc);
+
 -- t_entities
 alter table t_entities
     add primary key (id);

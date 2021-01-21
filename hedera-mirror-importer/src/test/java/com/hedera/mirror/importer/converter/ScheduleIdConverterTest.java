@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.domain;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,18 +20,14 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeAll;
 
-@Getter
-@RequiredArgsConstructor
-public enum EntityType {
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-    UNKNOWN, // Filler value to offset next values by one to match database values
-    ACCOUNT,
-    CONTRACT,
-    FILE,
-    TOPIC,
-    TOKEN,
-    SCHEDULE
+class ScheduleIdConverterTest extends AbstractEntityConverterTest {
+    @BeforeAll
+    static void beforeAll() {
+        converter = new ScheduleIdConverter();
+        entityTypeEnum = EntityTypeEnum.SCHEDULE;
+    }
 }
