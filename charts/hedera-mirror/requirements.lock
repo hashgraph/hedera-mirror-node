@@ -19,6 +19,6 @@ dependencies:
   version: 0.13.0-rc1
 - name: timescaledb-multinode
   repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
-  version: 0.7.0
-digest: sha256:a463fe7d2271ff146eddaba8cbcd3e3e66974084809892dd39154251f471cf29
-generated: "2021-01-21T09:25:15.921795-06:00"
+  version: 0.8.0
+digest: sha256:1b352bf53ad1d1d729e09614ed8744973b13a8267379ca1be16b03a0b0d32f9a
+generated: "2021-01-21T11:01:07.579217-06:00"
