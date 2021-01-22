@@ -85,6 +85,8 @@ public class TokenFeature {
     private List<TransactionId> transactionIdList;
 
     @When("I create a new treasury account")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void createNewAccount() throws HederaStatusException {
         if (treasuryAccount == null) {
             treasuryAccount = accountClient.createNewAccount(1_000_000_000);
@@ -101,6 +103,8 @@ public class TokenFeature {
     }
 
     @Given("I successfully create a new token {string}")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void createNewToken(String symbol) throws HederaStatusException {
         createNewToken(symbol, TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE);
@@ -115,51 +119,11 @@ public class TokenFeature {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
     }
 
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void createNewToken(String symbol, int freezeStatus, int kycStatus) throws HederaStatusException {
-        testInstantReference = Instant.now();
-
-        tokenKey = Ed25519PrivateKey.generate();
-        Ed25519PublicKey tokenPublicKey = tokenKey.publicKey;
-        log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
-
-        networkTransactionResponse = tokenClient.createToken(
-                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                symbol,
-                freezeStatus,
-                kycStatus,
-                treasuryAccount,
-                INITIAL_SUPPLY);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        tokenId = networkTransactionResponse.getReceipt().getTokenId();
-        assertNotNull(tokenId);
-    }
-
     @Given("I successfully onboard a new token account")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void onboardNewTokenAccount() throws HederaStatusException {
         onboardNewTokenAccount(TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
-    }
-
-    public void onboardNewTokenAccount(int freezeStatus, int kycStatus) throws HederaStatusException {
-        // create token, associate payer and transfer tokens to payer
-        createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
-
-        associateWithToken();
-
-        fundPayerAccountWithTokens(INITIAL_SUPPLY / 2);
-    }
-
-    @Given("I provide a token symbol {string}")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void designateToken(String symbol) {
-        testInstantReference = Instant.now();
-
-        this.symbol = symbol;
     }
 
     @Given("I associate with token")
@@ -172,6 +136,8 @@ public class TokenFeature {
     }
 
     @Given("I associate a new sender account with token")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void associateSenderWithToken() throws HederaStatusException {
 
         sender = accountClient.createNewAccount(10_000_000);
@@ -179,77 +145,41 @@ public class TokenFeature {
     }
 
     @Given("I associate a new recipient account with token")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void associateRecipientWithToken() throws HederaStatusException {
 
         recipient = accountClient.createNewAccount(10_000_000);
         associateWithToken(recipient);
     }
 
+    @When("I set new account freeze status to {int}")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
-    public void associateWithToken(ExpandedAccountId accountId) throws HederaStatusException {
-        networkTransactionResponse = tokenClient.asssociate(accountId, tokenId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @When("I set new account freeze status to {int}")
     public void setFreezeStatus(int freezeStatus) throws HederaStatusException {
         setFreezeStatus(freezeStatus, recipient);
     }
 
+    @When("I set new account kyc status to {int}")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
-    public void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) throws HederaStatusException {
-        if (freezeStatus == TokenFreezeStatus.Frozen_VALUE) {
-            networkTransactionResponse = tokenClient.freeze(tokenId, accountId.getAccountId(), tokenKey);
-        } else if (freezeStatus == TokenFreezeStatus.Unfrozen_VALUE) {
-            networkTransactionResponse = tokenClient.unfreeze(tokenId, accountId.getAccountId(), tokenKey);
-        } else {
-            log.warn("Freeze Status must be set to 1 (Frozen) or 2 (Unfrozen)");
-        }
-
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @When("I set new account kyc status to {int}")
     public void setKycStatus(int kycStatus) throws HederaStatusException {
         setKycStatus(kycStatus, recipient);
     }
 
+    @Then("I fund {int} tokens to payer")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
-    public void setKycStatus(int kycStatus, ExpandedAccountId accountId) throws HederaStatusException {
-        if (kycStatus == TokenKycStatus.Granted_VALUE) {
-            networkTransactionResponse = tokenClient.grantKyc(tokenId, accountId.getAccountId(), tokenKey);
-        } else if (kycStatus == TokenKycStatus.Revoked_VALUE) {
-            networkTransactionResponse = tokenClient.revokeKyc(tokenId, accountId.getAccountId(), tokenKey);
-        } else {
-            log.warn("Kyc Status must be set to 1 (Granted) or 2 (Revoked)");
-        }
-
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @Then("I fund {int} tokens to payer")
     public void fundPayerAccountWithTokens(int amount) throws HederaStatusException {
         transferTokens(tokenId, amount, treasuryAccount, tokenClient.getSdkClient().getOperatorId());
     }
 
     @Then("I transfer {int} tokens to recipient")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void transferTokensToRecipient(int amount) throws HederaStatusException {
         transferTokens(tokenId, amount, sender, recipient
                 .getAccountId());
-    }
-
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws HederaStatusException {
-        networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I update the token")
@@ -356,6 +286,73 @@ public class TokenFeature {
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
         }
+    }
+
+    private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws HederaStatusException {
+        testInstantReference = Instant.now();
+
+        tokenKey = Ed25519PrivateKey.generate();
+        Ed25519PublicKey tokenPublicKey = tokenKey.publicKey;
+        log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
+
+        networkTransactionResponse = tokenClient.createToken(
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                symbol,
+                freezeStatus,
+                kycStatus,
+                treasuryAccount,
+                INITIAL_SUPPLY);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        tokenId = networkTransactionResponse.getReceipt().getTokenId();
+        assertNotNull(tokenId);
+    }
+
+    private void associateWithToken(ExpandedAccountId accountId) throws HederaStatusException {
+        networkTransactionResponse = tokenClient.asssociate(accountId, tokenId);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) throws HederaStatusException {
+        if (freezeStatus == TokenFreezeStatus.Frozen_VALUE) {
+            networkTransactionResponse = tokenClient.freeze(tokenId, accountId.getAccountId(), tokenKey);
+        } else if (freezeStatus == TokenFreezeStatus.Unfrozen_VALUE) {
+            networkTransactionResponse = tokenClient.unfreeze(tokenId, accountId.getAccountId(), tokenKey);
+        } else {
+            log.warn("Freeze Status must be set to 1 (Frozen) or 2 (Unfrozen)");
+        }
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void setKycStatus(int kycStatus, ExpandedAccountId accountId) throws HederaStatusException {
+        if (kycStatus == TokenKycStatus.Granted_VALUE) {
+            networkTransactionResponse = tokenClient.grantKyc(tokenId, accountId.getAccountId(), tokenKey);
+        } else if (kycStatus == TokenKycStatus.Revoked_VALUE) {
+            networkTransactionResponse = tokenClient.revokeKyc(tokenId, accountId.getAccountId(), tokenKey);
+        } else {
+            log.warn("Kyc Status must be set to 1 (Granted) or 2 (Revoked)");
+        }
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws HederaStatusException {
+        networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void onboardNewTokenAccount(int freezeStatus, int kycStatus) throws HederaStatusException {
+        // create token, associate payer and transfer tokens to payer
+        createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
+
+        associateWithToken();
+
+        fundPayerAccountWithTokens(INITIAL_SUPPLY / 2);
     }
 
     private void verifyBalances() {
