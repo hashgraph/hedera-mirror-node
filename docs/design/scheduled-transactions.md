@@ -87,7 +87,6 @@ Add a `ScheduleIdConverter`.
 - If the `scheduleID` does not exist, insert a `Schedule`:
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `creatorAccountId` to the payer account from the transaction ID.
-  - Set `memo` to the `memo` field within the `ScheduleCreateTransactionBody`.
   - Set `payerAccountId` to the one in the transaction body else use the payer account from the transaction ID.
   - Set `scheduleId` to the `scheduleID` in the transaction receipt.
   - Set `transactionBody` to the `transactionBody` field within the `ScheduleCreateTransactionBody`.
