@@ -31,6 +31,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
+/**
+ * A validated data input stream extends {@link DataInputStream} by providing methods to validate several types
+ * of value read from the stream with expected value.
+ */
 public class ValidatedDataInputStream extends DataInputStream {
 
     private final static String NOT_EQUAL_ERROR_MESSAGE = "Unable to read file %s: Expected %s but got %s";
@@ -92,9 +96,7 @@ public class ValidatedDataInputStream extends DataInputStream {
             validate(SIMPLE_SUM - length, checksum, sectionName, "checksum");
         }
 
-        byte[] bytes = super.readNBytes(length);
-        validate(length, bytes.length, sectionName, "actual " + typeLength);
-        return bytes;
+        return readNBytes(length, sectionName, "actual" + typeLength);
     }
 
     public byte[] readNBytes(int expectedLength, String fieldName) throws IOException {
