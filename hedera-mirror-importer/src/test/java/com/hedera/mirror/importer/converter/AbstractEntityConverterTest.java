@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
 
-public abstract class AbstractEntityConverterTest {
+abstract class AbstractEntityConverterTest {
     protected static AbstractEntityIdConverter converter;
 
     @Test

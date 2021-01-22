@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.ScheduleSignature;
 
-public class ScheduleSignatureRepositoryTest extends AbstractRepositoryTest {
+class ScheduleSignatureRepositoryTest extends AbstractRepositoryTest {
     @Resource
     private ScheduleSignatureRepository scheduleSignatureRepository;
 

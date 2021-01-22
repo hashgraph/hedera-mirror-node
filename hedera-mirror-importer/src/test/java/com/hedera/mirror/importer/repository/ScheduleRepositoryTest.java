@@ -30,15 +30,15 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Schedule;
 
-public class ScheduleRepositoryTest extends AbstractRepositoryTest {
+class ScheduleRepositoryTest extends AbstractRepositoryTest {
     @Resource
     private ScheduleRepository scheduleRepository;
 
     @Test
     void save() {
         Schedule schedule = scheduleRepository.save(schedule(1));
-        assertThat(scheduleRepository.findById(schedule.getConsensusTimestamp())
-                .get()).isEqualTo(schedule);
+        assertThat(scheduleRepository.findById(schedule.getConsensusTimestamp()))
+                .get().isEqualTo(schedule);
     }
 
     @Test
