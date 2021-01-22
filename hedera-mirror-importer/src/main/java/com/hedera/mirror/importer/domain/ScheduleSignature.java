@@ -39,7 +39,7 @@ import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 @NoArgsConstructor
 public class ScheduleSignature {
     @EmbeddedId
-    private ScheduleSignature.Id scheduleSignatureId;
+    private ScheduleSignature.Id id;
 
     @ToString.Exclude
     private byte[] signature;

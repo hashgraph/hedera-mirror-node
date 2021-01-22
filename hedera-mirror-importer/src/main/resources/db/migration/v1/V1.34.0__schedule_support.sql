@@ -33,7 +33,10 @@ create table if not exists schedule
 comment on table schedule is 'Schedule entity entries';
 
 create unique index if not exists schedule__schedule_id
-    on schedule (schedule_id);
+    on schedule (schedule_id desc);
+
+create index if not exists schedule__consensus_timestamp
+    on schedule_signature (consensus_timestamp desc);
 
 --- Add schedule_signature table to capture schedule signatories
 create table if not exists schedule_signature
@@ -47,3 +50,6 @@ comment on table schedule is 'Schedule transaction signatories';
 
 create index if not exists schedule_signature__schedule_id
     on schedule_signature (schedule_id desc);
+
+create unique index if not exists schedule_signature__timestamp_public_key_prefix
+    on schedule_signature (consensus_timestamp desc, public_key_prefix);

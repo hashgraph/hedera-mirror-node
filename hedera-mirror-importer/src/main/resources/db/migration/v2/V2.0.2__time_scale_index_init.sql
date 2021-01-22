@@ -68,11 +68,17 @@ create index if not exists record_file__prev_hash
 
 -- schedule
 create unique index if not exists schedule__schedule_id
-    on schedule (schedule_id, consensus_timestamp);
+    on schedule (schedule_id desc, consensus_timestamp desc);
+
+create index if not exists schedule__consensus_timestamp
+    on schedule_signature (consensus_timestamp desc);
 
 -- schedule_signature
 create index if not exists schedule_signature__schedule_id
-    on schedule_signature (schedule_id desc, consensus_timestamp);
+    on schedule_signature (schedule_id desc, consensus_timestamp desc);
+
+create unique index if not exists schedule_signature__timestamp_public_key_prefix
+    on schedule_signature (consensus_timestamp desc, public_key_prefix);
 
 -- t_entities
 alter table t_entities
