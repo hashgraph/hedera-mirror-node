@@ -212,20 +212,27 @@ const getCryptoTransferTransactionsInnerQuery = function (
 ) {
   const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
   const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, creditDebitQuery);
-  const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
-  return `
+  const ctlSubQuery = `
+    SELECT DISTINCT consensus_timestamp
+    FROM crypto_transfer ctl
+    ${ctlWhereClause}
+    ORDER BY consensus_timestamp ${order}`;
+
+  if (resultTypeQuery || transactionTypeQuery) {
+    const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
+    return `
       SELECT t.consensus_ns AS consensus_timestamp
       FROM transaction t
-      JOIN (
-        SELECT DISTINCT consensus_timestamp
-        FROM crypto_transfer AS ctl
-        ${ctlWhereClause}
-        ORDER BY consensus_timestamp ${order}
-      ) AS ctl
+      JOIN (${ctlSubQuery}) AS ctl
       ON t.consensus_ns = ctl.consensus_timestamp
       ${whereClause}
       ORDER BY t.consensus_ns ${order}
       ${limitQuery}`;
+  }
+
+  // get consensus timestamps from crypto_transfer table directly when there are no transaction related filters
+  return `${ctlSubQuery}
+    ${limitQuery}`;
 };
 
 /**
