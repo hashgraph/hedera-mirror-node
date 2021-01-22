@@ -167,7 +167,7 @@ public class TokenFeature {
         setKycStatus(kycStatus, recipient);
     }
 
-    @Then("I fund {int} tokens to payer")
+    @Then("I transfer {int} tokens to payer")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void fundPayerAccountWithTokens(int amount) throws HederaStatusException {

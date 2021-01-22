@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -132,6 +133,7 @@ public class ClientConfiguration {
                     clientCodecConfigurer.defaultCodecs().jackson2JsonEncoder(jackson2JsonEncoder);
                 })
                 .defaultHeaders(httpHeaders -> {
+                    httpHeaders.setAccept((List.of(MediaType.APPLICATION_JSON)));
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setCacheControl(CacheControl.noCache());
                 })

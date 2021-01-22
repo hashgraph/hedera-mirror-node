@@ -10,7 +10,7 @@ Feature: HTS Base Coverage Feature
         Then the mirror node REST API should return status <httpStatusCode>
         When I associate with token
         Then the mirror node REST API should return status <httpStatusCode>
-        Then I fund <amount> tokens to payer
+        Then I transfer <amount> tokens to payer
         Then the mirror node REST API should return status <httpStatusCode> for token fund flow
         Examples:
             | amount | httpStatusCode |
