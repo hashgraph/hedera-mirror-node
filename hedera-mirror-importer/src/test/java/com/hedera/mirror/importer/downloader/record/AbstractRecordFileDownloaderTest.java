@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -102,12 +100,5 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
             assertThat(actual).isEqualToIgnoringGivenFields(expected, "id", "loadStart", "loadEnd", "nodeAccountId");
             assertThat(actual.getNodeAccountId()).isIn(allNodeAccountIds).isNotEqualTo(corruptedNodeAccountId);
         });
-    }
-
-    @Test
-    @DisplayName("Max download items reached")
-    void maxDownloadItemsReached() throws Exception {
-        ((RecordDownloaderProperties) downloaderProperties).setBatchSize(1);
-        testMaxDownloadItemsReached(file1);
     }
 }

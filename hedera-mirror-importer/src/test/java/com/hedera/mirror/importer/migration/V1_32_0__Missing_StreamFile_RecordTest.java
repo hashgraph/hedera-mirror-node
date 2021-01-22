@@ -64,6 +64,8 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Tag("failincci")
+@Tag("migration")
+@Tag("v1")
 @TestPropertySource(properties = "spring.flyway.target=1.31.3")
 class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
 
@@ -102,9 +104,11 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         balanceDownloaderProperties.init();
         recordDownloaderProperties.init();
 
-        FileCopier accountBalanceFileCopier = FileCopier.create(Utility.getResource("data").toPath(), balanceDownloaderProperties.getValidPath())
+        FileCopier accountBalanceFileCopier = FileCopier
+                .create(Utility.getResource("data").toPath(), balanceDownloaderProperties.getValidPath())
                 .from(balanceDownloaderProperties.getStreamType().getPath(), "v1", "balance0.0.3");
-        FileCopier recordFileCopier = FileCopier.create(Utility.getResource("data").toPath(), recordDownloaderProperties.getValidPath())
+        FileCopier recordFileCopier = FileCopier
+                .create(Utility.getResource("data").toPath(), recordDownloaderProperties.getValidPath())
                 .from(recordDownloaderProperties.getStreamType().getPath(), "v2", "record0.0.3");
 
         EntityId nodeAccountId = V1_32_0__Missing_StreamFile_Record.DEFAULT_NODE_ACCOUNT_ID;

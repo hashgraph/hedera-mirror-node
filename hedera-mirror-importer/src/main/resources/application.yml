@@ -35,6 +35,7 @@ management:
         autoCreateIndex: false
         enabled: false
         index: mirror
+        indexDateFormat: yyyy-MM-dd
         step: 30s
       prometheus:
         step: 30s
@@ -54,6 +55,8 @@ spring:
     name: hedera-mirror-importer
   cloud:
     gcp:
+      core:
+        enabled: false
       pubsub:
         enabled: false
     kubernetes:

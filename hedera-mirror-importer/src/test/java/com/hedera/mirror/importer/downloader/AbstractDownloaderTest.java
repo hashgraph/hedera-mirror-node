@@ -269,12 +269,6 @@ public abstract class AbstractDownloaderTest {
                 .containsAll(filenames);
     }
 
-    protected void testMaxDownloadItemsReached(String filename) throws Exception {
-        fileCopier.copy();
-        downloader.download();
-        assertValidFiles(List.of(filename));
-    }
-
     @Test
     @DisplayName("Download and verify files")
     void download() throws Exception {
@@ -533,6 +527,17 @@ public abstract class AbstractDownloaderTest {
                 .forEach(AbstractDownloaderTest::corruptFile);
         downloader.download();
         verifyForSuccess();
+    }
+
+    @Test
+    @DisplayName("Max download items reached")
+    void maxDownloadItemsReached() throws Exception {
+        downloaderProperties.setBatchSize(1);
+        fileCopier.copy();
+
+        downloader.download();
+
+        assertValidFiles(List.of(file1));
     }
 
     private void differentFilenames(Duration offset) throws Exception {

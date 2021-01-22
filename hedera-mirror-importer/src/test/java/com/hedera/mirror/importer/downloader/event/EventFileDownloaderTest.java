@@ -25,8 +25,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,7 +34,7 @@ import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 
 @ExtendWith(MockitoExtension.class)
-public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
     @BeforeEach
@@ -83,12 +81,5 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     @Override
     protected void verifyStreamFileRecord(List<String> files) {
         // no-op, add the logic when event file is saved into db
-    }
-
-    @Test
-    @DisplayName("Max download items reached")
-    void maxDownloadItemsReached() throws Exception {
-        ((EventDownloaderProperties) downloaderProperties).setBatchSize(1);
-        testMaxDownloadItemsReached(file1);
     }
 }

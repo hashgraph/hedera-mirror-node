@@ -72,6 +72,11 @@ afterAll(() => {
 });
 
 beforeEach(async () => {
+  if (!sqlConnection) {
+    console.log(`sqlConnection undefined, acquire new connection`);
+    sqlConnection = await integrationDbOps.instantiateDatabase();
+  }
+
   await integrationDbOps.cleanUp();
   await setupData();
 });

@@ -67,7 +67,7 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
  * testContainers/dockerized postgresql instance.
  */
 const instantiateDatabase = async function () {
-  if (!process.env.CIRCLECI) {
+  if (!process.env.CIRCLECI && !process.env.CI_CONTAINERS) {
     if (!(await isDockerInstalled())) {
       console.log('Docker not found. Integration tests will fail.');
       return;
@@ -81,9 +81,10 @@ const instantiateDatabase = async function () {
       .start();
     config.db.port = dockerDb.getMappedPort(config.db.port);
     config.db.host = dockerDb.getHost();
-    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`);
+    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`);
   }
 
+  console.log(`sqlConnection will use jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}`);
   sqlConnection = new SqlConnectionPool({
     user: dbUser,
     host: config.db.host,
