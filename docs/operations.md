@@ -57,8 +57,8 @@ said, we recommend Ubuntu 18.04 be used as the base operating system as that is 
 - `/usr/etc/hedera-mirror-importer/application.yml` - Configuration file
 - `/usr/lib/hedera-mirror-importer` - Binaries
 - `/var/lib/hedera-mirror-importer` - Data
-  - `addressbook.bin` - The current address book in use
   - `accountBalances` - The downloaded balance and signature files
+  - `eventsStreams` - The downloaded event and signature files
   - `recordstreams` - The downloaded record and signature files
 
 ### Starting
@@ -95,46 +95,86 @@ sudo journalctl -fu hedera-mirror-importer.service
 
 ### v1 to v2 Data Migration
 
-To support time series logic the Mirror Node DB schema shifted from PostgeSQL (v1) to TimescaleDB (v2).
-[Migrating from a Different PostgreSQL Database](https://docs.timescale.com/latest/getting-started/migrating-data#different-db) highlights the general recommended data migration steps when moving to TimescaleDB.
+In an effort to increase performance and reduce storage costs, the Mirror Node DB schema shifted from PostgreSQL (v1) to
+TimescaleDB (v2).
+[Migrating from a Different PostgreSQL Database](https://docs.timescale.com/latest/getting-started/migrating-data#different-db)
+highlights the general recommended data migration steps when moving to TimescaleDB.
 
-For mirror node operators running v1 db schema, the following steps can be taken to upgrade to v2.
+For mirror node operators running the v1 database schema, the following steps can be taken to upgrade to v2.
 
-1. Set up a new TimescaleDB database
+1. Upgrade the importer
 
-    A new TimescaleDB server must be spun up.
+   Ensure the importer is on the latest version and all v1 database migrations have completed before continuing.
 
-    Refer to Mirror Node [DB Installation](installation.md#database-setup) for manual instructions.
+2. Stop the importer
 
-    To use the Mirror Node configured docker container, simply run:
+   Ensure the valid directory for each stream type is empty (e.g. `/var/lib/hedera-mirror-importer/*/valid/`
+   where `/var/lib/hedera-mirror-importer` is the configured `dataPath`). If it's not empty, let the importer process
+   fully catch up before attempting the migration.
+
+3. Set up a new TimescaleDB database
+
+   A new TimescaleDB server must be spun up. Refer to the Mirror Node [DB Installation](installation.md#database-setup)
+   for manual instructions. For example, to use the Mirror Node configured docker container, simply run:
 
     ```shell script
     $ docker-compose up timescaledb
     ```
 
-    Refer to [TimescaleDB Installation Instructions](https://docs.timescale.com/latest/getting-started/installation) for other installation options.
+   Refer to the [TimescaleDB Installation Instructions](https://docs.timescale.com/latest/getting-started/installation)
+   for other installation options.
 
-    > **_NOTE:_** The following steps assume the database, users and schema have been created as detailed above
+   > **_NOTE:_** The following steps assume the database, users and schema have been created as detailed above
 
-2. Configure migration properties
+4. Configure properties
 
-    The configuration file `hedera-mirror-importer/src/main/resources/db/scripts/timescaledb/migration.config` contains db variables for easy running.
-    These options include variables such as db names, passwords, users, hosts for both the existing db and the new db.
+   First, locate the directory that contains the TimescaleDB migration scripts. For source code, the target directory is
+   located at `hedera-mirror-importer/src/main/resources/db/scripts/timescaledb`. For binaries, the migration directory
+   can be extracted from the JAR file:
 
-    Update these values appropriately for your db setup.
+   ```shell
+   jar -xvf hedera-mirror-importer-*.jar
+   cd BOOT-INF/classes/db/scripts/timescaledb
+   ```
 
-3. Run migration script
+   The configuration file `migration.config` contains database variables that need to be modified before running the
+   migration. These options include variables such as database names, passwords, users, hosts for both the existing
+   database and the new database. Update these values appropriately for your database setup.
 
-    From the `hedera-mirror-importer/src/main/resources/db` directory run the `migration.sh` script
-    ```shell script
-    $ ./scripts/timescaledb/migration.sh
+5. Run migration
+
+   Run the migration script that was previously extracted:
+
+    ```shell
+    $ ./migration.sh
     ```
 
-   The script uses successive `psql` connections to back up, configure and restore data on the new database nodes.
-   First it copies over the `flyway_schema_history` table, to maintain migration history.
-   It then utilizes the migration sql script used by normal flyway operations to create the new tables and then creates the Timescale hypertables based on these.
-   Following this the tables from the old database are backed up as csv files using `\COPY` and then the data inserted into the new database also using `\COPY`.
-   Finally the schema of the `flyway_schema_history` is updated and the sequence values are updated to ensure continuation.
+   The script uses successive `psql` connections to back up, configure and restore data on the new database nodes. First
+   it copies over the `flyway_schema_history` table, to maintain migration history. It then utilizes the migration SQL
+   script used by normal flyway operations to create the new tables and then creates the TimescaleDB hypertables based
+   on these. Following this, the tables from the old database are backed up as CSV files using `COPY` and then the data
+   inserted into the new database also using `COPY`. Finally, the schema of the `flyway_schema_history` is updated and
+   the sequence values are updated to ensure continuation.
+
+6. Start the importer
+
+   Configure the importer with the new database information. Note that the default schema has been changed from `public`
+   to `mirrornode` and the database user has been split into a separate owner and regular user. The importer will need
+   to be updated with the same values specified in the `migration.config`. Example configuration:
+
+   ```yaml
+   hedera:
+     mirror:
+       importer:
+         db:
+           host: timescaledb_host
+           owner: mirror_node
+           ownerPassword: mirror_node_pass
+           password: mirror_importer_pass
+           port: 5432
+           schema: mirrornode
+           username: mirror_importer
+   ```
 
 ## Monitor
 

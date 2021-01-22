@@ -33,4 +33,4 @@ dependencies:
     condition: timescaledb.enabled
     name: timescaledb-multinode
     repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
-    version: ^0.7.0
+    version: ^0.8.0

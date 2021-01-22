@@ -24,69 +24,73 @@ To install the wrapper chart:
 
 ```shell script
 $ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
-$ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
+$ helm upgrade --install "${RELEASE}" charts/hedera-mirror
 ```
 
 ## Configure
 
 ### TimescaleDB
-In an effort to increase performance and ingestion the v2 db schema of the mirror node will utilize [TimescaleDB](https://docs.timescale.com/latest/main) to take on a more time series aligned approach.
 
-To deploy the mirror chart using TimescaleDB instead of PostgreSQL take the following steps
-1. Set the following config values in `values.yaml` as noted below
-    ```yaml
-        global:
-          db:
-            host: RELEASE-NAME-timescaledb
+In an effort to increase performance and reduce storage costs, the mirror node is switching to
+[TimescaleDB](https://docs.timescale.com/latest/main) in the v2 schema. To deploy the mirror node chart using
+TimescaleDB instead of PostgreSQL use the `values-timescaledb.yaml`:
 
-        postgresql:
-          enabled: false
+```shell
+$ helm upgrade --install "${RELEASE}" charts/hedera-mirror -f charts/hedera-mirror/values-timescaledb.yaml
+```
 
-        timescaledb:
-          enabled: true
-    ```
+To temporarily expose TimescaleDB to migrate data from PostgreSQL, run the following command:
 
-2. Deploy Chart
-    ```shell script
-    $ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
-    ```
+```shell
+$ kubectl expose service "${RELEASE}-mirror-timescaledb" --type=LoadBalancer --name timescaledb-external
+```
+
+After the migration make sure to delete the temporary service:
+
+```shell
+$ kubectl delete service "${RELEASE}-mirror-timescaledb"
+```
 
 ### Address Book
-When running against a network other than the demo/testnet/mainnet network, the network must be updated and an initial address book file must be provided prior to deploying the chart.
 
-e.g. To use an address book from a file located at `/Downloads/perf.bin`:
+When running against a network other than a public network (demo/previewnet/testnet/mainnet), the network must be
+updated with an initial address book file prior to deploying the chart.
 
-1. First create the address book file as a secret from the local file:
-    ```shell script
-    $ kubectl create secret generic mirror-importer-addressbook --from-file=perf.bin=/Downloads/perf.bin --save-config=true
-    ```
+1. First create the secret from the local address book file (`/Downloads/perf.bin` in this case):
 
-2. Then create a local values file e.g `custom.yaml` file to set the `network`, `initialAddressBook`, `extraVolumes` and `extraVolumeMounts` configs.
-    ```yaml
-    importer:
-      config:
-        hedera:
-          mirror:
-            importer:
-              initialAddressBook: "/usr/etc/addressbook/perf.bin"
-              network: "OTHER"
-      extraVolumes:
-        - name: addressbook-secret-volume
-          secret:
-            defaultMode: 420
-            secretName: mirror-importer-addressbook
-      extraVolumeMounts:
-        - name: addressbook-secret-volume
-          mountPath: /usr/etc/addressbook
-    ```
-    > **_Note_** Ensure the configured `mountPath` matches the path in `initialAddressBook`
+```shell
+$ kubectl create secret generic mirror-importer-addressbook --from-file=addressbook.bin=/Downloads/perf.bin
+```
 
-   The secret data will be mounted as a file by the Importer StatefulSet and placed at the `mountPath` location on the importer filesystem.
+2. Then create a local values file (i.e. `custom.yaml`) to set the `network`, `initialAddressBook`, `extraVolumes`,
+   and `extraVolumeMounts` properties:
 
-   The `custom.yaml` should be referenced as a values file during chart deployment:
-   ```shell script
-   $ helm upgrade --install mirror charts/hedera-mirror -f charts/hedera-mirror/custom.yaml
-   ```
+```yaml
+importer:
+  config:
+    hedera:
+      mirror:
+        importer:
+          initialAddressBook: "/usr/etc/addressbook/addressbook.bin"
+          network: "OTHER"
+  extraVolumeMounts:
+    - name: addressbook
+      mountPath: /usr/etc/addressbook
+  extraVolumes:
+    - name: addressbook
+      secret:
+        defaultMode: 420
+        secretName: mirror-importer-addressbook
+```
+
+> **_Note_** Ensure the configured `mountPath` matches the path in `initialAddressBook`
+
+The secret data will be mounted as a file by the importer StatefulSet and placed at the `mountPath` location on the
+importer filesystem. The `custom.yaml` should be referenced as a values file during chart deployment:
+
+```shell
+$ helm upgrade --install mirror charts/hedera-mirror -f charts/hedera-mirror/custom.yaml
+```
 
 ## Testing
 
@@ -100,21 +104,25 @@ helm test "${RELEASE}"
 ## Using
 
 All of the APIs and dashboards can be accessed via a single IP. To get the load balancer IP:
+
 ```shell script
   export SERVICE_IP=$(kubectl get service "${RELEASE}-traefik" -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
 ```
 
 To access the GRPC API (using [grpcurl](https://github.com/fullstorydev/grpcurl)):
+
 ```shell script
   grpcurl -plaintext ${SERVICE_IP}:80 list
 ```
 
 To access the REST API:
+
 ```shell script
   curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
 ```
 
 To view the Grafana dashboard:
+
 ```shell script
   open "http://${SERVICE_IP}/grafana"
 ```
@@ -127,7 +135,9 @@ To remove all the Kubernetes components associated with the chart and delete the
 $ helm delete "${RELEASE}"
 ```
 
-The above command does not delete any of the underlying persistent volumes. To delete all the data associated with this release:
+The above command does not delete any of the underlying persistent volumes. To delete all the data associated with this
+release:
+
 ```shell script
 $ kubectl delete $(kubectl get pvc -o name)
 ```
@@ -164,11 +174,11 @@ $ kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d m
 
 ### Alerts
 
-Prometheus AlertManager is used to monitor and alert for ongoing issues in the cluster. If an alert is received via
-a notification mechanism like Slack or PagerDuty, it should contain enough details to know where to start the
+Prometheus AlertManager is used to monitor and alert for ongoing issues in the cluster. If an alert is received via a
+notification mechanism like Slack or PagerDuty, it should contain enough details to know where to start the
 investigation. Active alerts can be viewed via the `AlertManager` dashboard in Grafana that is exposed by the load
-balancer. To see further details or to silence or suppress the alert it will need to be done via the AlertManager UI.
-To access the AlertManager UI, expose it via kubectl:
+balancer. To see further details or to silence or suppress the alert it will need to be done via the AlertManager UI. To
+access the AlertManager UI, expose it via kubectl:
 
 ```shell script
 kubectl port-forward service/${RELEASE}-prometheus-alertmanager 9093:9093
