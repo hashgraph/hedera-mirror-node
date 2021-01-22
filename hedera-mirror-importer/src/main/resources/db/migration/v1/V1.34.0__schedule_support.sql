@@ -36,7 +36,7 @@ create unique index if not exists schedule__schedule_id
     on schedule (schedule_id desc);
 
 create index if not exists schedule__consensus_timestamp
-    on schedule_signature (consensus_timestamp desc);
+    on schedule (consensus_timestamp desc);
 
 --- Add schedule_signature table to capture schedule signatories
 create table if not exists schedule_signature

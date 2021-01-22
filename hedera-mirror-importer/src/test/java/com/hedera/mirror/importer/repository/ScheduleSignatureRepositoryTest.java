@@ -36,13 +36,13 @@ class ScheduleSignatureRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         ScheduleSignature scheduleSignature = scheduleSignatureRepository.save(scheduleSignature(1));
-        assertThat(scheduleSignatureRepository.findById(scheduleSignature.getScheduleSignatureId()))
+        assertThat(scheduleSignatureRepository.findById(scheduleSignature.getId()))
                 .get().isEqualTo(scheduleSignature);
     }
 
     private ScheduleSignature scheduleSignature(long consensusTimestamp) {
         ScheduleSignature scheduleSignature = new ScheduleSignature();
-        scheduleSignature.setScheduleSignatureId(new ScheduleSignature.Id(
+        scheduleSignature.setId(new ScheduleSignature.Id(
                 consensusTimestamp,
                 "signatory public key prefix".getBytes()));
         scheduleSignature.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
