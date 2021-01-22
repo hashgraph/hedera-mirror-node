@@ -54,7 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -95,9 +95,9 @@ abstract class AbstractRecordFileParserTest {
     private final String versionedPath;
 
     AbstractRecordFileParserTest(String filename1, String filename2, long[] fileConsensusTimestamps) {
-        Map<String, RecordFile> recordFilesMap = TestUtils.getRecordFilesMap();
-        recordFile1 = recordFilesMap.get(filename1);
-        recordFile2 = recordFilesMap.get(filename2);
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
+        recordFile1 = allRecordFileMap.get(filename1);
+        recordFile2 = allRecordFileMap.get(filename2);
         this.fileConsensusTimestamps = fileConsensusTimestamps;
         versionedPath = "v" + recordFile1.getVersion();
     }
@@ -294,7 +294,7 @@ abstract class AbstractRecordFileParserTest {
     }
 
     protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(String filename) {
-        RecordFile recordFile = TestUtils.getRecordFilesMap().get(filename);
+        RecordFile recordFile = TestRecordFiles.getAll().get(filename);
         return provideTimeOffsetArgumentFromRecordFile(recordFile);
     }
 

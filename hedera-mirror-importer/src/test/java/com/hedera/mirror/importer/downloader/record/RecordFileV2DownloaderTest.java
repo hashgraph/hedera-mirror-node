@@ -35,7 +35,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.util.Utility;
@@ -44,7 +44,7 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
-        Map<String, RecordFile> allRecordFileMap = TestUtils.getRecordFilesMap();
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
         RecordFile recordFile1 = allRecordFileMap.get("2019-08-30T18_10_00.419072Z.rcd");
         RecordFile recordFile2 = allRecordFileMap.get("2019-08-30T18_10_05.249678Z.rcd");
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);

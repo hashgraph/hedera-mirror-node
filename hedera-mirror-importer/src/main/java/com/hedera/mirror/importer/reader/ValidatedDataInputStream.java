@@ -96,7 +96,7 @@ public class ValidatedDataInputStream extends DataInputStream {
             validate(SIMPLE_SUM - length, checksum, sectionName, "checksum");
         }
 
-        return readNBytes(length, sectionName, "actual" + typeLength);
+        return readNBytes(length, sectionName, "actual " + typeLength);
     }
 
     public byte[] readNBytes(int expectedLength, String fieldName) throws IOException {

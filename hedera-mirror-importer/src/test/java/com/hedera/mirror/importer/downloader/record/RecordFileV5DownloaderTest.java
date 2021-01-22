@@ -25,14 +25,14 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Map;
 
-import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.domain.RecordFile;
 
 class RecordFileV5DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
-        Map<String, RecordFile> allRecordFileMap = TestUtils.getRecordFilesMap();
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
         RecordFile recordFile1 = allRecordFileMap.get("2021-01-11T22_09_24.063739000Z.rcd");
         RecordFile recordFile2 = allRecordFileMap.get("2021-01-11T22_09_34.097416003Z.rcd");
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);

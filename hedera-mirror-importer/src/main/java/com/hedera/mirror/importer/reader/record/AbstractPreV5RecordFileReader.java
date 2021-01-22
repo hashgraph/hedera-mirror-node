@@ -50,7 +50,8 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
         String filename = FilenameUtils.getName(streamFileData.getFilename());
 
-        try (ValidatedDataInputStream dis = new ValidatedDataInputStream(new BufferedInputStream(streamFileData.getInputStream()), filename)) {
+        try (ValidatedDataInputStream dis = new ValidatedDataInputStream(
+                new BufferedInputStream(streamFileData.getInputStream()), filename)) {
             RecordFile recordFile = new RecordFile();
             RecordFileDigest digest = getRecordFileDigest();
 
