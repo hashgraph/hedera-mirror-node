@@ -21,35 +21,38 @@ package com.hedera.mirror.importer.reader;
  */
 
 import java.io.IOException;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-@Data
-public class HashObject {
+@Getter
+@EqualsAndHashCode(callSuper=false)
+public class HashObject extends AbstractStreamObject {
 
-    private final long classId;
-    private final int classVersion;
     private final int digestType;
     private final byte[] hash;
 
-    public static HashObject read(ValidatedDataInputStream dis, String sectionName, DigestAlgorithm digestAlgorithm) {
+    public HashObject(Header header, int digestType, byte[] hash) {
+        super(header);
+        this.digestType = digestType;
+        this.hash = hash;
+    }
+
+    public HashObject(ValidatedDataInputStream dis, String sectionName, DigestAlgorithm digestAlgorithm) {
+        super(dis);
+
         try {
-            long classId = dis.readLong();
-            int classVersion = dis.readInt();
-
-            dis.readInt(digestAlgorithm.getType(), sectionName, "hash digest type");
+            digestType = dis.readInt(digestAlgorithm.getType(), sectionName, "hash digest type");
             int hashLength = digestAlgorithm.getSize();
-            byte[] hash = dis.readLengthAndBytes(hashLength, hashLength, false, sectionName, "hash");
-
-            return new HashObject(classId, classVersion, digestAlgorithm.getType(), hash);
+            hash = dis.readLengthAndBytes(hashLength, hashLength, false, sectionName, "hash");
         } catch (IOException e) {
             throw new InvalidStreamFileException(e);
         }
     }
 
-    public static HashObject read(ValidatedDataInputStream dis, DigestAlgorithm digestAlgorithm) {
-        return read(dis, null, digestAlgorithm);
+    public HashObject(ValidatedDataInputStream dis, DigestAlgorithm digestAlgorithm) {
+        this(dis, null, digestAlgorithm);
     }
 }

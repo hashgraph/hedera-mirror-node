@@ -30,7 +30,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 
@@ -40,6 +39,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.reader.AbstractStreamObject;
 import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
@@ -55,17 +55,17 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         MessageDigest messageDigestMetadata = createMessageDigest(DIGEST_ALGORITHM);
         String filename = FilenameUtils.getName(streamFileData.getFilename());
 
-        try (DigestInputStream digestInputStreamMetadata = new DigestInputStream(
+        try (DigestInputStream digestInputStream = new DigestInputStream(
                 new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
                 messageDigestMetadata);
-             ValidatedDataInputStream dis = new ValidatedDataInputStream(digestInputStreamMetadata, filename)) {
+             ValidatedDataInputStream dis = new ValidatedDataInputStream(digestInputStream, filename)) {
             RecordFile recordFile = new RecordFile();
 
             recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
 
             readHeader(dis, recordFile);
-            readBody(dis, itemConsumer, digestInputStreamMetadata, recordFile);
+            readBody(dis, itemConsumer, digestInputStream, recordFile);
 
             recordFile.setFileHash(Hex.encodeHexString(messageDigestFile.digest()));
             recordFile.setMetadataHash(Hex.encodeHexString(messageDigestMetadata.digest()));
@@ -85,15 +85,15 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     }
 
     private void readBody(ValidatedDataInputStream dis, Consumer<RecordItem> itemConsumer,
-            DigestInputStream digestInputStreamMetadata, RecordFile recordFile) throws IOException {
+            DigestInputStream metadataDigestInputStream, RecordFile recordFile) throws IOException {
         String filename = recordFile.getName();
 
         dis.readInt(); // object stream version
 
         // start object running hash
-        HashObject startHashObject = HashObject.read(dis, DIGEST_ALGORITHM);
-        digestInputStreamMetadata.on(false);
-        long hashObjectClassId = startHashObject.getClassId();
+        HashObject startHashObject = new HashObject(dis, DIGEST_ALGORITHM);
+        metadataDigestInputStream.on(false); // metadata hash is not calculated on record stream objects
+        long hashObjectClassId = startHashObject.getHeader().getClassId();
 
         long count = 0;
         long consensusStart = 0;
@@ -101,7 +101,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         // read record stream objects
         while (!isHashObject(dis, hashObjectClassId)) {
-            RecordStreamObject recordStreamObject = readRecordStreamObject(dis);
+            RecordStreamObject recordStreamObject = new RecordStreamObject(dis);
 
             if (itemConsumer != null) {
                 itemConsumer.accept(recordStreamObject.getRecordItem());
@@ -120,9 +120,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         }
         long consensusEnd = lastRecordStreamObject.getRecordItem().getConsensusTimestamp();
 
-        // end object running hash
-        digestInputStreamMetadata.on(true);
-        HashObject endHashObject = HashObject.read(dis, DIGEST_ALGORITHM);
+        // end object running hash, metadata hash is calculated on it
+        metadataDigestInputStream.on(true);
+        HashObject endHashObject = new HashObject(dis, DIGEST_ALGORITHM);
 
         if (dis.available() != 0) {
             throw new InvalidStreamFileException("Extra data discovered in record file " + filename);
@@ -151,26 +151,25 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         return classId == hashObjectClassId;
     }
 
-    private RecordStreamObject readRecordStreamObject(ValidatedDataInputStream dis) throws IOException {
-        long classId = dis.readLong();
-        int classVersion = dis.readInt();
-        byte[] recordBytes = dis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
-        byte[] transactionBytes = dis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
-
-        return new RecordStreamObject(classId, classVersion, recordBytes, transactionBytes);
-    }
-
     @Getter
-    @RequiredArgsConstructor
-    private static class RecordStreamObject {
+    private static class RecordStreamObject extends AbstractStreamObject {
 
-        private final long classId;
-        private final int classVersion;
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
         private RecordItem recordItem;
 
-        public RecordItem getRecordItem() {
+        RecordStreamObject(ValidatedDataInputStream dis) {
+            super(dis);
+
+            try {
+                recordBytes = dis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
+                transactionBytes = dis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
+            } catch (IOException e) {
+                throw new InvalidStreamFileException(e);
+            }
+        }
+
+        RecordItem getRecordItem() {
             if (recordBytes == null || transactionBytes == null) {
                 return null;
             }

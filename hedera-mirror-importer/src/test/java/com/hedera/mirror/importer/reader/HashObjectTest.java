@@ -69,14 +69,13 @@ class HashObjectTest {
             try (ValidatedDataInputStream dis = new ValidatedDataInputStream(new ByteArrayInputStream(data), "test")) {
                 // when, then
                 if (expectThrown) {
-                    assertThrows(InvalidStreamFileException.class, () -> HashObject.read(dis, SHA384));
+                    assertThrows(InvalidStreamFileException.class, () -> new HashObject(dis, SHA384));
                 } else {
-                    HashObject expected = new HashObject(classId, classVersion, digestType, hash);
-                    HashObject actual = HashObject.read(dis, "testfile", SHA384);
+                    HashObject expected = new HashObject(new AbstractStreamObject.Header(classId, classVersion), SHA384.getType(), hash);
+                    HashObject actual = new HashObject(dis, "testfile", SHA384);
                     assertThat(actual).isEqualTo(expected);
                 }
             }
-
         }
     }
 }
