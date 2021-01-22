@@ -28,6 +28,7 @@ const {
   checkRespArrayLength,
   checkMandatoryParams,
   checkResourceFreshness,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -35,7 +36,7 @@ const {
 } = require('./utils');
 
 const resource = 'topic';
-const resourceLimit = config[resource].limit;
+const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const {topicId} = config[resource];
 const jsonRespKey = 'messages';
 const mandatoryParams = [

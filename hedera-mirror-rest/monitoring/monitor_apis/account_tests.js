@@ -29,6 +29,7 @@ const {
   checkRespArrayLength,
   checkAccountId,
   checkMandatoryParams,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -37,7 +38,7 @@ const {
 
 const accountsPath = '/accounts';
 const resource = 'account';
-const resourceLimit = config[resource].limit;
+const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const jsonRespKey = 'accounts';
 const mandatoryParams = [
   'balance',

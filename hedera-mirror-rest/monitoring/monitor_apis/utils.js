@@ -28,6 +28,7 @@ const querystring = require('querystring');
 const config = require('./config');
 
 const apiPrefix = '/api/v1';
+const DEFAULT_LIMIT = 10;
 
 /**
  * Create and return the url for a rest api call
@@ -407,6 +408,7 @@ const accountIdCompare = (first, second) => {
 
 module.exports = {
   accountIdCompare,
+  DEFAULT_LIMIT,
   getUrl,
   getAPIResponse,
   createFailedResultJson,

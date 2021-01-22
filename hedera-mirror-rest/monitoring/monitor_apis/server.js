@@ -20,10 +20,6 @@
 
 'use strict';
 
-require('dotenv').config({
-  path: './.env',
-});
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -35,9 +31,9 @@ const monitor = require('./monitor');
 
 const app = express();
 
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 if (port === undefined || isNaN(Number(port))) {
-  console.log('Please specify the port');
+  console.log('Please specify a valid port');
   process.exit(1);
 }
 

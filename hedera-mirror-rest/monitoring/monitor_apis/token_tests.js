@@ -31,6 +31,7 @@ const {
   checkAccountId,
   checkMandatoryParams,
   checkResourceFreshness,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -39,7 +40,8 @@ const {
 
 const tokensPath = '/tokens';
 const resource = 'token';
-const {tokenId: tokenIdFromConfig, tokensLimit} = config[resource];
+const tokensLimit = config[resource].limit || DEFAULT_LIMIT;
+const tokenIdFromConfig = config[resource].tokenId;
 const tokensJsonRespKey = 'tokens';
 const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
 

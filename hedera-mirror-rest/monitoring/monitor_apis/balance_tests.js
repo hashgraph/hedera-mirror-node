@@ -30,6 +30,7 @@ const {
   checkAccountId,
   checkMandatoryParams,
   checkResourceFreshness,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -38,7 +39,7 @@ const {
 
 const balancesPath = '/balances';
 const resource = 'balance';
-const resourceLimit = config[resource].limit;
+const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const jsonRespKey = 'balances';
 const mandatoryParams = ['account', 'balance'];
 

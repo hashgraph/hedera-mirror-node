@@ -19,58 +19,38 @@
  */
 'use strict';
 
-const {DbError} = require('../errors/dbError');
-const {FileDownloadError} = require('../errors/fileDownloadError');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const {InvalidConfigError} = require('../errors/invalidConfigError');
-const {NotFoundError} = require('../errors/notFoundError');
+const statusCodes = require('http').STATUS_CODES;
+const defaultStatusCode = 500; // Internal server error
 
-const httpStatusCodes = {
-  OK: 200,
-  BAD_REQUEST: 400,
-  NOT_FOUND: 404,
-  INTERNAL_ERROR: 500,
-  SERVICE_UNAVAILABLE: 503,
-};
-
-const httpErrorMessages = {
-  INTERNAL_ERROR: 'Internal error',
+const errorMap = {
+  DbError: 503, // Service unavailable
+  InvalidArgumentError: 400, // Bad request
+  NotFoundError: 404, // Not found
+  InvalidConfigError: 503, // Service unavailable
 };
 
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const handleError = async (err, req, res, next) => {
-  // get application error message format
-  const errorMessage = errorMessageFormat(err.message);
+  const statusCode = errorMap[err.constructor.name] || defaultStatusCode;
+  let errorMessage;
 
-  // map errors to desired http status codes
-  switch (err.constructor) {
-    case DbError:
-      logger.error(`DbError processing ${req.originalUrl}: `, err);
-      res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
-      break;
-    case InvalidArgumentError:
-      logger.warn(`InvalidArgumentError processing ${req.originalUrl}: ${err.message}`);
-      res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
-      break;
-    case NotFoundError:
-      logger.warn(`NotFoundError processing ${req.originalUrl}: ${err.message}`);
-      res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
-      break;
-    case FileDownloadError:
-      logger.error(`FileDownloadError processing ${req.originalUrl}: `, err);
-      res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
-      break;
-    case InvalidConfigError:
-      logger.error(`InvalidConfigError processing ${req.originalUrl}: `, err);
-      res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
-      break;
-    default:
-      logger.error(`Unhandled error ${err.constructor.name} processing ${req.originalUrl}: `, err);
-      res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
+  if (isClientError(statusCode)) {
+    errorMessage = err.message;
+    logger.warn(
+      `${statusCode} ${statusCodes[statusCode]} processing ${req.originalUrl}: ${err.constructor.name} ${errorMessage}`
+    );
+  } else {
+    errorMessage = statusCodes[statusCode];
+    logger.error(`${statusCode} ${statusCodes[statusCode]} processing ${req.originalUrl}: `, err);
   }
 
-  return undefined;
+  res.status(statusCode).json(errorMessageFormat(errorMessage));
+  return next;
+};
+
+const isClientError = (statusCode) => {
+  return statusCode >= 400 && statusCode < 500;
 };
 
 /**

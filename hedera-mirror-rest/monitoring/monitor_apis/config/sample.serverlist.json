@@ -11,13 +11,13 @@
   "account": {
     "enabled": true,
     "intervalMultiplier": 1,
-    "limit": 1000
+    "limit": 10
   },
   "balance": {
     "enabled": true,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
-    "limit": 1000
+    "limit": 10
   },
   "stateproof": {
     "enabled": true,
@@ -27,13 +27,13 @@
     "enabled": true,
     "freshnessThreshold": 50,
     "intervalMultiplier": 1,
-    "limit": 1000
+    "limit": 10
   },
   "topic": {
     "enabled": true,
     "freshnessThreshold": 100,
     "intervalMultiplier": 1,
-    "limit": 1000,
+    "limit": 10,
     "topicId": "sample topic id"
   },
   "token": {
@@ -42,6 +42,6 @@
     "intervalMultiplier": 1,
     "tokenBalancesLimit": 10,
     "tokenId": "sample token id",
-    "tokensLimit": 10
+    "limit": 10
   }
 }

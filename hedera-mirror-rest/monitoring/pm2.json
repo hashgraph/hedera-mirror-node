@@ -1,0 +1,13 @@
+{
+  "apps": [
+    {
+      "exec_mode": "fork_mode",
+      "script": "./monitor_apis/server.js",
+      "name": "monitor",
+      "env": {
+        "PORT": 3000,
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}
