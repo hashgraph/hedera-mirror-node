@@ -44,8 +44,8 @@ public class ScheduleSignatureRepositoryTest extends AbstractRepositoryTest {
         ScheduleSignature scheduleSignature = new ScheduleSignature();
         scheduleSignature.setScheduleSignatureId(new ScheduleSignature.Id(
                 consensusTimestamp,
-                "signatory public key prefix".getBytes(),
-                EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE)));
+                "signatory public key prefix".getBytes()));
+        scheduleSignature.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
         scheduleSignature.setSignature("scheduled transaction signature".getBytes());
         return scheduleSignature;
     }

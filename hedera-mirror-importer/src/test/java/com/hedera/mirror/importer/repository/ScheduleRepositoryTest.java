@@ -54,7 +54,6 @@ public class ScheduleRepositoryTest extends AbstractRepositoryTest {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(consensusTimestamp);
         schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
-        schedule.setMemo("schedule memo".getBytes());
         schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
         schedule.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
         schedule.setTransactionBody("transaction body".getBytes());

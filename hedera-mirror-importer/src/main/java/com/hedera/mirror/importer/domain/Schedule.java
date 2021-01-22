@@ -46,8 +46,6 @@ public class Schedule {
 
     private Long executedTimestamp;
 
-    private byte[] memo;
-
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
