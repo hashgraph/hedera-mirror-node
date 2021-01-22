@@ -39,6 +39,13 @@ import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
+    @BeforeEach
+    protected void beforeEach() throws Exception {
+        super.beforeEach();
+        setTestFilesAndInstants(List.of("2020-04-11T00_12_00.025035Z.evts", "2020-04-11T00_12_05.059945Z.evts"));
+    }
+
+    @Override
     protected DownloaderProperties getDownloaderProperties() {
         var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         eventDownloaderProperties.setEnabled(true);
@@ -83,10 +90,5 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     void maxDownloadItemsReached() throws Exception {
         ((EventDownloaderProperties) downloaderProperties).setBatchSize(1);
         testMaxDownloadItemsReached(file1);
-    }
-
-    @BeforeEach
-    void beforeEach() {
-        setTestFilesAndInstants(List.of("2020-04-11T00_12_00.025035Z.evts", "2020-04-11T00_12_05.059945Z.evts"));
     }
 }

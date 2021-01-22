@@ -92,12 +92,21 @@ abstract class AbstractRecordFileParserTest {
     private final RecordFile recordFile1;
     private final RecordFile recordFile2;
     private final long[] fileConsensusTimestamps;
+    private final String path;
 
     AbstractRecordFileParserTest(String filename1, String filename2, long[] fileConsensusTimestamps) {
         Map<String, RecordFile> recordFilesMap = TestUtils.getRecordFilesMap();
         recordFile1 = recordFilesMap.get(filename1);
         recordFile2 = recordFilesMap.get(filename2);
         this.fileConsensusTimestamps = fileConsensusTimestamps;
+        path = "v" + recordFile1.getVersion();
+    }
+
+    AbstractRecordFileParserTest(RecordFile recordFile1, RecordFile recordFile2, long[] fileConsensusTimestamps, String path) {
+        this.recordFile1 = recordFile1;
+        this.recordFile2 = recordFile2;
+        this.fileConsensusTimestamps = fileConsensusTimestamps;
+        this.path = path;
     }
 
     @BeforeEach
@@ -115,7 +124,7 @@ abstract class AbstractRecordFileParserTest {
 
         FileCopier fileCopier = FileCopier
                 .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
-                .from(StreamType.RECORD.getPath(), "v" + recordFile1.getVersion(), "record0.0.3")
+                .from(StreamType.RECORD.getPath(), path, "record0.0.3")
                 .filterFiles("*.rcd");
         fileCopier.copy();
 
@@ -285,6 +294,10 @@ abstract class AbstractRecordFileParserTest {
 
     protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(String filename) {
         RecordFile recordFile = TestUtils.getRecordFilesMap().get(filename);
+        return provideTimeOffsetArgumentFromRecordFile(recordFile);
+    }
+
+    protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(RecordFile recordFile) {
         int numTransactions = recordFile.getCount().intValue();
 
         return Stream.of(

@@ -49,6 +49,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -56,10 +57,8 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -92,6 +91,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@Log4j2
 public abstract class AbstractDownloaderTest {
     private static final int S3_PROXY_PORT = 8001;
 
@@ -185,10 +185,7 @@ public abstract class AbstractDownloaderTest {
         allNodeAccountIds = addressBook.getNodeSet();
     }
 
-    @BeforeEach
-    void beforeEach(TestInfo testInfo) throws Exception {
-        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
-
+    protected void beforeEach() throws Exception {
         initProperties();
         transactionTemplate = new TransactionTemplate(platformTransactionManager);
         s3AsyncClient = new MirrorImporterConfiguration(
@@ -304,7 +301,9 @@ public abstract class AbstractDownloaderTest {
         AddressBook addressBookWith3Nodes = addressBook.toBuilder().entries(entries).nodeCount(entries.size()).build();
         doReturn(addressBookWith3Nodes).when(addressBookService).getCurrent();
 
-        fileCopier.filterDirectories("*" + entries.get(0).getNodeAccountIdString()).copy();
+        String nodeAccountId = entries.get(0).getNodeAccountIdString();
+        log.info("Only copy node {}'s stream files and signature files for a 3-node network", nodeAccountId);
+        fileCopier.filterDirectories("*" + nodeAccountId).copy();
         prepareDownloader().download();
 
         verifyForSuccess();

@@ -103,8 +103,10 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         });
     }
 
+    @Override
     @BeforeEach
-    void beforeEach() {
+    protected void beforeEach() throws Exception {
+        super.beforeEach();
         setTestFilesAndInstants(List.of(
                 "2019-08-30T18_15_00.016002001Z_Balances.csv",
                 "2019-08-30T18_30_00.010147001Z_Balances.csv"
