@@ -32,6 +32,7 @@ management:
         autoCreateIndex: false
         enabled: false
         index: mirror
+        indexDateFormat: yyyy-MM-dd
         step: 30s
       prometheus:
         step: 30s
