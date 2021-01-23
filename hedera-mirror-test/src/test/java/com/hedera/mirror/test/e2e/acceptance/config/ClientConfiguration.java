@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -34,7 +35,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
@@ -131,7 +132,11 @@ public class ClientConfiguration {
                     clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(jackson2JsonDecoder);
                     clientCodecConfigurer.defaultCodecs().jackson2JsonEncoder(jackson2JsonEncoder);
                 })
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeaders(httpHeaders -> {
+                    httpHeaders.setAccept((List.of(MediaType.APPLICATION_JSON)));
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setCacheControl(CacheControl.noCache());
+                })
                 .build();
     }
 }
