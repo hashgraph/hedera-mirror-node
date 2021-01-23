@@ -129,6 +129,28 @@ create table if not exists record_file
 );
 comment on table record_file is 'Network record file stream entries';
 
+-- schedule
+create table if not exists schedule
+(
+    consensus_timestamp bigint primary key not null,
+    creator_account_id  bigint             not null,
+    executed_timestamp  bigint             null,
+    payer_account_id    bigint             not null,
+    schedule_id         bigint             not null,
+    transaction_body    bytea              not null
+);
+comment on table schedule is 'Schedule entity entries';
+
+-- schedule_signature
+create table if not exists schedule_signature
+(
+    consensus_timestamp bigint not null,
+    public_key_prefix   bytea  not null,
+    schedule_id         bigint not null,
+    signature           bytea  not null
+);
+comment on table schedule is 'Schedule transaction signatories';
+
 -- t_application_status
 create table if not exists t_application_status
 (
@@ -182,7 +204,8 @@ values (1, 'account'),
        (2, 'contract'),
        (3, 'file'),
        (4, 'topic'),
-       (5, 'token');
+       (5, 'token'),
+       (6, 'schedule');
 
 -- t_transaction_results
 create table if not exists t_transaction_results
@@ -347,7 +370,12 @@ values ('OK', 0),
        ('TOKEN_ID_REPEATED_IN_TOKEN_LIST', 197),
        ('TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED', 198),
        ('EMPTY_TOKEN_TRANSFER_BODY', 199),
-       ('EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS', 200);
+       ('EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS', 200),
+       ('INVALID_SCHEDULE_ID', 201),
+       ('SCHEDULE_IS_IMMUTABLE', 202),
+       ('SCHEDULE_WAS_DELETED', 203),
+       ('INVALID_SCHEDULE_PAYER_ID', 204),
+       ('INVALID_SCHEDULE_ACCOUNT_ID', 205);
 
 -- t_transaction_types
 create table if not exists t_transaction_types
@@ -392,7 +420,10 @@ values (7, 'CONTRACTCALL', 2),
        (38, 'TOKENBURN', 5),
        (39, 'TOKENWIPE', 5),
        (40, 'TOKENASSOCIATE', 1),
-       (41, 'TOKENDISSOCIATE', 1);
+       (41, 'TOKENDISSOCIATE', 1),
+       (42, 'SCHEDULECREATE', 6),
+       (43, 'SCHEDULEDELETE', 6),
+       (44, 'SCHEDULESIGN', 6);
 
 -- token
 create table if not exists token

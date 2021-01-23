@@ -20,60 +20,45 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
-import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.converter.TokenIdConverter;
+import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
-public class TokenAccount {
+public class ScheduleSignature {
     @EmbeddedId
-    @JsonUnwrapped
-    private TokenAccount.Id id;
+    private ScheduleSignature.Id id;
 
-    private boolean associated;
+    @ToString.Exclude
+    private byte[] signature;
 
-    private long createdTimestamp;
-
-    @Enumerated(EnumType.ORDINAL)
-    private TokenFreezeStatusEnum freezeStatus;
-
-    @Enumerated(EnumType.ORDINAL)
-    private TokenKycStatusEnum kycStatus;
-
-    private long modifiedTimestamp;
-
-    public TokenAccount(EntityId tokenId, EntityId accountId) {
-        id = new TokenAccount.Id(tokenId, accountId);
-    }
+    @Convert(converter = ScheduleIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
+    private EntityId scheduleId;
 
     @Data
+    @Embeddable
     @AllArgsConstructor
     @NoArgsConstructor
-    @Embeddable
     public static class Id implements Serializable {
-        private static final long serialVersionUID = -4069569824910871771L;
 
-        @Convert(converter = TokenIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId tokenId;
+        private static final long serialVersionUID = -8758644338990079234L;
 
-        @Convert(converter = AccountIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId accountId;
+        private Long consensusTimestamp;
+
+        @ToString.Exclude
+        private byte[] publicKeyPrefix;
     }
 }

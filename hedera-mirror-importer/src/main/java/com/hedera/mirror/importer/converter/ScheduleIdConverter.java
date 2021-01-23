@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.domain;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,18 +20,17 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import javax.inject.Named;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-@Getter
-@RequiredArgsConstructor
-public enum EntityType {
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-    UNKNOWN, // Filler value to offset next values by one to match database values
-    ACCOUNT,
-    CONTRACT,
-    FILE,
-    TOPIC,
-    TOKEN,
-    SCHEDULE
+@Named
+@javax.persistence.Converter
+@ConfigurationPropertiesBinding
+public class ScheduleIdConverter extends AbstractEntityIdConverter {
+
+    public ScheduleIdConverter() {
+        super(EntityTypeEnum.SCHEDULE);
+    }
 }

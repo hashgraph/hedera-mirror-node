@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.domain;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,18 +20,9 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.CrudRepository;
 
-@Getter
-@RequiredArgsConstructor
-public enum EntityType {
+import com.hedera.mirror.importer.domain.ScheduleSignature;
 
-    UNKNOWN, // Filler value to offset next values by one to match database values
-    ACCOUNT,
-    CONTRACT,
-    FILE,
-    TOPIC,
-    TOKEN,
-    SCHEDULE
+public interface ScheduleSignatureRepository extends CrudRepository<ScheduleSignature, ScheduleSignature.Id> {
 }

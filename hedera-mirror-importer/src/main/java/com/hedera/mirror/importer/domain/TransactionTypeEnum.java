@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,7 +65,10 @@ public enum TransactionTypeEnum {
     TOKENBURN(38),
     TOKENWIPE(39),
     TOKENASSOCIATE(40),
-    TOKENDISSOCIATE(41);
+    TOKENDISSOCIATE(41),
+    SCHEDULECREATE(42),
+    SCHEDULEDELETE(43),
+    SCHEDULESIGN(44);
 
     private static final Map<Integer, TransactionTypeEnum> idMap = Arrays.stream(values())
             .collect(Collectors.toMap(TransactionTypeEnum::getProtoId, Function.identity()));
