@@ -115,7 +115,6 @@ const makeCard = (data, server) => {
     return 'No data received yet for at least one of the servers in your list ...';
   }
 
-  const cntTotal = data.results.numPassedTests + data.results.numFailedTests;
   const dotcolor = data.results.success ? 'green' : 'red';
   const startTime = data.results.startTime ? data.results.startTime : 0;
   const endTime = data.results.endTime ? data.results.endTime : 0;
@@ -125,13 +124,12 @@ const makeCard = (data, server) => {
   h += `
         <div class="card my-card">
           <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
-            <div class="card-title">Node: ${server}</div>
+            <div class="card-title">${server}</div>
             <div class="ip-addr"> (${data.ip}:${data.port})</div>
             <div class="card-text">
                <div class="results">
                  <span class="dot" style="background-color: ${dotcolor}"></span>
-                 ${data.results.numPassedTests} / ${cntTotal} Passed,
-                 ${data.results.numFailedTests} / ${cntTotal} Failed
+                 ${data.results.numPassedTests} / ${data.results.testResults.length} Passed
 	         at ${new Date(Number(endTime)).toISOString()}
                </div>
                <div class="card-arrow">&#x25B6</div>
@@ -190,7 +188,7 @@ const fetchAndDisplay = async () => {
             <p />`;
       } else {
         html = `
-                <h2 style="text-align:center">Hedera mirror node status</h2>
+                <h2 style="text-align:center">Hedera Mirror Node Status</h2>
                 ${Object.keys(data)
                   .map((server) => `<div class="card-deck">${makeCard(data, server)}</div>`)
                   .join('')}

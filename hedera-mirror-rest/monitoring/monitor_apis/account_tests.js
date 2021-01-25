@@ -190,7 +190,7 @@ const getSingleAccount = async (server) => {
 
 /**
  * Run all account tests in an asynchronous fashion waiting for all tests to complete
- * @param {String} server API host endpoint
+ * @param {Object} server API host endpoint
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {

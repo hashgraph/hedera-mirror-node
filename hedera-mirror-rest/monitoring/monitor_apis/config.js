@@ -20,9 +20,12 @@
 
 'use strict';
 
+const extend = require('extend');
 const fs = require('fs');
 const _ = require('lodash');
+const log4js = require('log4js');
 const path = require('path');
+const logger = log4js.getLogger();
 
 const REQUIRED_FIELDS = [
   'servers',
@@ -41,22 +44,37 @@ const REQUIRED_FIELDS = [
   'topic.intervalMultiplier',
   'topic.limit',
 ];
-const SERVERLIST_FILE = path.join(__dirname, 'config', 'serverlist.json');
-let config = {};
-let loaded = false;
 
-if (!loaded) {
-  config = JSON.parse(fs.readFileSync(SERVERLIST_FILE).toString('utf-8'));
+function load(configFile) {
+  let config = {};
+
+  try {
+    config = JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
+  } catch (err) {
+    logger.warn(`Skipping configuration ${configFile}: ${err}`);
+    return config;
+  }
+
   for (const field of REQUIRED_FIELDS) {
     if (!_.has(config, field)) {
-      throw new Error(`required field "${field}" not found in configuration file ${SERVERLIST_FILE}`);
+      throw new Error(`required field "${field}" not found in configuration file ${configFile}`);
     }
   }
 
   if (!Array.isArray(config.servers) || config.servers.length === 0) {
-    throw new Error(`invalid servers "${JSON.stringify(config.servers)}" in configuration file ${SERVERLIST_FILE}`);
+    throw new Error(`Invalid servers "${JSON.stringify(config.servers)}" in configuration file ${configFile}`);
   }
 
+  return config;
+}
+
+let config = {};
+let loaded = false;
+
+if (!loaded) {
+  config = load(path.join(__dirname, 'config', 'default.serverlist.json'));
+  const customConfig = load(path.join(__dirname, 'config', 'serverlist.json'));
+  extend(true, config, customConfig);
   loaded = true;
 }
 

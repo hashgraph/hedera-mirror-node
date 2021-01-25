@@ -1,9 +1,10 @@
 {
+  "port": 3000,
   "servers": [
     {
       "ip": "127.0.0.1",
-      "port": 3000,
-      "name": "MyLocalMirrorNode"
+      "port": 5551,
+      "name": "local"
     }
   ],
   "interval": 60,
@@ -34,14 +35,14 @@
     "freshnessThreshold": 100,
     "intervalMultiplier": 1,
     "limit": 10,
-    "topicId": "sample topic id"
+    "topicId": ""
   },
   "token": {
     "enabled": false,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
     "tokenBalancesLimit": 10,
-    "tokenId": "sample token id",
+    "tokenId": "",
     "limit": 10
   }
 }

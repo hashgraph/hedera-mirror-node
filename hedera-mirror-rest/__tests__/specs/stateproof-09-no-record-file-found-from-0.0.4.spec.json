@@ -14,7 +14,7 @@
     ]
   },
   "url": "/api/v1/transactions/0.0.111152-1570800932-629451400/stateproof",
-  "responseStatus": 503,
+  "responseStatus": 502,
   "responseJson": {
     "_status": {
       "messages": [

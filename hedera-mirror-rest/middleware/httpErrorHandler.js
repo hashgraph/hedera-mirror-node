@@ -19,14 +19,36 @@
  */
 'use strict';
 
-const statusCodes = require('http').STATUS_CODES;
-const defaultStatusCode = 500; // Internal server error
+class StatusCode {
+  constructor(code, message) {
+    this.code = code;
+    this.message = message;
+  }
+
+  isClientError() {
+    return this.code >= 400 && this.code < 500;
+  }
+
+  toString() {
+    return `${this.code} ${this.message}`;
+  }
+}
+
+const httpStatusCodes = {
+  BAD_REQUEST: new StatusCode(400, 'Bad request'),
+  NOT_FOUND: new StatusCode(404, 'Not found'),
+  INTERNAL_ERROR: new StatusCode(500, 'Internal error'),
+  BAD_GATEWAY: new StatusCode(502, 'Bad gateway'),
+  SERVICE_UNAVAILABLE: new StatusCode(503, 'Service unavailable'),
+};
+
+const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
 const errorMap = {
-  DbError: 503, // Service unavailable
-  InvalidArgumentError: 400, // Bad request
-  NotFoundError: 404, // Not found
-  InvalidConfigError: 503, // Service unavailable
+  DbError: httpStatusCodes.SERVICE_UNAVAILABLE,
+  FileDownloadError: httpStatusCodes.BAD_GATEWAY,
+  InvalidArgumentError: httpStatusCodes.BAD_REQUEST,
+  NotFoundError: httpStatusCodes.NOT_FOUND,
 };
 
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
@@ -35,22 +57,20 @@ const handleError = async (err, req, res, next) => {
   const statusCode = errorMap[err.constructor.name] || defaultStatusCode;
   let errorMessage;
 
-  if (isClientError(statusCode)) {
+  if (shouldReturnMessage(statusCode)) {
     errorMessage = err.message;
-    logger.warn(
-      `${statusCode} ${statusCodes[statusCode]} processing ${req.originalUrl}: ${err.constructor.name} ${errorMessage}`
-    );
+    logger.warn(`${statusCode} processing ${req.originalUrl}: ${err.constructor.name} ${errorMessage}`);
   } else {
-    errorMessage = statusCodes[statusCode];
-    logger.error(`${statusCode} ${statusCodes[statusCode]} processing ${req.originalUrl}: `, err);
+    errorMessage = statusCode.message;
+    logger.error(`${statusCode} processing ${req.originalUrl}: `, err);
   }
 
-  res.status(statusCode).json(errorMessageFormat(errorMessage));
+  res.status(statusCode.code).json(errorMessageFormat(errorMessage));
   return next;
 };
 
-const isClientError = (statusCode) => {
-  return statusCode >= 400 && statusCode < 500;
+const shouldReturnMessage = (statusCode) => {
+  return statusCode.isClientError() || statusCode === httpStatusCodes.BAD_GATEWAY;
 };
 
 /**

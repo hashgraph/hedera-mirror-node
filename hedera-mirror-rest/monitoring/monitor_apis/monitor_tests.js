@@ -44,8 +44,8 @@ const counters = {};
  * @param {String} address server address in the format of http://ip:port
  * @return {Object} results object capturing tests for given endpoint
  */
-const runTests = (name, address) => {
-  const counter = name in counters ? counters[name] : 0;
+const runTests = (server) => {
+  const counter = server.name in counters ? counters[server.name] : 0;
   const skippedResource = [];
   const enabledTestModules = allTestModules.filter((testModule) => {
     const {enabled} = config[testModule.resource];
@@ -60,11 +60,11 @@ const runTests = (name, address) => {
     skippedResource.push(testModule.resource);
     return false;
   });
-  counters[name] = counter + 1;
+  counters[server.name] = counter + 1;
 
   const serverTestResult = new utils.ServerTestResult();
   if (skippedResource.length !== 0) {
-    const currentResults = getServerCurrentResults(name);
+    const currentResults = getServerCurrentResults(server.name);
     for (const testResult of currentResults.testResults) {
       if (skippedResource.includes(testResult.resource)) {
         serverTestResult.addTestResult(testResult);
@@ -77,7 +77,7 @@ const runTests = (name, address) => {
     return Promise.resolve(serverTestResult.result);
   }
 
-  return Promise.all(testModules.map((testModule) => testModule.runTests(address, serverTestResult))).then(() => {
+  return Promise.all(testModules.map((testModule) => testModule.runTests(server, serverTestResult))).then(() => {
     // set class results endTime
     serverTestResult.finish();
     return serverTestResult.result;
