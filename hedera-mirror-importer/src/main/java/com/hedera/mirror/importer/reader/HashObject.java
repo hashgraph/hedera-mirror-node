@@ -22,17 +22,17 @@ package com.hedera.mirror.importer.reader;
 
 import java.io.IOException;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-@Getter
-@EqualsAndHashCode(callSuper=false)
+@EqualsAndHashCode(callSuper=true)
+@Value
 public class HashObject extends AbstractStreamObject {
 
-    private final int digestType;
-    private final byte[] hash;
+    int digestType;
+    byte[] hash;
 
     public HashObject(Header header, int digestType, byte[] hash) {
         super(header);
