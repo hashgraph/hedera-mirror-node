@@ -1,5 +1,5 @@
 -------------------
--- Add schedule to transaction table
+-- Add scheduled to transaction table
 -------------------
 
 alter table if exists transaction

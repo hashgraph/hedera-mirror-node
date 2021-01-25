@@ -276,6 +276,11 @@ class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
         jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
+    /**
+     * Insert transaction object using only columns supported in V_1_31_2
+     *
+     * @param transaction transaction domain
+     */
     private void insertTransaction(Transaction transaction) {
         jdbcOperations
                 .update("insert into transaction (charged_tx_fee, entity_id, initial_balance, max_fee, memo, " +
