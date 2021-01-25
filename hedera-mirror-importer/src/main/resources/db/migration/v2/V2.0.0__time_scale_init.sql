@@ -514,7 +514,7 @@ create table if not exists transaction
     max_fee                bigint,
     charged_tx_fee         bigint,
     memo                   bytea,
-    scheduled              boolean  null default false,
+    scheduled              boolean  not null default false,
     transaction_hash       bytea,
     transaction_bytes      bytea
 );
