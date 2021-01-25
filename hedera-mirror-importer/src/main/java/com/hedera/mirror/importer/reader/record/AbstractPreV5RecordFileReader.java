@@ -20,10 +20,14 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import com.google.common.primitives.Ints;
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.function.Consumer;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
@@ -50,16 +54,16 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
         String filename = FilenameUtils.getName(streamFileData.getFilename());
 
-        try (ValidatedDataInputStream dis = new ValidatedDataInputStream(
-                new BufferedInputStream(streamFileData.getInputStream()), filename)) {
+        try (BufferedInputStream bis = new BufferedInputStream(streamFileData.getInputStream());
+             RecordFileDigest digest = getRecordFileDigest(bis);
+             ValidatedDataInputStream dis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)
+        ) {
             RecordFile recordFile = new RecordFile();
-            RecordFileDigest digest = getRecordFileDigest();
-
             recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
-            readHeader(dis, digest, recordFile);
+
+            readHeader(dis, recordFile);
             readBody(dis, digest, itemConsumer, recordFile);
-            recordFile.setFileHash(Hex.encodeHexString(digest.digest()));
 
             return recordFile;
         } catch (ImporterException e) {
@@ -69,7 +73,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         }
     }
 
-    protected abstract RecordFileDigest getRecordFileDigest();
+    protected abstract RecordFileDigest getRecordFileDigest(InputStream is);
 
     /**
      * Reads the record file header, updates the message digest with data from the header, and sets corresponding
@@ -77,21 +81,14 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * file version, HAPI version, and the previous file hash.
      *
      * @param dis the {@link ValidatedDataInputStream} of the record file
-     * @param digest the {@link RecordFileDigest} to update the digest with
      * @param recordFile the {@link RecordFile} object
      * @throws IOException
      */
-    private void readHeader(ValidatedDataInputStream dis, RecordFileDigest digest,
-            RecordFile recordFile) throws IOException {
+    private void readHeader(ValidatedDataInputStream dis, RecordFile recordFile) throws IOException {
         int version = dis.readInt(readerVersion, "record file version");
-        int hapiVersion = dis.readInt(); // not used
-        byte marker = dis.readByte(PREV_HASH_MARKER, "previous hash marker");
+        dis.readInt(); // HAPI version, not used
+        dis.readByte(PREV_HASH_MARKER, "previous hash marker");
         byte[] prevHash = dis.readNBytes(DIGEST_ALGORITHM.getSize(), "previous hash size");
-
-        digest.updateHeader(Ints.toByteArray(version));
-        digest.updateHeader(Ints.toByteArray(hapiVersion));
-        digest.updateHeader(marker);
-        digest.updateHeader(prevHash);
 
         recordFile.setVersion(version);
         recordFile.setPreviousHash(Hex.encodeHexString(prevHash));
@@ -115,17 +112,12 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         long consensusStart = 0;
         long consensusEnd = 0;
         boolean hasItemConsumer = itemConsumer != null;
+        digest.startBody();
 
         while (dis.available() != 0) {
-            byte marker = dis.readByte(RECORD_MARKER, "record marker");
+            dis.readByte(RECORD_MARKER, "record marker");
             byte[] transactionBytes = dis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false,"transaction bytes");
             byte[] recordBytes = dis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false,"record bytes");
-
-            digest.updateBody(marker);
-            digest.updateBody(Ints.toByteArray(transactionBytes.length));
-            digest.updateBody(transactionBytes);
-            digest.updateBody(Ints.toByteArray(recordBytes.length));
-            digest.updateBody(recordBytes);
 
             boolean isFirstTransaction = count == 0;
             boolean isLastTransaction = dis.available() == 0;
@@ -153,13 +145,52 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         recordFile.setConsensusStart(consensusStart);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setCount(count);
+        recordFile.setFileHash(Hex.encodeHexString(digest.digest()));
     }
 
-    protected interface RecordFileDigest {
-        void updateHeader(byte input);
-        void updateHeader(byte[] input);
-        void updateBody(byte input);
-        void updateBody(byte[] input);
-        byte[] digest();
+    protected static class RecordFileDigest implements AutoCloseable {
+
+        @Getter
+        private final DigestInputStream digestInputStream;
+
+        private final MessageDigest messageDigestFile;
+
+        private final MessageDigest messageDigestBody;
+
+        public RecordFileDigest(InputStream is, boolean simple) {
+            try {
+                messageDigestFile = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
+                digestInputStream = new DigestInputStream(is, messageDigestFile);
+
+                if (simple) {
+                    messageDigestBody = null;
+                } else {
+                    // calculate the hash of the body separately, and the file hash is calculated as
+                    // h(header | h(body))
+                    messageDigestBody = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
+                }
+            } catch (NoSuchAlgorithmException e) {
+                throw new StreamFileReaderException("Unable to instantiate RecordFileDigest", e);
+            }
+        }
+
+        public byte[] digest() {
+            if (messageDigestBody != null) {
+                messageDigestFile.update(messageDigestBody.digest());
+            }
+
+            return messageDigestFile.digest();
+        }
+
+        public void startBody() {
+            if (messageDigestBody != null) {
+                digestInputStream.setMessageDigest(messageDigestBody);
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            digestInputStream.close();
+        }
     }
 }
