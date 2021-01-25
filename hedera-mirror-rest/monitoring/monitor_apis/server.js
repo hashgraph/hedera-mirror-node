@@ -26,10 +26,6 @@ const cors = require('cors');
 const compression = require('compression');
 const log4js = require('log4js');
 
-const config = require('./config');
-const common = require('./common');
-const monitor = require('./monitor');
-
 // Logger
 const logger = log4js.getLogger();
 log4js.configure({
@@ -50,6 +46,10 @@ log4js.configure({
   },
 });
 global.logger = log4js.getLogger();
+
+const config = require('./config');
+const common = require('./common');
+const monitor = require('./monitor');
 
 const app = express();
 

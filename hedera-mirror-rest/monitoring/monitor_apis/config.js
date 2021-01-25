@@ -32,41 +32,23 @@ const REQUIRED_FIELDS = [
   'interval',
   'shard',
   'account.intervalMultiplier',
-  'account.limit',
   'balance.freshnessThreshold',
   'balance.intervalMultiplier',
-  'balance.limit',
   'stateproof.intervalMultiplier',
   'transaction.freshnessThreshold',
   'transaction.intervalMultiplier',
-  'transaction.limit',
   'topic.freshnessThreshold',
   'topic.intervalMultiplier',
-  'topic.limit',
 ];
 
-function load(configFile) {
-  let config = {};
-
+const load = (configFile) => {
   try {
-    config = JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
+    return JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
   } catch (err) {
     logger.warn(`Skipping configuration ${configFile}: ${err}`);
-    return config;
+    return {};
   }
-
-  for (const field of REQUIRED_FIELDS) {
-    if (!_.has(config, field)) {
-      throw new Error(`required field "${field}" not found in configuration file ${configFile}`);
-    }
-  }
-
-  if (!Array.isArray(config.servers) || config.servers.length === 0) {
-    throw new Error(`Invalid servers "${JSON.stringify(config.servers)}" in configuration file ${configFile}`);
-  }
-
-  return config;
-}
+};
 
 let config = {};
 let loaded = false;
@@ -75,6 +57,18 @@ if (!loaded) {
   config = load(path.join(__dirname, 'config', 'default.serverlist.json'));
   const customConfig = load(path.join(__dirname, 'config', 'serverlist.json'));
   extend(true, config, customConfig);
+
+  for (const field of REQUIRED_FIELDS) {
+    if (!_.has(config, field)) {
+      throw new Error(`required field "${field}" not found in any configuration file`);
+    }
+  }
+
+  if (!Array.isArray(config.servers) || config.servers.length === 0) {
+    throw new Error(`Invalid servers "${JSON.stringify(config.servers)}" in any configuration file`);
+  }
+
+  logger.info(`Loaded configuration: ${JSON.stringify(config)}`);
   loaded = true;
 }
 
