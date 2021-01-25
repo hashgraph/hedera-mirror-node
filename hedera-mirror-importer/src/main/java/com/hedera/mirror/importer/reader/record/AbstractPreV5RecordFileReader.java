@@ -111,7 +111,6 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      */
     private void readBody(ValidatedDataInputStream dis, RecordFileDigest digest, Consumer<RecordItem> itemConsumer,
             RecordFile recordFile) throws IOException {
-        String filename = recordFile.getName();
         long count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;

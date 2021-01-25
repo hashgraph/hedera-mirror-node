@@ -37,10 +37,10 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
  */
 public class ValidatedDataInputStream extends DataInputStream {
 
-    private final static String NOT_EQUAL_ERROR_MESSAGE = "Unable to read file %s: Expected %s but got %s";
-    private final static String NOT_IN_RANGE_ERROR_MESSAGE = "Unable to read file %s: " +
+    private static final String NOT_EQUAL_ERROR_MESSAGE = "Unable to read file %s: Expected %s but got %s";
+    private static final String NOT_IN_RANGE_ERROR_MESSAGE = "Unable to read file %s: " +
             "Expected value between %d and %d but got %d";
-    private final static int SIMPLE_SUM = 101;
+    private static final int SIMPLE_SUM = 101;
 
     private final String filename;
 

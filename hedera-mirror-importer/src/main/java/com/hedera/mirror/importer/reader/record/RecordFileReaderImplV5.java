@@ -29,6 +29,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.Consumer;
 import javax.inject.Named;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
@@ -151,6 +152,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         return classId == hashObjectClassId;
     }
 
+    @EqualsAndHashCode(callSuper=true)
     @Getter
     private static class RecordStreamObject extends AbstractStreamObject {
 

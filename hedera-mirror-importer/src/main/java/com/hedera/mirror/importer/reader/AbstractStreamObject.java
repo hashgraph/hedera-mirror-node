@@ -36,7 +36,7 @@ public abstract class AbstractStreamObject {
 
     private final Header header;
 
-    public AbstractStreamObject(DataInputStream dis) {
+    protected AbstractStreamObject(DataInputStream dis) {
         try {
             header = new Header(dis.readLong(), dis.readInt());
         } catch (IOException e) {

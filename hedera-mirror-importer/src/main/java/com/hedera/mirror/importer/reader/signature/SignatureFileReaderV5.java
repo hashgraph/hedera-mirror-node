@@ -25,6 +25,7 @@ import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import javax.inject.Named;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.io.FilenameUtils;
 
@@ -77,6 +78,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         }
     }
 
+    @EqualsAndHashCode(callSuper=true)
     @Getter
     private static class SignatureObject extends AbstractStreamObject {
 
