@@ -286,7 +286,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
-        // persist immediately since ScheduleCreate can server to insert or update
         scheduleRepository.save(schedule);
     }
 

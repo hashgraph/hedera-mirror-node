@@ -49,12 +49,13 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.ScheduleSignature;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-public class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListenerTest {
 
     private static final Key SCHEDULE_REF_KEY = keyFromString(
             "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
@@ -83,7 +84,7 @@ public class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordIt
 
     @Test
     void scheduleCreate() throws InvalidProtocolBufferException {
-        List<SignaturePair> signaturePairs = getSignaturePairs(2);
+        List<SignaturePair> signaturePairs = getSignaturePairs(2, true);
         insertScheduleCreate(CREATE_TIMESTAMP, signaturePairs, SCHEDULE_ID);
 
         // verify entity count
@@ -105,41 +106,12 @@ public class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordIt
 
     @Test
     void scheduleUpdate() throws InvalidProtocolBufferException {
-        List<SignaturePair> startingSignaturePairs = getSignaturePairs(2);
+        List<SignaturePair> startingSignaturePairs = getSignaturePairs(2, true);
         insertScheduleCreate(CREATE_TIMESTAMP, startingSignaturePairs, SCHEDULE_ID);
 
         // update
-        List<SignaturePair> additionalSignaturePairs = getSignaturePairs(3);
+        List<SignaturePair> additionalSignaturePairs = getSignaturePairs(3, true);
         insertScheduleUpdate(UPDATE_TIMESTAMP, startingSignaturePairs, additionalSignaturePairs, SCHEDULE_ID);
-
-        // verify entity count
-        Entities scheduleEntity = getScheduleEntity(SCHEDULE_ID);
-        var expectedEntity = createEntity(scheduleEntity, null, null, SCHEDULE_REF_KEY, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.SCHEDULE);
-        assertEquals(5, entityRepository.count()); // Node, payer, schedule and autorenew
-        assertThat(scheduleEntity).isEqualTo(expectedEntity);
-
-        // verify schedule
-        assertThat(scheduleRepository.count()).isEqualTo(1L);
-        assertScheduleInRepository(SCHEDULE_ID, UPDATE_TIMESTAMP, null);
-
-        // verify schedule signatures
-        List<SignaturePair> combinedSignaturePairs = new ArrayList<>(startingSignaturePairs);
-        combinedSignaturePairs.addAll(additionalSignaturePairs);
-        assertScheduleSignatureInRepository(UPDATE_TIMESTAMP, SCHEDULE_ID, combinedSignaturePairs);
-
-        // verify transaction
-        assertTransactionInRepository(UPDATE_TIMESTAMP, false);
-    }
-
-    @Test
-    void scheduleSignSingleRecord() throws InvalidProtocolBufferException {
-        List<SignaturePair> startingSignaturePairs = getSignaturePairs(2);
-        insertScheduleCreate(CREATE_TIMESTAMP, startingSignaturePairs, SCHEDULE_ID);
-
-        // sign
-        List<SignaturePair> additionalSignaturePairs = getSignaturePairs(3);
-        insertScheduleSign(SIGN_TIMESTAMP, additionalSignaturePairs, SCHEDULE_ID);
 
         // verify entity count
         Entities scheduleEntity = getScheduleEntity(SCHEDULE_ID);
@@ -155,19 +127,61 @@ public class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordIt
         // verify schedule signatures
         List<SignaturePair> combinedSignaturePairs = new ArrayList<>(startingSignaturePairs);
         combinedSignaturePairs.addAll(additionalSignaturePairs);
-        assertScheduleSignatureInRepository(SIGN_TIMESTAMP, SCHEDULE_ID, combinedSignaturePairs);
+        assertScheduleSignatureInRepository(UPDATE_TIMESTAMP, SCHEDULE_ID, combinedSignaturePairs);
+
+        // verify transaction
+        assertTransactionInRepository(UPDATE_TIMESTAMP, false);
+    }
+
+    @Test
+    void scheduleSign() throws InvalidProtocolBufferException {
+        List<SignaturePair> startingSignaturePairs = getSignaturePairs(2, true);
+        insertScheduleCreate(CREATE_TIMESTAMP, startingSignaturePairs, SCHEDULE_ID);
+
+        // sign
+        List<SignaturePair> additionalSignaturePairs = getSignaturePairs(3, true);
+        insertScheduleSign(SIGN_TIMESTAMP, additionalSignaturePairs, SCHEDULE_ID);
+
+        // verify entity count
+        Entities scheduleEntity = getScheduleEntity(SCHEDULE_ID);
+        var expectedEntity = createEntity(scheduleEntity, null, null, SCHEDULE_REF_KEY, null, TRANSACTION_MEMO, 1L,
+                30L, EntityTypeEnum.SCHEDULE);
+        assertEquals(5, entityRepository.count()); // Node, payer, schedule and autorenew
+        assertThat(scheduleEntity).isEqualTo(expectedEntity);
+
+        // verify schedule
+        assertThat(scheduleRepository.count()).isEqualTo(1L);
+        assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, null);
+
+        // verify schedule signatures
+        assertThat(scheduleSignatureRepository.count())
+                .isEqualTo(startingSignaturePairs.size() + additionalSignaturePairs.size());
+        assertScheduleSignatureInRepository(CREATE_TIMESTAMP, SCHEDULE_ID, startingSignaturePairs);
+        assertScheduleSignatureInRepository(SIGN_TIMESTAMP, SCHEDULE_ID, additionalSignaturePairs);
 
         // verify transaction
         assertTransactionInRepository(SIGN_TIMESTAMP, false);
     }
 
     @Test
+    void scheduleCreateNonEd25519Signature() throws InvalidProtocolBufferException {
+        List<SignaturePair> signaturePairs = getSignaturePairs(2, false);
+        assertThrows(InvalidDatasetException.class, () -> {
+            insertScheduleSign(SIGN_TIMESTAMP, signaturePairs, SCHEDULE_ID);
+        });
+
+        // verify lack of schedule data and transaction
+        assertThat(scheduleSignatureRepository.count()).isEqualTo(0);
+        assertThat(transactionRepository.count()).isEqualTo(0);
+    }
+
+    @Test
     void scheduleExecute() throws InvalidProtocolBufferException {
-        List<SignaturePair> startingSignaturePairs = getSignaturePairs(2);
+        List<SignaturePair> startingSignaturePairs = getSignaturePairs(2, true);
         insertScheduleCreate(CREATE_TIMESTAMP, startingSignaturePairs, SCHEDULE_ID);
 
         // sign
-        List<SignaturePair> additionalSignaturePairs = getSignaturePairs(3);
+        List<SignaturePair> additionalSignaturePairs = getSignaturePairs(3, true);
         insertScheduleSign(SIGN_TIMESTAMP, additionalSignaturePairs, SCHEDULE_ID);
 
         // scheduled transaction
@@ -185,9 +199,10 @@ public class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordIt
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, EXECUTE_TIMESTAMP);
 
         // verify schedule signatures
-        List<SignaturePair> combinedSignaturePairs = new ArrayList<>(startingSignaturePairs);
-        combinedSignaturePairs.addAll(additionalSignaturePairs);
-        assertScheduleSignatureInRepository(SIGN_TIMESTAMP, SCHEDULE_ID, combinedSignaturePairs);
+        assertThat(scheduleSignatureRepository.count())
+                .isEqualTo(startingSignaturePairs.size() + additionalSignaturePairs.size());
+        assertScheduleSignatureInRepository(CREATE_TIMESTAMP, SCHEDULE_ID, startingSignaturePairs);
+        assertScheduleSignatureInRepository(SIGN_TIMESTAMP, SCHEDULE_ID, additionalSignaturePairs);
 
         // verify transaction
         assertTransactionInRepository(EXECUTE_TIMESTAMP, true);
@@ -231,15 +246,22 @@ public class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordIt
         return signatureBuilder.build();
     }
 
-    private List<SignaturePair> getSignaturePairs(int signatureCount) {
+    private List<SignaturePair> getSignaturePairs(int signatureCount, boolean isEd25519) {
         String salt = RandomStringUtils.randomAlphabetic(5);
 
         List<SignaturePair> signaturePairs = new ArrayList<>();
-        SignatureMap.Builder signatureBuilder = SignatureMap.newBuilder();
         for (int i = 0; i < signatureCount; i++) {
-            signaturePairs.add(SignaturePair.newBuilder()
-                    .setEd25519(ByteString.copyFromUtf8("Ed25519-" + i))
-                    .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-" + i)).build());
+            SignaturePair.Builder signaturePaiBuilder = SignaturePair.newBuilder();
+            signaturePaiBuilder.setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-" + i + salt));
+
+            ByteString byteString = ByteString.copyFromUtf8("Ed25519-" + i + salt);
+            if (isEd25519) {
+                signaturePaiBuilder.setEd25519(byteString);
+            } else {
+                signaturePaiBuilder.setRSA3072(byteString);
+            }
+
+            signaturePairs.add(signaturePaiBuilder.build());
         }
 
         return signaturePairs;
@@ -326,7 +348,9 @@ public class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordIt
                                                      List<SignaturePair> signaturePairs) {
         List<ScheduleSignature> scheduleSignatures = (List<ScheduleSignature>) scheduleSignatureRepository.findAll();
         assertThat(scheduleSignatures).isNotNull();
-        assertThat(scheduleSignatures.size()).isEqualTo(signaturePairs.size());
+
+        // repository should contain at least signaturePairs count of signatures
+        assertThat(scheduleSignatures.size()).isGreaterThanOrEqualTo(signaturePairs.size());
 
         signaturePairs.forEach(signaturePair -> {
             assertThat(scheduleSignatureRepository.findById(new ScheduleSignature.Id(

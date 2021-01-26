@@ -30,11 +30,14 @@ import org.springframework.data.repository.query.Param;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Schedule;
 
+@Transactional
 public interface ScheduleRepository extends CrudRepository<Schedule, Long> {
     @Modifying
-    @Transactional
     @Query("update Schedule set executedTimestamp = :timestamp where scheduleId = :schedule")
     void updateExecutedTimestamp(@Param("schedule") EntityId scheduleId, @Param("timestamp") long executedTimestamp);
 
     Optional<Schedule> findByScheduleId(EntityId scheduleId);
+
+    @Override
+    <S extends Schedule> S save(S entity);
 }

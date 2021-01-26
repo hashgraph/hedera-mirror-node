@@ -75,6 +75,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.exception.InvalidEntityException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -199,6 +200,11 @@ public class EntityRecordItemListener implements RecordItemListener {
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusNs, body, txRecord);
 
+            // handled scheduled transaction
+            if (tx.isScheduled()) {
+                onScheduledTransaction(recordItem);
+            }
+
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
@@ -236,8 +242,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertScheduleCreate(recordItem);
             } else if (body.hasScheduleSign()) {
                 insertScheduleSign(recordItem);
-            } else if (tx.isScheduled()) {
-                insertScheduleTransaction(recordItem);
             }
         }
 
@@ -779,18 +783,24 @@ public class EntityRecordItemListener implements RecordItemListener {
             var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
             var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
 
-            Schedule schedule = scheduleRepository
+            scheduleRepository
                     .findByScheduleId(scheduleId)
-                    .orElseGet(() -> new Schedule()); // check is schedule form a previous create already exists
-
-            schedule.setConsensusTimestamp(consensusTimestamp);
-            schedule.setCreatorAccountId(payerAccount);
-            schedule.setPayerAccountId(scheduleCreateTransactionBody.hasPayerAccountID() ? EntityId
-                    .of(scheduleCreateTransactionBody.getPayerAccountID()) : payerAccount);
-            schedule.setScheduleId(scheduleId);
-            schedule.setTransactionBody(scheduleCreateTransactionBody.getTransactionBody().toByteArray());
-
-            entityListener.onSchedule(schedule);
+                    .ifPresentOrElse(s -> {
+                                log.warn("Schedule entity {} already exists, only signatures will be persisted",
+                                        s.getScheduleId());
+                            },
+                            () -> {
+                                // insert schedule only if it doesn't already exist
+                                Schedule schedule = new Schedule();
+                                schedule.setConsensusTimestamp(consensusTimestamp);
+                                schedule.setCreatorAccountId(payerAccount);
+                                schedule.setPayerAccountId(scheduleCreateTransactionBody.hasPayerAccountID() ? EntityId
+                                        .of(scheduleCreateTransactionBody.getPayerAccountID()) : payerAccount);
+                                schedule.setScheduleId(scheduleId);
+                                schedule.setTransactionBody(scheduleCreateTransactionBody.getTransactionBody()
+                                        .toByteArray());
+                                entityListener.onSchedule(schedule);
+                            });
 
             // insert signature for every item in map
             if (scheduleCreateTransactionBody.hasSigMap()) {
@@ -806,7 +816,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isSchedules()) {
             ScheduleSignTransactionBody scheduleSignTransactionBody = recordItem.getTransactionBody().getScheduleSign();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
+            var scheduleId = EntityId.of(scheduleSignTransactionBody.getScheduleID());
 
             // insert signature for every item in map
             if (scheduleSignTransactionBody.hasSigMap()) {
@@ -814,26 +824,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                         scheduleId,
                         consensusTimestamp,
                         scheduleSignTransactionBody.getSigMap().getSigPairList());
-            }
-        }
-    }
-
-    private void insertScheduleTransaction(RecordItem recordItem) {
-        if (entityProperties.getPersist().isSchedules()) {
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TransactionRecord transactionRecord = recordItem.getRecord();
-            var scheduleId = EntityId.of(transactionRecord.getScheduleRef());
-            Schedule schedule = scheduleRepository
-                    .findByScheduleId(scheduleId)
-                    .orElseGet(() -> {
-                        log.warn("Missing schedule entity {}, unable to persist schedule", scheduleId);
-                        return null;
-                    });
-
-            // update schedule execute time
-            if (schedule != null) {
-                schedule.setExecutedTimestamp(consensusTimestamp);
-                entityListener.onSchedule(schedule);
             }
         }
     }
@@ -848,9 +838,25 @@ public class EntityRecordItemListener implements RecordItemListener {
                     signaturePair.getPubKeyPrefix().toByteArray()));
 
             // currently only Ed25519 signature is supported
+            SignaturePair.SignatureCase signatureCase = signaturePair.getSignatureCase();
+            if (signatureCase != SignaturePair.SignatureCase.ED25519) {
+                throw new InvalidDatasetException("Unsupported signature case encountered: " + signatureCase);
+            }
+
             scheduleSignature.setSignature(signaturePair.getEd25519().toByteArray());
 
             entityListener.onScheduleSignature(scheduleSignature);
         });
+    }
+
+    private void onScheduledTransaction(RecordItem recordItem) {
+        if (entityProperties.getPersist().isSchedules()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            TransactionRecord transactionRecord = recordItem.getRecord();
+            var scheduleId = EntityId.of(transactionRecord.getScheduleRef());
+
+            // update schedule execute time
+            scheduleRepository.updateExecutedTimestamp(scheduleId, consensusTimestamp);
+        }
     }
 }

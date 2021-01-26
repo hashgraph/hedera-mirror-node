@@ -35,13 +35,6 @@
         </dependencies>
     </dependencyManagement>
 
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -52,9 +45,9 @@
             <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.hashgraph.hedera-services</groupId>
+            <groupId>com.hedera.hashgraph</groupId>
             <artifactId>hedera-protobuf-java-api</artifactId>
-            <version>v0.11.0-alpha.3</version>
+            <version>${hedera-protobuf.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>

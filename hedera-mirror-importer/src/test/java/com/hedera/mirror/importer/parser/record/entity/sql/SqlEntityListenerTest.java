@@ -357,36 +357,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onScheduleUpdate() throws Exception {
-        EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
-        EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
-
-        Schedule schedule1 = getSchedule(1, entityId1.entityIdToString());
-        Schedule schedule2 = getSchedule(2, entityId2.entityIdToString());
-        Schedule schedule1Updated = getSchedule(3, entityId1.entityIdToString());
-        Schedule schedule2Executed = getSchedule(2, entityId2.entityIdToString());
-        schedule2Executed.setExecutedTimestamp(5L);
-
-        // when
-        sqlEntityListener.onSchedule(schedule1);
-        sqlEntityListener.onSchedule(schedule2);
-        completeFileAndCommit();
-
-        // update consensusTimestamp
-        sqlEntityListener.onSchedule(schedule1Updated);
-        completeFileAndCommit();
-
-        // update executedTimestamp
-        sqlEntityListener.onSchedule(schedule2Executed);
-        completeFileAndCommit();
-
-        // then
-        assertEquals(2, scheduleRepository.count());
-        assertExistsAndEquals(scheduleRepository, schedule1Updated, 3L);
-        assertExistsAndEquals(scheduleRepository, schedule2Executed, 2L);
-    }
-
-    @Test
     void onScheduleSignature() throws Exception {
         EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
         EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
