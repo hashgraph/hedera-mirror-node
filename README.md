@@ -251,10 +251,10 @@ documentation for directions on where and how to view logs.
 
 ## Releasing
 
-To prepare for a new release:
+To prepare for a new release, first update `release.version` and `release.chartVersion` in the root `pom.xml`. Then run:
 
 ```
-./mvnw clean package -N -P=release -Drelease.version=x.y.z -Drelease.chartVersion=x.y.z
+./mvnw clean package -N -P=release
 helm dependency update charts/hedera-mirror
 ```
 
