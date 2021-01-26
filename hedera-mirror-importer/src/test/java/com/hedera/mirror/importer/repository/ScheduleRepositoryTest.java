@@ -50,6 +50,13 @@ class ScheduleRepositoryTest extends AbstractRepositoryTest {
                 .returns(newExecutedTimestamp, from(Schedule::getExecutedTimestamp));
     }
 
+    @Test
+    void findByScheduleId() {
+        Schedule schedule = scheduleRepository.save(schedule(1));
+        assertThat(scheduleRepository.findByScheduleId(schedule.getScheduleId())).get()
+                .isEqualTo(schedule);
+    }
+
     private Schedule schedule(long consensusTimestamp) {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(consensusTimestamp);

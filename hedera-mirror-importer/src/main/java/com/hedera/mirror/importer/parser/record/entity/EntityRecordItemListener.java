@@ -779,7 +779,10 @@ public class EntityRecordItemListener implements RecordItemListener {
             var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
             var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
 
-            Schedule schedule = new Schedule();
+            Schedule schedule = scheduleRepository
+                    .findByScheduleId(scheduleId)
+                    .orElseGet(() -> new Schedule()); // check is schedule form a previous create already exists
+
             schedule.setConsensusTimestamp(consensusTimestamp);
             schedule.setCreatorAccountId(payerAccount);
             schedule.setPayerAccountId(scheduleCreateTransactionBody.hasPayerAccountID() ? EntityId
@@ -821,7 +824,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TransactionRecord transactionRecord = recordItem.getRecord();
             var scheduleId = EntityId.of(transactionRecord.getScheduleRef());
             Schedule schedule = scheduleRepository
-                    .findByScheduleId(scheduleId.getId())
+                    .findByScheduleId(scheduleId)
                     .orElseGet(() -> {
                         log.warn("Missing schedule entity {}, unable to persist schedule", scheduleId);
                         return null;
@@ -840,11 +843,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         signaturePairList.forEach(signaturePair -> {
             ScheduleSignature scheduleSignature = new ScheduleSignature();
             scheduleSignature.setScheduleId(scheduleId);
-            scheduleSignature.setScheduleSignatureId(new ScheduleSignature.Id(
+            scheduleSignature.setId(new ScheduleSignature.Id(
                     consensusTimestamp,
                     signaturePair.getPubKeyPrefix().toByteArray()));
 
-            // currently on Ed25519 signature is supported
+            // currently only Ed25519 signature is supported
             scheduleSignature.setSignature(signaturePair.getEd25519().toByteArray());
 
             entityListener.onScheduleSignature(scheduleSignature);

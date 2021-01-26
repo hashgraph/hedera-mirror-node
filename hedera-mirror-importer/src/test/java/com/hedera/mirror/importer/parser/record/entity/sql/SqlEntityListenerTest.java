@@ -342,8 +342,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
         EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
 
-        Schedule schedule1 = getSchedule(1, entityId1.toString());
-        Schedule schedule2 = getSchedule(2, entityId2.toString());
+        Schedule schedule1 = getSchedule(1, entityId1.entityIdToString());
+        Schedule schedule2 = getSchedule(2, entityId2.entityIdToString());
 
         // when
         sqlEntityListener.onSchedule(schedule1);
@@ -361,10 +361,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
         EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
         EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
 
-        Schedule schedule1 = getSchedule(1, entityId1.toString());
-        Schedule schedule2 = getSchedule(2, entityId2.toString());
-        Schedule schedule1Updated = getSchedule(3, entityId1.toString());
-        Schedule schedule2Executed = getSchedule(2, entityId2.toString());
+        Schedule schedule1 = getSchedule(1, entityId1.entityIdToString());
+        Schedule schedule2 = getSchedule(2, entityId2.entityIdToString());
+        Schedule schedule1Updated = getSchedule(3, entityId1.entityIdToString());
+        Schedule schedule2Executed = getSchedule(2, entityId2.entityIdToString());
         schedule2Executed.setExecutedTimestamp(5L);
 
         // when
@@ -372,12 +372,12 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onSchedule(schedule2);
         completeFileAndCommit();
 
-        // update
+        // update consensusTimestamp
         sqlEntityListener.onSchedule(schedule1Updated);
         completeFileAndCommit();
 
-        // update
-        sqlEntityListener.onSchedule(schedule1Updated);
+        // update executedTimestamp
+        sqlEntityListener.onSchedule(schedule2Executed);
         completeFileAndCommit();
 
         // then
@@ -395,9 +395,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
         byte[] pubKeyPrefix2 = "pubKeyPrefix2".getBytes();
         byte[] pubKeyPrefix3 = "pubKeyPrefix3".getBytes();
 
-        ScheduleSignature scheduleSignature1 = getScheduleSignature(1, entityId1.toString(), pubKeyPrefix1);
-        ScheduleSignature scheduleSignature2 = getScheduleSignature(2, entityId2.toString(), pubKeyPrefix2);
-        ScheduleSignature scheduleSignature3 = getScheduleSignature(3, entityId3.toString(), pubKeyPrefix3);
+        ScheduleSignature scheduleSignature1 = getScheduleSignature(1, entityId1.entityIdToString(), pubKeyPrefix1);
+        ScheduleSignature scheduleSignature2 = getScheduleSignature(2, entityId2.entityIdToString(), pubKeyPrefix2);
+        ScheduleSignature scheduleSignature3 = getScheduleSignature(3, entityId3.entityIdToString(), pubKeyPrefix3);
 
         // when
         sqlEntityListener.onScheduleSignature(scheduleSignature1);
@@ -542,7 +542,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     private ScheduleSignature getScheduleSignature(long consensusTimestamp, String scheduleId, byte[] pubKeyPrefix) {
         ScheduleSignature scheduleSignature = new ScheduleSignature();
-        scheduleSignature.setScheduleSignatureId(new ScheduleSignature.Id(
+        scheduleSignature.setId(new ScheduleSignature.Id(
                 consensusTimestamp,
                 pubKeyPrefix));
         scheduleSignature.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));

@@ -36,5 +36,5 @@ public interface ScheduleRepository extends CrudRepository<Schedule, Long> {
     @Query("update Schedule set executedTimestamp = :timestamp where scheduleId = :schedule")
     void updateExecutedTimestamp(@Param("schedule") EntityId scheduleId, @Param("timestamp") long executedTimestamp);
 
-    Optional<Schedule> findByScheduleId(long encodedEntityId);
+    Optional<Schedule> findByScheduleId(EntityId scheduleId);
 }

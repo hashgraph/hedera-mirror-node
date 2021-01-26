@@ -41,18 +41,17 @@ public class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandl
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setScheduleSign(ScheduleSignTransactionBody.newBuilder()
-                        .setScheduleID(ScheduleID.newBuilder().setShardNum(0).setRealmNum(0).setScheduleNum(1)
-                                .build())
+                        .setScheduleID(ScheduleID.newBuilder().setScheduleNum(DEFAULT_ENTITY_NUM).build())
                         .setSigMap(SignatureMap.newBuilder()
-                                .setSigPair(0, SignaturePair.newBuilder()
+                                .addSigPair(SignaturePair.newBuilder()
                                         .setEd25519(ByteString.copyFromUtf8("Ed25519-1"))
                                         .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-1")).build())
-                                .setSigPair(1, SignaturePair.newBuilder()
+                                .addSigPair(SignaturePair.newBuilder()
                                         .setEd25519(ByteString.copyFromUtf8("Ed25519-2"))
                                         .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-2")).build())
-                                .setSigPair(2, SignaturePair.newBuilder()
-                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-2"))
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-2")).build())
+                                .addSigPair(SignaturePair.newBuilder()
+                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-3"))
+                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-3")).build())
                                 .build()));
     }
 

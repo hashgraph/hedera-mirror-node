@@ -35,7 +35,6 @@ import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 @Data
 @Entity
 @NoArgsConstructor
-@ToString(exclude = {"memo", "transactionBody"})
 public class Schedule {
     @Id
     private Long consensusTimestamp;
@@ -54,5 +53,6 @@ public class Schedule {
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId scheduleId;
 
+    @ToString.Exclude
     private byte[] transactionBody;
 }
