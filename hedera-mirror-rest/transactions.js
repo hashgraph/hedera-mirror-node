@@ -429,7 +429,7 @@ const getTransactions = async (req, res) => {
 
 /**
  * Get the scheduled db query from the scheduled param in the HTTP request query.
- * - if not present, returns undefined
+ * - if not present, returns empty string
  * - if false, returns a query to select only SCHEDULECREATE transactions
  * - if true, returns a query to select only scheduled transactions
  *
@@ -439,7 +439,7 @@ const getTransactions = async (req, res) => {
 const getScheduledQuery = async (query) => {
   const scheduledValues = query[constants.filterKeys.SCHEDULED];
   if (scheduledValues === undefined) {
-    return undefined;
+    return '';
   }
 
   let scheduled = scheduledValues;
@@ -466,6 +466,7 @@ const getOneTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
   const scheduledQuery = await getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
+  const whereClause = buildWhereClause('t.payer_account_id = ?', 't.valid_start_ns = ?', scheduledQuery);
 
   const sqlQuery = `
     ${getSelectClauseWithTokenTransferOrder()}
@@ -476,9 +477,7 @@ const getOneTransaction = async (req, res) => {
     LEFT JOIN token_transfer ttl
       ON t.type = ${await transactionTypes.get('CRYPTOTRANSFER')}
       AND t.consensus_ns = ttl.consensus_timestamp
-    WHERE t.payer_account_id = ?
-       AND t.valid_start_ns = ?
-       ${(scheduledQuery && `AND ${scheduledQuery}`) || ''}
+    ${whereClause}
     GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo,
       t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
     ORDER BY consensus_ns ASC, ctl_entity_id ASC, ctl.amount ASC`;
