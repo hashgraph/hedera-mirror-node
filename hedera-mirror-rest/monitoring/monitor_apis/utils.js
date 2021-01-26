@@ -121,7 +121,7 @@ class ServerTestResult {
 /**
  * Creates a function to run specific tests with the provided server address, classs result, and resource
  *
- * @param {Object} server server address in the format of http://ip:port
+ * @param {Object} server object provided by the user
  * @param {ServerTestResult} testClassResult test class result object
  * @param {String} resource name of the resource to test
  * @return {function(...[*]=)}

@@ -83,7 +83,7 @@ const runEverything = async (servers) => {
         }
 
         common.saveResults(server, results);
-        logger.warn(`Incomplete tests for ${server.name} at: ${new Date()}`);
+        logger.warn(`Incomplete tests for ${server.name}`);
       }
     }
   } catch (err) {

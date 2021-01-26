@@ -35,10 +35,10 @@ class StatusCode {
 }
 
 const httpStatusCodes = {
-  BAD_REQUEST: new StatusCode(400, 'Bad request'),
-  NOT_FOUND: new StatusCode(404, 'Not found'),
-  INTERNAL_ERROR: new StatusCode(500, 'Internal error'),
   BAD_GATEWAY: new StatusCode(502, 'Bad gateway'),
+  BAD_REQUEST: new StatusCode(400, 'Bad request'),
+  INTERNAL_ERROR: new StatusCode(500, 'Internal error'),
+  NOT_FOUND: new StatusCode(404, 'Not found'),
   SERVICE_UNAVAILABLE: new StatusCode(503, 'Service unavailable'),
 };
 

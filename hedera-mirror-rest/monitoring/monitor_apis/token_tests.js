@@ -440,7 +440,7 @@ const checkTokenBalanceFreshness = async (server) => {
 /**
  * Run all token tests in an asynchronous fashion waiting for all tests to complete
  *
- * @param {Object} server API host endpoint
+ * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {

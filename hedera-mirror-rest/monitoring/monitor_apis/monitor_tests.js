@@ -40,8 +40,7 @@ const counters = {};
  * Each class manages its tests and returns a class results object
  * A single combined result object covering all test resources is returned
  *
- * @param {String} name server name
- * @param {String} address server address in the format of http://ip:port
+ * @param {Object} server object provided by the user
  * @return {Object} results object capturing tests for given endpoint
  */
 const runTests = (server) => {

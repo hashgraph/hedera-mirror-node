@@ -43,9 +43,11 @@ const REQUIRED_FIELDS = [
 
 const load = (configFile) => {
   try {
-    return JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
+    const data = JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
+    logger.info(`Loaded configuration source: ${configFile}`);
+    return data;
   } catch (err) {
-    logger.warn(`Skipping configuration ${configFile}: ${err}`);
+    logger.warn(`Skipping configuration source ${configFile}: ${err}`);
     return {};
   }
 };
