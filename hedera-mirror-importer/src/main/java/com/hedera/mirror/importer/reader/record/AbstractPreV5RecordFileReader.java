@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestInputStream;
@@ -54,8 +53,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
         String filename = FilenameUtils.getName(streamFileData.getFilename());
 
-        try (BufferedInputStream bis = new BufferedInputStream(streamFileData.getInputStream());
-             RecordFileDigest digest = getRecordFileDigest(bis);
+        try (RecordFileDigest digest = getRecordFileDigest(streamFileData.getInputStream());
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)
         ) {
             RecordFile recordFile = new RecordFile();

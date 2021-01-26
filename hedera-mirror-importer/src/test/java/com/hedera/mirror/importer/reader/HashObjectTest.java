@@ -50,7 +50,7 @@ class HashObjectTest {
             "1226, 1, , 57, true",
             "1226, 1, , 61, true",
     })
-    void read(long classId, int classVersion, Integer digestType, int bytesToTruncate, boolean expectThrown) throws IOException {
+    void newHashObject(long classId, int classVersion, Integer digestType, int bytesToTruncate, boolean expectThrown) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); DataOutputStream dos = new DataOutputStream(bos)) {
             // given
             dos.writeLong(classId);
@@ -71,7 +71,7 @@ class HashObjectTest {
                 if (expectThrown) {
                     assertThrows(InvalidStreamFileException.class, () -> new HashObject(dis, SHA384));
                 } else {
-                    HashObject expected = new HashObject(new AbstractStreamObject.Header(classId, classVersion), SHA384.getType(), hash);
+                    HashObject expected = new HashObject(classId, classVersion, SHA384.getType(), hash);
                     HashObject actual = new HashObject(dis, "testfile", SHA384);
                     assertThat(actual).isEqualTo(expected);
                 }

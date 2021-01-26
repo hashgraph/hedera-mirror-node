@@ -57,7 +57,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         String filename = FilenameUtils.getName(streamFileData.getFilename());
 
         // the first DigestInputStream is for file hash and the second is for metadata hash. Any BufferedInputStream
-        // should not wrap, directly or indirectly, the second DigestInputStream.
+        // should not wrap, directly or indirectly, the second DigestInputStream. The BufferedInputStream after the
+        // first DigestInputStream is needed to avoid digesting some class ID fields twice.
         try (DigestInputStream digestInputStream = new DigestInputStream(
                 new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
                 messageDigestMetadata);
@@ -96,7 +97,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         // start object running hash
         HashObject startHashObject = new HashObject(vdis, DIGEST_ALGORITHM);
         metadataDigestInputStream.on(false); // metadata hash is not calculated on record stream objects
-        long hashObjectClassId = startHashObject.getHeader().getClassId();
+        long hashObjectClassId = startHashObject.getClassId();
 
         long count = 0;
         long consensusStart = 0;
@@ -162,12 +163,12 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         private final byte[] transactionBytes;
         private RecordItem recordItem;
 
-        RecordStreamObject(ValidatedDataInputStream dis) {
-            super(dis);
+        RecordStreamObject(ValidatedDataInputStream vdis) {
+            super(vdis);
 
             try {
-                recordBytes = dis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
-                transactionBytes = dis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
+                recordBytes = vdis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
+                transactionBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
             } catch (IOException e) {
                 throw new InvalidStreamFileException(e);
             }

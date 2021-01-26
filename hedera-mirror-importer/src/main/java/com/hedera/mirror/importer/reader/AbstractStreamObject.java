@@ -24,7 +24,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
@@ -32,19 +31,15 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 @RequiredArgsConstructor
 public abstract class AbstractStreamObject {
 
-    private final Header header;
+    private final long classId;
+    private final int classVersion;
 
     protected AbstractStreamObject(DataInputStream dis) {
         try {
-            header = new Header(dis.readLong(), dis.readInt());
+            classId = dis.readLong();
+            classVersion = dis.readInt();
         } catch (IOException e) {
             throw new InvalidStreamFileException(e);
         }
-    }
-
-    @Value
-    public static class Header {
-        long classId;
-        int classVersion;
     }
 }

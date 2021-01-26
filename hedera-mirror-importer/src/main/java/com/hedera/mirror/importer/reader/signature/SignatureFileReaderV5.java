@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import javax.inject.Named;
 import lombok.EqualsAndHashCode;
@@ -49,7 +48,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
 
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
-                new BufferedInputStream(signatureFileData.getInputStream()), filename)) {
+                signatureFileData.getInputStream(), filename)) {
             vdis.readByte(SIGNATURE_FILE_FORMAT_VERSION, "fileVersion");
 
             // Read the objectStreamSignatureVersion, which is not used
@@ -57,14 +56,14 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
 
             HashObject fileHashObject = new HashObject(vdis, "entireFile", SHA384);
             fileStreamSignature.setFileHash(fileHashObject.getHash());
-            SignatureObject signatureObject = new SignatureObject(vdis, "entireFile");
-            fileStreamSignature.setFileHashSignature(signatureObject.getSignature());
-            fileStreamSignature.setSignatureType(signatureObject.getSignatureType());
+            SignatureObject fileSignatureObject = new SignatureObject(vdis, "entireFile");
+            fileStreamSignature.setFileHashSignature(fileSignatureObject.getSignature());
+            fileStreamSignature.setSignatureType(fileSignatureObject.getSignatureType());
 
             HashObject metadataHashObject = new HashObject(vdis, "metadata", SHA384);
             fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
-            signatureObject = new SignatureObject(vdis, "metadata");
-            fileStreamSignature.setMetadataHashSignature(signatureObject.getSignature());
+            SignatureObject metadataSignatureObject = new SignatureObject(vdis, "metadata");
+            fileStreamSignature.setMetadataHashSignature(metadataSignatureObject.getSignature());
 
             if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
@@ -83,13 +82,13 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         private final byte[] signature;
         private final SignatureType signatureType;
 
-        SignatureObject(ValidatedDataInputStream dis, String sectionName) {
-            super(dis);
+        SignatureObject(ValidatedDataInputStream vdis, String sectionName) {
+            super(vdis);
 
             try {
                 signatureType = SignatureType.SHA_384_WITH_RSA;
-                dis.readInt(signatureType.getFileMarker(), sectionName, "signature type");
-                signature = dis.readLengthAndBytes(1, signatureType.getMaxLength(), true, sectionName, "signature");
+                vdis.readInt(signatureType.getFileMarker(), sectionName, "signature type");
+                signature = vdis.readLengthAndBytes(1, signatureType.getMaxLength(), true, sectionName, "signature");
             } catch (IOException e) {
                 throw new InvalidStreamFileException(e);
             }

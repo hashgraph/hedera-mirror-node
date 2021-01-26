@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import javax.inject.Named;
 import org.apache.commons.io.FilenameUtils;
@@ -45,7 +44,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
 
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
-                new BufferedInputStream(signatureFileData.getInputStream()), filename)) {
+                signatureFileData.getInputStream(), filename)) {
             vdis.readByte(SIGNATURE_TYPE_FILE_HASH, "hash delimiter");
             byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA384.getSize(), "hash");
             fileStreamSignature.setFileHash(fileHash);

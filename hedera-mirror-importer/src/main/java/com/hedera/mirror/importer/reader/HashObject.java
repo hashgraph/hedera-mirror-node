@@ -34,19 +34,13 @@ public class HashObject extends AbstractStreamObject {
     int digestType;
     byte[] hash;
 
-    public HashObject(Header header, int digestType, byte[] hash) {
-        super(header);
-        this.digestType = digestType;
-        this.hash = hash;
-    }
-
-    public HashObject(ValidatedDataInputStream dis, String sectionName, DigestAlgorithm digestAlgorithm) {
-        super(dis);
+    public HashObject(ValidatedDataInputStream vdis, String sectionName, DigestAlgorithm digestAlgorithm) {
+        super(vdis);
 
         try {
-            digestType = dis.readInt(digestAlgorithm.getType(), sectionName, "hash digest type");
+            digestType = vdis.readInt(digestAlgorithm.getType(), sectionName, "hash digest type");
             int hashLength = digestAlgorithm.getSize();
-            hash = dis.readLengthAndBytes(hashLength, hashLength, false, sectionName, "hash");
+            hash = vdis.readLengthAndBytes(hashLength, hashLength, false, sectionName, "hash");
         } catch (IOException e) {
             throw new InvalidStreamFileException(e);
         }
@@ -54,5 +48,11 @@ public class HashObject extends AbstractStreamObject {
 
     public HashObject(ValidatedDataInputStream dis, DigestAlgorithm digestAlgorithm) {
         this(dis, null, digestAlgorithm);
+    }
+
+    protected HashObject(long classId, int classVersion, int digestType, byte[] hash) {
+        super(classId, classVersion);
+        this.digestType = digestType;
+        this.hash = hash;
     }
 }
