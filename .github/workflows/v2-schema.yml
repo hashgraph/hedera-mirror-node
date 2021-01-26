@@ -33,11 +33,8 @@ jobs:
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Maven Install
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} install -DskipTests
-
       - name: Maven Verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -pl hedera-mirror-grpc/
+        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -pl hedera-mirror-protobuf,hedera-mirror-grpc
 
       - name: Upload grpc test results
         if: always()
