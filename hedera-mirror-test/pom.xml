@@ -12,7 +12,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.26.0</version>
+        <version>${release.version}</version>
     </parent>
 
     <properties>
@@ -258,8 +258,8 @@
                             <jmeterExtensions>
                                 <jmeterExtension>io.perfmark:perfmark-api:0.20.1</jmeterExtension>
                                 <jmeterExtension>io.opencensus:opencensus-api:0.24.0</jmeterExtension>
-                                <jmeterExtension>com.hedera:hedera-mirror-grpc:${project.version}</jmeterExtension>
-                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${project.version}
+                                <jmeterExtension>com.hedera:hedera-mirror-grpc:${release.version}</jmeterExtension>
+                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${release.version}
                                 </jmeterExtension>
                                 <jmeterExtension>com.google.guava:guava:29.0-jre</jmeterExtension>
                             </jmeterExtensions>
