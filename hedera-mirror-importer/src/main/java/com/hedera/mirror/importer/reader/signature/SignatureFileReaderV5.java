@@ -48,27 +48,25 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
 
-        try (ValidatedDataInputStream dis = new ValidatedDataInputStream(
-                new BufferedInputStream(signatureFileData.getInputStream()),
-                filename
-        )) {
-            dis.readByte(SIGNATURE_FILE_FORMAT_VERSION, "fileVersion");
+        try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
+                new BufferedInputStream(signatureFileData.getInputStream()), filename)) {
+            vdis.readByte(SIGNATURE_FILE_FORMAT_VERSION, "fileVersion");
 
             // Read the objectStreamSignatureVersion, which is not used
-            dis.readInt();
+            vdis.readInt();
 
-            HashObject fileHashObject = new HashObject(dis, "entireFile", SHA384);
+            HashObject fileHashObject = new HashObject(vdis, "entireFile", SHA384);
             fileStreamSignature.setFileHash(fileHashObject.getHash());
-            SignatureObject signatureObject = new SignatureObject(dis, "entireFile");
+            SignatureObject signatureObject = new SignatureObject(vdis, "entireFile");
             fileStreamSignature.setFileHashSignature(signatureObject.getSignature());
             fileStreamSignature.setSignatureType(signatureObject.getSignatureType());
 
-            HashObject metadataHashObject = new HashObject(dis, "metadata", SHA384);
+            HashObject metadataHashObject = new HashObject(vdis, "metadata", SHA384);
             fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
-            signatureObject = new SignatureObject(dis, "metadata");
+            signatureObject = new SignatureObject(vdis, "metadata");
             fileStreamSignature.setMetadataHashSignature(signatureObject.getSignature());
 
-            if (dis.available() != 0) {
+            if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 

@@ -56,17 +56,19 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         MessageDigest messageDigestMetadata = createMessageDigest(DIGEST_ALGORITHM);
         String filename = FilenameUtils.getName(streamFileData.getFilename());
 
+        // the first DigestInputStream is for file hash and the second is for metadata hash. Any BufferedInputStream
+        // should not wrap, directly or indirectly, the second DigestInputStream.
         try (DigestInputStream digestInputStream = new DigestInputStream(
                 new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
                 messageDigestMetadata);
-             ValidatedDataInputStream dis = new ValidatedDataInputStream(digestInputStream, filename)) {
+             ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
             RecordFile recordFile = new RecordFile();
 
             recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
 
-            readHeader(dis, recordFile);
-            readBody(dis, itemConsumer, digestInputStream, recordFile);
+            readHeader(vdis, recordFile);
+            readBody(vdis, itemConsumer, digestInputStream, recordFile);
 
             recordFile.setFileHash(Hex.encodeHexString(messageDigestFile.digest()));
             recordFile.setMetadataHash(Hex.encodeHexString(messageDigestMetadata.digest()));
@@ -77,22 +79,22 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         }
     }
 
-    private void readHeader(ValidatedDataInputStream dis, RecordFile recordFile) throws IOException {
-        dis.readInt(VERSION, "record file version");
-        recordFile.setHapiVersionMajor(dis.readInt());
-        recordFile.setHapiVersionMinor(dis.readInt());
-        recordFile.setHapiVersionPatch(dis.readInt());
+    private void readHeader(ValidatedDataInputStream vdis, RecordFile recordFile) throws IOException {
+        vdis.readInt(VERSION, "record file version");
+        recordFile.setHapiVersionMajor(vdis.readInt());
+        recordFile.setHapiVersionMinor(vdis.readInt());
+        recordFile.setHapiVersionPatch(vdis.readInt());
         recordFile.setVersion(VERSION);
     }
 
-    private void readBody(ValidatedDataInputStream dis, Consumer<RecordItem> itemConsumer,
+    private void readBody(ValidatedDataInputStream vdis, Consumer<RecordItem> itemConsumer,
             DigestInputStream metadataDigestInputStream, RecordFile recordFile) throws IOException {
         String filename = recordFile.getName();
 
-        dis.readInt(); // object stream version
+        vdis.readInt(); // object stream version
 
         // start object running hash
-        HashObject startHashObject = new HashObject(dis, DIGEST_ALGORITHM);
+        HashObject startHashObject = new HashObject(vdis, DIGEST_ALGORITHM);
         metadataDigestInputStream.on(false); // metadata hash is not calculated on record stream objects
         long hashObjectClassId = startHashObject.getHeader().getClassId();
 
@@ -101,8 +103,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         RecordStreamObject lastRecordStreamObject = null;
 
         // read record stream objects
-        while (!isHashObject(dis, hashObjectClassId)) {
-            RecordStreamObject recordStreamObject = new RecordStreamObject(dis);
+        while (!isHashObject(vdis, hashObjectClassId)) {
+            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis);
 
             if (itemConsumer != null) {
                 itemConsumer.accept(recordStreamObject.getRecordItem());
@@ -123,9 +125,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         // end object running hash, metadata hash is calculated on it
         metadataDigestInputStream.on(true);
-        HashObject endHashObject = new HashObject(dis, DIGEST_ALGORITHM);
+        HashObject endHashObject = new HashObject(vdis, DIGEST_ALGORITHM);
 
-        if (dis.available() != 0) {
+        if (vdis.available() != 0) {
             throw new InvalidStreamFileException("Extra data discovered in record file " + filename);
         }
 

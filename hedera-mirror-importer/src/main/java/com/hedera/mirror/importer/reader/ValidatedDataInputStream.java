@@ -37,22 +37,22 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
  */
 public class ValidatedDataInputStream extends DataInputStream {
 
-    private static final String NOT_EQUAL_ERROR_MESSAGE = "Unable to read file %s: Expected %s but got %s";
-    private static final String NOT_IN_RANGE_ERROR_MESSAGE = "Unable to read file %s: " +
+    private static final String NOT_EQUAL_ERROR_MESSAGE = "Unable to read %s: Expected %s but got %s";
+    private static final String NOT_IN_RANGE_ERROR_MESSAGE = "Unable to read %s: " +
             "Expected value between %d and %d but got %d";
     private static final int SIMPLE_SUM = 101;
 
-    private final String filename;
+    private final String resourceName;
 
     /**
-     * Creates a ValidatedDataInputStream that uses the specified underlying InputStream.
+     * Creates a ValidatedDataInputStream that uses the specified underlying {@link InputStream}.
      *
      * @param in the specified input stream
-     * @param filename the file name of the specified input stream
+     * @param resourceName the name of the resource {@code in} is created from
      */
-    public ValidatedDataInputStream(InputStream in, String filename) {
+    public ValidatedDataInputStream(InputStream in, String resourceName) {
         super(in);
-        this.filename = filename;
+        this.resourceName = resourceName;
     }
 
     public byte readByte(byte expected, String fieldName) throws IOException {
@@ -61,8 +61,7 @@ public class ValidatedDataInputStream extends DataInputStream {
 
     public byte readByte(byte expected, String sectionName, String fieldName) throws IOException {
         byte actual = super.readByte();
-        validate(expected, actual, sectionName, fieldName);
-        return actual;
+        return validate(expected, actual, sectionName, fieldName);
     }
 
     public int readInt(int expected, String fieldName) throws IOException {
@@ -71,8 +70,7 @@ public class ValidatedDataInputStream extends DataInputStream {
 
     public int readInt(int expected, String sectionName, String fieldName) throws IOException {
         int actual = super.readInt();
-        validate(expected, actual, sectionName, fieldName);
-        return actual;
+        return validate(expected, actual, sectionName, fieldName);
     }
 
     public byte[] readLengthAndBytes(int minLength, int maxLength, boolean hasChecksum,
@@ -109,25 +107,27 @@ public class ValidatedDataInputStream extends DataInputStream {
         return bytes;
     }
 
-    private void validate(Object expected, Object actual, String sectionName, String fieldName) {
+    private <T> T validate(T expected, T actual, String sectionName, String fieldName) {
         if (!Objects.equals(expected, actual)) {
             throw new InvalidStreamFileException(
-                    String.format(NOT_EQUAL_ERROR_MESSAGE, formatResource(sectionName, fieldName),
+                    String.format(NOT_EQUAL_ERROR_MESSAGE, getFullFieldName(sectionName, fieldName),
                             expected, actual));
         }
+
+        return actual;
     }
 
     private void validateBetween(int minimumExpected, int maximumExpected, int actual, String sectionName,
             String fieldName) {
         if (actual < minimumExpected || actual > maximumExpected) {
             throw new InvalidStreamFileException(
-                    String.format(NOT_IN_RANGE_ERROR_MESSAGE, formatResource(sectionName, fieldName),
+                    String.format(NOT_IN_RANGE_ERROR_MESSAGE, getFullFieldName(sectionName, fieldName),
                             minimumExpected, maximumExpected, actual));
         }
     }
 
-    private String formatResource(String sectionName, String fieldName) {
-        List<String> parts = Arrays.asList(filename, "field", sectionName, fieldName).stream()
+    private String getFullFieldName(String sectionName, String fieldName) {
+        List<String> parts = Arrays.asList(resourceName, "field", sectionName, fieldName).stream()
                 .filter(StringUtils::isNotEmpty)
                 .collect(Collectors.toList());
         if (parts.size() == 1) {

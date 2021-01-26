@@ -44,20 +44,18 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
 
-        try (ValidatedDataInputStream dis = new ValidatedDataInputStream(
-                new BufferedInputStream(signatureFileData.getInputStream()),
-                filename
-        )) {
-            dis.readByte(SIGNATURE_TYPE_FILE_HASH, "hash delimiter");
-            byte[] fileHash = dis.readNBytes(DigestAlgorithm.SHA384.getSize(), "hash");
+        try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
+                new BufferedInputStream(signatureFileData.getInputStream()), filename)) {
+            vdis.readByte(SIGNATURE_TYPE_FILE_HASH, "hash delimiter");
+            byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA384.getSize(), "hash");
             fileStreamSignature.setFileHash(fileHash);
 
-            dis.readByte(SIGNATURE_TYPE_SIGNATURE, "signature delimiter");
-            byte[] signature = dis.readLengthAndBytes(1, SignatureType.SHA_384_WITH_RSA.getMaxLength(),
+            vdis.readByte(SIGNATURE_TYPE_SIGNATURE, "signature delimiter");
+            byte[] signature = vdis.readLengthAndBytes(1, SignatureType.SHA_384_WITH_RSA.getMaxLength(),
                     false, "signature");
             fileStreamSignature.setFileHashSignature(signature);
 
-            if (dis.available() != 0) {
+            if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 

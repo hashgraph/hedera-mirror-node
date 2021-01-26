@@ -22,16 +22,14 @@ package com.hedera.mirror.importer.reader;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-@Getter
+@Data
 @RequiredArgsConstructor
-@EqualsAndHashCode
 public abstract class AbstractStreamObject {
 
     private final Header header;
