@@ -128,7 +128,7 @@ transaction APIs JSON response:
 
 - If true, return only the inner scheduled transaction
 - If false, return only the `ScheduleCreate` transaction
-- If not present, return both
+- If not present, return all transactions matching `id`
 
 ```json
 {

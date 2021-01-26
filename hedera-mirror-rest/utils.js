@@ -100,6 +100,10 @@ const isValidTransactionType = async (transactionType) => {
   return _.isString(transactionType) && (await transactionTypes.get(transactionType)) !== undefined;
 };
 
+const isValidBooleanOpAndValue = async(op, val) => {
+  return op === 'eq' && /^(true|false)$/i.test(val);
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -156,6 +160,10 @@ const filterValidityChecks = async (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.CREDIT_TYPE:
+      // Acceptable words: credit or debit
+      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
+      break;
     case constants.filterKeys.ENCODING:
       // Acceptable words: binary or text
       ret = isValidEncoding(val.toLowerCase());
@@ -176,6 +184,9 @@ const filterValidityChecks = async (param, op, val) => {
       // Acceptable words: success or fail
       ret = Object.values(constants.transactionResultFilter).includes(val.toLowerCase());
       break;
+    case constants.filterKeys.SCHEDULED:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
@@ -186,10 +197,6 @@ const filterValidityChecks = async (param, op, val) => {
     case constants.filterKeys.TOKEN_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
-      break;
-    case constants.filterKeys.CREDIT_TYPE:
-      // Acceptable words: credit or debit
-      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
@@ -412,6 +419,10 @@ const buildPgSqlObject = (query, params, order, limit) => {
     order,
     limit: Number(limit),
   };
+};
+
+const parseBooleanValue = (value) => {
+  return value.toLowerCase() === 'true';
 };
 
 /**
@@ -703,6 +714,9 @@ const formatComparator = (comparator) => {
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
         break;
+      case constants.filterKeys.SCHEDULED:
+        comparator.value = parseBooleanValue(comparator.value);
+        break;
       case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
@@ -795,6 +809,7 @@ module.exports = {
   parseAccountIdQueryParam,
   parseTimestampQueryParam,
   parseResultParams,
+  parseBooleanValue,
   parseTimestampParam,
   nsToSecNs,
   nsToSecNsWithHyphen,

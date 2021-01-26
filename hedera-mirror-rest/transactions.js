@@ -58,7 +58,8 @@ const getSelectClauseWithTokenTransferOrder = (order) => {
        t.charged_tx_fee,
        t.valid_duration_seconds,
        t.max_fee,
-       t.transaction_hash`;
+       t.transaction_hash,
+       t.scheduled`;
 };
 
 /**
@@ -100,23 +101,24 @@ const createTransferLists = (rows) => {
     if (!(row.consensus_ns in transactions)) {
       const validStartTimestamp = row.valid_start_ns;
       transactions[row.consensus_ns] = {
-        consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
-        transaction_hash: utils.encodeBase64(row.transaction_hash),
-        valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
         charged_tx_fee: Number(row.charged_tx_fee),
+        consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
         id: row.id,
-        memo_base64: utils.encodeBase64(row.memo),
-        result: row.result,
-        name: row.name,
         max_fee: utils.getNullableNumber(row.max_fee),
-        valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
+        memo_base64: utils.encodeBase64(row.memo),
+        name: row.name,
         node: EntityId.fromString(row.node_account_id).toString(),
+        result: row.result,
+        scheduled: row.scheduled,
+        token_transfers: createTokenTransferList(row.token_transfer_list),
+        transaction_hash: utils.encodeBase64(row.transaction_hash),
         transaction_id: utils.createTransactionId(
           EntityId.fromString(row.payer_account_id).toString(),
           validStartTimestamp
         ),
         transfers: [],
-        token_transfers: createTokenTransferList(row.token_transfer_list),
+        valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
+        valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
       };
     }
 
@@ -426,15 +428,45 @@ const getTransactions = async (req, res) => {
 };
 
 /**
+ * Get the scheduled db query from the scheduled param in the HTTP request query.
+ * - if not present, returns undefined
+ * - if false, returns a query to select only SCHEDULECREATE transactions
+ * - if true, returns a query to select only scheduled transactions
+ *
+ * @param query - the HTTP request query
+ * @return {Promise<string|undefined>}
+ */
+const getScheduledQuery = async (query) => {
+  const scheduledValues = query[constants.filterKeys.SCHEDULED];
+  if (scheduledValues === undefined) {
+    return undefined;
+  }
+
+  let scheduled = scheduledValues;
+  if (Array.isArray(scheduledValues)) {
+    scheduled = scheduledValues[scheduledValues.length - 1];
+  }
+
+  if (!utils.parseBooleanValue(scheduled)) {
+    const scheduleCreateProtoId = await transactionTypes.get('SCHEDULECREATE');
+    return `t.type = ${scheduleCreateProtoId}`;
+  }
+
+  return 't.scheduled = true';
+};
+
+/**
  * Handler function for /transactions/:transaction_id API.
  * @param {Request} req HTTP request object
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
+  await utils.validateReq(req);
+
   const transactionId = TransactionId.fromString(req.params.id);
+  const scheduledQuery = await getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
 
-  // In case of duplicate transactions, only the first succeeds
   const sqlQuery = `
     ${getSelectClauseWithTokenTransferOrder()}
     FROM transaction t
@@ -445,7 +477,8 @@ const getOneTransaction = async (req, res) => {
       ON t.type = ${await transactionTypes.get('CRYPTOTRANSFER')}
       AND t.consensus_ns = ttl.consensus_timestamp
     WHERE t.payer_account_id = ?
-       AND  t.valid_start_ns = ?
+       AND t.valid_start_ns = ?
+       ${(scheduledQuery && `AND ${scheduledQuery}`) || ''}
     GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo,
       t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
     ORDER BY consensus_ns ASC, ctl_entity_id ASC, ctl.amount ASC`;
