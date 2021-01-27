@@ -164,8 +164,8 @@ paths:
         - name: scheduled
           in: query
           description: >-
-            Filter transactions by the scheduled flag. When true, return only the scheduled transaction. When false, return
-            only the ScheduleCreate transaction. When not present, return all transactions matching transactionId.
+            Filter transactions by the scheduled flag. If true, return only the scheduled transaction. If false, return
+            non-scheduled transactions. If not present, return all transactions matching transactionId.
           schema:
             type: boolean
       responses:
@@ -202,10 +202,11 @@ paths:
         - name: scheduled
           in: query
           description: >-
-            Filter stateproof by the transaction scheduled flag. When true, return stateproof for the scheduled
-            transaction. When false, return stateproof for the non-scheduled transaction. The default is false.
+            Filter stateproof by the transaction scheduled flag. If true, return stateproof for the scheduled
+            transaction. If false, return stateproof for the non-scheduled transaction.
           schema:
             type: boolean
+            default: false
       responses:
         200:
           description: OK

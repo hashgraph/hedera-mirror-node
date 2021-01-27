@@ -14,7 +14,7 @@
       "data/db/stateproof/transaction.sql"
     ]
   },
-  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=true&scheduled=false&scheduled=false",
+  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=true&scheduled=true&scheduled=false",
   "responseStatus": 200,
   "responseJson": {
     "record_file": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0",

@@ -20,7 +20,6 @@
     "cryptotransfers": [
       {
         "consensus_timestamp": "1234567890000000003",
-        "valid_start_timestamp": "1234567890000000001",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
         "amount": 10,

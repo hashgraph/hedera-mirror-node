@@ -428,15 +428,13 @@ const getTransactions = async (req, res) => {
 };
 
 /**
- * Get the scheduled db query from the scheduled param in the HTTP request query.
- * - if not present, returns empty string
- * - if false, returns a query to select only SCHEDULECREATE transactions
- * - if true, returns a query to select only scheduled transactions
+ * Gets the scheduled db query from the scheduled param in the HTTP request query. The last scheduled value is honored.
+ * If not present, returns empty string.
  *
- * @param query - the HTTP request query
- * @return {Promise<string|undefined>}
+ * @param {Object} query the HTTP request query
+ * @return {string}
  */
-const getScheduledQuery = async (query) => {
+const getScheduledQuery = (query) => {
   const scheduledValues = query[constants.filterKeys.SCHEDULED];
   if (scheduledValues === undefined) {
     return '';
@@ -447,12 +445,7 @@ const getScheduledQuery = async (query) => {
     scheduled = scheduledValues[scheduledValues.length - 1];
   }
 
-  if (!utils.parseBooleanValue(scheduled)) {
-    const scheduleCreateProtoId = await transactionTypes.get('SCHEDULECREATE');
-    return `t.type = ${scheduleCreateProtoId}`;
-  }
-
-  return 't.scheduled = true';
+  return `t.scheduled = ${scheduled}`;
 };
 
 /**
@@ -504,6 +497,7 @@ const getOneTransaction = async (req, res) => {
       };
     });
 };
+
 module.exports = {
   getTransactions,
   getOneTransaction,
