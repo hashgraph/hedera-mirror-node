@@ -44,8 +44,8 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
        FROM transaction
        WHERE payer_account_id = $1
          AND valid_start_ns = $2
-         AND result = 22
-         AND scheduled = ${scheduled}`; // only the successful transaction
+         AND scheduled = ${scheduled}
+         AND result = 22`; // only the successful transaction
   if (logger.isTraceEnabled()) {
     logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }

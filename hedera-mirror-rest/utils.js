@@ -52,6 +52,10 @@ const isNumeric = (n) => {
   return !isNaN(parseFloat(n)) && isFinite(n);
 };
 
+const isValidBooleanOpAndValue = (op, val) => {
+  return op === 'eq' && /^(true|false)$/i.test(val);
+};
+
 const isValidTimestampParam = (timestamp) => {
   // Accepted forms: seconds or seconds.upto 9 digits
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
@@ -100,9 +104,7 @@ const isValidTransactionType = async (transactionType) => {
   return _.isString(transactionType) && (await transactionTypes.get(transactionType)) !== undefined;
 };
 
-const isValidBooleanOpAndValue = async(op, val) => {
-  return op === 'eq' && /^(true|false)$/i.test(val);
-};
+const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 /**
  * Validate input parameters for the rest apis
@@ -162,7 +164,7 @@ const filterValidityChecks = async (param, op, val) => {
       break;
     case constants.filterKeys.CREDIT_TYPE:
       // Acceptable words: credit or debit
-      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
+      ret = isValidValueIgnoreCase(val, Object.values(constants.cryptoTransferType));
       break;
     case constants.filterKeys.ENCODING:
       // Acceptable words: binary or text
@@ -178,11 +180,11 @@ const filterValidityChecks = async (param, op, val) => {
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = Object.values(constants.orderFilterValues).includes(val.toLowerCase());
+      ret = isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
       break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = Object.values(constants.transactionResultFilter).includes(val.toLowerCase());
+      ret = isValidValueIgnoreCase(val, Object.values(constants.transactionResultFilter));
       break;
     case constants.filterKeys.SCHEDULED:
       ret = isValidBooleanOpAndValue(op, val);
