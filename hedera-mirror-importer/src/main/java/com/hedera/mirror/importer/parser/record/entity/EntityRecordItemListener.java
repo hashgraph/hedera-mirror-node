@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -200,7 +202,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusNs, body, txRecord);
 
-            // handled scheduled transaction
+            // handle scheduled transaction
             if (tx.isScheduled()) {
                 onScheduledTransaction(recordItem);
             }
@@ -780,9 +782,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                     .getScheduleCreate();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             TransactionBody body = recordItem.getTransactionBody();
-            var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
+            var creatorAccount = EntityId.of(body.getTransactionID().getAccountID());
+            var payerAccount = scheduleCreateTransactionBody.hasPayerAccountID() ?
+                    EntityId.of(scheduleCreateTransactionBody.getPayerAccountID()) :
+                    EntityId.of(body.getTransactionID().getAccountID());
             var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
 
+            // insert schedule only if it doesn't already exist in db
             scheduleRepository
                     .findByScheduleId(scheduleId)
                     .ifPresentOrElse(s -> {
@@ -790,19 +796,17 @@ public class EntityRecordItemListener implements RecordItemListener {
                                         s.getScheduleId());
                             },
                             () -> {
-                                // insert schedule only if it doesn't already exist
                                 Schedule schedule = new Schedule();
                                 schedule.setConsensusTimestamp(consensusTimestamp);
-                                schedule.setCreatorAccountId(payerAccount);
-                                schedule.setPayerAccountId(scheduleCreateTransactionBody.hasPayerAccountID() ? EntityId
-                                        .of(scheduleCreateTransactionBody.getPayerAccountID()) : payerAccount);
+                                schedule.setCreatorAccountId(creatorAccount);
+                                schedule.setPayerAccountId(payerAccount);
                                 schedule.setScheduleId(scheduleId);
                                 schedule.setTransactionBody(scheduleCreateTransactionBody.getTransactionBody()
                                         .toByteArray());
                                 entityListener.onSchedule(schedule);
                             });
 
-            // insert signature for every item in map
+            // insert signature for every item in sigMap
             if (scheduleCreateTransactionBody.hasSigMap()) {
                 insertScheduleSignatures(
                         scheduleId,
@@ -830,22 +834,26 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertScheduleSignatures(EntityId scheduleId, long consensusTimestamp,
                                           List<SignaturePair> signaturePairList) {
+        HashSet<ByteString> publicKeyPrefixes = new HashSet<>();
         signaturePairList.forEach(signaturePair -> {
-            ScheduleSignature scheduleSignature = new ScheduleSignature();
-            scheduleSignature.setScheduleId(scheduleId);
-            scheduleSignature.setId(new ScheduleSignature.Id(
-                    consensusTimestamp,
-                    signaturePair.getPubKeyPrefix().toByteArray()));
-
             // currently only Ed25519 signature is supported
             SignaturePair.SignatureCase signatureCase = signaturePair.getSignatureCase();
             if (signatureCase != SignaturePair.SignatureCase.ED25519) {
                 throw new InvalidDatasetException("Unsupported signature case encountered: " + signatureCase);
             }
 
-            scheduleSignature.setSignature(signaturePair.getEd25519().toByteArray());
+            // handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
+            ByteString prefix = signaturePair.getPubKeyPrefix();
+            if (publicKeyPrefixes.add(prefix)) {
+                ScheduleSignature scheduleSignature = new ScheduleSignature();
+                scheduleSignature.setId(new ScheduleSignature.Id(
+                        consensusTimestamp,
+                        prefix.toByteArray()));
+                scheduleSignature.setScheduleId(scheduleId);
+                scheduleSignature.setSignature(signaturePair.getEd25519().toByteArray());
 
-            entityListener.onScheduleSignature(scheduleSignature);
+                entityListener.onScheduleSignature(scheduleSignature);
+            }
         });
     }
 

@@ -164,7 +164,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
-    void scheduleCreateNonEd25519Signature() throws InvalidProtocolBufferException {
+    void scheduleSignNonEd25519Signature() {
         List<SignaturePair> signaturePairs = getSignaturePairs(2, false);
         assertThrows(InvalidDatasetException.class, () -> {
             insertScheduleSign(SIGN_TIMESTAMP, signaturePairs, SCHEDULE_ID);
@@ -173,6 +173,21 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         // verify lack of schedule data and transaction
         assertThat(scheduleSignatureRepository.count()).isEqualTo(0);
         assertThat(transactionRepository.count()).isEqualTo(0);
+    }
+
+    @Test
+    void scheduleSignDuplicateEd25519Signatures() throws InvalidProtocolBufferException {
+        List<SignaturePair> signaturePairs = getSignaturePairs(3, true);
+        List<SignaturePair> combinedSignaturePairs = new ArrayList<>(signaturePairs);
+        combinedSignaturePairs.add(signaturePairs.get(0));
+        combinedSignaturePairs.add(signaturePairs.get(2));
+
+        insertScheduleSign(SIGN_TIMESTAMP, combinedSignaturePairs, SCHEDULE_ID);
+
+        // verify lack of schedule data and transaction
+        assertThat(scheduleSignatureRepository.count()).isEqualTo(signaturePairs.size());
+        assertScheduleSignatureInRepository(SIGN_TIMESTAMP, SCHEDULE_ID, signaturePairs);
+        assertThat(transactionRepository.count()).isEqualTo(1);
     }
 
     @Test
