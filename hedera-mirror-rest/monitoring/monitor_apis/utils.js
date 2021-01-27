@@ -23,11 +23,15 @@
 const AbortController = require('abort-controller');
 const httpErrors = require('http-errors');
 const _ = require('lodash');
+const log4js = require('log4js');
 const fetch = require('node-fetch');
+const prettyMilliseconds = require('pretty-ms');
 const querystring = require('querystring');
 const config = require('./config');
 
 const apiPrefix = '/api/v1';
+const DEFAULT_LIMIT = 10;
+const logger = log4js.getLogger();
 
 /**
  * Create and return the url for a rest api call
@@ -73,16 +77,14 @@ const getAPIResponse = async (url, key = undefined) => {
   try {
     const response = await fetch(url, {signal: controller.signal});
     if (!response.ok) {
-      console.log(`Non success response for call to '${url}'`);
-      return httpErrors(response.status, response.statusText);
+      const message = `GET ${url} failed with ${response.statusText} (${response.status})`;
+      return httpErrors(message);
     }
 
     const json = await response.json();
     return key ? json[key] : json;
   } catch (error) {
-    const message = `Fetch error, url : ${url}, error : ${error}`;
-    console.log(message);
-    return Error(message);
+    return Error(`${error}`);
   } finally {
     clearTimeout(timeout);
   }
@@ -119,7 +121,7 @@ class ServerTestResult {
 /**
  * Creates a function to run specific tests with the provided server address, classs result, and resource
  *
- * @param {String} server server address in the format of http://ip:port
+ * @param {Object} server object provided by the user
  * @param {ServerTestResult} testClassResult test class result object
  * @param {String} resource name of the resource to test
  * @return {function(...[*]=)}
@@ -127,7 +129,7 @@ class ServerTestResult {
 const testRunner = (server, testClassResult, resource) => {
   return async (testFunc) => {
     const start = Date.now();
-    const result = await testFunc(server);
+    const result = await testFunc(`http://${server.ip}:${server.port}`);
     if (result.skipped) {
       return;
     }
@@ -140,6 +142,10 @@ const testRunner = (server, testClassResult, resource) => {
       failureMessages: !result.passed ? [result.message] : [],
       resource,
     };
+
+    if (!result.passed) {
+      logger.error(`Test ${resource} failed for ${server.name}: ${testResult.failureMessages}`);
+    }
 
     testClassResult.addTestResult(testResult);
   };
@@ -178,23 +184,7 @@ const createFailedResultJson = (title, msg) => {
 };
 
 const checkAPIResponseError = (resp, option) => {
-  const {expectHttpError, status} = option;
-  const isRespError = resp instanceof Error;
-  const isRespHttpError = resp instanceof httpErrors.HttpError;
-
-  if (expectHttpError) {
-    if (isRespHttpError && (!status || resp.status === status)) {
-      return {passed: true};
-    }
-
-    const actual = isRespError ? JSON.stringify(resp) : '2xx';
-    return {
-      passed: false,
-      message: `expect http error ${status || 'any'}, got ${actual}`,
-    };
-  }
-
-  if (isRespError) {
+  if (resp instanceof Error) {
     return {
       passed: false,
       message: resp.message,
@@ -337,7 +327,7 @@ const checkResourceFreshness = async (server, path, resource, timestamp, jsonRes
     .withCheckSpec(checkRespDataFreshness, {
       timestamp,
       threshold: freshnessThreshold,
-      message: (delta) => `${resource} was stale, ${delta} seconds old`,
+      message: (delta) => `Stale ${resource} was ${prettyMilliseconds(delta * 1000)} old`,
     })
     .run(resp);
   if (!result.passed) {
@@ -407,6 +397,7 @@ const accountIdCompare = (first, second) => {
 
 module.exports = {
   accountIdCompare,
+  DEFAULT_LIMIT,
   getUrl,
   getAPIResponse,
   createFailedResultJson,

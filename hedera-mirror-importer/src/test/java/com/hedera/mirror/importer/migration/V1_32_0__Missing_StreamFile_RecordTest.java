@@ -50,7 +50,7 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -130,12 +130,12 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
                 accountBalanceFileCopier, accountBalanceFile, saveAccountBalanceFile
         ));
 
-        Map<String, RecordFile> recordFilesMap = TestUtils.getRecordFilesMap();
-        RecordFile recordFile = recordFilesMap.get("2019-08-30T18_10_00.419072Z.rcd");
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
+        RecordFile recordFile = allRecordFileMap.get("2019-08-30T18_10_00.419072Z.rcd");
         recordFile.setNodeAccountId(nodeAccountId);
         allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
 
-        recordFile = recordFilesMap.get("2019-08-30T18_10_05.249678Z.rcd");
+        recordFile = allRecordFileMap.get("2019-08-30T18_10_05.249678Z.rcd");
         recordFile.setNodeAccountId(nodeAccountId);
         allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
 

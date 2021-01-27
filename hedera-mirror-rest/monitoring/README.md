@@ -1,18 +1,13 @@
 # Monitoring a live deployment of Hedera Mirror Node
 
-This code runs on an external server outside of the Hedera Beta MirrorNode deployment, and periodically polls the REST APIs exposed by the Hedera mirror node to ensure that the deployed APIs are working.
+This code runs on an external server outside of the Hedera mirror node deployment, and periodically polls the REST APIs exposed by the Hedera mirror node to ensure that the deployed APIs are working.
 It also provides a simple dashboard to monitor the status.
 
-## Overview
-
-Hedera mirror nodes REST APIs expose /transactions, /balances and /accounts endpoints.
-To monitor a live deployment of a Hedera mirror node, this code consists of monitoring APIs and monitoring dashboard as described below.
-
-#### Monitoring APIs:
+## Monitoring APIs:
 
 A process runs that periodically polls the APIs exposed by the deployment of a Hedera mirror node.
-It then checks the responses using a few simple checks for /transactions, /balances and /accounts APIs.
-The results of these checks are exposed as a set of REST APIs exposed by this monitoring service as follows:
+It then checks the responses using a few simple checks for those APIs.
+The results of these checks are exposed as a set of REST APIs by this monitoring service as follows:
 
 | API                 | HTTP return code | Description                                                                                                                                          |
 | ------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -20,7 +15,7 @@ The results of these checks are exposed as a set of REST APIs exposed by this mo
 | /api/v1/status/{id} | 200 (OK)         | If all tests pass for a server, then it returns the results                                                                                          |
 |                     | 4xx              | If any tests fail for a server, or if the server is not running, then it returns a 4xx error code to make it easy to integrate with alerting systems |
 
-#### Monitoring dashboard:
+## Monitoring Dashboard:
 
 A dashboard polls the above-mentioned APIs and displays the results.
 
@@ -30,10 +25,11 @@ A dashboard polls the above-mentioned APIs and displays the results.
 
 ### Requirements
 
--   [ ] List of addresses of Hedera mirror nodes that you want to monitor
--   [ ] An existing topic ID of the target Hedera Mirrornode environment if you want to run topic message tests
--   [ ] An external server where you want to run this code to monitor the mirror node. You will need two TCP ports on the server.
--   [ ] npm and pm2
+- [ ] List of addresses of Hedera mirror nodes that you want to monitor
+- [ ] An existing topic ID of the target Hedera Mirror node environment if you want to run topic message tests
+- [ ] An external server where you want to run this code to monitor the mirror node. You will need two TCP ports on the server.
+- [ ] npm
+- [ ] PM2
 
 ```
 git clone git@github.com:hashgraph/hedera-mirror-node.git
@@ -45,7 +41,7 @@ To install the dependencies and configure monitor_apis:
 ```
 cd monitor_apis
 npm install
-cp config/sample.serverlist.json config/serverlist.json // Start with the sample configuration file
+cp config/default.serverlist.json config/serverlist.json // Start with the sample configuration file
 nano config/serverlist.json // Insert the mirror node deployments you want to monitor
 ```
 
@@ -69,13 +65,13 @@ To customize per-resource configuration:
   "account": {
     "enabled": true,
     "intervalMultiplier": 1,
-    "limit": 1000
+    "limit": 10
   },
   "balance": {
     "enabled": true,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
-    "limit": 1000
+    "limit": 10
   },
   "stateproof": {
     "enabled": true,
@@ -85,13 +81,13 @@ To customize per-resource configuration:
     "enabled": true,
     "freshnessThreshold": 50,
     "intervalMultiplier": 1,
-    "limit": 1000
+    "limit": 10
   },
   "topic": {
     "enabled": true,
     "freshnessThreshold": 100,
     "intervalMultiplier": 1,
-    "limit": 1000,
+    "limit": 10,
     "topicId": "sample topic id"
   },
   "token": {

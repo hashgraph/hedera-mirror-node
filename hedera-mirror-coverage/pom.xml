@@ -11,14 +11,14 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.26.0</version>
+        <version>${release.version}</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>com.hedera</groupId>
             <artifactId>hedera-mirror-importer</artifactId>
-            <version>${project.version}</version>
+            <version>${release.version}</version>
         </dependency>
     </dependencies>
 

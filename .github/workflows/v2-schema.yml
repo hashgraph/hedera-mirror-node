@@ -5,7 +5,7 @@ on:
     branches: [ master, release/** ]
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dskip.npm
     -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Djib.skip -Ddocker.skip
   MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0 -Dgroups=!v1
     -Dspring.flyway.locations=classpath:/db/migration/v2,filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2
@@ -33,11 +33,8 @@ jobs:
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Maven Install
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} install -DskipTests
-
       - name: Maven Verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -pl hedera-mirror-grpc/
+        run: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} verify -pl hedera-mirror-protobuf,hedera-mirror-grpc
 
       - name: Upload grpc test results
         if: always()

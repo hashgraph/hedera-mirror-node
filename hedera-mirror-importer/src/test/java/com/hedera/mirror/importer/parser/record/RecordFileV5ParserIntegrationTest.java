@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record;
 class RecordFileV5ParserIntegrationTest extends AbstractRecordFileParserIntegrationTest {
 
     RecordFileV5ParserIntegrationTest() {
-        super(new RecordFileDescriptor(2, 2, RECORD_FILES_MAP.get("2021-01-11T22_09_24.063739000Z.rcd")),
-                new RecordFileDescriptor(2, 0, RECORD_FILES_MAP.get("2021-01-11T22_09_34.097416003Z.rcd")));
+        super(new RecordFileDescriptor(2, 2, ALL_RECORD_FILE_MAP.get("2021-01-11T22_09_24.063739000Z.rcd")),
+                new RecordFileDescriptor(2, 0, ALL_RECORD_FILE_MAP.get("2021-01-11T22_09_34.097416003Z.rcd")));
     }
 }

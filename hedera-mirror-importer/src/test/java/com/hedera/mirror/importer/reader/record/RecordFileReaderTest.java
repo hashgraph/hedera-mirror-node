@@ -47,7 +47,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
@@ -56,7 +56,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @ExtendWith(MockitoExtension.class)
 abstract class RecordFileReaderTest {
 
-    private static final Collection<RecordFile> ALL_RECORD_FILES = TestUtils.getRecordFilesMap().values();
+    private static final Collection<RecordFile> ALL_RECORD_FILES = TestRecordFiles.getAll().values();
 
     protected FileCopier fileCopier;
     protected RecordFileReader recordFileReader;

@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -51,7 +50,7 @@ class HashObjectTest {
             "1226, 1, , 57, true",
             "1226, 1, , 61, true",
     })
-    void read(long classId, int classVersion, Integer digestType, int bytesToTruncate, boolean expectThrown) throws IOException {
+    void newHashObject(long classId, int classVersion, Integer digestType, int bytesToTruncate, boolean expectThrown) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); DataOutputStream dos = new DataOutputStream(bos)) {
             // given
             dos.writeLong(classId);
@@ -67,17 +66,16 @@ class HashObjectTest {
                 data = Arrays.copyOfRange(data, 0, data.length - bytesToTruncate);
             }
 
-            try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data))) {
+            try (ValidatedDataInputStream dis = new ValidatedDataInputStream(new ByteArrayInputStream(data), "test")) {
                 // when, then
                 if (expectThrown) {
-                    assertThrows(InvalidStreamFileException.class, () -> HashObject.read(dis, "testfile", SHA384));
+                    assertThrows(InvalidStreamFileException.class, () -> new HashObject(dis, SHA384));
                 } else {
-                    HashObject expected = new HashObject(classId, classVersion, digestType, hash);
-                    HashObject actual = HashObject.read(dis, "testfile", SHA384);
+                    HashObject expected = new HashObject(classId, classVersion, SHA384.getType(), hash);
+                    HashObject actual = new HashObject(dis, "testfile", SHA384);
                     assertThat(actual).isEqualTo(expected);
                 }
             }
-
         }
     }
 }

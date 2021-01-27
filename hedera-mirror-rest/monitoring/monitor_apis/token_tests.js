@@ -31,6 +31,7 @@ const {
   checkAccountId,
   checkMandatoryParams,
   checkResourceFreshness,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -39,7 +40,8 @@ const {
 
 const tokensPath = '/tokens';
 const resource = 'token';
-const {tokenId: tokenIdFromConfig, tokensLimit} = config[resource];
+const tokensLimit = config[resource].limit || DEFAULT_LIMIT;
+const tokenIdFromConfig = config[resource].tokenId;
 const tokensJsonRespKey = 'tokens';
 const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
 
@@ -438,7 +440,7 @@ const checkTokenBalanceFreshness = async (server) => {
 /**
  * Run all token tests in an asynchronous fashion waiting for all tests to complete
  *
- * @param {String} server API host endpoint
+ * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {

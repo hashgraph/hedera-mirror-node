@@ -20,24 +20,22 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.Map;
 
-public class RecordFileV5DownloaderTest extends AbstractRecordFileDownloaderTest {
+import com.hedera.mirror.importer.TestRecordFiles;
+import com.hedera.mirror.importer.domain.RecordFile;
 
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        addressBook = loadAddressBook("previewnet");
-        allNodeAccountIds = addressBook.getNodeSet();
-    }
+class RecordFileV5DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
-    protected List<String> getTestFiles() {
-        return List.of("2021-01-11T22_09_24.063739000Z.rcd", "2021-01-11T22_09_34.097416003Z.rcd");
+    protected Map<String, RecordFile> getRecordFileMap() {
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
+        RecordFile recordFile1 = allRecordFileMap.get("2021-01-11T22_09_24.063739000Z.rcd");
+        RecordFile recordFile2 = allRecordFileMap.get("2021-01-11T22_09_34.097416003Z.rcd");
+        return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
 
     @Override

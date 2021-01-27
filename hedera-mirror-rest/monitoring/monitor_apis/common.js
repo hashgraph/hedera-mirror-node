@@ -108,7 +108,7 @@ const getStatusByName = (name) => {
   // Return 404 (Not found) for if the server doesn't appear in our results table
   if (!currentResults[name] || !currentResults[name].results) {
     ret.httpCode = 404;
-    ret.message = `Test results unavailable for Net: ${name}`;
+    ret.message = `Test results unavailable for server: ${name}`;
     return ret;
   }
 

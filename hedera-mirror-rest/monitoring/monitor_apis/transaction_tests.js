@@ -30,6 +30,7 @@ const {
   checkRespArrayLength,
   checkMandatoryParams,
   checkResourceFreshness,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -38,7 +39,7 @@ const {
 
 const transactionsPath = '/transactions';
 const resource = 'transaction';
-const resourceLimit = config[resource].limit;
+const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const jsonRespKey = 'transactions';
 const mandatoryParams = [
   'consensus_timestamp',
@@ -288,7 +289,7 @@ const checkTransactionFreshness = async (server) => {
 /**
  * Run all transaction tests in an asynchronous fashion waiting for all tests to complete
  *
- * @param {String} server API host endpoint
+ * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {

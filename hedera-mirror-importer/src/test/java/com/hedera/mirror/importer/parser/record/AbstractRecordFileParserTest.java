@@ -54,7 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -92,12 +92,22 @@ abstract class AbstractRecordFileParserTest {
     private final RecordFile recordFile1;
     private final RecordFile recordFile2;
     private final long[] fileConsensusTimestamps;
+    private final String versionedPath;
 
     AbstractRecordFileParserTest(String filename1, String filename2, long[] fileConsensusTimestamps) {
-        Map<String, RecordFile> recordFilesMap = TestUtils.getRecordFilesMap();
-        recordFile1 = recordFilesMap.get(filename1);
-        recordFile2 = recordFilesMap.get(filename2);
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
+        recordFile1 = allRecordFileMap.get(filename1);
+        recordFile2 = allRecordFileMap.get(filename2);
         this.fileConsensusTimestamps = fileConsensusTimestamps;
+        versionedPath = "v" + recordFile1.getVersion();
+    }
+
+    AbstractRecordFileParserTest(RecordFile recordFile1, RecordFile recordFile2, long[] fileConsensusTimestamps,
+            String versionedPath) {
+        this.recordFile1 = recordFile1;
+        this.recordFile2 = recordFile2;
+        this.fileConsensusTimestamps = fileConsensusTimestamps;
+        this.versionedPath = versionedPath;
     }
 
     @BeforeEach
@@ -115,7 +125,7 @@ abstract class AbstractRecordFileParserTest {
 
         FileCopier fileCopier = FileCopier
                 .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
-                .from(StreamType.RECORD.getPath(), "v" + recordFile1.getVersion(), "record0.0.3")
+                .from(StreamType.RECORD.getPath(), versionedPath, "record0.0.3")
                 .filterFiles("*.rcd");
         fileCopier.copy();
 
@@ -284,7 +294,11 @@ abstract class AbstractRecordFileParserTest {
     }
 
     protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(String filename) {
-        RecordFile recordFile = TestUtils.getRecordFilesMap().get(filename);
+        RecordFile recordFile = TestRecordFiles.getAll().get(filename);
+        return provideTimeOffsetArgumentFromRecordFile(recordFile);
+    }
+
+    protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(RecordFile recordFile) {
         int numTransactions = recordFile.getCount().intValue();
 
         return Stream.of(
