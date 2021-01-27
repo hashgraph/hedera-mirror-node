@@ -22,12 +22,10 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import javax.inject.Named;
-import lombok.Value;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
@@ -35,8 +33,9 @@ import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
+import com.hedera.mirror.importer.reader.AbstractStreamObject;
 import com.hedera.mirror.importer.reader.HashObject;
-import com.hedera.mirror.importer.reader.ReaderUtility;
+import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
 @Named
 public class SignatureFileReaderV5 implements SignatureFileReader {
@@ -47,28 +46,26 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
     public FileStreamSignature read(StreamFileData signatureFileData) {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
-        InputStream inputStream = signatureFileData.getInputStream();
 
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
+        try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
+                signatureFileData.getInputStream(), filename)) {
+            vdis.readByte(SIGNATURE_FILE_FORMAT_VERSION, "fileVersion");
 
-            byte fileVersion = dis.readByte();
-            ReaderUtility.validate(SIGNATURE_FILE_FORMAT_VERSION, fileVersion, filename, "fileVersion");
+            // Read the objectStreamSignatureVersion, which is not used
+            vdis.readInt();
 
-            //Read the objectStreamSignatureVersion, which is not used
-            dis.readInt();
-
-            HashObject fileHashObject = HashObject.read(dis, filename, "entireFile", SHA384);
+            HashObject fileHashObject = new HashObject(vdis, "entireFile", SHA384);
             fileStreamSignature.setFileHash(fileHashObject.getHash());
-            Signature fileHashSignature = readSignatureObject(dis, filename, "entireFile");
-            fileStreamSignature.setFileHashSignature(fileHashSignature.getSignatureBytes());
-            fileStreamSignature.setSignatureType(fileHashSignature.getSignatureType());
+            SignatureObject fileHashSignatureObject = new SignatureObject(vdis, "entireFile");
+            fileStreamSignature.setFileHashSignature(fileHashSignatureObject.getSignature());
+            fileStreamSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
 
-            HashObject metadataHashObject = HashObject.read(dis, filename, "metadata", SHA384);
+            HashObject metadataHashObject = new HashObject(vdis, "metadata", SHA384);
             fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
-            Signature metadataSignature = readSignatureObject(dis, filename, "metadata");
-            fileStreamSignature.setMetadataHashSignature(metadataSignature.getSignatureBytes());
+            SignatureObject metadataHashSignatureObject = new SignatureObject(vdis, "metadata");
+            fileStreamSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
 
-            if (dis.available() != 0) {
+            if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 
@@ -78,29 +75,23 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         }
     }
 
-    private Signature readSignatureObject(DataInputStream dis, String filename, String sectionName) throws IOException {
-        readClassIdAndVersion(dis);
+    @EqualsAndHashCode(callSuper=true)
+    @Getter
+    private static class SignatureObject extends AbstractStreamObject {
 
-        int signatureTypeIndicator = dis.readInt();
-        ReaderUtility.validate(SignatureType.SHA_384_WITH_RSA.getFileMarker(), signatureTypeIndicator, filename,
-                sectionName, "signature type");
+        private final byte[] signature;
+        private final SignatureType signatureType;
 
-        SignatureType signatureType = SignatureType.of(signatureTypeIndicator);
-        byte[] signature = ReaderUtility.readLengthAndBytes(dis, 1, signatureType.getMaxLength(),
-                true, filename, sectionName, "signature");
+        SignatureObject(ValidatedDataInputStream vdis, String sectionName) {
+            super(vdis);
 
-        return new Signature(signature, signatureType);
-    }
-
-    private void readClassIdAndVersion(DataInputStream dis) throws IOException {
-        //Read the ClassId and ClassVersion, which are not used
-        dis.readLong();
-        dis.readInt();
-    }
-
-    @Value
-    private static class Signature {
-        byte[] signatureBytes;
-        FileStreamSignature.SignatureType signatureType;
+            try {
+                signatureType = SignatureType.SHA_384_WITH_RSA;
+                vdis.readInt(signatureType.getFileMarker(), sectionName, "signature type");
+                signature = vdis.readLengthAndBytes(1, signatureType.getMaxLength(), true, sectionName, "signature");
+            } catch (IOException e) {
+                throw new InvalidStreamFileException(e);
+            }
+        }
     }
 }

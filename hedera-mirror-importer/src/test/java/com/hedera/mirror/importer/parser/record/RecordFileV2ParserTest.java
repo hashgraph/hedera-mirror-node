@@ -67,6 +67,7 @@ class RecordFileV2ParserTest extends AbstractRecordFileParserTest {
         super(FILENAMES[0], FILENAMES[1], FILE_CONSENSUS_TIMESTAMPS);
     }
 
+    // static method to provide arguments for the parameterized tests in base class
     private static Stream<Arguments> provideTimeOffsetArgument() {
         return provideTimeOffsetArgumentFromRecordFile(FILENAMES[0]);
     }

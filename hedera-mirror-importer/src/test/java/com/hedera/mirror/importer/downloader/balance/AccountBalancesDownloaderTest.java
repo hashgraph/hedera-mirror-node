@@ -30,8 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -47,7 +45,7 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
+class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Mock
     private AccountBalanceFileRepository accountBalanceFileRepository;
@@ -103,8 +101,10 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         });
     }
 
+    @Override
     @BeforeEach
-    void beforeEach() {
+    protected void beforeEach() throws Exception {
+        super.beforeEach();
         setTestFilesAndInstants(List.of(
                 "2019-08-30T18_15_00.016002001Z_Balances.csv",
                 "2019-08-30T18_30_00.010147001Z_Balances.csv"
@@ -135,12 +135,5 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
                 .nodeAccountId(null)
                 .build();
         accountBalanceFileMap.put(file2, abf2);
-    }
-
-    @Test
-    @DisplayName("Max download items reached")
-    void maxDownloadItemsReached() throws Exception {
-        ((BalanceDownloaderProperties) downloaderProperties).setBatchSize(1);
-        testMaxDownloadItemsReached(file1);
     }
 }
