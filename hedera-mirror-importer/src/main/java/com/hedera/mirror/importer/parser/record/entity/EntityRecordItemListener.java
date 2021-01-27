@@ -781,21 +781,21 @@ public class EntityRecordItemListener implements RecordItemListener {
             ScheduleCreateTransactionBody scheduleCreateTransactionBody = recordItem.getTransactionBody()
                     .getScheduleCreate();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TransactionBody body = recordItem.getTransactionBody();
-            var creatorAccount = EntityId.of(body.getTransactionID().getAccountID());
-            var payerAccount = scheduleCreateTransactionBody.hasPayerAccountID() ?
-                    EntityId.of(scheduleCreateTransactionBody.getPayerAccountID()) :
-                    EntityId.of(body.getTransactionID().getAccountID());
             var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
 
             // insert schedule only if it doesn't already exist in db
             scheduleRepository
                     .findByScheduleId(scheduleId)
-                    .ifPresentOrElse(s -> {
-                                log.warn("Schedule entity {} already exists, only signatures will be persisted",
-                                        s.getScheduleId());
-                            },
+                    .ifPresentOrElse(s ->
+                                    log.warn("Schedule entity {} already exists, only signatures will be persisted",
+                                            s.getScheduleId())
+                            ,
                             () -> {
+                                TransactionBody body = recordItem.getTransactionBody();
+                                var creatorAccount = EntityId.of(body.getTransactionID().getAccountID());
+                                var payerAccount = scheduleCreateTransactionBody.hasPayerAccountID() ?
+                                        EntityId.of(scheduleCreateTransactionBody.getPayerAccountID()) : creatorAccount;
+
                                 Schedule schedule = new Schedule();
                                 schedule.setConsensusTimestamp(consensusTimestamp);
                                 schedule.setCreatorAccountId(creatorAccount);

@@ -144,7 +144,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    public void onSchedule() throws ImporterException {
+    void onSchedule() throws ImporterException {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(1L);
         schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
@@ -156,7 +156,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    public void onScheduleSignature() throws ImporterException {
+    void onScheduleSignature() throws ImporterException {
         ScheduleSignature scheduleSignature = new ScheduleSignature();
         scheduleSignature.setId(new ScheduleSignature.Id(
                 1L,

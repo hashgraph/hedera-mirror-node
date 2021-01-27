@@ -171,8 +171,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         });
 
         // verify lack of schedule data and transaction
-        assertThat(scheduleSignatureRepository.count()).isEqualTo(0);
-        assertThat(transactionRepository.count()).isEqualTo(0);
+        assertThat(scheduleSignatureRepository.count()).isZero();
+        assertThat(transactionRepository.count()).isZero();
     }
 
     @Test
