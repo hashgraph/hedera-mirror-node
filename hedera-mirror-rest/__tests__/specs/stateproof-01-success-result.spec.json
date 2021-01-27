@@ -3,7 +3,7 @@
   "extendedDescription": [
     "When querying stateproof for transaction 0.0.94139-1570800748-313194300, expect to find it in record file",
     "2019-10-11T13_32_41.443132Z.rcd and all 4 signature files exist. For the sake of brevity, the base64 encoded",
-    "file content is replaced with its md5sum in responseJson"
+    "file content is replaced with its sha256 sum in responseJson"
   ],
   "setup": {
     "sqlscripts": [

@@ -1,5 +1,5 @@
 {
-  "description": "Stateproof api calls with valid scheduled transaction ID with scheduled=true",
+  "description": "Stateproof api calls with valid scheduled transaction ID with repeated scheduled=true",
   "extendedDescription": [
     "There are two successful transactions with ID 0.0.94139-1570800762-443131000, one is the SCHEDULECREATE and the ",
     "other is the scheduled transaction. When querying with scheduled=true, expect to find the scheduled ",
@@ -14,7 +14,7 @@
       "data/db/stateproof/transaction.sql"
     ]
   },
-  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=true",
+  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=false&scheduled=false&scheduled=true",
   "responseStatus": 200,
   "responseJson": {
     "address_books": ["29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"],
