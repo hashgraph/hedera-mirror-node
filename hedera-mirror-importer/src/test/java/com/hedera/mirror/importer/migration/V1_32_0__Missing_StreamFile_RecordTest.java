@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -63,6 +64,8 @@ import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
 @Tag("failincci")
 @Tag("migration")
 @Tag("v1")
@@ -133,11 +136,13 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
         RecordFile recordFile = allRecordFileMap.get("2019-08-30T18_10_00.419072Z.rcd");
         recordFile.setNodeAccountId(nodeAccountId);
-        allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
+        allFilesWithMeta.put(recordFile
+                .getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
 
         recordFile = allRecordFileMap.get("2019-08-30T18_10_05.249678Z.rcd");
         recordFile.setNodeAccountId(nodeAccountId);
-        allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
+        allFilesWithMeta.put(recordFile
+                .getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
 
         allFiles = List.copyOf(allFilesWithMeta.keySet());
         accountBalanceFiles = allFilesWithMeta.keySet().stream()
@@ -228,7 +233,8 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
                         .count(resultSet.getLong("count"))
                         .fileHash(resultSet.getString("file_hash"))
                         .name(resultSet.getString("name"))
-                        .nodeAccountId(accountIdConverter.convertToEntityAttribute(resultSet.getLong("node_account_id")))
+                        .nodeAccountId(accountIdConverter
+                                .convertToEntityAttribute(resultSet.getLong("node_account_id")))
                         .previousHash(resultSet.getString("prev_hash"))
                         .build());
     }

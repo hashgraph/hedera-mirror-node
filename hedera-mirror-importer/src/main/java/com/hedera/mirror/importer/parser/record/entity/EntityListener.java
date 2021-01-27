@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Schedule;
+import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
@@ -58,6 +60,12 @@ public interface EntityListener {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+    }
+
+    default void onSchedule(Schedule schedule) throws ImporterException {
+    }
+
+    default void onScheduleSignature(ScheduleSignature scheduleSignature) throws ImporterException {
     }
 
     default void onToken(Token token) throws ImporterException {
