@@ -45,6 +45,8 @@ public class EntityProperties {
 
         private boolean nonFeeTransfers = false;
 
+        private boolean schedules = false;
+
         private boolean systemFiles = true;
 
         private boolean tokens = true;

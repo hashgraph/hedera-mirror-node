@@ -1,9 +1,10 @@
 {
-  "description": "Stateproof api calls with valid transaction ID and success response",
+  "description": "Stateproof api calls with valid scheduled transaction ID with repeated scheduled=false",
   "extendedDescription": [
-    "When querying stateproof for transaction 0.0.94139-1570800748-313194300, expect to find it in record file",
-    "2019-10-11T13_32_41.443132Z.rcd and all 4 signature files exist. For the sake of brevity, the base64 encoded",
-    "file content is replaced with its sha256 sum in responseJson"
+    "There are two successful transactions with ID 0.0.94139-1570800762-443131000, one is the SCHEDULECREATE and the ",
+    "other is the scheduled transaction. When querying with scheduled=false, expect to find the SCHEDULECREATE ",
+    "transaction in record file 2019-10-11T13_32_41.443132Z.rcd and all 4 signature files exist. For the sake of ",
+    "brevity, the base64 encoded file content is replaced with its sha256 sum in responseJson"
   ],
   "setup": {
     "sqlscripts": [
@@ -13,7 +14,7 @@
       "data/db/stateproof/transaction.sql"
     ]
   },
-  "url": "/api/v1/transactions/0.0.94139-1570800748-313194300/stateproof",
+  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=true&scheduled=true&scheduled=false",
   "responseStatus": 200,
   "responseJson": {
     "record_file": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0",

@@ -26,6 +26,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Schedule;
+import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
@@ -58,6 +60,12 @@ public interface EntityListener {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+    }
+
+    default void onSchedule(Schedule schedule) throws ImporterException {
+    }
+
+    default void onScheduleSignature(ScheduleSignature scheduleSignature) throws ImporterException {
     }
 
     default void onToken(Token token) throws ImporterException {

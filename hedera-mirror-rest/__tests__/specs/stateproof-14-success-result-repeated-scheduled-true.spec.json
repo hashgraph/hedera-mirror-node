@@ -1,0 +1,29 @@
+{
+  "description": "Stateproof api calls with valid scheduled transaction ID with repeated scheduled=true",
+  "extendedDescription": [
+    "There are two successful transactions with ID 0.0.94139-1570800762-443131000, one is the SCHEDULECREATE and the ",
+    "other is the scheduled transaction. When querying with scheduled=true, expect to find the scheduled ",
+    "transaction in record file 2019-10-11T14_12_20.026969Z.rcd and all 4 signature files exist. For the sake of ",
+    "brevity, the base64 encoded file content is replaced with its sha256 sum in responseJson"
+  ],
+  "setup": {
+    "sqlscripts": [
+      "data/db/stateproof/address_book.sql",
+      "data/db/stateproof/address_book_entry.sql",
+      "data/db/stateproof/record_file.sql",
+      "data/db/stateproof/transaction.sql"
+    ]
+  },
+  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=false&scheduled=false&scheduled=true",
+  "responseStatus": 200,
+  "responseJson": {
+    "address_books": ["29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"],
+    "record_file": "9fd46d9d3620b2c713d511c1234679be20ac6f0c8abbe5bffca1cdee22e436ee",
+    "signature_files": {
+      "0.0.3": "cddc13091fb59fd6f77caa6c85cb9f2f4a2d80f6134451f41bb858a9993a70eb",
+      "0.0.4": "c39350277dae18a2238098a88867ea2516fe23acf5e0f85cad0fb522aca102c6",
+      "0.0.5": "f9a54052b0b195b7961031b8cb31ef80df977b9a1c2cebaf5f8acb978c09f26f",
+      "0.0.6": "1a5897cdce80edff3df07881454223bbca91a10ee1bd748bf5d570e8ca6fc933"
+    }
+  }
+}

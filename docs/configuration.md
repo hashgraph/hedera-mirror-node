@@ -83,6 +83,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |
 | `hedera.mirror.importer.parser.record.entity.persist.files`                 | true                    | Persist all file data to the database                                                          |
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
+| `hedera.mirror.importer.parser.record.entity.persist.schedules`             | false                   | Persist schedule transactions to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.entity.persist.tokens`                | true                    | Persist token data to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |

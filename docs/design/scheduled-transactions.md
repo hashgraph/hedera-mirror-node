@@ -127,8 +127,9 @@ Add an optional boolean `scheduled` parameter to `/api/v1/transactions/:id`. Als
 transaction APIs JSON response:
 
 - If true, return only the inner scheduled transaction
-- If false, return only the `ScheduleCreate` transaction
-- If not present, return both
+- If false, return all non-scheduled transactions matching `id` including the `ScheduleCreate` transaction
+  if exists
+- If not present, return all transactions matching `id`
 
 ```json
 {

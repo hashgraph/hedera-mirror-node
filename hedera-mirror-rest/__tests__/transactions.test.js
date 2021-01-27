@@ -17,19 +17,18 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const request = require('supertest');
 const server = require('../server');
-const testutils = require('./testutils.js');
-const utils = require('../utils.js');
-const {buildWhereClause} = require('../transactions.js');
+const testutils = require('./testutils');
+const utils = require('../utils');
+const {buildWhereClause} = require('../transactions');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
 });
-
-afterAll(() => {});
 
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
@@ -109,7 +108,8 @@ const validateAccNumRange = function (transactions, low, high) {
  * @return {Boolean}  Result of the check
  */
 const validateFields = function (transactions) {
-  let ret = true;
+  const errors = [];
+  const transaction = transactions[0];
 
   // Assert that all mandatory fields are present in the response
   [
@@ -125,23 +125,28 @@ const validateFields = function (transactions) {
     'valid_duration_seconds',
     'max_fee',
     'transaction_hash',
+    'scheduled',
   ].forEach((field) => {
-    ret = ret && transactions[0].hasOwnProperty(field);
+    if (!(field in transaction)) {
+      errors.push(`missing field "${field}"`);
+    }
   });
 
-  // Assert that the transfers is an array
-  ret = ret && Array.isArray(transactions[0].transfers);
-
-  // Assert that the transfers array has the mandatory fields
-  if (ret) {
+  if (Array.isArray(transaction.transfers)) {
     ['account', 'amount'].forEach((field) => {
-      ret = ret && transactions[0].transfers[0].hasOwnProperty(field);
+      if (!(field in transaction.transfers[0])) {
+        errors.push(`missing field "${field}" in transfers[0]`);
+      }
     });
+  } else {
+    errors.push('field "transfers" is not an array');
   }
-  if (!ret) {
-    console.log(`validateFields check failed: A mandatory parameter is missing`);
+
+  if (errors.length !== 0) {
+    console.log(`validateFields check failed: ${errors.join(',\n\t')}`);
   }
-  return ret;
+
+  return errors.length === 0;
 };
 
 /**
@@ -154,7 +159,7 @@ const validateOrder = function (transactions, order) {
   let ret = true;
   let offenderTx = null;
   let offenderVal = null;
-  let direction = order === 'desc' ? -1 : 1;
+  const direction = order === 'desc' ? -1 : 1;
   let val = transactions[0].consensus_timestamp - direction;
   for (const tx of transactions) {
     if (val * direction > tx.consensus_timestamp * direction) {
@@ -250,7 +255,7 @@ const singleTests = {
 
 /**
  * This list allows creation of combinations of individual tests to exercise presence
- * of mulitple query parameters. The combined query string is created by adding the query
+ * of multiple query parameters. The combined query string is created by adding the query
  * strings of each of the individual tests, and all checks from all of the individual tests
  * are performed on the resultant SQL query
  * NOTE: To add more combined tests, just add an entry to following array using the
@@ -267,15 +272,15 @@ const combinedTests = [
 
 // Start of tests
 describe('Transaction tests', () => {
-  let api = '/api/v1/transactions';
+  const api = '/api/v1/transactions';
 
   // First, execute the single tests
   for (const [name, item] of Object.entries(singleTests)) {
     test(`Transactions single test: ${name} - URL: ${item.urlparam}`, async () => {
-      let response = await request(server).get([api, item.urlparam].join('?'));
+      const response = await request(server).get([api, item.urlparam].join('?'));
 
       expect(response.status).toEqual(200);
-      const transactions = JSON.parse(response.text).transactions;
+      const {transactions} = JSON.parse(response.text);
       const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
 
       // Verify the sql query against each of the specified checks
@@ -295,10 +300,10 @@ describe('Transaction tests', () => {
   // And now, execute the combined tests
   for (const combination of combinedTests) {
     // Combine the individual (single) checks as specified in the combinedTests array
-    let combtest = {urls: [], checks: [], checkFunctions: [], names: ''};
+    const combtest = {urls: [], checks: [], checkFunctions: [], names: ''};
     for (const testname of combination) {
       if (testname in singleTests) {
-        combtest.names += testname + ' ';
+        combtest.names += `${testname} `;
         combtest.urls.push(singleTests[testname].urlparam);
         combtest.checks = combtest.checks.concat(singleTests[testname].checks);
         combtest.checkFunctions = combtest.checkFunctions.concat(
@@ -309,10 +314,10 @@ describe('Transaction tests', () => {
     const comburl = combtest.urls.join('&');
 
     test(`Transactions combination test: ${combtest.names} - URL: ${comburl}`, async () => {
-      let response = await request(server).get([api, comburl].join('?'));
+      const response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
       const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
-      const transactions = JSON.parse(response.text).transactions;
+      const {transactions} = JSON.parse(response.text);
 
       // Verify the sql query against each of the specified checks
       expect(parsedParams).toEqual(expect.arrayContaining(combtest.checks));

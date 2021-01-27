@@ -25,6 +25,7 @@ import com.google.common.base.Splitter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import java.io.Serializable;
@@ -90,6 +91,11 @@ public class EntityId implements Serializable, Comparable<EntityId> {
 
     public static EntityId of(TokenID tokenID) {
         return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), EntityTypeEnum.TOKEN);
+    }
+
+    public static EntityId of(ScheduleID scheduleID) {
+        return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID
+                .getScheduleNum(), EntityTypeEnum.SCHEDULE);
     }
 
     public static EntityId of(String entityId, EntityTypeEnum type) {

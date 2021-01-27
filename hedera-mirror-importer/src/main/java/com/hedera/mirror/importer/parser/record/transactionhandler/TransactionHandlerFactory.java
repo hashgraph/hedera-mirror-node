@@ -45,6 +45,8 @@ public class TransactionHandlerFactory {
     private final FileCreateTransactionHandler fileCreateTransactionHandler;
     private final FileDeleteTransactionHandler fileDeleteTransactionHandler;
     private final FileUpdateTransactionHandler fileUpdateTransactionHandler;
+    private final ScheduleCreateTransactionHandler scheduleCreateTransactionHandler;
+    private final ScheduleSignTransactionHandler scheduleSignTransactionHandler;
     private final TokenAssociateTransactionsHandler tokenAssociateTransactionsHandler;
     private final TokenBurnTransactionsHandler tokenBurnTransactionsHandler;
     private final TokenCreateTransactionsHandler tokenCreateTransactionsHandler;
@@ -98,6 +100,10 @@ public class TransactionHandlerFactory {
             return fileDeleteTransactionHandler;
         } else if (body.hasFileUpdate()) {
             return fileUpdateTransactionHandler;
+        } else if (body.hasScheduleCreate()) {
+            return scheduleCreateTransactionHandler;
+        } else if (body.hasScheduleSign()) {
+            return scheduleSignTransactionHandler;
         } else if (body.hasTokenAssociate()) {
             return tokenAssociateTransactionsHandler;
         } else if (body.hasTokenBurn()) {

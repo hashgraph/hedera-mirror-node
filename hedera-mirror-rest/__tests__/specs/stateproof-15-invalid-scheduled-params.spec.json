@@ -1,0 +1,33 @@
+{
+  "description": "Stateproof api calls with invalid scheduled params",
+  "setup": [],
+  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=ne:true&scheduled=lte:true&scheduled=lt:true&scheduled=gte:true&scheduled=gt:true&scheduled=1&scheduled=",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: scheduled"
+        }
+      ]
+    }
+  }
+}

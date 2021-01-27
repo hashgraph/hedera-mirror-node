@@ -25,16 +25,17 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
   ENTITY_PUBLICKEY: 'publickey',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
+  SCHEDULED: 'scheduled',
   SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
   TOKENID: 'tokenid',
   TOKEN_ID: 'token.id',
-  CREDIT_TYPE: 'type',
   TRANSACTION_TYPE: 'transactiontype',
 };
 
