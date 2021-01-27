@@ -54,8 +54,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         String filename = FilenameUtils.getName(streamFileData.getFilename());
 
         try (RecordFileDigest digest = getRecordFileDigest(streamFileData.getInputStream());
-             ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)
-        ) {
+             ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)) {
             RecordFile recordFile = new RecordFile();
             recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);

@@ -56,14 +56,14 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
 
             HashObject fileHashObject = new HashObject(vdis, "entireFile", SHA384);
             fileStreamSignature.setFileHash(fileHashObject.getHash());
-            SignatureObject fileSignatureObject = new SignatureObject(vdis, "entireFile");
-            fileStreamSignature.setFileHashSignature(fileSignatureObject.getSignature());
-            fileStreamSignature.setSignatureType(fileSignatureObject.getSignatureType());
+            SignatureObject fileHashSignatureObject = new SignatureObject(vdis, "entireFile");
+            fileStreamSignature.setFileHashSignature(fileHashSignatureObject.getSignature());
+            fileStreamSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
 
             HashObject metadataHashObject = new HashObject(vdis, "metadata", SHA384);
             fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
-            SignatureObject metadataSignatureObject = new SignatureObject(vdis, "metadata");
-            fileStreamSignature.setMetadataHashSignature(metadataSignatureObject.getSignature());
+            SignatureObject metadataHashSignatureObject = new SignatureObject(vdis, "metadata");
+            fileStreamSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
 
             if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
