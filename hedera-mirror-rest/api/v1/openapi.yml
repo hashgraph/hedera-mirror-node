@@ -229,8 +229,8 @@ paths:
                     - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
         404:
           $ref: '#/components/responses/TransactionNotFound'
-        503:
-          description: Service Unavailable
+        502:
+          description: Bad Gateway
           content:
             application/json:
               schema:
