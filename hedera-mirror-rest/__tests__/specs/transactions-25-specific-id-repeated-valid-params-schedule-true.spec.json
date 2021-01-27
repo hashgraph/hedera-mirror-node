@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for a specific transaction using transaction id",
+  "description": "Transaction api calls for a specific transaction using transaction id and repeated valid params and schedule true",
   "setup": {
     "accounts": [
       {
@@ -24,7 +24,7 @@
         "consensus_timestamp": "1234567890000000002",
         "valid_start_timestamp": "1234567890000000001",
         "name": "SCHEDULECREATE",
-        "type": 42,
+        "type": "42",
         "transfers": [
           {
             "account": "0.0.9",
@@ -70,34 +70,10 @@
       }
     ]
   },
-  "url": "/api/v1/transactions/0.0.10-1234567890-000000001",
+  "url": "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=true&scheduled=false&scheduled=true",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
-      {
-        "consensus_timestamp": "1234567890.000000002",
-        "charged_tx_fee": 7,
-        "max_fee": "33",
-        "memo_base64": null,
-        "name": "SCHEDULECREATE",
-        "node": "0.0.3",
-        "result": "SUCCESS",
-        "scheduled": false,
-        "transaction_hash": "aGFzaA==",
-        "transaction_id": "0.0.10-1234567890-000000001",
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 10
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ],
-        "valid_duration_seconds": "11",
-        "valid_start_timestamp": "1234567890.000000001"
-      },
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000003",
@@ -117,30 +93,6 @@
           {
             "account": "0.0.10",
             "amount": -11
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ],
-        "valid_duration_seconds": "11",
-        "valid_start_timestamp": "1234567890.000000001"
-      },
-      {
-        "charged_tx_fee": 7,
-        "consensus_timestamp": "1234567890.000000040",
-        "max_fee": "33",
-        "memo_base64": null,
-        "name": "CRYPTOTRANSFER",
-        "node": "0.0.4",
-        "result": "DUPLICATE_TRANSACTION",
-        "scheduled": false,
-        "transaction_hash": "aGFzaA==",
-        "transaction_id": "0.0.10-1234567890-000000001",
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 100
           },
           {
             "account": "0.0.98",
