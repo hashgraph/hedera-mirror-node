@@ -69,9 +69,7 @@ services:
       - 5551:5551
 
   rosetta:
-    build:
-      context: ./hedera-mirror-rosetta
-      dockerfile: ./Dockerfile
+    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.26.0
     environment:
       HEDERA_MIRROR_ROSETTA_DB_HOST: db
     restart: unless-stopped
