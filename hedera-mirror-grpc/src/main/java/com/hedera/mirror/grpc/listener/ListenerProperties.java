@@ -47,7 +47,7 @@ public class ListenerProperties {
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
 
-    @Min(1)
+    @Min(4)
     @Max(256)
     private int prefetch = 48;
 
