@@ -48,7 +48,7 @@ jobs:
       - name: Package hedera-mirror-rosetta
         run: |
           set -ex
-          tar -czf ${{ steps.get_version.outputs.VERSION }}.tgz -C . hedera-mirror-rosetta
+          tar -czf hedera-mirror-rosetta-${{ steps.get_version.outputs.VERSION }}.tgz -C . hedera-mirror-rosetta
       - name: Upload folder archive as artifact
         uses: actions/upload-artifact@master
         with:
