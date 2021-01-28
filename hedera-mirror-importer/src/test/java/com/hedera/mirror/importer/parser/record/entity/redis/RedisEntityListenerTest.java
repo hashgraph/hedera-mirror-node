@@ -151,7 +151,7 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
                 .thenCancel()
                 .verify(Duration.ofMillis(1000));
 
-        // reset the stub
+        // reset the spy
         Mockito.reset(redisOperations);
     }
 
