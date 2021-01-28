@@ -6,7 +6,7 @@
 FROM ubuntu:18.04 as cloner
 RUN apt-get update && apt-get install -y git
 ARG GIT_BRANCH=master
-RUN git clone https://github.com/LimeChain/hedera-mirror-node.git
+RUN git clone https://github.com/hashgraph/hedera-mirror-node.git
 RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
 
 # ------------------------------  Rosetta  ------------------------------- #

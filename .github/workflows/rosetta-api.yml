@@ -9,9 +9,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      tag-version: ${GITHUB_REF}
-      run-id: ${GITHUB_RUN_ID}
 
     steps:
       - uses: actions/checkout@v2
