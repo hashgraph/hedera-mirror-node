@@ -91,7 +91,7 @@ jobs:
         ports:
           - 4566:4566
       timescaledb:
-        image: timescaledev/timescaledb-ha:pg12-ts2.0.0-rc3
+        image: timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
         env:
           POSTGRES_DB: mirror_node_integration
           POSTGRES_PASSWORD: mirror_api_pass
