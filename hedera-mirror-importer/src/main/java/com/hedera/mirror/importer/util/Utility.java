@@ -84,14 +84,6 @@ public class Utility {
         return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
     }
 
-    /**
-     * @return string which represents an AccountID
-     */
-    public static String accountIDToString(AccountID accountID) {
-        return String.format("%d.%d.%d", accountID.getShardNum(),
-                accountID.getRealmNum(), accountID.getAccountNum());
-    }
-
     public static Instant convertToInstant(Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
@@ -272,8 +264,8 @@ public class Utility {
     }
 
     /**
-     * Opens a file and returns a {@link InputStream} object. Throws {@link FileOperationException} if
-     * some error occurs.
+     * Opens a file and returns a {@link InputStream} object. Throws {@link FileOperationException} if some error
+     * occurs.
      *
      * @param file the input file
      * @return {@link InputStream} object representing the file

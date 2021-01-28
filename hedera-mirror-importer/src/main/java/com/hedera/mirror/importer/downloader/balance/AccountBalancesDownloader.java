@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader.balance;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,18 +31,20 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.leader.Leader;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 public class AccountBalancesDownloader extends Downloader {
 
+    private final BalanceFileReader balanceFileReader;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
 
     public AccountBalancesDownloader(
@@ -50,10 +52,11 @@ public class AccountBalancesDownloader extends Downloader {
             AddressBookService addressBookService, BalanceDownloaderProperties downloaderProperties,
             TransactionTemplate transactionTemplate, MeterRegistry meterRegistry,
             AccountBalanceFileRepository accountBalanceFileRepository, NodeSignatureVerifier nodeSignatureVerifier,
-            SignatureFileReader signatureFileReader) {
+            SignatureFileReader signatureFileReader, BalanceFileReader balanceFileReader) {
         super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
                 meterRegistry, nodeSignatureVerifier, signatureFileReader);
         this.accountBalanceFileRepository = accountBalanceFileRepository;
+        this.balanceFileReader = balanceFileReader;
     }
 
     /**
@@ -64,12 +67,7 @@ public class AccountBalancesDownloader extends Downloader {
      */
     @Override
     protected StreamFile readStreamFile(File file) {
-        return AccountBalanceFile.builder()
-                .consensusTimestamp(Utility.getTimestampFromFilename(file.getName()))
-                .count(0L)
-                .fileHash(Utility.getBalanceFileHash(file.getPath()))
-                .name(file.getName())
-                .build();
+        return balanceFileReader.read(StreamFileData.from(file));
     }
 
     @Override

@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
-import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
+import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
 
 @ExtendWith(MockitoExtension.class)
 class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
@@ -54,7 +54,7 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
     protected Downloader getDownloader() {
         return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (EventDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
-                new EventFileReaderImpl(), nodeSignatureVerifier, signatureFileReader);
+                new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader);
     }
 
     @Override

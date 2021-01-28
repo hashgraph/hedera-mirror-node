@@ -35,85 +35,87 @@ import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
 
 import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
 
-class EventFileReaderImplTest {
+class EventFileReaderV3Test {
 
-    private final byte[] prevHash = new byte[EventFileReaderImpl.EVENT_PREV_HASH_LENGTH];
+    private final byte[] prevHash = new byte[EventFileReaderV3.EVENT_PREV_HASH_LENGTH];
     private final byte[] content = new byte[64];
 
-    private final EventFileReaderImpl eventFileReader = new EventFileReaderImpl();
+    private final EventFileReaderV3 eventFileReader = new EventFileReaderV3();
 
     @TempDir
     protected File tmpPath;
 
     @Test
     void readValidFileVersion2() {
-        File validFile = createTmpEventFile(EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_2,
-                EventFileReaderImpl.EVENT_TYPE_PREV_HASH, prevHash, content);
-        EventFile eventFile = eventFileReader.read(validFile);
+        File validFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_2,
+                EventFileReaderV3.EVENT_TYPE_PREV_HASH, prevHash, content);
+        EventFile eventFile = eventFileReader.read(StreamFileData.from(validFile));
 
-        verifyForSuccess(eventFile, validFile, EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_2, prevHash);
+        verifyForSuccess(eventFile, validFile, EventFileReaderV3.EVENT_STREAM_FILE_VERSION_2, prevHash);
     }
 
     @Test
     void readValidFileVersion3() {
-        File validFile = createTmpEventFile(EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_3,
-                EventFileReaderImpl.EVENT_TYPE_PREV_HASH, prevHash, content);
-        EventFile eventFile = eventFileReader.read(validFile);
+        File validFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3,
+                EventFileReaderV3.EVENT_TYPE_PREV_HASH, prevHash, content);
+        EventFile eventFile = eventFileReader.read(StreamFileData.from(validFile));
 
-        verifyForSuccess(eventFile, validFile, EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_3, prevHash);
+        verifyForSuccess(eventFile, validFile, EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3, prevHash);
     }
 
     @Test
     void readValidFileWithNoContent() {
-        File validFile = createTmpEventFile(EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_3,
-                EventFileReaderImpl.EVENT_TYPE_PREV_HASH, prevHash, null);
-        EventFile eventFile = eventFileReader.read(validFile);
+        File validFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3,
+                EventFileReaderV3.EVENT_TYPE_PREV_HASH, prevHash, null);
+        EventFile eventFile = eventFileReader.read(StreamFileData.from(validFile));
 
-        verifyForSuccess(eventFile, validFile, EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_3, prevHash);
+        verifyForSuccess(eventFile, validFile, EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3, prevHash);
     }
 
     @Test
     void readInvalidFileWithInvalidVersion1() {
-        File invalidFile = createTmpEventFile(1, EventFileReaderImpl.EVENT_TYPE_PREV_HASH, prevHash, content);
+        File invalidFile = createTmpEventFile(1, EventFileReaderV3.EVENT_TYPE_PREV_HASH, prevHash, content);
         assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(invalidFile);
+            eventFileReader.read(StreamFileData.from(invalidFile));
         });
     }
 
     @Test
     void readInvalidFileWithInvalidVersion4() {
-        File invalidFile = createTmpEventFile(4, EventFileReaderImpl.EVENT_TYPE_PREV_HASH, prevHash, content);
+        File invalidFile = createTmpEventFile(4, EventFileReaderV3.EVENT_TYPE_PREV_HASH, prevHash, content);
         assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(invalidFile);
+            eventFileReader.read(StreamFileData.from(invalidFile));
         });
     }
 
     @Test
     void readInvalidFileWithInvalidPrevHashMarker() {
-        File invalidFile = createTmpEventFile(EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_3, (byte) 0x0, prevHash, content);
+        File invalidFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3, (byte) 0x0, prevHash,
+                content);
         assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(invalidFile);
+            eventFileReader.read(StreamFileData.from(invalidFile));
         });
     }
 
     @Test
     void readInvalidFileWithNoPrevHash() {
-        File invalidFile = createTmpEventFile(EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_3,
-                EventFileReaderImpl.EVENT_TYPE_PREV_HASH, null, null);
+        File invalidFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3,
+                EventFileReaderV3.EVENT_TYPE_PREV_HASH, null, null);
         assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(invalidFile);
+            eventFileReader.read(StreamFileData.from(invalidFile));
         });
     }
 
     @Test
     void readInvalidFileWithIncompletePrevHash() {
-        byte[] incompletePrevHash = new byte[EventFileReaderImpl.EVENT_PREV_HASH_LENGTH - 2];
-        File invalidFile = createTmpEventFile(EventFileReaderImpl.EVENT_STREAM_FILE_VERSION_3,
-                EventFileReaderImpl.EVENT_TYPE_PREV_HASH, incompletePrevHash, null);
+        byte[] incompletePrevHash = new byte[EventFileReaderV3.EVENT_PREV_HASH_LENGTH - 2];
+        File invalidFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3,
+                EventFileReaderV3.EVENT_TYPE_PREV_HASH, incompletePrevHash, null);
         assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(invalidFile);
+            eventFileReader.read(StreamFileData.from(invalidFile));
         });
     }
 
@@ -136,7 +138,8 @@ class EventFileReaderImplTest {
         }
     }
 
-    private void verifyForSuccess(EventFile eventFile, File inputFile, int expectedFileVersion, byte[] expectedPrevHash) {
+    private void verifyForSuccess(EventFile eventFile, File inputFile, int expectedFileVersion,
+                                  byte[] expectedPrevHash) {
         assertThat(eventFile).isNotNull();
         assertThat(eventFile.getName()).isEqualTo(inputFile.getName());
         assertThat(eventFile.getFileVersion()).isEqualTo(expectedFileVersion);

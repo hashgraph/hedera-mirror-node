@@ -20,49 +20,35 @@ package com.hedera.mirror.importer.reader.balance;
  * ‍
  */
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.io.input.BoundedInputStream;
+import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 
 @Named
+@Primary
 @RequiredArgsConstructor
 public class CompositeBalanceFileReader implements BalanceFileReader {
 
-    static final int BUFFER_SIZE = 16;
-    private final BalanceFileReaderImplV1 version1Reader;
-    private final BalanceFileReaderImplV2 version2Reader;
+    private final BalanceFileReaderImplV1 balanceFileReaderImplV1;
+    private final BalanceFileReaderImplV2 balanceFileReaderImplV2;
 
     @Override
-    public Stream<AccountBalance> read(File file) {
-        return getReader(file).read(file);
+    public boolean supports(StreamFileData streamFileData) {
+        return true;
     }
 
-    private BalanceFileReader getReader(File file) {
-        if (file == null) {
-            throw new InvalidDatasetException("Null file provided to balance file reader");
-        }
-        try (BufferedReader reader =
-                     new BufferedReader(new InputStreamReader(new BoundedInputStream(new FileInputStream(file),
-                             BUFFER_SIZE)), BUFFER_SIZE)) {
-            String line = reader.readLine();
-            if (line == null) {
-                throw new InvalidDatasetException("Account balance file is empty");
-            } else if (version2Reader.isFirstLineFromFileVersion(line)) {
-                return version2Reader;
-            } else {
-                return version1Reader;
-            }
-        } catch (IOException ex) {
-            throw new InvalidDatasetException("Error reading account balance file", ex);
-        }
+    @Override
+    public AccountBalanceFile read(StreamFileData streamFileData, Consumer<AccountBalance> itemConsumer) {
+        BalanceFileReader balanceFileReader = getReader(streamFileData);
+        return balanceFileReader.read(streamFileData, itemConsumer);
+    }
+
+    private BalanceFileReader getReader(StreamFileData streamFileData) {
+        return balanceFileReaderImplV2.supports(streamFileData) ? balanceFileReaderImplV2 : balanceFileReaderImplV1;
     }
 }

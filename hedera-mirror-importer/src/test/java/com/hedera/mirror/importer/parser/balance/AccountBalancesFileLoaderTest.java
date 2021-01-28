@@ -43,13 +43,13 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV2;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
-import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
 public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
@@ -58,9 +58,6 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
     @Resource
     private AccountBalanceRepository accountBalanceRepository;
-
-    @Resource
-    private TokenBalanceRepository tokenBalanceRepository;
 
     @Resource
     private AccountBalanceSetRepository accountBalanceSetRepository;
@@ -145,13 +142,9 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
         if (persisted) {
             assertThat(accountBalanceMap.size()).isEqualTo(balanceFileStats.getCount());
-            try (var stream = balanceFileReader.read(balanceFile)) {
-                var accountBalanceIter = stream.iterator();
-                while (accountBalanceIter.hasNext()) {
-                    AccountBalance expected = accountBalanceIter.next();
-                    assertThat(accountBalanceMap.get(expected.getId())).usingRecursiveComparison().isEqualTo(expected);
-                }
-            }
+            balanceFileReader.read(StreamFileData.from(balanceFile), expected -> {
+                assertThat(accountBalanceMap.get(expected.getId())).usingRecursiveComparison().isEqualTo(expected);
+            });
 
             assertThat(accountBalanceSetRepository.count()).isEqualTo(1);
             assertThat(accountBalanceSetRepository.findById(balanceFileStats.getConsensusTimestamp()).get())

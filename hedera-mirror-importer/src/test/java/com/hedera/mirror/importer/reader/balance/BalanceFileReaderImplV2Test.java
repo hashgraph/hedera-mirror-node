@@ -29,9 +29,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Value;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV2;
 import com.hedera.mirror.importer.util.Utility;
@@ -71,8 +72,9 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
 
     @Test
     void readValid() throws IOException {
-        Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(balanceFile);
-        verifySuccess(balanceFile, accountBalanceStream, sampleConsensusTimestamp, 2);
+        List<AccountBalance> accountBalances = new ArrayList<>();
+        balanceFileReader.read(StreamFileData.from(balanceFile), accountBalances::add);
+        verifySuccess(balanceFile, accountBalances, sampleConsensusTimestamp, 2);
     }
 
     @Test
@@ -83,7 +85,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         copy.addAll(lines);
         FileUtils.writeLines(testFile, copy);
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -94,7 +96,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, lines);
 
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -105,7 +107,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, lines);
 
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -121,7 +123,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, copy);
 
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -134,7 +136,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, lines);
 
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -145,7 +147,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, lines);
 
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -153,14 +155,14 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
     void readInvalidWhenFileIsEmpty() throws IOException {
         FileUtils.write(testFile, "", "utf-8");
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
     @Test
     void readInvalidWhenFileDoesNotExist() {
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -176,7 +178,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, copy);
 
         assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(testFile);
+            balanceFileReader.read(StreamFileData.from(testFile));
         });
     }
 
@@ -186,8 +188,9 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, lines);
         FileUtils.writeStringToFile(testFile, "\n\n\n", "utf-8", true);
 
-        Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
-        verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
+        List<AccountBalance> accountBalances = new ArrayList<>();
+        balanceFileReader.read(StreamFileData.from(testFile), accountBalances::add);
+        verifySuccess(testFile, accountBalances, sampleConsensusTimestamp, 2);
     }
 
     @Test
@@ -196,8 +199,9 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeLines(testFile, lines);
         FileUtils.writeStringToFile(testFile, "\n0.0.3.20340\nfoobar\n", "utf-8", true);
 
-        Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
-        verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
+        List<AccountBalance> accountBalances = new ArrayList<>();
+        balanceFileReader.read(StreamFileData.from(testFile), accountBalances::add);
+        verifySuccess(testFile, accountBalances, sampleConsensusTimestamp, 2);
     }
 
     @Test
@@ -208,38 +212,36 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
         FileUtils.writeStringToFile(testFile,
                 String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard), "utf-8", true);
 
-        Stream<AccountBalance> accountBalanceStream = balanceFileReader.read(testFile);
-        verifySuccess(testFile, accountBalanceStream, sampleConsensusTimestamp, 2);
-    }
-
-    @Test
-    void readNullFile() throws IOException {
-        assertThrows(InvalidDatasetException.class, () -> {
-            balanceFileReader.read(null);
-        });
+        List<AccountBalance> accountBalances = new ArrayList<>();
+        balanceFileReader.read(StreamFileData.from(testFile), accountBalances::add);
+        verifySuccess(testFile, accountBalances, sampleConsensusTimestamp, 2);
     }
 
     @Test
     void fileVersion2HeaderConfirmed() {
-        assertThat(balanceFileReader.isFirstLineFromFileVersion(VERSION_2_HEADER_PREFIX)).isTrue();
+        StreamFileData streamFileData = StreamFileData.from("foo.csv", VERSION_2_HEADER_PREFIX);
+        assertThat(balanceFileReader.supports(streamFileData)).isTrue();
     }
 
     @Test
     void fileVersion1HeaderIsRejected() {
-        assertThat(balanceFileReader.isFirstLineFromFileVersion(VERSION_1_TIMESTAMP_HEADER_PREFIX)).isFalse();
+        StreamFileData streamFileData = StreamFileData.from("foo.csv", VERSION_1_TIMESTAMP_HEADER_PREFIX);
+        assertThat(balanceFileReader.supports(streamFileData)).isFalse();
     }
 
     @Test
     void nullFirstLineIsRejected() {
-        assertThat(balanceFileReader.isFirstLineFromFileVersion(null)).isFalse();
+        StreamFileData streamFileData = StreamFileData.from("foo.csv", "");
+        assertThat(balanceFileReader.supports(streamFileData)).isFalse();
     }
 
     @Test
     void randomFirstLineIsRejected() {
-        assertThat(balanceFileReader.isFirstLineFromFileVersion("junk")).isFalse();
+        StreamFileData streamFileData = StreamFileData.from("foo.csv", "junk");
+        assertThat(balanceFileReader.supports(streamFileData)).isFalse();
     }
 
-    private void verifySuccess(File file, Stream<AccountBalance> stream, long expectedConsensusTimestamp,
+    private void verifySuccess(File file, List<AccountBalance> accountBalances, long expectedConsensusTimestamp,
                                int skipLines) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
             while (skipLines > 0) {
@@ -248,7 +250,7 @@ class BalanceFileReaderImplV2Test extends IntegrationTest {
             }
 
             var lineIter = reader.lines().iterator();
-            var accountBalanceIter = stream.iterator();
+            var accountBalanceIter = accountBalances.iterator();
 
             while (lineIter.hasNext()) {
                 String line = lineIter.next();
