@@ -14,6 +14,11 @@
         <version>${release.version}</version>
     </parent>
 
+    <properties>
+        <sonar.exclusions>pom.xml</sonar.exclusions>
+        <sonar.sources>${project.basedir}</sonar.sources>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
