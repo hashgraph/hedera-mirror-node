@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -152,8 +151,8 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
                 .thenCancel()
                 .verify(Duration.ofMillis(1000));
 
-        // reset the stub
-        doCallRealMethod().when(redisOperations).convertAndSend(anyString(), any(Object.class));
+        // reset the spy
+        Mockito.reset(redisOperations);
     }
 
     @TestConfiguration
