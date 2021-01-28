@@ -9,6 +9,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      tag-version: ${GITHUB_REF}
+      run-id: ${GITHUB_RUN_ID}
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -30,6 +34,18 @@ jobs:
         with:
           name: hedera-mirror-rosetta
           path: ${{ env.working-directory }}/rosetta
+          if-no-files-found: error
+      - name: Package hedera-mirror-rosetta
+        run: |
+          set -ex
+          VERSION_TAG=${GITHUB_RUN_ID/*\//}
+          NAME=hedera-mirror-rosetta-${VERSION_TAG:-b$GITHUB_RUN_ID}
+          tar -czf ${NAME}.tgz -C . hedera-mirror-rosetta
+      - name: Upload folder archive as artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: hedera-mirror-rosetta
+          path: hedera-mirror-rosetta-${VERSION_TAG:-b$GITHUB_RUN_ID}.tgz
           if-no-files-found: error
   test:
     runs-on: ubuntu-latest
