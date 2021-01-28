@@ -37,7 +37,14 @@ jobs:
           if-no-files-found: error
       - name: Get current version
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: |
+          REF_TAG=${GITHUB_REF/refs\/tags\//}
+          if [[ $REF_TAG != v* ]];
+          then
+            REF_TAG=${GITHUB_RUN_ID}
+          fi
+
+          echo ::set-output name=VERSION::${REF_TAG}
       - name: Package hedera-mirror-rosetta
         run: |
           set -ex
