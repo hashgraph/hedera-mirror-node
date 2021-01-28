@@ -38,14 +38,13 @@ jobs:
       - name: Package hedera-mirror-rosetta
         run: |
           set -ex
-          VERSION_TAG=${GITHUB_RUN_ID/*\//}
-          NAME=hedera-mirror-rosetta-${VERSION_TAG}
+          NAME=hedera-mirror-rosetta-${GITHUB_REF}
           tar -czf ${NAME}.tgz -C . hedera-mirror-rosetta
       - name: Upload folder archive as artifact
         uses: actions/upload-artifact@master
         with:
           name: hedera-mirror-rosetta
-          path: hedera-mirror-rosetta-${{GITHUB_RUN_ID}}.tgz
+          path: hedera-mirror-rosetta-${{ github.ref }}.tgz
           if-no-files-found: error
   test:
     runs-on: ubuntu-latest
