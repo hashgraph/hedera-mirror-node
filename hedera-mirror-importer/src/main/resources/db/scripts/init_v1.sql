@@ -10,12 +10,31 @@
 \set rosetta_user 'mirror_rosetta'
 \set rosetta_password 'mirror_rosetta_pass'
 
-create function init_user(user_name text, user_pass text) returns void as $$
+create function init_create_user(user_name text, user_pass text) returns void as
+$$
 begin
-    if not exists (select from pg_catalog.pg_roles where rolname = user_name) then
+    if not exists(select from pg_catalog.pg_roles where rolname = user_name) then
         execute format(
                 'create user %I with
                     createrole
+                    password %L'
+            , user_name
+            , user_pass
+            );
+        raise notice 'Created user "%" with create role', user_name;
+    else
+        raise notice 'User "%" already exists, not creating it', user_name;
+    end if;
+end
+$$ language plpgsql;
+
+create function init_user(user_name text, user_pass text) returns void as
+$$
+begin
+    if not exists(select from pg_catalog.pg_roles where rolname = user_name) then
+        execute format(
+                'create user %I with
+                    login
                     password %L'
             , user_name
             , user_pass
@@ -28,9 +47,10 @@ end
 $$ language plpgsql;
 
 select :'db_create'
-where not exists (select from pg_database where datname = :'db_name')\gexec
+where not exists(select from pg_database where datname = :'db_name')
+\gexec
 
-select init_user(:'db_user', :'db_password');
+select init_create_user(:'db_user', :'db_password');
 select init_user(:'grpc_user', :'grpc_password');
 select init_user(:'rosetta_user', :'rosetta_password');
 

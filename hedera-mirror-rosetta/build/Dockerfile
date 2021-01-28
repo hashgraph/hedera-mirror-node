@@ -21,13 +21,7 @@ FROM openjdk:11.0 as java-builder
 
 RUN apt-get update
 COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
-RUN cd hedera-mirror-node && ./mvnw clean package -DskipTests -pl '!hedera-mirror-rest, !hedera-mirror-rosetta'
-
-# --------------------------------- REST --------------------------------- #
-FROM node:14.15.4-alpine3.12 as node-builder
-
-COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
-RUN cd hedera-mirror-node/hedera-mirror-rest && npm ci
+RUN cd hedera-mirror-node && ./mvnw clean package -DskipTests -pl hedera-mirror-importer
 
 # ######################################################################## #
 # --------------------------- Runner Container --------------------------- #
