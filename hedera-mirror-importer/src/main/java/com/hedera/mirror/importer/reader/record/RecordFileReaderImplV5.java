@@ -1,11 +1,11 @@
 package com.hedera.mirror.importer.reader.record;
 
 /*-
- *
+ * ‌
  * Hedera Mirror Node
- *  ​
+ * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
- *  ​
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +17,7 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * ‍
  */
 
 import com.google.common.primitives.Longs;
@@ -89,7 +89,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     }
 
     private void readBody(ValidatedDataInputStream vdis, Consumer<RecordItem> itemConsumer,
-            DigestInputStream metadataDigestInputStream, RecordFile recordFile) throws IOException {
+                          DigestInputStream metadataDigestInputStream, RecordFile recordFile) throws IOException {
         String filename = recordFile.getName();
 
         vdis.readInt(); // object stream version
@@ -155,7 +155,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         return classId == hashObjectClassId;
     }
 
-    @EqualsAndHashCode(callSuper=true)
+    @EqualsAndHashCode(callSuper = true)
     @Getter
     private static class RecordStreamObject extends AbstractStreamObject {
 
