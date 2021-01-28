@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.downloader;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.primitives.Bytes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -43,7 +42,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -51,6 +49,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -58,10 +57,8 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -87,9 +84,14 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@Log4j2
 public abstract class AbstractDownloaderTest {
     private static final int S3_PROXY_PORT = 8001;
 
@@ -116,6 +118,9 @@ public abstract class AbstractDownloaderTest {
     protected Instant file1Instant;
     protected Instant file2Instant;
     protected EntityId corruptedNodeAccountId;
+    protected NodeSignatureVerifier nodeSignatureVerifier;
+    protected SignatureFileReader signatureFileReader;
+    protected StreamType streamType;
 
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
@@ -180,21 +185,23 @@ public abstract class AbstractDownloaderTest {
         allNodeAccountIds = addressBook.getNodeSet();
     }
 
-    @BeforeEach
-    void beforeEach(TestInfo testInfo) throws Exception {
-        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
-
+    protected void beforeEach() throws Exception {
         initProperties();
         transactionTemplate = new TransactionTemplate(platformTransactionManager);
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
                 AnonymousCredentialsProvider.create())
                 .s3CloudStorageClient();
+
+        signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
+                new SignatureFileReaderV5());
+        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         downloader = prepareDownloader();
+        streamType = downloaderProperties.getStreamType();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
-                .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
+                .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
 
         validPath = downloaderProperties.getValidPath();
 
@@ -262,12 +269,6 @@ public abstract class AbstractDownloaderTest {
                 .containsAll(filenames);
     }
 
-    protected void testMaxDownloadItemsReached(String filename) throws Exception {
-        fileCopier.copy();
-        downloader.download();
-        assertValidFiles(List.of(filename));
-    }
-
     @Test
     @DisplayName("Download and verify files")
     void download() throws Exception {
@@ -290,17 +291,13 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Exactly 1/3 consensus")
     void oneThirdConsensus() throws Exception {
-        MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-        Path addressBookPath = ResourceUtils.getFile(String
-                .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
-        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
-        int index = Bytes.lastIndexOf(addressBookBytes, (byte) '\n');
-        addressBookBytes = Arrays.copyOfRange(addressBookBytes, 0, index);
-        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
-        long now = Instant.now().getEpochSecond();
-        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
+        List<AddressBookEntry> entries = addressBook.getEntries().stream().limit(3).collect(Collectors.toList());
+        AddressBook addressBookWith3Nodes = addressBook.toBuilder().entries(entries).nodeCount(entries.size()).build();
+        doReturn(addressBookWith3Nodes).when(addressBookService).getCurrent();
 
-        fileCopier.filterDirectories("*0.0.3").copy();
+        String nodeAccountId = entries.get(0).getNodeAccountIdString();
+        log.info("Only copy node {}'s stream files and signature files for a 3-node network", nodeAccountId);
+        fileCopier.filterDirectories("*" + nodeAccountId).copy();
         prepareDownloader().download();
 
         verifyForSuccess();
@@ -436,8 +433,7 @@ public abstract class AbstractDownloaderTest {
         // the difference between file1 and file2.
         Duration interval = getCloseInterval().multipliedBy(2);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
-        String lastFileName = Utility
-                .getStreamFilenameFromInstant(downloaderProperties.getStreamType(), lastFileInstant);
+        String lastFileName = Utility.getStreamFilenameFromInstant(streamType, lastFileInstant);
 
         doReturn(lastFileName).when(applicationStatusRepository)
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
@@ -452,7 +448,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), Instant.now()))
+        doReturn(Utility.getStreamFilenameFromInstant(streamType, Instant.now()))
                 .when(applicationStatusRepository)
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         fileCopier.copy();
@@ -470,7 +466,7 @@ public abstract class AbstractDownloaderTest {
     })
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
-        doReturn(Utility.getStreamFilenameFromInstant(downloaderProperties.getStreamType(), startDate))
+        doReturn(Utility.getStreamFilenameFromInstant(streamType, startDate))
                 .when(applicationStatusRepository)
                 .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
         List<String> expectedFiles = List.of(file1, file2)
@@ -533,20 +529,31 @@ public abstract class AbstractDownloaderTest {
         verifyForSuccess();
     }
 
+    @Test
+    @DisplayName("Max download items reached")
+    void maxDownloadItemsReached() throws Exception {
+        downloaderProperties.setBatchSize(1);
+        fileCopier.copy();
+
+        downloader.download();
+
+        assertValidFiles(List.of(file1));
+    }
+
     private void differentFilenames(Duration offset) throws Exception {
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
-        StreamType type = downloaderProperties.getStreamType();
         fileCopier.filterFiles(file2 + "*").copy();
-        Path basePath = fileCopier.getTo().resolve(type.getNodePrefix() + "0.0.3");
+        Path basePath = fileCopier.getTo().resolve(streamType.getNodePrefix() + "0.0.3");
 
         // Construct a new filename with the offset added to the last valid file
         long nanoOffset = getCloseInterval().plus(offset).toNanos();
         long timestamp = Utility.getTimestampFromFilename(file1) + nanoOffset;
-        String baseFilename = Instant.ofEpochSecond(0, timestamp).toString().replace(':', '_') + type.getSuffix() + ".";
+        String baseFilename = Instant.ofEpochSecond(0, timestamp) + streamType.getSuffix() + ".";
+        baseFilename = baseFilename.replace(':', '_');
 
         // Rename the good files to have a bad timestamp
-        String signature = baseFilename + type.getSignatureExtension();
-        String signed = baseFilename + type.getExtension();
+        String signature = baseFilename + streamType.getSignatureExtension();
+        String signed = baseFilename + streamType.getExtension();
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
@@ -608,9 +615,9 @@ public abstract class AbstractDownloaderTest {
         }
     }
 
-    protected void setTestFilesAndInstants(String file1, String file2) {
-        this.file1 = file1;
-        this.file2 = file2;
+    protected void setTestFilesAndInstants(List<String> files) {
+        this.file1 = files.get(0);
+        this.file2 = files.get(1);
 
         file1Instant = Utility.getInstantFromFilename(file1);
         file2Instant = Utility.getInstantFromFilename(file2);

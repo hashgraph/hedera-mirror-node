@@ -124,12 +124,12 @@ paths:
           in: query
           description: The transaction success type.
           schema:
-            enum: [success, fail]
+            enum: [ success, fail ]
         - name: type
           in: query
           description: The transaction account balance modification type.
           schema:
-            enum: [credit, debit]
+            enum: [ credit, debit ]
       responses:
         200:
           description: OK
@@ -161,6 +161,13 @@ paths:
       operationId: getTransactionById
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
+        - name: scheduled
+          in: query
+          description: >-
+            Filter transactions by the scheduled flag. If true, return only the scheduled transaction. If false, return
+            non-scheduled transactions. If not present, return all transactions matching transactionId.
+          schema:
+            type: boolean
       responses:
         200:
           description: OK
@@ -192,6 +199,14 @@ paths:
       operationId: getStateproofInfo
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
+        - name: scheduled
+          in: query
+          description: >-
+            Filter stateproof by the transaction scheduled flag. If true, return stateproof for the scheduled
+            transaction. If false, return stateproof for the non-scheduled transaction.
+          schema:
+            type: boolean
+            default: false
       responses:
         200:
           description: OK
@@ -214,8 +229,8 @@ paths:
                     - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
         404:
           $ref: '#/components/responses/TransactionNotFound'
-        503:
-          description: Service Unavailable
+        502:
+          description: Bad Gateway
           content:
             application/json:
               schema:
@@ -471,7 +486,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.25.0-rc1
+  version: 0.26.0
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -484,19 +499,19 @@ externalDocs:
   description: Hedera REST API Docs
   url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api'
 servers:
-  - description: Current REST API server
-    url: '/api/v1'
+  - description: The current REST API server
+    url: ''
   - description: The production REST API servers
-    url: '{scheme}://{network}.mirrornode.hedera.com/api/v1'
+    url: '{scheme}://{network}.mirrornode.hedera.com'
     variables:
       scheme:
         default: https
         description: The URI scheme
-        enum: [http, https]
+        enum: [ http, https ]
       network:
         default: testnet
         description: The Hedera network in use
-        enum: [mainnet, previewnet, testnet]
+        enum: [ mainnet, previewnet, testnet ]
 components:
   schemas:
     Timestamp:
@@ -623,6 +638,8 @@ components:
           type: string
         node:
           type: string
+        scheduled:
+          type: boolean
         transaction_id:
           type: string
         transfers:
@@ -664,6 +681,7 @@ components:
         valid_duration_seconds: 11
         node: 0.0.3
         transaction_id: 0.0.8-1234567890-000000006
+        scheduled: false
         transfers:
           - account: 0.0.3
             amount: 2
@@ -728,7 +746,7 @@ components:
         topic_id: 0.0.7
         message: bWVzc2FnZQ==
         running_hash: cnVubmluZ19oYXNo
-        running_hash_version: 0.12.0-rc1
+        running_hash_version: 0.13.0
         sequence_number: 1
     TopicMessages:
       type: array
@@ -1020,7 +1038,7 @@ components:
       description: The order in which items are listed
       example: desc
       schema:
-        enum: [asc, desc]
+        enum: [ asc, desc ]
         default: asc
     accountPublicKeyQueryParam:
       name: account.publickey

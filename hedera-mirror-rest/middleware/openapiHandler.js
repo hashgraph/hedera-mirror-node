@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -59,7 +59,7 @@ const getSpecPath = (apiVersion) => {
  */
 const getOpenApiSpecObject = (apiVersion) => {
   const openApiSpecPath = path.resolve(process.cwd(), getSpecPath(apiVersion));
-  return yaml.safeLoad(fs.readFileSync(openApiSpecPath, 'utf8'));
+  return yaml.load(fs.readFileSync(openApiSpecPath, 'utf8'));
 };
 
 /**

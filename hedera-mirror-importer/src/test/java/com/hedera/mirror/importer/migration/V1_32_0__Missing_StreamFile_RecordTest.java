@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.migration;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -40,14 +41,18 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestRecordFiles;
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -57,22 +62,32 @@ import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
+@Tag("failincci")
+@Tag("migration")
+@Tag("v1")
 @TestPropertySource(properties = "spring.flyway.target=1.31.3")
 class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
+
+    private final static String INSERT_RECORD_FILE_STATEMENT = "insert into record_file " +
+            "(consensus_start, consensus_end, count, file_hash, name, node_account_id, prev_hash) " +
+            "values (?, ?, ?, ?, ?, ?, ?)";
+    private final static String SELECT_ALL_RECORD_FILES_STATEMENT = "select * from record_file";
 
     @Resource
     private V1_32_0__Missing_StreamFile_Record migration;
     @Resource
     private DataSource dataSource;
     @Resource
+    private AccountIdConverter accountIdConverter;
+    @Resource
     private AccountBalanceFileRepository accountBalanceFileRepository;
     @Resource
     private BalanceDownloaderProperties balanceDownloaderProperties;
-    @Resource
-    private RecordFileRepository recordFileRepository;
+    private JdbcTemplate jdbcTemplate;
     @Resource
     private RecordDownloaderProperties recordDownloaderProperties;
     @Resource
@@ -87,52 +102,47 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
+        jdbcTemplate = new JdbcTemplate(dataSource);
         mirrorProperties.setDataPath(dataPath);
         balanceDownloaderProperties.init();
         recordDownloaderProperties.init();
 
-        FileCopier accountBalanceFileCopier = FileCopier.create(Utility.getResource("data").toPath(), balanceDownloaderProperties.getValidPath())
+        FileCopier accountBalanceFileCopier = FileCopier
+                .create(Utility.getResource("data").toPath(), balanceDownloaderProperties.getValidPath())
                 .from(balanceDownloaderProperties.getStreamType().getPath(), "v1", "balance0.0.3");
-        FileCopier recordFileCopier = FileCopier.create(Utility.getResource("data").toPath(), recordDownloaderProperties.getValidPath())
+        FileCopier recordFileCopier = FileCopier
+                .create(Utility.getResource("data").toPath(), recordDownloaderProperties.getValidPath())
                 .from(recordDownloaderProperties.getStreamType().getPath(), "v2", "record0.0.3");
 
         EntityId nodeAccountId = V1_32_0__Missing_StreamFile_Record.DEFAULT_NODE_ACCOUNT_ID;
 
-        // account balance file "2019-08-30T18_15_00.016002001Z_Balances.csv"
+        Consumer<StreamFile> saveAccountBalanceFile = (streamFile) -> {
+            accountBalanceFileRepository.save((AccountBalanceFile) streamFile);
+        };
         AccountBalanceFile accountBalanceFile = new AccountBalanceFile(1567188900016002001L, 0L,
                 "c1a6ffb5df216a1e8331f949f45cb9400fc474150d57d977c77f21318687eb18d407c780147d0435791a02743a0f7bfc",
                 null, null, "2019-08-30T18_15_00.016002001Z_Balances.csv", nodeAccountId);
         allFilesWithMeta.put(accountBalanceFile.getName(), new StreamFileMetadata(
-                accountBalanceFileCopier, accountBalanceFile, accountBalanceFileRepository
+                accountBalanceFileCopier, accountBalanceFile, saveAccountBalanceFile
         ));
 
-        // account balance file "2019-08-30T18_30_00.010147001Z_Balances.csv"
         accountBalanceFile = new AccountBalanceFile(1567189800010147001L, 0L,
                 "c197898e485e92a85752d475b536e6dc09879a18d358b1e72a9a1160bb24c8bb7a4c58610383ac80fd1c7659214eccd4",
                 null, null, "2019-08-30T18_30_00.010147001Z_Balances.csv", nodeAccountId);
         allFilesWithMeta.put(accountBalanceFile.getName(), new StreamFileMetadata(
-                accountBalanceFileCopier, accountBalanceFile, accountBalanceFileRepository
+                accountBalanceFileCopier, accountBalanceFile, saveAccountBalanceFile
         ));
 
-        // record file "2019-08-30T18_10_00.419072Z.rcd"
-        RecordFile recordFile = new RecordFile(1567188600419072000L, 1567188604906443001L, null,
-                "2019-08-30T18_10_00.419072Z.rcd", null, null,
-                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                nodeAccountId, 0L, 2);
-        allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(
-                recordFileCopier, recordFile, recordFileRepository
-        ));
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
+        RecordFile recordFile = allRecordFileMap.get("2019-08-30T18_10_00.419072Z.rcd");
+        recordFile.setNodeAccountId(nodeAccountId);
+        allFilesWithMeta.put(recordFile
+                .getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
 
-        // record file "2019-08-30T18_10_05.249678Z.rcd"
-        recordFile = new RecordFile(1567188605249678000L, 1567188609705382001L, null,
-                "2019-08-30T18_10_05.249678Z.rcd", null, null,
-                "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
-                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                nodeAccountId, 0L, 2);
-        allFilesWithMeta.put(recordFile.getName(), new StreamFileMetadata(
-                recordFileCopier, recordFile, recordFileRepository
-        ));
+        recordFile = allRecordFileMap.get("2019-08-30T18_10_05.249678Z.rcd");
+        recordFile.setNodeAccountId(nodeAccountId);
+        allFilesWithMeta.put(recordFile
+                .getName(), new StreamFileMetadata(recordFileCopier, recordFile, this::insertRecordFile));
 
         allFiles = List.copyOf(allFilesWithMeta.keySet());
         accountBalanceFiles = allFilesWithMeta.keySet().stream()
@@ -183,8 +193,8 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         }
 
         for (String filename : filesWithRecord) {
-            StreamFileMetadata meta = allFilesWithMeta.get(filename);
-            meta.getRepository().save(meta.getStreamFile());
+            StreamFileMetadata metadata = allFilesWithMeta.get(filename);
+            metadata.getSave().accept(metadata.getStreamFile());
         }
 
         // when
@@ -195,16 +205,45 @@ class V1_32_0__Missing_StreamFile_RecordTest extends IntegrationTest {
         expectedAddedStreamFiles.removeAll(filesWithRecord);
         List<String> actualAddedStreamFiles = new ArrayList<>();
         accountBalanceFileRepository.findAll().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
-        recordFileRepository.findAll().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
+        loadAllRecordFiles().forEach(streamFile -> actualAddedStreamFiles.add(streamFile.getName()));
         actualAddedStreamFiles.removeAll(filesWithRecord);
         assertThat(actualAddedStreamFiles).hasSameElementsAs(expectedAddedStreamFiles);
+    }
+
+    private void insertRecordFile(StreamFile streamFile) {
+        RecordFile recordFile = (RecordFile) streamFile;
+        jdbcTemplate.update(
+                INSERT_RECORD_FILE_STATEMENT,
+                recordFile.getConsensusStart(),
+                recordFile.getConsensusEnd(),
+                recordFile.getCount(),
+                recordFile.getFileHash(),
+                recordFile.getName(),
+                accountIdConverter.convertToDatabaseColumn(recordFile.getNodeAccountId()),
+                recordFile.getPreviousHash()
+        );
+    }
+
+    private List<RecordFile> loadAllRecordFiles() {
+        return jdbcTemplate.query(
+                SELECT_ALL_RECORD_FILES_STATEMENT,
+                (resultSet, rowNum) -> RecordFile.builder()
+                        .consensusStart(resultSet.getLong("consensus_start"))
+                        .consensusEnd(resultSet.getLong("consensus_end"))
+                        .count(resultSet.getLong("count"))
+                        .fileHash(resultSet.getString("file_hash"))
+                        .name(resultSet.getString("name"))
+                        .nodeAccountId(accountIdConverter
+                                .convertToEntityAttribute(resultSet.getLong("node_account_id")))
+                        .previousHash(resultSet.getString("prev_hash"))
+                        .build());
     }
 
     @Data
     private static class StreamFileMetadata {
         private final FileCopier fileCopier;
         private final StreamFile streamFile;
-        private final CrudRepository repository;
+        private final Consumer<StreamFile> save;
     }
 
     private class FlywayContext implements Context {

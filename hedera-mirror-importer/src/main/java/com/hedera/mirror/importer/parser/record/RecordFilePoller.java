@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import javax.inject.Named;
@@ -32,8 +29,8 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.FilePoller;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -91,17 +88,14 @@ public class RecordFilePoller implements FilePoller {
             // get file from full path
             File file = validPath.resolve(filePath).toFile();
 
-            try (InputStream fileInputStream = new FileInputStream(file)) {
-                recordFileParser.parse(new StreamFileData(file.getAbsolutePath(), fileInputStream));
+            try {
+                recordFileParser.parse(StreamFileData.from(file));
 
                 if (parserProperties.isKeepFiles()) {
                     Utility.archiveFile(file, parserProperties.getParsedPath());
                 } else {
                     FileUtils.deleteQuietly(file);
                 }
-            } catch (FileNotFoundException e) {
-                log.warn("File does not exist {}", filePath);
-                return;
             } catch (Exception e) {
                 log.error("Error parsing file {}", filePath, e);
                 return;

@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.domain;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -38,7 +37,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Value
-@AllArgsConstructor
 public class RecordItem implements StreamItem {
     static final String BAD_TRANSACTION_BYTES_MESSAGE = "Failed to parse transaction bytes";
     static final String BAD_RECORD_BYTES_MESSAGE = "Failed to parse record bytes";

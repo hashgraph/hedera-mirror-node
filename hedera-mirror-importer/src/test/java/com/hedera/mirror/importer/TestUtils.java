@@ -4,7 +4,7 @@ package com.hedera.mirror.importer;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,35 +24,51 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import lombok.experimental.UtilityClass;
 
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.util.Utility;
 
-public final class TestUtils {
-    public static AccountID toAccountId(String accountId) {
+@UtilityClass
+public class TestUtils {
+
+    public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
                 .setAccountNum(Long.parseLong(parts[2])).build();
     }
 
-    public static TransactionID toTransactionId(String transactionId) {
+    public TransactionID toTransactionId(String transactionId) {
         var parts = transactionId.split("-");
         return TransactionID.newBuilder().setAccountID(toAccountId(parts[0]))
                 .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1]))).build();
     }
 
-    public static Timestamp toTimestamp(Long nanosecondsSinceEpoch) {
+    public Timestamp toTimestamp(Long nanosecondsSinceEpoch) {
         if (nanosecondsSinceEpoch == null) {
             return null;
         }
         return Utility.instantToTimestamp(Instant.ofEpochSecond(0, nanosecondsSinceEpoch));
     }
 
-    public static Timestamp toTimestamp(long seconds, long nanoseconds) {
+    public Timestamp toTimestamp(long seconds, long nanoseconds) {
         return Timestamp.newBuilder().setSeconds(seconds).setNanos((int) nanoseconds).build();
     }
 
-    public static byte[] toByteArray(Key key) {
+    public byte[] toByteArray(Key key) {
         return (null == key) ? null : key.toByteArray();
+    }
+
+    public byte[] generateRandomByteArray(int size) {
+        byte[] hashBytes = new byte[size];
+        new SecureRandom().nextBytes(hashBytes);
+        return hashBytes;
     }
 }

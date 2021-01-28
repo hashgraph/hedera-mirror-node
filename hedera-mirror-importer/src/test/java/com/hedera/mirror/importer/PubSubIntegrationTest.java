@@ -4,7 +4,7 @@ package com.hedera.mirror.importer;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 
 @ActiveProfiles("pubsub")
 @SpringBootTest(properties = {
+        "spring.cloud.gcp.core.enabled=true",
         "spring.cloud.gcp.pubsub.enabled=true",
         "hedera.mirror.importer.parser.record.entity.enabled=false",
         "hedera.mirror.importer.parser.record.pubsub.enabled=true"})

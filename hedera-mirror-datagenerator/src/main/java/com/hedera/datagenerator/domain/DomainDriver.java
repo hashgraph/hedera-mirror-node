@@ -3,7 +3,7 @@ package com.hedera.datagenerator.domain;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -105,9 +105,21 @@ public class DomainDriver implements ApplicationRunner {
         }
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
+        RecordFile recordFile = RecordFile.builder()
+                .consensusStart(0L)
+                .consensusEnd(1L)
+                .count(0L)
+                .id(1L)
+                .name("")
+                .loadStart(0L)
+                .loadEnd(1L)
+                .fileHash("")
+                .previousHash("")
+                .nodeAccountId(nodeAccountId)
+                .version(2)
+                .build();
         log.info("Writing data to db");
-        sqlEntityListener
-                .onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", nodeAccountId, 0L, 0)); // writes data to db
+        sqlEntityListener.onEnd(recordFile); // writes data to db
         domainWriter.flush(); // writes data to db
         log.info("Total time taken: {}", stopwatch);
     }

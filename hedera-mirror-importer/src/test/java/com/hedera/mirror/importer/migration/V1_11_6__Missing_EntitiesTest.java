@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.migration;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -57,6 +58,8 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
         "use due to the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
+@Tag("migration")
+@Tag("v1")
 @TestPropertySource(properties = "spring.flyway.target=1.11.5")
 public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 

@@ -3,7 +3,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ process.env.CONFIG_NAME = 'perfTestConfig';
 process.env.CONFIG_PATH = __dirname;
 const config = require('../config');
 
-const mustLoadYaml = fileName => {
+const mustLoadYaml = (fileName) => {
   try {
     console.log(`Loading yaml file ${fileName}`);
     return yaml.safeLoad(fs.readFileSync(fileName, 'utf8'));
@@ -39,5 +39,5 @@ const mustLoadYaml = fileName => {
 
 module.exports = {
   config: config,
-  mustLoadYaml: mustLoadYaml
+  mustLoadYaml: mustLoadYaml,
 };

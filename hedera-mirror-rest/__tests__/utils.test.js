@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,5 +303,20 @@ describe('Utils convertMySqlStyleQueryToPostgres tests', () => {
     test(sqlQuery, () => {
       expect(utils.convertMySqlStyleQueryToPostgres(sqlQuery)).toEqual(expected);
     });
+  });
+});
+
+describe('Utils randomString tests', () => {
+  test('Negative', () => {
+    const val = utils.randomString(-4);
+    expect(val).toMatch(/^[0-9a-z]{2}$/);
+  });
+  test('Zero', () => {
+    const val = utils.randomString(0);
+    expect(val).toMatch(/^[0-9a-z]{2}$/);
+  });
+  test('Positive', () => {
+    const val = utils.randomString(8);
+    expect(val).toMatch(/^[0-9a-z]{8}$/);
   });
 });

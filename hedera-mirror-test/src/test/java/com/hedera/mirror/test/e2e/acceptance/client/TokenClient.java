@@ -4,7 +4,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createToken(ExpandedAccountId expandedAccountId, String symbol, int freezeStatus,
-                                                  int kycStatus) throws HederaStatusException {
+                                                  int kycStatus, ExpandedAccountId treasuryAccount,
+                                                  int initialSupply) throws HederaStatusException {
 
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
@@ -69,10 +70,10 @@ public class TokenClient extends AbstractNetworkClient {
                 .setAutoRenewPeriod(Duration.ofSeconds(6_999_999L))
                 .setDecimals(10)
                 .setFreezeDefault(false)
-                .setInitialSupply(1000000000)
+                .setInitialSupply(initialSupply)
                 .setName(symbol + "_name")
                 .setSymbol(symbol)
-                .setTreasury(client.getOperatorId())
+                .setTreasury(treasuryAccount.getAccountId())
                 .setMaxTransactionFee(1_000_000_000)
                 .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
                 .setTransactionMemo("Create token_" + refInstant);
@@ -96,7 +97,7 @@ public class TokenClient extends AbstractNetworkClient {
         }
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenCreateTransaction, null);
+                executeTransactionAndRetrieveReceipt(tokenCreateTransaction, treasuryAccount.getPrivateKey());
         TokenId tokenId = networkTransactionResponse.getReceipt().getTokenId();
         log.debug("Created new token {}", tokenId);
 
@@ -212,19 +213,19 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse transferToken(TokenId tokenId, AccountId sender, AccountId recipient,
+    public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
                                                     long amount) throws HederaStatusException {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
         Instant refInstant = Instant.now();
         TransferTransaction tokenTransferTransaction = new TransferTransaction()
-                .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
+                .addTokenTransfer(tokenId, sender.getAccountId(), Math.negateExact(amount))
                 .addTokenTransfer(tokenId, recipient, amount)
                 .setMaxTransactionFee(10_000_000L)
                 .setTransactionMemo("Transfer token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenTransferTransaction, null);
+                executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender.getPrivateKey());
 
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender,
                 recipient);

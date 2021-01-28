@@ -17,7 +17,7 @@ services:
       - 5432:5432
 
   grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc:0.25.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-grpc:0.26.0
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
@@ -29,7 +29,7 @@ services:
       - 5600:5600
 
   importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer:0.25.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-importer:0.26.0
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_IMPORTER_DATAPATH: /var/lib/hedera-mirror-importer
@@ -43,7 +43,7 @@ services:
   monitor:
     deploy:
       replicas: 0
-    image: gcr.io/mirrornode/hedera-mirror-monitor:0.25.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-monitor:0.26.0
     restart: unless-stopped
     environment:
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-monitor/
@@ -60,10 +60,26 @@ services:
       - 6379:6379
 
   rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest:0.25.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-rest:0.26.0
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
     restart: unless-stopped
     tty: true
     ports:
       - 5551:5551
+
+  timescaledb:
+    deploy:
+      replicas: 0
+    image: timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
+    restart: unless-stopped
+    stop_grace_period: 2m
+    stop_signal: SIGTERM
+    tty: true
+    environment:
+      POSTGRES_PASSWORD: mirror_node_pass
+    volumes:
+      - ./timescaledb:/var/lib/postgresql/data
+      - ./hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql:/docker-entrypoint-initdb.d/init_v2.sql
+    ports:
+      - 5432:5432

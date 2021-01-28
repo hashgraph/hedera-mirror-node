@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
-import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
@@ -29,7 +28,7 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.MissingFileException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -52,7 +51,7 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     public void onEnd(RecordFile recordFile) throws ImporterException {
         recordFileRepository.save(recordFile);
         applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getCurrentHash());
     }
 
     @Override

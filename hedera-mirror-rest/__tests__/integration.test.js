@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -72,6 +72,11 @@ afterAll(() => {
 });
 
 beforeEach(async () => {
+  if (!sqlConnection) {
+    console.log(`sqlConnection undefined, acquire new connection`);
+    sqlConnection = await integrationDbOps.instantiateDatabase();
+  }
+
   await integrationDbOps.cleanUp();
   await setupData();
 });

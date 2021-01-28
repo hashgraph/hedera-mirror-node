@@ -21,6 +21,8 @@ select set_integer_now_func('contract_result', 'unix_now');
 select set_integer_now_func('crypto_transfer', 'unix_now');
 select set_integer_now_func('file_data', 'unix_now');
 select set_integer_now_func('non_fee_transfer', 'unix_now');
+select set_integer_now_func('schedule', 'unix_now');
+select set_integer_now_func('schedule_signature', 'unix_now');
 select set_integer_now_func('record_file', 'unix_now');
 select set_integer_now_func('t_entities', 'unix_now');
 select set_integer_now_func('token', 'unix_now');
@@ -61,6 +63,12 @@ alter table live_hash
 alter table non_fee_transfer
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
 
+alter table schedule
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'schedule_id');
+
+alter table schedule_signature
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'schedule_id');
+
 alter table record_file
     set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
 
@@ -79,7 +87,7 @@ alter table token
     set (timescaledb.compress, timescaledb.compress_segmentby = 'token_id');
 
 alter table token_account
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id');
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'token_id');
 
 alter table token_balance
     set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id, token_id');

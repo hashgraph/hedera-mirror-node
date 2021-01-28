@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ const {exec} = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const SqlConnectionPool = require('pg').Pool;
-const {randomString} = require('./testutils');
+const {randomString} = require('../utils');
 const {isDockerInstalled} = require('./integrationUtils');
 
 let oldPool;
@@ -50,7 +50,7 @@ const v1SchemaConfigs = {
 const v2SchemaConfigs = {
   docker: {
     imageName: 'timescaledev/timescaledb-ha',
-    tagName: 'pg12-ts2.0.0-rc3',
+    tagName: 'pg12.5-ts2.0.0-p0',
   },
   flyway: {
     baselineVersion: '1.999.999',
@@ -67,7 +67,7 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
  * testContainers/dockerized postgresql instance.
  */
 const instantiateDatabase = async function () {
-  if (!process.env.CIRCLECI) {
+  if (!process.env.CIRCLECI && !process.env.CI_CONTAINERS) {
     if (!(await isDockerInstalled())) {
       console.log('Docker not found. Integration tests will fail.');
       return;
@@ -81,9 +81,10 @@ const instantiateDatabase = async function () {
       .start();
     config.db.port = dockerDb.getMappedPort(config.db.port);
     config.db.host = dockerDb.getHost();
-    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}/${schemaConfigs.docker.tagName}`);
+    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`);
   }
 
+  console.log(`sqlConnection will use postgresql://${config.db.host}:${config.db.port}/${config.db.name}`);
   sqlConnection = new SqlConnectionPool({
     user: dbUser,
     host: config.db.host,

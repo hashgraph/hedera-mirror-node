@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 'use strict';
 
 const _ = require('lodash');
+const crypto = require('crypto');
 const math = require('mathjs');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -49,6 +50,10 @@ const opsMap = {
  */
 const isNumeric = (n) => {
   return !isNaN(parseFloat(n)) && isFinite(n);
+};
+
+const isValidBooleanOpAndValue = (op, val) => {
+  return op === 'eq' && /^(true|false)$/i.test(val);
 };
 
 const isValidTimestampParam = (timestamp) => {
@@ -98,6 +103,8 @@ const isValidEncoding = (query) => {
 const isValidTransactionType = async (transactionType) => {
   return _.isString(transactionType) && (await transactionTypes.get(transactionType)) !== undefined;
 };
+
+const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 /**
  * Validate input parameters for the rest apis
@@ -155,6 +162,10 @@ const filterValidityChecks = async (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.CREDIT_TYPE:
+      // Acceptable words: credit or debit
+      ret = isValidValueIgnoreCase(val, Object.values(constants.cryptoTransferType));
+      break;
     case constants.filterKeys.ENCODING:
       // Acceptable words: binary or text
       ret = isValidEncoding(val.toLowerCase());
@@ -169,11 +180,14 @@ const filterValidityChecks = async (param, op, val) => {
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = Object.values(constants.orderFilterValues).includes(val.toLowerCase());
+      ret = isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
       break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = Object.values(constants.transactionResultFilter).includes(val.toLowerCase());
+      ret = isValidValueIgnoreCase(val, Object.values(constants.transactionResultFilter));
+      break;
+    case constants.filterKeys.SCHEDULED:
+      ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
@@ -185,10 +199,6 @@ const filterValidityChecks = async (param, op, val) => {
     case constants.filterKeys.TOKEN_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
-      break;
-    case constants.filterKeys.CREDIT_TYPE:
-      // Acceptable words: credit or debit
-      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
@@ -413,6 +423,10 @@ const buildPgSqlObject = (query, params, order, limit) => {
   };
 };
 
+const parseBooleanValue = (value) => {
+  return value.toLowerCase() === 'true';
+};
+
 /**
  * Convert the positional parameters from the MySql style query (?) to Postgres style positional parameters
  * ($1, $2, etc); named parameters of the format \?([a-zA-Z][a-zA-Z0-9]*)? will get the same positional index.
@@ -528,6 +542,10 @@ const secNsToNs = (secNs) => {
 
 const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
+};
+
+const randomString = (length) => {
+  return crypto.randomBytes(Math.max(2, length) / 2).toString('hex');
 };
 
 /**
@@ -698,6 +716,9 @@ const formatComparator = (comparator) => {
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
         break;
+      case constants.filterKeys.SCHEDULED:
+        comparator.value = parseBooleanValue(comparator.value);
+        break;
       case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
@@ -790,9 +811,11 @@ module.exports = {
   parseAccountIdQueryParam,
   parseTimestampQueryParam,
   parseResultParams,
+  parseBooleanValue,
   parseTimestampParam,
   nsToSecNs,
   nsToSecNsWithHyphen,
+  randomString,
   returnEntriesLimit,
   secNsToNs,
   secNsToSeconds,

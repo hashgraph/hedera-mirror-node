@@ -14,7 +14,7 @@ comment on table account_balance is 'Account balances (historical) in tinybars a
 
 create table if not exists account_balance_file
 (
-    consensus_timestamp bigint,
+    consensus_timestamp bigint       not null,
     count               bigint       not null,
     load_start          bigint,
     load_end            bigint,
@@ -37,7 +37,7 @@ comment on table account_balance_sets is 'Processing state of snapshots of the e
 -- address_book
 create table if not exists address_book
 (
-    start_consensus_timestamp bigint,
+    start_consensus_timestamp bigint not null,
     end_consensus_timestamp   bigint null,
     file_id                   bigint not null,
     node_count                int    null,
@@ -110,18 +110,46 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 -- id seq from v1.0 no longer explicitly created as s_record_files_seq
 create table if not exists record_file
 (
-    id              serial,
-    name            character varying(250) not null,
-    load_start      bigint,
-    load_end        bigint,
-    file_hash       character varying(96),
-    prev_hash       character varying(96),
-    consensus_start bigint default 0       not null,
-    consensus_end   bigint default 0       not null,
-    node_account_id bigint                 not null,
-    count           bigint                 not null
+    id                 serial,
+    name               character varying(250) not null,
+    load_start         bigint,
+    load_end           bigint,
+    file_hash          character varying(96),
+    prev_hash          character varying(96),
+    consensus_start    bigint default 0       not null,
+    consensus_end      bigint default 0       not null,
+    node_account_id    bigint                 not null,
+    count              bigint                 not null,
+    digest_algorithm   int                    not null,
+    end_running_hash   character varying(96),
+    hapi_version_major int,
+    hapi_version_minor int,
+    hapi_version_patch int,
+    version            int                    not null
 );
 comment on table record_file is 'Network record file stream entries';
+
+-- schedule
+create table if not exists schedule
+(
+    consensus_timestamp bigint primary key not null,
+    creator_account_id  bigint             not null,
+    executed_timestamp  bigint             null,
+    payer_account_id    bigint             not null,
+    schedule_id         bigint             not null,
+    transaction_body    bytea              not null
+);
+comment on table schedule is 'Schedule entity entries';
+
+-- schedule_signature
+create table if not exists schedule_signature
+(
+    consensus_timestamp bigint not null,
+    public_key_prefix   bytea  not null,
+    schedule_id         bigint not null,
+    signature           bytea  not null
+);
+comment on table schedule is 'Schedule transaction signatories';
 
 -- t_application_status
 create table if not exists t_application_status
@@ -176,7 +204,8 @@ values (1, 'account'),
        (2, 'contract'),
        (3, 'file'),
        (4, 'topic'),
-       (5, 'token');
+       (5, 'token'),
+       (6, 'schedule');
 
 -- t_transaction_results
 create table if not exists t_transaction_results
@@ -341,7 +370,12 @@ values ('OK', 0),
        ('TOKEN_ID_REPEATED_IN_TOKEN_LIST', 197),
        ('TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED', 198),
        ('EMPTY_TOKEN_TRANSFER_BODY', 199),
-       ('EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS', 200);
+       ('EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS', 200),
+       ('INVALID_SCHEDULE_ID', 201),
+       ('SCHEDULE_IS_IMMUTABLE', 202),
+       ('SCHEDULE_WAS_DELETED', 203),
+       ('INVALID_SCHEDULE_PAYER_ID', 204),
+       ('INVALID_SCHEDULE_ACCOUNT_ID', 205);
 
 -- t_transaction_types
 create table if not exists t_transaction_types
@@ -386,7 +420,10 @@ values (7, 'CONTRACTCALL', 2),
        (38, 'TOKENBURN', 5),
        (39, 'TOKENWIPE', 5),
        (40, 'TOKENASSOCIATE', 1),
-       (41, 'TOKENDISSOCIATE', 1);
+       (41, 'TOKENDISSOCIATE', 1),
+       (42, 'SCHEDULECREATE', 6),
+       (43, 'SCHEDULEDELETE', 6),
+       (44, 'SCHEDULESIGN', 6);
 
 -- token
 create table if not exists token
@@ -473,10 +510,11 @@ create table if not exists transaction
     valid_duration_seconds bigint,
     node_account_id        bigint   not null,
     entity_id              bigint,
-    initial_balance        bigint default 0,
+    initial_balance        bigint   default 0,
     max_fee                bigint,
     charged_tx_fee         bigint,
     memo                   bytea,
+    scheduled              boolean  not null default false,
     transaction_hash       bytea,
     transaction_bytes      bytea
 );

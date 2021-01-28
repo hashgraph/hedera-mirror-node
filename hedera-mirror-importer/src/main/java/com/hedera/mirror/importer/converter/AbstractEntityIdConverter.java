@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.converter;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.converter;
  */
 
 import javax.persistence.AttributeConverter;
+import lombok.Getter;
 import org.springframework.core.convert.converter.Converter;
 
 import com.hedera.mirror.importer.domain.EntityId;
@@ -29,6 +30,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 
 public abstract class AbstractEntityIdConverter implements AttributeConverter<EntityId, Long>, Converter<String,
         EntityId> {
+    @Getter
     private final EntityTypeEnum entityTypeEnum;
 
     public AbstractEntityIdConverter(EntityTypeEnum entityTypeEnum) {

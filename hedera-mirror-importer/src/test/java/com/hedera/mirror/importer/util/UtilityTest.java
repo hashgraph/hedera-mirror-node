@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.util;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,15 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,6 +51,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.importer.converter.InstantConverter;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.exception.FileOperationException;
 
 public class UtilityTest {
 
@@ -290,12 +296,40 @@ public class UtilityTest {
             "xx, xx, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.rcd, true,  passes if hashes are equal"
             // @formatter:on
     })
-    public void testVerifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
-                                    @ConvertWith(InstantConverter.class) Instant verifyHashAfter, String fileName,
-                                    Boolean expectedResult, String testName) {
+    void testVerifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
+                             @ConvertWith(InstantConverter.class) Instant verifyHashAfter, String fileName,
+                             Boolean expectedResult, String testName) {
         assertThat(Utility.verifyHashChain(actualPrevFileHash, expectedPrevFileHash, verifyHashAfter, fileName))
                 .as(testName)
                 .isEqualTo(expectedResult);
+    }
+
+    @ParameterizedTest(name = "openQuietly {3}")
+    @CsvSource({
+            "true, false, false, open empty file should return non-null InputStream",
+            "true, true, false, open file with content should return non-null InputStream",
+            "false, false, false, open non-existent file expect FileOperationException",
+            "false, false, true, open directory expect FileOperationException",
+    })
+    void openQuietly(boolean createFile, boolean writeData, boolean createDirectory, String testName) throws IOException {
+        File file = FileUtils.getFile(tempDir.toFile(), "testfile");
+
+        if (createFile) {
+            FileUtils.touch(file);
+
+            if (writeData) {
+                FileUtils.write(file, "testdata", StandardCharsets.UTF_8);
+            }
+
+            InputStream is = Utility.openQuietly(file);
+            assertThat(is).as(testName).isNotNull();
+        } else {
+            if (createDirectory) {
+                FileUtils.forceMkdir(file);
+            }
+
+            assertThrows(FileOperationException.class, () -> Utility.openQuietly(file), testName);
+        }
     }
 }
 

@@ -4,7 +4,7 @@ package com.hedera.mirror.grpc.retriever;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -300,7 +300,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     @Test
     void unthrottledShouldKeepPolling() {
-        retrieverProperties.getUnthrottled().setMaxPolls(10);
+        retrieverProperties.getUnthrottled().setMaxPolls(20);
 
         Instant now = Instant.now();
         Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(5, now);

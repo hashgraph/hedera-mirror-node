@@ -1,22 +1,25 @@
 @TokenBase @FullSuite
 Feature: HTS Base Coverage Feature
 
-#    @Acceptance @Sanity
-    Scenario Outline: Validate Base Token Flow - Create, Associate, Transfer
+    Background: Treasury account is created
+        Given I create a new treasury account
+
+    @Acceptance @Sanity
+    Scenario Outline: Validate Base Token Flow - Create, Associate, Fund
         Given I successfully create a new token
         Then the mirror node REST API should return status <httpStatusCode>
-        When I associate a new account with token
+        When I associate with token
         Then the mirror node REST API should return status <httpStatusCode>
-        Then I transfer <amount> tokens to recipient
+        Then I transfer <amount> tokens to payer
         Then the mirror node REST API should return status <httpStatusCode> for token fund flow
         Examples:
             | amount | httpStatusCode |
             | 2350   | 200            |
 
-#    @Acceptance
+    @Acceptance
     Scenario Outline: Validate Freeze and KYC Flow - Create, Unfreeze, GrantKyc
-        Given I successfully create a new token with freeze status <initialFreezeStatus> and kyc status <initialKycStatus>
-        When I associate a new account with token
+        Given I successfully onboard a new token account with freeze status <initialFreezeStatus> and kyc status <initialKycStatus>
+        When I associate a new recipient account with token
         And I set new account freeze status to <newFreezeStatus>
         Then the mirror node REST API should return status <httpStatusCode>
         And I set new account kyc status to <newKycStatus>
@@ -25,10 +28,10 @@ Feature: HTS Base Coverage Feature
             | initialFreezeStatus | initialKycStatus | newFreezeStatus | newKycStatus | httpStatusCode |
             | 1                   | 2                | 2               | 1            | 200            |
 
-#    @Acceptance
+    @Acceptance
     Scenario Outline: Validate Token Modification Flow - Create, Associate, Transfer, Update, Burn, Mint and Wipe
-        Given I successfully create a new token
-        When I associate a new account with token
+        Given I successfully onboard a new token account
+        When I associate a new recipient account with token
         And I transfer <amount> tokens to recipient
         Then the mirror node REST API should return status <httpStatusCode> for token fund flow
         Then I update the token
@@ -43,10 +46,10 @@ Feature: HTS Base Coverage Feature
             | amount | httpStatusCode | modifySupplyAmount |
             | 2350   | 200            | 100                |
 
-#    @Acceptance
+    @Acceptance
     Scenario Outline: Validate Token ramp down Flow - Create, Associate, Dissociate, Delete
-        Given I successfully create a new token
-        When I associate a new account with token
+        Given I successfully onboard a new token account
+        When I associate a new recipient account with token
         And the mirror node REST API should return status <httpStatusCode>
         Then I dissociate the account from the token
         And the mirror node REST API should return status <httpStatusCode>
@@ -55,19 +58,3 @@ Feature: HTS Base Coverage Feature
         Examples:
             | httpStatusCode |
             | 200            |
-
-#    @Negative @Acceptance
-    Scenario Outline: Validate Negative Association
-        Given I successfully create a new token
-        Then the network should observe an error associating a token <errorCode>
-        Examples:
-            | errorCode                             |
-            | "TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT" |
-
-#    @Negative @Acceptance
-    Scenario Outline: Validate token creation with bad symbols
-        Given I provide a token symbol <tokenId>
-        Then the network should observe an error creating a token <errorCode>
-        Examples:
-            | tokenId | errorCode              |
-            | ""      | "MISSING_TOKEN_SYMBOL" |

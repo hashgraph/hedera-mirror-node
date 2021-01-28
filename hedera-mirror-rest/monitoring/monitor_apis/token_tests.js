@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ const {
   checkAccountId,
   checkMandatoryParams,
   checkResourceFreshness,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -39,7 +40,8 @@ const {
 
 const tokensPath = '/tokens';
 const resource = 'token';
-const {tokenId: tokenIdFromConfig, tokensLimit} = config[resource];
+const tokensLimit = config[resource].limit || DEFAULT_LIMIT;
+const tokenIdFromConfig = config[resource].tokenId;
 const tokensJsonRespKey = 'tokens';
 const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
 
@@ -438,7 +440,7 @@ const checkTokenBalanceFreshness = async (server) => {
 /**
  * Run all token tests in an asynchronous fashion waiting for all tests to complete
  *
- * @param {String} server API host endpoint
+ * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {

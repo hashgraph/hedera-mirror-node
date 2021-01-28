@@ -12,7 +12,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.25.0-rc1</version>
+        <version>${release.version}</version>
     </parent>
 
     <properties>
@@ -21,7 +21,7 @@
         <jmeter.publishThreadCount></jmeter.publishThreadCount>
         <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
         <cucumber.version>6.9.1</cucumber.version>
-        <cucumber-reporting.version>4.0.86</cucumber-reporting.version>
+        <cucumber-reporting.version>4.0.94</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -258,8 +258,8 @@
                             <jmeterExtensions>
                                 <jmeterExtension>io.perfmark:perfmark-api:0.20.1</jmeterExtension>
                                 <jmeterExtension>io.opencensus:opencensus-api:0.24.0</jmeterExtension>
-                                <jmeterExtension>com.hedera:hedera-mirror-grpc:${project.version}</jmeterExtension>
-                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${project.version}
+                                <jmeterExtension>com.hedera:hedera-mirror-grpc:${release.version}</jmeterExtension>
+                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${release.version}
                                 </jmeterExtension>
                                 <jmeterExtension>com.google.guava:guava:29.0-jre</jmeterExtension>
                             </jmeterExtensions>

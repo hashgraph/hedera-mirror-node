@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.domain;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,15 @@ import lombok.NonNull;
 
 public interface StreamFile {
 
+    default String getCurrentHash() {
+        return getFileHash();
+    }
+
     String getFileHash();
+
+    default String getMetadataHash() {
+        return null;
+    }
 
     String getName();
 

@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.domain;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
@@ -40,7 +39,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Data
 @Entity
-@Log4j2
 @NoArgsConstructor
 public class Token {
     @EmbeddedId

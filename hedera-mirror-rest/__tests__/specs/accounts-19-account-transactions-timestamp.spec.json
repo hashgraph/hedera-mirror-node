@@ -134,6 +134,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "result": "SUCCESS",
+        "scheduled": false,
         "token_transfers": [
           {
             "account": "0.0.1679",
@@ -173,6 +174,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "result": "SUCCESS",
+        "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.8-1234567890-000000006",
         "transfers": [

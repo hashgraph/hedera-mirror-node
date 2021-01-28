@@ -4,7 +4,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class AccountFeature {
         assertNotNull(accountId);
     }
 
-    @When("I send {int} tℏ to account {int}")
+    @When("I send {long} tℏ to account {int}")
     public void sendTinyHbars(long amount, int accountNum) throws HederaStatusException {
         accountId = new AccountId(accountNum);
         startingBalance = accountClient.getBalance(accountId);
@@ -70,7 +70,7 @@ public class AccountFeature {
         assertNotNull(receipt);
     }
 
-    @Then("the new balance should reflect cryptotransfer of {int}")
+    @Then("the new balance should reflect cryptotransfer of {long}")
     public void accountReceivedFunds(long amount) throws HederaStatusException {
         assertTrue(accountClient.getBalance(accountId) >= startingBalance + amount);
     }

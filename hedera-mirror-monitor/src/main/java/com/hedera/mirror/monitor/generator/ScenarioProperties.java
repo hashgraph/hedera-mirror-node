@@ -4,7 +4,7 @@ package com.hedera.mirror.monitor.generator;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,10 @@ public class ScenarioProperties {
 
     @NotNull
     private TransactionType type;
+
+    @DurationMin(seconds = 0)
+    @NotNull
+    private Duration warmupPeriod = Duration.ofSeconds(30L);
 
     public long getLimit() {
         return limit > 0 ? limit : Long.MAX_VALUE;

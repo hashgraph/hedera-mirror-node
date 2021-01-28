@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.migration;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -49,7 +50,10 @@ import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-@Log4j2
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
+@Tag("migration")
+@Tag("v1")
 @TestPropertySource(properties = "spring.flyway.target=1.31.1")
 class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
 
@@ -106,7 +110,7 @@ class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
         transactionList
                 .add(transaction(50, 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.TOKENCREATION));
-        transactionRepository.saveAll(transactionList);
+        transactionList.forEach(this::insertTransaction);
 
         // migration
         migrate();
@@ -149,7 +153,7 @@ class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
         transactionList
                 .add(transaction(80, 100, EntityTypeEnum.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
                         TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
-        transactionRepository.saveAll(transactionList);
+        transactionList.forEach(this::insertTransaction);
 
         // migration
         migrate();
@@ -225,7 +229,7 @@ class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
         transactionList
                 .add(transaction(1000, 100, EntityTypeEnum.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
                         TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
-        transactionRepository.saveAll(transactionList);
+        transactionList.forEach(this::insertTransaction);
 
         // migration
         migrate();
@@ -271,5 +275,32 @@ class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
 
     private void migrate() throws IOException {
         jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+    }
+
+    /**
+     * Insert transaction object using only columns supported in V_1_31_2
+     *
+     * @param transaction transaction domain
+     */
+    private void insertTransaction(Transaction transaction) {
+        jdbcOperations
+                .update("insert into transaction (charged_tx_fee, entity_id, initial_balance, max_fee, memo, " +
+                                "node_account_id, payer_account_id, result, transaction_bytes, " +
+                                "transaction_hash, type, valid_duration_seconds, valid_start_ns, consensus_ns) values" +
+                                " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        transaction.getChargedTxFee(),
+                        transaction.getEntityId().getId(),
+                        transaction.getInitialBalance(),
+                        transaction.getMaxFee(),
+                        transaction.getMemo(),
+                        transaction.getNodeAccountId().getId(),
+                        transaction.getPayerAccountId().getId(),
+                        transaction.getResult(),
+                        transaction.getTransactionBytes(),
+                        transaction.getTransactionHash(),
+                        transaction.getType(),
+                        transaction.getValidDurationSeconds(),
+                        transaction.getValidStartNs(),
+                        transaction.getConsensusNs());
     }
 }

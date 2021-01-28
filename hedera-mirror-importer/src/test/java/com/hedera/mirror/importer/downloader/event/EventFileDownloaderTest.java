@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.downloader.event;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,7 +34,14 @@ import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 
 @ExtendWith(MockitoExtension.class)
-public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+
+    @Override
+    @BeforeEach
+    protected void beforeEach() throws Exception {
+        super.beforeEach();
+        setTestFilesAndInstants(List.of("2020-04-11T00_12_00.025035Z.evts", "2020-04-11T00_12_05.059945Z.evts"));
+    }
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
@@ -49,7 +54,7 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     protected Downloader getDownloader() {
         return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (EventDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
-                new EventFileReaderImpl());
+                new EventFileReaderImpl(), nodeSignatureVerifier, signatureFileReader);
     }
 
     @Override
@@ -76,20 +81,5 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     @Override
     protected void verifyStreamFileRecord(List<String> files) {
         // no-op, add the logic when event file is saved into db
-    }
-
-    @Test
-    @DisplayName("Max download items reached")
-    void maxDownloadItemsReached() throws Exception {
-        ((EventDownloaderProperties) downloaderProperties).setBatchSize(1);
-        testMaxDownloadItemsReached(file1);
-    }
-
-    @BeforeEach
-    void beforeEach() {
-        setTestFilesAndInstants(
-                "2020-04-11T00_12_00.025035Z.evts",
-                "2020-04-11T00_12_05.059945Z.evts"
-        );
     }
 }

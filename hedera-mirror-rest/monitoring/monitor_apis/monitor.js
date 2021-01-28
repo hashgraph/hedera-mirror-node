@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,21 +44,18 @@ const runEverything = async (servers) => {
 
       if (processObj === undefined) {
         // execute test and store name
-        monitorTests.runTests(server.name, `http://${server.ip}:${server.port}`).then((outJson) => {
+        monitorTests.runTests(server).then((outJson) => {
           let results;
           if (outJson.testResults) {
             results = outJson;
-            console.log(
-              `Completed tests run for ${server.name} at: ${new Date()} with ${results.numPassedTests}/${
-                results.testResults.length
-              } tests passed`
-            );
+            const total = results.testResults.length;
+            logger.info(`Completed tests run for ${server.name} with ${results.numPassedTests}/${total} tests passed`);
           } else {
             results = utils.createFailedResultJson(
               `Test result unavailable`,
               `Test results not available for: ${server.name}`
             );
-            console.log(`Incomplete tests for ${server.name} at: ${new Date()}`);
+            logger.warn(`Incomplete tests for ${server.name}`);
           }
 
           common.deleteProcess(server);
@@ -74,25 +71,23 @@ const runEverything = async (servers) => {
 
         // escape race condition, kill stored process and allow next process to attempt test
         if (processObj.encountered >= retryCountMax) {
-          console.warn(
+          logger.warn(
             `Previous tests for ${server.name} persisted for ${processObj.encountered} rounds. Clearing saved process.`
           );
           common.deleteProcess(server);
         } else {
-          console.log(
+          logger.info(
             `Previous tests for ${server.name} still running after ${processObj.encountered} rounds. Incrementing count.`
           );
           common.saveProcess(server, processObj.encountered + 1);
         }
 
         common.saveResults(server, results);
-        console.log(`Incomplete tests for ${server.name} at: ${new Date()}`);
+        logger.warn(`Incomplete tests for ${server.name}`);
       }
     }
   } catch (err) {
-    console.log(`Error in runEverything: ${err}`);
-    console.log(err.stack);
-    console.trace();
+    logger.error(`Error in runEverything: `, err);
   }
 };
 

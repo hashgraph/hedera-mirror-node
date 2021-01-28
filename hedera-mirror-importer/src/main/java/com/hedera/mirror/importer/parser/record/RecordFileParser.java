@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -57,6 +58,7 @@ public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordParserProperties parserProperties;
+    private final RecordFileReader recordFileReader;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -71,11 +73,13 @@ public class RecordFileParser implements FileParser {
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
+            RecordFileReader recordFileReader,
             RecordItemListener recordItemListener,
             RecordStreamFileListener recordStreamFileListener,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
+        this.recordFileReader = recordFileReader;
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
@@ -137,7 +141,7 @@ public class RecordFileParser implements FileParser {
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
-        String expectedPrevFileHash =
+        String expectedPreviousHash =
                 applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
                 .getDateRangeFilter(parserProperties.getStreamType());
@@ -146,16 +150,14 @@ public class RecordFileParser implements FileParser {
         try {
             RecordFile recordFileDb = recordStreamFileListener.onStart(streamFileData);
             Stopwatch stopwatch = Stopwatch.createStarted();
-            RecordFile recordFile = Utility.parseRecordFile(
-                    streamFileData.getFilename(),
-                    recordItem -> {
-                        if (processRecordItem(recordItem, dateRangeFilter)) {
-                            counter.incrementAndGet();
-                        }
-                    });
-            if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
+            RecordFile recordFile = recordFileReader.read(streamFileData, recordItem -> {
+                if (processRecordItem(recordItem, dateRangeFilter)) {
+                    counter.incrementAndGet();
+                }
+            });
+            if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPreviousHash,
                     parserProperties.getMirrorProperties().getVerifyHashAfter(), recordFile.getName())) {
-                throw new HashMismatchException(recordFile.getName(), expectedPrevFileHash,
+                throw new HashMismatchException(recordFile.getName(), expectedPreviousHash,
                         recordFile.getPreviousHash());
             }
 

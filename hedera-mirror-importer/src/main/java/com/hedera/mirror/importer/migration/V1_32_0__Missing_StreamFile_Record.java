@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.migration;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,35 +24,57 @@ import com.google.common.base.Stopwatch;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Optional;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
+import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-@RequiredArgsConstructor
 public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration {
 
     public static final EntityId DEFAULT_NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
 
-    private final BalanceDownloaderProperties balanceDownloaderProperties;
+    private static final String COUNT_RECORD_FILE_STATEMENT = "select count(*) from record_file where name = ?";
+    private static final String INSERT_RECORD_FILE_STATEMENT = "insert into record_file " +
+            "(consensus_start, consensus_end, count, file_hash, name, node_account_id, prev_hash) " +
+            "values (?, ?, ?, ?, ?, ?, ?)";
+
+    private final AccountIdConverter accountIdConverter;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final BalanceDownloaderProperties balanceDownloaderProperties;
+    private final JdbcTemplate jdbcTemplate;
     private final RecordDownloaderProperties recordDownloaderProperties;
-    private final RecordFileRepository recordFileRepository;
+    private final RecordFileReader recordFileReader;
+
+    public V1_32_0__Missing_StreamFile_Record(AccountIdConverter accountIdConverter,
+            AccountBalanceFileRepository accountBalanceFileRepository,
+            BalanceDownloaderProperties balanceDownloaderProperties,
+            DataSource dataSource,
+            RecordDownloaderProperties recordDownloaderProperties,
+            RecordFileReader recordFileReader) {
+        this.accountIdConverter = accountIdConverter;
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
+        this.balanceDownloaderProperties = balanceDownloaderProperties;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.recordDownloaderProperties = recordDownloaderProperties;
+        this.recordFileReader = recordFileReader;
+    }
 
     @Override
     protected void doMigrate() {
@@ -108,7 +130,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
                     .name(file.getName())
                     .build();
         } else if (streamType == StreamType.RECORD) {
-            streamFile = Utility.parseRecordFile(file.getPath(), null);
+            streamFile = recordFileReader.read(StreamFileData.from(file));
         } else {
             throw new IllegalArgumentException("StreamType " + streamType + " is not supported");
         }
@@ -121,19 +143,28 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
         if (streamType == StreamType.BALANCE) {
             accountBalanceFileRepository.save((AccountBalanceFile) streamFile);
         } else if (streamType == StreamType.RECORD) {
-            recordFileRepository.save((RecordFile) streamFile);
+            RecordFile recordFile = (RecordFile) streamFile;
+            jdbcTemplate.update(INSERT_RECORD_FILE_STATEMENT,
+                    recordFile.getConsensusStart(),
+                    recordFile.getConsensusEnd(),
+                    recordFile.getCount(),
+                    recordFile.getFileHash(),
+                    recordFile.getName(),
+                    accountIdConverter.convertToDatabaseColumn(recordFile.getNodeAccountId()),
+                    recordFile.getPreviousHash()
+            );
         }
     }
 
     private boolean isStreamFileRecordPresent(String filename, StreamType streamType) {
-        Optional<? extends StreamFile> streamFile = Optional.empty();
         if (streamType == StreamType.BALANCE) {
             long timestamp = Utility.getTimestampFromFilename(filename);
-            streamFile = accountBalanceFileRepository.findById(timestamp);
+            return accountBalanceFileRepository.findById(timestamp).isPresent();
         } else if (streamType == StreamType.RECORD) {
-            streamFile = recordFileRepository.findByName(filename);
+            int count = jdbcTemplate.queryForObject(COUNT_RECORD_FILE_STATEMENT, Integer.class, filename);
+            return count == 1;
         }
 
-        return streamFile.isPresent();
+        return false;
     }
 }

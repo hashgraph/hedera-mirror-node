@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.domain;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,10 @@ public enum TransactionTypeEnum {
     TOKENBURN(38),
     TOKENWIPE(39),
     TOKENASSOCIATE(40),
-    TOKENDISSOCIATE(41);
+    TOKENDISSOCIATE(41),
+    SCHEDULECREATE(42),
+    SCHEDULEDELETE(43),
+    SCHEDULESIGN(44);
 
     private static final Map<Integer, TransactionTypeEnum> idMap = Arrays.stream(values())
             .collect(Collectors.toMap(TransactionTypeEnum::getProtoId, Function.identity()));

@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,14 @@
 
 'use strict';
 
+const constants = require('../constants');
+const httpContext = require('express-http-context');
 const qs = require('qs');
+const {randomString} = require('../utils');
 
-const requestLogger = function (req, res, next) {
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+const requestLogger = async (req, res, next) => {
+  httpContext.set(constants.requestIdLabel, randomString(8));
+  logger.info(`${req.ip} ${req.method} ${req.originalUrl}`);
   return next();
 };
 

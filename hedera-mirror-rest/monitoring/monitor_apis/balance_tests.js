@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ const {
   checkAccountId,
   checkMandatoryParams,
   checkResourceFreshness,
+  DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
@@ -38,7 +39,7 @@ const {
 
 const balancesPath = '/balances';
 const resource = 'balance';
-const resourceLimit = config[resource].limit;
+const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const jsonRespKey = 'balances';
 const mandatoryParams = ['account', 'balance'];
 
@@ -174,7 +175,7 @@ const checkBalanceFreshness = async (server) => {
 /**
  * Run all balance tests in an asynchronous fashion waiting for all tests to complete
  *
- * @param {String} server API host endpoint
+ * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {
