@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.parser.record.entity.redis;/*
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 
@@ -76,11 +75,10 @@ public class RedisEntityListenerMockitoTest {
         }
 
         // when
-        doAnswer((Answer<Void>) invocation -> {
-            // block publish until latch count reaches 0
+        when(redisOperations.executePipelined(any(SessionCallback.class))).then((callback) -> {
             latch.await();
             return null;
-        }).when(redisOperations).executePipelined(any(SessionCallback.class));
+        });
 
         // drive entityListener to handle topic messages in a different thread cause it will block
         new Thread(() -> {
