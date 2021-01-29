@@ -113,7 +113,7 @@ public class DomainDriver implements ApplicationRunner {
                 .name("")
                 .loadStart(0L)
                 .loadEnd(1L)
-                .fileHash("")
+                .hash("")
                 .previousHash("")
                 .nodeAccountId(nodeAccountId)
                 .version(2)
