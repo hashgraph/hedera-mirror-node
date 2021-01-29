@@ -20,20 +20,16 @@ package com.hedera.mirror.importer.reader.balance;
  * ‍
  */
 
-import java.io.File;
-import java.util.stream.Stream;
-
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.reader.FileReader;
 
-public interface BalanceFileReader {
-    /**
-     * Reads an account balance file, parses the header to get the consensus timestamp, and returns a stream of
-     * <code>AccountBalance</code> objects, one such object per valid account balance line.
-     *
-     * @param file The account balances file object
-     * @return A stream of <code>AccountBalance</code> objects
-     * @throws InvalidDatasetException if a fatal parsing error occurs
-     */
-    Stream<AccountBalance> read(File file);
+/**
+ * Reads an account balance file, parses the header to get the consensus timestamp, and extracts
+ * <code>AccountBalance</code> objects, one such object per valid account balance line.
+ */
+public interface BalanceFileReader extends FileReader<AccountBalanceFile, AccountBalance> {
+
+    boolean supports(StreamFileData streamFileData);
 }

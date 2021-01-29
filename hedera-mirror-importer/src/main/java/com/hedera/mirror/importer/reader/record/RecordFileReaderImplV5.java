@@ -159,6 +159,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     @Getter
     private static class RecordStreamObject extends AbstractStreamObject {
 
+        private static final int MAX_RECORD_LENGTH = 64 * 1024;
+
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
         private RecordItem recordItem;

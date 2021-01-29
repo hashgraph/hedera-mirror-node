@@ -41,6 +41,10 @@ import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -62,9 +66,11 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected Downloader getDownloader() {
+        BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(mirrorProperties),
+                new AccountBalanceLineParserV1());
         return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (BalanceDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
-                accountBalanceFileRepository, nodeSignatureVerifier, signatureFileReader);
+                accountBalanceFileRepository, nodeSignatureVerifier, signatureFileReader, balanceFileReader);
     }
 
     @Override

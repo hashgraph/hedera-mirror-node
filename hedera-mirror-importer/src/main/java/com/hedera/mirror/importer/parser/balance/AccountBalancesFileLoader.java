@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.NonNull;
@@ -43,10 +42,11 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.reader.balance.CompositeBalanceFileReader;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
@@ -101,13 +101,13 @@ public class AccountBalancesFileLoader {
 
     private final int insertBatchSize;
     private final DataSource dataSource;
-    private final CompositeBalanceFileReader balanceFileReader;
+    private final BalanceFileReader balanceFileReader;
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
     private final Timer parseLatencyMetric;
 
     public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
-                                     CompositeBalanceFileReader balanceFileReader, MeterRegistry meterRegistry) {
+                                     BalanceFileReader balanceFileReader, MeterRegistry meterRegistry) {
         insertBatchSize = balanceParserProperties.getBatchSize();
         this.dataSource = dataSource;
         this.balanceFileReader = balanceFileReader;
@@ -143,8 +143,9 @@ public class AccountBalancesFileLoader {
                      .prepareStatement(INSERT_TOKEN_BALANCE_STATEMENT);
              PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
              PreparedStatement updateAccountBalanceFileStatement = connection
-                     .prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT);
-             Stream<AccountBalance> stream = balanceFileReader.read(balanceFile)) {
+                     .prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT)) {
+            List<AccountBalance> accountBalances = new ArrayList<>();
+            balanceFileReader.read(StreamFileData.from(balanceFile), accountBalances::add);
             long consensusTimestamp = -1;
             long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
             List<AccountBalance> accountBalanceList = new ArrayList<>();
@@ -152,9 +153,7 @@ public class AccountBalancesFileLoader {
             boolean skip = false;
             int validCount = 0;
 
-            var iter = stream.iterator();
-            while (iter.hasNext()) {
-                AccountBalance accountBalance = iter.next();
+            for (AccountBalance accountBalance : accountBalances) {
                 if (consensusTimestamp == -1) {
                     consensusTimestamp = accountBalance.getId().getConsensusTimestamp();
                     if (timestampFromFileName != consensusTimestamp) {
