@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,19 +21,19 @@
 package types
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"strconv"
+    rTypes "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+    "strconv"
 )
 
 type Amount struct {
-	Value int64
+    Value int64
 }
 
 // ToRosetta returns Rosetta type Amount from the current domain type Amount
 func (b *Amount) ToRosetta() *rTypes.Amount {
-	return &rTypes.Amount{
-		Value:    strconv.FormatInt(b.Value, 10),
-		Currency: config.CurrencyHbar,
-	}
+    return &rTypes.Amount{
+        Value:    strconv.FormatInt(b.Value, 10),
+        Currency: config.CurrencyHbar,
+    }
 }

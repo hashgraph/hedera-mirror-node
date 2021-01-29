@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,11 +21,11 @@
 package repositories
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+    rTypes "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 )
 
 // AddressBookEntryRepository Interface that all AddressBookEntryRepository structs must implement
 type AddressBookEntryRepository interface {
-	Entries() (*types.AddressBookEntries, *rTypes.Error)
+    Entries() (*types.AddressBookEntries, *rTypes.Error)
 }

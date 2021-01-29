@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,41 +21,41 @@
 package mempool
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
-	"github.com/stretchr/testify/assert"
-	"testing"
+    rTypes "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+    "github.com/stretchr/testify/assert"
+    "testing"
 )
 
 func TestNewMempoolAPIService(t *testing.T) {
-	repository.Setup()
-	mempoolService := NewMempoolAPIService()
+    repository.Setup()
+    mempoolService := NewMempoolAPIService()
 
-	assert.IsType(t, &MempoolAPIService{}, mempoolService)
+    assert.IsType(t, &MempoolAPIService{}, mempoolService)
 }
 
 func TestMempool(t *testing.T) {
-	// when:
-	res, e := NewMempoolAPIService().Mempool(nil, nil)
+    // when:
+    res, e := NewMempoolAPIService().Mempool(nil, nil)
 
-	// then:
-	assert.Equal(
-		t,
-		&rTypes.MempoolResponse{
-			TransactionIdentifiers: []*rTypes.TransactionIdentifier{},
-		},
-		res,
-	)
+    // then:
+    assert.Equal(
+        t,
+        &rTypes.MempoolResponse{
+            TransactionIdentifiers: []*rTypes.TransactionIdentifier{},
+        },
+        res,
+    )
 
-	assert.Nil(t, e)
+    assert.Nil(t, e)
 }
 
 func TestMempoolTransaction(t *testing.T) {
-	// when:
-	res, e := NewMempoolAPIService().MempoolTransaction(nil, nil)
+    // when:
+    res, e := NewMempoolAPIService().MempoolTransaction(nil, nil)
 
-	// then:
-	assert.Equal(t, errors.Errors[errors.TransactionNotFound], e)
-	assert.Nil(t, res)
+    // then:
+    assert.Equal(t, errors.Errors[errors.TransactionNotFound], e)
+    assert.Nil(t, res)
 }

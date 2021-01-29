@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,11 +21,11 @@
 package repositories
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+    rTypes "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 )
 
 // AccountRepository Interface that all AccountRepository structs must implement
 type AccountRepository interface {
-	RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (*types.Amount, *rTypes.Error)
+    RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (*types.Amount, *rTypes.Error)
 }

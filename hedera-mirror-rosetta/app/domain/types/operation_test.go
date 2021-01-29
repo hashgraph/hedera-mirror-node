@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,55 +21,55 @@
 package types
 
 import (
-	"github.com/coinbase/rosetta-sdk-go/types"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/stretchr/testify/assert"
-	"testing"
+    "github.com/coinbase/rosetta-sdk-go/types"
+    entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+    "github.com/stretchr/testify/assert"
+    "testing"
 )
 
 func exampleOperation() *Operation {
-	return &Operation{
-		Index:  1,
-		Type:   "transfer",
-		Status: "pending",
-		Account: &Account{
-			entityid.EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
-				EntityNum: 0,
-			},
-		},
-		Amount: &Amount{Value: int64(400)},
-	}
+    return &Operation{
+        Index:  1,
+        Type:   "transfer",
+        Status: "pending",
+        Account: &Account{
+            entityid.EntityId{
+                ShardNum:  0,
+                RealmNum:  0,
+                EntityNum: 0,
+            },
+        },
+        Amount: &Amount{Value: int64(400)},
+    }
 }
 
 func expectedOperation() *types.Operation {
-	return &types.Operation{
-		OperationIdentifier: &types.OperationIdentifier{
-			Index:        1,
-			NetworkIndex: nil,
-		},
-		RelatedOperations: []*types.OperationIdentifier{},
-		Type:              "transfer",
-		Status:            "pending",
-		Account: &types.AccountIdentifier{
-			Address:    "0.0.0",
-			SubAccount: nil,
-			Metadata:   nil,
-		},
-		Amount: &types.Amount{
-			Value:    "400",
-			Currency: config.CurrencyHbar,
-			Metadata: nil,
-		},
-	}
+    return &types.Operation{
+        OperationIdentifier: &types.OperationIdentifier{
+            Index:        1,
+            NetworkIndex: nil,
+        },
+        RelatedOperations: []*types.OperationIdentifier{},
+        Type:              "transfer",
+        Status:            "pending",
+        Account: &types.AccountIdentifier{
+            Address:    "0.0.0",
+            SubAccount: nil,
+            Metadata:   nil,
+        },
+        Amount: &types.Amount{
+            Value:    "400",
+            Currency: config.CurrencyHbar,
+            Metadata: nil,
+        },
+    }
 }
 
 func TestToRosettaOperation(t *testing.T) {
-	// when:
-	rosettaOperation := exampleOperation().ToRosetta()
+    // when:
+    rosettaOperation := exampleOperation().ToRosetta()
 
-	// then:
-	assert.Equal(t, expectedOperation(), rosettaOperation)
+    // then:
+    assert.Equal(t, expectedOperation(), rosettaOperation)
 }

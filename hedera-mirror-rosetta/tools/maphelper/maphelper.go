@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,25 +21,25 @@
 package maphelper
 
 import (
-	"github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/coinbase/rosetta-sdk-go/types"
 )
 
 func GetStringValuesFromIntStringMap(mapping map[int]string) []string {
-	var values []string
+    var values []string
 
-	for _, v := range mapping {
-		values = append(values, v)
-	}
+    for _, v := range mapping {
+        values = append(values, v)
+    }
 
-	return values
+    return values
 }
 
 func GetErrorValuesFromStringErrorMap(mapping map[string]*types.Error) []*types.Error {
-	values := make([]*types.Error, 0, len(mapping))
+    values := make([]*types.Error, 0, len(mapping))
 
-	for _, v := range mapping {
-		values = append(values, v)
-	}
+    for _, v := range mapping {
+        values = append(values, v)
+    }
 
-	return values
+    return values
 }

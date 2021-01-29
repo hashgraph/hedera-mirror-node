@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,73 +21,73 @@
 package hex
 
 import (
-	"github.com/stretchr/testify/assert"
-	"testing"
+    "github.com/stretchr/testify/assert"
+    "testing"
 )
 
 func TestAddsPrefixCorrectly(t *testing.T) {
-	// given:
-	var testData = []struct {
-		string string
-	}{
-		{"addprefix"},
-		{""},
-		{"123"},
-		{"0x"},
-		{"0x "},
-		{"0x123aasd"},
-	}
+    // given:
+    var testData = []struct {
+        string string
+    }{
+        {"addprefix"},
+        {""},
+        {"123"},
+        {"0x"},
+        {"0x "},
+        {"0x123aasd"},
+    }
 
-	var expectedData = []struct {
-		result string
-	}{
-		{"0xaddprefix"},
-		{"0x"},
-		{"0x123"},
-		{"0x"},
-		{"0x "},
-		{"0x123aasd"},
-	}
+    var expectedData = []struct {
+        result string
+    }{
+        {"0xaddprefix"},
+        {"0x"},
+        {"0x123"},
+        {"0x"},
+        {"0x "},
+        {"0x123aasd"},
+    }
 
-	for i, tt := range testData {
-		// when:
-		result := SafeAddHexPrefix(tt.string)
+    for i, tt := range testData {
+        // when:
+        result := SafeAddHexPrefix(tt.string)
 
-		// then:
-		assert.Equal(t, expectedData[i].result, result)
-	}
+        // then:
+        assert.Equal(t, expectedData[i].result, result)
+    }
 }
 
 func TestRemovesPrefixCorrectly(t *testing.T) {
-	// given:
-	var testData = []struct {
-		string string
-	}{
-		{"0xaddprefix"},
-		{"0x"},
-		{"0x123"},
-		{"0x "},
-		{"0x123aasd"},
-		{"0xaasd"},
-		{"234123"},
-	}
+    // given:
+    var testData = []struct {
+        string string
+    }{
+        {"0xaddprefix"},
+        {"0x"},
+        {"0x123"},
+        {"0x "},
+        {"0x123aasd"},
+        {"0xaasd"},
+        {"234123"},
+    }
 
-	var expectedData = []struct {
-		result string
-	}{
-		{"addprefix"},
-		{""},
-		{"123"},
-		{" "},
-		{"123aasd"},
-		{"aasd"},
-		{"234123"},
-	}
+    var expectedData = []struct {
+        result string
+    }{
+        {"addprefix"},
+        {""},
+        {"123"},
+        {" "},
+        {"123aasd"},
+        {"aasd"},
+        {"234123"},
+    }
 
-	for i, tt := range testData {
-		// when:
-		result := SafeRemoveHexPrefix(tt.string)
-		// then:
-		assert.Equal(t, expectedData[i].result, result)
-	}
+    for i, tt := range testData {
+        // when:
+        result := SafeRemoveHexPrefix(tt.string)
+        // then:
+        assert.Equal(t, expectedData[i].result, result)
+    }
 }

@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,22 +21,22 @@
 package main
 
 import (
-	"fmt"
-	"log"
+    "fmt"
+    "log"
 
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+    "github.com/jinzhu/gorm"
+    _ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 // Establish connection to the Postgres Database
 func connectToDb(dbConfig types.Db) *gorm.DB {
-	connectionStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", dbConfig.Host, dbConfig.Port, dbConfig.Username, dbConfig.Name, dbConfig.Password)
-	db, err := gorm.Open("postgres", connectionStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Successfully connected to Database")
+    connectionStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", dbConfig.Host, dbConfig.Port, dbConfig.Username, dbConfig.Name, dbConfig.Password)
+    db, err := gorm.Open("postgres", connectionStr)
+    if err != nil {
+        log.Fatal(err)
+    }
+    log.Println("Successfully connected to Database")
 
-	return db
+    return db
 }

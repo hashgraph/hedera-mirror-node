@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,16 +21,16 @@
 package repository
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/stretchr/testify/mock"
+    rTypes "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+    "github.com/stretchr/testify/mock"
 )
 
 type MockAddressBookEntryRepository struct {
-	mock.Mock
+    mock.Mock
 }
 
 func (m MockAddressBookEntryRepository) Entries() (*types.AddressBookEntries, *rTypes.Error) {
-	args := m.Called()
-	return args.Get(0).(*types.AddressBookEntries), args.Get(1).(*rTypes.Error)
+    args := m.Called()
+    return args.Get(0).(*types.AddressBookEntries), args.Get(1).(*rTypes.Error)
 }

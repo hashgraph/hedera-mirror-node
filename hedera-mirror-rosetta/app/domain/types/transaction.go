@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,25 +21,25 @@
 package types
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+    rTypes "github.com/coinbase/rosetta-sdk-go/types"
 )
 
 // Transaction is domain level struct used to represent Transaction conceptual mapping in Hedera
 type Transaction struct {
-	Hash       string
-	Operations []*Operation
+    Hash       string
+    Operations []*Operation
 }
 
 // ToRosetta returns Rosetta type Transaction from the current domain type Transaction
 func (t *Transaction) ToRosetta() *rTypes.Transaction {
-	operations := make([]*rTypes.Operation, len(t.Operations))
-	for i, o := range t.Operations {
-		operations[i] = o.ToRosetta()
-	}
+    operations := make([]*rTypes.Operation, len(t.Operations))
+    for i, o := range t.Operations {
+        operations[i] = o.ToRosetta()
+    }
 
-	rTransaction := &rTypes.Transaction{
-		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: t.Hash},
-		Operations:            operations,
-	}
-	return rTransaction
+    rTransaction := &rTypes.Transaction{
+        TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: t.Hash},
+        Operations:            operations,
+    }
+    return rTransaction
 }

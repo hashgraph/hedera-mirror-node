@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,28 +21,28 @@
 package types
 
 import (
-	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/stretchr/testify/assert"
-	"testing"
+    "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+    "github.com/stretchr/testify/assert"
+    "testing"
 )
 
 func expectedAmount() *types.Amount {
-	return &types.Amount{
-		Value:    "400",
-		Currency: config.CurrencyHbar,
-		Metadata: nil,
-	}
+    return &types.Amount{
+        Value:    "400",
+        Currency: config.CurrencyHbar,
+        Metadata: nil,
+    }
 }
 
 func exampleAmount() *Amount {
-	return &Amount{Value: int64(400)}
+    return &Amount{Value: int64(400)}
 }
 
 func TestToRosettaAmount(t *testing.T) {
-	// when:
-	result := exampleAmount().ToRosetta()
+    // when:
+    result := exampleAmount().ToRosetta()
 
-	// then:
-	assert.Equal(t, expectedAmount(), result)
+    // then:
+    assert.Equal(t, expectedAmount(), result)
 }

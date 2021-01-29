@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,8 +21,8 @@
 package repository
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+    rTypes "github.com/coinbase/rosetta-sdk-go/types"
+    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 )
 
 var MBlockRepository *MockBlockRepository
@@ -37,8 +37,8 @@ var NilTransaction *types.Transaction = nil
 var NilEntries *types.AddressBookEntries = nil
 
 func Setup() {
-	MBlockRepository = &MockBlockRepository{}
-	MTransactionRepository = &MockTransactionRepository{}
-	MAccountRepository = &MockAccountRepository{}
-	MAddressBookEntryRepository = &MockAddressBookEntryRepository{}
+    MBlockRepository = &MockBlockRepository{}
+    MTransactionRepository = &MockTransactionRepository{}
+    MAccountRepository = &MockAccountRepository{}
+    MAddressBookEntryRepository = &MockAddressBookEntryRepository{}
 }
