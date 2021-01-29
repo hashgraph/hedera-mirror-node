@@ -20,27 +20,18 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
  * ‍
  */
 
-import java.time.Duration;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.UnicastProcessor;
-import reactor.test.StepVerifier;
 
 import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RedisEntityListenerTest extends BatchEntityListenerTest {
@@ -70,39 +61,5 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
 
         redisOperations.execute(redisCallback);
         return processor;
-    }
-
-    @Test
-    void onDuplicateTopicMessages() throws InterruptedException {
-        // given
-        TopicMessage topicMessage1 = topicMessage();
-        TopicMessage topicMessage2 = topicMessage();
-        TopicMessage topicMessage3 = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage1.getTopicNum());
-
-        // when
-        entityListener.onTopicMessage(topicMessage1);
-        entityListener.onTopicMessage(topicMessage2);
-        entityListener.onTopicMessage(topicMessage1); // duplicate
-        entityListener.onTopicMessage(topicMessage2); // duplicate
-        entityListener.onTopicMessage(topicMessage3);
-        entityListener.onSave(new EntityBatchSaveEvent(this));
-        entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-
-        // then
-        topicMessages.as(StepVerifier::create)
-                .expectNext(topicMessage1, topicMessage2, topicMessage3)
-                .thenCancel()
-                .verify(Duration.ofMillis(1000));
-    }
-
-    @TestConfiguration
-    static class ContextConfiguration {
-
-        @Bean
-        @Primary
-        public RedisOperations<String, StreamMessage> redisOpsSpy(RedisOperations<String, StreamMessage> redisOperations) {
-            return Mockito.spy(redisOperations);
-        }
     }
 }

@@ -64,7 +64,7 @@ class RedisEntityListenerMockitoTest {
     }
 
     @Test
-    void onSlowPublish() throws InterruptedException {
+    void onSlowPublish() {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger saveCount = new AtomicInteger(0);
 
@@ -84,8 +84,7 @@ class RedisEntityListenerMockitoTest {
         new Thread(() -> {
             try {
                 for (TopicMessage message : messages) {
-                    entityListener.onTopicMessage(message);
-                    entityListener.onSave(new EntityBatchSaveEvent(this));
+                    submitAndSave(message);
                     entityListener.onCleanup(new EntityBatchCleanupEvent(this));
                     saveCount.getAndIncrement();
                 }
@@ -94,8 +93,9 @@ class RedisEntityListenerMockitoTest {
             }
         }).start();
 
+        //then
         //Wait for separate thread to catch up.
-        //Thread should be blocked at message 10, with the first publish still waiting.
+        //Thread is blocked because queue is full, and publisher is blocked on first message.
         verify(redisOperations, timeout(500).times(1))
                 .executePipelined(any(SessionCallback.class));
         assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1);
@@ -109,36 +109,32 @@ class RedisEntityListenerMockitoTest {
 
     @Test
     void onDuplicateTopicMessages() throws InterruptedException {
-        // given
         TopicMessage topicMessage1 = topicMessage();
         TopicMessage topicMessage2 = topicMessage();
         TopicMessage topicMessage3 = topicMessage();
 
-        // when
-        entityListener.onTopicMessage(topicMessage1);
-        entityListener.onSave(new EntityBatchSaveEvent(this));
-        entityListener.onTopicMessage(topicMessage2);
-        entityListener.onSave(new EntityBatchSaveEvent(this));
+        submitAndSave(topicMessage1);
+        submitAndSave(topicMessage2);
         verify(redisOperations, timeout(1000).times(2))
                 .executePipelined(any(SessionCallback.class));
-        entityListener.onTopicMessage(topicMessage1); // duplicate
-        entityListener.onSave(new EntityBatchSaveEvent(this));
-        entityListener.onTopicMessage(topicMessage2); // duplicate
-        entityListener.onSave(new EntityBatchSaveEvent(this));
+        submitAndSave(topicMessage1);
+        submitAndSave(topicMessage2);
         verify(redisOperations, timeout(1000).times(2))
                 .executePipelined(any(SessionCallback.class));
-        entityListener.onTopicMessage(topicMessage3);
-        entityListener.onSave(new EntityBatchSaveEvent(this));
+        submitAndSave(topicMessage3);
         entityListener.onCleanup(new EntityBatchCleanupEvent(this));
         verify(redisOperations, timeout(1000).times(3))
                 .executePipelined(any(SessionCallback.class));
-
-        // then
     }
 
     private TopicMessage topicMessage() {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp++);
         return topicMessage;
+    }
+
+    private void submitAndSave(TopicMessage topicMessage) throws InterruptedException {
+        entityListener.onTopicMessage(topicMessage);
+        entityListener.onSave(new EntityBatchSaveEvent(this));
     }
 }
