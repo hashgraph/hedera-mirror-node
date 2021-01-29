@@ -21,83 +21,59 @@ package com.hedera.mirror.importer.reader.balance;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import java.util.Objects;
-import java.util.stream.Stream;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
-import com.hedera.mirror.importer.util.Utility;
 
-@AllArgsConstructor
 @Log4j2
 @Named
-public class BalanceFileReaderImplV1 implements BalanceFileReader {
+public class BalanceFileReaderImplV1 extends CsvBalanceFileReader {
+
     private static final int MAX_HEADER_ROWS = 10;
-    private static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
-    private static final String COLUMN_HEADER_PREFIX = "shard";
+    static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
 
-    private final BalanceParserProperties balanceParserProperties;
-    private final AccountBalanceLineParserV1 parser;
-
-    @Override
-    public Stream<AccountBalance> read(File file) {
-        if (file == null) {
-            throw new InvalidDatasetException("Null file provided to balance file reader");
-        }
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)),
-                    balanceParserProperties.getFileBufferSize());
-            long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
-            long shard = balanceParserProperties.getMirrorProperties().getShard();
-
-            return reader.lines()
-                    .map(line -> {
-                        try {
-                            return parser.parse(line, consensusTimestamp, shard);
-                        } catch (InvalidDatasetException ex) {
-                            log.error(ex);
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .onClose(() -> {
-                        try {
-                            reader.close();
-                        } catch (Exception ex) {
-                        }
-                    });
-        } catch (IOException ex) {
-            throw new InvalidDatasetException("Error reading account balance file", ex);
-        }
+    public BalanceFileReaderImplV1(BalanceParserProperties balanceParserProperties, AccountBalanceLineParserV1 parser) {
+        super(balanceParserProperties, parser);
     }
 
-    private long parseHeaderForConsensusTimestamp(BufferedReader reader) {
-        // The file should contain:
-        //  - single header row Timestamp:YYYY-MM-DDTHH:MM:SS.NNNNNNNNZ
-        //  - shardNum,realmNum,accountNum,balance
-        // followed by rows of data.
-        // The logic here is a slight bit more lenient. Look at up to MAX_HEADER_ROWS rows ending at any row containing
-        // "shard" and requiring that one of the rows had "Timestamp: some value"
+    @Override
+    protected String getTimestampHeaderPrefix() {
+        return TIMESTAMP_HEADER_PREFIX;
+    }
+
+    @Override
+    protected String getVersionHeaderPrefix() {
+        return TIMESTAMP_HEADER_PREFIX;
+    }
+
+    /**
+     * The file should contain 2 header rows:
+     * <p>
+     * - single header row Timestamp:YYYY-MM-DDTHH:MM:SS.NNNNNNNNZ
+     * <p>
+     * - shardNum,realmNum,accountNum,balance
+     * <p>
+     * followed by rows of data. The logic here is a slight bit more lenient. Look at up to MAX_HEADER_ROWS rows ending
+     * at any row containing "shard" and requiring that one of the rows had "Timestamp: some value"
+     *
+     * @param reader
+     * @return consensusTimestamp
+     */
+    @Override
+    protected long parseConsensusTimestamp(BufferedReader reader) {
         String line = null;
         try {
             long consensusTimestamp = -1;
             for (int i = 0; i < MAX_HEADER_ROWS; i++) {
                 line = reader.readLine();
-                if (StringUtils.startsWithIgnoreCase(line, TIMESTAMP_HEADER_PREFIX)) {
-                    Instant instant = Instant.parse(line.substring(TIMESTAMP_HEADER_PREFIX.length()));
-                    consensusTimestamp = Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
+                if (supports(line)) {
+                    consensusTimestamp = convertTimestamp(line.substring(TIMESTAMP_HEADER_PREFIX.length()));
                 } else if (StringUtils.startsWithIgnoreCase(line, COLUMN_HEADER_PREFIX)) {
                     if (consensusTimestamp == -1) {
                         break;

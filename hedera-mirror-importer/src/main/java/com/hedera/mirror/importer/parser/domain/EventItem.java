@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.reader.record;
+package com.hedera.mirror.importer.parser.domain;
 
 /*-
  * ‌
@@ -20,11 +20,5 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.reader.FileReader;
-
-public interface RecordFileReader extends FileReader<RecordFile, RecordItem> {
-
-    int MAX_TRANSACTION_LENGTH = 64 * 1024;
+public class EventItem implements StreamItem {
 }

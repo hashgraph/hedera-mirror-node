@@ -23,30 +23,31 @@ package com.hedera.mirror.importer.reader.event;
 import com.google.common.primitives.Ints;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.security.MessageDigest;
+import java.util.function.Consumer;
 import javax.inject.Named;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
+import com.hedera.mirror.importer.parser.domain.EventItem;
 
 @Named
-public class EventFileReaderImpl implements EventFileReader {
+public class EventFileReaderV3 implements EventFileReader {
 
-    public static final String HASH_ALGORITHM = "SHA-384";
+    private static final String HASH_ALGORITHM = "SHA-384";
     public static final byte EVENT_TYPE_PREV_HASH = 1; // next 48 bytes are SHA-384 hash of previous files
-    public static final int  EVENT_PREV_HASH_LENGTH = 48; // SHA-384 - 48 bytes
+    public static final int EVENT_PREV_HASH_LENGTH = 48; // SHA-384 - 48 bytes
     public static final byte EVENT_STREAM_FILE_VERSION_2 = 2;
     public static final byte EVENT_STREAM_FILE_VERSION_3 = 3;
 
     @Override
-    public EventFile read(File file) {
-        EventFile eventFile = new EventFile();
-        String fileName = file.getName();
+    public EventFile read(StreamFileData streamFileData, Consumer<EventItem> itemConsumer) {
+        String fileName = streamFileData.getFilename();
 
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFileData.getInputStream()))) {
             // MessageDigest for getting the file Hash
             // suppose file[i] = p[i] || h[i] || c[i];
             // p[i] denotes the bytes before previousFileHash;
@@ -84,17 +85,17 @@ public class EventFileReaderImpl implements EventFileReader {
                 }
             }
 
-            eventFile.setName(fileName);
+            EventFile eventFile = new EventFile();
+            eventFile.setName(FilenameUtils.getName(fileName));
             eventFile.setFileVersion(fileVersion);
             eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
             eventFile.setHash(Hex.encodeHexString(md.digest()));
             eventFile.setCount(0L);
+            return eventFile;
         } catch (InvalidEventFileException e) {
             throw e;
         } catch (Exception e) {
             throw new InvalidEventFileException("Error reading bad event file " + fileName, e);
         }
-
-        return eventFile;
     }
 }

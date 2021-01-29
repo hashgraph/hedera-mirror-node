@@ -20,19 +20,10 @@ package com.hedera.mirror.importer.reader.event;
  * ‍
  */
 
-import java.io.File;
-import java.time.Instant;
-
 import com.hedera.mirror.importer.domain.EventFile;
-import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.exception.InvalidEventFileException;
+import com.hedera.mirror.importer.parser.domain.EventItem;
+import com.hedera.mirror.importer.reader.FileReader;
 
-public interface EventFileReader {
-    /**
-     * Read event file. Throws {@link InvalidEventFileException} if file is malformatted.
-     *
-     * @param file event file object
-     * @return {@link EventFile} object
-     */
-    EventFile read(File file);
+public interface EventFileReader extends FileReader<EventFile, EventItem> {
+
 }

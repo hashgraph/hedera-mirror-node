@@ -59,13 +59,6 @@ public class UtilityTest {
     Path tempDir;
 
     @Test
-    void accountIDToString() {
-        AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
-        String parsed = Utility.accountIDToString(accountId);
-        assertThat(parsed).isEqualTo("0.0.100");
-    }
-
-    @Test
     void ensureDirectory() throws Exception {
         Path directory = tempDir.resolve("created");
         Path file = tempDir.resolve("file");
