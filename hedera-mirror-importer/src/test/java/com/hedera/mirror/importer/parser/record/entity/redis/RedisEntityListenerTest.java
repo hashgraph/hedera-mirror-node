@@ -23,7 +23,11 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -90,5 +94,15 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
                 .expectNext(topicMessage1, topicMessage2, topicMessage3)
                 .thenCancel()
                 .verify(Duration.ofMillis(1000));
+    }
+
+    @TestConfiguration
+    static class ContextConfiguration {
+
+        @Bean
+        @Primary
+        public RedisOperations<String, StreamMessage> redisOpsSpy(RedisOperations<String, StreamMessage> redisOperations) {
+            return Mockito.spy(redisOperations);
+        }
     }
 }
