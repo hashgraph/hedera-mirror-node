@@ -24,7 +24,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -50,8 +50,6 @@ class RedisEntityListenerMockitoTest {
     @Mock
     private RedisOperations<String, StreamMessage> redisOperations;
 
-    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-
     private RedisEntityListener entityListener;
 
     private long consensusTimestamp = 1;
@@ -59,7 +57,7 @@ class RedisEntityListenerMockitoTest {
     @BeforeEach
     void setup() {
         entityListener = new RedisEntityListener(new MirrorProperties(),
-                new RedisProperties(), redisOperations, meterRegistry);
+                new RedisProperties(), redisOperations, new SimpleMeterRegistry());
         entityListener.init();
     }
 
@@ -94,7 +92,6 @@ class RedisEntityListenerMockitoTest {
         }).start();
 
         //then
-        //Wait for separate thread to catch up.
         //Thread is blocked because queue is full, and publisher is blocked on first message.
         verify(redisOperations, timeout(500).times(1))
                 .executePipelined(any(SessionCallback.class));
@@ -113,17 +110,24 @@ class RedisEntityListenerMockitoTest {
         TopicMessage topicMessage2 = topicMessage();
         TopicMessage topicMessage3 = topicMessage();
 
+        //submitAndSave two messages, verify publish logic called twice
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
-        verify(redisOperations, timeout(1000).times(2))
+        verify(redisOperations, timeout(500).times(2))
                 .executePipelined(any(SessionCallback.class));
+
+        //submitAndSave two duplicate messages, verify publish was not attempted
+        Mockito.reset(redisOperations);
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
-        verify(redisOperations, timeout(1000).times(2))
+        verify(redisOperations, timeout(500).times(0))
                 .executePipelined(any(SessionCallback.class));
+
+        //submitAndSave third new unique message, verify publish called once.
+        Mockito.reset(redisOperations);
         submitAndSave(topicMessage3);
         entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-        verify(redisOperations, timeout(1000).times(3))
+        verify(redisOperations, timeout(500).times(1))
                 .executePipelined(any(SessionCallback.class));
     }
 
