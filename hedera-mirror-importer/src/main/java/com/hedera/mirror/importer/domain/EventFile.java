@@ -35,7 +35,7 @@ public class EventFile implements StreamFile {
 
     private Long loadEnd;
 
-    private String fileHash;
+    private String hash;
 
     private String previousHash;
 
@@ -45,4 +45,9 @@ public class EventFile implements StreamFile {
     private EntityId nodeAccountId;
 
     private Long count;
+
+    @Override
+    public String getFileHash() {
+        return hash;
+    }
 }

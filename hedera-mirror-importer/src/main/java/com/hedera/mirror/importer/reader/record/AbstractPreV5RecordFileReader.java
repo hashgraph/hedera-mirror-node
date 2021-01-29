@@ -142,7 +142,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         recordFile.setConsensusStart(consensusStart);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setCount(count);
-        recordFile.setFileHash(Hex.encodeHexString(digest.digest()));
+        recordFile.setHash(Hex.encodeHexString(digest.digest()));
     }
 
     protected static class RecordFileDigest implements AutoCloseable {

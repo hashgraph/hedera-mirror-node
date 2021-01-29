@@ -167,7 +167,7 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
             cryptoTransferCount += descriptor.getCryptoTransferCount();
             entityCount += descriptor.getEntityCount();
             transactionCount += descriptor.getRecordFile().getCount().intValue();
-            lastFileHash = descriptor.getRecordFile().getCurrentHash();
+            lastFileHash = descriptor.getRecordFile().getHash();
         }
         assertEquals(transactionCount, transactionRepository.count());
         assertEquals(cryptoTransferCount, cryptoTransferRepository.count());

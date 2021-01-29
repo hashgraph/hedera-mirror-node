@@ -87,7 +87,7 @@ public class EventFileReaderImpl implements EventFileReader {
             eventFile.setName(fileName);
             eventFile.setFileVersion(fileVersion);
             eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
-            eventFile.setFileHash(Hex.encodeHexString(md.digest()));
+            eventFile.setHash(Hex.encodeHexString(md.digest()));
             eventFile.setCount(0L);
         } catch (InvalidEventFileException e) {
             throw e;

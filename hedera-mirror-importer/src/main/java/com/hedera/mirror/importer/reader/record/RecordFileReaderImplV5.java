@@ -135,7 +135,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setCount(count);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setConsensusStart(consensusStart);
-        recordFile.setEndRunningHash(Hex.encodeHexString(endHashObject.getHash()));
+        recordFile.setHash(Hex.encodeHexString(endHashObject.getHash()));
         recordFile.setPreviousHash(Hex.encodeHexString(startHashObject.getHash()));
     }
 

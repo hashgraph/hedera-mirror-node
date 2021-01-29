@@ -524,7 +524,7 @@ public abstract class Downloader {
         transactionTemplate.executeWithoutResult(status -> {
             if (lastValidDownloadedFileHashKey != null) {
                 applicationStatusRepository
-                        .updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getCurrentHash());
+                        .updateStatusValue(lastValidDownloadedFileHashKey, streamFile.getHash());
             }
             applicationStatusRepository.updateStatusValue(lastValidDownloadedFileKey, streamFile.getName());
 

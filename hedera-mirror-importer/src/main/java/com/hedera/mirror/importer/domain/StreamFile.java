@@ -24,8 +24,9 @@ import lombok.NonNull;
 
 public interface StreamFile {
 
-    default String getCurrentHash() {
-        return getFileHash();
+    // Get the chained hash of the stream file
+    default String getHash() {
+        return null;
     }
 
     String getFileHash();
@@ -36,6 +37,7 @@ public interface StreamFile {
 
     String getName();
 
+    // Get the chained hash of the previous stream file
     default String getPreviousHash() {
         return null;
     }

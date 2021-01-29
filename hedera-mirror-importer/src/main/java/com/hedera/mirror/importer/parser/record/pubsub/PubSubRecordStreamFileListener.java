@@ -51,7 +51,7 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     public void onEnd(RecordFile recordFile) throws ImporterException {
         recordFileRepository.save(recordFile);
         applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getCurrentHash());
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getHash());
     }
 
     @Override

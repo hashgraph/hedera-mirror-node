@@ -51,8 +51,6 @@ public class RecordFile implements StreamFile {
     @Enumerated
     private DigestAlgorithm digestAlgorithm;
 
-    private String endRunningHash;
-
     private String fileHash;
 
     private Integer hapiVersionMajor;
@@ -60,6 +58,8 @@ public class RecordFile implements StreamFile {
     private Integer hapiVersionMinor;
 
     private Integer hapiVersionPatch;
+
+    private String hash;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,11 +83,11 @@ public class RecordFile implements StreamFile {
     private int version;
 
     @Override
-    public String getCurrentHash() {
+    public String getFileHash() {
         if (version == 5) {
-            return endRunningHash;
+            return fileHash;
         }
 
-        return fileHash;
+        return hash;
     }
 }
