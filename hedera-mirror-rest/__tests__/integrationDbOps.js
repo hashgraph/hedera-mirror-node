@@ -73,8 +73,7 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
 const instantiateDatabase = async () => {
   if (!process.env.CIRCLECI && !process.env.CI_CONTAINERS) {
     if (!(await isDockerInstalled())) {
-      logger.error('Docker not found. Integration tests will fail.');
-      return;
+      throw new Error('Docker not found');
     }
 
     const image = `${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`;
