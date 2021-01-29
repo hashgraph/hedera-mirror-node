@@ -6,7 +6,7 @@
     <description>Rosetta REST API for the Hedera Mirror Node</description>
     <modelVersion>4.0.0</modelVersion>
     <name>Hedera Mirror Node Rosetta REST API</name>
-    <packaging>mvn-golang</packaging>
+    <packaging>pom</packaging>
 
     <parent>
         <groupId>com.hedera</groupId>
@@ -20,44 +20,10 @@
     </properties>
 
     <build>
-        <sourceDirectory>${project.basedir}/cmd</sourceDirectory>
-        <directory>${basedir}${file.separator}bin</directory>
-        <defaultGoal>clean package</defaultGoal>
-        <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>com.igormaznitsa</groupId>
-                <artifactId>mvn-golang-wrapper</artifactId>
-                <version>2.3.6</version>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <id>default-test</id>
-                        <configuration>
-                            <buildFlags>
-                                <flag>-v</flag>
-                            </buildFlags>
-                            <packages>
-                                <package>${project.basedir}/...</package>
-                            </packages>
-                            <outLogFile>${project.artifactId}-test.log</outLogFile>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>default-build</id>
-                        <configuration>
-                            <buildFlags>
-                                <flag>-a</flag>
-                                <flag>-i</flag>
-                            </buildFlags>
-                            <sources>${project.basedir}/cmd</sources>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
