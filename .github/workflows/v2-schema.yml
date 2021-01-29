@@ -135,6 +135,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: rest-test-2-results
+          name: rest-test-results
           path: ${{env.working-directory}}/target/jest-junit/*
           retention-days: 7

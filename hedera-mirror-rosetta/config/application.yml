@@ -1,0 +1,18 @@
+# This file contains application defaults and shouldn't be modified. See docs/configuration.md for how to override.
+hedera:
+  mirror:
+    rosetta:
+      apiVersion: 1.4.4
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_rosetta_pass
+        port: 5432
+        username: mirror_rosetta
+      online: true
+      network: DEMO
+      nodeVersion: 0
+      port: 5700
+      realm: 0
+      shard: 0
+      version: 0.20.0
