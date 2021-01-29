@@ -161,6 +161,13 @@ paths:
       operationId: getTransactionById
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
+        - name: scheduled
+          in: query
+          description: >-
+            Filter transactions by the scheduled flag. If true, return only the scheduled transaction. If false, return
+            non-scheduled transactions. If not present, return all transactions matching transactionId.
+          schema:
+            type: boolean
       responses:
         200:
           description: OK
@@ -192,6 +199,14 @@ paths:
       operationId: getStateproofInfo
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
+        - name: scheduled
+          in: query
+          description: >-
+            Filter stateproof by the transaction scheduled flag. If true, return stateproof for the scheduled
+            transaction. If false, return stateproof for the non-scheduled transaction.
+          schema:
+            type: boolean
+            default: false
       responses:
         200:
           description: OK
@@ -214,8 +229,8 @@ paths:
                     - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
         404:
           $ref: '#/components/responses/TransactionNotFound'
-        503:
-          description: Service Unavailable
+        502:
+          description: Bad Gateway
           content:
             application/json:
               schema:
@@ -623,6 +638,8 @@ components:
           type: string
         node:
           type: string
+        scheduled:
+          type: boolean
         transaction_id:
           type: string
         transfers:
@@ -664,6 +681,7 @@ components:
         valid_duration_seconds: 11
         node: 0.0.3
         transaction_id: 0.0.8-1234567890-000000006
+        scheduled: false
         transfers:
           - account: 0.0.3
             amount: 2

@@ -58,6 +58,7 @@
         "charged_tx_fee": 0,
         "memo_base64": null,
         "result": "SUCCESS",
+        "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "name": "CRYPTOUPDATEACCOUNT",
         "node": "0.0.3",

@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *​
+ * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
- *​
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * ‍
  */
 
 'use strict';
@@ -25,16 +25,17 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
   ENTITY_PUBLICKEY: 'publickey',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
+  SCHEDULED: 'scheduled',
   SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
   TOKENID: 'tokenid',
   TOKEN_ID: 'token.id',
-  CREDIT_TYPE: 'type',
   TRANSACTION_TYPE: 'transactiontype',
 };
 

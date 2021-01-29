@@ -1,34 +1,145 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for erroneous data throws exception 1`] = `
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.balance","operator":"eq","value":"-1"} 1`] = `
+Array [
+  "Invalid parameter: account.balance",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.balance","operator":"eq","value":"23456789012345678901234"} 1`] = `
+Array [
+  "Invalid parameter: account.balance",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.id","operator":"lt","value":"-1"} 1`] = `
 Array [
   "Invalid parameter: account.id",
-  "Invalid parameter: timestamp",
-  "Invalid parameter: order",
-  "Invalid parameter: limit",
-  "Invalid parameter: sequencenumber",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.id","operator":"lt","value":"0.1.23456789012345"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.publickey","operator":"eq","value":"3c3d546321ff6f63d701d2ec5c2"} 1`] = `
+Array [
   "Invalid parameter: account.publickey",
-  "Invalid parameter: result",
-  "Invalid parameter: type",
-  "Invalid parameter: account.balance",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.publickey","operator":"eq","value":"key"} 1`] = `
+Array [
+  "Invalid parameter: account.publickey",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"encoding","operator":"eq","value":"encrypt"} 1`] = `
+Array [
   "Invalid parameter: encoding",
 ]
 `;
 
-exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for invalid format throws exception 1`] = `
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"limit","operator":"eq","value":"-1"} 1`] = `
 Array [
-  "Invalid parameter: account.id",
-  "Invalid parameter: timestamp",
   "Invalid parameter: limit",
-  "Invalid parameter: sequencenumber",
-  "Invalid parameter: account.publickey",
-  "Invalid parameter: account.balance",
 ]
 `;
 
-exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for sequencenumber=2 1`] = `
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"limit","operator":"eq","value":"2.3"} 1`] = `
+Array [
+  "Invalid parameter: limit",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"order","operator":"eq","value":"chronological"} 1`] = `
+Array [
+  "Invalid parameter: order",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"result","operator":"eq","value":"good"} 1`] = `
+Array [
+  "Invalid parameter: result",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"scheduled","operator":"eq","value":"invalid"} 1`] = `
+Array [
+  "Invalid parameter: scheduled",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"scheduled","operator":"gt","value":"true"} 1`] = `
+Array [
+  "Invalid parameter: scheduled",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"scheduled","operator":"gte","value":"true"} 1`] = `
+Array [
+  "Invalid parameter: scheduled",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"scheduled","operator":"lt","value":"true"} 1`] = `
+Array [
+  "Invalid parameter: scheduled",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"scheduled","operator":"lte","value":"true"} 1`] = `
+Array [
+  "Invalid parameter: scheduled",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"scheduled","operator":"ne","value":"true"} 1`] = `
+Array [
+  "Invalid parameter: scheduled",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"sequencenumber","operator":"<","value":"2"} 1`] = `
 Array [
   "Invalid parameter: sequencenumber",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"sequencenumber","operator":"<=","value":"2"} 1`] = `
+Array [
   "Invalid parameter: sequencenumber",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"sequencenumber","operator":"eq","value":"-1"} 1`] = `
+Array [
+  "Invalid parameter: sequencenumber",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"sequencenumber","operator":"eq","value":"3.4"} 1`] = `
+Array [
+  "Invalid parameter: sequencenumber",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"timestamp","operator":"lte","value":"23456789012345678901234"} 1`] = `
+Array [
+  "Invalid parameter: timestamp",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"timestamp","operator":"lte","value":"today"} 1`] = `
+Array [
+  "Invalid parameter: timestamp",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"type","operator":"eq","value":"all"} 1`] = `
+Array [
+  "Invalid parameter: type",
 ]
 `;

@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
+ * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,43 +20,57 @@
 
 'use strict';
 
+const extend = require('extend');
 const fs = require('fs');
 const _ = require('lodash');
+const log4js = require('log4js');
 const path = require('path');
+const logger = log4js.getLogger();
 
 const REQUIRED_FIELDS = [
   'servers',
   'interval',
   'shard',
   'account.intervalMultiplier',
-  'account.limit',
   'balance.freshnessThreshold',
   'balance.intervalMultiplier',
-  'balance.limit',
   'stateproof.intervalMultiplier',
   'transaction.freshnessThreshold',
   'transaction.intervalMultiplier',
-  'transaction.limit',
   'topic.freshnessThreshold',
   'topic.intervalMultiplier',
-  'topic.limit',
 ];
-const SERVERLIST_FILE = path.join(__dirname, 'config', 'serverlist.json');
+
+const load = (configFile) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
+    logger.info(`Loaded configuration source: ${configFile}`);
+    return data;
+  } catch (err) {
+    logger.warn(`Skipping configuration source ${configFile}: ${err}`);
+    return {};
+  }
+};
+
 let config = {};
 let loaded = false;
 
 if (!loaded) {
-  config = JSON.parse(fs.readFileSync(SERVERLIST_FILE).toString('utf-8'));
+  config = load(path.join(__dirname, 'config', 'default.serverlist.json'));
+  const customConfig = load(path.join(__dirname, 'config', 'serverlist.json'));
+  extend(true, config, customConfig);
+
   for (const field of REQUIRED_FIELDS) {
     if (!_.has(config, field)) {
-      throw new Error(`required field "${field}" not found in configuration file ${SERVERLIST_FILE}`);
+      throw new Error(`required field "${field}" not found in any configuration file`);
     }
   }
 
   if (!Array.isArray(config.servers) || config.servers.length === 0) {
-    throw new Error(`invalid servers "${JSON.stringify(config.servers)}" in configuration file ${SERVERLIST_FILE}`);
+    throw new Error(`Invalid servers "${JSON.stringify(config.servers)}" in any configuration file`);
   }
 
+  logger.info(`Loaded configuration: ${JSON.stringify(config)}`);
   loaded = true;
 }
 

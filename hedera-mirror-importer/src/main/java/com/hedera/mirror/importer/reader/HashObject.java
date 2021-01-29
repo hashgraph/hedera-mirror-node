@@ -20,41 +20,39 @@ package com.hedera.mirror.importer.reader;
  * ‍
  */
 
-import java.io.DataInputStream;
 import java.io.IOException;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-@Data
-public class HashObject {
+@EqualsAndHashCode(callSuper=true)
+@Value
+public class HashObject extends AbstractStreamObject {
 
-    private final long classId;
-    private final int classVersion;
-    private final int digestType;
-    private final byte[] hash;
+    int digestType;
+    byte[] hash;
 
-    public static HashObject read(DataInputStream dis, String filename, String sectionName,
-            DigestAlgorithm digestAlgorithm) {
+    public HashObject(ValidatedDataInputStream vdis, String sectionName, DigestAlgorithm digestAlgorithm) {
+        super(vdis);
+
         try {
-            long classId = dis.readLong();
-            int classVersion = dis.readInt();
-
-            int digestType = dis.readInt();
-            ReaderUtility.validate(digestAlgorithm.getType(), digestType, filename, sectionName, "hash digest type");
-
+            digestType = vdis.readInt(digestAlgorithm.getType(), sectionName, "hash digest type");
             int hashLength = digestAlgorithm.getSize();
-            byte[] hash = ReaderUtility.readLengthAndBytes(dis, hashLength, hashLength, false, filename,
-                    sectionName, "hash");
-
-            return new HashObject(classId, classVersion, digestType, hash);
+            hash = vdis.readLengthAndBytes(hashLength, hashLength, false, sectionName, "hash");
         } catch (IOException e) {
             throw new InvalidStreamFileException(e);
         }
     }
 
-    public static HashObject read(DataInputStream dis, String filename, DigestAlgorithm digestAlgorithm) {
-        return read(dis, filename, null, digestAlgorithm);
+    public HashObject(ValidatedDataInputStream dis, DigestAlgorithm digestAlgorithm) {
+        this(dis, null, digestAlgorithm);
+    }
+
+    protected HashObject(long classId, int classVersion, int digestType, byte[] hash) {
+        super(classId, classVersion);
+        this.digestType = digestType;
+        this.hash = hash;
     }
 }

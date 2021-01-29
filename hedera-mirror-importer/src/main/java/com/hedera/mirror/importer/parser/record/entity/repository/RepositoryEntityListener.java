@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Schedule;
+import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
@@ -45,6 +47,8 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
@@ -70,6 +74,8 @@ public class RepositoryEntityListener implements EntityListener {
     private final TokenTransferRepository tokenTransferRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final ScheduleSignatureRepository scheduleSignatureRepository;
 
     @Override
     public boolean isEnabled() {
@@ -104,6 +110,16 @@ public class RepositoryEntityListener implements EntityListener {
     @Override
     public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
         nonFeeTransferRepository.save(nonFeeTransfer);
+    }
+
+    @Override
+    public void onSchedule(Schedule schedule) throws ImporterException {
+        scheduleRepository.save(schedule);
+    }
+
+    @Override
+    public void onScheduleSignature(ScheduleSignature scheduleSignature) throws ImporterException {
+        scheduleSignatureRepository.save(scheduleSignature);
     }
 
     @Override

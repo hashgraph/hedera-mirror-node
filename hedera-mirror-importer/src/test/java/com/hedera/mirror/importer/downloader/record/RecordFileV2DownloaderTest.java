@@ -30,18 +30,24 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.util.Utility;
 
 class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
-    protected List<String> getTestFiles() {
-        return List.of("2019-08-30T18_10_00.419072Z.rcd", "2019-08-30T18_10_05.249678Z.rcd");
+    protected Map<String, RecordFile> getRecordFileMap() {
+        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
+        RecordFile recordFile1 = allRecordFileMap.get("2019-08-30T18_10_00.419072Z.rcd");
+        RecordFile recordFile2 = allRecordFileMap.get("2019-08-30T18_10_05.249678Z.rcd");
+        return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
 
     @Override

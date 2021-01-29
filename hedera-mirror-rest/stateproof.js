@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
+ * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,8 +24,9 @@ const _ = require('lodash');
 const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
-const TransactionId = require('./transactionId');
 const s3client = require('./s3client');
+const TransactionId = require('./transactionId');
+const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {FileDownloadError} = require('./errors/fileDownloadError');
@@ -34,14 +35,16 @@ const {FileDownloadError} = require('./errors/fileDownloadError');
  * Get the consensus_ns of the transaction. Throws exception if no such successful transaction found or multiple such
  * transactions found.
  * @param {TransactionId} transactionId
+ * @param {Boolean} scheduled
  * @returns {Promise<String>} consensus_ns of the successful transaction if found
  */
-let getSuccessfulTransactionConsensusNs = async (transactionId) => {
+let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const sqlQuery = `SELECT consensus_ns
        FROM transaction
        WHERE payer_account_id = $1
          AND valid_start_ns = $2
+         AND scheduled = ${scheduled}
          AND result = 22`; // only the successful transaction
   if (logger.isTraceEnabled()) {
     logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
@@ -232,14 +235,31 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
 let canReachConsensus = (actualCount, totalCount) => actualCount >= Math.ceil(totalCount / 3.0);
 
 /**
+ * Get scheduled param value from filters. In case there are multiple scheduled params in the filter, the last one is
+ * used. The default is false if not present.
+ * @param filters - the validated filters built from the HTTP request query
+ * @return {Boolean}
+ */
+const getScheduledParamValue = (filters) => {
+  const values = filters
+    .filter((filter) => filter.key === constants.filterKeys.SCHEDULED)
+    .map((filter) => filter.value);
+  return values.length !== 0 ? values[values.length - 1] : false;
+};
+
+/**
  * Handler function for /transactions/:transaction_id/stateproof API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns none
  */
 const getStateProofForTransaction = async (req, res) => {
+  const filters = utils.buildFilterObject(req.query);
+  await utils.validateAndParseFilters(filters);
+
   const transactionId = TransactionId.fromString(req.params.id);
-  const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId);
+  const scheduled = getScheduledParamValue(filters);
+  const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, scheduled);
   const {rcdFileName, nodeAccountId} = await getRCDFileInfoByConsensusNs(consensusNs);
   const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 

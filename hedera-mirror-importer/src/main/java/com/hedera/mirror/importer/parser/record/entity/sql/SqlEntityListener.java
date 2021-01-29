@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,6 +46,9 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.Schedule;
+import com.hedera.mirror.importer.domain.ScheduleSignature;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
@@ -54,7 +57,6 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
@@ -63,6 +65,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 
@@ -80,6 +83,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final ApplicationEventPublisher eventPublisher;
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final ScheduleRepository scheduleRepository;
 
     // init schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
@@ -90,6 +94,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
     private final PgCopy<TokenTransfer> tokenTransferPgCopy;
+    private final PgCopy<ScheduleSignature> scheduleSignaturePgCopy;
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
@@ -103,13 +108,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TopicMessage> topicMessages;
     private final Collection<EntityId> entityIds;
     private final Collection<TokenTransfer> tokenTransfers;
+    private final Collection<ScheduleSignature> scheduleSignatures;
 
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
                              ApplicationStatusRepository applicationStatusRepository,
                              EntityRepository entityRepository, ApplicationEventPublisher eventPublisher,
-                             TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository) {
+                             TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository,
+                             ScheduleRepository scheduleRepository) {
         this.dataSource = dataSource;
         this.applicationStatusRepository = applicationStatusRepository;
         this.entityRepository = entityRepository;
@@ -119,6 +126,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.eventPublisher = eventPublisher;
         this.tokenRepository = tokenRepository;
         this.tokenAccountRepository = tokenAccountRepository;
+        this.scheduleRepository = scheduleRepository;
 
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
@@ -128,6 +136,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, sqlProperties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
         tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, sqlProperties);
+        scheduleSignaturePgCopy = new PgCopy<>(ScheduleSignature.class, meterRegistry, sqlProperties);
 
         transactions = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -138,6 +147,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         entityIds = new HashSet<>();
         topicMessages = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
+        scheduleSignatures = new ArrayList<>();
     }
 
     @Override
@@ -177,6 +187,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         topicMessages.clear();
         transactions.clear();
         tokenTransfers.clear();
+        scheduleSignatures.clear();
         eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
     }
 
@@ -197,6 +208,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
+            scheduleSignaturePgCopy.copy(scheduleSignatures, connection);
             persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
@@ -270,6 +282,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
         tokenTransfers.add(tokenTransfer);
+    }
+
+    @Override
+    public void onSchedule(Schedule schedule) throws ImporterException {
+        scheduleRepository.save(schedule);
+    }
+
+    @Override
+    public void onScheduleSignature(ScheduleSignature scheduleSignature) throws ImporterException {
+        scheduleSignatures.add(scheduleSignature);
     }
 
     private void persistEntities() {

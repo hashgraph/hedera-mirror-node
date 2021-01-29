@@ -20,11 +20,8 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.InputStream;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.exception.StreamFileReaderException;
 
 @Named
 public class RecordFileReaderImplV1 extends AbstractPreV5RecordFileReader {
@@ -34,45 +31,7 @@ public class RecordFileReaderImplV1 extends AbstractPreV5RecordFileReader {
     }
 
     @Override
-    protected RecordFileDigest getRecordFileDigest() {
-        try {
-            return new RecordFileDigestV1();
-        } catch (NoSuchAlgorithmException e) {
-            throw new StreamFileReaderException("Unable to instantiate RecordFileDigestV1" , e);
-        }
-    }
-
-    private static class RecordFileDigestV1 implements RecordFileDigest {
-
-        private final MessageDigest md;
-
-        RecordFileDigestV1() throws NoSuchAlgorithmException {
-            md = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
-        }
-
-        @Override
-        public void updateHeader(byte input) {
-            md.update(input);
-        }
-
-        @Override
-        public void updateHeader(byte[] input) {
-            md.update(input);
-        }
-
-        @Override
-        public void updateBody(byte input) {
-            md.update(input);
-        }
-
-        @Override
-        public void updateBody(byte[] input) {
-            md.update(input);
-        }
-
-        @Override
-        public byte[] digest() {
-            return md.digest();
-        }
+    protected RecordFileDigest getRecordFileDigest(final InputStream is) {
+        return new RecordFileDigest(is, true);
     }
 }

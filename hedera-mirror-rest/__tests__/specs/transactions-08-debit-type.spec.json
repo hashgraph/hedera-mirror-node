@@ -78,6 +78,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "result": "SUCCESS",
+        "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1565779209-711927000",
         "transfers": [
@@ -105,6 +106,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "result": "FAIL_FEE",
+        "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1565779111-711927000",
         "transfers": [

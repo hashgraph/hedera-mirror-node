@@ -1,0 +1,22 @@
+{
+  "apps": [
+    {
+      "exec_mode": "fork_mode",
+      "script": "./monitor_apis/server.js",
+      "name": "monitor-api",
+      "env": {
+        "PORT": 3000,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "serve",
+      "name": "monitor-dashboard",
+      "env": {
+        "PM2_SERVE_PATH": "./monitor_dashboard",
+        "PM2_SERVE_PORT": 3001
+      }
+    }
+  ]
+}

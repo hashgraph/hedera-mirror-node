@@ -12,7 +12,7 @@ services:
       POSTGRES_USER: mirror_node
     volumes:
       - ./db:/var/lib/postgresql/data
-      - ./hedera-mirror-grpc/scripts/db/:/docker-entrypoint-initdb.d/
+      - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sql:/docker-entrypoint-initdb.d/init_v1.sql
     ports:
       - 5432:5432
 
@@ -67,6 +67,19 @@ services:
     tty: true
     ports:
       - 5551:5551
+
+  rosetta:
+    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.26.0
+    environment:
+      HEDERA_MIRROR_ROSETTA_DB_HOST: db
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./application.yml:/src/hedera-mirror-rosetta/application.yml
+    ports:
+      - 5700:5700
+    depends_on:
+      - "db"
 
   timescaledb:
     deploy:

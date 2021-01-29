@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Value;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -53,7 +54,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
 
     private final static EntityId NODE_ACCOUNT_ID = EntityId.of(TestUtils.toAccountId("0.0.3"));
-    protected final static Map<String, RecordFile> RECORD_FILES_MAP = TestUtils.getRecordFilesMap();
+    protected final static Map<String, RecordFile> ALL_RECORD_FILE_MAP = TestRecordFiles.getAll();
 
     @TempDir
     static Path dataPath;

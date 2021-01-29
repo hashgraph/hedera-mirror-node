@@ -1,7 +1,7 @@
 package com.hedera.mirror.importer.reader.record;
 
 /*-
- *
+ * ‌
  * Hedera Mirror Node
  * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
@@ -17,7 +17,7 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * ‍
  */
 
 public class RecordFileReaderImplV5Test extends AbstractRecordFileReaderTest {
@@ -28,7 +28,7 @@ public class RecordFileReaderImplV5Test extends AbstractRecordFileReaderTest {
     }
 
     @Override
-    protected boolean filterFile(final int version) {
+    protected boolean filterFile(int version) {
         return version == 5;
     }
 }

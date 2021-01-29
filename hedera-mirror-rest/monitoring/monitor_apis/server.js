@@ -20,24 +20,42 @@
 
 'use strict';
 
-require('dotenv').config({
-  path: './.env',
-});
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const compression = require('compression');
+const log4js = require('log4js');
 
-const {interval, servers} = require('./config');
+// Logger
+const logger = log4js.getLogger();
+log4js.configure({
+  appenders: {
+    console: {
+      layout: {
+        pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %m',
+        type: 'pattern',
+      },
+      type: 'stdout',
+    },
+  },
+  categories: {
+    default: {
+      appenders: ['console'],
+      level: 'info',
+    },
+  },
+});
+global.logger = log4js.getLogger();
+
+const config = require('./config');
 const common = require('./common');
 const monitor = require('./monitor');
 
 const app = express();
 
-const port = process.env.PORT;
+const port = process.env.PORT || config.port || 3000;
 if (port === undefined || isNaN(Number(port))) {
-  console.log('Please specify the port');
+  logger.error('Please specify a valid port');
   process.exit(1);
 }
 
@@ -60,28 +78,39 @@ common.initResults();
 // routes
 app.get(`${apiPrefix}/status`, (req, res) => {
   const status = common.getStatus();
+  const passed = status.results.map((r) => r.results.numPassedTests).reduce((r, i) => r + i);
+  const total = status.results.map((r) => r.results.testResults.length).reduce((r, i) => r + i);
+  logger.info(
+    `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
+  );
   res.status(status.httpCode).send(status.results);
 });
+
 app.get(`${apiPrefix}/status/:name`, (req, res) => {
   const status = common.getStatusByName(req.params.name);
+  const passed = status.results.numPassedTests;
+  const total = status.results.testResults.length;
+  logger.info(
+    `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
+  );
   res.status(status.httpCode).send(status);
 });
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
-    console.log(`Server running on port: ${port}`);
+    logger.info(`Server running on port: ${port}`);
   });
 }
 
 const runMonitorTests = () => {
-  console.log(`Running the tests at: ${new Date()}`);
-  monitor.runEverything(servers);
+  logger.info('Running tests');
+  monitor.runEverything(config.servers);
 };
 
 runMonitorTests();
 setInterval(() => {
   // Run all the tests periodically
   runMonitorTests();
-}, interval * 1000);
+}, config.interval * 1000);
 
 module.exports = app;

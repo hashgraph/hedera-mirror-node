@@ -1,0 +1,90 @@
+name: Rosetta API
+
+on: pull_request
+
+env:
+  working-directory: ./hedera-mirror-rosetta
+  image-tag: mirror-node
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        name: Setup GO Env
+        with:
+          go-version: '1.13'
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build hedera-mirror-rosetta
+        run: go build -i -o rosetta cmd/*
+        working-directory: ${{env.working-directory}}
+      - name: Upload Binary as artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: hedera-mirror-rosetta
+          path: ${{ env.working-directory }}/rosetta
+          if-no-files-found: error
+      - name: Get current version
+        id: get_version
+        run: |
+          REF_TAG=${GITHUB_REF/refs\/tags\//}
+          if [[ $REF_TAG != v* ]];
+          then
+            REF_TAG=${GITHUB_RUN_ID}
+          fi
+
+          echo ::set-output name=VERSION::${REF_TAG}
+      - name: Package hedera-mirror-rosetta
+        run: |
+          set -ex
+          tar -czf hedera-mirror-rosetta-${{ steps.get_version.outputs.VERSION }}.tgz -C . hedera-mirror-rosetta
+      - name: Upload folder archive as artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: hedera-mirror-rosetta
+          path: hedera-mirror-rosetta-${{ steps.get_version.outputs.VERSION }}.tgz
+          if-no-files-found: error
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        name: Setup GO Env
+        with:
+          go-version: '1.13'
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-test-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-test-
+      - name: Run Unit Tests with Coverage
+        run: go test ./... -coverpkg=./... -race -coverprofile=coverage.txt -covermode=atomic
+        working-directory: ${{env.working-directory}}
+      - name: Upload Coverage report to CodeCov
+        run: bash <(curl -s https://codecov.io/bash)
+        working-directory: ${{env.working-directory}}
+  cli-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Mirror Node All-in-One
+        run: docker build --tag=${{env.image-tag}} --build-arg GIT_BRANCH=${{ github.head_ref }} .
+        working-directory: ${{env.working-directory}}/build
+      - name: Run Mirror Node
+        run: docker run -d -p 5700:5700 ${{env.image-tag}}
+      - name: Wait for Mirror Node to start syncing
+        run: bash ./wait-for-mirror-node.sh
+        working-directory: ${{env.working-directory}}/scripts
+      - name: Run CLI Validation
+        run: bash ./validation/run-validation.sh
+        working-directory: ${{env.working-directory}}/scripts

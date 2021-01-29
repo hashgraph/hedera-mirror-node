@@ -48,6 +48,8 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.Schedule;
+import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
@@ -65,6 +67,8 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
@@ -86,6 +90,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenTransferRepository tokenTransferRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final ScheduleSignatureRepository scheduleSignatureRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
 
@@ -331,6 +337,54 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertExistsAndEquals(tokenTransferRepository, tokenTransfer3, new TokenTransfer.Id(4L, tokenId1, accountId1));
     }
 
+    @Test
+    void onSchedule() throws Exception {
+        EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
+        EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
+
+        Schedule schedule1 = getSchedule(1, entityId1.entityIdToString());
+        Schedule schedule2 = getSchedule(2, entityId2.entityIdToString());
+
+        // when
+        sqlEntityListener.onSchedule(schedule1);
+        sqlEntityListener.onSchedule(schedule2);
+        completeFileAndCommit();
+
+        // then
+        assertEquals(2, scheduleRepository.count());
+        assertExistsAndEquals(scheduleRepository, schedule1, 1L);
+        assertExistsAndEquals(scheduleRepository, schedule2, 2L);
+    }
+
+    @Test
+    void onScheduleSignature() throws Exception {
+        EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
+        EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
+        EntityId entityId3 = EntityId.of("0.0.300", EntityTypeEnum.SCHEDULE);
+        byte[] pubKeyPrefix1 = "pubKeyPrefix1".getBytes();
+        byte[] pubKeyPrefix2 = "pubKeyPrefix2".getBytes();
+        byte[] pubKeyPrefix3 = "pubKeyPrefix3".getBytes();
+
+        ScheduleSignature scheduleSignature1 = getScheduleSignature(1, entityId1.entityIdToString(), pubKeyPrefix1);
+        ScheduleSignature scheduleSignature2 = getScheduleSignature(2, entityId2.entityIdToString(), pubKeyPrefix2);
+        ScheduleSignature scheduleSignature3 = getScheduleSignature(3, entityId3.entityIdToString(), pubKeyPrefix3);
+
+        // when
+        sqlEntityListener.onScheduleSignature(scheduleSignature1);
+        sqlEntityListener.onScheduleSignature(scheduleSignature2);
+        sqlEntityListener.onScheduleSignature(scheduleSignature3);
+        completeFileAndCommit();
+
+        // then
+        assertEquals(3, scheduleSignatureRepository.count());
+        assertExistsAndEquals(scheduleSignatureRepository, scheduleSignature1, new ScheduleSignature.Id(1L,
+                pubKeyPrefix1));
+        assertExistsAndEquals(scheduleSignatureRepository, scheduleSignature2, new ScheduleSignature.Id(2L,
+                pubKeyPrefix2));
+        assertExistsAndEquals(scheduleSignatureRepository, scheduleSignature3, new ScheduleSignature.Id(3L,
+                pubKeyPrefix3));
+    }
+
     private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
@@ -382,6 +436,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         transaction.setMaxFee(1L);
         transaction.setChargedTxFee(1L);
         transaction.setInitialBalance(0L);
+        transaction.setScheduled(true);
         return transaction;
     }
 
@@ -443,5 +498,25 @@ public class SqlEntityListenerTest extends IntegrationTest {
                         .of(accountId, ACCOUNT)));
 
         return tokenTransfer;
+    }
+
+    private Schedule getSchedule(long consensusTimestamp, String scheduleId) {
+        Schedule schedule = new Schedule();
+        schedule.setConsensusTimestamp(consensusTimestamp);
+        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
+        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
+        schedule.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        schedule.setTransactionBody("transaction body".getBytes());
+        return schedule;
+    }
+
+    private ScheduleSignature getScheduleSignature(long consensusTimestamp, String scheduleId, byte[] pubKeyPrefix) {
+        ScheduleSignature scheduleSignature = new ScheduleSignature();
+        scheduleSignature.setId(new ScheduleSignature.Id(
+                consensusTimestamp,
+                pubKeyPrefix));
+        scheduleSignature.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        scheduleSignature.setSignature("scheduled transaction signature".getBytes());
+        return scheduleSignature;
     }
 }

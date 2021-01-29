@@ -84,7 +84,7 @@ const instantiateDatabase = async function () {
     console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`);
   }
 
-  console.log(`sqlConnection will use jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}`);
+  console.log(`sqlConnection will use postgresql://${config.db.host}:${config.db.port}/${config.db.name}`);
   sqlConnection = new SqlConnectionPool({
     user: dbUser,
     host: config.db.host,

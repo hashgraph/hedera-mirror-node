@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- *
+ * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -77,7 +77,6 @@ if (process.env.NODE_ENV === 'test') {
 }
 if (port === undefined || Number.isNaN(Number(port))) {
   logger.error('Server started with unknown port');
-  console.log('Please specify the port');
   process.exit(1);
 }
 
@@ -138,10 +137,6 @@ app.getAsync(`${apiPrefix}/accounts/:id`, accounts.getOneAccount);
 // balances routes
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
-// transactions routes
-app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
-app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
-
 // stateproof route
 if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
   logger.info('stateproof REST API is enabled, install handler');
@@ -150,15 +145,19 @@ if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
   logger.info('stateproof REST API is disabled');
 }
 
+// tokens routes
+app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
+app.getAsync(`${apiPrefix}/tokens/:id`, tokens.getTokenInfoRequest);
+app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenBalances);
+
 // topics routes
 app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
 app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
-// tokens routes
-app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
-app.getAsync(`${apiPrefix}/tokens/:id`, tokens.getTokenInfoRequest);
-app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenBalances);
+// transactions routes
+app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
+app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
 
 // response data handling middleware
 app.use(responseHandler);

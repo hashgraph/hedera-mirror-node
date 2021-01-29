@@ -190,6 +190,7 @@ class Pool {
       row.amount = i * 1000;
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';
+      row.scheduled = false;
       rows.push(row);
     }
     if (['asc', 'ASC'].includes(order)) {

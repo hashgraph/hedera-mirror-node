@@ -99,6 +99,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "result": "SUCCESS",
+        "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.8-1565779666-711927000",
         "transfers": [
@@ -126,6 +127,7 @@
         "name": "CRYPTOUPDATEACCOUNT",
         "node": "0.0.3",
         "result": "SUCCESS",
+        "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.8-1565779600-711927000",
         "transfers": [],

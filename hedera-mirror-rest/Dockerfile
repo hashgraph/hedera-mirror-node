@@ -1,4 +1,4 @@
-FROM node:14.7.0-alpine3.12
+FROM node:14.15.4-alpine3.12
 LABEL maintainer="mirrornode@hedera.com"
 
 # Setup

@@ -24,6 +24,22 @@ const utils = require('../utils.js');
 const constants = require('../constants.js');
 
 describe('utils buildComparatorFilter tests', () => {
+  test('Verify buildComparatorFilter for scheduled=true', () => {
+    verifyBuildComparatorFilter(constants.filterKeys.SCHEDULED, 'true', {
+      key: constants.filterKeys.SCHEDULED,
+      operator: 'eq',
+      value: 'true',
+    });
+  });
+
+  test('Verify buildComparatorFilter for scheduled=false', () => {
+    verifyBuildComparatorFilter(constants.filterKeys.SCHEDULED, 'false', {
+      key: constants.filterKeys.SCHEDULED,
+      operator: 'eq',
+      value: 'false',
+    });
+  });
+
   test('Verify buildComparatorFilter for sequencenumber=lt:2', () => {
     verifyBuildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, 'lt:2', {
       key: constants.filterKeys.SEQUENCE_NUMBER,
@@ -83,9 +99,9 @@ describe('utils buildFilterObject tests', () => {
       sequencenumber: '2',
     };
 
-    let formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilterObject(filters);
 
-    expect(formattedFilters.length).toBe(1);
+    expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'eq', '2');
   });
 
@@ -94,9 +110,9 @@ describe('utils buildFilterObject tests', () => {
       timestamp: '1234567890.000000004',
     };
 
-    let formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilterObject(filters);
 
-    expect(formattedFilters.length).toBe(1);
+    expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.TIMESTAMP, 'eq', '1234567890.000000004');
   });
 
@@ -108,24 +124,45 @@ describe('utils buildFilterObject tests', () => {
       order: 'desc',
     };
 
-    let builtFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilterObject(filters);
 
-    expect(builtFilters.length).toBe(5);
-    verifyFilter(builtFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'lt', '2');
-    verifyFilter(builtFilters[1], constants.filterKeys.SEQUENCE_NUMBER, 'gte', '3');
-    verifyFilter(builtFilters[2], constants.filterKeys.TIMESTAMP, 'eq', '1234567890.000000004');
-    verifyFilter(builtFilters[3], constants.filterKeys.LIMIT, 'eq', '5');
-    verifyFilter(builtFilters[4], constants.filterKeys.ORDER, 'eq', 'desc');
+    expect(formattedFilters).toHaveLength(5);
+    verifyFilter(formattedFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'lt', '2');
+    verifyFilter(formattedFilters[1], constants.filterKeys.SEQUENCE_NUMBER, 'gte', '3');
+    verifyFilter(formattedFilters[2], constants.filterKeys.TIMESTAMP, 'eq', '1234567890.000000004');
+    verifyFilter(formattedFilters[3], constants.filterKeys.LIMIT, 'eq', '5');
+    verifyFilter(formattedFilters[4], constants.filterKeys.ORDER, 'eq', 'desc');
+  });
+
+  test('Verify buildComparatorFilter for /api/v1/transactions/0.0.3-1234567890-000000123/stateproof?scheduled=true', () => {
+    const filters = {
+      scheduled: 'true',
+    };
+
+    const formattedFilters = utils.buildFilterObject(filters);
+
+    expect(formattedFilters).toHaveLength(1);
+    verifyFilter(formattedFilters[0], constants.filterKeys.SCHEDULED, 'eq', 'true');
+  });
+
+  test('Verify buildComparatorFilter for /api/v1/transactions/0.0.3-1234567890-000000123/stateproof?scheduled=true&scheduled=false', () => {
+    const filters = {
+      scheduled: ['true', 'false'],
+    };
+
+    const formattedFilters = utils.buildFilterObject(filters);
+
+    expect(formattedFilters).toHaveLength(2);
+    verifyFilter(formattedFilters[0], constants.filterKeys.SCHEDULED, 'eq', 'true');
+    verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULED, 'eq', 'false');
   });
 });
 
 describe('utils formatComparator tests', () => {
-  test('Verify formatComparator for sequencenumber=2', () => {
+  test('Verify formatComparator for sequencenumber=lt:2', () => {
     const filter = utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, 'lt:2');
-
-    let formattedFilter = utils.formatComparator(filter);
-
-    expect(formattedFilter).toBe(undefined);
+    utils.formatComparator(filter);
+    verifyFilter(filter, constants.filterKeys.SEQUENCE_NUMBER, ' < ', '2');
   });
 
   test('Verify formatComparator for timestamp=lte:1234567890.000000004', () => {
@@ -160,50 +197,63 @@ describe('utils formatComparator tests', () => {
     verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' >= ', '6');
   });
 
-  test('Verify formatComparator for timestamp=lte:1234567890.000000004', () => {
+  test('Verify formatComparator for timestamp=gt:1234567890.000000004', () => {
     const filter = utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'gt:1234567890.000000007');
     utils.formatComparator(filter);
     verifyFilter(filter, constants.filterKeys.TIMESTAMP, ' > ', '1234567890000000007');
   });
+
+  test('Verify formatComparator for scheduled=true', () => {
+    const filter = utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'true');
+    utils.formatComparator(filter);
+    verifyFilter(filter, constants.filterKeys.SCHEDULED, ' = ', true);
+  });
+
+  test('Verify formatComparator for scheduled=false', () => {
+    const filter = utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'false');
+    utils.formatComparator(filter);
+    verifyFilter(filter, constants.filterKeys.SCHEDULED, ' = ', false);
+  });
 });
 
 describe('utils validateAndParseFilters tests', () => {
-  test('Verify validateAndParseFilters for sequencenumber=2', async () => {
-    const filters = [
-      utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<:2'),
-      utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<=:2'),
-    ];
+  const verifyInvalidFilters = async (filters) => {
+    await expect(utils.validateAndParseFilters(filters)).rejects.toThrowErrorMatchingSnapshot();
+  };
 
-    await verifyInvalidFilters(filters);
-  });
+  const invalidFilters = [
+    // erroneous data
+    utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:-1'),
+    utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:today'),
+    utils.buildComparatorFilter(constants.filterKeys.ORDER, 'chronological'),
+    utils.buildComparatorFilter(constants.filterKeys.LIMIT, '-1'),
+    utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '-1'),
+    utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_PUBLICKEY, 'key'),
+    utils.buildComparatorFilter(constants.filterKeys.RESULT, 'good'),
+    utils.buildComparatorFilter(constants.filterKeys.CREDIT_TYPE, 'all'),
+    utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '-1'),
+    utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'encrypt'),
+    utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'lt:true'),
+    utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'lte:true'),
+    utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'ne:true'),
+    utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'gte:true'),
+    utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'gt:true'),
+    // invalid format
+    utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:0.1.23456789012345'),
+    utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:23456789012345678901234'),
+    utils.buildComparatorFilter(constants.filterKeys.LIMIT, '2.3'),
+    utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '3.4'),
+    utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<:2'),
+    utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<=:2'),
+    utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_PUBLICKEY, '3c3d546321ff6f63d701d2ec5c2'),
+    utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '23456789012345678901234'),
+    utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'invalid'),
+  ];
 
-  test('Verify validateAndParseFilters for erroneous data throws exception', async () => {
-    const filters = [
-      utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:-1'),
-      utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:today'),
-      utils.buildComparatorFilter(constants.filterKeys.ORDER, 'chronological'),
-      utils.buildComparatorFilter(constants.filterKeys.LIMIT, '-1'),
-      utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '-1'),
-      utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_PUBLICKEY, 'key'),
-      utils.buildComparatorFilter(constants.filterKeys.RESULT, 'good'),
-      utils.buildComparatorFilter(constants.filterKeys.CREDIT_TYPE, 'all'),
-      utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '-1'),
-      utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'encrypt'),
-    ];
-
-    await verifyInvalidFilters(filters);
-  });
-
-  test('Verify validateAndParseFilters for invalid format throws exception', async () => {
-    const filters = [
-      utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:0.1.23456789012345'),
-      utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:23456789012345678901234'),
-      utils.buildComparatorFilter(constants.filterKeys.LIMIT, '2.3'),
-      utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '3.4'),
-      utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_PUBLICKEY, '3c3d546321ff6f63d701d2ec5c2'),
-      utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '23456789012345678901234'),
-    ];
-    await verifyInvalidFilters(filters);
+  invalidFilters.forEach((filter) => {
+    test(`Verify validateAndParseFilters for ${JSON.stringify(filter)}`, async () => {
+      await verifyInvalidFilters([filter]);
+    });
   });
 
   test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
@@ -223,12 +273,12 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.CREDIT_TYPE, 'debit'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '45000'),
       utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'utf-8'),
+      utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'true'),
+      utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'false'),
+      utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'True'),
+      utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'False'),
     ];
 
-    await expect(utils.validateAndParseFilters(filters)).resolves.toBeUndefined();
+    await utils.validateAndParseFilters(filters);
   });
 });
-
-const verifyInvalidFilters = async (filters) => {
-  await expect(utils.validateAndParseFilters(filters)).rejects.toThrowErrorMatchingSnapshot();
-};

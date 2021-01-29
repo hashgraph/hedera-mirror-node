@@ -20,10 +20,7 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import javax.inject.Named;
 import org.apache.commons.io.FilenameUtils;
 
@@ -33,7 +30,7 @@ import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
-import com.hedera.mirror.importer.reader.ReaderUtility;
+import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
 @Named
 public class SignatureFileReaderV2 implements SignatureFileReader {
@@ -45,28 +42,19 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
     public FileStreamSignature read(StreamFileData signatureFileData) {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
         String filename = FilenameUtils.getName(signatureFileData.getFilename());
-        InputStream inputStream = signatureFileData.getInputStream();
 
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(inputStream))) {
-            byte[] fileHash = new byte[DigestAlgorithm.SHA384.getSize()];
-
-            byte hashTypeDelimiter = dis.readByte();
-            ReaderUtility.validate(SIGNATURE_TYPE_FILE_HASH, hashTypeDelimiter, filename, "hash delimiter");
-
-            int length = dis.read(fileHash);
-            ReaderUtility.validate(fileHash.length, length, filename, "hash length");
-
+        try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
+                signatureFileData.getInputStream(), filename)) {
+            vdis.readByte(SIGNATURE_TYPE_FILE_HASH, "hash delimiter");
+            byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA384.getSize(), "hash");
             fileStreamSignature.setFileHash(fileHash);
 
-            byte signatureTypeDelimiter = dis.readByte();
-            ReaderUtility.validate(SIGNATURE_TYPE_SIGNATURE, signatureTypeDelimiter, filename, "signature delimiter");
+            vdis.readByte(SIGNATURE_TYPE_SIGNATURE, "signature delimiter");
+            byte[] signature = vdis.readLengthAndBytes(1, SignatureType.SHA_384_WITH_RSA.getMaxLength(),
+                    false, "signature");
+            fileStreamSignature.setFileHashSignature(signature);
 
-            int sigLength = dis.readInt();
-            byte[] sigBytes = new byte[sigLength];
-            dis.readFully(sigBytes);
-            fileStreamSignature.setFileHashSignature(sigBytes);
-
-            if (dis.available() != 0) {
+            if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 

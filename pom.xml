@@ -38,6 +38,7 @@
         <module>hedera-mirror-monitor</module>
         <module>hedera-mirror-protobuf</module>
         <module>hedera-mirror-rest</module>
+        <module>hedera-mirror-rosetta</module>
         <module>hedera-mirror-test</module>
     </modules>
 
@@ -62,7 +63,7 @@
         <embedded.testcontainers.version>2.0.0</embedded.testcontainers.version>
         <grpc-spring-boot.version>2.10.1.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.35.0</grpc.version>
-        <hedera-protobuf.version>0.10.0</hedera-protobuf.version>
+        <hedera-protobuf.version>0.11.0</hedera-protobuf.version>
         <hedera-sdk.version>1.3.3</hedera-sdk.version>
         <jacoco.version>0.8.6</jacoco.version>
         <java.version>11</java.version>
@@ -74,6 +75,7 @@
         <protobuf.version>3.14.0</protobuf.version>
         <release.version>0.27.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.13.0</release.chartVersion>
+        <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.coverage.jacoco.xmlReportPaths>
             ${maven.multiModuleProjectDirectory}/hedera-mirror-coverage/target/site/jacoco-aggregate/jacoco.xml
@@ -232,7 +234,6 @@
                 </plugin>
                 <plugin>
                     <!-- To generate license report: ./mvnw license:aggregate-third-party-report -->
-                    <!-- To update license headers: ./mvnw license:update-file-header -N -->
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
                     <version>2.0.0</version>
@@ -351,6 +352,66 @@
     </build>
 
     <profiles>
+        <!-- To update license headers, run ./mvnw clean package -N -P=license -->
+        <profile>
+            <id>license</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>license-maven-plugin</artifactId>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <includes>
+                                <include>**/*.js</include>
+                                <include>**/*.java</include>
+                                <include>**/*.proto</include>
+                            </includes>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>update-file-header</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Remove extra whitespace in header that the license plugin adds -->
+                    <plugin>
+                        <groupId>com.google.code.maven-replacer-plugin</groupId>
+                        <artifactId>replacer</artifactId>
+                        <version>${replacer.version}</version>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <basedir>${project.basedir}</basedir>
+                            <includes>
+                                <include>**/*.js</include>
+                                <include>**/*.java</include>
+                                <include>**/*.proto</include>
+                            </includes>
+                            <regexFlags>
+                                <regexFlag>MULTILINE</regexFlag>
+                            </regexFlags>
+                            <replacements>
+                                <replacement>
+                                    <token><![CDATA[(?<=^ [*])\s+$]]></token>
+                                    <value/>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                                <phase>process-sources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <build>
@@ -358,7 +419,7 @@
                     <plugin>
                         <groupId>com.google.code.maven-replacer-plugin</groupId>
                         <artifactId>replacer</artifactId>
-                        <version>1.5.3</version>
+                        <version>${replacer.version}</version>
                         <configuration>
                             <basedir>${project.basedir}</basedir>
                             <includes>
@@ -389,7 +450,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>
-                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|test):)[0-9a-zA-Z.-]+]]></token>
+                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                             </replacements>

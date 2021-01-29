@@ -1,0 +1,48 @@
+{
+  "port": 3000,
+  "servers": [
+    {
+      "ip": "127.0.0.1",
+      "port": 5551,
+      "name": "local"
+    }
+  ],
+  "interval": 60,
+  "shard": 0,
+  "account": {
+    "enabled": true,
+    "intervalMultiplier": 1,
+    "limit": 10
+  },
+  "balance": {
+    "enabled": true,
+    "freshnessThreshold": 1000,
+    "intervalMultiplier": 1,
+    "limit": 10
+  },
+  "stateproof": {
+    "enabled": true,
+    "intervalMultiplier": 10
+  },
+  "transaction": {
+    "enabled": true,
+    "freshnessThreshold": 50,
+    "intervalMultiplier": 1,
+    "limit": 10
+  },
+  "topic": {
+    "enabled": true,
+    "freshnessThreshold": 100,
+    "intervalMultiplier": 1,
+    "limit": 10,
+    "topicId": ""
+  },
+  "token": {
+    "enabled": false,
+    "freshnessThreshold": 1000,
+    "intervalMultiplier": 1,
+    "tokenBalancesLimit": 10,
+    "tokenId": "",
+    "limit": 10
+  }
+}

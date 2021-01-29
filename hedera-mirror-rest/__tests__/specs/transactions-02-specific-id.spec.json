@@ -16,34 +16,99 @@
       }
     ],
     "balances": [],
-    "transactions": [],
+    "transactions": [
+      {
+        "charged_tx_fee": 7,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000002",
+        "valid_start_timestamp": "1234567890000000001",
+        "name": "SCHEDULECREATE",
+        "type": 42,
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 10
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "charged_tx_fee": 7,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.4",
+        "consensus_timestamp": "1234567890000000040",
+        "valid_start_timestamp": "1234567890000000001",
+        "name": "CRYPTOTRANSFER",
+        "result": 11,
+        "type": 14,
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 100
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ]
+      }
+    ],
     "cryptotransfers": [
       {
-        "consensus_timestamp": "1234567890000000001",
+        "consensus_timestamp": "1234567890000000003",
+        "valid_start_timestamp": "1234567890000000001",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
         "amount": 10,
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
+        "treasuryAccountId": "0.0.98",
+        "scheduled": true
       }
     ]
   },
-  "url": "/api/v1/transactions/0.0.10-1234567890-000000000",
+  "url": "/api/v1/transactions/0.0.10-1234567890-000000001",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
       {
-        "consensus_timestamp": "1234567890.000000001",
-        "valid_start_timestamp": "1234567890.000000000",
+        "consensus_timestamp": "1234567890.000000002",
         "charged_tx_fee": 7,
+        "max_fee": "33",
         "memo_base64": null,
+        "name": "SCHEDULECREATE",
+        "node": "0.0.3",
         "result": "SUCCESS",
+        "scheduled": false,
         "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.10-1234567890-000000001",
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 10
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567890.000000001"
+      },
+      {
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567890.000000003",
+        "max_fee": "33",
+        "memo_base64": null,
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
-        "transaction_id": "0.0.10-1234567890-000000000",
-        "valid_duration_seconds": "11",
-        "max_fee": "33",
+        "result": "SUCCESS",
+        "scheduled": true,
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
           {
             "account": "0.0.9",
@@ -57,7 +122,33 @@
             "account": "0.0.98",
             "amount": 1
           }
-        ]
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567890.000000001"
+      },
+      {
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567890.000000040",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.4",
+        "result": "DUPLICATE_TRANSACTION",
+        "scheduled": false,
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.10-1234567890-000000001",
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 100
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567890.000000001"
       }
     ]
   }

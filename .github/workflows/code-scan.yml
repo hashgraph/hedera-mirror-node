@@ -11,7 +11,7 @@ jobs:
     name: Analyze Java
     runs-on: ubuntu-latest
     env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dskip.npm
 
     steps:
       - name: Checkout repository
@@ -62,6 +62,25 @@ jobs:
         uses: github/codeql-action/init@v1
         with:
           languages: javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
+
+  analyze-go:
+    name: Analyze Golang
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: go
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v1

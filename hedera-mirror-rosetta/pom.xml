@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <artifactId>hedera-mirror-rosetta</artifactId>
+    <description>Rosetta REST API for the Hedera Mirror Node</description>
+    <modelVersion>4.0.0</modelVersion>
+    <name>Hedera Mirror Node Rosetta REST API</name>
+    <packaging>pom</packaging>
+
+    <parent>
+        <groupId>com.hedera</groupId>
+        <artifactId>hedera-mirror-node</artifactId>
+        <version>${release.version}</version>
+    </parent>
+
+    <properties>
+        <sonar.exclusions>pom.xml</sonar.exclusions>
+        <sonar.sources>${project.basedir}</sonar.sources>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

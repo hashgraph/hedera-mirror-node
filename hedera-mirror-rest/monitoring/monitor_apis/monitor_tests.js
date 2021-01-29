@@ -1,9 +1,9 @@
 /*-
- *‌
+ * ‌
  * Hedera Mirror Node
- *​
+ * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
- *​
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *‍
+ * ‍
  */
 
 'use strict';
@@ -40,12 +40,11 @@ const counters = {};
  * Each class manages its tests and returns a class results object
  * A single combined result object covering all test resources is returned
  *
- * @param {String} name server name
- * @param {String} address server address in the format of http://ip:port
+ * @param {Object} server object provided by the user
  * @return {Object} results object capturing tests for given endpoint
  */
-const runTests = (name, address) => {
-  const counter = name in counters ? counters[name] : 0;
+const runTests = (server) => {
+  const counter = server.name in counters ? counters[server.name] : 0;
   const skippedResource = [];
   const enabledTestModules = allTestModules.filter((testModule) => {
     const {enabled} = config[testModule.resource];
@@ -60,11 +59,11 @@ const runTests = (name, address) => {
     skippedResource.push(testModule.resource);
     return false;
   });
-  counters[name] = counter + 1;
+  counters[server.name] = counter + 1;
 
   const serverTestResult = new utils.ServerTestResult();
   if (skippedResource.length !== 0) {
-    const currentResults = getServerCurrentResults(name);
+    const currentResults = getServerCurrentResults(server.name);
     for (const testResult of currentResults.testResults) {
       if (skippedResource.includes(testResult.resource)) {
         serverTestResult.addTestResult(testResult);
@@ -77,7 +76,7 @@ const runTests = (name, address) => {
     return Promise.resolve(serverTestResult.result);
   }
 
-  return Promise.all(testModules.map((testModule) => testModule.runTests(address, serverTestResult))).then(() => {
+  return Promise.all(testModules.map((testModule) => testModule.runTests(server, serverTestResult))).then(() => {
     // set class results endTime
     serverTestResult.finish();
     return serverTestResult.result;

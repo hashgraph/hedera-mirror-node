@@ -5,7 +5,7 @@ on:
     branches: [ master, release/** ]
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dskip.npm
     -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Djib.skip -Ddocker.skip
   MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0 -Dgroups=!v1
     -Dspring.flyway.locations=classpath:/db/migration/v2,filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2
@@ -135,6 +135,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: rest-test-2-results
+          name: rest-test-results
           path: ${{env.working-directory}}/target/jest-junit/*
           retention-days: 7

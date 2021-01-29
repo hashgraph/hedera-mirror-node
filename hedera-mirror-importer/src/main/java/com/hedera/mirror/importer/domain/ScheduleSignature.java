@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import javax.persistence.Convert;
@@ -39,6 +40,7 @@ import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 @NoArgsConstructor
 public class ScheduleSignature {
     @EmbeddedId
+    @JsonUnwrapped
     private ScheduleSignature.Id id;
 
     @ToString.Exclude

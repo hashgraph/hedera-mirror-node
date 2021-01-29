@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,8 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.Schedule;
+import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -52,6 +54,8 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
@@ -77,6 +81,8 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
     private final RepositoryEntityListener repositoryEntityListener;
+    private final ScheduleRepository scheduleRepository;
+    private final ScheduleSignatureRepository scheduleSignatureRepository;
 
     @Test
     void isEnabled() {
@@ -135,6 +141,30 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         nonFeeTransfer.setId(new NonFeeTransfer.Id(1L, ENTITY_ID));
         repositoryEntityListener.onNonFeeTransfer(nonFeeTransfer);
         assertThat(nonFeeTransferRepository.findAll()).contains(nonFeeTransfer);
+    }
+
+    @Test
+    void onSchedule() throws ImporterException {
+        Schedule schedule = new Schedule();
+        schedule.setConsensusTimestamp(1L);
+        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
+        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
+        schedule.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
+        schedule.setTransactionBody("transaction body".getBytes());
+        repositoryEntityListener.onSchedule(schedule);
+        assertThat(scheduleRepository.findAll()).contains(schedule);
+    }
+
+    @Test
+    void onScheduleSignature() throws ImporterException {
+        ScheduleSignature scheduleSignature = new ScheduleSignature();
+        scheduleSignature.setId(new ScheduleSignature.Id(
+                1L,
+                "signatory public key prefix".getBytes()));
+        scheduleSignature.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
+        scheduleSignature.setSignature("scheduled transaction signature".getBytes());
+        repositoryEntityListener.onScheduleSignature(scheduleSignature);
+        assertThat(scheduleSignatureRepository.findAll()).contains(scheduleSignature);
     }
 
     @Test
