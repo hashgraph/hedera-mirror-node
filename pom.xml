@@ -38,6 +38,7 @@
         <module>hedera-mirror-monitor</module>
         <module>hedera-mirror-protobuf</module>
         <module>hedera-mirror-rest</module>
+        <module>hedera-mirror-rosetta</module>
         <module>hedera-mirror-test</module>
     </modules>
 
@@ -449,7 +450,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>
-                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|test):)[0-9a-zA-Z.-]+]]></token>
+                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                             </replacements>

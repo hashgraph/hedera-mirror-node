@@ -1,9 +1,9 @@
-# We upload two separate reports: js and java
+# We upload three separate reports: js, java and go
 codecov:
     notify:
-        after_n_builds: 2
+        after_n_builds: 3
 comment:
-    after_n_builds: 2
+    after_n_builds: 3
 coverage:
     status:
         project:
