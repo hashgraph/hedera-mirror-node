@@ -20,13 +20,28 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.when;
+
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.UnicastProcessor;
@@ -39,13 +54,13 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RedisEntityListenerIntegrationTest extends BatchEntityListenerTest {
+class RedisEntityListenerTest extends BatchEntityListenerTest {
 
     private final RedisOperations<String, StreamMessage> redisOperations;
 
     @Autowired
-    public RedisEntityListenerIntegrationTest(RedisEntityListener entityListener, RedisProperties properties,
-                                              RedisOperations<String, StreamMessage> redisOperations) {
+    public RedisEntityListenerTest(RedisEntityListener entityListener, RedisProperties properties,
+                                   RedisOperations<String, StreamMessage> redisOperations) {
         super(entityListener, properties);
         this.redisOperations = redisOperations;
     }
@@ -90,5 +105,69 @@ class RedisEntityListenerIntegrationTest extends BatchEntityListenerTest {
                 .expectNext(topicMessage1, topicMessage2, topicMessage3)
                 .thenCancel()
                 .verify(Duration.ofMillis(1000));
+    }
+
+    @Test
+    void onSlowPublish() {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger saveCount = new AtomicInteger(0);
+
+        // given
+        List<TopicMessage> messages = new ArrayList<>();
+        for (int i = 0; i < RedisEntityListener.TASK_QUEUE_SIZE + 2; i++) {
+            messages.add(topicMessage());
+        }
+        Flux<TopicMessage> topicMessageFlux = subscribe(messages.get(0).getTopicNum());
+
+        // when
+//        doAnswer((Answer<Void>) invocation -> {
+//            // block publish until latch count reaches 0
+//            latch.await();
+//            invocation.callRealMethod();
+//            return null;
+//        }).
+        when(redisOperations.executePipelined(any(SessionCallback.class))).then((x) -> {
+            latch.await();
+//            return x.callRealMethod();
+            return null;
+        });
+
+        // drive entityListener to handle topic messages in a different thread cause it will block
+        new Thread(() -> {
+            try {
+                for (TopicMessage message : messages) {
+                    entityListener.onTopicMessage(message);
+                    entityListener.onSave(new EntityBatchSaveEvent(this));
+                    entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+                    saveCount.getAndIncrement();
+                }
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }).start();
+
+        // then
+        topicMessageFlux
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(500))
+                .then(() -> assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1))
+                .expectNextCount(0)
+                .then(latch::countDown)
+                .expectNextSequence(messages)
+                .thenCancel()
+                .verify(Duration.ofMillis(1000));
+
+        // reset the stub
+        doCallRealMethod().when(redisOperations).convertAndSend(anyString(), any(Object.class));
+    }
+
+    @TestConfiguration
+    static class ContextConfiguration {
+
+        @Bean
+        @Primary
+        public RedisOperations<String, StreamMessage> redisOpsSpy(RedisOperations<String, StreamMessage> redisOperations) {
+            return Mockito.spy(redisOperations);
+        }
     }
 }
