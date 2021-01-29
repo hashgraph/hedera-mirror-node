@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.redis;/*
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,7 +45,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
 @ExtendWith(MockitoExtension.class)
-public class RedisEntityListenerMockitoTest {
+class RedisEntityListenerMockitoTest {
 
     @Mock
     private RedisOperations<String, StreamMessage> redisOperations;
@@ -95,18 +95,16 @@ public class RedisEntityListenerMockitoTest {
         }).start();
 
         //Wait for separate thread to catch up.
-        Thread.sleep(500);
         //Thread should be blocked at message 10, with the first publish still waiting.
-        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1);
-        verify(redisOperations, times(1))
+        verify(redisOperations, timeout(500).times(1))
                 .executePipelined(any(SessionCallback.class));
+        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1);
 
         latch.countDown();
-        Thread.sleep(500);
         //All messages should be queued and published
-        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 2);
-        verify(redisOperations, times(RedisEntityListener.TASK_QUEUE_SIZE + 2))
+        verify(redisOperations, timeout(500).times(RedisEntityListener.TASK_QUEUE_SIZE + 2))
                 .executePipelined(any(SessionCallback.class));
+        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 2);
     }
 
     @Test
@@ -121,21 +119,18 @@ public class RedisEntityListenerMockitoTest {
         entityListener.onSave(new EntityBatchSaveEvent(this));
         entityListener.onTopicMessage(topicMessage2);
         entityListener.onSave(new EntityBatchSaveEvent(this));
-        Thread.sleep(1000);
-        verify(redisOperations, times(2))
+        verify(redisOperations, timeout(1000).times(2))
                 .executePipelined(any(SessionCallback.class));
         entityListener.onTopicMessage(topicMessage1); // duplicate
         entityListener.onSave(new EntityBatchSaveEvent(this));
         entityListener.onTopicMessage(topicMessage2); // duplicate
         entityListener.onSave(new EntityBatchSaveEvent(this));
-        Thread.sleep(1000);
-        verify(redisOperations, times(2))
+        verify(redisOperations, timeout(1000).times(2))
                 .executePipelined(any(SessionCallback.class));
         entityListener.onTopicMessage(topicMessage3);
         entityListener.onSave(new EntityBatchSaveEvent(this));
         entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-        Thread.sleep(1000);
-        verify(redisOperations, times(3))
+        verify(redisOperations, timeout(1000).times(3))
                 .executePipelined(any(SessionCallback.class));
 
         // then
