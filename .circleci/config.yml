@@ -306,7 +306,7 @@ jobs:
       - run:
           working_directory: "hedera-mirror-rest"
           name: Run npm test
-          command: npm test
+          command: npm test -- --maxWorkers 2
           environment:
             TEST_S3_HOST: "127.0.0.1"
       - store_artifacts:

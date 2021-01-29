@@ -121,7 +121,7 @@ jobs:
           restore-keys: ${{ runner.os }}-node-
 
       - name: Run tests
-        run: npm test
+        run: npm test -- --maxWorkers 2
         working-directory: ${{env.working-directory}}
         env:
           CI_CONTAINERS: true
