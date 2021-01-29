@@ -36,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
@@ -51,6 +52,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
     static final int BUFFER_SIZE = 16;
     static final Charset CHARSET = StandardCharsets.UTF_8;
+    static final String COLUMN_HEADER_PREFIX = "shard";
 
     private final BalanceParserProperties balanceParserProperties;
     private final AccountBalanceLineParser parser;
@@ -69,7 +71,13 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
         }
     }
 
-    protected abstract boolean supports(String firstLine);
+    protected boolean supports(String firstLine) {
+        return StringUtils.startsWithIgnoreCase(firstLine, getVersionHeaderPrefix());
+    }
+
+    protected abstract String getTimestampHeaderPrefix();
+
+    protected abstract String getVersionHeaderPrefix();
 
     @Override
     public AccountBalanceFile read(StreamFileData streamFileData, Consumer<AccountBalance> itemConsumer) {
@@ -102,8 +110,8 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
                     .peek(accountBalance -> count.incrementAndGet())
                     .forEachOrdered(itemConsumer);
 
-            accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
             accountBalanceFile.setCount(count.get());
+            accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
             accountBalanceFile.setLoadEnd(Instant.now().getEpochSecond());
             return accountBalanceFile;
         } catch (IOException ex) {

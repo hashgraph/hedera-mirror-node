@@ -37,10 +37,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import lombok.experimental.UtilityClass;
@@ -59,23 +56,6 @@ public class Utility {
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
     private static final Long SCALAR = 1_000_000_000L;
-
-    /**
-     * Calculate SHA384 hash of a balance file
-     *
-     * @param fileName file name
-     * @return hash in hex or null if calculating has failed
-     */
-    public static String getBalanceFileHash(String fileName) {
-        try {
-            MessageDigest md = MessageDigest.getInstance(SHA384.getName());
-            byte[] array = Files.readAllBytes(Paths.get(fileName));
-            return Utility.bytesToHex(md.digest(array));
-        } catch (NoSuchAlgorithmException | IOException e) {
-            log.error(e);
-            return null;
-        }
-    }
 
     /**
      * @return Timestamp from an instant

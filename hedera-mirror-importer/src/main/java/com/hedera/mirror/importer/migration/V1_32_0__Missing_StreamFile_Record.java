@@ -40,6 +40,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -61,19 +62,21 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
     private final JdbcTemplate jdbcTemplate;
     private final RecordDownloaderProperties recordDownloaderProperties;
     private final RecordFileReader recordFileReader;
+    private final BalanceFileReader balanceFileReader;
 
     public V1_32_0__Missing_StreamFile_Record(AccountIdConverter accountIdConverter,
-            AccountBalanceFileRepository accountBalanceFileRepository,
-            BalanceDownloaderProperties balanceDownloaderProperties,
-            DataSource dataSource,
-            RecordDownloaderProperties recordDownloaderProperties,
-            RecordFileReader recordFileReader) {
+                                              AccountBalanceFileRepository accountBalanceFileRepository,
+                                              BalanceDownloaderProperties balanceDownloaderProperties,
+                                              DataSource dataSource,
+                                              RecordDownloaderProperties recordDownloaderProperties,
+                                              RecordFileReader recordFileReader, BalanceFileReader balanceFileReader) {
         this.accountIdConverter = accountIdConverter;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
         this.balanceDownloaderProperties = balanceDownloaderProperties;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.recordDownloaderProperties = recordDownloaderProperties;
         this.recordFileReader = recordFileReader;
+        this.balanceFileReader = balanceFileReader;
     }
 
     @Override
@@ -123,12 +126,7 @@ public class V1_32_0__Missing_StreamFile_Record extends MirrorBaseJavaMigration 
     private StreamFile readStreamFile(File file, StreamType streamType) {
         StreamFile streamFile;
         if (streamType == StreamType.BALANCE) {
-            streamFile = AccountBalanceFile.builder()
-                    .consensusTimestamp(Utility.getTimestampFromFilename(file.getName()))
-                    .count(0L)
-                    .fileHash(Utility.getBalanceFileHash(file.getPath()))
-                    .name(file.getName())
-                    .build();
+            streamFile = balanceFileReader.read(StreamFileData.from(file));
         } else if (streamType == StreamType.RECORD) {
             streamFile = recordFileReader.read(StreamFileData.from(file));
         } else {

@@ -35,17 +35,21 @@ import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1
 @Named
 public class BalanceFileReaderImplV1 extends CsvBalanceFileReader {
 
-    private static final String COLUMN_HEADER_PREFIX = "shard";
     private static final int MAX_HEADER_ROWS = 10;
-    private static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
+    static final String TIMESTAMP_HEADER_PREFIX = "timestamp:";
 
     public BalanceFileReaderImplV1(BalanceParserProperties balanceParserProperties, AccountBalanceLineParserV1 parser) {
         super(balanceParserProperties, parser);
     }
 
     @Override
-    protected boolean supports(String firstLine) {
-        return StringUtils.startsWithIgnoreCase(firstLine, TIMESTAMP_HEADER_PREFIX);
+    protected String getTimestampHeaderPrefix() {
+        return TIMESTAMP_HEADER_PREFIX;
+    }
+
+    @Override
+    protected String getVersionHeaderPrefix() {
+        return TIMESTAMP_HEADER_PREFIX;
     }
 
     /**
