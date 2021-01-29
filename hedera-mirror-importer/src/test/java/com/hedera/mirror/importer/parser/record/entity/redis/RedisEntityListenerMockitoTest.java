@@ -109,6 +109,38 @@ public class RedisEntityListenerMockitoTest {
                 .executePipelined(any(SessionCallback.class));
     }
 
+    @Test
+    void onDuplicateTopicMessages() throws InterruptedException {
+        // given
+        TopicMessage topicMessage1 = topicMessage();
+        TopicMessage topicMessage2 = topicMessage();
+        TopicMessage topicMessage3 = topicMessage();
+
+        // when
+        entityListener.onTopicMessage(topicMessage1);
+        entityListener.onSave(new EntityBatchSaveEvent(this));
+        entityListener.onTopicMessage(topicMessage2);
+        entityListener.onSave(new EntityBatchSaveEvent(this));
+        Thread.sleep(1000);
+        verify(redisOperations, times(2))
+                .executePipelined(any(SessionCallback.class));
+        entityListener.onTopicMessage(topicMessage1); // duplicate
+        entityListener.onSave(new EntityBatchSaveEvent(this));
+        entityListener.onTopicMessage(topicMessage2); // duplicate
+        entityListener.onSave(new EntityBatchSaveEvent(this));
+        Thread.sleep(1000);
+        verify(redisOperations, times(2))
+                .executePipelined(any(SessionCallback.class));
+        entityListener.onTopicMessage(topicMessage3);
+        entityListener.onSave(new EntityBatchSaveEvent(this));
+        entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+        Thread.sleep(1000);
+        verify(redisOperations, times(3))
+                .executePipelined(any(SessionCallback.class));
+
+        // then
+    }
+
     private TopicMessage topicMessage() {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp++);
