@@ -165,15 +165,13 @@ const flywayMigrate = () => {
   });
 };
 
-const closeConnection = () => {
+const closeConnection = async () => {
   if (sqlConnection) {
-    sqlConnection.end();
+    await sqlConnection.end();
     sqlConnection = null;
   }
   if (dockerDb) {
-    dockerDb.stop({
-      removeVolumes: false,
-    });
+    await dockerDb.stop();
     dockerDb = null;
   }
   if (oldPool) {

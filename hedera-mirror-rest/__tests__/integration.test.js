@@ -68,8 +68,8 @@ beforeAll(async () => {
   sqlConnection = await integrationDbOps.instantiateDatabase();
 }, 120000);
 
-afterAll(() => {
-  integrationDbOps.closeConnection();
+afterAll(async () => {
+  await integrationDbOps.closeConnection();
 });
 
 beforeEach(async () => {
