@@ -78,35 +78,31 @@ class EventFileReaderV3Test {
     @Test
     void readInvalidFileWithInvalidVersion1() {
         File invalidFile = createTmpEventFile(1, EventFileReaderV3.EVENT_TYPE_PREV_HASH, prevHash, content);
-        assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(StreamFileData.from(invalidFile));
-        });
+        StreamFileData streamFileData = StreamFileData.from(invalidFile);
+        assertThrows(InvalidEventFileException.class, () -> eventFileReader.read(streamFileData));
     }
 
     @Test
     void readInvalidFileWithInvalidVersion4() {
         File invalidFile = createTmpEventFile(4, EventFileReaderV3.EVENT_TYPE_PREV_HASH, prevHash, content);
-        assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(StreamFileData.from(invalidFile));
-        });
+        StreamFileData streamFileData = StreamFileData.from(invalidFile);
+        assertThrows(InvalidEventFileException.class, () -> eventFileReader.read(streamFileData));
     }
 
     @Test
     void readInvalidFileWithInvalidPrevHashMarker() {
         File invalidFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3, (byte) 0x0, prevHash,
                 content);
-        assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(StreamFileData.from(invalidFile));
-        });
+        StreamFileData streamFileData = StreamFileData.from(invalidFile);
+        assertThrows(InvalidEventFileException.class, () -> eventFileReader.read(streamFileData));
     }
 
     @Test
     void readInvalidFileWithNoPrevHash() {
         File invalidFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3,
                 EventFileReaderV3.EVENT_TYPE_PREV_HASH, null, null);
-        assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(StreamFileData.from(invalidFile));
-        });
+        StreamFileData streamFileData = StreamFileData.from(invalidFile);
+        assertThrows(InvalidEventFileException.class, () -> eventFileReader.read(streamFileData));
     }
 
     @Test
@@ -114,9 +110,8 @@ class EventFileReaderV3Test {
         byte[] incompletePrevHash = new byte[EventFileReaderV3.EVENT_PREV_HASH_LENGTH - 2];
         File invalidFile = createTmpEventFile(EventFileReaderV3.EVENT_STREAM_FILE_VERSION_3,
                 EventFileReaderV3.EVENT_TYPE_PREV_HASH, incompletePrevHash, null);
-        assertThrows(InvalidEventFileException.class, () -> {
-            eventFileReader.read(StreamFileData.from(invalidFile));
-        });
+        StreamFileData streamFileData = StreamFileData.from(invalidFile);
+        assertThrows(InvalidEventFileException.class, () -> eventFileReader.read(streamFileData));
     }
 
     private File createTmpEventFile(int fileVersion, byte prevHashMarker, byte[] prevHash, byte[] content) {

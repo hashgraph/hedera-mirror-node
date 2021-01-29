@@ -26,6 +26,5 @@ import com.hedera.mirror.importer.reader.FileReader;
 
 public interface RecordFileReader extends FileReader<RecordFile, RecordItem> {
 
-    int MAX_RECORD_LENGTH = 64 * 1024;
     int MAX_TRANSACTION_LENGTH = 64 * 1024;
 }

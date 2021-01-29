@@ -100,14 +100,15 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
             reader.lines()
                     .map(line -> {
                         try {
-                            return parser.parse(line, consensusTimestamp, shard);
+                            AccountBalance accountBalance = parser.parse(line, consensusTimestamp, shard);
+                            count.incrementAndGet();
+                            return accountBalance;
                         } catch (InvalidDatasetException ex) {
                             log.error(ex);
                             return null;
                         }
                     })
                     .filter(Objects::nonNull)
-                    .peek(accountBalance -> count.incrementAndGet())
                     .forEachOrdered(itemConsumer);
 
             accountBalanceFile.setCount(count.get());

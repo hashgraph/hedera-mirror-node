@@ -38,7 +38,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
-public class BalanceFileReaderImplV1Test extends CsvBalanceFileReaderTest {
+class BalanceFileReaderImplV1Test extends CsvBalanceFileReaderTest {
 
     private static final String FILENAME = "classpath:data/accountBalances/v1/balance0.0.3/2019-08-30T18_15_00" +
             ".016002001Z_Balances.csv";

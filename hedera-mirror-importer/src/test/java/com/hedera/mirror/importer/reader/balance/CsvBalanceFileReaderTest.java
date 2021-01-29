@@ -53,7 +53,7 @@ import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParser;
 import com.hedera.mirror.importer.util.Utility;
 
-public abstract class CsvBalanceFileReaderTest extends IntegrationTest {
+abstract class CsvBalanceFileReaderTest extends IntegrationTest {
 
     @Resource
     private MirrorProperties mirrorProperties;
@@ -99,8 +99,8 @@ public abstract class CsvBalanceFileReaderTest extends IntegrationTest {
         List<String> lines = FileUtils.readLines(balanceFile, CsvBalanceFileReader.CHARSET);
         lines.remove(0);
         FileUtils.writeLines(testFile, lines);
-
-        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(StreamFileData.from(testFile)));
+        StreamFileData streamFileData = StreamFileData.from(testFile);
+        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(streamFileData));
     }
 
     @Test
@@ -112,7 +112,8 @@ public abstract class CsvBalanceFileReaderTest extends IntegrationTest {
         copy.addAll(lines);
         FileUtils.writeLines(testFile, copy);
 
-        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(StreamFileData.from(testFile)));
+        StreamFileData streamFileData = StreamFileData.from(testFile);
+        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(streamFileData));
     }
 
     @Test
@@ -122,7 +123,8 @@ public abstract class CsvBalanceFileReaderTest extends IntegrationTest {
         lines.remove(0);
         FileUtils.writeLines(testFile, lines);
 
-        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(StreamFileData.from(testFile)));
+        StreamFileData streamFileData = StreamFileData.from(testFile);
+        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(streamFileData));
     }
 
     @Test
@@ -132,19 +134,20 @@ public abstract class CsvBalanceFileReaderTest extends IntegrationTest {
                 .filter(lines, line -> !line.contains(CsvBalanceFileReader.COLUMN_HEADER_PREFIX));
         FileUtils.writeLines(testFile, filtered);
 
-        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(StreamFileData.from(testFile)));
+        StreamFileData streamFileData = StreamFileData.from(testFile);
+        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(streamFileData));
     }
 
     @Test
     void readInvalidWhenFileIsEmpty() {
-        assertThrows(InvalidDatasetException.class, () ->
-                balanceFileReader.read(StreamFileData.from(balanceFile.getName(), ""))
-        );
+        StreamFileData streamFileData = StreamFileData.from(balanceFile.getName(), "");
+        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(streamFileData));
     }
 
     @Test
     void readInvalidWhenFileDoesNotExist() {
-        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(StreamFileData.from(testFile)));
+        StreamFileData streamFileData = StreamFileData.from(testFile);
+        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(streamFileData));
     }
 
     @Test
@@ -155,7 +158,8 @@ public abstract class CsvBalanceFileReaderTest extends IntegrationTest {
                 line -> StringUtils.startsWithIgnoreCase(line, prefix) ? prefix : line);
         FileUtils.writeLines(testFile, filtered);
 
-        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(StreamFileData.from(testFile)));
+        StreamFileData streamFileData = StreamFileData.from(testFile);
+        assertThrows(InvalidDatasetException.class, () -> balanceFileReader.read(streamFileData));
     }
 
     @Test
@@ -237,7 +241,7 @@ public abstract class CsvBalanceFileReaderTest extends IntegrationTest {
         assertThat(accountBalanceFile).isNotNull();
         assertThat(accountBalanceFile.getCount()).isEqualTo(expectedCount);
         assertThat(accountBalanceFile.getConsensusTimestamp()).isEqualTo(consensusTimestamp);
-        assertThat(accountBalanceFile.getLoadStart()).isNotNull().isGreaterThan(0L);
+        assertThat(accountBalanceFile.getLoadStart()).isNotNull().isPositive();
         assertThat(accountBalanceFile.getLoadEnd()).isNotNull()
                 .isGreaterThanOrEqualTo(accountBalanceFile.getLoadStart());
         assertThat(accountBalanceFile.getName()).isEqualTo(balanceFile.getName());
