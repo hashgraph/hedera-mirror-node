@@ -74,7 +74,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         topicMessages.as(StepVerifier::create)
                 .expectNext(topicMessage1, topicMessage2)
                 .thenCancel()
-                .verify(Duration.ofMillis(3000));
+                .verify(Duration.ofMillis(10000));
     }
 
     @Test
