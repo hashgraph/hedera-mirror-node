@@ -21,61 +21,61 @@
 package maphelper
 
 import (
-    "fmt"
-    "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-    "github.com/stretchr/testify/assert"
-    "testing"
+	"fmt"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestGetsCorrectStringValuesFromMap(t *testing.T) {
-    // given:
-    inputData := map[int]string{
-        1: "abc",
-        2: "asd",
-        3: "aaaa",
-        4: "1",
-    }
-    // when:
-    result := GetStringValuesFromIntStringMap(inputData)
-    // then:
-    assert.Equal(t, len(inputData), len(result))
-    for _, v := range inputData {
-        found := false
-        for _, e := range result {
-            if e == v {
-                found = true
-                break
-            }
-        }
-        assert.True(t, found)
-    }
+	// given:
+	inputData := map[int]string{
+		1: "abc",
+		2: "asd",
+		3: "aaaa",
+		4: "1",
+	}
+	// when:
+	result := GetStringValuesFromIntStringMap(inputData)
+	// then:
+	assert.Equal(t, len(inputData), len(result))
+	for _, v := range inputData {
+		found := false
+		for _, e := range result {
+			if e == v {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found)
+	}
 }
 
 func TestGetsCorrectErrorValuesFromMap(t *testing.T) {
-    // given:
-    inputData := map[string]*types.Error{
-        "error1":  newErrorDummy(32, true),
-        "error2":  newErrorDummy(64, false),
-        "error3":  newErrorDummy(128, true),
-        "error64": newErrorDummy(12341, false),
-    }
-    // when:
-    result := GetErrorValuesFromStringErrorMap(inputData)
-    // then:
-    assert.Equal(t, len(inputData), len(result))
-    for _, v := range inputData {
-        found := false
-        for _, e := range result {
-            if e == v {
-                found = true
-                break
-            }
-        }
-        assert.True(t, found)
-    }
+	// given:
+	inputData := map[string]*types.Error{
+		"error1":  newErrorDummy(32, true),
+		"error2":  newErrorDummy(64, false),
+		"error3":  newErrorDummy(128, true),
+		"error64": newErrorDummy(12341, false),
+	}
+	// when:
+	result := GetErrorValuesFromStringErrorMap(inputData)
+	// then:
+	assert.Equal(t, len(inputData), len(result))
+	for _, v := range inputData {
+		found := false
+		for _, e := range result {
+			if e == v {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found)
+	}
 }
 
 func newErrorDummy(code int32, retryable bool) *types.Error {
-    return errors.New(fmt.Sprintf("error_dummy_%d", code), code, retryable)
+	return errors.New(fmt.Sprintf("error_dummy_%d", code), code, retryable)
 }

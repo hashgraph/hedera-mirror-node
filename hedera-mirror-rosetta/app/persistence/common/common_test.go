@@ -21,10 +21,10 @@
 package common
 
 import (
-    "github.com/stretchr/testify/assert"
-    "testing"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestShouldSuccessReturnCryptoTransferTableName(t *testing.T) {
-    assert.Equal(t, tableNameCryptoTransfer, CryptoTransfer{}.TableName())
+	assert.Equal(t, tableNameCryptoTransfer, CryptoTransfer{}.TableName())
 }

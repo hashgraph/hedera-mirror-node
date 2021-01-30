@@ -21,48 +21,48 @@
 package validator
 
 import (
-    "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-    "github.com/stretchr/testify/assert"
-    "testing"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestValidateOperationsSum(t *testing.T) {
-    // given:
-    operationDummy := newOperationDummy("100")
-    operationDummyNegative := newOperationDummy("-100")
-    invalidOperationDummy := newOperationDummy("-100H")
+	// given:
+	operationDummy := newOperationDummy("100")
+	operationDummyNegative := newOperationDummy("-100")
+	invalidOperationDummy := newOperationDummy("-100H")
 
-    var testData = []struct {
-        operations []*types.Operation
-        expected   *types.Error
-    }{
-        {[]*types.Operation{
-            operationDummy,
-            operationDummyNegative,
-        }, nil},
-        {[]*types.Operation{
-            operationDummyNegative,
-        }, errors.Errors[errors.InvalidOperationsTotalAmount]},
-        {[]*types.Operation{
-            invalidOperationDummy,
-        }, errors.Errors[errors.InvalidAmount]},
-        {[]*types.Operation{}, errors.Errors[errors.EmptyOperations]},
-        {[]*types.Operation{
-            newOperationDummy("0"),
-        }, errors.Errors[errors.InvalidAmount]},
-    }
+	var testData = []struct {
+		operations []*types.Operation
+		expected   *types.Error
+	}{
+		{[]*types.Operation{
+			operationDummy,
+			operationDummyNegative,
+		}, nil},
+		{[]*types.Operation{
+			operationDummyNegative,
+		}, errors.Errors[errors.InvalidOperationsTotalAmount]},
+		{[]*types.Operation{
+			invalidOperationDummy,
+		}, errors.Errors[errors.InvalidAmount]},
+		{[]*types.Operation{}, errors.Errors[errors.EmptyOperations]},
+		{[]*types.Operation{
+			newOperationDummy("0"),
+		}, errors.Errors[errors.InvalidAmount]},
+	}
 
-    for _, tt := range testData {
-        result := ValidateOperationsSum(tt.operations)
-        assert.Equal(t, tt.expected, result)
-    }
+	for _, tt := range testData {
+		result := ValidateOperationsSum(tt.operations)
+		assert.Equal(t, tt.expected, result)
+	}
 }
 
 func newOperationDummy(amount string) *types.Operation {
-    return &types.Operation{
-        Amount: &types.Amount{
-            Value: amount,
-        },
-    }
+	return &types.Operation{
+		Amount: &types.Amount{
+			Value: amount,
+		},
+	}
 }

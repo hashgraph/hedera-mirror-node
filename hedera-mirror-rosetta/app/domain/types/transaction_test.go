@@ -21,69 +21,69 @@
 package types
 
 import (
-    "github.com/coinbase/rosetta-sdk-go/types"
-    entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-    "github.com/stretchr/testify/assert"
-    "testing"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func exampleTransaction() *Transaction {
-    return &Transaction{
-        Hash: "somehash",
-        Operations: []*Operation{
-            {
-                Index:  1,
-                Type:   "transfer",
-                Status: "pending",
-                Account: &Account{
-                    entityid.EntityId{
-                        ShardNum:  0,
-                        RealmNum:  0,
-                        EntityNum: 0,
-                    },
-                },
-                Amount: &Amount{Value: int64(400)},
-            },
-        },
-    }
+	return &Transaction{
+		Hash: "somehash",
+		Operations: []*Operation{
+			{
+				Index:  1,
+				Type:   "transfer",
+				Status: "pending",
+				Account: &Account{
+					entityid.EntityId{
+						ShardNum:  0,
+						RealmNum:  0,
+						EntityNum: 0,
+					},
+				},
+				Amount: &Amount{Value: int64(400)},
+			},
+		},
+	}
 }
 
 func expectedTransaction() *types.Transaction {
-    return &types.Transaction{
-        TransactionIdentifier: &types.TransactionIdentifier{Hash: "somehash"},
-        Operations: []*types.Operation{
-            {
-                OperationIdentifier: &types.OperationIdentifier{
-                    Index:        1,
-                    NetworkIndex: nil,
-                },
-                RelatedOperations: []*types.OperationIdentifier{},
-                Type:              "transfer",
-                Status:            "pending",
-                Account: &types.AccountIdentifier{
-                    Address:    "0.0.0",
-                    SubAccount: nil,
-                    Metadata:   nil,
-                },
-                Amount: &types.Amount{
-                    Value:    "400",
-                    Currency: config.CurrencyHbar,
-                    Metadata: nil,
-                },
-            },
-        },
-        Metadata: nil,
-    }
+	return &types.Transaction{
+		TransactionIdentifier: &types.TransactionIdentifier{Hash: "somehash"},
+		Operations: []*types.Operation{
+			{
+				OperationIdentifier: &types.OperationIdentifier{
+					Index:        1,
+					NetworkIndex: nil,
+				},
+				RelatedOperations: []*types.OperationIdentifier{},
+				Type:              "transfer",
+				Status:            "pending",
+				Account: &types.AccountIdentifier{
+					Address:    "0.0.0",
+					SubAccount: nil,
+					Metadata:   nil,
+				},
+				Amount: &types.Amount{
+					Value:    "400",
+					Currency: config.CurrencyHbar,
+					Metadata: nil,
+				},
+			},
+		},
+		Metadata: nil,
+	}
 }
 
 func TestToRosettaTransaction(t *testing.T) {
-    // given:
-    expectedTransaction := expectedTransaction()
+	// given:
+	expectedTransaction := expectedTransaction()
 
-    // when:
-    rosettaTransaction := exampleTransaction().ToRosetta()
+	// when:
+	rosettaTransaction := exampleTransaction().ToRosetta()
 
-    // then:
-    assert.Equal(t, expectedTransaction, rosettaTransaction)
+	// then:
+	assert.Equal(t, expectedTransaction, rosettaTransaction)
 }

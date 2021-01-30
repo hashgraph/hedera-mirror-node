@@ -21,8 +21,8 @@
 package repository
 
 import (
-    rTypes "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 )
 
 var MBlockRepository *MockBlockRepository
@@ -37,8 +37,8 @@ var NilTransaction *types.Transaction = nil
 var NilEntries *types.AddressBookEntries = nil
 
 func Setup() {
-    MBlockRepository = &MockBlockRepository{}
-    MTransactionRepository = &MockTransactionRepository{}
-    MAccountRepository = &MockAccountRepository{}
-    MAddressBookEntryRepository = &MockAddressBookEntryRepository{}
+	MBlockRepository = &MockBlockRepository{}
+	MTransactionRepository = &MockTransactionRepository{}
+	MAccountRepository = &MockAccountRepository{}
+	MAddressBookEntryRepository = &MockAddressBookEntryRepository{}
 }

@@ -21,52 +21,52 @@
 package account
 
 import (
-    "context"
-    rTypes "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
-    hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"context"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
+	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
 
 // AccountAPIService implements the server.AccountAPIServicer interface.
 type AccountAPIService struct {
-    base.BaseService
-    accountRepo repositories.AccountRepository
+	base.BaseService
+	accountRepo repositories.AccountRepository
 }
 
 // NewAccountAPIService creates a new instance of a AccountAPIService.
 func NewAccountAPIService(base base.BaseService, accountRepo repositories.AccountRepository) *AccountAPIService {
-    return &AccountAPIService{
-        BaseService: base,
-        accountRepo: accountRepo,
-    }
+	return &AccountAPIService{
+		BaseService: base,
+		accountRepo: accountRepo,
+	}
 }
 
 // AccountBalance implements the /account/balance endpoint.
 func (a *AccountAPIService) AccountBalance(ctx context.Context, request *rTypes.AccountBalanceRequest) (*rTypes.AccountBalanceResponse, *rTypes.Error) {
-    var block *types.Block
-    var err *rTypes.Error
+	var block *types.Block
+	var err *rTypes.Error
 
-    if request.BlockIdentifier != nil {
-        block, err = a.RetrieveBlock(request.BlockIdentifier)
-    } else {
-        block, err = a.RetrieveLatest()
-    }
-    if err != nil {
-        return nil, err
-    }
+	if request.BlockIdentifier != nil {
+		block, err = a.RetrieveBlock(request.BlockIdentifier)
+	} else {
+		block, err = a.RetrieveLatest()
+	}
+	if err != nil {
+		return nil, err
+	}
 
-    balance, err := a.accountRepo.RetrieveBalanceAtBlock(request.AccountIdentifier.Address, block.ConsensusEndNanos)
-    if err != nil {
-        return nil, err
-    }
+	balance, err := a.accountRepo.RetrieveBalanceAtBlock(request.AccountIdentifier.Address, block.ConsensusEndNanos)
+	if err != nil {
+		return nil, err
+	}
 
-    return &rTypes.AccountBalanceResponse{
-        BlockIdentifier: &rTypes.BlockIdentifier{
-            Index: block.Index,
-            Hash:  hexUtils.SafeAddHexPrefix(block.Hash),
-        },
-        Balances: []*rTypes.Amount{balance.ToRosetta()},
-    }, nil
+	return &rTypes.AccountBalanceResponse{
+		BlockIdentifier: &rTypes.BlockIdentifier{
+			Index: block.Index,
+			Hash:  hexUtils.SafeAddHexPrefix(block.Hash),
+		},
+		Balances: []*rTypes.Amount{balance.ToRosetta()},
+	}, nil
 }

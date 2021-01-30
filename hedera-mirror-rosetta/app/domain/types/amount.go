@@ -21,19 +21,19 @@
 package types
 
 import (
-    rTypes "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-    "strconv"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+	"strconv"
 )
 
 type Amount struct {
-    Value int64
+	Value int64
 }
 
 // ToRosetta returns Rosetta type Amount from the current domain type Amount
 func (b *Amount) ToRosetta() *rTypes.Amount {
-    return &rTypes.Amount{
-        Value:    strconv.FormatInt(b.Value, 10),
-        Currency: config.CurrencyHbar,
-    }
+	return &rTypes.Amount{
+		Value:    strconv.FormatInt(b.Value, 10),
+		Currency: config.CurrencyHbar,
+	}
 }

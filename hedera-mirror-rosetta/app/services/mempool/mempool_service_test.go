@@ -21,41 +21,41 @@
 package mempool
 
 import (
-    rTypes "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
-    "github.com/stretchr/testify/assert"
-    "testing"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestNewMempoolAPIService(t *testing.T) {
-    repository.Setup()
-    mempoolService := NewMempoolAPIService()
+	repository.Setup()
+	mempoolService := NewMempoolAPIService()
 
-    assert.IsType(t, &MempoolAPIService{}, mempoolService)
+	assert.IsType(t, &MempoolAPIService{}, mempoolService)
 }
 
 func TestMempool(t *testing.T) {
-    // when:
-    res, e := NewMempoolAPIService().Mempool(nil, nil)
+	// when:
+	res, e := NewMempoolAPIService().Mempool(nil, nil)
 
-    // then:
-    assert.Equal(
-        t,
-        &rTypes.MempoolResponse{
-            TransactionIdentifiers: []*rTypes.TransactionIdentifier{},
-        },
-        res,
-    )
+	// then:
+	assert.Equal(
+		t,
+		&rTypes.MempoolResponse{
+			TransactionIdentifiers: []*rTypes.TransactionIdentifier{},
+		},
+		res,
+	)
 
-    assert.Nil(t, e)
+	assert.Nil(t, e)
 }
 
 func TestMempoolTransaction(t *testing.T) {
-    // when:
-    res, e := NewMempoolAPIService().MempoolTransaction(nil, nil)
+	// when:
+	res, e := NewMempoolAPIService().MempoolTransaction(nil, nil)
 
-    // then:
-    assert.Equal(t, errors.Errors[errors.TransactionNotFound], e)
-    assert.Nil(t, res)
+	// then:
+	assert.Equal(t, errors.Errors[errors.TransactionNotFound], e)
+	assert.Nil(t, res)
 }

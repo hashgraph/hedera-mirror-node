@@ -21,38 +21,38 @@
 package repository
 
 import (
-    rTypes "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-    "github.com/stretchr/testify/mock"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockBlockRepository struct {
-    mock.Mock
+	mock.Mock
 }
 
 func (m *MockBlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
-    args := m.Called()
-    return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
+	args := m.Called()
+	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
 }
 
 func (m *MockBlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
-    args := m.Called()
-    return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
+	args := m.Called()
+	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
 }
 
 func (m *MockBlockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
-    args := m.Called()
-    return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
+	args := m.Called()
+	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
 }
 
 func (m *MockBlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
-    return m.retrieveBlock(m.Called())
+	return m.retrieveBlock(m.Called())
 }
 
 func (m *MockBlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
-    return m.retrieveBlock(m.Called())
+	return m.retrieveBlock(m.Called())
 }
 
 func (m *MockBlockRepository) retrieveBlock(args mock.Arguments) (*types.Block, *rTypes.Error) {
-    return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
+	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
 }

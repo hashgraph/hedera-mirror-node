@@ -21,61 +21,61 @@
 package block
 
 import (
-    "context"
-    "github.com/coinbase/rosetta-sdk-go/server"
-    rTypes "github.com/coinbase/rosetta-sdk-go/types"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
-    "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"context"
+	"github.com/coinbase/rosetta-sdk-go/server"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
 
 // BlockAPIService implements the server.BlockAPIServicer interface.
 type BlockAPIService struct {
-    base.BaseService
+	base.BaseService
 }
 
 // NewBlockAPIService creates a new instance of a BlockAPIService.
 func NewBlockAPIService(base base.BaseService) server.BlockAPIServicer {
-    return &BlockAPIService{
-        BaseService: base,
-    }
+	return &BlockAPIService{
+		BaseService: base,
+	}
 }
 
 // Block implements the /block endpoint.
 func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockRequest) (*rTypes.BlockResponse, *rTypes.Error) {
-    block, err := s.RetrieveBlock(request.BlockIdentifier)
-    if err != nil {
-        return nil, err
-    }
+	block, err := s.RetrieveBlock(request.BlockIdentifier)
+	if err != nil {
+		return nil, err
+	}
 
-    transactions, err := s.FindBetween(block.ConsensusStartNanos, block.ConsensusEndNanos)
-    if err != nil {
-        return nil, err
-    }
+	transactions, err := s.FindBetween(block.ConsensusStartNanos, block.ConsensusEndNanos)
+	if err != nil {
+		return nil, err
+	}
 
-    block.Transactions = transactions
-    rBlock := block.ToRosetta()
-    return &rTypes.BlockResponse{
-        Block: rBlock,
-    }, nil
+	block.Transactions = transactions
+	rBlock := block.ToRosetta()
+	return &rTypes.BlockResponse{
+		Block: rBlock,
+	}, nil
 }
 
 // BlockTransaction implements the /block/transaction endpoint.
 func (s *BlockAPIService) BlockTransaction(
-        ctx context.Context,
-        request *rTypes.BlockTransactionRequest,
+	ctx context.Context,
+	request *rTypes.BlockTransactionRequest,
 ) (*rTypes.BlockTransactionResponse, *rTypes.Error) {
-    h := hex.SafeRemoveHexPrefix(request.BlockIdentifier.Hash)
-    block, err := s.FindByIdentifier(request.BlockIdentifier.Index, h)
-    if err != nil {
-        return nil, err
-    }
+	h := hex.SafeRemoveHexPrefix(request.BlockIdentifier.Hash)
+	block, err := s.FindByIdentifier(request.BlockIdentifier.Index, h)
+	if err != nil {
+		return nil, err
+	}
 
-    transaction, err := s.FindByHashInBlock(request.TransactionIdentifier.Hash, block.ConsensusStartNanos, block.ConsensusEndNanos)
-    if err != nil {
-        return nil, err
-    }
-    rTransaction := transaction.ToRosetta()
-    return &rTypes.BlockTransactionResponse{
-        Transaction: rTransaction,
-    }, nil
+	transaction, err := s.FindByHashInBlock(request.TransactionIdentifier.Hash, block.ConsensusStartNanos, block.ConsensusEndNanos)
+	if err != nil {
+		return nil, err
+	}
+	rTransaction := transaction.ToRosetta()
+	return &rTypes.BlockTransactionResponse{
+		Transaction: rTransaction,
+	}, nil
 }
