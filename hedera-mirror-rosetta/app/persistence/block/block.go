@@ -40,7 +40,6 @@ const (
 	// The information about the position is used as Block Index
 	selectLatestWithIndex string = `SELECT rd.consensus_start,
                                            rd.consensus_end,
-                                           rd.end_running_hash,
                                            rd.hash,
                                            rd.prev_hash,
                                            rd.version,
