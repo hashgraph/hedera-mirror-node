@@ -60,7 +60,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.0.0</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.0.3</embedded.testcontainers.version>
         <grpc-spring-boot.version>2.10.1.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.35.0</grpc.version>
         <hedera-protobuf.version>0.11.0</hedera-protobuf.version>
