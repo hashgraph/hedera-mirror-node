@@ -17,24 +17,28 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
-const config = require('../config.js');
-const {GenericContainer} = require('testcontainers');
 const {exec} = require('child_process');
-const path = require('path');
 const fs = require('fs');
+const log4js = require('log4js');
+const path = require('path');
 const SqlConnectionPool = require('pg').Pool;
-const {randomString} = require('../utils');
+const {GenericContainer} = require('testcontainers');
+const {db: dbConfig} = require('../config');
 const {isDockerInstalled} = require('./integrationUtils');
+const {randomString} = require('../utils');
+
+const logger = log4js.getLogger();
 
 let oldPool;
 let dockerDb;
 let sqlConnection;
 
-config.db.name = process.env.POSTGRES_DB || 'mirror_node_integration';
-const dbUser = process.env.POSTGRES_USER || config.db.username + '_admin';
-const dbPassword = process.env.POSTGRES_PASSWORD || randomString(16);
+dbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
+const dbAdminUser = process.env.POSTGRES_USER || `${dbConfig.username}_admin`;
+const dbAdminPassword = process.env.POSTGRES_PASSWORD || randomString(16);
 
 const v1SchemaConfigs = {
   docker: {
@@ -66,31 +70,32 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
  * testContainers/dockerized postgresql instance.
  */
-const instantiateDatabase = async function () {
+const instantiateDatabase = async () => {
   if (!process.env.CIRCLECI && !process.env.CI_CONTAINERS) {
     if (!(await isDockerInstalled())) {
-      console.log('Docker not found. Integration tests will fail.');
-      return;
+      throw new Error('Docker not found');
     }
 
-    dockerDb = await new GenericContainer(schemaConfigs.docker.imageName, schemaConfigs.docker.tagName)
-      .withEnv('POSTGRES_DB', config.db.name)
-      .withEnv('POSTGRES_USER', dbUser)
-      .withEnv('POSTGRES_PASSWORD', dbPassword)
-      .withExposedPorts(config.db.port)
+    const image = `${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`;
+    logger.info(`Starting PostgreSQL docker container with image ${image}`);
+    dockerDb = await new GenericContainer(image)
+      .withEnv('POSTGRES_DB', dbConfig.name)
+      .withEnv('POSTGRES_USER', dbAdminUser)
+      .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
+      .withExposedPorts(dbConfig.port)
       .start();
-    config.db.port = dockerDb.getMappedPort(config.db.port);
-    config.db.host = dockerDb.getHost();
-    console.log(`Started dockerized PostgreSQL ${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`);
+    dbConfig.port = dockerDb.getMappedPort(dbConfig.port);
+    dbConfig.host = dockerDb.getHost();
+    logger.info('Started dockerized PostgreSQL');
   }
 
-  console.log(`sqlConnection will use postgresql://${config.db.host}:${config.db.port}/${config.db.name}`);
+  logger.info(`sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`);
   sqlConnection = new SqlConnectionPool({
-    user: dbUser,
-    host: config.db.host,
-    database: config.db.name,
-    password: dbPassword,
-    port: config.db.port,
+    user: dbAdminUser,
+    host: dbConfig.host,
+    database: dbConfig.name,
+    password: dbAdminPassword,
+    port: dbConfig.port,
   });
 
   // Until "server", "pool" and everything else is made non-static...
@@ -106,8 +111,8 @@ const instantiateDatabase = async function () {
  * Run the sql (non-java) based migrations stored in the importer project against the target database.
  * @returns {Promise}
  */
-const flywayMigrate = function () {
-  console.log('Using flyway CLI to construct schema');
+const flywayMigrate = () => {
+  logger.info('Using flyway CLI to construct schema');
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(flywayDataPath, 'config.json');
@@ -117,18 +122,18 @@ const flywayMigrate = function () {
   "flywayArgs": {
     "baselineVersion": "${schemaConfigs.flyway.baselineVersion}",
     "locations": "filesystem:${locations}",
-    "password": "${dbPassword}",
-    "placeholders.api-password": "${config.db.password}",
-    "placeholders.api-user": "${config.db.username}",
+    "password": "${dbAdminPassword}",
+    "placeholders.api-password": "${dbConfig.password}",
+    "placeholders.api-user": "${dbConfig.username}",
     "placeholders.chunkIdInterval": 10000,
     "placeholders.chunkTimeInterval": 604800000000000,
     "placeholders.compressionAge": 604800000000000,
-    "placeholders.db-name": "${config.db.name}",
-    "placeholders.db-user": "${dbUser}",
+    "placeholders.db-name": "${dbConfig.name}",
+    "placeholders.db-user": "${dbAdminUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
     "target": "${schemaConfigs.flyway.target}",
-    "url": "jdbc:postgresql://${config.db.host}:${config.db.port}/${config.db.name}",
-    "user": "${dbUser}"
+    "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}",
+    "user": "${dbAdminUser}"
   },
   "version": "6.5.7",
   "downloads": {
@@ -151,7 +156,7 @@ const flywayMigrate = function () {
         if (err) {
           reject(err);
         } else {
-          console.log(stdout);
+          logger.info(stdout);
           resolve();
         }
       });
@@ -159,26 +164,18 @@ const flywayMigrate = function () {
   });
 };
 
-const closeConnection = function () {
+const closeConnection = async () => {
   if (sqlConnection) {
-    sqlConnection.end();
+    await sqlConnection.end();
     sqlConnection = null;
   }
   if (dockerDb) {
-    dockerDb.stop({
-      removeVolumes: false,
-    });
+    await dockerDb.stop();
     dockerDb = null;
   }
-  if (oldPool !== null) {
+  if (oldPool) {
     global.pool = oldPool;
     oldPool = null;
-  }
-};
-
-const cleanUp = async function () {
-  if (sqlConnection) {
-    await sqlConnection.query(cleanupSql);
   }
 };
 
@@ -198,8 +195,14 @@ const cleanupSql = fs.readFileSync(
   'utf8'
 );
 
-const runSqlQuery = async function (query, params) {
-  return await sqlConnection.query(query, params);
+const cleanUp = async () => {
+  if (sqlConnection) {
+    await sqlConnection.query(cleanupSql);
+  }
+};
+
+const runSqlQuery = async (query, params) => {
+  return sqlConnection.query(query, params);
 };
 
 module.exports = {

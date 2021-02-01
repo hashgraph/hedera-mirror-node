@@ -48,8 +48,8 @@ const _ = require('lodash');
 const path = require('path');
 const request = require('supertest');
 
-const integrationDbOps = require('./integrationDbOps.js');
-const integrationDomainOps = require('./integrationDomainOps.js');
+const integrationDbOps = require('./integrationDbOps');
+const integrationDomainOps = require('./integrationDomainOps');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 const {cloudProviders, filterKeys} = require('../constants');
@@ -62,18 +62,21 @@ const utils = require('../utils');
 
 let sqlConnection;
 
+// set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
+const defaultBeforeAllTimeoutMillis = 120 * 1000;
+
 beforeAll(async () => {
   jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
-});
+}, defaultBeforeAllTimeoutMillis);
 
-afterAll(() => {
-  integrationDbOps.closeConnection();
+afterAll(async () => {
+  await integrationDbOps.closeConnection();
 });
 
 beforeEach(async () => {
   if (!sqlConnection) {
-    console.log(`sqlConnection undefined, acquire new connection`);
+    logger.warn(`sqlConnection undefined, acquire new connection`);
     sqlConnection = await integrationDbOps.instantiateDatabase();
   }
 
@@ -86,22 +89,20 @@ beforeEach(async () => {
 // shard 0, realm 15, accounts 1-10
 // 3 balances per account
 // several transactions
-
-const shard = 0;
-const realm = 15;
+const defaultShard = 0;
+const defaultRealm = 15;
 
 /**
  * Setup test data in the postgres instance.
  */
-
-const setupData = async function () {
+const setupData = async () => {
   const testDataPath = path.join(__dirname, 'integration_test_data.json');
   const testData = fs.readFileSync(testDataPath);
   const testDataJson = JSON.parse(testData);
 
   await integrationDomainOps.setUp(testDataJson.setup, sqlConnection);
 
-  console.log('Finished initializing DB data');
+  logger.info('Finished initializing DB data');
 };
 
 /**
@@ -110,9 +111,15 @@ const setupData = async function () {
  * @param payerAccountId
  * @param recipientAccountId
  * @param amount
- * @returns {Promise<void>}
+ * @param validDurationSeconds
+ * @param maxFee
+ * @param result
+ * @param type
+ * @param nodeAccountId
+ * @param treasuryAccountId
+ * @return {Promise<void>}
  */
-const addCryptoTransferTransaction = async function (
+const addCryptoTransferTransaction = async (
   consensusTimestamp,
   payerAccountId,
   recipientAccountId,
@@ -123,18 +130,18 @@ const addCryptoTransferTransaction = async function (
   type = 14,
   nodeAccountId = '0.15.3',
   treasuryAccountId = '0.15.98'
-) {
+) => {
   await integrationDomainOps.addCryptoTransaction({
     consensus_timestamp: consensusTimestamp,
-    payerAccountId: payerAccountId,
-    recipientAccountId: recipientAccountId,
-    amount: amount,
+    payerAccountId,
+    recipientAccountId,
+    amount,
     valid_duration_seconds: validDurationSeconds,
     max_fee: maxFee,
-    result: result,
-    type: type,
-    nodeAccountId: nodeAccountId,
-    treasuryAccountId: treasuryAccountId,
+    result,
+    type,
+    nodeAccountId,
+    treasuryAccountId,
   });
 };
 
@@ -157,31 +164,22 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  * @param rows
  * @returns {*}
  */
-function mapTransactionResults(rows) {
-  return rows.map(function (v) {
-    return v['consensus_ns'] + ', ' + EntityId.fromString(v['ctl_entity_id']).toString() + ', ' + v['amount'];
-  });
-}
+const mapTransactionResults = (rows) => {
+  return rows.map((v) => `${v.consensus_ns}, ${EntityId.fromString(v.ctl_entity_id).toString()}, ${v.amount}`);
+};
 
-function extractDurationAndMaxFeeFromTransactionResults(rows) {
-  return rows.map(function (v) {
-    return v['valid_duration_seconds'] + ', ' + v['max_fee'];
-  });
-}
+const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
+  return rows.map((v) => `${v.valid_duration_seconds}, ${v.max_fee}`);
+};
 
-function extractNameAndResultFromTransactionResults(rows) {
-  return rows.map(function (v) {
-    return v['name'] + ', ' + v['result'];
-  });
-}
+const extractNameAndResultFromTransactionResults = (rows) => rows.map((v) => `${v.name}, ${v.result}`);
 
 //
 // TESTS
 //
-
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
   const sql = await transactions.reqToSql({query: {}});
-  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
     '1050, 0.15.10, -11',
@@ -261,15 +259,15 @@ describe('DB integration test -  utils.isValidTransactionType', () => {
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
-  const sql = await transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
-  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const sql = await transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
+  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
   expect(mapTransactionResults(res.rows).sort()).toEqual(['1052, 0.15.8, -31', '1052, 0.15.9, 30', '1052, 0.15.98, 1']);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
   const sql = await transactions.reqToSql({query: {'account.id': '0.17.666'}});
-  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(0);
 });
 
@@ -415,7 +413,7 @@ describe('DB integration test - spec based', () => {
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());
     configClone = _.cloneDeep(config);
-  });
+  }, defaultBeforeAllTimeoutMillis);
 
   afterAll(async () => {
     await s3Ops.stop();

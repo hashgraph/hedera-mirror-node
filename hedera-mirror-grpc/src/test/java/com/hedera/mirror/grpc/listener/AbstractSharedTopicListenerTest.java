@@ -27,6 +27,7 @@ import java.util.stream.LongStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
@@ -38,11 +39,13 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
     @DisplayName("slow subscriber receives overflow exception and normal subscriber is not affected")
     void slowSubscriberOverflowException() {
         int maxBufferSize = 16;
+        Duration frequency = Duration.ofMillis(10L);
         int prefetch = 4;
 
         // step verifier requests 2 messages on subscription, and there are downstream buffers after the backpressure
         // buffer, to ensure overflow, set the number of topic messages to send as follows
         int numMessages = maxBufferSize + prefetch * 2 + 3;
+        listenerProperties.setFrequency(frequency);
         listenerProperties.setMaxBufferSize(maxBufferSize);
         listenerProperties.setPrefetch(prefetch);
 
@@ -62,13 +65,21 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .startTime(Instant.EPOCH)
                 .build();
 
+        // send the messages in two batches and wait 2 * polling frequency between. Limit the first batch to
+        // maxBufferSize messages so it definitely won't cause overflow with the SharedPollingTopicListener.
+        // The wait also gives the subscriber threads chance to consume messages in slow environment.
+        Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(maxBufferSize, future);
+        Flux<TopicMessage> secondBatch = domainBuilder.topicMessages(numMessages - maxBufferSize, future.plusSeconds(1));
+
         // the slow subscriber
         topicListener.listen(filterSlow)
                 .map(TopicMessage::getSequenceNumber)
                 .as(p -> StepVerifier.create(p, 1)) // initial request amount of 1
                 .thenRequest(1) // trigger subscription
                 .thenAwait(Duration.ofMillis(10L))
-                .then(() -> publish(domainBuilder.topicMessages(numMessages, future)))
+                .then(() -> publish(firstBatch))
+                .thenAwait(frequency.multipliedBy(2))
+                .then(() -> publish(secondBatch))
                 .expectNext(1L, 2L)
                 .thenAwait(Duration.ofMillis(500L)) // stall to overrun backpressure buffer
                 .thenRequest(Long.MAX_VALUE)
