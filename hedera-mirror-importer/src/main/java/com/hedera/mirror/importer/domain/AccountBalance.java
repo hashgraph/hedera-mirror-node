@@ -41,13 +41,14 @@ import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.parser.domain.StreamItem;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @NamedEntityGraph(name = "AccountBalance.tokenBalances", attributeNodes = @NamedAttributeNode("tokenBalances"))
-public class AccountBalance implements Persistable<AccountBalance.Id> {
+public class AccountBalance implements Persistable<AccountBalance.Id>, StreamItem {
 
     private long balance;
 

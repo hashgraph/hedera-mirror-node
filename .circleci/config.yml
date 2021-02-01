@@ -239,7 +239,7 @@ jobs:
       - write_spring_override_config
       - run:
           name: Running maven (validate, compile, test, package)
-          command: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} package
+          command: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} package -pl '!hedera-mirror-rosetta'
       - store_artifacts:
           path: hedera-mirror-importer/target/surefire-reports
           destination: /importer-surefire
@@ -306,7 +306,7 @@ jobs:
       - run:
           working_directory: "hedera-mirror-rest"
           name: Run npm test
-          command: npm test
+          command: npm test -- --maxWorkers 2
           environment:
             TEST_S3_HOST: "127.0.0.1"
       - store_artifacts:

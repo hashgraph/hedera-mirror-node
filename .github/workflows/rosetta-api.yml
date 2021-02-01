@@ -24,14 +24,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build hedera-mirror-rosetta
-        run: go build -i -o rosetta cmd/*
-        working-directory: ${{env.working-directory}}
-      - name: Upload Binary as artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: hedera-mirror-rosetta
-          path: ${{ env.working-directory }}/rosetta
-          if-no-files-found: error
+        run: ./mvnw clean package -pl hedera-mirror-rosetta
       - name: Get current version
         id: get_version
         run: |

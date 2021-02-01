@@ -60,7 +60,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.0.0</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.0.3</embedded.testcontainers.version>
         <grpc-spring-boot.version>2.10.1.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.35.0</grpc.version>
         <hedera-protobuf.version>0.11.0</hedera-protobuf.version>
@@ -145,7 +145,7 @@
                 <plugin>
                     <groupId>com.googlecode.maven-download-plugin</groupId>
                     <artifactId>download-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.6.1</version>
                     <executions>
                         <execution>
                             <id>download-antlr-source</id>
@@ -248,6 +248,7 @@
                             <include>**/*.js</include>
                             <include>**/*.java</include>
                             <include>**/*.proto</include>
+                            <include>**/*.go</include>
                         </includes>
                         <licenseMerges>
                             <licenseMerge>
@@ -366,6 +367,7 @@
                                 <include>**/*.js</include>
                                 <include>**/*.java</include>
                                 <include>**/*.proto</include>
+                                <include>**/*.go</include>
                             </includes>
                         </configuration>
                         <executions>
@@ -389,6 +391,7 @@
                                 <include>**/*.js</include>
                                 <include>**/*.java</include>
                                 <include>**/*.proto</include>
+                                <include>**/*.go</include>
                             </includes>
                             <regexFlags>
                                 <regexFlag>MULTILINE</regexFlag>

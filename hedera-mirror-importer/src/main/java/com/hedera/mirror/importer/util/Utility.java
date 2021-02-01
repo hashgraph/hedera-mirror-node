@@ -37,10 +37,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import lombok.experimental.UtilityClass;
@@ -61,35 +58,10 @@ public class Utility {
     private static final Long SCALAR = 1_000_000_000L;
 
     /**
-     * Calculate SHA384 hash of a balance file
-     *
-     * @param fileName file name
-     * @return hash in hex or null if calculating has failed
-     */
-    public static String getBalanceFileHash(String fileName) {
-        try {
-            MessageDigest md = MessageDigest.getInstance(SHA384.getName());
-            byte[] array = Files.readAllBytes(Paths.get(fileName));
-            return Utility.bytesToHex(md.digest(array));
-        } catch (NoSuchAlgorithmException | IOException e) {
-            log.error(e);
-            return null;
-        }
-    }
-
-    /**
      * @return Timestamp from an instant
      */
     public static Timestamp instantToTimestamp(Instant instant) {
         return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
-    }
-
-    /**
-     * @return string which represents an AccountID
-     */
-    public static String accountIDToString(AccountID accountID) {
-        return String.format("%d.%d.%d", accountID.getShardNum(),
-                accountID.getRealmNum(), accountID.getAccountNum());
     }
 
     public static Instant convertToInstant(Timestamp timestamp) {
@@ -272,8 +244,8 @@ public class Utility {
     }
 
     /**
-     * Opens a file and returns a {@link InputStream} object. Throws {@link FileOperationException} if
-     * some error occurs.
+     * Opens a file and returns a {@link InputStream} object. Throws {@link FileOperationException} if some error
+     * occurs.
      *
      * @param file the input file
      * @return {@link InputStream} object representing the file

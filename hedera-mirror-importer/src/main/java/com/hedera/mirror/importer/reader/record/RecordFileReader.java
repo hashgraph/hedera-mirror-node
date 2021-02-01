@@ -20,30 +20,11 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import java.io.InputStream;
-import java.util.function.Consumer;
-
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.reader.FileReader;
 
-public interface RecordFileReader {
+public interface RecordFileReader extends FileReader<RecordFile, RecordItem> {
 
-    int MAX_RECORD_LENGTH = 64 * 1024;
     int MAX_TRANSACTION_LENGTH = 64 * 1024;
-
-    /**
-     * Reads record file. This method takes ownership of the {@link InputStream} provided by {@code streamFileData} and
-     * will close it when it's done processing the data.
-     *
-     * @param streamFileData {@link StreamFileData} object for the record file.
-     * @param itemConsumer consumer to handle individual {@link RecordItem} objects.
-     * @return {@link RecordFile} object
-     */
-    RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) throws ImporterException;
-
-    default RecordFile read(StreamFileData streamFileData) {
-        return read(streamFileData, null);
-    }
 }

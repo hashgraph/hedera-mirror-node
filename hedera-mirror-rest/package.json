@@ -20,7 +20,7 @@
     "@awaitjs/express": "^0.7.0",
     "@godaddy/terminus": "^4.6.0",
     "asn1js": "^2.0.26",
-    "aws-sdk": "^2.831.0",
+    "aws-sdk": "^2.834.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -31,7 +31,7 @@
     "lodash": "^4.17.20",
     "log4js": "^6.3.0",
     "long": "^4.0.0",
-    "mathjs": "^9.0.0",
+    "mathjs": "^9.1.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
     "pg": "~8.5.1",
@@ -75,6 +75,7 @@
     "eslint-plugin-security": "^1.4.0",
     "husky": "^4.3.8",
     "jest": "^26.6.3",
+    "jest-circus": "^26.6.3",
     "jest-junit": "^12.0.0",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.5",
@@ -84,8 +85,8 @@
     "pretty-quick": "^3.1.0",
     "rewire": "^5.0.0",
     "sinon": "^9.2.4",
-    "supertest": "^6.1.1",
-    "testcontainers": "^7.0.1"
+    "supertest": "^6.1.3",
+    "testcontainers": "^7.2.0"
   },
   "husky": {
     "hooks": {
@@ -103,6 +104,7 @@
       "<rootDir>/__tests__/mockpool.js",
       "<rootDir>/__tests__/testutils.js"
     ],
+    "maxWorkers": "50%",
     "reporters": [
       "default",
       "jest-junit"
@@ -115,6 +117,7 @@
       "__tests__/mockpool.js",
       "__tests__/testutils.js"
     ],
+    "testRunner": "jest-circus/runner",
     "verbose": true
   },
   "jest-junit": {
