@@ -402,3 +402,6 @@ ij_javascript_var_declaration_wrap = normal
 ij_javascript_while_brace_force = never
 ij_javascript_while_on_new_line = false
 ij_javascript_wrap_comments = false
+
+[*.go]
+indent_style = tab
