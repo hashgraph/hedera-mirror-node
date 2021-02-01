@@ -2,7 +2,7 @@
  * Rename / reorganize hash columns in record_file table:
  *   - columns hash and prev_hash store the chained hash of the current file and the previous file respectively
  *   - the new file_hash column stores the file hash of record files if the file hash is not used as chained hash,
- *     e.g., v1 and v2 record files
+ *     e.g., v5 record files
  */
 
 alter table if exists record_file rename column file_hash to hash;
