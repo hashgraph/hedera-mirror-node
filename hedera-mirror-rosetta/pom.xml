@@ -20,7 +20,7 @@
     </properties>
 
     <build>
-        <sourceDirectory>${project.basedir}/cmd</sourceDirectory>
+        <sourceDirectory>${project.basedir}${file.separator}cmd</sourceDirectory>
         <directory>${basedir}${file.separator}bin</directory>
         <defaultGoal>clean package</defaultGoal>
         <finalName>${project.artifactId}</finalName>
@@ -42,7 +42,7 @@
                                 <flag>-v</flag>
                             </buildFlags>
                             <packages>
-                                <package>${project.basedir}/...</package>
+                                <package>${project.basedir}${file.separator}...</package>
                             </packages>
                         </configuration>
                     </execution>
@@ -53,7 +53,7 @@
                                 <flag>-a</flag>
                                 <flag>-i</flag>
                             </buildFlags>
-                            <sources>${project.basedir}/cmd</sources>
+                            <sources>${project.basedir}${file.separator}cmd</sources>
                         </configuration>
                     </execution>
                 </executions>
