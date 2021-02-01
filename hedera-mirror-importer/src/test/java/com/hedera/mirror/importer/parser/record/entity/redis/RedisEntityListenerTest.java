@@ -33,8 +33,6 @@ import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 
-//@SpringBootTest(properties = {
-//        "hedera.mirror.importer.parser.record.entity.redis.enabled=true"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RedisEntityListenerTest extends BatchEntityListenerTest {
 
