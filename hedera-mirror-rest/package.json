@@ -31,7 +31,7 @@
     "lodash": "^4.17.20",
     "log4js": "^6.3.0",
     "long": "^4.0.0",
-    "mathjs": "^9.0.0",
+    "mathjs": "^9.1.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
     "pg": "~8.5.1",
@@ -85,7 +85,7 @@
     "rewire": "^5.0.0",
     "sinon": "^9.2.4",
     "supertest": "^6.1.1",
-    "testcontainers": "^7.0.1"
+    "testcontainers": "^7.2.0"
   },
   "husky": {
     "hooks": {
