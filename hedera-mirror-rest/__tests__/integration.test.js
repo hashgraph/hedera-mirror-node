@@ -62,11 +62,13 @@ const utils = require('../utils');
 
 let sqlConnection;
 
-// timeout for beforeAll is 2m as downloading docker image if not exists can take quite some time
+// set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
+const defaultBeforeAllTimeoutMillis = 120 * 1000;
+
 beforeAll(async () => {
   jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
-}, 120000);
+}, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
   await integrationDbOps.closeConnection();
@@ -411,7 +413,7 @@ describe('DB integration test - spec based', () => {
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());
     configClone = _.cloneDeep(config);
-  }, 20000);
+  }, defaultBeforeAllTimeoutMillis);
 
   afterAll(async () => {
     await s3Ops.stop();
