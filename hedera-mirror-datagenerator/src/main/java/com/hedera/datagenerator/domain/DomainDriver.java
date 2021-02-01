@@ -109,13 +109,14 @@ public class DomainDriver implements ApplicationRunner {
                 .consensusStart(0L)
                 .consensusEnd(1L)
                 .count(0L)
+                .fileHash("")
+                .hash("")
                 .id(1L)
-                .name("")
                 .loadStart(0L)
                 .loadEnd(1L)
-                .hash("")
-                .previousHash("")
+                .name("")
                 .nodeAccountId(nodeAccountId)
+                .previousHash("")
                 .version(2)
                 .build();
         log.info("Writing data to db");

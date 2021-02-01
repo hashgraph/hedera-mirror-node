@@ -81,13 +81,4 @@ public class RecordFile implements StreamFile {
     private String previousHash;
 
     private int version;
-
-    @Override
-    public String getFileHash() {
-        if (version == 5) {
-            return fileHash;
-        }
-
-        return hash;
-    }
 }
