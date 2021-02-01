@@ -7,7 +7,7 @@ spec:
   chart:
     git: https://github.com/hashgraph/hedera-mirror-node.git
     path: charts/hedera-mirror-common
-    ref: e45aede11a45ec55a1cdab97620663e70bd9c590
+    ref: a931d1fd8301442f85912a362cd6a652c362c350
   rollback:
     enable: true
     force: true
