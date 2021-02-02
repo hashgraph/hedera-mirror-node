@@ -5,8 +5,8 @@ cd "$(dirname $0)/.."
 
 # name of the service and directories
 name=hedera-mirror-rosetta
-usretc="/opt/${name}"
-usrlib="/opt/lib/${name}"
+configdir="/opt/${name}"
+libdir="/opt/lib/${name}"
 execname="$(ls -1 ${name}-*)"
 
 if [[ ! -f "${execname}" ]]; then
@@ -14,10 +14,10 @@ if [[ ! -f "${execname}" ]]; then
     exit 1
 fi
 
-mkdir -p "${usretc}" "${usrlib}"
+mkdir -p "${configdir}" "${libdir}"
 systemctl stop "${name}.service" || true
 
-if [[ ! -f "${usretc}/application.yml" ]]; then
+if [[ ! -f "${configdir}/application.yml" ]]; then
     echo "Fresh install of ${execname}"
     read -p "Database hostname: " dbHost
     read -p "Database name: " dbName
@@ -25,7 +25,7 @@ if [[ ! -f "${usretc}/application.yml" ]]; then
     read -p "Database port: " dbPort
     read -p "Rosetta user: " dbUser
     read -p "Rosetta api port: " apiPort
-    cat >"${usretc}/application.yml" <<EOF
+    cat >"${configdir}/application.yml" <<EOF
 hedera:
   mirror:
     rosetta:
@@ -47,9 +47,9 @@ EOF
 fi
 
 echo "Copying new binary"
-rm -f "${usrlib}/${name}"
-cp "${execname}" "${usrlib}"
-ln -s "${usrlib}/${execname}" "${usrlib}/${name}"
+rm -f "${libdir}/${name}"
+cp "${execname}" "${libdir}"
+ln -s "${libdir}/${execname}" "${libdir}/${name}"
 
 echo "Setting up ${name} systemd service"
 cp "scripts/${name}.service" /etc/systemd/system

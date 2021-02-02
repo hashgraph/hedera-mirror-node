@@ -1,6 +1,10 @@
 name: Rosetta API
 
-on: pull_request
+on:
+  - pull_request
+  - push:
+      tags:
+        - v*
 
 env:
   working-directory: ./hedera-mirror-rosetta

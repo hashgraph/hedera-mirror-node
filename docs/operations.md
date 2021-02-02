@@ -346,3 +346,8 @@ sudo systemctl stop hedera-mirror-rosetta.service
 systemctl status hedera-mirror-rosetta.service
 sudo journalctl -fu hedera-mirror-rosetta.service
 ```
+
+Verify individual APIs manually:
+```shell script
+curl -H "Content-Type: application/json" -d '{ "network_identifier": {"blockchain":"Hedera", "network": "testnet", "sub_network_identifier": { "network": "shard 0 realm 0" }}, "block_identifier": {"index":0} }' 'http://localhost:5700/block'
+```
