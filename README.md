@@ -63,6 +63,12 @@ The beta mirror node works as follows:
 - This mirror node software can download the balance files, validate at least 1/3 of nodes have signed and then process
   the balance files for long term storage.
 
+### Rosetta API
+In addition to the REST API which exposes the persisted network entities (accounts, balances, transactions, topics and tokens),
+the Mirror Node also provides a [Rosetta API](https://www.rosetta-api.org/docs/welcome.html) complying REST API server.
+This exposes a subset of data with a focus on blockchain data integration.
+See [rosetta-server](docs/rosetta-server.md) for more details.
+
 ## Getting Started
 
 ### Technologies
@@ -82,6 +88,7 @@ to understanding the mirror node operations.
 - [PostgreSQL](https://www.postgresql.org/docs/9.6/index.html)
   - [SQL commands](https://www.postgresql.org/docs/9.6/sql-commands.html)
   - [Client Application & Utilities](https://www.postgresql.org/docs/9.6/reference-client.html)
+- [Go](https://golang.org/)
 
 ### Prerequisite Tools
 
@@ -89,7 +96,7 @@ Ensure these tools are installed prior to running the mirror node
 
 - [Docker](https://www.docker.com/products/docker-desktop)
 
-### Running Mirror Node (Importer, gRPC API, Monitor and REST API)
+### Running Mirror Node (Importer, gRPC API, Monitor, REST API and ROSETTA API)
 
 To run the mirror node, execute these 3 commands in your terminal.
 
@@ -239,6 +246,21 @@ documentation for directions on where and how to view logs.
 
 > **_Note_** You cannot exec into the gRPC, Monitor and Importer containers as they are
 > [distroless](https://github.com/GoogleContainerTools/distroless) java images.
+
+#### ROSETTA API
+
+The ROSETTA API container will display logs similar to the below at start:
+
+    Successfully connected to Database
+    Serving Rosetta API in ONLINE mode
+    Listening on port 5700
+
+The REST API endpoints can be verified through the terminal using the `curl` command. The following endpoint is a
+suggestion to get the genesis block. Modify the below IP's and ports if they differ from your running containers.
+
+```shell
+curl -H "Content-Type: application/json" -d '{ "network_identifier": {"blockchain":"Hedera", "network": "testnet", "sub_network_identifier": { "network": "shard 0 realm 0" }}, "block_identifier": {"index":0} }' 'http://localhost:5700/block'
+```
 
 ## Documentation
 

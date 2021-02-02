@@ -318,7 +318,7 @@ The Rosetta API runs on [Go](https://golang.org/) and should be able to run on a
 That said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
 
 ```shell script
-wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.8.1/hedera-mirror-rosetta-v0.27.0.tgz"
+wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.27.0/hedera-mirror-rosetta-v0.27.0.tgz"
 tar -xvf hedera-mirror-rosetta-v*.tgz
 cd hedera-mirror-rosetta-*/scripts
 sudo ./deploy.sh
