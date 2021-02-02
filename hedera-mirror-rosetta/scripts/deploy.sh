@@ -5,8 +5,8 @@ cd "$(dirname $0)/.."
 
 # name of the service and directories
 name=hedera-mirror-rosetta
-configdir="/opt/${name}"
-libdir="/opt/lib/${name}"
+configdir="/usr/etc/${name}"
+libdir="/usr/lib/${name}"
 execname="$(ls -1 ${name}-*)"
 
 if [[ ! -f "${execname}" ]]; then
