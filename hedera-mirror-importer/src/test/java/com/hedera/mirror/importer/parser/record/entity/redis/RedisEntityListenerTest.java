@@ -22,89 +22,47 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.time.Duration;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.redis.core.RedisCallback;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.RedisSerializer;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.UnicastProcessor;
-import reactor.test.StepVerifier;
+import org.springframework.data.redis.core.SessionCallback;
 
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RedisEntityListenerTest extends BatchEntityListenerTest {
+@ExtendWith(MockitoExtension.class)
+class RedisEntityListenerTest {
 
-    private final RedisOperations<String, StreamMessage> redisOperations;
+    @Mock
+    private RedisOperations<String, StreamMessage> redisOperations;
 
-    @Autowired
-    public RedisEntityListenerTest(RedisEntityListener entityListener, RedisProperties properties,
-                                   RedisOperations<String, StreamMessage> redisOperations) {
-        super(entityListener, properties);
-        this.redisOperations = redisOperations;
-    }
+    private RedisEntityListener entityListener;
 
-    @Override
-    protected Flux<TopicMessage> subscribe(long topicNum) {
-        UnicastProcessor<TopicMessage> processor = UnicastProcessor.create();
-        RedisSerializer stringSerializer = ((RedisTemplate<String, ?>) redisOperations).getStringSerializer();
-        RedisSerializer<TopicMessage> serializer = (RedisSerializer<TopicMessage>) redisOperations.getValueSerializer();
+    private long consensusTimestamp = 1;
 
-        RedisCallback<TopicMessage> redisCallback = connection -> {
-            byte[] channel = stringSerializer.serialize("topic.0.0." + topicNum);
-            connection.subscribe((message, pattern) -> {
-                processor.onNext(serializer.deserialize(message.getBody()));
-            }, channel);
-            return null;
-        };
-
-        redisOperations.execute(redisCallback);
-        return processor;
-    }
-
-    @Test
-    void onDuplicateTopicMessages() throws InterruptedException {
-        // given
-        TopicMessage topicMessage1 = topicMessage();
-        TopicMessage topicMessage2 = topicMessage();
-        TopicMessage topicMessage3 = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage1.getTopicNum());
-
-        // when
-        entityListener.onTopicMessage(topicMessage1);
-        entityListener.onTopicMessage(topicMessage2);
-        entityListener.onTopicMessage(topicMessage1); // duplicate
-        entityListener.onTopicMessage(topicMessage2); // duplicate
-        entityListener.onTopicMessage(topicMessage3);
-        entityListener.onSave(new EntityBatchSaveEvent(this));
-        entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-
-        // then
-        topicMessages.as(StepVerifier::create)
-                .expectNext(topicMessage1, topicMessage2, topicMessage3)
-                .thenCancel()
-                .verify(Duration.ofMillis(1000));
+    @BeforeEach
+    void setup() {
+        entityListener = new RedisEntityListener(new MirrorProperties(),
+                new RedisProperties(), redisOperations, new SimpleMeterRegistry());
+        entityListener.init();
     }
 
     @Test
@@ -117,22 +75,18 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
         for (int i = 0; i < RedisEntityListener.TASK_QUEUE_SIZE + 2; i++) {
             messages.add(topicMessage());
         }
-        Flux<TopicMessage> topicMessageFlux = subscribe(messages.get(0).getTopicNum());
 
         // when
-        doAnswer((Answer<Void>) invocation -> {
-            // block publish until latch count reaches 0
+        when(redisOperations.executePipelined(any(SessionCallback.class))).then((callback) -> {
             latch.await();
-            invocation.callRealMethod();
             return null;
-        }).when(redisOperations).convertAndSend(anyString(), any(Object.class));
+        });
 
         // drive entityListener to handle topic messages in a different thread cause it will block
         new Thread(() -> {
             try {
                 for (TopicMessage message : messages) {
-                    entityListener.onTopicMessage(message);
-                    entityListener.onSave(new EntityBatchSaveEvent(this));
+                    submitAndSave(message);
                     entityListener.onCleanup(new EntityBatchCleanupEvent(this));
                     saveCount.getAndIncrement();
                 }
@@ -141,28 +95,64 @@ class RedisEntityListenerTest extends BatchEntityListenerTest {
             }
         }).start();
 
-        // then
-        topicMessageFlux
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(500))
-                .then(() -> assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1))
-                .expectNextCount(0)
-                .then(latch::countDown)
-                .expectNextSequence(messages)
-                .thenCancel()
-                .verify(Duration.ofMillis(1000));
+        //then
+        //Thread is blocked because queue is full, and publisher is blocked on first message.
+        verify(redisOperations, timeout(500).times(1))
+                .executePipelined(any(SessionCallback.class));
+        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1);
 
-        // reset the stub
-        doCallRealMethod().when(redisOperations).convertAndSend(anyString(), any(Object.class));
+        latch.countDown();
+        //All messages should be queued and published
+        verify(redisOperations, timeout(500).times(RedisEntityListener.TASK_QUEUE_SIZE + 2))
+                .executePipelined(any(SessionCallback.class));
+        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 2);
     }
 
-    @TestConfiguration
-    static class ContextConfiguration {
+    @Test
+    void onDuplicateTopicMessages() throws InterruptedException {
+        TopicMessage topicMessage1 = topicMessage();
+        TopicMessage topicMessage2 = topicMessage();
+        TopicMessage topicMessage3 = topicMessage();
 
-        @Bean
-        @Primary
-        public RedisOperations<String, StreamMessage> redisOpsSpy(RedisOperations<String, StreamMessage> redisOperations) {
-            return Mockito.spy(redisOperations);
-        }
+        //submitAndSave two messages, verify publish logic called twice
+        submitAndSave(topicMessage1);
+        submitAndSave(topicMessage2);
+        verify(redisOperations, timeout(500).times(2))
+                .executePipelined(any(SessionCallback.class));
+
+        //submitAndSave two duplicate messages, verify publish was not attempted
+        Mockito.reset(redisOperations);
+        submitAndSave(topicMessage1);
+        submitAndSave(topicMessage2);
+        verify(redisOperations, timeout(500).times(0))
+                .executePipelined(any(SessionCallback.class));
+
+        //submitAndSave third new unique message, verify publish called once.
+        Mockito.reset(redisOperations);
+        submitAndSave(topicMessage3);
+        entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+        verify(redisOperations, timeout(500).times(1))
+                .executePipelined(any(SessionCallback.class));
+    }
+
+    protected TopicMessage topicMessage() {
+        TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setChunkNum(1);
+        topicMessage.setChunkTotal(2);
+        topicMessage.setConsensusTimestamp(consensusTimestamp++);
+        topicMessage.setMessage("test message".getBytes());
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash("running hash".getBytes());
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(1);
+        topicMessage.setTopicNum(1001);
+        topicMessage.setValidStartTimestamp(4L);
+        return topicMessage;
+    }
+
+    private void submitAndSave(TopicMessage topicMessage) throws InterruptedException {
+        entityListener.onTopicMessage(topicMessage);
+        entityListener.onSave(new EntityBatchSaveEvent(this));
     }
 }
