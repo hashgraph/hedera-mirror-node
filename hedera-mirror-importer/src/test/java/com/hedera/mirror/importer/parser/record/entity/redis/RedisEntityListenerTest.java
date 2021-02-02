@@ -41,6 +41,8 @@ import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
@@ -133,9 +135,19 @@ class RedisEntityListenerTest {
                 .executePipelined(any(SessionCallback.class));
     }
 
-    private TopicMessage topicMessage() {
+    protected TopicMessage topicMessage() {
         TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setChunkNum(1);
+        topicMessage.setChunkTotal(2);
         topicMessage.setConsensusTimestamp(consensusTimestamp++);
+        topicMessage.setMessage("test message".getBytes());
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash("running hash".getBytes());
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(1);
+        topicMessage.setTopicNum(1001);
+        topicMessage.setValidStartTimestamp(4L);
         return topicMessage;
     }
 
