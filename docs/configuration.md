@@ -335,3 +335,5 @@ The following table lists the available properties along with their default valu
 | `hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |
 | `hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard                                                      |
 | `hedera.mirror.rosetta.version`                         | 0.20.0                  | The version of the Hedera Mirror Node used to adhere to the Rosetta interface                  |
+
+To utilize an external configuration file with customs values the `HEDERA_MIRROR_ROSETTA_API_CONFIG` variable should be set e.g. `HEDERA_MIRROR_ROSETTA_API_CONFIG=/Users/Downloads/hedera-mirror-rosetta/application.yml`
