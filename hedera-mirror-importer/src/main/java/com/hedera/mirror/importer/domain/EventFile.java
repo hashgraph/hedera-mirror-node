@@ -29,20 +29,23 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @Data
 @NoArgsConstructor
 public class EventFile implements StreamFile {
-    private String name;
 
-    private Long loadStart;
-
-    private Long loadEnd;
+    private Long count;
 
     private String fileHash;
 
-    private String previousHash;
-
     private int fileVersion;
+
+    private String hash;
+
+    private Long loadEnd;
+
+    private Long loadStart;
+
+    private String name;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
 
-    private Long count;
+    private String previousHash;
 }

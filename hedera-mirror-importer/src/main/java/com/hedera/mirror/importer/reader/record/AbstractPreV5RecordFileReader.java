@@ -139,10 +139,13 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             count++;
         }
 
+        String fileHash = Hex.encodeHexString(digest.digest());
+
         recordFile.setConsensusStart(consensusStart);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setCount(count);
-        recordFile.setFileHash(Hex.encodeHexString(digest.digest()));
+        recordFile.setFileHash(fileHash);
+        recordFile.setHash(fileHash);
     }
 
     protected static class RecordFileDigest implements AutoCloseable {

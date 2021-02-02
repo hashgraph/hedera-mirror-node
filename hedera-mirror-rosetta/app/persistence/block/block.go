@@ -21,12 +21,13 @@
 package block
 
 import (
+	"log"
+	"sync"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/jinzhu/gorm"
-	"log"
-	"sync"
 )
 
 const (
@@ -37,35 +38,36 @@ const (
 	// selectLatestWithIndex - Selects row which hash is equal to the last processed record hash
 	// and adds additional information about the position of that row using count (counts only loaded record files).
 	// The information about the position is used as Block Index
-	selectLatestWithIndex string = `SELECT rd.file_hash,
-                                           rd.consensus_start,
+	selectLatestWithIndex string = `SELECT rd.consensus_start,
                                            rd.consensus_end,
+                                           rd.hash,
                                            rd.prev_hash,
+                                           rd.version,
                                            rcd_index.block_index
                                     FROM   (SELECT *
                                             FROM   record_file
-                                            WHERE  file_hash = (SELECT status_value FROM t_application_status
+                                            WHERE  hash = (SELECT status_value FROM t_application_status
                                                                 WHERE status_code = 'LAST_PROCESSED_RECORD_HASH')) AS rd,
                                            (SELECT COUNT(*) - 1 - $1 AS block_index
                                             FROM   record_file
                                             WHERE  load_end IS NOT NULL) AS rcd_index`
 
-	// selectByHashWithIndex - Selects the row which is loaded by a given file_hash
+	// selectByHashWithIndex - Selects the row which is loaded by a given hash
 	// and adds additional info about the position of that row using count.
 	// The information about the position is used as Block Index
-	selectByHashWithIndex string = `SELECT rd.file_hash,
+	selectByHashWithIndex string = `SELECT rd.hash,
                                            rd.consensus_start,
                                            rd.consensus_end,
                                            rd.prev_hash,
                                            rcd.block_index
                                     FROM   (SELECT *
                                             FROM   record_file
-                                            WHERE  file_hash = $1 AND load_end IS NOT NULL) AS rd,
+                                            WHERE  hash = $1 AND load_end IS NOT NULL) AS rd,
                                            (SELECT COUNT(*) - 1 - $2 AS block_index
                                             FROM   record_file
                                             WHERE  consensus_end <= (SELECT consensus_end
                                                                      FROM   record_file
-                                                                     WHERE  file_hash = $1)) AS rcd`
+                                                                     WHERE  hash = $1)) AS rcd`
 	// selectSkippedRecordFilesCount - Selects the count of rows from the record_file table,
 	// where each one's consensus_end is before the MIN consensus_timestamp of account_balance table (the first one added).
 	// This way, record files before that timestamp are considered non-existent,
@@ -93,15 +95,23 @@ const (
 )
 
 type recordFile struct {
-	ID             int64  `gorm:"type:bigint;primary_key"`
-	Name           string `gorm:"size:250"`
-	LoadStart      int64  `gorm:"type:bigint"`
-	LoadEnd        int64  `gorm:"type:bigint"`
-	FileHash       string `gorm:"size:96"`
-	PrevHash       string `gorm:"size:96"`
-	ConsensusStart int64  `gorm:"type:bigint"`
-	ConsensusEnd   int64  `gorm:"type:bigint"`
-	BlockIndex     int64  `gorm:"type:bigint"`
+	BlockIndex       int64  `gorm:"type:bigint"`
+	ConsensusStart   int64  `gorm:"type:bigint"`
+	ConsensusEnd     int64  `gorm:"type:bigint"`
+	Count            int64  `gorm:"type:bigint"`
+	DigestAlgorithm  int    `gorm:"type:int"`
+	FileHash         string `gorm:"size:96"`
+	HapiVersionMajor int    `gorm:"type:int"`
+	HapiVersionMinor int    `gorm:"type:int"`
+	HapiVersionPatch int    `gorm:"type:int"`
+	Hash             string `gorm:"size:96"`
+	ID               int64  `gorm:"type:bigint;primary_key"`
+	LoadEnd          int64  `gorm:"type:bigint"`
+	LoadStart        int64  `gorm:"type:bigint"`
+	Name             string `gorm:"size:250"`
+	NodeAccountID    int64  `gorm:"type:bigint"`
+	PrevHash         string `gorm:"size:96"`
+	Version          int    `gorm:"type:int"`
 }
 
 // TableName - Set table name to be `record_file`
@@ -172,7 +182,7 @@ func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 
 	return &types.Block{
 		Index:               0,
-		Hash:                rf.FileHash,
+		Hash:                rf.Hash,
 		ConsensusStartNanos: rf.ConsensusStart,
 		ConsensusEndNanos:   rf.ConsensusEnd,
 	}, nil
@@ -189,7 +199,7 @@ func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 	if br.dbClient.Raw(selectLatestWithIndex, startingIndex).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
-	if rf.FileHash == "" {
+	if rf.Hash == "" {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -207,7 +217,7 @@ func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTyp
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
-	if rf.BlockIndex < 0 || rf.FileHash == "" {
+	if rf.BlockIndex < 0 || rf.Hash == "" {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -221,12 +231,12 @@ func (br *BlockRepository) constructBlockResponse(rf *recordFile, blockIndex int
 
 	// Handle the edge case for querying first block
 	if parentIndex < 0 {
-		parentIndex = 0          // Parent index should be 0, same as current block index
-		parentHash = rf.FileHash // Parent hash should be same as current block hash
+		parentIndex = 0      // Parent index should be 0, same as current block index
+		parentHash = rf.Hash // Parent hash should be same as current block hash
 	}
 	return &types.Block{
 		Index:               blockIndex,
-		Hash:                rf.FileHash,
+		Hash:                rf.Hash,
 		ParentIndex:         parentIndex,
 		ParentHash:          parentHash,
 		ConsensusStartNanos: rf.ConsensusStart,

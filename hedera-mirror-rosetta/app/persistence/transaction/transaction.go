@@ -22,15 +22,16 @@ package transaction
 
 import (
 	"encoding/hex"
+	"log"
+	"strconv"
+	"strings"
+	"sync"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
-	"log"
-	"strconv"
-	"strings"
-	"sync"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/jinzhu/gorm"
@@ -56,19 +57,20 @@ const (
 
 type transaction struct {
 	ConsensusNS          int64  `gorm:"type:bigint;primary_key"`
-	Type                 int    `gorm:"type:smallint"`
-	Result               int    `gorm:"type:smallint"`
-	PayerAccountID       int64  `gorm:"type:bigint"`
-	ValidStartNS         int64  `gorm:"type:bigint"`
-	ValidDurationSeconds int64  `gorm:"type:bigint"`
-	NodeAccountID        int64  `gorm:"type:bigint"`
+	ChargedTxFee         int64  `gorm:"type:bigint"`
 	EntityID             int64  `gorm:"type:bigint"`
 	InitialBalance       int64  `gorm:"type:bigint"`
 	MaxFee               int64  `gorm:"type:bigint"`
-	ChargedTxFee         int64  `gorm:"type:bigint"`
 	Memo                 []byte `gorm:"type:bytea"`
-	TransactionHash      []byte `gorm:"type:bytea"`
+	NodeAccountID        int64  `gorm:"type:bigint"`
+	PayerAccountID       int64  `gorm:"type:bigint"`
+	Result               int    `gorm:"type:smallint"`
+	Scheduled            bool   `gorm:"type:bool"`
 	TransactionBytes     []byte `gorm:"type:bytea"`
+	TransactionHash      []byte `gorm:"type:bytea"`
+	Type                 int    `gorm:"type:smallint"`
+	ValidDurationSeconds int64  `gorm:"type:bigint"`
+	ValidStartNS         int64  `gorm:"type:bigint"`
 }
 
 type transactionType struct {
@@ -135,6 +137,7 @@ func (tr *TransactionRepository) Statuses() (map[int]string, *rTypes.Error) {
 	return tr.statuses, nil
 }
 
+// TypesAsArray returns all Transaction type names as an array
 func (tr *TransactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
 	transactionTypes, err := tr.Types()
 	if err != nil {

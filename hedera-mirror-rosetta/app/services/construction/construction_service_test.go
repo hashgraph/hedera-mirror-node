@@ -22,10 +22,11 @@ package construction
 
 import (
 	"encoding/hex"
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const (

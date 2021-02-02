@@ -86,11 +86,14 @@ public class EventFileReaderV3 implements EventFileReader {
             }
 
             EventFile eventFile = new EventFile();
-            eventFile.setName(FilenameUtils.getName(fileName));
-            eventFile.setFileVersion(fileVersion);
-            eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
-            eventFile.setFileHash(Hex.encodeHexString(md.digest()));
+            String fileHash = Hex.encodeHexString(md.digest());
+
             eventFile.setCount(0L);
+            eventFile.setFileHash(fileHash);
+            eventFile.setFileVersion(fileVersion);
+            eventFile.setHash(fileHash);
+            eventFile.setName(FilenameUtils.getName(fileName));
+            eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
             return eventFile;
         } catch (InvalidEventFileException e) {
             throw e;

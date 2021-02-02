@@ -115,7 +115,7 @@ abstract class AbstractRecordFileParserPerformanceTest extends IntegrationTest {
                             .count(0L)
                             .digestAlgorithm(DigestAlgorithm.SHA384)
                             .fileHash(currentHash)
-                            .endRunningHash(currentHash)
+                            .hash(currentHash)
                             .name(filename)
                             .nodeAccountId(DEFAULT_NODE_ACCOUNT_ID)
                             .previousHash(previousHash)

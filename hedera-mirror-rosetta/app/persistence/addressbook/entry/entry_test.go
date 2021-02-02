@@ -21,6 +21,8 @@
 package entry
 
 import (
+	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
@@ -28,7 +30,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const (
