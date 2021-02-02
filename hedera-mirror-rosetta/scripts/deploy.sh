@@ -24,16 +24,25 @@ if [[ ! -f "${usretc}/application.yml" ]]; then
     read -p "Rosetta user password: " dbPassword
     read -p "Database port: " dbPort
     read -p "Rosetta user: " dbUser
+    read -p "Rosetta api port: " apiPort
     cat >"${usretc}/application.yml" <<EOF
 hedera:
   mirror:
-    importer:
+    rosetta:
+      apiVersion: 1.4.4
       db:
         host: ${dbHost}
         name: ${dbName}
         password: ${dbPassword}
         port: ${dbPort}
-        user: ${dbUser}
+        username: ${dbUser}
+      online: true
+      network: DEMO
+      nodeVersion: 0
+      port: ${apiPort}
+      realm: 0
+      shard: 0
+      version: 0.20.0
 EOF
 fi
 
