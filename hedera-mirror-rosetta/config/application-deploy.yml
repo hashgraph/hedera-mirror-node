@@ -1,0 +1,18 @@
+# This file contains application defaults and placeholder configurations used in initial installation. See docs/configuration.md for how to override defaults.
+hedera:
+  mirror:
+    rosetta:
+      apiVersion: 1.4.4
+      db:
+        host: ${dbHost}
+        name: ${dbName}
+        password: ${dbPassword}
+        port: ${dbPort}
+        username: ${dbUser}
+      online: true
+      network: DEMO
+      nodeVersion: 0
+      port: ${apiPort}
+      realm: 0
+      shard: 0
+      version: 0.20.0

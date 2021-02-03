@@ -39,6 +39,7 @@ func LoadConfig() *types.Config {
 	var configuration types.Config
 	GetConfig(&configuration, defaultConfigFile)
 	GetConfig(&configuration, mainConfigFile)
+	GetConfig(&configuration, os.Getenv("HEDERA_MIRROR_ROSETTA_API_CONFIG"))
 
 	if err := env.Parse(&configuration); err != nil {
 		panic(err)
@@ -62,4 +63,6 @@ func GetConfig(config *types.Config, path string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Printf("Loaded external config file: %s\n", path)
 }

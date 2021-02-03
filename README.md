@@ -63,6 +63,12 @@ The beta mirror node works as follows:
 - This mirror node software can download the balance files, validate at least 1/3 of nodes have signed and then process
   the balance files for long term storage.
 
+### Rosetta API
+In addition to the REST API which exposes the persisted network entities (accounts, balances, transactions, topics and tokens),
+the Mirror Node also provides a [Rosetta API](https://www.rosetta-api.org/docs/welcome.html) compliant REST API server.
+This exposes a subset of data with a focus on blockchain data integration.
+See [rosetta-server](docs/rosetta-server.md) for more details.
+
 ## Getting Started
 
 ### Technologies
@@ -82,6 +88,7 @@ to understanding the mirror node operations.
 - [PostgreSQL](https://www.postgresql.org/docs/9.6/index.html)
   - [SQL commands](https://www.postgresql.org/docs/9.6/sql-commands.html)
   - [Client Application & Utilities](https://www.postgresql.org/docs/9.6/reference-client.html)
+- [Go](https://golang.org/)
 
 ### Prerequisite Tools
 
@@ -89,7 +96,7 @@ Ensure these tools are installed prior to running the mirror node
 
 - [Docker](https://www.docker.com/products/docker-desktop)
 
-### Running Mirror Node (Importer, gRPC API, Monitor and REST API)
+### Running Mirror Node
 
 To run the mirror node, execute these 3 commands in your terminal.
 
@@ -196,19 +203,7 @@ The REST API container will display logs similar to the below at start:
 
     Server running on port: 5551
 
-The REST API endpoints can be verified either through the browser or the terminal. The following endpoints are
-suggestions that can be accessed from your browser. Modify the below IP's and ports if they differ from your running
-containers.
-
-    http://127.0.0.1:5551/api/v1/accounts
-    http://127.0.0.1:5551/api/v1/balances
-    http://127.0.0.1:5551/api/v1/transactions
-
-When using the terminal simply use the `curl` command on the above endpoints.
-
-```shell
-curl http://127.0.0.1:5551/api/v1/transactions
-```
+To manually verify REST API endpoints follow the [Operations](docs/operations.md#verifying-1) details.
 
 #### gRPC API
 
@@ -217,17 +212,8 @@ The gRPC container will display logs similar to the below at start
     MirrorGrpcApplication Started MirrorGrpcApplication ....
     Listener Starting to poll every 1000ms
 
-The gRPC streaming endpoint can be verified using clients that support [HTTP/2](https://http2.github.io/). Some useful
-clients we've encountered include:
+To manually verify the gRPC streaming endpoint follow the [Operations](docs/operations.md#verifying) details.
 
-- [grpcurl](https://github.com/fullstorydev/grpcurl)
-  - Run the following command making substitutions for `topicNum`, `grpcContainerIP` and `grpcContainerPort`:
-
-```shell
-grpcurl -plaintext -d '{"topicID":{"shardNum":0,"realmNum":0,"topicNum":{topicNum}},"consensusStartTime":{"seconds":0,"nanos":0},"limit":10}' {grpcContainerIP}:{grpcContainerPort} com.hedera.mirror.api.proto.ConsensusService/subscribeTopic
-```
-
-- [Bloom](https://github.com/uw-labs/bloomrpc)
 
 Additionally, logs of each module container can be viewed to verify expected operation or decipher issues.
 See [Troubleshooting](docs/troubleshooting.md) for details.
@@ -239,6 +225,16 @@ documentation for directions on where and how to view logs.
 
 > **_Note_** You cannot exec into the gRPC, Monitor and Importer containers as they are
 > [distroless](https://github.com/GoogleContainerTools/distroless) java images.
+
+#### Rosetta API
+
+The Rosetta API container will display logs similar to the below at start:
+
+    Successfully connected to Database
+    Serving Rosetta API in ONLINE mode
+    Listening on port 5700
+
+To manually verify the Rosetta API endpoints follow the [Operations](docs/operations.md#verifying-2) details.
 
 ## Documentation
 

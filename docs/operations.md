@@ -46,6 +46,19 @@ systemctl status hedera-mirror-grpc.service
 sudo journalctl -fu hedera-mirror-grpc.service
 ```
 
+### Verifying
+The gRPC streaming endpoint can be verified using clients that support [HTTP/2](https://http2.github.io/). Some useful
+clients we've encountered include:
+
+- [grpcurl](https://github.com/fullstorydev/grpcurl)
+  - Run the following command making substitutions for `topicNum`, `grpcContainerIP` and `grpcContainerPort`:
+
+```shell
+grpcurl -plaintext -d '{"topicID":{"shardNum":0,"realmNum":0,"topicNum":{topicNum}},"consensusStartTime":{"seconds":0,"nanos":0},"limit":10}' {grpcContainerIP}:{grpcContainerPort} com.hedera.mirror.api.proto.ConsensusService/subscribeTopic
+```
+
+- [Bloom](https://github.com/uw-labs/bloomrpc)
+
 ## Importer
 
 The Importer process is a Java-based application and should be able to run on any platform that Java supports. That
@@ -258,7 +271,10 @@ pm2 status
 pm2 logs <port>
 ```
 
-Verify individual APIs manually:
+### Verifying
+The REST API endpoints can be verified either through the browser or the terminal. The following endpoints are
+suggestions that can be accessed from your browser. Modify the below IP's and ports if they differ from your running
+containers.
 
 ```shell script
 curl http://127.0.0.1:6551/api/v1/accounts
@@ -309,3 +325,52 @@ available
 - `/swagger/metrics` - Prometheus formatted metrics
 
 Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest.metrics.config.uriPath`.
+
+## Rosetta API
+
+### Initial Installation / Upgrade
+
+The Rosetta API runs on [Go](https://golang.org/) and should be able to run on any platform that Golang supports.
+That said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
+
+```shell script
+wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.27.0/hedera-mirror-rosetta-v0.27.0.tgz"
+tar -xvf hedera-mirror-rosetta-v*.tgz
+cd hedera-mirror-rosetta-*/scripts
+sudo ./deploy.sh
+```
+
+### File Layout
+
+- `/usr/lib/hedera-mirror-rosetta` - Binaries
+- `/usr/etc/hedera-mirror-rosetta/application.yml` - Configuration file
+
+### Starting
+```
+sudo systemctl start hedera-mirror-rosetta.service
+```
+The Rosetta API container will display logs similar to the below at start:
+
+    Successfully connected to Database
+    Serving Rosetta API in ONLINE mode
+    Listening on port 5700
+
+### Stopping
+```
+sudo systemctl stop hedera-mirror-rosetta.service
+```
+
+
+### Monitoring
+```
+systemctl status hedera-mirror-rosetta.service
+sudo journalctl -fu hedera-mirror-rosetta.service
+```
+
+### Verifying
+The REST API endpoints can be verified through the terminal using the `curl` command. The following endpoint is a
+suggestion to get the genesis block. Modify the below IP's and ports if they differ from your running containers.
+
+```shell script
+curl -H "Content-Type: application/json" -d '{ "network_identifier": {"blockchain":"Hedera", "network": "testnet", "sub_network_identifier": { "network": "shard 0 realm 0" }}, "block_identifier": {"index":0} }' 'http://localhost:5700/block'
+```
