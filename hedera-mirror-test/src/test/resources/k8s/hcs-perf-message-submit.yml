@@ -41,7 +41,7 @@ spec:
                     app.kubernetes.io/name: test
       restartPolicy: Never
       containers:
-        - image: gcr.io/mirrornode/hedera-mirror-test:0.27.0-rc1
+        - image: gcr.io/mirrornode/hedera-mirror-test:0.27.0-rc2
           name: test
           env:
             - name: testProfile

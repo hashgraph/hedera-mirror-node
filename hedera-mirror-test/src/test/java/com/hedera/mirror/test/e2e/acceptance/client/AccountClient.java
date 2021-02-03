@@ -20,7 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
@@ -38,12 +37,22 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 @Log4j2
-@Value
 public class AccountClient extends AbstractNetworkClient {
+
+    private ExpandedAccountId tokenTreasuryAccount = null;
 
     public AccountClient(SDKClient sdkClient) {
         super(sdkClient);
         log.debug("Creating Account Client");
+    }
+
+    public ExpandedAccountId getTokenTreasuryAccount() throws HederaStatusException {
+        if (tokenTreasuryAccount == null) {
+            tokenTreasuryAccount = createNewAccount(1_000_000_000L);
+            log.debug("Treasury Account: {} will be used for current test session", tokenTreasuryAccount);
+        }
+
+        return tokenTreasuryAccount;
     }
 
     public static long getBalance(Client client, String accountIdString) throws HederaStatusException {

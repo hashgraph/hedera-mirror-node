@@ -1,9 +1,6 @@
 @TokenBase @FullSuite
 Feature: HTS Base Coverage Feature
 
-    Background: Treasury account is created
-        Given I create a new treasury account
-
     @Acceptance @Sanity
     Scenario Outline: Validate Base Token Flow - Create, Associate, Fund
         Given I successfully create a new token
