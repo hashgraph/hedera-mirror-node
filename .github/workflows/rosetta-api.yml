@@ -47,6 +47,7 @@ jobs:
           NAME=${MODULE}-${VERSION_TAG}
           mkdir -p ${NAME}
           cp ${MODULE}/bin/${MODULE} ${NAME}/${NAME}
+          cp ${MODULE}/config/application-deploy.yml ${NAME}/application.yml
           cp -R ${MODULE}/scripts/deploy ${NAME}/scripts
           tar -czf ${NAME}.tgz -C . ${NAME}
       - name: Upload folder archive as artifact

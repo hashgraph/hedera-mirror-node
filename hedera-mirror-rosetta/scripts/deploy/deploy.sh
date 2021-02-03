@@ -18,14 +18,22 @@ fi
 mkdir -p "${configdir}" "${libdir}"
 systemctl stop "${name}.service" || true
 
-if [[ ! -f "${configfile}" ]]; then
+if [[ ! -f "${configdir}/${configfile}" ]]; then
     if [[ ! -f "${configfile}" ]]; then
         echo "Can't find ${configfile}. Aborting"
         exit 1
     fi
 
-    echo "Copying default cofig file, update with custom values!"
-    cp "${configfile}" "${configdir}"
+    echo "Copying new cofig file"
+    read -p "Database hostname: " dbHost
+    read -p "Database name: " dbName
+    read -p "Rosetta user password: " dbPassword
+    read -p "Database port: " dbPort
+    read -p "Rosetta user: " dbUser
+    read -p "Rosetta api port: " apiPort
+    sed -e 's/${dbHost}/'"${dbHost}"'/g' -e 's/${dbName}/'"${dbName}"'/g' -e 's/${dbPassword}/'"${dbPassword}"'/g' \
+        -e 's/${dbPort}/'"${dbPort}"'/g' -e 's/${dbUser}/'"${dbUser}"'/g' -e 's/${apiPort}/'"${apiPort}"'/g' \
+        "./${configfile}" >"${configdir}/${configfile}"
 fi
 
 echo "Copying new binary"
