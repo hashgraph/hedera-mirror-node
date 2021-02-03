@@ -315,7 +315,7 @@ latter configuration overwriting (technically recursively merged into) the curre
 
 1. `./config/application.yml`
 2. `./application.yml`
-3. `${HEDERA_MIRROR_ROSETTA_API_CONFIG}/application.yml`
+3. `${HEDERA_MIRROR_ROSETTA_API_CONFIG}` environment variable to custom values file (e.g. `HEDERA_MIRROR_ROSETTA_API_CONFIG=/Users/Downloads/hedera-mirror-rosetta/application.yml`)
 4. Environment variables that start with `HEDERA_MIRROR_ROSETTA_` (e.g. `HEDERA_MIRROR_ROSETTA_API_VERSION=1.4.2`)
 
 The following table lists the available properties along with their default values.
