@@ -5,6 +5,7 @@ cd "$(dirname $0)/.."
 
 # name of the service and directories
 name=hedera-mirror-rosetta
+configfile=application.yml
 configdir="/usr/etc/${name}"
 libdir="/usr/lib/${name}"
 execname="$(ls -1 ${name}-*)"
@@ -17,33 +18,14 @@ fi
 mkdir -p "${configdir}" "${libdir}"
 systemctl stop "${name}.service" || true
 
-if [[ ! -f "${configdir}/application.yml" ]]; then
-    echo "Fresh install of ${execname}"
-    read -p "Database hostname: " dbHost
-    read -p "Database name: " dbName
-    read -p "Rosetta user password: " dbPassword
-    read -p "Database port: " dbPort
-    read -p "Rosetta user: " dbUser
-    read -p "Rosetta api port: " apiPort
-    cat >"${configdir}/application.yml" <<EOF
-hedera:
-  mirror:
-    rosetta:
-      apiVersion: 1.4.4
-      db:
-        host: ${dbHost}
-        name: ${dbName}
-        password: ${dbPassword}
-        port: ${dbPort}
-        username: ${dbUser}
-      online: true
-      network: DEMO
-      nodeVersion: 0
-      port: ${apiPort}
-      realm: 0
-      shard: 0
-      version: 0.20.0
-EOF
+if [[ ! -f "${configfile}" ]]; then
+    if [[ ! -f "${configfile}" ]]; then
+        echo "Can't find ${configfile}. Aborting"
+        exit 1
+    fi
+
+    echo "Copying default cofig file, update with custom values!"
+    cp "${configfile}" "${configdir}"
 fi
 
 echo "Copying new binary"
