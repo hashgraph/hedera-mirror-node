@@ -330,7 +330,7 @@ Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest
 
 ### Initial Installation / Upgrade
 
-The Rosetta API runs on [Go](https://golang.org/) and should be able to run on any platform that golang supports.
+The Rosetta API runs on [Go](https://golang.org/) and should be able to run on any platform that Golang supports.
 That said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
 
 ```shell script
@@ -342,8 +342,8 @@ sudo ./deploy.sh
 
 ### File Layout
 
-- `/opt/lib/hedera-mirror-rosetta` - Binaries
-- `/opt/hedera-mirror-rosetta/application.yml` - Configuration file
+- `/usr/lib/hedera-mirror-rosetta` - Binaries
+- `/usr/etc/hedera-mirror-rosetta/application.yml` - Configuration file
 
 ### Starting
 ```
