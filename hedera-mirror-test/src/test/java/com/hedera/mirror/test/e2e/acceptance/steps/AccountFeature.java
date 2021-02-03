@@ -51,7 +51,7 @@ public class AccountFeature {
         balance = accountClient.getBalance();
     }
 
-    @Then("the result should be greater than or equal to {long}")
+    @Then("the crypto balance should be greater than or equal to {long}")
     public void isGreaterOrEqualThan(long threshold) {
         assertTrue(balance >= threshold);
     }

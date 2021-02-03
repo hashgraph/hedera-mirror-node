@@ -44,7 +44,7 @@ public class RestPollingProperties {
     @DurationMin(seconds = 0L)
     @DurationMax(seconds = 10L)
     @NotNull
-    private Duration delay = Duration.ofMillis(1000);
+    private Duration delay = Duration.ofMillis(3000);
 
     @Min(1)
     @Max(60)

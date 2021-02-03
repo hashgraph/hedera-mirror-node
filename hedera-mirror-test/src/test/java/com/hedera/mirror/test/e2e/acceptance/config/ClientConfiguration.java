@@ -135,7 +135,7 @@ public class ClientConfiguration {
                 .defaultHeaders(httpHeaders -> {
                     httpHeaders.setAccept((List.of(MediaType.APPLICATION_JSON)));
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                    httpHeaders.setCacheControl(CacheControl.noCache());
+                    httpHeaders.setCacheControl(CacheControl.noStore());
                 })
                 .build();
     }

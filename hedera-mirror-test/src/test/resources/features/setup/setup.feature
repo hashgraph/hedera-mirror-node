@@ -3,14 +3,12 @@ Feature: Setup entities for various features
 
     @SetupTokenAccounts
     Scenario Outline: Setup 2 new accounts for token transfers
-        Given I successfully create a new token <symbol>
-        When I associate a new account with token
+        Given I successfully onboard a new token account
+        When I associate a new recipient account with token
         And I transfer <amount> tokens to recipient
-        Then I associate a new account with token
-        Then I transfer <amount> tokens to recipient
         Examples:
-            | symbol  | amount |
-            | "NECTK" | 100000 |
+            | amount |
+            | 250000 |
 
     @FundAccount
     Scenario Outline: Fund account

@@ -28,7 +28,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import io.grpc.StatusRuntimeException;
-import java.time.Instant;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -42,7 +41,6 @@ import org.springframework.retry.annotation.Retryable;
 import com.hedera.hashgraph.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.proto.TokenKycStatus;
 import com.hedera.hashgraph.sdk.HederaStatusException;
-import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
@@ -74,25 +72,11 @@ public class TokenFeature {
     private AccountClient accountClient;
     @Autowired
     private MirrorNodeClient mirrorClient;
-    private Instant testInstantReference;
     private Ed25519PrivateKey tokenKey;
-    private String symbol;
     private TokenId tokenId;
-    private ExpandedAccountId treasuryAccount;
     private ExpandedAccountId sender;
     private ExpandedAccountId recipient;
     private NetworkTransactionResponse networkTransactionResponse;
-    private List<TransactionId> transactionIdList;
-
-    @When("I create a new treasury account")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void createNewAccount() throws HederaStatusException {
-        if (treasuryAccount == null) {
-            treasuryAccount = accountClient.createNewAccount(1_000_000_000);
-            log.debug("Treasury Account: {} will be used for current test session", treasuryAccount);
-        }
-    }
 
     @Given("I successfully create a new token")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
@@ -114,8 +98,6 @@ public class TokenFeature {
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void createNewToken(int freezeStatus, int kycStatus) throws HederaStatusException {
-        testInstantReference = Instant.now();
-
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
     }
 
@@ -171,7 +153,8 @@ public class TokenFeature {
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
             "message.contains('RESOURCE_EXHAUSTED')}")
     public void fundPayerAccountWithTokens(int amount) throws HederaStatusException {
-        transferTokens(tokenId, amount, treasuryAccount, tokenClient.getSdkClient().getOperatorId());
+        transferTokens(tokenId, amount, accountClient.getTokenTreasuryAccount(), tokenClient.getSdkClient()
+                .getOperatorId());
     }
 
     @Then("I transfer {int} tokens to recipient")
@@ -289,8 +272,6 @@ public class TokenFeature {
     }
 
     private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws HederaStatusException {
-        testInstantReference = Instant.now();
-
         tokenKey = Ed25519PrivateKey.generate();
         Ed25519PublicKey tokenPublicKey = tokenKey.publicKey;
         log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
@@ -300,7 +281,7 @@ public class TokenFeature {
                 symbol,
                 freezeStatus,
                 kycStatus,
-                treasuryAccount,
+                accountClient.getTokenTreasuryAccount(),
                 INITIAL_SUPPLY);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
