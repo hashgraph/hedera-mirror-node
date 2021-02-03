@@ -486,7 +486,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.26.0
+  version: 0.27.0-rc1
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -746,7 +746,7 @@ components:
         topic_id: 0.0.7
         message: bWVzc2FnZQ==
         running_hash: cnVubmluZ19oYXNo
-        running_hash_version: 0.13.0
+        running_hash_version: 2
         sequence_number: 1
     TopicMessages:
       type: array

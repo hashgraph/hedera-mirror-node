@@ -122,7 +122,7 @@ and secret keys in the config. This will also allow you to take advantage of alt
 to connect to an S3 bucket that requires authenticaion, and the static credentials are not provided in the config, the
 mirror node will default to using this provider. For more information and to see how you can set up your environment to
 take advantage of this, see
-[the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html)
+[the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html)
 When running in Docker or Kubernetes, credentials can be attached in a variety of ways, including by using volumes and
 secrets to directly add static credentials or an existing AWS credentials file, by using other tools such as Vault or
 AWS Secrets Manager, and many more.
@@ -310,9 +310,8 @@ hedera:
 ## Rosetta API
 
 The Rosetta API supports loading configuration from YAML. By default, it loads a file named
-`application.yml` in each of the search paths (see below).
-The configuration is loaded in the following order with the latter configuration overwriting (technically recursively
-merged into) the current configuration:
+`application.yml` in each of the search paths (see below). The configuration is loaded in the following order with the
+latter configuration overwriting (technically recursively merged into) the current configuration:
 
 1. `./config/application.yml`
 2. `./application.yml`
@@ -321,18 +320,18 @@ merged into) the current configuration:
 
 The following table lists the available properties along with their default values.
 
-| Name                                                    | Default                 | Description                                                                                    |
-| ------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `hedera.mirror.rosetta.apiVersion`                      | 1.4.4                   | The version of the Rosetta interface the implementation adheres to                             |
-| `hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
-| `hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database                                                                       |
-| `hedera.mirror.rosetta.db.password`                     | mirror_rosetta_pass     | The database password the processor uses to connect. **Should be changed from default**        |
-| `hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.rosetta.db.username`                     | mirror_rosetta          | The username the processor uses to connect to the database                                     |
-| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`             |
-| `hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime                                              |
-| `hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface                                               |
-| `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port                                                                              |
-| `hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |
-| `hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard                                                      |
-| `hedera.mirror.rosetta.version`                         | 0.20.0                  | The version of the Hedera Mirror Node used to adhere to the Rosetta interface                  |
+Name                                                    | Default                 | Description
+------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------
+`hedera.mirror.rosetta.apiVersion`                      | 1.4.4                   | The version of the Rosetta interface the implementation adheres to
+`hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database
+`hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database
+`hedera.mirror.rosetta.db.password`                     | mirror_rosetta_pass     | The database password the processor uses to connect.
+`hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database
+`hedera.mirror.rosetta.db.username`                     | mirror_rosetta          | The username the processor uses to connect to the database
+`hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
+`hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime
+`hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface
+`hedera.mirror.rosetta.port`                            | 5700                    | The REST API port
+`hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in
+`hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard
+`hedera.mirror.rosetta.version`                         | Varies per release      | The version of the Hedera Mirror Node used to adhere to the Rosetta interface
