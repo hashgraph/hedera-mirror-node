@@ -12,7 +12,7 @@ services:
       POSTGRES_USER: mirror_node
     volumes:
       - ./db:/var/lib/postgresql/data
-      - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sql:/docker-entrypoint-initdb.d/init_v1.sql
+      - ./hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - 5432:5432
 
