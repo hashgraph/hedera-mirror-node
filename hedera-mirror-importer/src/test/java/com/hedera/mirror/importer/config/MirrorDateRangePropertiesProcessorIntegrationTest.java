@@ -55,8 +55,9 @@ public class MirrorDateRangePropertiesProcessorIntegrationTest extends Integrati
 
     @Test
     void eventFiredAndListenerCalled() {
-        verify(applicationEventPublisher, timeout(500).times(1)).publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
-        verify(accountBalancesDownloader).onMirrorDateRangePropertiesProcessedEvent();
+        verify(applicationEventPublisher, timeout(500).times(1))
+                .publishEvent(any(MirrorDateRangePropertiesProcessedEvent.class));
+        verify(accountBalancesDownloader, timeout(500)).onMirrorDateRangePropertiesProcessedEvent();
         verify(recordFileDownloader).onMirrorDateRangePropertiesProcessedEvent();
         verify(eventFileDownloader).onMirrorDateRangePropertiesProcessedEvent();
     }
