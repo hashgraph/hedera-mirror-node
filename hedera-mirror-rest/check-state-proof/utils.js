@@ -17,7 +17,8 @@
  * limitations under the License.
  * ‍
  */
-'uses strict';
+
+'use strict';
 
 // external libraries
 const fs = require('fs');
@@ -57,7 +58,7 @@ const getAPIResponse = async (url) => {
   );
 
   console.log(`Requesting state proof files from ${url}...`);
-  return await fetch(url, {signal: controller.signal})
+  return fetch(url, {signal: controller.signal})
     .then(async (response) => {
       if (!response.ok) {
         throw Error(response.statusText);
@@ -65,7 +66,7 @@ const getAPIResponse = async (url) => {
       return response.json();
     })
     .catch((error) => {
-      throw `Error fetching ${url}: ${error}`;
+      throw Error(`Error fetching ${url}: ${error}`);
     })
     .finally(() => {
       clearTimeout(timeout);
@@ -73,7 +74,7 @@ const getAPIResponse = async (url) => {
 };
 
 const readJSONFile = (filePath) => {
-  const rawData = fs.readFileSync(filePath);
+  const rawData = fs.readFileSync(filePath, 'utf8');
   return JSON.parse(rawData);
 };
 

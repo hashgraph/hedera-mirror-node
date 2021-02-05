@@ -17,41 +17,74 @@
  * limitations under the License.
  * ‍
  */
-'uses strict';
+
+'use strict';
+
+const {SHA_384_LENGTH, SHA_384_WITH_RSA} = require('./constants');
+const {readLengthAndBytes, readNBytes, HashObject, SignatureObject} = require('./streamObject');
+
+// version (byte), object stream signature version (int)
+const V5_FILE_HASH_OFFSET = 1 + 4;
 
 class SignatureFile {
   /**
-   * parse signature file buffer, retrieve hash and node id
+   * Parses signature file buffer, retrieve hash and node id
+   * @param {Buffer} buffer
+   * @param {String} nodeId
    */
-  constructor(signatureFile, nodeid) {
-    this.parseSignatureFileBuffer(signatureFile);
-    this.nodeId = nodeid;
+  constructor(buffer, nodeId) {
+    this.nodeId = nodeId;
+
+    const version = buffer.readInt8();
+    switch (version) {
+      case 4:
+        this.version = 2;
+        this.parseV2SignatureFile(buffer);
+        break;
+      case 5:
+        this.version = 5;
+        this.parseV5SignatureFile(buffer);
+        break;
+      default:
+        throw new Error(`Unexpected signature file version '${version}'`);
+    }
   }
 
-  // Extract the Hash and signature from the file.
-  parseSignatureFileBuffer(signatureFileBuffer) {
-    const fileHashSize = 48; // number of bytes
-    let index = 0;
-    while (index < signatureFileBuffer.length) {
-      const typeDelimiter = signatureFileBuffer[index++];
+  parseV2SignatureFile(buffer) {
+    // skip type, already checked
+    this.fileHash = readNBytes(buffer.slice(1), SHA_384_LENGTH);
 
-      switch (typeDelimiter) {
-        case 4:
-          // hash
-          this.hash = signatureFileBuffer.subarray(index, index + fileHashSize);
-          index += fileHashSize;
-          break;
-        case 3:
-          // signature
-          const signatureLength = signatureFileBuffer.readInt32BE(index);
-          index += 4;
-          this.signature = signatureFileBuffer.subarray(index, index + signatureLength);
-          index += signatureLength;
-          break;
-        default:
-          throw new Error(`Unexpected type delimiter '${typeDelimiter}' in signature file at index '${index - 1}'`);
-      }
+    buffer = buffer.slice(1 + SHA_384_LENGTH);
+    const type = buffer.readInt8();
+    if (type !== 3) {
+      throw new Error(`Unexpected type delimiter '${type}' in signature file`);
     }
+    const {length, bytes} = readLengthAndBytes(buffer.slice(1), 1, SHA_384_WITH_RSA.maxLength, false);
+    this.fileHashSignature = bytes;
+
+    buffer = buffer.slice(1 + length);
+    if (buffer.length !== 0) {
+      throw new Error('Extra data discovered in signature file ');
+    }
+  }
+
+  parseV5SignatureFile(buffer) {
+    buffer = buffer.slice(V5_FILE_HASH_OFFSET);
+    const fileHashObject = new HashObject(buffer);
+    const fileHashSignatureObject = new SignatureObject(buffer.slice(fileHashObject.getLength()));
+
+    buffer = buffer.slice(fileHashObject.getLength() + fileHashSignatureObject.getLength());
+    const metadataHashObject = new HashObject(buffer);
+    const metadataHashSignatureObject = new SignatureObject(buffer.slice(metadataHashObject.getLength()));
+
+    if (buffer.length !== metadataHashObject.getLength() + metadataHashSignatureObject.getLength()) {
+      throw new Error('Extra data discovered in signature file');
+    }
+
+    this.fileHash = fileHashObject.hash;
+    this.fileHashSignature = fileHashSignatureObject.signature;
+    this.metadataHash = metadataHashObject.hash;
+    this.metadataHashSignature = metadataHashSignatureObject.signature;
   }
 }
 

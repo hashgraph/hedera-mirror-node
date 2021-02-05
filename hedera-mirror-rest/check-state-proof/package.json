@@ -30,10 +30,16 @@
     "abort-controller": "^3.0.0",
     "boxen": "^4.2.0",
     "chalk": "^4.1.0",
+    "glob": "^7.1.6",
     "jest": "^26.4.0",
     "lodash": "^4.17.19",
     "node-fetch": "^2.6.1",
     "node-rsa": "^1.1.1",
     "yargs": "^15.4.1"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "tests/testUtils.js"
+    ]
   }
 }

@@ -20,13 +20,23 @@
 'use strict';
 
 const {SignatureFile} = require('../signatureFile');
-const {base64StringToBuffer, readJSONFile} = require('../utils');
+const {base64StringToBuffer} = require('../utils');
+const {loadStateProofSamples} = require('./testUtils');
 
-const stateProofJson = readJSONFile('stateProofSample.json');
+describe('signatureFile test', () => {
+  loadStateProofSamples().forEach((sample) => {
+    test(`parse signature file in ${sample.filepath}`, () => {
+      const buffer = base64StringToBuffer(sample.data.signature_files['0.0.3']);
+      const signatureFileDomain = new SignatureFile(buffer, '0.0.3');
 
-test('signatureFile test', () => {
-  const sigFilesString = base64StringToBuffer(stateProofJson['signature_files']['0.0.3']);
-  const signatureFileDomain = new SignatureFile(sigFilesString, '0.0.3');
-  expect(signatureFileDomain.hash).toBeDefined();
-  expect(signatureFileDomain.signature).toBeDefined();
+      expect(signatureFileDomain.fileHash).toBeDefined();
+      expect(signatureFileDomain.fileHashSignature).toBeDefined();
+      expect(signatureFileDomain.version).toEqual(sample.version);
+
+      if (sample.version === 5) {
+        expect(signatureFileDomain.metadataHash).toBeDefined();
+        expect(signatureFileDomain.metadataHashSignature).toBeDefined();
+      }
+    });
+  });
 });

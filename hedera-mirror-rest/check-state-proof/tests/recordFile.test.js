@@ -20,13 +20,21 @@
 'use strict';
 
 const {RecordFile} = require('../recordFile');
-const {base64StringToBuffer, readJSONFile} = require('../utils');
+const {base64StringToBuffer} = require('../utils');
+const {loadStateProofSamples} = require('./testUtils');
 
-const stateProofJson = readJSONFile('stateProofSample.json');
+describe('recordFile parsetest', () => {
+  loadStateProofSamples().forEach((sample) => {
+    test(`parse recordfile in ${sample.filepath}`, () => {
+      const buffer = base64StringToBuffer(sample.data.record_file);
+      const recordFileDomain = new RecordFile(buffer);
 
-test('recordFile parsetest', () => {
-  const recordFilesString = base64StringToBuffer(stateProofJson['record_file']);
-  const recordFileDomain = new RecordFile(recordFilesString, '0.0.3');
-  expect(recordFileDomain.hash).toBeDefined();
-  expect(Object.keys(recordFileDomain.transactionIdMap).length).toBeGreaterThan(0);
+      expect(recordFileDomain.fileHash).toBeDefined();
+      expect(recordFileDomain.version).toEqual(sample.version);
+      if (sample.version === 5) {
+        expect(recordFileDomain.metadataHash).toBeDefined();
+      }
+      expect(Object.keys(recordFileDomain.transactionIdMap).length).toBeGreaterThan(0);
+    });
+  });
 });
