@@ -30,7 +30,7 @@ const {readLengthAndBytes, HashObject, RecordStreamObject} = require('./streamOb
 // version (int), hapiVersion (int), previous hash marker (byte), SHA-384 hash
 const PRE_V5_HEADER_LENGTH = 4 + 4 + 1 + SHA_384_LENGTH;
 
-// version (int), hapi version major/minor/patch (int), object stream vesion (int)
+// version (int), hapi version major/minor/patch (int), object stream version (int)
 const V5_START_HASH_OFFSET = 4 + (4 + 4 + 4) + 4;
 
 class RecordFile {
@@ -104,8 +104,8 @@ class RecordFile {
       fileDigest.update(buffer);
     } else {
       // version 2
-      const contentDigest = crypto.createHash('sha384').update(buffer.slice(PRE_V5_HEADER_LENGTH));
-      fileDigest.update(buffer.slice(0, PRE_V5_HEADER_LENGTH)).update(contentDigest.digest());
+      const contentHash = crypto.createHash('sha384').update(buffer.slice(PRE_V5_HEADER_LENGTH)).digest();
+      fileDigest.update(buffer.slice(0, PRE_V5_HEADER_LENGTH)).update(contentHash);
     }
 
     this.fileHash = fileDigest.digest('hex');
@@ -116,13 +116,13 @@ class RecordFile {
   }
 
   mapSuccessfulTransactions(transactionRecordRawBuffer) {
-    const deserializedTransactionRecord = TransactionRecord.deserializeBinary(transactionRecordRawBuffer);
-    const transactionReceipt = deserializedTransactionRecord.getReceipt();
+    const transactionRecord = TransactionRecord.deserializeBinary(transactionRecordRawBuffer);
+    const transactionReceipt = transactionRecord.getReceipt();
     const status = transactionReceipt.getStatus();
 
     // check if status was SUCCESS, if so add to map
     if (status === 22) {
-      const transactionId = deserializedTransactionRecord.getTransactionid();
+      const transactionId = transactionRecord.getTransactionid();
       const accountId = transactionId.getAccountid();
       const timestamp = transactionId.getTransactionvalidstart();
 
