@@ -70,6 +70,24 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
+  global.redis.password:
+    type: string
+    description: The password used by the redis service to connect to the database
+    title: Redis database password
+    x-google-marketplace:
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
+  global.rest.password:
+    type: string
+    description: The password used by the REST API to connect to the database
+    title: REST API database password
+    x-google-marketplace:
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
   grpc.config.hedera.mirror.grpc.db.password:
     type: string
     description: The password used by the gRPC API to connect to the database
@@ -89,10 +107,10 @@ properties:
   grpc.serviceAccount.name:
     type: string
     title: gRPC API service account
-    description: The Kubernetes service account to assign to the gRPC API
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
+        description: The Kubernetes service account to assign to the gRPC API
         roles:
           - type: Role
             rulesType: CUSTOM
@@ -120,14 +138,27 @@ properties:
     type: string
     description: The Google Cloud Storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.importer.network` value.
     title: Importer GCS bucket name
+  importer.config.hedera.mirror.importer.downloader.cloudProvider:
+    default: GCP
+    type: string
+    description: The cloud provider to download files from. Either S3 or GCP.
+    title: Importer cloud provider
   importer.config.hedera.mirror.importer.downloader.gcpProjectId:
     type: string
-    description: GCP project id to bill for requests to GCS bucket with requester pays enabled
+    description: GCP project id to bill for requests to GCS bucket with requester pays enabled.
     title: Importer GCP billing project ID
   importer.config.hedera.mirror.importer.downloader.secretKey:
     type: string
     description: The Google Cloud secret key used to pay for downloaded streamed files
     title: Importer GCP secret key
+  importer.config.hedera.mirror.importer.endDate:
+    type: string
+    description: The end date (inclusive) of the data to import. Items after this date will be ignored. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
+    title: Importer data end date
+  importer.config.hedera.mirror.importer.initialAddressBook:
+    type: string
+    description: The path to the bootstrap address book used to override the built-in address book
+    title: Importer bootstrap address book
   importer.config.hedera.mirror.importer.network:
     default: MAINNET
     type: string
@@ -139,6 +170,29 @@ properties:
       - PREVIEWNET
       - DEMO
       - OTHER
+  importer.config.hedera.mirror.importer.startDate:
+    type: string
+    description: The start date (inclusive) of the data to import. Items before this date will be ignored. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
+    title: Importer data start date
+  importer.config.hedera.mirror.importer.verifyHashAfter:
+    type: string
+    description: Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
+    title: Importer data verify hash after date
+  importer.config.spring.flyway.baselineVersion:
+    default: '0'
+    type: string
+    description: The version to tag an existing schema with when executing baseline.
+    title: Importer data migration baseline version
+  importer.config.spring.flyway.locations:
+    default: classpath:db/migration/v1
+    type: string
+    description: Comma-separated list of locations to scan recursively for migrations.
+    title: Importer data migration scripts location
+  importer.config.spring.flyway.target:
+    default: '1.999.999'
+    type: string
+    description: Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
+    title: Importer data migration target version
   importer.persistence.size:
     default: 10Gi
     description: The storage size for the importer persistent volume
@@ -147,10 +201,10 @@ properties:
   importer.serviceAccount.name:
     type: string
     title: Importer service account
-    description: The Kubernetes service account to assign to the importer
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
+        description: The Kubernetes service account to assign to the importer
         roles:
           - type: Role
             rulesType: CUSTOM
@@ -179,15 +233,6 @@ properties:
     type: string
     description: The password used by the PostgreSQL Replication Manager to connect to the database
     title: PostgreSQL Repmgr password
-    x-google-marketplace:
-      type: GENERATED_PASSWORD
-      generatedPassword:
-        length: 24
-        base64: False
-  global.rest.password:
-    type: string
-    description: The password used by the REST API to connect to the database
-    title: REST API database password
     x-google-marketplace:
       type: GENERATED_PASSWORD
       generatedPassword:

@@ -3,20 +3,22 @@ applicationResource:
   partnerId: mirror-node-public
   partnerName: mirror-node-public
   solutionId: hedera-mirror-node
-  version: ''
+  version: 0.27.0-rc2
 
 global:
   db:
     host: RELEASE-NAME-postgres-postgresql
+    schema: mirrornode
+  redis:
+    host: RELEASE-NAME-redis
+    password: redis_password
+  rest:
+    username: mirror_api
+    password: mirror_api_pass
   useReleaseForNameLabel: true
 
 grpc:
   config:
-    hedera:
-      mirror:
-        grpc:
-          listener:
-            type: NOTIFY
     management:
       endpoint:
         health:
@@ -56,16 +58,27 @@ importer:
               exclude: redis
   rbac:
     enabled: false
+  redis:
+    sentinel:
+      masterSet: mirror
   replicas: 1
   serviceAccount:
     create: false
+
+monitor:
+  enabled: false
 
 postgresql:
   pgpool:
     replicaCount: 0
 
 redis:
-  enabled: false
+  cluster:
+    slaveCount: 1
+  enabled: true
+  sentinel:
+    enabled: true
+    masterSet: mirror
 
 rest:
   config:

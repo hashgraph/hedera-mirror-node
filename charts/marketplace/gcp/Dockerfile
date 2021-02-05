@@ -27,7 +27,9 @@ RUN cat /tmp/schema.yaml \
 # Run helm template to render and verify templates
 RUN helm dependency update /tmp/charts/hedera-mirror
 RUN helm template /tmp/charts/hedera-mirror -f /tmp/charts/hedera-mirror/values.yaml
-RUN cd /tmp/charts && tar -czvf hedera-mirror-node.tar.gz hedera-mirror
+
+# Build chart archive, copy hedera-mirror contents to chart dir to comply with mpdev expectations
+RUN cd /tmp/charts && mv hedera-mirror chart && tar -czvf hedera-mirror-node.tar.gz chart
 
 # Setup marketplace structure on helm deployer image base
 FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm
