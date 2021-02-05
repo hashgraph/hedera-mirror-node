@@ -38,7 +38,6 @@ import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -64,7 +63,7 @@ public class DomainDriver implements ApplicationRunner {
         this.entityManager = entityManager;
         this.domainWriter = domainWriter;
         this.sqlEntityListener = sqlEntityListener;
-        sqlEntityListener.onStart(new StreamFileData("", null));
+        sqlEntityListener.onStart();
         consensusNanoAdjustmentsDistribution = new RandomDistributionFromRange(0, 1000000000);
     }
 

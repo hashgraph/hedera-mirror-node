@@ -92,7 +92,7 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
     private StreamFileData streamFileData2;
 
     AbstractRecordFileParserIntegrationTest(RecordFileDescriptor recordFileDescriptor1,
-            RecordFileDescriptor recordFileDescriptor2) {
+                                            RecordFileDescriptor recordFileDescriptor2) {
         this.recordFileDescriptor1 = recordFileDescriptor1;
         this.recordFileDescriptor2 = recordFileDescriptor2;
     }
@@ -103,7 +103,6 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
         mirrorProperties.setDataPath(dataPath);
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
-        parserProperties.init();
 
         recordFile1 = recordFileDescriptor1.getRecordFile().toBuilder().nodeAccountId(NODE_ACCOUNT_ID).build();
         recordFile2 = recordFileDescriptor2.getRecordFile().toBuilder().nodeAccountId(NODE_ACCOUNT_ID).build();
@@ -124,7 +123,7 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
         recordFileRepository.save(recordFile1);
 
         // when
-        recordFileParser.parse(streamFileData1);
+        recordFileParser.parse(recordFile1);
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
@@ -133,7 +132,7 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
         recordFileRepository.save(recordFile2);
 
         // when parse second file
-        recordFileParser.parse(streamFileData2);
+        recordFileParser.parse(recordFile2);
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1, recordFileDescriptor2);
@@ -145,7 +144,7 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
 
         // when
         Assertions.assertThrows(MissingFileException.class, () -> {
-            recordFileParser.parse(streamFileData1);
+            recordFileParser.parse(recordFile1);
         });
 
         // then
@@ -153,7 +152,7 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
 
         // verify continue functionality
         recordFileRepository.save(recordFile1);
-        recordFileParser.parse(streamFileData1);
+        recordFileParser.parse(recordFile1);
         verifyFinalDatabaseState(recordFileDescriptor1);
     }
 

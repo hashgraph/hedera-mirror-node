@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.downloader;
 
 /*-
  * ‌
@@ -20,11 +20,16 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
-import lombok.Value;
+import static com.hedera.mirror.importer.config.IntegrationConfiguration.CHANNEL_STREAM;
 
-@Value
-public class BalanceFile {
-    long consensusTimestamp;
-    long count;
-    String filename;
+import javax.inject.Named;
+import org.springframework.integration.annotation.MessagingGateway;
+
+import com.hedera.mirror.importer.domain.StreamFile;
+
+@Named
+@MessagingGateway(defaultRequestChannel = CHANNEL_STREAM)
+public interface StreamFileNotifier {
+
+    void verified(StreamFile streamFile);
 }

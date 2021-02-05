@@ -21,9 +21,6 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,7 +45,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.gaul.s3proxy.S3Proxy;
@@ -64,7 +60,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -80,23 +76,25 @@ import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 public abstract class AbstractDownloaderTest {
     private static final int S3_PROXY_PORT = 8001;
 
-    @Mock(answer = Answers.RETURNS_SMART_NULLS, lenient = true)
-    protected ApplicationStatusRepository applicationStatusRepository;
+    @Mock
+    protected StreamFileNotifier streamFileNotifier;
+    protected StreamFileRepository<?, ?> streamFileRepository;
     @Mock(lenient = true)
     protected AddressBookService addressBookService;
     @Mock
@@ -177,8 +175,6 @@ public abstract class AbstractDownloaderTest {
         return path.toString().endsWith("_sig");
     }
 
-    protected abstract void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize);
-
     @BeforeAll
     static void beforeAll() throws IOException {
         addressBook = loadAddressBook("testnet");
@@ -224,7 +220,6 @@ public abstract class AbstractDownloaderTest {
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);
 
         downloaderProperties = getDownloaderProperties();
-        downloaderProperties.init();
     }
 
     private void startS3Proxy() throws Exception {
@@ -258,15 +253,6 @@ public abstract class AbstractDownloaderTest {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(0);
-    }
-
-    protected void assertValidFiles(List<String> filenames) throws Exception {
-        assertThat(Files.walk(validPath))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(filenames.size())
-                .allMatch(p -> !isSigFile(p))
-                .extracting(p -> p.getFileName().toString())
-                .containsAll(filenames);
     }
 
     @Test
@@ -383,14 +369,12 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
         verifyForSuccess();
 
-        Mockito.reset(applicationStatusRepository);
-        reset();
+        Mockito.reset(streamFileRepository);
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
         Files.walk(downloaderProperties.getSignaturesPath())
                 .filter(this::isSigFile)
                 .forEach(AbstractDownloaderTest::corruptFile);
-        doReturn("").when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+
         downloader.download();
         verifyForSuccess();
     }
@@ -434,9 +418,7 @@ public abstract class AbstractDownloaderTest {
         Duration interval = getCloseInterval().multipliedBy(2);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
         String lastFileName = Utility.getStreamFilenameFromInstant(streamType, lastFileInstant);
-
-        doReturn(lastFileName).when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        doReturn(streamFile(lastFileName, "")).when(streamFileRepository).findLatest();
 
         fileCopier.copy();
         downloader.download();
@@ -448,9 +430,9 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(Utility.getStreamFilenameFromInstant(streamType, Instant.now()))
-                .when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        doReturn(streamFile(Utility.getStreamFilenameFromInstant(streamType, Instant.now()), ""))
+                .when(streamFileRepository)
+                .findLatest();
         fileCopier.copy();
         downloader.download();
         verifyForSuccess(List.of());
@@ -466,9 +448,11 @@ public abstract class AbstractDownloaderTest {
     })
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
-        doReturn(Utility.getStreamFilenameFromInstant(streamType, startDate))
-                .when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        RecordFile streamFile = new RecordFile();
+        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, startDate));
+        doReturn(streamFile)
+                .when(streamFileRepository)
+                .findLatest();
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
@@ -489,9 +473,7 @@ public abstract class AbstractDownloaderTest {
     })
     void endDate(long seconds, String fileChoice) throws Exception {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
-        setDownloaderBatchSize(downloaderProperties, 1);
-        configStatefulApplicationStatusRepositoryMock(downloaderProperties
-                .getLastValidDownloadedFileKey(), downloaderProperties.getLastValidDownloadedFileHashKey());
+        downloaderProperties.setBatchSize(1);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> !Utility.getInstantFromFilename(name).isAfter(mirrorProperties.getEndDate()))
@@ -537,7 +519,7 @@ public abstract class AbstractDownloaderTest {
 
         downloader.download();
 
-        assertValidFiles(List.of(file1));
+        verifyStreamFiles(List.of(file1));
     }
 
     private void differentFilenames(Duration offset) throws Exception {
@@ -557,15 +539,14 @@ public abstract class AbstractDownloaderTest {
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
-        doReturn(file1).when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
+        RecordFile streamFile = new RecordFile();
+        streamFile.setName(file1);
+        doReturn(streamFile).when(streamFileRepository)
+                .findLatest();
 
         downloader.download();
 
-        // The file with the different timestamp than all other nodes should not be processed
-        verify(applicationStatusRepository)
-                .updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), file2);
-        assertValidFiles(List.of(file2));
+        verifyStreamFiles(List.of(file2));
     }
 
     private void verifyForSuccess() throws Exception {
@@ -577,32 +558,14 @@ public abstract class AbstractDownloaderTest {
     }
 
     private void verifyForSuccess(List<String> files, boolean expectEnabled) throws Exception {
-        verifyApplicationStatus(files);
+        verifyStreamFiles(files);
         assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
-        assertValidFiles(files);
     }
 
-    private void verifyApplicationStatus(List<String> files) {
-        ApplicationStatusCode lastValidDownloadedFileKey = downloaderProperties.getLastValidDownloadedFileKey();
-        ApplicationStatusCode lastValidDownloadedFileHashKey = downloaderProperties.getLastValidDownloadedFileHashKey();
-
-        verify(applicationStatusRepository, times(files.size()))
-                .updateStatusValue(eq(lastValidDownloadedFileKey), any(String.class));
-        for (String filename : files) {
-            verify(applicationStatusRepository).updateStatusValue(lastValidDownloadedFileKey, filename);
-        }
-
-        if (lastValidDownloadedFileHashKey != null) {
-            verify(applicationStatusRepository, times(files.size()))
-                    .updateStatusValue(eq(lastValidDownloadedFileHashKey), any());
-        }
-
-        verifyStreamFileRecord(files);
+    protected void verifyStreamFiles(List<String> files) {
+        verify(streamFileNotifier, times(files.size()))
+                .verified(ArgumentMatchers.argThat(s -> files.contains(s.getName())));
     }
-
-    protected abstract void reset();
-
-    protected abstract void verifyStreamFileRecord(List<String> files);
 
     private Instant chooseFileInstant(String choice) {
         switch (choice) {
@@ -621,24 +584,6 @@ public abstract class AbstractDownloaderTest {
 
         file1Instant = Utility.getInstantFromFilename(file1);
         file2Instant = Utility.getInstantFromFilename(file2);
-    }
-
-    private void configStatefulApplicationStatusRepositoryMock(ApplicationStatusCode... statusCodes) {
-        for (var statusCode : statusCodes) {
-            if (statusCode == null) {
-                continue;
-            }
-
-            ApplicationStatus applicationStatus = new ApplicationStatus();
-            doAnswer(invocation -> {
-                        String value = invocation.getArgument(1);
-                        applicationStatus.setStatus(value);
-                        return null;
-                    }
-            ).when(applicationStatusRepository).updateStatusValue(eq(statusCode), any());
-            doAnswer(invocation -> applicationStatus.getStatus()).when(applicationStatusRepository)
-                    .findByStatusCode(statusCode);
-        }
     }
 
     protected static AddressBook loadAddressBook(String filename) throws IOException {
@@ -683,8 +628,10 @@ public abstract class AbstractDownloaderTest {
         return allNodeAccountIds.stream().map(Arguments::of);
     }
 
-    @Data
-    private static class ApplicationStatus {
-        String status = "";
+    protected StreamFile streamFile(String name, String hash) {
+        RecordFile recordFile = new RecordFile(); // The exact implementation class doesn't matter
+        recordFile.setHash(hash);
+        recordFile.setName(name);
+        return recordFile;
     }
 }

@@ -26,7 +26,6 @@ import java.io.IOException;
 import javax.inject.Named;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
@@ -44,8 +43,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
-        FileStreamSignature fileStreamSignature = new FileStreamSignature();
-        String filename = FilenameUtils.getName(signatureFileData.getFilename());
+        String filename = signatureFileData.getFilename();
 
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
                 signatureFileData.getInputStream(), filename)) {
@@ -55,19 +53,22 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
             vdis.readInt();
 
             HashObject fileHashObject = new HashObject(vdis, "entireFile", SHA384);
-            fileStreamSignature.setFileHash(fileHashObject.getHash());
             SignatureObject fileHashSignatureObject = new SignatureObject(vdis, "entireFile");
-            fileStreamSignature.setFileHashSignature(fileHashSignatureObject.getSignature());
-            fileStreamSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
 
             HashObject metadataHashObject = new HashObject(vdis, "metadata", SHA384);
-            fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
             SignatureObject metadataHashSignatureObject = new SignatureObject(vdis, "metadata");
-            fileStreamSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
 
             if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
+
+            FileStreamSignature fileStreamSignature = new FileStreamSignature();
+            fileStreamSignature.setFileHash(fileHashObject.getHash());
+            fileStreamSignature.setFileHashSignature(fileHashSignatureObject.getSignature());
+            fileStreamSignature.setFilename(filename);
+            fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
+            fileStreamSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
+            fileStreamSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
 
             return fileStreamSignature;
         } catch (InvalidStreamFileException | IOException e) {
@@ -75,7 +76,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
         }
     }
 
-    @EqualsAndHashCode(callSuper=true)
+    @EqualsAndHashCode(callSuper = true)
     @Getter
     private static class SignatureObject extends AbstractStreamObject {
 

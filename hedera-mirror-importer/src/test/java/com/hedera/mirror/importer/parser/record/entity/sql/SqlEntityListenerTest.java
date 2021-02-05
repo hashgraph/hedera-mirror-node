@@ -50,7 +50,6 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.ScheduleSignature;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -59,7 +58,6 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -103,7 +101,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         String newFileHash = UUID.randomUUID().toString();
         recordFile = insertRecordFileRecord(fileName, newFileHash, "fileHash0", 1L);
 
-        sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener.onStart();
     }
 
     @Test
@@ -248,7 +246,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null, 2L);
-        sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener.onStart();
         sqlEntityListener.onEntityId(entityId); // duplicate across files
         completeFileAndCommit();
 
@@ -265,15 +263,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.count()).isEqualTo(1);
         assertThat(recordFileRepository.findByName(fileName)).isPresent();
-    }
-
-    @Test
-    void testMissingFileInRecordFileRepository() {
-        recordFileRepository.deleteAll();
-
-        assertThrows(MissingFileException.class, () -> {
-            sqlEntityListener.onStart(new StreamFileData(fileName, null));
-        });
     }
 
     @Test

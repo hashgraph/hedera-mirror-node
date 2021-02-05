@@ -55,10 +55,6 @@ public enum StreamType {
         return SIGNATURES;
     }
 
-    public String getTemp() {
-        return TEMP;
-    }
-
     public String getValid() {
         return VALID;
     }
@@ -73,5 +69,9 @@ public enum StreamType {
         }
 
         return null;
+    }
+
+    public boolean isChained() {
+        return this != BALANCE;
     }
 }

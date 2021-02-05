@@ -26,20 +26,26 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
+import com.hedera.mirror.importer.repository.EventFileRepository;
 
 @ExtendWith(MockitoExtension.class)
 class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+
+    @Mock
+    private EventFileRepository eventFileRepository;
 
     @Override
     @BeforeEach
     protected void beforeEach() throws Exception {
         super.beforeEach();
+        streamFileRepository = eventFileRepository;
         setTestFilesAndInstants(List.of("2020-04-11T00_12_00.025035Z.evts", "2020-04-11T00_12_05.059945Z.evts"));
     }
 
@@ -52,9 +58,9 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
     protected Downloader getDownloader() {
-        return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (EventDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
-                new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader);
+        return new EventFileDownloader(s3AsyncClient, eventFileRepository, addressBookService,
+                (EventDownloaderProperties) downloaderProperties, meterRegistry,
+                new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader, streamFileNotifier);
     }
 
     @Override
@@ -65,21 +71,5 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
     @Override
     protected Duration getCloseInterval() {
         return Duration.ofSeconds(5L);
-    }
-
-    @Override
-    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
-        EventDownloaderProperties properties = (EventDownloaderProperties) downloaderProperties;
-        properties.setBatchSize(batchSize);
-    }
-
-    @Override
-    protected void reset() {
-        // no-op, add the logic when event file is saved into db
-    }
-
-    @Override
-    protected void verifyStreamFileRecord(List<String> files) {
-        // no-op, add the logic when event file is saved into db
     }
 }

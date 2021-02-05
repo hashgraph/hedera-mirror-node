@@ -77,9 +77,4 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     public ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
     }
-
-    @Override
-    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return null;
-    }
 }

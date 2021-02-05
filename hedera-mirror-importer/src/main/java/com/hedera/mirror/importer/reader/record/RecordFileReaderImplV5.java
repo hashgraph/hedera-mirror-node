@@ -64,7 +64,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
                 messageDigestMetadata);
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
             RecordFile recordFile = new RecordFile();
-
+            recordFile.setBytes(streamFileData.getBytes());
             recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
 

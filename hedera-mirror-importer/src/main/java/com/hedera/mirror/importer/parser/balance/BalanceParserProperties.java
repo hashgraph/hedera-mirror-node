@@ -21,8 +21,11 @@ package com.hedera.mirror.importer.parser.balance;
  */
 
 import java.nio.file.Path;
+import java.time.Duration;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -44,6 +47,10 @@ public class BalanceParserProperties implements ParserProperties {
 
     @Min(1)
     private int fileBufferSize = 200_000;
+
+    @DurationMin(millis = 10L)
+    @NotNull
+    private Duration frequency = Duration.ofMillis(100L);
 
     private boolean keepFiles = false;
 

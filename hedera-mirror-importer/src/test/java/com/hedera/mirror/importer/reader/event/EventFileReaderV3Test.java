@@ -137,7 +137,7 @@ class EventFileReaderV3Test {
                                   byte[] expectedPrevHash) {
         assertThat(eventFile).isNotNull();
         assertThat(eventFile.getName()).isEqualTo(inputFile.getName());
-        assertThat(eventFile.getFileVersion()).isEqualTo(expectedFileVersion);
+        assertThat(eventFile.getVersion()).isEqualTo(expectedFileVersion);
         assertThat(eventFile.getPreviousHash()).isEqualTo(Hex.encodeHexString(expectedPrevHash));
     }
 }

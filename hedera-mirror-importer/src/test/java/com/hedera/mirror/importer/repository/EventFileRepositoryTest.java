@@ -26,36 +26,37 @@ import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EventFile;
 
-class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
+class EventFileRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
-    private AccountBalanceFileRepository accountBalanceFileRepository;
+    private EventFileRepository eventFileRepository;
 
     private long count = 0;
 
     @Test
     void findLatest() {
-        AccountBalanceFile accountBalanceFile1 = accountBalanceFile();
-        AccountBalanceFile accountBalanceFile2 = accountBalanceFile();
-        AccountBalanceFile accountBalanceFile3 = accountBalanceFile();
-        accountBalanceFileRepository.saveAll(List.of(accountBalanceFile1, accountBalanceFile2, accountBalanceFile3));
-        assertThat(accountBalanceFileRepository.findLatest()).get().isEqualTo(accountBalanceFile3);
+        EventFile eventFile1 = eventFile();
+        EventFile eventFile2 = eventFile();
+        EventFile eventFile3 = eventFile();
+        eventFileRepository.saveAll(List.of(eventFile1, eventFile2, eventFile3));
+        assertThat(eventFileRepository.findLatest()).get().isEqualTo(eventFile3);
     }
 
-    private AccountBalanceFile accountBalanceFile() {
+    private EventFile eventFile() {
         long id = ++count;
-        return AccountBalanceFile.builder()
-                .consensusTimestamp(id)
-                .count(id)
-                .fileHash("fileHash" + id)
-                .loadEnd(id)
-                .loadStart(id)
-                .name(id + ".csv")
-                .nodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT))
-                .build();
+        EventFile eventFile = new EventFile();
+        eventFile.setConsensusStart(id);
+        eventFile.setConsensusEnd(id);
+        eventFile.setCount(id);
+        eventFile.setFileHash("fileHash" + id);
+        eventFile.setLoadEnd(id);
+        eventFile.setLoadStart(id);
+        eventFile.setName(id + ".evt");
+        eventFile.setNodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
+        return eventFile;
     }
 }

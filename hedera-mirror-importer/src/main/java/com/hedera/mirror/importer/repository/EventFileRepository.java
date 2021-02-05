@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,6 +20,14 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-public interface FilePoller {
-    void poll();
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+
+import com.hedera.mirror.importer.domain.EventFile;
+
+public interface EventFileRepository extends StreamFileRepository<EventFile, String> {
+
+    @Override
+    @Query(value = "select * from event_file order by consensus_end desc limit 1", nativeQuery = true)
+    Optional<EventFile> findLatest();
 }

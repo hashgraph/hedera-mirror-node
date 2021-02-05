@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -35,12 +34,12 @@ import com.hedera.mirror.importer.exception.FileOperationException;
 public class StreamFileData {
 
     private final String filename;
-    private final InputStream inputStream;
+    private final byte[] bytes;
 
     public static StreamFileData from(@NonNull File file) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
-            return new StreamFileData(file.getAbsolutePath(), new ByteArrayInputStream(bytes));
+            return new StreamFileData(file.getAbsolutePath(), bytes);
         } catch (Exception e) {
             throw new FileOperationException("Unable to read file to byte array", e);
         }
@@ -48,7 +47,15 @@ public class StreamFileData {
 
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
-        return new StreamFileData(filename, new BufferedInputStream(new ByteArrayInputStream(contents
-                .getBytes(StandardCharsets.UTF_8))));
+        return new StreamFileData(filename, contents.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public InputStream getInputStream() {
+        return new ByteArrayInputStream(bytes);
+    }
+
+    @Override
+    public String toString() {
+        return filename;
     }
 }

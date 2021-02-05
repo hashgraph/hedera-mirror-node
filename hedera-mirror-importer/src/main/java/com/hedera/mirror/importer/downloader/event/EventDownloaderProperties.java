@@ -77,9 +77,4 @@ public class EventDownloaderProperties implements DownloaderProperties {
     public ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
     }
-
-    @Override
-    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH;
-    }
 }

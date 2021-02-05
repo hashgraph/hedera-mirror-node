@@ -20,23 +20,45 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Transient;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.parser.domain.EventItem;
 
 @Data
+@Entity
 @NoArgsConstructor
 public class EventFile implements StreamFile {
 
+    @ToString.Exclude
+    private byte[] bytes;
+
+    private Long consensusStart;
+
+    @Id
+    private Long consensusEnd;
+
     private Long count;
 
+    @ToString.Exclude
     private String fileHash;
 
-    private int fileVersion;
-
+    @ToString.Exclude
     private String hash;
+
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private List<EventItem> items = new ArrayList<>();
 
     private Long loadEnd;
 
@@ -47,5 +69,13 @@ public class EventFile implements StreamFile {
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
 
+    @ToString.Exclude
     private String previousHash;
+
+    private int version;
+
+    @Override
+    public StreamType getType() {
+        return StreamType.RECORD;
+    }
 }

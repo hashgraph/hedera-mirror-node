@@ -34,26 +34,21 @@ import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Tag("performance")
-public class BalanceFileParserPerformanceTest extends IntegrationTest {
-
-    private static final String DATA_SOURCE_FOLDER = "v1/performance";
+public class BalanceFilePollerPerformanceTest extends IntegrationTest {
 
     @TempDir
     static Path dataPath;
 
     @Value("classpath:data")
     Path testPath;
-
-    @Resource
-    private BalanceFileParser balanceFileParser;
 
     @Resource
     private BalanceParserProperties parserProperties;
@@ -69,10 +64,9 @@ public class BalanceFileParserPerformanceTest extends IntegrationTest {
     void before() throws IOException {
         streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
-        parserProperties.init();
 
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        Files.walk(Path.of(testPath.toString(), streamType.getPath(), DATA_SOURCE_FOLDER))
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+        Files.walk(Path.of(testPath.toString(), streamType.getPath(), "v1", "performance"))
                 .filter(p -> p.toString().endsWith(".csv"))
                 .forEach(p -> {
                     String filename = FilenameUtils.getName(p.toString());
@@ -97,11 +91,11 @@ public class BalanceFileParserPerformanceTest extends IntegrationTest {
 
     private void parse(String filePath) {
         fileCopier = FileCopier.create(testPath, dataPath)
-                .from(streamType.getPath(), DATA_SOURCE_FOLDER)
+                .from(streamType.getPath(), "v1", "performance")
                 .filterFiles(filePath)
                 .to(streamType.getPath(), streamType.getValid());
         fileCopier.copy();
 
-        balanceFileParser.parse();
+        //balanceFilePoller.poll();
     }
 }

@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.reader.event;
  */
 
 import com.google.common.primitives.Ints;
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.security.MessageDigest;
 import java.util.function.Consumer;
@@ -47,7 +46,7 @@ public class EventFileReaderV3 implements EventFileReader {
     public EventFile read(StreamFileData streamFileData, Consumer<EventItem> itemConsumer) {
         String fileName = streamFileData.getFilename();
 
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFileData.getInputStream()))) {
+        try (DataInputStream dis = new DataInputStream(streamFileData.getInputStream())) {
             // MessageDigest for getting the file Hash
             // suppose file[i] = p[i] || h[i] || c[i];
             // p[i] denotes the bytes before previousFileHash;
@@ -85,15 +84,15 @@ public class EventFileReaderV3 implements EventFileReader {
                 }
             }
 
-            EventFile eventFile = new EventFile();
             String fileHash = Hex.encodeHexString(md.digest());
-
+            EventFile eventFile = new EventFile();
+            eventFile.setBytes(streamFileData.getBytes());
             eventFile.setCount(0L);
             eventFile.setFileHash(fileHash);
-            eventFile.setFileVersion(fileVersion);
             eventFile.setHash(fileHash);
             eventFile.setName(FilenameUtils.getName(fileName));
             eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
+            eventFile.setVersion(fileVersion);
             return eventFile;
         } catch (InvalidEventFileException e) {
             throw e;

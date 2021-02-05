@@ -77,9 +77,4 @@ public class RecordDownloaderProperties implements DownloaderProperties {
     public ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
     }
-
-    @Override
-    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH;
-    }
 }

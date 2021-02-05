@@ -38,9 +38,9 @@ import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -51,16 +51,13 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 abstract class AbstractRecordFileParserPerformanceTest extends IntegrationTest {
 
-    private final static EntityId DEFAULT_NODE_ACCOUNT_ID = EntityId.of(TestUtils.toAccountId("0.0.3"));
+    private final static EntityId DEFAULT_NODE_ACCOUNT_ID = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
 
     @TempDir
     static Path dataPath;
 
     @Value("classpath:data")
     Path testPath;
-
-    @Resource
-    private RecordFilePoller recordFilePoller;
 
     @Resource
     private RecordParserProperties parserProperties;
@@ -79,7 +76,6 @@ abstract class AbstractRecordFileParserPerformanceTest extends IntegrationTest {
     @BeforeAll
     void warmUp() throws Exception {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
-        parserProperties.init();
         streamType = parserProperties.getStreamType();
 
         RecordFile recordFile = RecordFile.builder()
@@ -140,7 +136,7 @@ abstract class AbstractRecordFileParserPerformanceTest extends IntegrationTest {
         if (!warmup) {
             Files.deleteIfExists(fileCopier.getTo().resolve(warmUpFile));
         }
-        recordFilePoller.poll();
+        //recordFilePoller.poll();
         Files.deleteIfExists(fileCopier.getTo().resolve(warmUpFile));
     }
 

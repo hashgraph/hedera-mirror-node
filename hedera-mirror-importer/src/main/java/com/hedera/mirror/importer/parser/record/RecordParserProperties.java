@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -40,6 +41,7 @@ public class RecordParserProperties implements ParserProperties {
 
     private boolean enabled = true;
 
+    @DurationMin(millis = 10L)
     @NotNull
     private Duration frequency = Duration.ofMillis(100L);
 

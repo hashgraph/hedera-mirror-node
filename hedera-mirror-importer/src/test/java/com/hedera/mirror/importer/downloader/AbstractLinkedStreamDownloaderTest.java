@@ -36,11 +36,10 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
-        doReturn("2019-01-01T01_00_00.000000Z." + downloaderProperties.getStreamType().getExtension())
-                .when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
-        doReturn("123").when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileHashKey());
+        doReturn(streamFile("2019-01-01T01_00_00.000000Z." + downloaderProperties.getStreamType()
+                .getExtension(), "123"))
+                .when(streamFileRepository)
+                .findLatest();
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertNoFilesinValidPath();
@@ -49,14 +48,14 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @Test
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
-        doReturn("2019-01-01T14_12_00.000000Z." + downloaderProperties.getStreamType().getExtension())
-                .when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
-        doReturn("123").when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileHashKey());
+        doReturn(streamFile("2019-01-01T14_12_00.000000Z." + downloaderProperties.getStreamType()
+                .getExtension(), "123"))
+                .when(streamFileRepository)
+                .findLatest();
+
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
-        assertValidFiles(List.of(file2));
+        verifyStreamFiles(List.of(file2));
     }
 }

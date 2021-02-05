@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -37,7 +36,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import lombok.experimental.UtilityClass;
@@ -46,8 +45,10 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
+import com.hedera.mirror.importer.parser.ParserProperties;
 
 @Log4j2
 @UtilityClass
@@ -138,33 +139,23 @@ public class Utility {
     }
 
     // Moves a file in the form 2019-08-30T18_10_00.419072Z.rcd to destinationRoot/2019/08/30
-    public static void archiveFile(File source, Path destinationRoot) {
-        String filename = source.getName();
+    public static void archiveFile(String filename, byte[] contents, Path destinationRoot) {
         String date = filename.substring(0, 10).replace("-", File.separator);
         Path destination = destinationRoot.resolve(date);
 
         try {
             destination.toFile().mkdirs();
-            Files.move(source.toPath(), destination.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
-            log.trace("Moved {} to {}", source, destination);
+            Files.write(destination
+                    .resolve(filename), contents, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            log.trace("Wrote {} to {}", filename, destination);
         } catch (Exception e) {
-            log.error("Error moving file {} to {}", source, destination, e);
+            log.error("Error writing file {} to {}", filename, destination, e);
         }
     }
 
-    public static void purgeDirectory(Path path) {
-        File dir = path.toFile();
-        if (!dir.exists()) {
-            return;
-        }
-
-        for (File file : dir.listFiles()) {
-            if (file.isDirectory()) {
-                purgeDirectory(file.toPath());
-            }
-            if (!file.delete()) {
-                log.warn("Unable to delete file: {}", file);
-            }
+    public static void archiveFile(StreamFile streamFile, ParserProperties parserProperties) {
+        if (parserProperties.isKeepFiles()) {
+            archiveFile(streamFile.getName(), streamFile.getBytes(), parserProperties.getParsedPath());
         }
     }
 
@@ -297,34 +288,5 @@ public class Utility {
     public static TransactionID getTransactionId(AccountID payerAccountId) {
         Timestamp validStart = Utility.instantToTimestamp(Instant.now());
         return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
-    }
-
-    /**
-     * Helps verify chaining for files in a stream.
-     *
-     * @param actualPrevHash   prevHash as read from current file
-     * @param expectedPrevHash hash of last file from application state
-     * @param verifyHashAfter  Only the files created after (not including) this point of time are verified for hash
-     *                         chaining.
-     * @param fileName         name of current stream file being verified
-     * @return true if verification succeeds, else false
-     */
-    public static boolean verifyHashChain(String actualPrevHash, String expectedPrevHash,
-                                          Instant verifyHashAfter, String fileName) {
-        var fileInstant = Instant.parse(FilenameUtils.getBaseName(fileName).replaceAll("_", ":"));
-        if (!verifyHashAfter.isBefore(fileInstant)) {
-            return true;
-        }
-
-        if (SHA384.isHashEmpty(expectedPrevHash)) {
-            log.warn("Previous hash not available");
-            return true;
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("actual hash = {}, expected hash = {}", actualPrevHash, expectedPrevHash);
-        }
-
-        return actualPrevHash.contentEquals(expectedPrevHash);
     }
 }

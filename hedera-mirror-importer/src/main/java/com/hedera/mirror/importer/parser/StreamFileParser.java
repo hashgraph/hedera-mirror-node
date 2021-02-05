@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.parser;
 
 /*-
  * ‌
@@ -20,16 +20,9 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
+import com.hedera.mirror.importer.domain.StreamFile;
 
-import com.hedera.mirror.importer.domain.RecordFile;
+public interface StreamFileParser<T extends StreamFile> {
 
-public interface RecordFileRepository extends StreamFileRepository<RecordFile, Long> {
-
-    Optional<RecordFile> findByName(String name);
-
-    @Override
-    @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
-    Optional<RecordFile> findLatest();
+    void parse(T streamFile);
 }

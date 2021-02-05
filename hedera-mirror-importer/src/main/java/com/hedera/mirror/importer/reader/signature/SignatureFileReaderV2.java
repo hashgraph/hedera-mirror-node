@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.reader.signature;
 
 import java.io.IOException;
 import javax.inject.Named;
-import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
@@ -40,24 +39,25 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
-        FileStreamSignature fileStreamSignature = new FileStreamSignature();
-        String filename = FilenameUtils.getName(signatureFileData.getFilename());
+        String filename = signatureFileData.getFilename();
 
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
                 signatureFileData.getInputStream(), filename)) {
             vdis.readByte(SIGNATURE_TYPE_FILE_HASH, "hash delimiter");
             byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA384.getSize(), "hash");
-            fileStreamSignature.setFileHash(fileHash);
 
             vdis.readByte(SIGNATURE_TYPE_SIGNATURE, "signature delimiter");
             byte[] signature = vdis.readLengthAndBytes(1, SignatureType.SHA_384_WITH_RSA.getMaxLength(),
                     false, "signature");
-            fileStreamSignature.setFileHashSignature(signature);
 
             if (vdis.available() != 0) {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 
+            FileStreamSignature fileStreamSignature = new FileStreamSignature();
+            fileStreamSignature.setFileHash(fileHash);
+            fileStreamSignature.setFileHashSignature(signature);
+            fileStreamSignature.setFilename(filename);
             fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
 
             return fileStreamSignature;

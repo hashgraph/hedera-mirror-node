@@ -43,7 +43,6 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordFilePoller;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -58,15 +57,12 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
     @Resource
     private RecordParserProperties parserProperties;
     @Resource
-    private RecordFilePoller recordFilePoller;
-    @Resource
     private RecordFileRepository recordFileRepository;
     private FileCopier fileCopier;
 
     @BeforeEach
     void beforeEach() throws IOException {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
-        parserProperties.init();
 
         StreamType streamType = StreamType.RECORD;
         fileCopier = FileCopier.create(testResourcesPath, dataPath)
@@ -100,7 +96,7 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
         fileCopier.copy();
 
         // when
-        recordFilePoller.poll();
+        //recordFilePoller.poll();
 
         // then
         List<String> expectedMessages = Files.readAllLines(testResourcesPath.resolve("pubsub-messages.txt"));

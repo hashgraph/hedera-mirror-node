@@ -44,7 +44,6 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordFilePoller;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -61,9 +60,6 @@ public abstract class PerformanceIntegrationTest {
 
     @Value("classpath:data")
     Path testPath;
-
-    @Resource
-    private RecordFilePoller recordFilePoller;
 
     private FileCopier fileCopier;
 
@@ -114,7 +110,6 @@ public abstract class PerformanceIntegrationTest {
     void parse(String filePath) {
         streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
-        parserProperties.init();
 
         fileCopier = FileCopier.create(testPath, dataPath)
                 .from(streamType.getPath(), "performance")
@@ -122,7 +117,7 @@ public abstract class PerformanceIntegrationTest {
                 .to(streamType.getPath(), streamType.getValid());
         fileCopier.copy();
 
-        recordFilePoller.poll();
+        //recordFilePoller.poll();
     }
 
     void checkSeededTablesArePresent() throws SQLException {

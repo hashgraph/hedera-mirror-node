@@ -56,6 +56,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         try (RecordFileDigest digest = getRecordFileDigest(streamFileData.getInputStream());
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)) {
             RecordFile recordFile = new RecordFile();
+            recordFile.setBytes(streamFileData.getBytes());
             recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
 
@@ -73,11 +74,11 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     protected abstract RecordFileDigest getRecordFileDigest(InputStream is);
 
     /**
-     * Reads the record file header, updates the message digest with data from the header, and sets corresponding
-     * {@link RecordFile} fields. {@code vdis} should point at the beginning of the stream. The header should contain
-     * file version, HAPI version, and the previous file hash.
+     * Reads the record file header, updates the message digest with data from the header, and sets corresponding {@link
+     * RecordFile} fields. {@code vdis} should point at the beginning of the stream. The header should contain file
+     * version, HAPI version, and the previous file hash.
      *
-     * @param vdis the {@link ValidatedDataInputStream} of the record file
+     * @param vdis       the {@link ValidatedDataInputStream} of the record file
      * @param recordFile the {@link RecordFile} object
      * @throws IOException
      */
@@ -92,19 +93,19 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     }
 
     /**
-     * Reads the record file body, updates the message digest with data from the body, and sets corresponding
-     * {@link RecordFile} fields. {@code vdis} should point at the beginning of the body. The body should contain
-     * a variable number of transaction and record pairs ordered by consensus timestamp. The body may also contain
-     * metadata to mark the boundary of the pairs.
+     * Reads the record file body, updates the message digest with data from the body, and sets corresponding {@link
+     * RecordFile} fields. {@code vdis} should point at the beginning of the body. The body should contain a variable
+     * number of transaction and record pairs ordered by consensus timestamp. The body may also contain metadata to mark
+     * the boundary of the pairs.
      *
-     * @param vdis the {@link ValidatedDataInputStream} of the record file
-     * @param digest the {@link RecordFileDigest} to update the digest with
+     * @param vdis         the {@link ValidatedDataInputStream} of the record file
+     * @param digest       the {@link RecordFileDigest} to update the digest with
      * @param itemConsumer the {@link Consumer} to process individual {@link RecordItem}s
-     * @param recordFile the {@link RecordFile} object
+     * @param recordFile   the {@link RecordFile} object
      * @throws IOException
      */
     private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest, Consumer<RecordItem> itemConsumer,
-            RecordFile recordFile) throws IOException {
+                          RecordFile recordFile) throws IOException {
         long count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;
@@ -113,8 +114,8 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
         while (vdis.available() != 0) {
             vdis.readByte(RECORD_MARKER, "record marker");
-            byte[] transactionBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false,"transaction bytes");
-            byte[] recordBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false,"record bytes");
+            byte[] transactionBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
+            byte[] recordBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record bytes");
 
             boolean isFirstTransaction = count == 0;
             boolean isLastTransaction = vdis.available() == 0;

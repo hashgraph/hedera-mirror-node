@@ -32,14 +32,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,13 +60,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
-import com.hedera.mirror.importer.reader.record.RecordFileReader;
-import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
-import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
-import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,7 +96,7 @@ abstract class AbstractRecordFileParserTest {
     }
 
     AbstractRecordFileParserTest(RecordFile recordFile1, RecordFile recordFile2, long[] fileConsensusTimestamps,
-            String versionedPath) {
+                                 String versionedPath) {
         this.recordFile1 = recordFile1;
         this.recordFile2 = recordFile2;
         this.fileConsensusTimestamps = fileConsensusTimestamps;
@@ -116,12 +109,9 @@ abstract class AbstractRecordFileParserTest {
         mirrorProperties.setDataPath(dataPath);
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
-        parserProperties.init();
 
-        RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
-                new RecordFileReaderImplV2(), new RecordFileReaderImplV5());
-        recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties, new SimpleMeterRegistry(),
-                recordFileReader, recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
+        recordFileParser = new RecordFileParser(parserProperties, new SimpleMeterRegistry(),
+                recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
 
         FileCopier fileCopier = FileCopier
                 .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
@@ -132,8 +122,7 @@ abstract class AbstractRecordFileParserTest {
         streamFileData1 = StreamFileData.from(dataPath.resolve(recordFile1.getName()).toFile());
         streamFileData2 = StreamFileData.from(dataPath.resolve(recordFile2.getName()).toFile());
 
-        doReturn(recordFile1).when(recordStreamFileListener).onStart(streamFileData1);
-        doReturn(recordFile2).when(recordStreamFileListener).onStart(streamFileData2);
+        verify(recordStreamFileListener, times(2)).onStart();
     }
 
     @Test
@@ -141,31 +130,14 @@ abstract class AbstractRecordFileParserTest {
         // given
 
         // when
-        recordFileParser.parse(streamFileData1);
+        recordFileParser.parse(recordFile1);
         assertProcessedFile(streamFileData1, recordFile1);
 
-        recordFileParser.parse(streamFileData2);
+        recordFileParser.parse(recordFile2);
 
         // then
         verify(recordStreamFileListener, never()).onError();
         assertAllProcessed();
-    }
-
-    @Test
-    void invalidFile() throws Exception {
-        // given
-        File file = dataPath.resolve(recordFile1.getName()).toFile();
-        FileUtils.writeStringToFile(file, "corrupt", "UTF-8");
-        StreamFileData streamFileData = StreamFileData.from(file);
-        doReturn(recordFile1).when(recordStreamFileListener).onStart(streamFileData);
-
-        // when
-        Assertions.assertThrows(InvalidStreamFileException.class, () -> recordFileParser.parse(streamFileData));
-
-        // then
-        verify(recordStreamFileListener).onStart(streamFileData);
-        verify(recordStreamFileListener, never()).onEnd(recordFile1);
-        verify(recordStreamFileListener).onError();
     }
 
     @Test
@@ -175,28 +147,13 @@ abstract class AbstractRecordFileParserTest {
 
         // when
         Assertions.assertThrows(HashMismatchException.class, () -> {
-            recordFileParser.parse(streamFileData1);
+            recordFileParser.parse(recordFile1);
         });
 
         // then
-        verify(recordStreamFileListener).onStart(streamFileData1);
+        verify(recordStreamFileListener).onStart();
         verify(recordStreamFileListener, never()).onEnd(any());
         verify(recordStreamFileListener).onError();
-    }
-
-    @Test
-    void bypassHashMismatch() {
-        // given
-        Instant oneNanoAfter = Instant.ofEpochSecond(0, recordFile1.getConsensusStart() + 1L);
-        parserProperties.getMirrorProperties().setVerifyHashAfter(oneNanoAfter);
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
-
-        // when
-        recordFileParser.parse(streamFileData1);
-
-        // then
-        verify(recordStreamFileListener, never()).onError();
-        assertProcessedFile(streamFileData1, recordFile1);
     }
 
     @Test
@@ -206,13 +163,26 @@ abstract class AbstractRecordFileParserTest {
 
         // when
         Assertions.assertThrows(ImporterException.class, () -> {
-            recordFileParser.parse(streamFileData1);
+            recordFileParser.parse(recordFile1);
         });
 
         // then
-        verify(recordStreamFileListener).onStart(streamFileData1);
+        verify(recordStreamFileListener).onStart();
         verify(recordStreamFileListener, never()).onEnd(recordFile1);
         verify(recordStreamFileListener).onError();
+    }
+
+    @Test
+    void keepFiles() throws Exception {
+        // given
+        parserProperties.setKeepFiles(true);
+
+        // when
+        recordFileParser.parse(recordFile1);
+
+        // then
+        assertAllProcessed();
+        assertParsedFiles(streamFileData1.getFilename());
     }
 
     @ParameterizedTest(name = "parse with endDate set to {0}ns after the {1}th transaction")
@@ -225,8 +195,8 @@ abstract class AbstractRecordFileParserTest {
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
 
         // when
-        recordFileParser.parse(streamFileData1);
-        recordFileParser.parse(streamFileData2);
+        recordFileParser.parse(recordFile1);
+        recordFileParser.parse(recordFile2);
 
         // then
         assertAllProcessed(filter);
@@ -242,21 +212,11 @@ abstract class AbstractRecordFileParserTest {
                 .when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
 
         // when
-        recordFileParser.parse(streamFileData1);
-        recordFileParser.parse(streamFileData2);
+        recordFileParser.parse(recordFile1);
+        recordFileParser.parse(recordFile2);
 
         // then
         assertAllProcessed(filter);
-    }
-
-    // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
-    private void assertOnStart(String... fileNames) {
-        ArgumentCaptor<StreamFileData> captor = ArgumentCaptor.forClass(StreamFileData.class);
-        verify(recordStreamFileListener, times(fileNames.length)).onStart(captor.capture());
-        List<StreamFileData> actualArgs = captor.getAllValues();
-        assertThat(actualArgs)
-                .extracting(StreamFileData::getFilename)
-                .contains(fileNames);
     }
 
     // Asserts that recordStreamFileListener.onEnd is called exactly with given recordFiles (ignoring load start and end
@@ -275,7 +235,7 @@ abstract class AbstractRecordFileParserTest {
     private void assertProcessedFile(StreamFileData streamFileData, RecordFile recordFile) {
         // assert mock interactions
         verify(recordItemListener, times(recordFile.getCount().intValue())).onItem(any());
-        assertOnStart(streamFileData.getFilename());
+        verify(recordStreamFileListener, times(1)).onStart();
         assertOnEnd(recordFile);
     }
 
@@ -289,8 +249,18 @@ abstract class AbstractRecordFileParserTest {
                 .filter(ts -> dateRangeFilter == null || dateRangeFilter.filter(ts)).count();
 
         verify(recordItemListener, times(expectedNumTxns)).onItem(any());
-        assertOnStart(streamFileData1.getFilename(), streamFileData2.getFilename());
+        verify(recordStreamFileListener, times(2)).onStart();
         assertOnEnd(recordFile1, recordFile2);
+    }
+
+    // Asserts that parsed directory contains exactly the files with given fileNames
+    private void assertParsedFiles(String... fileNames) throws Exception {
+        assertThat(Files.walk(parserProperties.getParsedPath()))
+                .filteredOn(p -> !p.toFile().isDirectory())
+                .hasSize(fileNames.length)
+                .extracting(Path::getFileName)
+                .extracting(Path::toString)
+                .contains(fileNames);
     }
 
     protected static Stream<Arguments> provideTimeOffsetArgumentFromRecordFile(String filename) {

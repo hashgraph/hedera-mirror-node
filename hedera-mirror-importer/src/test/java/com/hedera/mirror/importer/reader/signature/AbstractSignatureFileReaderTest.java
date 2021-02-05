@@ -25,8 +25,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.primitives.Bytes;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,10 +37,6 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 abstract class AbstractSignatureFileReaderTest {
 
-    protected InputStream getInputStream(byte[] bytes) {
-        return new ByteArrayInputStream(bytes);
-    }
-
     //Dynamically generate tests for corrupt/invalid signature file tests
     protected Iterable<DynamicTest> generateCorruptedFileTests(SignatureFileReader fileReader,
                                                                List<SignatureFileSection> signatureFileSections) {
@@ -52,7 +46,7 @@ abstract class AbstractSignatureFileReaderTest {
         testCases.add(DynamicTest.dynamicTest(
                 "blankFile",
                 () -> {
-                    StreamFileData blankFileData = new StreamFileData("blankFile", getInputStream(new byte[0]));
+                    StreamFileData blankFileData = new StreamFileData("blankFile", new byte[0]);
                     SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                             () -> fileReader.read(blankFileData));
                     assertTrue(e.getMessage().contains("EOFException"));
@@ -78,8 +72,7 @@ abstract class AbstractSignatureFileReaderTest {
             testCases.add(DynamicTest.dynamicTest(
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
-                        StreamFileData corruptedFileData = new StreamFileData("corruptedFile",
-                                getInputStream(fullSignatureBytes));
+                        StreamFileData corruptedFileData = new StreamFileData("corruptedFile", fullSignatureBytes);
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                                 () -> fileReader.read(corruptedFileData));
                         sectionToCorrupt.validateError(e.getMessage());

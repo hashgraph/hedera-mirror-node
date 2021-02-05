@@ -49,14 +49,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
@@ -67,7 +65,6 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -119,9 +116,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
-
-    @Resource
-    protected RecordFileRepository recordFileRepository;
 
     protected static SignatureMap getSigMap() {
         String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
@@ -183,7 +177,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
         String fileName = UUID.randomUUID().toString();
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
         RecordFile recordFile = RecordFile.builder()
                 .consensusStart(recordItem.getConsensusTimestamp())
                 .consensusEnd(recordItem.getConsensusTimestamp() + 1)
@@ -194,8 +188,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .fileHash(UUID.randomUUID().toString())
                 .previousHash("")
                 .build();
-        recordFileRepository.save(recordFile);
-        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
+        recordStreamFileListener.onStart();
         entityRecordItemListener.onItem(recordItem);
         // commit, close connection
         recordStreamFileListener.onEnd(recordFile);
@@ -203,7 +196,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
         String fileName = UUID.randomUUID().toString();
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
         RecordFile recordFile = RecordFile.builder()
                 .consensusStart(recordItems[0].getConsensusTimestamp())
                 .consensusEnd(recordItems[recordItems.length - 1].getConsensusTimestamp())
@@ -214,8 +207,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .fileHash(UUID.randomUUID().toString())
                 .previousHash("")
                 .build();
-        recordFileRepository.save(recordFile);
-        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
+        recordStreamFileListener.onStart();
 
         // process each record item
         for (RecordItem recordItem : recordItems) {

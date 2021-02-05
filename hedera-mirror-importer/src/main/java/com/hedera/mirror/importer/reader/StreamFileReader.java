@@ -20,13 +20,15 @@ package com.hedera.mirror.importer.reader;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.domain.StreamItem;
 
-public interface FileReader<S extends StreamFile, I extends StreamItem> {
+public interface StreamFileReader<S extends StreamFile, I extends StreamItem> {
 
     /**
      * Reads a stream file. This method takes ownership of the {@link java.io.InputStream} provided by {@code
@@ -39,6 +41,9 @@ public interface FileReader<S extends StreamFile, I extends StreamItem> {
     S read(StreamFileData streamFileData, Consumer<I> itemConsumer);
 
     default S read(StreamFileData streamFileData) {
-        return read(streamFileData, null);
+        List<I> items = new ArrayList<>();
+        S streamFile = read(streamFileData, items::add);
+        streamFile.getItems().addAll(items);
+        return streamFile;
     }
 }
