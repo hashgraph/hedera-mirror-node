@@ -61,7 +61,8 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHan
                                         .setEd25519(ByteString.copyFromUtf8("Ed25519-3"))
                                         .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-3")).build())
                                 .build())
-                        .setTransactionBody(ByteString.copyFromUtf8("transaction body")));
+                        .setTransactionBody(ByteString.copyFromUtf8("transaction body"))
+                        .setMemo("schedule memo"));
     }
 
     @Override
