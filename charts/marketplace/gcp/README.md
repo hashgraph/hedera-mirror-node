@@ -383,6 +383,39 @@ helm upgrade "${APP_NAME}" charts/hedera-mirror \
   -f custom-values.yaml
 ```
 
+## v0.13 -> v0.27+ (Includes breaking changes)
+
+Marketplace upgrade from v0.13 to v0.27 onwards include many noteworthy improvements and changes.
+Unfortunately 2 such changes include breaking stateful set changes from the mirror node and postgres sub chart.
+As such a few extra steps are necessary for a smooth transition.
+These steps draw inspiration from Bitnami's [Upgrade Steps To 9.0.0](https://artifacthub.io/packages/helm/bitnami/postgresql#to-9-0-0)
+
+1. From a v0.13 repo Stop importer downloading
+    > **Note:** It's important to run the following command from a v0.13 repo, to ensure additional charts and resources are not prematurely pushed to the existing application
+    ```shell script
+    helm upgrade "${APP_NAME}" charts/hedera-mirror --namespace "${NAMESPACE}" --install --reuse-values --set importer.config.hedera.mirror.importer.downloader.record.enabled=false --set importer.config.hedera.mirror.importer.downloader.balance.enabled=false
+    ```
+
+    Observe the logs and ensure no record or balance stream files are being processed.
+
+2. Delete stateful sets
+    After verifying no record or balance stream files are being processed, remove the importer and postgres stateful sets
+    ```shell script
+    kubectl delete statefulsets.apps --cascade=false "${APP_NAME}-importer" "${APP_NAME}-postgres-postgresql"
+    ```
+
+3. From a v0.27 repo Upgrade
+    From a newly checked out v0.27 or greater mirror node repo kickoff the upgrade
+    ```shell script
+    git checkout tags/v0.27.0
+    helm upgrade "${APP_NAME}" charts/hedera-mirror --namespace "${NAMESPACE}" -f charts/marketplace/gcp/values.yaml -f custom-values.yaml
+    ```
+
+4. Delete importer and postgres pods
+    ```shell script
+    kubectl delete pod "${APP_NAME}-importer-0" "${APP_NAME}-postgres-postgresql-0"
+    ```
+
 # Scaling
 
 Scaling the Importer or PostgreSQL components is not currently supported. The gRPC and REST

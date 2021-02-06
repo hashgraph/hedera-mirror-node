@@ -71,6 +71,11 @@ monitor:
 postgresql:
   pgpool:
     replicaCount: 0
+  postgresql:
+    upgradeRepmgrExtension: true #upgrade repmgr version to 5.2 or else container spinup fails
+  postgresqlImage:
+    debug: true
+    tag: 11.10.0-debian-10-r78
 
 redis:
   cluster:

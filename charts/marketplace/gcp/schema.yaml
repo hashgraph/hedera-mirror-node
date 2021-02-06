@@ -17,14 +17,25 @@ x-google-marketplace:
   publishedVersion: "$TAG"
   publishedVersionMetadata:
     releaseNote: >-
-      Initial release of the Hedera Mirror Node
+      v0.27 brings many new features to the mirror node marketplace application since v0.13.
+      The largest of which is the support for the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
+      Tokens entity types are now ingested to the DB and can be queried through new REST APIs.
+      Support for the new v5 record file and signature file formats was added to be able to parse additional detailed information made available by the network in HAPI v0.11.0.
+      Additionally topic fragmentation support was added to the ingestion process as well as the exposure through the appropriate REST and gRPC APIs
+      State Proof alpha REST API was added to enable Mirror node users who want to verify submitted transactions for themselves.
+      <a href"https://swagger.io/specification">OpenAPI 3.0</a> specification support was added to the REST API long with a docs endpoint for upto date documentation and REST API curl support.
+      Redis service was added to support at least 10,000 TPS ingestion while still remaining under 10 seconds from submitting the topic message and receiving it back via the mirror node's streaming API.
+      DB and process memory optimizations were made to improve the ingestion rate with at least 2x-3x improvements.
+      `startDate` and `endDate` properties were added to enable Mirror node users the ability to specify a time range for data processing.
+      <a href"https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">AWS default credential provider chain</a> support was added to provide greater flexibility for mirror node operators.
+      Many more features went into the release, for detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>.
     # releaseTypes - Feature | BugFix | Security
     releaseTypes:
       - Feature
     # If "recommended" is "true", users using older releases are encouraged
     # to update as soon as possible. This is useful if, for example, this release
     # fixes a critical issue.
-    recommended: false
+    recommended: true
 
   # images for subcharts. Primary image is importer
   images:

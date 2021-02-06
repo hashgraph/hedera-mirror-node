@@ -2,47 +2,47 @@
 set -ex
 
 if [[ "$#" -lt 1 ]]; then
-  echo "You must provide the Mirror Node image tag (e.g. 0.14.0)"
-  exit 1
+    echo "You must provide the Mirror Node image tag (e.g. 0.14.0)"
+    exit 1
 fi
 
 # Same source and target tags
 if [[ "$#" -eq 1 ]]; then
-  source_tag="${1}"
-  target_tag="${source_tag}"
+    source_tag="${1}"
+    target_tag="${source_tag}"
 fi
 
 # Different source and target tags. Useful for testing chart changes with existing tags.
 if [[ "$#" -eq 2 ]]; then
-  source_tag="${1}"
-  target_tag="${2}"
+    source_tag="${1}"
+    target_tag="${2}"
 fi
 
 target_tag="${target_tag#v}" # Strip v prefix if present
 target_tag_minor="${target_tag%\.*}"
 bats_tag="1.2.1"
-postgresql_tag="13.1.0-debian-10-r74"
+postgresql_tag="12.5.0-debian-10-r79"
 registry="gcr.io/mirror-node-public/hedera-mirror-node"
 
 function retag() {
-  local source=${1}
-  local image=${2}
-  local target="${registry}/${image}"
+    local source=${1}
+    local image=${2}
+    local target="${registry}/${image}"
 
-  # Main image
-  if [[ -z "${image}" ]]; then
-    target="${registry}"
-  fi
+    # Main image
+    if [[ -z "${image}" ]]; then
+        target="${registry}"
+    fi
 
-  docker pull "${source}"
-  docker tag "${source}" "${target}:${target_tag}"
-  docker push "${target}:${target_tag}"
+    docker pull "${source}"
+    docker tag "${source}" "${target}:${target_tag}"
+    docker push "${target}:${target_tag}"
 
-  # Don't update minor tag for pre-release tags
-  if [[ ! "${target_tag}" =~ .*-.* ]]; then
-    docker tag "${source}" "${target}:${target_tag_minor}"
-    docker push "${target}:${target_tag_minor}"
-  fi
+    # Don't update minor tag for pre-release tags
+    if [[ ! "${target_tag}" =~ .*-.* ]]; then
+        docker tag "${source}" "${target}:${target_tag_minor}"
+        docker push "${target}:${target_tag_minor}"
+    fi
 }
 
 # Ensure chart app version matches schema.yaml version
@@ -63,4 +63,3 @@ retag "bitnami/postgresql-repmgr:${postgresql_tag}" "postgresql-repmgr"
 mv values.yaml.bak values.yaml
 echo "Successfully pushed all images"
 exit 0
-
