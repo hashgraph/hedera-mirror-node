@@ -30,10 +30,17 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import lombok.Getter;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+public class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+    @Getter(lazy = true)
+    private final Key adminKey = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("key")).build();
+
+    private static final String MEMO = "scheduleCreateMemo";
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ScheduleCreateTransactionHandler();
@@ -75,5 +82,21 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHan
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.SCHEDULE;
+    }
+
+    @Override
+    protected ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setScheduleCreate(
+                ScheduleCreateTransactionBody.newBuilder()
+                        .setAdminKey(this.getAdminKey())
+                        .setMemo(MEMO)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    protected void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setKey(this.getAdminKey().toByteArray());
+        entity.setMemo(MEMO);
     }
 }
