@@ -32,6 +32,15 @@ The CLI takes the following steps to prove legitimacy of provided transaction ID
 
 11. Returns true if all  verifications pass
 
+### Record stream file and signature file version 5
+
+From hedera-services v0.11.0, the mainnet has upgraded to generate version 5 record streams. While
+the state proof check login remains the same, the following changes are made to support the file version upgrade:
+
+1. Parsing logic for the new format is added. Please refer to the [official documentation](https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats)
+   for the format.
+1. Metadata hash signature in signature file version 5 is verified in addition to file hash signature.
+
 ## Requirements
 To run the CLI you must
 1. Install the node application

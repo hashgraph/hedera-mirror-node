@@ -20,23 +20,17 @@
 
 'use strict';
 
-const MAX_RECORD_LENGTH = 64 * 1024;
-
-const MAX_TRANSACTION_LENGTH = 64 * 1024;
-
-const SHA_384_LENGTH = 48;
-
-const SHA_384_WITH_RSA = {
-  type: 1,
-  maxLength: 384,
+const SHA_384 = {
+  encoding: 'hex',
+  length: 48,
+  name: 'sha384',
 };
 
-const SIMPLE_SUM = 101;
+const BYTE_SIZE = 1;
+const INT_SIZE = 4;
 
 module.exports = {
-  MAX_RECORD_LENGTH,
-  MAX_TRANSACTION_LENGTH,
-  SHA_384_LENGTH,
-  SHA_384_WITH_RSA,
-  SIMPLE_SUM,
+  BYTE_SIZE,
+  INT_SIZE,
+  SHA_384,
 };

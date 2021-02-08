@@ -23,6 +23,7 @@
 // external libraries
 const _ = require('lodash');
 const crypto = require('crypto');
+const {SHA_384} = require('./constants');
 
 /**
  * Verifies given hash was signed with the provided public key
@@ -59,7 +60,7 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
   _.forEach(signatureFilesMap, (sigMapItem) => {
     console.info(`Verify signatures passed for node ${sigMapItem.nodeId}`);
     const {publicKey} = nodePublicKeyMap[sigMapItem.nodeId];
-    const sigMapItemHashHex = sigMapItem.fileHash.toString('hex');
+    const sigMapItemHashHex = sigMapItem.fileHash.toString(SHA_384.encoding);
 
     if (!verifySignature(publicKey, sigMapItem.fileHash, sigMapItem.fileHashSignature)) {
       console.error(`Failed to verify fileHash signature for node ${sigMapItem.nodeId}!`);

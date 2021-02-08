@@ -24,14 +24,40 @@
 const crypto = require('crypto');
 const {TransactionRecord} = require('@hashgraph/sdk/lib/generated/TransactionRecord_pb');
 
-const {MAX_TRANSACTION_LENGTH, MAX_RECORD_LENGTH, SHA_384_LENGTH} = require('./constants');
-const {readLengthAndBytes, HashObject, RecordStreamObject} = require('./streamObject');
+const {BYTE_SIZE, INT_SIZE, SHA_384} = require('./constants');
+const {readLengthAndBytes, HashObject, StreamObject} = require('./streamObject');
+
+const MAX_TRANSACTION_LENGTH = 64 * 1024;
+const MAX_RECORD_LENGTH = 64 * 1024;
 
 // version (int), hapiVersion (int), previous hash marker (byte), SHA-384 hash
-const PRE_V5_HEADER_LENGTH = 4 + 4 + 1 + SHA_384_LENGTH;
+const PRE_V5_HEADER_LENGTH = INT_SIZE + INT_SIZE + BYTE_SIZE + SHA_384.length;
 
 // version (int), hapi version major/minor/patch (int), object stream version (int)
-const V5_START_HASH_OFFSET = 4 + (4 + 4 + 4) + 4;
+const V5_START_HASH_OFFSET = INT_SIZE + (INT_SIZE + INT_SIZE + INT_SIZE) + INT_SIZE;
+
+class RecordStreamObject extends StreamObject {
+  /**
+   * Reads record stream object from buffer
+   * @param buffer
+   */
+  constructor(buffer) {
+    super(buffer);
+    this.read(buffer.slice(super.getLength()));
+  }
+
+  read(buffer) {
+    const record = readLengthAndBytes(buffer, 1, MAX_RECORD_LENGTH, false);
+    const transaction = readLengthAndBytes(buffer.slice(record.length), 1, MAX_TRANSACTION_LENGTH, false);
+    this.record = record.bytes;
+    this.transaction = transaction.bytes;
+    this.dataLength = record.length + transaction.length;
+  }
+
+  getLength() {
+    return super.getLength() + this.dataLength;
+  }
+}
 
 class RecordFile {
   /**
@@ -74,16 +100,17 @@ class RecordFile {
   }
 
   parseV5RecordFile(buffer) {
-    this.fileHash = crypto.createHash('sha384').update(buffer).digest('hex');
-    const metadataDigest = crypto.createHash('sha384').update(buffer.slice(0, V5_START_HASH_OFFSET));
+    this.fileHash = crypto.createHash(SHA_384.name).update(buffer).digest(SHA_384.encoding);
+    const metadataDigest = crypto.createHash(SHA_384.name).update(buffer.slice(0, V5_START_HASH_OFFSET));
 
-    // skip the header
+    // skip the bytes before the start hash object
     buffer = buffer.slice(V5_START_HASH_OFFSET);
     const startHashObject = new HashObject(buffer);
     metadataDigest.update(buffer.slice(0, startHashObject.getLength()));
 
     buffer = buffer.slice(startHashObject.getLength());
     while (buffer.readBigInt64BE() !== startHashObject.classId) {
+      // record stream objects are between the start hash object and the end hash object
       const recordStreamObject = new RecordStreamObject(buffer);
       this.mapSuccessfulTransactions(recordStreamObject.record);
       buffer = buffer.slice(recordStreamObject.getLength());
@@ -94,21 +121,21 @@ class RecordFile {
       throw new Error('Extra data discovered in record file');
     }
 
-    this.metadataHash = metadataDigest.update(buffer).digest('hex');
+    this.metadataHash = metadataDigest.update(buffer).digest(SHA_384.encoding);
   }
 
   calculatePreV5FileHash(version, buffer) {
-    const fileDigest = crypto.createHash('sha384');
+    const fileDigest = crypto.createHash(SHA_384.name);
 
     if (version === 1) {
       fileDigest.update(buffer);
     } else {
       // version 2
-      const contentHash = crypto.createHash('sha384').update(buffer.slice(PRE_V5_HEADER_LENGTH)).digest();
+      const contentHash = crypto.createHash(SHA_384.name).update(buffer.slice(PRE_V5_HEADER_LENGTH)).digest();
       fileDigest.update(buffer.slice(0, PRE_V5_HEADER_LENGTH)).update(contentHash);
     }
 
-    this.fileHash = fileDigest.digest('hex');
+    this.fileHash = fileDigest.digest(SHA_384.encoding);
   }
 
   containsTransaction(transactionId) {

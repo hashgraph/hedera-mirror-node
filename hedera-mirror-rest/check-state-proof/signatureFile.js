@@ -20,11 +20,43 @@
 
 'use strict';
 
-const {SHA_384_LENGTH, SHA_384_WITH_RSA} = require('./constants');
-const {readLengthAndBytes, readNBytes, HashObject, SignatureObject} = require('./streamObject');
+const {BYTE_SIZE, INT_SIZE, SHA_384} = require('./constants');
+const {readLengthAndBytes, readNBytes, HashObject, StreamObject} = require('./streamObject');
+
+const SHA_384_WITH_RSA = {
+  type: 1,
+  maxLength: 384,
+};
 
 // version (byte), object stream signature version (int)
-const V5_FILE_HASH_OFFSET = 1 + 4;
+const V5_FILE_HASH_OFFSET = BYTE_SIZE + INT_SIZE;
+
+class SignatureObject extends StreamObject {
+  /**
+   * Reads signature object from buffer
+   * @param {Buffer} buffer
+   */
+  constructor(buffer) {
+    super(buffer);
+    this.read(buffer.slice(super.getLength()));
+  }
+
+  read(buffer) {
+    const message = 'Error reading signature object';
+    const type = buffer.readInt32BE();
+    if (type !== SHA_384_WITH_RSA.type) {
+      throw new Error(`${message}, expect type ${SHA_384_WITH_RSA.type} got ${type}`);
+    }
+
+    const {length, bytes} = readLengthAndBytes(buffer.slice(4), 1, SHA_384_WITH_RSA.maxLength, true);
+    this.dataLength = 4 + length;
+    this.signature = bytes;
+  }
+
+  getLength() {
+    return super.getLength() + this.dataLength;
+  }
+}
 
 class SignatureFile {
   /**
@@ -52,9 +84,9 @@ class SignatureFile {
 
   parseV2SignatureFile(buffer) {
     // skip type, already checked
-    this.fileHash = readNBytes(buffer.slice(1), SHA_384_LENGTH);
+    this.fileHash = readNBytes(buffer.slice(1), SHA_384.length);
 
-    buffer = buffer.slice(1 + SHA_384_LENGTH);
+    buffer = buffer.slice(1 + SHA_384.length);
     const type = buffer.readInt8();
     if (type !== 3) {
       throw new Error(`Unexpected type delimiter '${type}' in signature file`);

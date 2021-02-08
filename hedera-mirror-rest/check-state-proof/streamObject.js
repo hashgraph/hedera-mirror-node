@@ -20,7 +20,9 @@
 
 'use strict';
 
-const constants = require('./constants');
+const {SHA_384} = require('./constants');
+
+const SIMPLE_SUM = 101;
 
 /**
  * Reads the length field, an optional checksum, and the byte array from buffer
@@ -44,7 +46,7 @@ const readLengthAndBytes = (buffer, minLength, maxLength, hasChecksum) => {
 
   if (hasChecksum) {
     const checksum = buffer.readInt32BE(offset);
-    const expected = constants.SIMPLE_SUM - length;
+    const expected = SIMPLE_SUM - length;
     offset += 4;
     if (checksum !== expected) {
       throw new Error(`${message}, expect checksum ${checksum} to be ${expected}`);
@@ -98,61 +100,11 @@ class HashObject extends StreamObject {
 
   read(buffer) {
     // always SHA-384
-    const hashLength = constants.SHA_384_LENGTH;
+    const hashLength = SHA_384.length;
     this.digestType = buffer.readInt32BE();
     const {length, bytes} = readLengthAndBytes(buffer.slice(4), hashLength, hashLength, false);
     this.dataLength = 4 + length;
     this.hash = bytes;
-  }
-
-  getLength() {
-    return super.getLength() + this.dataLength;
-  }
-}
-
-class RecordStreamObject extends StreamObject {
-  /**
-   * Reads record stream object from buffer
-   * @param buffer
-   */
-  constructor(buffer) {
-    super(buffer);
-    this.read(buffer.slice(super.getLength()));
-  }
-
-  read(buffer) {
-    const record = readLengthAndBytes(buffer, 1, constants.MAX_RECORD_LENGTH, false);
-    const transaction = readLengthAndBytes(buffer.slice(record.length), 1, constants.MAX_TRANSACTION_LENGTH, false);
-    this.record = record.bytes;
-    this.transaction = transaction.bytes;
-    this.dataLength = record.length + transaction.length;
-  }
-
-  getLength() {
-    return super.getLength() + this.dataLength;
-  }
-}
-
-class SignatureObject extends StreamObject {
-  /**
-   * Reads signature object from buffer
-   * @param {Buffer} buffer
-   */
-  constructor(buffer) {
-    super(buffer);
-    this.read(buffer.slice(super.getLength()));
-  }
-
-  read(buffer) {
-    const message = 'Error reading signature object';
-    const type = buffer.readInt32BE();
-    if (type !== constants.SHA_384_WITH_RSA.type) {
-      throw new Error(`${message}, expect type ${constants.SHA_384_WITH_RSA.type} got ${type}`);
-    }
-
-    const {length, bytes} = readLengthAndBytes(buffer.slice(4), 1, constants.SHA_384_WITH_RSA.maxLength, true);
-    this.dataLength = 4 + length;
-    this.signature = bytes;
   }
 
   getLength() {
@@ -165,6 +117,4 @@ module.exports = {
   readNBytes,
   StreamObject,
   HashObject,
-  RecordStreamObject,
-  SignatureObject,
 };
