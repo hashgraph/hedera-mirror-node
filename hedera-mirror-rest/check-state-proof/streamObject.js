@@ -22,6 +22,7 @@
 
 const {SHA_384} = require('./constants');
 
+// the sum of the length field and the checksum field
 const SIMPLE_SUM = 101;
 
 /**
