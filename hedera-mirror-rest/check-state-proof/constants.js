@@ -20,6 +20,7 @@
 
 'use strict';
 
+// properties of SHA-384 hash algorithm
 const SHA_384 = {
   encoding: 'hex',
   length: 48,

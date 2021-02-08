@@ -23,6 +23,7 @@
 const {BYTE_SIZE, INT_SIZE, SHA_384} = require('./constants');
 const {readLengthAndBytes, readNBytes, HashObject, StreamObject} = require('./streamObject');
 
+// properties of SHA384WithRsa signature
 const SHA_384_WITH_RSA = {
   type: 1,
   maxLength: 384,
