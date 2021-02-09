@@ -36,7 +36,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 public class TokenUpdateTransactionsHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+    private final Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
@@ -78,7 +78,7 @@ public class TokenUpdateTransactionsHandlerTest extends AbstractUpdatesEntityTra
     ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setTokenUpdate(
                 TokenUpdateTransactionBody.newBuilder()
-                        .setAdminKey(adminKey)
+                        .setAdminKey(ADMIN_KEY)
                         .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
                         .setExpiry(EXPIRATION_TIME)
                         .build())
@@ -87,7 +87,7 @@ public class TokenUpdateTransactionsHandlerTest extends AbstractUpdatesEntityTra
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(adminKey.toByteArray());
+        entity.setKey(ADMIN_KEY.toByteArray());
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
         entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
     }

@@ -34,9 +34,9 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class CryptoCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
-
     private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
+
+    private final Key KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -66,14 +66,14 @@ class CryptoCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactio
         return TransactionBody.newBuilder().setCryptoCreateAccount(
                 CryptoCreateTransactionBody.newBuilder()
                         .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setKey(adminKey)
+                        .setKey(KEY)
                         .build())
                 .build().toByteString();
     }
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(adminKey.toByteArray());
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
+        entity.setKey(KEY.toByteArray());
     }
 }

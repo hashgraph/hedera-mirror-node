@@ -69,7 +69,7 @@ public abstract class AbstractUpdatesEntityTransactionHandlerTest extends Abstra
         return entity;
     }
 
-    protected Key getKey(String keyString) {
+    protected static Key getKey(String keyString) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
     }
 }

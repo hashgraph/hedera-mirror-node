@@ -34,7 +34,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ContractCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+    private final Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
@@ -67,8 +67,8 @@ class ContractCreateTransactionHandlerTest extends AbstractUpdatesEntityTransact
     ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setContractCreateInstance(
                 ContractCreateTransactionBody.newBuilder()
+                        .setAdminKey(ADMIN_KEY)
                         .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setAdminKey(adminKey)
                         .setMemo(MEMO)
                         .build())
                 .build().toByteString();
@@ -76,8 +76,8 @@ class ContractCreateTransactionHandlerTest extends AbstractUpdatesEntityTransact
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(adminKey.toByteArray());
-        entity.setMemo(MEMO);
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
+        entity.setKey(ADMIN_KEY.toByteArray());
+        entity.setMemo(MEMO);
     }
 }

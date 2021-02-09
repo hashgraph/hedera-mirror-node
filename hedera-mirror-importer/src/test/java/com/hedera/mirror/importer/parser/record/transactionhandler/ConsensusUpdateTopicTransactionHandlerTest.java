@@ -36,15 +36,15 @@ import com.hedera.mirror.importer.util.Utility;
 
 class ConsensusUpdateTopicTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
-
-    private final Key submitKey = getKey("submitKey");
+    private final static Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
+    private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
+
     private static final String MEMO = "consensusCreateTopicMemo";
 
-    private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
+    private final static Key SUBMIT_KEY = getKey("5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -67,21 +67,21 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractUpdatesEntityTr
     ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setConsensusUpdateTopic(
                 ConsensusUpdateTopicTransactionBody.newBuilder()
+                        .setAdminKey(ADMIN_KEY)
                         .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setAdminKey(adminKey)
-                        .setSubmitKey(submitKey)
                         .setExpirationTime(EXPIRATION_TIME)
                         .setMemo(StringValue.of(MEMO))
+                        .setSubmitKey(SUBMIT_KEY)
                         .build())
                 .build().toByteString();
     }
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(adminKey.toByteArray());
-        entity.setSubmitKey(submitKey.toByteArray());
-        entity.setMemo(MEMO);
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
         entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
+        entity.setKey(ADMIN_KEY.toByteArray());
+        entity.setMemo(MEMO);
+        entity.setSubmitKey(SUBMIT_KEY.toByteArray());
     }
 }

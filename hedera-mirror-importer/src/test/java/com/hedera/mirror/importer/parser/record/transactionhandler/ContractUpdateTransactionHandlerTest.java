@@ -35,13 +35,13 @@ import com.hedera.mirror.importer.util.Utility;
 
 class ContractUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+    private final Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
-    private static final String MEMO = "consensusCreateTopicMemo";
-
     private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
+
+    private static final String MEMO = "consensusCreateTopicMemo";
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -64,8 +64,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransact
     ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setContractUpdateInstance(
                 ContractUpdateTransactionBody.newBuilder()
+                        .setAdminKey(ADMIN_KEY)
                         .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setAdminKey(adminKey)
                         .setExpirationTime(EXPIRATION_TIME)
                         .setMemo(MEMO)
                         .build())
@@ -74,9 +74,9 @@ class ContractUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransact
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(adminKey.toByteArray());
-        entity.setMemo(MEMO);
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
         entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
+        entity.setKey(ADMIN_KEY.toByteArray());
+        entity.setMemo(MEMO);
     }
 }

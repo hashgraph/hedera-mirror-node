@@ -36,7 +36,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+    private final Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     private static final String MEMO = "scheduleCreateMemo";
 
@@ -49,7 +49,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransact
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(adminKey)
+                        .setAdminKey(ADMIN_KEY)
                         .setPayerAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1)
                                 .build())
                         .setSigMap(SignatureMap.newBuilder()
@@ -83,7 +83,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransact
     protected ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setScheduleCreate(
                 ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(adminKey)
+                        .setAdminKey(ADMIN_KEY)
                         .setMemo(MEMO)
                         .build())
                 .build().toByteString();
@@ -91,7 +91,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransact
 
     @Override
     protected void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(adminKey.toByteArray());
+        entity.setKey(ADMIN_KEY.toByteArray());
         entity.setMemo(MEMO);
     }
 }

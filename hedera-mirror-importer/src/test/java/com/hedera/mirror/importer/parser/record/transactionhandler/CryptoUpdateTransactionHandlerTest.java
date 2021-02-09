@@ -35,11 +35,11 @@ import com.hedera.mirror.importer.util.Utility;
 
 class CryptoUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
-
     private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
     private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
+
+    private final Key KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -63,16 +63,16 @@ class CryptoUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactio
         return TransactionBody.newBuilder().setCryptoUpdateAccount(
                 CryptoUpdateTransactionBody.newBuilder()
                         .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setKey(adminKey)
                         .setExpirationTime(EXPIRATION_TIME)
+                        .setKey(KEY)
                         .build())
                 .build().toByteString();
     }
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(adminKey.toByteArray());
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
         entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
+        entity.setKey(KEY.toByteArray());
     }
 }
