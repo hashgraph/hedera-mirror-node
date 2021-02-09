@@ -19,6 +19,7 @@ select set_integer_now_func('address_book', 'unix_now');
 select set_integer_now_func('address_book_entry', 'unix_now');
 select set_integer_now_func('contract_result', 'unix_now');
 select set_integer_now_func('crypto_transfer', 'unix_now');
+select set_integer_now_func('event_file', 'unix_now');
 select set_integer_now_func('file_data', 'unix_now');
 select set_integer_now_func('non_fee_transfer', 'unix_now');
 select set_integer_now_func('schedule', 'unix_now');
@@ -54,6 +55,9 @@ alter table contract_result
 alter table crypto_transfer
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
 
+alter table event_file
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
+
 alter table file_data
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
 
@@ -63,14 +67,14 @@ alter table live_hash
 alter table non_fee_transfer
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
 
+alter table record_file
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
+
 alter table schedule
     set (timescaledb.compress, timescaledb.compress_segmentby = 'schedule_id');
 
 alter table schedule_signature
     set (timescaledb.compress, timescaledb.compress_segmentby = 'schedule_id');
-
-alter table record_file
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
 
 alter table t_entities
     set (timescaledb.compress, timescaledb.compress_segmentby = 'fk_entity_type_id');
@@ -108,10 +112,13 @@ select add_compression_policy('address_book', bigint '${compressionAge}');
 select add_compression_policy('address_book_entry', bigint '${compressionAge}');
 select add_compression_policy('contract_result', bigint '${compressionAge}');
 select add_compression_policy('crypto_transfer', bigint '${compressionAge}');
+select add_compression_policy('event_file', bigint '${compressionAge}');
 select add_compression_policy('file_data', bigint '${compressionAge}');
 select add_compression_policy('live_hash', bigint '${compressionAge}');
 select add_compression_policy('non_fee_transfer', bigint '${compressionAge}');
 select add_compression_policy('record_file', bigint '${compressionAge}');
+select add_compression_policy('schedule', bigint '${compressionAge}');
+select add_compression_policy('schedule_signature', bigint '${compressionAge}');
 select add_compression_policy('t_entities', bigint '${compressionAge}');
 select add_compression_policy('token', bigint '${compressionAge}');
 select add_compression_policy('token_account', bigint '${compressionAge}');

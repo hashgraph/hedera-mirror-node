@@ -23,11 +23,13 @@ package com.hedera.mirror.importer.reader.event;
 import com.google.common.primitives.Ints;
 import java.io.DataInputStream;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
@@ -36,7 +38,7 @@ import com.hedera.mirror.importer.parser.domain.EventItem;
 @Named
 public class EventFileReaderV3 implements EventFileReader {
 
-    private static final String HASH_ALGORITHM = "SHA-384";
+    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
     public static final byte EVENT_TYPE_PREV_HASH = 1; // next 48 bytes are SHA-384 hash of previous files
     public static final int EVENT_PREV_HASH_LENGTH = 48; // SHA-384 - 48 bytes
     public static final byte EVENT_STREAM_FILE_VERSION_2 = 2;
@@ -45,6 +47,12 @@ public class EventFileReaderV3 implements EventFileReader {
     @Override
     public EventFile read(StreamFileData streamFileData, Consumer<EventItem> itemConsumer) {
         String fileName = streamFileData.getFilename();
+        EventFile eventFile = new EventFile();
+        eventFile.setBytes(streamFileData.getBytes());
+        eventFile.setCount(0L);
+        eventFile.setDigestAlgorithm(DIGEST_ALGORITHM);
+        eventFile.setLoadStart(Instant.now().getEpochSecond());
+        eventFile.setName(FilenameUtils.getName(fileName));
 
         try (DataInputStream dis = new DataInputStream(streamFileData.getInputStream())) {
             // MessageDigest for getting the file Hash
@@ -55,7 +63,7 @@ public class EventFileReaderV3 implements EventFileReader {
             // '||' means concatenation
             // for Version2, h[i + 1] = hash(p[i] || h[i] || c[i]);
             // for Version3, h[i + 1] = hash(p[i] || h[i] || hash(c[i]))
-            MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
+            MessageDigest md = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
 
             int fileVersion = dis.readInt();
             md.update(Ints.toByteArray(fileVersion));
@@ -79,18 +87,14 @@ public class EventFileReaderV3 implements EventFileReader {
                 if (fileVersion == EVENT_STREAM_FILE_VERSION_2) {
                     md.update(remaining);
                 } else {
-                    MessageDigest mdForEventData = MessageDigest.getInstance(HASH_ALGORITHM);
+                    MessageDigest mdForEventData = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
                     md.update(mdForEventData.digest(remaining));
                 }
             }
 
             String fileHash = Hex.encodeHexString(md.digest());
-            EventFile eventFile = new EventFile();
-            eventFile.setBytes(streamFileData.getBytes());
-            eventFile.setCount(0L);
             eventFile.setFileHash(fileHash);
             eventFile.setHash(fileHash);
-            eventFile.setName(FilenameUtils.getName(fileName));
             eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
             eventFile.setVersion(fileVersion);
             return eventFile;

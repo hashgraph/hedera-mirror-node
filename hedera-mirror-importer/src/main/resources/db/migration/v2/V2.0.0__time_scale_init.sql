@@ -14,11 +14,12 @@ comment on table account_balance is 'Account balances (historical) in tinybars a
 
 create table if not exists account_balance_file
 (
+    bytes               bytea        null,
     consensus_timestamp bigint       not null,
     count               bigint       not null,
-    load_start          bigint,
-    load_end            bigint,
-    file_hash           varchar(96),
+    file_hash           varchar(96)  null,
+    load_start          bigint       not null,
+    load_end            bigint       not null,
     name                varchar(250) not null,
     node_account_id     bigint       not null
 );
@@ -80,6 +81,24 @@ create table if not exists crypto_transfer
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
+-- event_file
+create table if not exists event_file
+(
+    bytes            bytea                  null,
+    consensus_start  bigint                 not null,
+    consensus_end    bigint                 not null,
+    count            bigint                 not null,
+    digest_algorithm int                    not null,
+    file_hash        character varying(96)  not null,
+    hash             character varying(96)  not null,
+    load_start       bigint                 not null,
+    load_end         bigint                 not null,
+    name             character varying(250) not null,
+    node_account_id  bigint                 not null,
+    previous_hash    character varying(96)  not null,
+    version          integer                not null
+);
+
 -- file_data
 create table if not exists file_data
 (
@@ -110,21 +129,22 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 -- id seq from v1.0 no longer explicitly created as s_record_files_seq
 create table if not exists record_file
 (
-    id                 serial,
-    name               character varying(250) not null,
-    load_start         bigint,
-    load_end           bigint,
-    hash               character varying(96),
-    file_hash          character varying(96),
-    prev_hash          character varying(96),
+    bytes              bytea                  null,
     consensus_start    bigint default 0       not null,
     consensus_end      bigint default 0       not null,
-    node_account_id    bigint                 not null,
     count              bigint                 not null,
     digest_algorithm   int                    not null,
+    file_hash          character varying(96)  not null,
     hapi_version_major int,
     hapi_version_minor int,
     hapi_version_patch int,
+    hash               character varying(96)  not null,
+    id                 serial                 not null,
+    load_start         bigint                 not null,
+    load_end           bigint                 not null,
+    name               character varying(250) not null,
+    node_account_id    bigint                 not null,
+    prev_hash          character varying(96)  not null,
     version            int                    not null
 );
 comment on table record_file is 'Network record file stream entries';

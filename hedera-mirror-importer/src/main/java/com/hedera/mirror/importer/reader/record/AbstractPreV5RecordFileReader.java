@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.NonNull;
@@ -57,6 +58,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)) {
             RecordFile recordFile = new RecordFile();
             recordFile.setBytes(streamFileData.getBytes());
+            recordFile.setLoadStart(Instant.now().getEpochSecond());
             recordFile.setName(filename);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
 
