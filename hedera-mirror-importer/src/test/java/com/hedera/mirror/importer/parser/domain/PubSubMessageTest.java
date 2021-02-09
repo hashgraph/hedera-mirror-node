@@ -155,7 +155,9 @@ class PubSubMessageTest {
                 "        \"shardNum\": \"0\"," +
                 "        \"realmNum\": \"0\"," +
                 "        \"accountNum\": \"10\"" +
-                "      }" +
+                "      }," +
+                "      \"scheduled\": false," +
+                "      \"nonce\": \"\"" +
                 "    }," +
                 "    \"nodeAccountID\": {" +
                 "      \"shardNum\": \"0\"," +
