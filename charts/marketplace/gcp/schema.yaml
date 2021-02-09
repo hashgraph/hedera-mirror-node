@@ -54,12 +54,6 @@ x-google-marketplace:
           type: REPO_WITH_REGISTRY
         grpc.image.tag:
           type: TAG
-    monitor:
-      properties:
-        monitor.image.repository:
-          type: REPO_WITH_REGISTRY
-        monitor.image.tag:
-          type: TAG
     postgresql-repmgr:
       properties:
         postgresql.postgresqlImage.registry:
@@ -73,12 +67,6 @@ x-google-marketplace:
         rest.image.repository:
           type: REPO_WITH_REGISTRY
         rest.image.tag:
-          type: TAG
-    redis:
-      properties:
-        redis.image.repository:
-          type: REPO_WITH_REGISTRY
-        redis.image.tag:
           type: TAG
     test:
       properties:

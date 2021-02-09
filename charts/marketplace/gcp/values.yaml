@@ -9,9 +9,6 @@ global:
   db:
     host: RELEASE-NAME-postgres-postgresql
     schema: mirrornode
-  redis:
-    host: RELEASE-NAME-redis
-    password: redis_password
   rest:
     username: mirror_api
     password: mirror_api_pass
@@ -19,6 +16,11 @@ global:
 
 grpc:
   config:
+    hedera:
+      mirror:
+        grpc:
+          listener:
+            type: NOTIFY
     management:
       endpoint:
         health:
@@ -58,19 +60,12 @@ importer:
               exclude: redis
   rbac:
     enabled: false
-  redis:
-    sentinel:
-      masterSet: mirror
   replicas: 1
   serviceAccount:
     create: false
 
 monitor:
   enabled: false
-  rbac:
-    enabled: false
-  serviceAccount:
-    create: false
 
 postgresql:
   pgpool:
@@ -81,14 +76,7 @@ postgresql:
     tag: 11.10.0-debian-10-r83
 
 redis:
-  cluster:
-    slaveCount: 1
-  enabled: true
-  image:
-    tag: 6.0.10-debian-10-r22
-  sentinel:
-    enabled: true
-    masterSet: mirror
+  enabled: false
 
 rest:
   config:

@@ -22,7 +22,6 @@ target_tag="${target_tag#v}" # Strip v prefix if present
 target_tag_minor="${target_tag%\.*}"
 bats_tag="1.2.1"
 postgresql_tag="11.10.0-debian-10-r83"
-redis_tag="6.0.10-debian-10-r22"
 registry="gcr.io/mirror-node-public/hedera-mirror-node"
 
 function retag() {
@@ -56,11 +55,9 @@ docker push "${registry}/deployer:${target_tag}"
 # Retag other images
 retag "bats/bats:${bats_tag}" "test"
 retag "bitnami/postgresql-repmgr:${postgresql_tag}" "postgresql-repmgr"
-retag "bitnami/redis:${redis_tag}" "redis"
 retag "${registry}/deployer:${target_tag}" "deployer"
 retag "gcr.io/mirrornode/hedera-mirror-grpc:${source_tag}" "grpc"
 retag "gcr.io/mirrornode/hedera-mirror-importer:${source_tag}" ""
-retag "gcr.io/mirrornode/hedera-mirror-monitor:${source_tag}" "monitor"
 retag "gcr.io/mirrornode/hedera-mirror-rest:${source_tag}" "rest"
 
 mv values.yaml.bak values.yaml
