@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -29,7 +28,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Files;
@@ -58,17 +56,13 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
 abstract class AbstractRecordFileParserTest {
     @TempDir
     Path dataPath;
-    @Mock
-    private ApplicationStatusRepository applicationStatusRepository;
     @Mock
     private RecordItemListener recordItemListener;
     @Mock(lenient = true)
@@ -138,22 +132,6 @@ abstract class AbstractRecordFileParserTest {
         // then
         verify(recordStreamFileListener, never()).onError();
         assertAllProcessed();
-    }
-
-    @Test
-    void hashMismatch() {
-        // given
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
-
-        // when
-        Assertions.assertThrows(HashMismatchException.class, () -> {
-            recordFileParser.parse(recordFile1);
-        });
-
-        // then
-        verify(recordStreamFileListener).onStart();
-        verify(recordStreamFileListener, never()).onEnd(any());
-        verify(recordStreamFileListener).onError();
     }
 
     @Test

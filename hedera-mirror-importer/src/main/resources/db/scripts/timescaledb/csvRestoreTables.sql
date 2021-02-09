@@ -24,8 +24,6 @@
 
 \copy record_file from record_file.csv csv;
 
-\copy t_application_status from t_application_status.csv csv;
-
 \copy t_entities from t_entities.csv csv;
 
 \copy t_entity_types from t_entity_types.csv csv;

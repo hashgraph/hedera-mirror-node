@@ -24,8 +24,6 @@
 
 \copy record_file to record_file.csv delimiter ',' csv;
 
-\copy t_application_status to t_application_status.csv delimiter ',' csv;
-
 \copy t_entities to t_entities.csv delimiter ',' csv;
 
 \copy t_entity_types to t_entity_types.csv delimiter ',' csv;

@@ -36,10 +36,10 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
-        doReturn(streamFile("2019-01-01T01_00_00.000000Z." + downloaderProperties.getStreamType()
-                .getExtension(), "123"))
-                .when(streamFileRepository)
-                .findLatest();
+        doReturn("2019-01-01T01_00_00.000000Z." + downloaderProperties.getStreamType())
+                .when(dateRangeProcessor)
+                .getEffectiveStartDate(downloaderProperties);
+
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertNoFilesinValidPath();
@@ -47,11 +47,10 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
 
     @Test
     @DisplayName("Bypass previous hash mismatch")
-    void hashMismatchWithBypass() throws Exception {
-        doReturn(streamFile("2019-01-01T14_12_00.000000Z." + downloaderProperties.getStreamType()
-                .getExtension(), "123"))
-                .when(streamFileRepository)
-                .findLatest();
+    void hashMismatchWithBypass() {
+        doReturn("2019-01-01T14_12_00.000000Z." + downloaderProperties.getStreamType())
+                .when(dateRangeProcessor)
+                .getEffectiveStartDate(downloaderProperties);
 
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash

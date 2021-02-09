@@ -37,7 +37,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -59,7 +58,6 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
@@ -73,7 +71,6 @@ import com.hedera.mirror.importer.repository.TokenRepository;
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
     private final DataSource dataSource;
-    private final ApplicationStatusRepository applicationStatusRepository;
     private final EntityRepository entityRepository;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
@@ -110,12 +107,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
-                             ApplicationStatusRepository applicationStatusRepository,
                              EntityRepository entityRepository, ApplicationEventPublisher eventPublisher,
                              TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository,
                              ScheduleRepository scheduleRepository) {
         this.dataSource = dataSource;
-        this.applicationStatusRepository = applicationStatusRepository;
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
@@ -161,8 +156,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         executeBatches();
         recordFileRepository.save(recordFile);
-        applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getHash());
     }
 
     @Override

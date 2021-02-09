@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,18 +40,16 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.MissingFileException;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+@RequiredArgsConstructor
 abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
 
     private final static EntityId NODE_ACCOUNT_ID = EntityId.of(TestUtils.toAccountId("0.0.3"));
@@ -69,9 +68,6 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
     private RecordParserProperties parserProperties;
 
     @Resource
-    private ApplicationStatusRepository applicationStatusRepository;
-
-    @Resource
     private CryptoTransferRepository cryptoTransferRepository;
 
     @Resource
@@ -88,14 +84,6 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
 
     private RecordFile recordFile1;
     private RecordFile recordFile2;
-    private StreamFileData streamFileData1;
-    private StreamFileData streamFileData2;
-
-    AbstractRecordFileParserIntegrationTest(RecordFileDescriptor recordFileDescriptor1,
-                                            RecordFileDescriptor recordFileDescriptor2) {
-        this.recordFileDescriptor1 = recordFileDescriptor1;
-        this.recordFileDescriptor2 = recordFileDescriptor2;
-    }
 
     @BeforeEach
     void before() {
@@ -112,9 +100,6 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
                 .from(StreamType.RECORD.getPath(), "v" + recordFile1.getVersion(), "record0.0.3")
                 .filterFiles("*.rcd");
         fileCopier.copy();
-
-        streamFileData1 = StreamFileData.from(dataPath.resolve(recordFile1.getName()).toFile());
-        streamFileData2 = StreamFileData.from(dataPath.resolve(recordFile2.getName()).toFile());
     }
 
     @Test
@@ -160,13 +145,13 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
         int cryptoTransferCount = 0;
         int entityCount = 0;
         int transactionCount = 0;
-        String lastFileHash = "";
+        String lastHash = "";
 
         for (RecordFileDescriptor descriptor : recordFileDescriptors) {
             cryptoTransferCount += descriptor.getCryptoTransferCount();
             entityCount += descriptor.getEntityCount();
             transactionCount += descriptor.getRecordFile().getCount().intValue();
-            lastFileHash = descriptor.getRecordFile().getHash();
+            lastHash = descriptor.getRecordFile().getHash();
         }
         assertEquals(transactionCount, transactionRepository.count());
         assertEquals(cryptoTransferCount, cryptoTransferRepository.count());
@@ -181,9 +166,7 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
                     assertThat(rf.getLoadStart()).isGreaterThan(0L);
                     assertThat(rf.getLoadEnd()).isGreaterThan(0L);
                     assertThat(rf.getLoadEnd()).isGreaterThanOrEqualTo(rf.getLoadStart());
-                });
-        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH))
-                .isEqualTo(lastFileHash);
+                }).last().extracting(RecordFile::getHash).isEqualTo(lastHash);
     }
 
     @lombok.Value

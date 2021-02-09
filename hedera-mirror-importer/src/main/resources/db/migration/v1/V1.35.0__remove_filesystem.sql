@@ -29,4 +29,4 @@ delete
 from record_file
 where load_end is null;
 
---drop table if exists t_application_status;
+drop table if exists t_application_status;

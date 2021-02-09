@@ -54,6 +54,8 @@ public interface StreamFile {
 
     String getName();
 
+    void setName(String name);
+
     EntityId getNodeAccountId();
 
     void setNodeAccountId(@NonNull EntityId nodeAccountId);

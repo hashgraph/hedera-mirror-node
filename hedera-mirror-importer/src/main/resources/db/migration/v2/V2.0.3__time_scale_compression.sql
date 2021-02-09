@@ -72,8 +72,6 @@ alter table schedule_signature
 alter table record_file
     set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
 
--- t_application_status skipped
-
 alter table t_entities
     set (timescaledb.compress, timescaledb.compress_segmentby = 'fk_entity_type_id');
 

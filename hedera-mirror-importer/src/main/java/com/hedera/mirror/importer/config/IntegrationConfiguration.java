@@ -53,7 +53,7 @@ public class IntegrationConfiguration {
     }
 
     @Bean
-    IntegrationFlow streamFileGateway() {
+    IntegrationFlow streamFileRouter() {
         return IntegrationFlows.from(CHANNEL_STREAM)
                 .route(StreamFile.class, s -> s.getType().toString().toLowerCase(), s -> s.prefix(CHANNEL_STREAM + "."))
                 .get();

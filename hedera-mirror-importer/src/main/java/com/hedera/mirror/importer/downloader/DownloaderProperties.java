@@ -21,10 +21,8 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import java.nio.file.Path;
-import java.time.Duration;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
 
 public interface DownloaderProperties {
@@ -64,8 +62,4 @@ public interface DownloaderProperties {
     boolean isKeepSignatures();
 
     void setKeepSignatures(boolean keepSignatures);
-
-    ApplicationStatusCode getLastValidDownloadedFileKey();
-
-    Duration getStartDateAdjustment();
 }

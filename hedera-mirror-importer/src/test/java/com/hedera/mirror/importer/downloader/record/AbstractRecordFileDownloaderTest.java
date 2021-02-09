@@ -47,7 +47,6 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     @BeforeEach
     protected void beforeEach() throws Exception {
         super.beforeEach();
-        streamFileRepository = recordFileRepository;
         recordFileMap = getRecordFileMap();
         setTestFilesAndInstants(recordFileMap.keySet().stream().sorted().collect(Collectors.toList()));
     }
@@ -63,8 +62,8 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     protected Downloader getDownloader() {
         RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5());
-        return new RecordFileDownloader(s3AsyncClient, recordFileRepository, addressBookService,
+        return new RecordFileDownloader(s3AsyncClient, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier);
+                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, dateRangeProcessor);
     }
 }

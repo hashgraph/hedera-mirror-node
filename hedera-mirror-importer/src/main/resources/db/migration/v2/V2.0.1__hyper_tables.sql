@@ -57,8 +57,6 @@ select create_hypertable('schedule_signature', 'consensus_timestamp', chunk_time
 select create_hypertable('record_file', 'consensus_start', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
--- t_application_status hyper table creation skipped as it serves only as a reference table
-
 -- t_entities
 select create_hypertable('t_entities', 'id', chunk_time_interval => ${chunkIdInterval},
                          create_default_indexes => false, if_not_exists => true);

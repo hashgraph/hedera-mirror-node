@@ -73,6 +73,7 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
@@ -85,7 +86,6 @@ import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
-import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -94,7 +94,8 @@ public abstract class AbstractDownloaderTest {
 
     @Mock
     protected StreamFileNotifier streamFileNotifier;
-    protected StreamFileRepository<?, ?> streamFileRepository;
+    @Mock
+    protected MirrorDateRangePropertiesProcessor dateRangeProcessor;
     @Mock(lenient = true)
     protected AddressBookService addressBookService;
     @Mock
@@ -154,17 +155,9 @@ public abstract class AbstractDownloaderTest {
         }
     }
 
-    protected Downloader prepareDownloader() {
-        var downloader = getDownloader();
-        downloader.onMirrorDateRangePropertiesProcessedEvent();
-        return downloader;
-    }
-
     // Implementation can assume that mirrorProperties and commonDownloaderProperties have been initialized.
     protected abstract DownloaderProperties getDownloaderProperties();
 
-    // Implementations can assume that s3AsyncClient, applicationStatusRepository, addressBookService and
-    // downloaderProperties have been initialized.
     protected abstract Downloader getDownloader();
 
     protected abstract Path getTestDataDir();
@@ -192,7 +185,7 @@ public abstract class AbstractDownloaderTest {
         signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
                 new SignatureFileReaderV5());
         nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
-        downloader = prepareDownloader();
+        downloader = getDownloader();
         streamType = downloaderProperties.getStreamType();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -284,7 +277,7 @@ public abstract class AbstractDownloaderTest {
         String nodeAccountId = entries.get(0).getNodeAccountIdString();
         log.info("Only copy node {}'s stream files and signature files for a 3-node network", nodeAccountId);
         fileCopier.filterDirectories("*" + nodeAccountId).copy();
-        prepareDownloader().download();
+        downloader.download();
 
         verifyForSuccess();
     }
@@ -369,7 +362,7 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
         verifyForSuccess();
 
-        Mockito.reset(streamFileRepository);
+        Mockito.reset(dateRangeProcessor);
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
         Files.walk(downloaderProperties.getSignaturesPath())
                 .filter(this::isSigFile)
@@ -418,7 +411,7 @@ public abstract class AbstractDownloaderTest {
         Duration interval = getCloseInterval().multipliedBy(2);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
         String lastFileName = Utility.getStreamFilenameFromInstant(streamType, lastFileInstant);
-        doReturn(streamFile(lastFileName, "")).when(streamFileRepository).findLatest();
+        doReturn(lastFileName).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
 
         fileCopier.copy();
         downloader.download();
@@ -430,9 +423,9 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(streamFile(Utility.getStreamFilenameFromInstant(streamType, Instant.now()), ""))
-                .when(streamFileRepository)
-                .findLatest();
+        doReturn(Utility.getStreamFilenameFromInstant(streamType, Instant.now()))
+                .when(dateRangeProcessor)
+                .getEffectiveStartDate(downloaderProperties);
         fileCopier.copy();
         downloader.download();
         verifyForSuccess(List.of());
@@ -448,11 +441,9 @@ public abstract class AbstractDownloaderTest {
     })
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
-        RecordFile streamFile = new RecordFile();
-        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, startDate));
-        doReturn(streamFile)
-                .when(streamFileRepository)
-                .findLatest();
+        doReturn(Utility.getStreamFilenameFromInstant(streamType, startDate))
+                .when(dateRangeProcessor)
+                .getEffectiveStartDate(downloaderProperties);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
@@ -539,10 +530,7 @@ public abstract class AbstractDownloaderTest {
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
-        RecordFile streamFile = new RecordFile();
-        streamFile.setName(file1);
-        doReturn(streamFile).when(streamFileRepository)
-                .findLatest();
+        doReturn(file1).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
 
         downloader.download();
 

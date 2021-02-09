@@ -151,26 +151,6 @@ create table if not exists schedule_signature
 );
 comment on table schedule is 'Schedule transaction signatories';
 
--- t_application_status
-create table if not exists t_application_status
-(
-    status_name  character varying(40),
-    status_code  character varying(40),
-    status_value character varying(100)
-);
-comment on table t_application_status is 'Parser application status cache values. Assists continuity between parser restarts';
-
-insert into t_application_status (status_name, status_code)
-values ('Last valid downloaded record file name', 'LAST_VALID_DOWNLOADED_RECORD_FILE'),
-       ('Last valid downloaded record file hash', 'LAST_VALID_DOWNLOADED_RECORD_FILE_HASH'),
-       ('Last valid downloaded balance file name', 'LAST_VALID_DOWNLOADED_BALANCE_FILE'),
-       ('Last valid downloaded event file name', 'LAST_VALID_DOWNLOADED_EVENT_FILE'),
-       ('Last valid downloaded event file hash', 'LAST_VALID_DOWNLOADED_EVENT_FILE_HASH'),
-       ('Event hash mismatch bypass until after', 'EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER'),
-       ('Record hash mismatch bypass until after', 'RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER'),
-       ('Last processed record hash', 'LAST_PROCESSED_RECORD_HASH'),
-       ('Last processed event hash', 'LAST_PROCESSED_EVENT_HASH');
-
 -- t_entities
 create table if not exists t_entities
 (
@@ -515,7 +495,7 @@ create table if not exists transaction
     valid_duration_seconds bigint,
     node_account_id        bigint   not null,
     entity_id              bigint,
-    initial_balance        bigint   default 0,
+    initial_balance        bigint            default 0,
     max_fee                bigint,
     charged_tx_fee         bigint,
     memo                   bytea,

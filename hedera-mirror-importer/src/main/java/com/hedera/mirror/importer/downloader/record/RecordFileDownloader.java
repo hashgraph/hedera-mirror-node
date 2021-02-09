@@ -30,6 +30,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -38,7 +39,6 @@ import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
 public class RecordFileDownloader extends Downloader {
@@ -47,13 +47,15 @@ public class RecordFileDownloader extends Downloader {
     private final Timer streamCloseMetric;
 
     public RecordFileDownloader(
-            S3AsyncClient s3Client, RecordFileRepository recordFileRepository,
-            AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
+            S3AsyncClient s3Client, AddressBookService addressBookService,
+            RecordDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader, RecordFileReader recordFileReader,
-            StreamFileNotifier streamFileNotifier) {
-        super(s3Client, recordFileRepository, addressBookService, downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier);
+            StreamFileNotifier streamFileNotifier,
+            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+        super(s3Client, addressBookService, downloaderProperties, meterRegistry,
+                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier,
+                mirrorDateRangePropertiesProcessor);
 
         downloadLatencyMetric = Timer.builder("hedera.mirror.download.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file " +

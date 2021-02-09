@@ -22,8 +22,8 @@ package com.hedera.mirror.importer.parser.event;
 
 import static com.hedera.mirror.importer.config.IntegrationConfiguration.CHANNEL_EVENT;
 
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.Poller;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.retry.annotation.Backoff;
@@ -33,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 
-@Named
+@MessageEndpoint
 @RequiredArgsConstructor
 public class EventFileParser implements StreamFileParser<EventFile> {
 
@@ -42,6 +42,7 @@ public class EventFileParser implements StreamFileParser<EventFile> {
     @ServiceActivator(inputChannel = CHANNEL_EVENT,
             poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.event.frequency:100}")
     )
+
     @Transactional
     public void parse(EventFile eventFile) {
         // Event parsing not implemented yet

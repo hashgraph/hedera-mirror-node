@@ -45,7 +45,6 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
     @BeforeEach
     protected void beforeEach() throws Exception {
         super.beforeEach();
-        streamFileRepository = eventFileRepository;
         setTestFilesAndInstants(List.of("2020-04-11T00_12_00.025035Z.evts", "2020-04-11T00_12_05.059945Z.evts"));
     }
 
@@ -58,9 +57,10 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
     protected Downloader getDownloader() {
-        return new EventFileDownloader(s3AsyncClient, eventFileRepository, addressBookService,
+        return new EventFileDownloader(s3AsyncClient, addressBookService,
                 (EventDownloaderProperties) downloaderProperties, meterRegistry,
-                new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader, streamFileNotifier);
+                new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader, streamFileNotifier,
+                dateRangeProcessor);
     }
 
     @Override

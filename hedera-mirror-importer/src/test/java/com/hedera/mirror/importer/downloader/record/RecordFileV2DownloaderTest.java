@@ -65,7 +65,7 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
 
-        prepareDownloader().download();
+        downloader.download();
 
         verifyStreamFiles(List.of("2019-07-01T14:13:00.317763Z.rcd", "2019-07-01T14:29:00.302068Z.rcd"));
     }

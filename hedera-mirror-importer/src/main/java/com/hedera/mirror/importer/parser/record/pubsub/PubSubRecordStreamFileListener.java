@@ -23,11 +23,9 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
@@ -36,7 +34,6 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 public class PubSubRecordStreamFileListener implements RecordStreamFileListener {
 
     private final RecordFileRepository recordFileRepository;
-    private final ApplicationStatusRepository applicationStatusRepository;
 
     @Override
     public void onStart() throws ImporterException {
@@ -45,8 +42,6 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     @Override
     public void onEnd(RecordFile recordFile) throws ImporterException {
         recordFileRepository.save(recordFile);
-        applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getHash());
     }
 
     @Override

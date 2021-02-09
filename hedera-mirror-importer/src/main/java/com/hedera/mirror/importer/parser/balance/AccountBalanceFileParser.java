@@ -34,9 +34,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.Poller;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -57,7 +57,7 @@ import com.hedera.mirror.importer.util.Utility;
  * Parse an account balances file and load it into the database.
  */
 @Log4j2
-@Named
+@MessageEndpoint
 public class AccountBalanceFileParser implements StreamFileParser<AccountBalanceFile> {
 
     private static final String INSERT_SET_STATEMENT = "insert into account_balance_sets (consensus_timestamp) " +

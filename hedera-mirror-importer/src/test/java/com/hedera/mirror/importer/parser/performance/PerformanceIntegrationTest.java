@@ -42,12 +42,11 @@ import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCh
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.db.DBProperties;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -77,7 +76,7 @@ public abstract class PerformanceIntegrationTest {
     private DBProperties dbProperties;
 
     @Resource
-    private ApplicationStatusRepository applicationStatusRepository;
+    private RecordFileRepository recordFileRepository;
 
     @Resource
     private EntityRepository entityRepository;
@@ -122,7 +121,7 @@ public abstract class PerformanceIntegrationTest {
 
     void checkSeededTablesArePresent() throws SQLException {
         String[] tables = new String[] {"account_balance_sets", "account_balance", "flyway_schema_history",
-                "non_fee_transfer", "t_application_status", "contract_result", "crypto_transfer",
+                "non_fee_transfer", "contract_result", "crypto_transfer",
                 "t_entities", "t_entity_types", "file_data", "live_hash", "record_file",
                 "t_transaction_results",
                 "t_transaction_types", "transaction", "topic_message"
@@ -158,8 +157,10 @@ public abstract class PerformanceIntegrationTest {
         assertThat(count).isGreaterThan(0);
     }
 
-    void clearLastProcessedRecordHash() throws SQLException {
-        log.debug("Clear LastProcessedRecordHash");
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "");
+    void clearLastProcessedRecordHash() {
+        recordFileRepository.findLatest().ifPresent(r -> {
+            r.setHash("");
+            recordFileRepository.save(r);
+        });
     }
 }

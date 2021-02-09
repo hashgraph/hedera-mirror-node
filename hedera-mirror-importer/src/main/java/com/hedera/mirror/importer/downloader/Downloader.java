@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.context.event.EventListener;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -58,17 +57,17 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.config.event.MirrorDateRangePropertiesProcessedEvent;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -83,9 +82,9 @@ public abstract class Downloader {
     private final CommonDownloaderProperties commonDownloaderProperties;
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
-    protected final StreamFileRepository<?, ?> streamFileRepository;
     protected final StreamFileReader<?, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
+    protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     private Optional<StreamFile> lastStreamFile = Optional.empty();
 
@@ -94,15 +93,13 @@ public abstract class Downloader {
     private final Counter.Builder signatureVerificationMetric;
     private final Timer.Builder streamVerificationMetric;
 
-    private boolean mirrorDateRangePropertiesProcessed = false;
-
-    public Downloader(S3AsyncClient s3Client, StreamFileRepository<?, ?> streamFileRepository,
+    public Downloader(S3AsyncClient s3Client,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
                       MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
                       SignatureFileReader signatureFileReader, StreamFileReader<?, ?> streamFileReader,
-                      StreamFileNotifier streamFileNotifier) {
+                      StreamFileNotifier streamFileNotifier,
+                      MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.s3Client = s3Client;
-        this.streamFileRepository = streamFileRepository;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
         this.meterRegistry = meterRegistry;
@@ -111,6 +108,7 @@ public abstract class Downloader {
         this.signatureFileReader = signatureFileReader;
         this.streamFileReader = streamFileReader;
         this.streamFileNotifier = streamFileNotifier;
+        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
         mirrorProperties = downloaderProperties.getMirrorProperties();
         commonDownloaderProperties = downloaderProperties.getCommon();
@@ -127,21 +125,13 @@ public abstract class Downloader {
                 .tag("type", streamType);
     }
 
-    @EventListener(MirrorDateRangePropertiesProcessedEvent.class)
-    public void onMirrorDateRangePropertiesProcessedEvent() {
-        mirrorDateRangePropertiesProcessed = true;
-    }
-
     public abstract void download();
 
     protected void downloadNextBatch() {
-        if (!mirrorDateRangePropertiesProcessed) {
-            return;
-        }
-
         if (!downloaderProperties.isEnabled()) {
             return;
         }
+
         if (ShutdownHelper.isStopping()) {
             return;
         }
@@ -163,21 +153,6 @@ public abstract class Downloader {
         } catch (Exception e) {
             log.error("Error downloading files", e);
         }
-    }
-
-    /**
-     * Returns the last signature file name that was successfully verified. On startup, this will be the last file
-     * successfully imported into the database since all files are downloaded into memory will have been discarded.
-     * Since 'foo.rcd' is lexicographically before 'foo.rcd_sig' we have to start listing from after 'foo.rcd_sig'.
-     *
-     * @return last signature file name
-     */
-    private String getLastSignature() {
-        return lastStreamFile
-                .or(streamFileRepository::findLatest)
-                .map(StreamFile::getName)
-                .map(name -> name + "_sig")
-                .orElse("");
     }
 
     /**
@@ -275,6 +250,26 @@ public abstract class Downloader {
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         }
         return sigFilesMap;
+    }
+
+    /**
+     * Returns the last signature file name that was successfully verified. On startup, this will be the last file
+     * successfully imported into the database since all files are downloaded into memory will have been discarded.
+     * Unless startDate or demo network is set, then those take precedence. Since 'foo.rcd' is lexicographically before
+     * 'foo.rcd_sig' we have to start listing from after 'foo.rcd_sig'.
+     *
+     * @return last signature file name
+     */
+    private String getLastSignature() {
+        return lastStreamFile
+                .map(StreamFile::getName)
+                .or(() -> {
+                    StreamType streamType = downloaderProperties.getStreamType();
+                    Instant startDate = mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties);
+                    return Optional.of(Utility.getStreamFilenameFromInstant(streamType, startDate));
+                })
+                .map(name -> name + "_sig")
+                .orElse("");
     }
 
     /**

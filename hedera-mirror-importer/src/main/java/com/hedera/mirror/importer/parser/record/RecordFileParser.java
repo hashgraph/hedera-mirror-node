@@ -154,7 +154,6 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
 
             Instant loadEnd = Instant.now();
             log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
-            recordFile.setLoadStart(startTime.getEpochSecond());
             recordFile.setLoadEnd(loadEnd.getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
 
