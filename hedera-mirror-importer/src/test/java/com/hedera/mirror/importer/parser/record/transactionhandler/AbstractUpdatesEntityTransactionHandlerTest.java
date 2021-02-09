@@ -36,7 +36,7 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public abstract class AbstractUpdatesEntityTransactionHandlerTest extends AbstractTransactionHandlerTest {
+abstract class AbstractUpdatesEntityTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     protected static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
