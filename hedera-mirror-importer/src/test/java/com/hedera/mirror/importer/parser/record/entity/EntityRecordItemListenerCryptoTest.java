@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -81,6 +82,9 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
 
+        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
+                INITIAL_BALANCE, Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId)));
+
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
@@ -92,33 +96,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 , () -> assertCryptoTransaction(transactionBody, record, false)
                 , () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp())
                 , () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
-        );
-    }
-
-    @Test
-    void cryptoCreateTransactionWithBody() throws Exception {
-        Transaction transaction = createTransactionWithBody();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
-
-        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                INITIAL_BALANCE, Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId)));
-
-        assertAll(
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
-                        .of(NODE), EntityId.of(TREASURY)),
-                () -> assertEquals(5, cryptoTransferRepository.count()),
-                () -> assertEquals(0, contractResultRepository.count()),
-                () -> assertEquals(0, liveHashRepository.count()),
-                () -> assertEquals(0, fileDataRepository.count()),
-                () -> assertCryptoTransaction(transactionBody, record, false),
-                () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), INITIAL_BALANCE),
-                () -> assertThat(initialBalanceTransfer).isPresent()
+                , () -> assertThat(initialBalanceTransfer).isPresent()
         );
     }
 
@@ -243,6 +221,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                         cryptoUpdateTransactionBody.getKey().toByteArray()), dbAccountEntity.getEd25519PublicKeyHex())
                 , () -> assertAccount(cryptoUpdateTransactionBody.getProxyAccountID(), dbProxyAccountId)
                 , () -> assertArrayEquals(cryptoUpdateTransactionBody.getKey().toByteArray(), dbAccountEntity.getKey())
+                , () -> assertEquals(cryptoUpdateTransactionBody.getMemo().getValue(), dbAccountEntity.getMemo())
                 , () -> assertEquals(Utility.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpiryTimeNs())
         );
@@ -626,6 +605,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 () -> assertEquals(Utility.protobufKeyToHexIfEd25519OrNull(expected.getKey().toByteArray()),
                         actualAccount.getEd25519PublicKeyHex()),
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
+                () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
                 () -> assertNull(actualAccount.getExpiryTimeNs()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccountId),
                 () -> assertNull(actualAccount.getExpiryTimeNs())
@@ -649,22 +629,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         return buildTransaction(builder -> builder.getCryptoCreateAccountBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
                 .setInitialBalance(INITIAL_BALANCE)
-                .setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
-                .setNewRealmAdminKey(keyFromString(
-                        "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
-                .setProxyAccountID(PROXY)
-                .setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build())
-                .setShardID(ShardID.newBuilder().setShardNum(0))
-                .setReceiveRecordThreshold(2000L)
-                .setReceiverSigRequired(true)
-                .setSendRecordThreshold(3000L));
-    }
-
-    private Transaction createTransactionWithBody() {
-        return buildTransaction(builder -> builder.getCryptoCreateAccountBuilder()
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
-                .setInitialBalance(INITIAL_BALANCE)
                 .setKey(keyFromString(KEY))
+                .setMemo("CryptoCreateAccount memo")
                 .setNewRealmAdminKey(keyFromString(KEY2))
                 .setProxyAccountID(PROXY)
                 .setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build())
@@ -680,6 +646,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(5001L))
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
+                .setMemo(StringValue.of("CryptoUpdateAccount memo"))
                 .setProxyAccountID(PROXY_UPDATE)
                 .setReceiveRecordThreshold(5001L)
                 .setReceiverSigRequired(false)

@@ -32,6 +32,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 @AllArgsConstructor
 public class TokenCreateTransactionsHandler implements TransactionHandler {
+
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
@@ -56,6 +57,8 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
         if (tokenCreateTransactionBody.hasExpiry()) {
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(tokenCreateTransactionBody.getExpiry()));
         }
+
+        entity.setMemo(tokenCreateTransactionBody.getMemo());
     }
 
     @Override

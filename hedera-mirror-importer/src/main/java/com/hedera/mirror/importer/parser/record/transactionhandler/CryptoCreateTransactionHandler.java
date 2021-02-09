@@ -59,8 +59,11 @@ public class CryptoCreateTransactionHandler implements TransactionHandler {
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
+
         if (txMessage.hasKey()) {
             entity.setKey(txMessage.getKey().toByteArray());
         }
+
+        entity.setMemo(txMessage.getMemo());
     }
 }

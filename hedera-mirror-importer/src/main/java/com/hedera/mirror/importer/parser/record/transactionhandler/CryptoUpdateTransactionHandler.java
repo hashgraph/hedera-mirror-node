@@ -54,11 +54,17 @@ public class CryptoUpdateTransactionHandler implements TransactionHandler {
         if (txMessage.hasExpirationTime()) {
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
         }
+
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
+
         if (txMessage.hasKey()) {
             entity.setKey(txMessage.getKey().toByteArray());
+        }
+
+        if (txMessage.hasMemo()) {
+            entity.setMemo(txMessage.getMemo().getValue());
         }
     }
 }

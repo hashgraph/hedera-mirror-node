@@ -54,15 +54,26 @@ public class ContractUpdateTransactionHandler implements TransactionHandler {
         if (txMessage.hasExpirationTime()) {
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
         }
+
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
+
         if (txMessage.hasAdminKey()) {
             entity.setKey(txMessage.getAdminKey().toByteArray());
         }
-        // Can't clear memo on contracts. 0 length indicates no change
-        if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
-            entity.setMemo(txMessage.getMemo());
+
+        switch (txMessage.getMemoFieldCase()) {
+            case MEMOWRAPPER:
+                entity.setMemo(txMessage.getMemoWrapper().getValue());
+                break;
+            case MEMO:
+                if (txMessage.getMemo().length() > 0) {
+                    entity.setMemo(txMessage.getMemo());
+                }
+                break;
+            default:
+                break;
         }
     }
 }

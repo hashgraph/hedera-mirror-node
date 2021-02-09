@@ -49,8 +49,13 @@ public class FileUpdateTransactionHandler implements TransactionHandler {
         if (txMessage.hasExpirationTime()) {
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
         }
+
         if (txMessage.hasKeys()) {
             entity.setKey(txMessage.getKeys().toByteArray());
+        }
+
+        if (txMessage.hasMemo()) {
+            entity.setMemo(txMessage.getMemo().getValue());
         }
     }
 }

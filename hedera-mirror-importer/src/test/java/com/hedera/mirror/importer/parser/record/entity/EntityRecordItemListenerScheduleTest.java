@@ -46,7 +46,6 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -57,8 +56,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 
 class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListenerTest {
 
-    private static final Key SCHEDULE_REF_KEY = keyFromString(
-            "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
+    private static final Key SCHEDULE_REF_KEY = keyFromString(KEY);
     private static final ScheduleID SCHEDULE_ID = ScheduleID.newBuilder().setShardNum(0).setRealmNum(0)
             .setScheduleNum(2).build();
     private static final ByteString SCHEDULE_CREATE_TRANSACTION_BODY = ByteString
@@ -88,11 +86,10 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleCreate(CREATE_TIMESTAMP, signaturePairs, SCHEDULE_ID);
 
         // verify entity count
-        Entities scheduleEntity = getScheduleEntity(SCHEDULE_ID);
-        var expectedEntity = createEntity(scheduleEntity, null, null, SCHEDULE_REF_KEY, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.SCHEDULE);
-        assertEquals(5, entityRepository.count()); // Node, payer, schedule and autorenew
-        assertThat(scheduleEntity).isEqualTo(expectedEntity);
+        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+                null, false, null, null , null);
+        assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
+        assertEntity(expected);
 
         // verify schedule and signatures
         assertThat(scheduleRepository.count()).isEqualTo(1L);
@@ -114,11 +111,10 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleUpdate(UPDATE_TIMESTAMP, startingSignaturePairs, additionalSignaturePairs, SCHEDULE_ID);
 
         // verify entity count
-        Entities scheduleEntity = getScheduleEntity(SCHEDULE_ID);
-        var expectedEntity = createEntity(scheduleEntity, null, null, SCHEDULE_REF_KEY, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.SCHEDULE);
-        assertEquals(5, entityRepository.count()); // Node, payer, schedule and autorenew
-        assertThat(scheduleEntity).isEqualTo(expectedEntity);
+        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+                null, false, null, null, null);
+        assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
+        assertEntity(expected);
 
         // verify schedule
         assertThat(scheduleRepository.count()).isEqualTo(1L);
@@ -143,11 +139,10 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleSign(SIGN_TIMESTAMP, additionalSignaturePairs, SCHEDULE_ID);
 
         // verify entity count
-        Entities scheduleEntity = getScheduleEntity(SCHEDULE_ID);
-        var expectedEntity = createEntity(scheduleEntity, null, null, SCHEDULE_REF_KEY, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.SCHEDULE);
-        assertEquals(5, entityRepository.count()); // Node, payer, schedule and autorenew
-        assertThat(scheduleEntity).isEqualTo(expectedEntity);
+        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+                null, false, null, null, null);
+        assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
+        assertEntity(expected);
 
         // verify schedule
         assertThat(scheduleRepository.count()).isEqualTo(1L);
@@ -203,11 +198,10 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduledTransaction(EXECUTE_TIMESTAMP, SCHEDULE_ID);
 
         // verify entity count
-        Entities scheduleEntity = getScheduleEntity(SCHEDULE_ID);
-        var expectedEntity = createEntity(scheduleEntity, null, null, SCHEDULE_REF_KEY, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.SCHEDULE);
-        assertEquals(5, entityRepository.count()); // Node, payer, schedule and autorenew
-        assertThat(scheduleEntity).isEqualTo(expectedEntity);
+        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+                null, false, null, null, null);
+        assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
+        assertEntity(expected);
 
         // verify schedule
         assertThat(scheduleRepository.count()).isEqualTo(1L);
@@ -227,7 +221,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                                                   List<SignaturePair> newSignaturePairs) {
         return buildTransaction(builder -> {
             builder.getScheduleCreateBuilder()
-                    .setAdminKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8(KEY)).build())
+                    .setAdminKey(SCHEDULE_REF_KEY)
                     .setPayerAccountID(PAYER)
                     .setSigMap(getSigMap(originalSignaturePairs, newSignaturePairs))
                     .setTransactionBody(SCHEDULE_CREATE_TRANSACTION_BODY);
@@ -253,10 +247,10 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     private SignatureMap getSigMap(List<SignaturePair> originalSignaturePairs, List<SignaturePair> newSignaturePairs) {
         SignatureMap.Builder signatureBuilder = SignatureMap.newBuilder();
         // add existing signatures
-        originalSignaturePairs.forEach(signaturePair -> signatureBuilder.addSigPair(signaturePair));
+        originalSignaturePairs.forEach(signatureBuilder::addSigPair);
 
         // add new signatures
-        newSignaturePairs.forEach(signaturePair -> signatureBuilder.addSigPair(signaturePair));
+        newSignaturePairs.forEach(signatureBuilder::addSigPair);
 
         return signatureBuilder.build();
     }
