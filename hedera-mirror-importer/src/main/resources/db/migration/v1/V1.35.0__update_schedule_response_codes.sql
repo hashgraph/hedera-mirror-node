@@ -3,9 +3,9 @@
 -------------------
 
 -- Update existing transaction result types since SCHEDULE_WAS_DELETED was deleted
-UPDATE t_transaction_results set result = 'NO_NEW_VALID_SIGNATURES' WHERE proto_id = 205;
-update t_transaction_results set result = 'INVALID_SCHEDULE_ACCOUNT_ID' WHERE proto_id = 204;
-update t_transaction_results set result = 'INVALID_SCHEDULE_PAYER_ID' WHERE proto_id = 203;
+update t_transaction_results set result = 'NO_NEW_VALID_SIGNATURES' where proto_id = 205;
+update t_transaction_results set result = 'INVALID_SCHEDULE_ACCOUNT_ID' where proto_id = 204;
+update t_transaction_results set result = 'INVALID_SCHEDULE_PAYER_ID' where proto_id = 203;
 
 -- Add new schedule transaction result types
 
