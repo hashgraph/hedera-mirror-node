@@ -48,6 +48,10 @@ public abstract class AbstractUpdatesEntityTransactionHandlerTest extends Abstra
         assertThat(entity).isEqualTo(expectedEntity);
     }
 
+    abstract ByteString getUpdateEntityTransactionBody();
+
+    abstract void buildUpdateEntityExpectedEntity(Entities entity);
+
     private RecordItem getUpdateEntityRecordItem() {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(
@@ -59,15 +63,11 @@ public abstract class AbstractUpdatesEntityTransactionHandlerTest extends Abstra
         return new RecordItem(transaction, TransactionRecord.newBuilder().build());
     }
 
-    abstract ByteString getUpdateEntityTransactionBody();
-
     private Entities getUpdateEntityExpectedEntity() {
         Entities entity = new Entities();
         buildUpdateEntityExpectedEntity(entity);
         return entity;
     }
-
-    abstract void buildUpdateEntityExpectedEntity(Entities entity);
 
     protected Key getKey(String keyString) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();

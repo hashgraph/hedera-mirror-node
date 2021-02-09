@@ -20,13 +20,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-class CryptoDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class CryptoDeleteTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new CryptoDeleteTransactionHandler();
@@ -42,5 +44,18 @@ class CryptoDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.ACCOUNT;
+    }
+
+    @Override
+    ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setCryptoDelete(
+                        CryptoDeleteTransactionBody.newBuilder().build()
+                ).build().toByteString();
+    }
+
+    @Override
+    void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setDeleted(true);
     }
 }
