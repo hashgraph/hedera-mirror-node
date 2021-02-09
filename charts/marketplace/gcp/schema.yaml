@@ -18,16 +18,19 @@ x-google-marketplace:
   publishedVersionMetadata:
     releaseNote: >-
       v0.27 brings many new features to the mirror node marketplace application since v0.13.
-      The largest of which is the support for the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
-      Tokens entity types are now ingested to the DB and can be queried through new REST APIs.
-      Support for the new v5 record file and signature file formats was added to be able to parse additional detailed information made available by the network in HAPI v0.11.0.
-      Additionally topic fragmentation support was added to the ingestion process as well as the exposure through the appropriate REST and gRPC APIs
-      State Proof alpha REST API was added to enable Mirror node users who want to verify submitted transactions for themselves.
+      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/master/charts/marketplace/gcp#v0.13-to-v0.27+">v0.13 to v0.27+ Upgrade</a> for additional upgrade steps.
+
+      The largest feature introduced since v0.13 is that of the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
+      Token entity types are now ingested to the DB and can be queried through new REST APIs.
+      Support for the new v5 record file and signature file formats was added to be able to parse additional hash information made available by the network in HAPI v0.11.0.
+      Topic fragmentation support was added to the ingestion process as well as exposed through the appropriate REST and gRPC APIs
+      State Proof alpha REST API was added to enable Mirror node users who want to verify the cryptographic claims of submitted transactions for themselves.
       <a href"https://swagger.io/specification">OpenAPI 3.0</a> specification support was added to the REST API long with a docs endpoint for upto date documentation and REST API curl support.
-      Redis service was added to support at least 10,000 TPS ingestion while still remaining under 10 seconds from submitting the topic message and receiving it back via the mirror node's streaming API.
+      A Redis service was added to support ~10,000 TPS ingestion while still remaining under 10 seconds from submitting the topic message and receiving it back via the mirror node's streaming API.
       DB and process memory optimizations were made to improve the ingestion rate with at least 2x-3x improvements.
       `startDate` and `endDate` properties were added to enable Mirror node users the ability to specify a time range for data processing.
       <a href"https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">AWS default credential provider chain</a> support was added to provide greater flexibility for mirror node operators.
+
       Many more features went into the release, for detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>.
     # releaseTypes - Feature | BugFix | Security
     releaseTypes:
@@ -51,11 +54,11 @@ x-google-marketplace:
           type: REPO_WITH_REGISTRY
         grpc.image.tag:
           type: TAG
-    rest:
+    monitor:
       properties:
-        rest.image.repository:
+        monitor.image.repository:
           type: REPO_WITH_REGISTRY
-        rest.image.tag:
+        monitor.image.tag:
           type: TAG
     postgresql-repmgr:
       properties:
@@ -64,6 +67,18 @@ x-google-marketplace:
         postgresql.postgresqlImage.repository:
           type: REPO_WITHOUT_REGISTRY
         postgresql.postgresqlImage.tag:
+          type: TAG
+    rest:
+      properties:
+        rest.image.repository:
+          type: REPO_WITH_REGISTRY
+        rest.image.tag:
+          type: TAG
+    redis:
+      properties:
+        redis.image.repository:
+          type: REPO_WITH_REGISTRY
+        redis.image.tag:
           type: TAG
     test:
       properties:

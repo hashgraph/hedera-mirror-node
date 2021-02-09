@@ -383,11 +383,11 @@ helm upgrade "${APP_NAME}" charts/hedera-mirror \
   -f custom-values.yaml
 ```
 
-## v0.13 -> v0.27+ (Includes breaking changes)
+## v0.13 to v0.27+
 
-Marketplace upgrade from v0.13 to v0.27 onwards include many noteworthy improvements and changes.
-Unfortunately 2 such changes include breaking stateful set changes from the mirror node and postgres sub chart.
-As such a few extra steps are necessary for a smooth transition.
+Marketplace upgrade from v0.13 to v0.27+ include many noteworthy improvements and changes.
+Unfortunately 2 such changes introduce breaking stateful set changes from the mirror node and postgres sub charts.
+As such, a few extra steps are necessary to ensure a smooth upgrade process.
 These steps draw inspiration from Bitnami's [Upgrade Steps To 9.0.0](https://artifacthub.io/packages/helm/bitnami/postgresql#to-9-0-0)
 
 1. From a v0.13 repo Stop importer downloading
@@ -408,7 +408,7 @@ These steps draw inspiration from Bitnami's [Upgrade Steps To 9.0.0](https://art
     From a newly checked out v0.27 or greater mirror node repo kickoff the upgrade
     ```shell script
     git checkout tags/v0.27.0
-    helm upgrade "${APP_NAME}" charts/hedera-mirror --namespace "${NAMESPACE}" -f charts/marketplace/gcp/values.yaml -f custom-values.yaml
+    helm upgrade "${APP_NAME}" charts/hedera-mirror --namespace "${NAMESPACE}" --install -f charts/marketplace/gcp/values.yaml -f custom-values.yaml
     ```
 
 4. Delete importer and postgres pods

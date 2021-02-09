@@ -3,7 +3,7 @@ applicationResource:
   partnerId: mirror-node-public
   partnerName: mirror-node-public
   solutionId: hedera-mirror-node
-  version: 0.27.0-rc2
+  version: ''
 
 global:
   db:
@@ -67,6 +67,10 @@ importer:
 
 monitor:
   enabled: false
+  rbac:
+    enabled: false
+  serviceAccount:
+    create: false
 
 postgresql:
   pgpool:
@@ -74,13 +78,14 @@ postgresql:
   postgresql:
     upgradeRepmgrExtension: true #upgrade repmgr version to 5.2 or else container spinup fails
   postgresqlImage:
-    debug: true
-    tag: 11.10.0-debian-10-r78
+    tag: 11.10.0-debian-10-r83
 
 redis:
   cluster:
     slaveCount: 1
   enabled: true
+  image:
+    tag: 6.0.10-debian-10-r22
   sentinel:
     enabled: true
     masterSet: mirror
