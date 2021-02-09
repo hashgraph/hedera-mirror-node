@@ -30,14 +30,13 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import lombok.Getter;
 
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
-    @Getter(lazy = true)
-    private final Key adminKey = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("key")).build();
+class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
+    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     private static final String MEMO = "scheduleCreateMemo";
 
@@ -50,11 +49,7 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityT
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(Key.newBuilder()
-                                .setEd25519(ByteString
-                                        .copyFromUtf8(
-                                                "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f"))
-                                .build())
+                        .setAdminKey(adminKey)
                         .setPayerAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1)
                                 .build())
                         .setSigMap(SignatureMap.newBuilder()
@@ -88,7 +83,7 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityT
     protected ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setScheduleCreate(
                 ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(this.getAdminKey())
+                        .setAdminKey(adminKey)
                         .setMemo(MEMO)
                         .build())
                 .build().toByteString();
@@ -96,7 +91,7 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityT
 
     @Override
     protected void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(this.getAdminKey().toByteArray());
+        entity.setKey(adminKey.toByteArray());
         entity.setMemo(MEMO);
     }
 }

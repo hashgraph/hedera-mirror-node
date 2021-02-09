@@ -20,13 +20,29 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.util.Utility;
 
-class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class ContractUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
+    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+
+    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
+
+    private static final String MEMO = "consensusCreateTopicMemo";
+
+    private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ContractUpdateTransactionHandler();
@@ -42,5 +58,25 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.CONTRACT;
+    }
+
+    @Override
+    ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setContractUpdateInstance(
+                ContractUpdateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                        .setAdminKey(adminKey)
+                        .setExpirationTime(EXPIRATION_TIME)
+                        .setMemo(MEMO)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setKey(adminKey.toByteArray());
+        entity.setMemo(MEMO);
+        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
+        entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
     }
 }

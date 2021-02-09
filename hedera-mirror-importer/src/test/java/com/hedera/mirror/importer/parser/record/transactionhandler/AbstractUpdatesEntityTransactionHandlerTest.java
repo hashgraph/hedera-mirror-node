@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -67,4 +68,8 @@ public abstract class AbstractUpdatesEntityTransactionHandlerTest extends Abstra
     }
 
     abstract void buildUpdateEntityExpectedEntity(Entities entity);
+
+    protected Key getKey(String keyString) {
+        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
+    }
 }

@@ -20,13 +20,27 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.util.Utility;
 
-class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class CryptoUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
+    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+
+    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
+
+    private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new CryptoUpdateTransactionHandler();
@@ -42,5 +56,23 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.ACCOUNT;
+    }
+
+    @Override
+    ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setCryptoUpdateAccount(
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                        .setKey(adminKey)
+                        .setExpirationTime(EXPIRATION_TIME)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setKey(adminKey.toByteArray());
+        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
+        entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
     }
 }

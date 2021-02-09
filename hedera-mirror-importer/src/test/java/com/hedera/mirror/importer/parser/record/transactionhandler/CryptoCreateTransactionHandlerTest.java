@@ -20,15 +20,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class CryptoCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
+    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+
+    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new CryptoCreateTransactionHandler();
@@ -50,5 +59,21 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.ACCOUNT;
+    }
+
+    @Override
+    ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setCryptoCreateAccount(
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                        .setKey(adminKey)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setKey(adminKey.toByteArray());
+        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
     }
 }

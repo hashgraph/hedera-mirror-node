@@ -20,15 +20,28 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class ConsensusCreateTopicTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
+    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+
+    private final Key submitKey = getKey("submitKey");
+
+    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
+
+    private static final String MEMO = "consensusCreateTopicMemo";
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ConsensusCreateTopicTransactionHandler();
@@ -50,5 +63,25 @@ class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHand
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.TOPIC;
+    }
+
+    @Override
+    ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setConsensusCreateTopic(
+                ConsensusCreateTopicTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                        .setAdminKey(adminKey)
+                        .setSubmitKey(submitKey)
+                        .setMemo(MEMO)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setKey(adminKey.toByteArray());
+        entity.setSubmitKey(submitKey.toByteArray());
+        entity.setMemo(MEMO);
+        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
     }
 }

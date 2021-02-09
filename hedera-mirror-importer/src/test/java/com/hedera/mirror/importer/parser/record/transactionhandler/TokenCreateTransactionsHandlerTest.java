@@ -30,10 +30,20 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.time.Instant;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.util.Utility;
 
-public class TokenCreateTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenCreateTransactionsHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
+    private final Key adminKey = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
+
+    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
+
+    private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new TokenCreateTransactionsHandler();
@@ -73,5 +83,23 @@ public class TokenCreateTransactionsHandlerTest extends AbstractTransactionHandl
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.TOKEN;
+    }
+
+    @Override
+    ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setTokenCreation(
+                TokenCreateTransactionBody.newBuilder()
+                        .setAdminKey(adminKey)
+                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                        .setExpiry(EXPIRATION_TIME)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setKey(adminKey.toByteArray());
+        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
+        entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
     }
 }
