@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -33,14 +31,6 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ConsensusCreateTopicTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
-
-    private final static Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
-
-    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
-
-    private static final String MEMO = "consensusCreateTopicMemo";
-
-    private final static Key SUBMIT_KEY = getKey("5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -69,19 +59,19 @@ class ConsensusCreateTopicTransactionHandlerTest extends AbstractUpdatesEntityTr
     protected ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setConsensusCreateTopic(
                 ConsensusCreateTopicTransactionBody.newBuilder()
-                        .setAdminKey(ADMIN_KEY)
-                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setMemo(MEMO)
-                        .setSubmitKey(SUBMIT_KEY)
+                        .setAdminKey(DEFAULT_KEY)
+                        .setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
+                        .setMemo(DEFAULT_MEMO)
+                        .setSubmitKey(DEFAULT_SUBMIT_KEY)
                         .build())
                 .build().toByteString();
     }
 
     @Override
     protected void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(ADMIN_KEY.toByteArray());
-        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
-        entity.setSubmitKey(SUBMIT_KEY.toByteArray());
-        entity.setMemo(MEMO);
+        entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
+        entity.setKey(DEFAULT_KEY.toByteArray());
+        entity.setMemo(DEFAULT_MEMO);
+        entity.setSubmitKey(DEFAULT_SUBMIT_KEY.toByteArray());
     }
 }

@@ -23,26 +23,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.time.Instant;
 
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.util.Utility;
 
 public class TokenCreateTransactionsHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
-
-    private final Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
-
-    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
-
-    private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -51,25 +43,22 @@ public class TokenCreateTransactionsHandlerTest extends AbstractUpdatesEntityTra
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
-        Key key = Key.newBuilder()
-                .setEd25519(ByteString.copyFromUtf8("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f"))
-                .build();
         return TransactionBody.newBuilder()
                 .setTokenCreation(TokenCreateTransactionBody.newBuilder()
-                        .setAdminKey(key)
+                        .setAdminKey(DEFAULT_KEY)
                         .setDecimals(1000)
                         .setExpiry(Timestamp.newBuilder().setSeconds(360))
                         .setInitialSupply(1_000_000L)
                         .setFreezeDefault(false)
-                        .setKycKey(key)
-                        .setFreezeKey(key)
+                        .setKycKey(DEFAULT_KEY)
+                        .setFreezeKey(DEFAULT_KEY)
                         .setSymbol("SYMBOL")
                         .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
                         .setAutoRenewAccount(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2)
                                 .build())
                         .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
                         .setName("token_name")
-                        .setWipeKey(key)
+                        .setWipeKey(DEFAULT_KEY)
                         .build());
     }
 
@@ -89,17 +78,17 @@ public class TokenCreateTransactionsHandlerTest extends AbstractUpdatesEntityTra
     ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setTokenCreation(
                 TokenCreateTransactionBody.newBuilder()
-                        .setAdminKey(ADMIN_KEY)
-                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setExpiry(EXPIRATION_TIME)
+                        .setAdminKey(DEFAULT_KEY)
+                        .setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
+                        .setExpiry(DEFAULT_EXPIRATION_TIME)
                         .build())
                 .build().toByteString();
     }
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(ADMIN_KEY.toByteArray());
-        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
-        entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
+        entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
+        entity.setExpiryTimeNs(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
+        entity.setKey(DEFAULT_KEY.toByteArray());
     }
 }

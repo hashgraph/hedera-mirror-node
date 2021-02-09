@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -36,10 +35,6 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private final Key ADMIN_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
-
-    private static final String MEMO = "scheduleCreateMemo";
-
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ScheduleCreateTransactionHandler();
@@ -49,7 +44,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransact
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(ADMIN_KEY)
+                        .setAdminKey(DEFAULT_KEY)
                         .setPayerAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1)
                                 .build())
                         .setSigMap(SignatureMap.newBuilder()
@@ -83,15 +78,15 @@ class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransact
     protected ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setScheduleCreate(
                 ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(ADMIN_KEY)
-                        .setMemo(MEMO)
+                        .setAdminKey(DEFAULT_KEY)
+                        .setMemo(DEFAULT_MEMO)
                         .build())
                 .build().toByteString();
     }
 
     @Override
     protected void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setKey(ADMIN_KEY.toByteArray());
-        entity.setMemo(MEMO);
+        entity.setKey(DEFAULT_KEY.toByteArray());
+        entity.setMemo(DEFAULT_MEMO);
     }
 }

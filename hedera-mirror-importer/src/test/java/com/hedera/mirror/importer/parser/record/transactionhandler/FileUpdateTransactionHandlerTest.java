@@ -24,9 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
 import java.util.Arrays;
 
 import com.hedera.mirror.importer.domain.Entities;
@@ -35,13 +33,8 @@ import com.hedera.mirror.importer.util.Utility;
 
 class FileUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
 
-    private static final Timestamp EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
-
     private final KeyList KEY_LIST = KeyList.newBuilder().addAllKeys(
-            Arrays.asList(
-                    getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f"),
-                    getKey("5b5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96g")
-            ))
+            Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
             .build();
 
     @Override
@@ -65,7 +58,7 @@ class FileUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionH
     ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setFileUpdate(
                 FileUpdateTransactionBody.newBuilder()
-                        .setExpirationTime(EXPIRATION_TIME)
+                        .setExpirationTime(DEFAULT_EXPIRATION_TIME)
                         .setKeys(KEY_LIST)
                         .build())
                 .build().toByteString();
@@ -73,7 +66,7 @@ class FileUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionH
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setExpiryTimeNs(Utility.timestampInNanosMax(EXPIRATION_TIME));
+        entity.setExpiryTimeNs(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
         entity.setKey(KEY_LIST.toByteArray());
     }
 }

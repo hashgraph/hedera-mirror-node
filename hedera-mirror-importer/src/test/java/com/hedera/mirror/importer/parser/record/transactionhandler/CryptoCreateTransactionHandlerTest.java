@@ -23,8 +23,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -33,10 +31,6 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class CryptoCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
-
-    private static final Duration AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
-
-    private final Key KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -65,15 +59,15 @@ class CryptoCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactio
     ByteString getUpdateEntityTransactionBody() {
         return TransactionBody.newBuilder().setCryptoCreateAccount(
                 CryptoCreateTransactionBody.newBuilder()
-                        .setAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                        .setKey(KEY)
+                        .setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
+                        .setKey(DEFAULT_KEY)
                         .build())
                 .build().toByteString();
     }
 
     @Override
     void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD.getSeconds());
-        entity.setKey(KEY.toByteArray());
+        entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
+        entity.setKey(DEFAULT_KEY.toByteArray());
     }
 }
