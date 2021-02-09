@@ -28,6 +28,9 @@ import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.messaging.MessageChannel;
 
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.parser.event.EventParserProperties;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @Configuration
 public class IntegrationConfiguration {
@@ -38,18 +41,18 @@ public class IntegrationConfiguration {
     public static final String CHANNEL_RECORD = CHANNEL_STREAM + ".record";
 
     @Bean(CHANNEL_BALANCE)
-    MessageChannel channelBalance() {
-        return MessageChannels.queue(1).get();
+    MessageChannel channelBalance(BalanceParserProperties properties) {
+        return MessageChannels.queue(properties.getQueueCapacity()).get();
     }
 
     @Bean(CHANNEL_EVENT)
-    MessageChannel channelEvent() {
-        return MessageChannels.queue(1).get();
+    MessageChannel channelEvent(EventParserProperties properties) {
+        return MessageChannels.queue(properties.getQueueCapacity()).get();
     }
 
     @Bean(CHANNEL_RECORD)
-    MessageChannel channelRecord() {
-        return MessageChannels.queue(1).get();
+    MessageChannel channelRecord(RecordParserProperties properties) {
+        return MessageChannels.queue(properties.getQueueCapacity()).get();
     }
 
     @Bean

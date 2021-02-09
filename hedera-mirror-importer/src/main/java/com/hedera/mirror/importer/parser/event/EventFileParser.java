@@ -33,12 +33,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.EventFileRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @MessageEndpoint
 @RequiredArgsConstructor
 public class EventFileParser implements StreamFileParser<EventFile> {
 
     private final EventFileRepository eventFileRepository;
+    private final EventParserProperties properties;
 
     @Override
     @Retryable(backoff = @Backoff(delay = 200L, maxDelay = 10_000L, multiplier = 2), maxAttempts = Integer.MAX_VALUE)
@@ -48,7 +50,15 @@ public class EventFileParser implements StreamFileParser<EventFile> {
 
     @Transactional
     public void parse(EventFile eventFile) {
-        // Event parsing not implemented yet
+        if (!properties.isEnabled()) {
+            return;
+        }
+
+        if (!properties.isPersistBytes()) {
+            eventFile.setBytes(null);
+        }
+
         eventFileRepository.save(eventFile);
+        Utility.archiveFile(eventFile, properties);
     }
 }

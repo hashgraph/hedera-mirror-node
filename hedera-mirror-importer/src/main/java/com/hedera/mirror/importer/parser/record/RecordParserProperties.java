@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -48,6 +49,9 @@ public class RecordParserProperties implements ParserProperties {
     private boolean keepFiles = false;
 
     private boolean persistBytes = false;
+
+    @Min(1)
+    private int queueCapacity = 100;
 
     @Override
     public Path getStreamPath() {

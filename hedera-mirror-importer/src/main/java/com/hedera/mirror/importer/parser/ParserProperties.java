@@ -26,6 +26,8 @@ import com.hedera.mirror.importer.domain.StreamType;
 
 public interface ParserProperties {
 
+    int getQueueCapacity();
+
     Path getStreamPath();
 
     StreamType getStreamType();

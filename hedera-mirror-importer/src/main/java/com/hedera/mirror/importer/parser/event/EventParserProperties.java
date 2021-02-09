@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.event;
 
 /*-
  * ‌
@@ -35,18 +35,12 @@ import com.hedera.mirror.importer.parser.ParserProperties;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.importer.parser.balance")
-public class BalanceParserProperties implements ParserProperties {
+@ConfigurationProperties("hedera.mirror.importer.parser.event")
+public class EventParserProperties implements ParserProperties {
 
     private final MirrorProperties mirrorProperties;
 
-    @Min(1)
-    private int batchSize = 2000;
-
     private boolean enabled = true;
-
-    @Min(1)
-    private int fileBufferSize = 200_000;
 
     @DurationMin(millis = 10L)
     @NotNull
@@ -57,7 +51,7 @@ public class BalanceParserProperties implements ParserProperties {
     private boolean persistBytes = false;
 
     @Min(1)
-    private int queueCapacity = 40;
+    private int queueCapacity = 100;
 
     @Override
     public Path getStreamPath() {
@@ -66,6 +60,6 @@ public class BalanceParserProperties implements ParserProperties {
 
     @Override
     public StreamType getStreamType() {
-        return StreamType.BALANCE;
+        return StreamType.EVENT;
     }
 }
