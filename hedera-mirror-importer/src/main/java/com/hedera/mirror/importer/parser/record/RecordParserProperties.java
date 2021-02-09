@@ -47,6 +47,8 @@ public class RecordParserProperties implements ParserProperties {
 
     private boolean keepFiles = false;
 
+    private boolean persistBytes = false;
+
     @Override
     public Path getStreamPath() {
         return mirrorProperties.getDataPath().resolve(getStreamType().getPath());

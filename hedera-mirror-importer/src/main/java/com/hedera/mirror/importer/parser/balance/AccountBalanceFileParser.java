@@ -193,6 +193,10 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
                 updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             }
 
+            if (!balanceParserProperties.isPersistBytes()) {
+                accountBalanceFile.setBytes(null);
+            }
+
             Instant loadEnd = Instant.now();
             accountBalanceFile.setCount(validCount);
             accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
