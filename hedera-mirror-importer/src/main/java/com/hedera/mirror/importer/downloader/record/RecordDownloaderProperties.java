@@ -58,7 +58,7 @@ public class RecordDownloaderProperties implements DownloaderProperties {
     private String prefix = "recordstreams/record";
 
     @Min(1)
-    private int threads = 13;
+    private int threads = 15;
 
     @NotNull
     private Duration startDateAdjustment = Duration.ofSeconds(30L);
