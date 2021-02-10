@@ -117,7 +117,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void receiptPercent() {
-        properties.setReceipt(0.001);
+        properties.setReceipt(0.1);
         Multiset<Boolean> receipts = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
@@ -127,7 +127,7 @@ class ConfigurableTransactionGeneratorTest {
         assertThat((double) receipts.count(true) / SAMPLE_SIZE)
                 .isNotNegative()
                 .isNotZero()
-                .isCloseTo(properties.getReceipt(), within(0.001));
+                .isCloseTo(properties.getReceipt(), within(properties.getReceipt() * 0.2));
     }
 
     @Test
@@ -162,7 +162,7 @@ class ConfigurableTransactionGeneratorTest {
         assertThat((double) records.count(true) / SAMPLE_SIZE)
                 .isNotNegative()
                 .isNotZero()
-                .isCloseTo(properties.getRecord(), within(SAMPLE_SIZE * 0.05));
+                .isCloseTo(properties.getRecord(), within(properties.getRecord() * 0.2));
     }
 
     @Test
