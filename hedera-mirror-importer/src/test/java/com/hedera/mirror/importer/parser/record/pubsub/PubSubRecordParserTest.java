@@ -22,18 +22,18 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -103,28 +103,12 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
         recordFilePoller.poll();
 
         // then
-        List<String> expectedMessages =
-                Files.readAllLines(testResourcesPath.resolve("pubsub-messages.txt"));
-        List<PubsubMessage> actualMessages = getAllMessages(NUM_TXNS);
+        List<String> expectedMessages = Files.readAllLines(testResourcesPath.resolve("pubsub-messages.txt"));
+        List<String> actualMessages = getAllMessages(NUM_TXNS).stream()
+                .map(PubsubMessage::getData)
+                .map(ByteString::toStringUtf8)
+                .collect(Collectors.toList());
 
-        assertThat(actualMessages)
-                .hasSize(expectedMessages.size())
-                .zipSatisfy(expectedMessages, (actual, expected) -> {
-
-                    assertThat(actual.getAttributesMap().get("consensusTimestamp"))
-                            .isEqualTo(getConsensusTimestampFromMessage(expected));
-                    // Users of PubSub will work with JSON. We don't convert these to Java POJOs since we want to
-                    // drectly test json (without deserialization layer)
-                    assertThat(actual.getData().toStringUtf8()).isEqualTo(expected);
-                });
-    }
-
-    private String getConsensusTimestampFromMessage(String message) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.readValue(message, Map.class).get("consensusTimestamp").toString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        assertThat(actualMessages).containsExactlyElementsOf(expectedMessages);
     }
 }
