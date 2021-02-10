@@ -19,7 +19,7 @@
  * ‍
  */
 
-'uses strict';
+'use strict';
 
 // external libraries
 const {startUpScreen} = require('./startUp');

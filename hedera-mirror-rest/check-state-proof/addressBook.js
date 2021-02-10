@@ -18,7 +18,7 @@
  * ‍
  */
 
-'uses strict';
+'use strict';
 
 // addressBook object. Parse string to object, provide methods to pull info
 

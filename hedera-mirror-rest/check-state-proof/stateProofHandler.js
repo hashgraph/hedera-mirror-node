@@ -17,7 +17,8 @@
  * limitations under the License.
  * ‍
  */
-'uses strict';
+
+'use strict';
 
 // external libraries
 const _ = require('lodash');
@@ -75,13 +76,7 @@ class StateProofHandler {
   }
 
   getNodeSignatureMap() {
-    return _.map(this.signatureFiles, (signatureFileObject) => {
-      return {
-        nodeId: signatureFileObject.nodeId,
-        signature: signatureFileObject.signature,
-        hash: signatureFileObject.hash,
-      };
-    });
+    return this.signatureFiles;
   }
 
   runStateProof() {
@@ -102,7 +97,7 @@ class StateProofHandler {
     const validatedTransaction = performStateProof(
       nodeIdPublicKeyPairs,
       this.getNodeSignatureMap(),
-      this.recordFile.hash
+      this.recordFile.fileHash
     );
 
     return validatedTransaction;

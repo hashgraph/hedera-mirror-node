@@ -18,11 +18,12 @@
  * ‍
  */
 
-'uses strict';
+'use strict';
 
 // external libraries
 const _ = require('lodash');
 const crypto = require('crypto');
+const {SHA_384} = require('./constants');
 
 /**
  * Verifies given hash was signed with the provided public key
@@ -58,24 +59,34 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
   // create a map of hash -> nodeId to show alignment
   _.forEach(signatureFilesMap, (sigMapItem) => {
     console.info(`Verify signatures passed for node ${sigMapItem.nodeId}`);
-    const publicKeyBuffer = nodePublicKeyMap[sigMapItem.nodeId].publicKey;
-    const sigMapItemHashHex = sigMapItem.hash.toString('hex');
-    if (verifySignature(publicKeyBuffer, sigMapItem.hash, sigMapItem.signature)) {
-      if (_.isEmpty(validatedSignatureFilesMap[sigMapItemHashHex])) {
-        validatedSignatureFilesMap[sigMapItemHashHex] = [sigMapItem.nodeId];
-      } else {
-        validatedSignatureFilesMap[sigMapItemHashHex].push(sigMapItem.nodeId);
-        const nodeCount = validatedSignatureFilesMap[sigMapItemHashHex].length;
+    const {publicKey} = nodePublicKeyMap[sigMapItem.nodeId];
+    const sigMapItemHashHex = sigMapItem.fileHash.toString(SHA_384.encoding);
 
-        // update max. Sufficient to do here as you'd never want the max to occur in the if where the count would be 1
-        if (nodeCount > maxHashCount) {
-          maxHashCount = nodeCount;
-          consensusHashMap.hash = sigMapItemHashHex;
-          consensusHashMap.count = maxHashCount;
-        }
-      }
+    if (!verifySignature(publicKey, sigMapItem.fileHash, sigMapItem.fileHashSignature)) {
+      console.error(`Failed to verify fileHash signature for node ${sigMapItem.nodeId}!`);
+      return;
+    }
+
+    if (
+      sigMapItem.metadataHash &&
+      !verifySignature(publicKey, sigMapItem.metadataHash, sigMapItem.metadataHashSignature)
+    ) {
+      console.error(`Failed to verify metadataHash signature for node ${sigMapItem.nodeId}!`);
+      return;
+    }
+
+    if (_.isEmpty(validatedSignatureFilesMap[sigMapItemHashHex])) {
+      validatedSignatureFilesMap[sigMapItemHashHex] = [sigMapItem.nodeId];
     } else {
-      console.error(`Failed to verify signatures for node ${sigMapItem.nodeId}!`);
+      validatedSignatureFilesMap[sigMapItemHashHex].push(sigMapItem.nodeId);
+      const nodeCount = validatedSignatureFilesMap[sigMapItemHashHex].length;
+
+      // update max. Sufficient to do here as you'd never want the max to occur in the if where the count would be 1
+      if (nodeCount > maxHashCount) {
+        maxHashCount = nodeCount;
+        consensusHashMap.hash = sigMapItemHashHex;
+        consensusHashMap.count = maxHashCount;
+      }
     }
   });
 
