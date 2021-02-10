@@ -89,7 +89,9 @@ class StreamObject {
     this.bodyLength = this.readBody(buffer.slice(STREAM_OBJECT_HEADER_SIZE));
   }
 
-  readBody(buffer) {}
+  readBody(buffer) {
+    return 0;
+  }
 
   getLength() {
     return STREAM_OBJECT_HEADER_SIZE + this.bodyLength;
