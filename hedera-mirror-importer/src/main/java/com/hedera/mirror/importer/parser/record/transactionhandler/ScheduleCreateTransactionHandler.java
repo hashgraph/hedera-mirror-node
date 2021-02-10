@@ -48,5 +48,6 @@ public class ScheduleCreateTransactionHandler implements TransactionHandler {
         if (scheduleCreateTransactionBody.hasAdminKey()) {
             entity.setKey(scheduleCreateTransactionBody.getAdminKey().toByteArray());
         }
+        entity.setMemo(scheduleCreateTransactionBody.getMemo());
     }
 }
