@@ -56,15 +56,16 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 
 class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListenerTest {
 
-    private static final Key SCHEDULE_REF_KEY = keyFromString(KEY);
-    private static final ScheduleID SCHEDULE_ID = ScheduleID.newBuilder().setShardNum(0).setRealmNum(0)
-            .setScheduleNum(2).build();
+    private static final long CREATE_TIMESTAMP = 1L;
+    private static final long EXECUTE_TIMESTAMP = 500L;
+    private static final String SCHEDULE_CREATE_MEMO = "ScheduleCreate memo";
     private static final ByteString SCHEDULE_CREATE_TRANSACTION_BODY = ByteString
             .copyFromUtf8("ScheduleCreate transaction body");
-    private static final long CREATE_TIMESTAMP = 1L;
-    private static final long UPDATE_TIMESTAMP = 5L;
+    private static final ScheduleID SCHEDULE_ID = ScheduleID.newBuilder().setShardNum(0).setRealmNum(0)
+            .setScheduleNum(2).build();
+    private static final Key SCHEDULE_REF_KEY = keyFromString(KEY);
     private static final long SIGN_TIMESTAMP = 10L;
-    private static final long EXECUTE_TIMESTAMP = 500L;
+    private static final long UPDATE_TIMESTAMP = 5L;
 
     @Resource
     protected ScheduleRepository scheduleRepository;
@@ -87,7 +88,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, null , null);
+                null, false, null, SCHEDULE_CREATE_MEMO , null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 
@@ -112,7 +113,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, null, null);
+                null, false, null, SCHEDULE_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 
@@ -140,7 +141,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, null, null);
+                null, false, null, SCHEDULE_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 
@@ -199,7 +200,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, null, null);
+                null, false, null, SCHEDULE_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 
@@ -222,6 +223,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         return buildTransaction(builder -> {
             builder.getScheduleCreateBuilder()
                     .setAdminKey(SCHEDULE_REF_KEY)
+                    .setMemo(SCHEDULE_CREATE_MEMO)
                     .setPayerAccountID(PAYER)
                     .setSigMap(getSigMap(originalSignaturePairs, newSignaturePairs))
                     .setTransactionBody(SCHEDULE_CREATE_TRANSACTION_BODY);

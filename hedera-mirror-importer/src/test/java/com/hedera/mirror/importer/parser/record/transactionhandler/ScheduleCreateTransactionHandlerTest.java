@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -31,9 +30,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class ScheduleCreateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ScheduleCreateTransactionHandler();
@@ -43,11 +44,7 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHan
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(Key.newBuilder()
-                                .setEd25519(ByteString
-                                        .copyFromUtf8(
-                                                "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f"))
-                                .build())
+                        .setAdminKey(DEFAULT_KEY)
                         .setPayerAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1)
                                 .build())
                         .setSigMap(SignatureMap.newBuilder()
@@ -61,7 +58,8 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHan
                                         .setEd25519(ByteString.copyFromUtf8("Ed25519-3"))
                                         .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-3")).build())
                                 .build())
-                        .setTransactionBody(ByteString.copyFromUtf8("transaction body")));
+                        .setTransactionBody(ByteString.copyFromUtf8("transaction body"))
+                        .setMemo("schedule memo"));
     }
 
     @Override
@@ -74,5 +72,21 @@ public class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHan
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.SCHEDULE;
+    }
+
+    @Override
+    protected ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setScheduleCreate(
+                ScheduleCreateTransactionBody.newBuilder()
+                        .setAdminKey(DEFAULT_KEY)
+                        .setMemo(DEFAULT_MEMO)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    protected void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setKey(DEFAULT_KEY.toByteArray());
+        entity.setMemo(DEFAULT_MEMO);
     }
 }

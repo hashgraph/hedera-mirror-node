@@ -20,13 +20,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.util.Utility;
 
-class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class ConsensusUpdateTopicTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ConsensusUpdateTopicTransactionHandler();
@@ -42,5 +47,27 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.TOPIC;
+    }
+
+    @Override
+    ByteString getUpdateEntityTransactionBody() {
+        return TransactionBody.newBuilder().setConsensusUpdateTopic(
+                ConsensusUpdateTopicTransactionBody.newBuilder()
+                        .setAdminKey(DEFAULT_KEY)
+                        .setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
+                        .setExpirationTime(DEFAULT_EXPIRATION_TIME)
+                        .setMemo(StringValue.of(DEFAULT_MEMO))
+                        .setSubmitKey(DEFAULT_SUBMIT_KEY)
+                        .build())
+                .build().toByteString();
+    }
+
+    @Override
+    void buildUpdateEntityExpectedEntity(Entities entity) {
+        entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
+        entity.setExpiryTimeNs(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
+        entity.setKey(DEFAULT_KEY.toByteArray());
+        entity.setMemo(DEFAULT_MEMO);
+        entity.setSubmitKey(DEFAULT_SUBMIT_KEY.toByteArray());
     }
 }
