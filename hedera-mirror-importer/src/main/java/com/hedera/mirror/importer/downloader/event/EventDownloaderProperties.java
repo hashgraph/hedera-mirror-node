@@ -58,7 +58,7 @@ public class EventDownloaderProperties implements DownloaderProperties {
     private String prefix = "eventsStreams/events_";
 
     @Min(1)
-    private int threads = 13;
+    private int threads = 15;
 
     @NotNull
     private Duration startDateAdjustment = Duration.ofSeconds(30L);
