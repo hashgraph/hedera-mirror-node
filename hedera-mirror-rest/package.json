@@ -20,7 +20,7 @@
     "@awaitjs/express": "^0.7.1",
     "@godaddy/terminus": "^4.6.0",
     "asn1js": "^2.0.26",
-    "aws-sdk": "^2.834.0",
+    "aws-sdk": "^2.841.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
