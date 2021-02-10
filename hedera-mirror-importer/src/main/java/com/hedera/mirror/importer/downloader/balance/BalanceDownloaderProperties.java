@@ -58,7 +58,7 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     private String prefix = "accountBalances/balance";
 
     @Min(1)
-    private int threads = 13;
+    private int threads = 15;
 
     @NotNull
     private Duration startDateAdjustment = Duration.ofSeconds(1L);
