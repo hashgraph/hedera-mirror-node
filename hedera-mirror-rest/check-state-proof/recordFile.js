@@ -38,24 +38,17 @@ const V5_START_HASH_OFFSET = INT_SIZE + (INT_SIZE + INT_SIZE + INT_SIZE) + INT_S
 
 class RecordStreamObject extends StreamObject {
   /**
-   * Reads record stream object from buffer
-   * @param buffer
+   * Reads the body of the record stream object
+   * @param {Buffer} buffer
+   * @returns {Number} The size of the body in bytes
    */
-  constructor(buffer) {
-    super(buffer);
-    this.read(buffer.slice(super.getLength()));
-  }
-
-  read(buffer) {
+  readBody(buffer) {
     const record = readLengthAndBytes(buffer, BYTE_SIZE, MAX_RECORD_LENGTH, false);
     const transaction = readLengthAndBytes(buffer.slice(record.length), BYTE_SIZE, MAX_TRANSACTION_LENGTH, false);
     this.record = record.bytes;
     this.transaction = transaction.bytes;
-    this.dataLength = record.length + transaction.length;
-  }
 
-  getLength() {
-    return super.getLength() + this.dataLength;
+    return record.length + transaction.length;
   }
 }
 

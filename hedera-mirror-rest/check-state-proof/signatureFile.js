@@ -34,15 +34,11 @@ const V5_FILE_HASH_OFFSET = BYTE_SIZE + INT_SIZE;
 
 class SignatureObject extends StreamObject {
   /**
-   * Reads signature object from buffer
+   * Reads the body of the signature object
    * @param {Buffer} buffer
+   * @returns {Number} The size of the body in bytes
    */
-  constructor(buffer) {
-    super(buffer);
-    this.read(buffer.slice(super.getLength()));
-  }
-
-  read(buffer) {
+  readBody(buffer) {
     const message = 'Error reading signature object';
     const type = buffer.readInt32BE();
     if (type !== SHA_384_WITH_RSA.type) {
@@ -50,12 +46,9 @@ class SignatureObject extends StreamObject {
     }
 
     const {length, bytes} = readLengthAndBytes(buffer.slice(INT_SIZE), BYTE_SIZE, SHA_384_WITH_RSA.maxLength, true);
-    this.dataLength = INT_SIZE + length;
     this.signature = bytes;
-  }
 
-  getLength() {
-    return super.getLength() + this.dataLength;
+    return INT_SIZE + length;
   }
 }
 

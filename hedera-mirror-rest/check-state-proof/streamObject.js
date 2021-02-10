@@ -20,10 +20,13 @@
 
 'use strict';
 
-const {INT_SIZE, SHA_384} = require('./constants');
+const {INT_SIZE, LONG_SIZE, SHA_384} = require('./constants');
 
 // the sum of the length field and the checksum field
 const SIMPLE_SUM = 101;
+
+// classId, classVersion
+const STREAM_OBJECT_HEADER_SIZE = LONG_SIZE + INT_SIZE;
 
 /**
  * Reads the length field, an optional checksum, and the byte array from buffer
@@ -81,35 +84,32 @@ class StreamObject {
    */
   constructor(buffer) {
     this.classId = buffer.readBigInt64BE();
-    this.classVersion = buffer.readInt32BE(8);
+    this.classVersion = buffer.readInt32BE(LONG_SIZE);
+
+    this.bodyLength = this.readBody(buffer.slice(STREAM_OBJECT_HEADER_SIZE));
   }
 
+  readBody(buffer) {}
+
   getLength() {
-    return 12;
+    return STREAM_OBJECT_HEADER_SIZE + this.bodyLength;
   }
 }
 
 class HashObject extends StreamObject {
   /**
-   * Reads hash object from buffer
+   * Reads the body of the hash object
    * @param {Buffer} buffer
+   * @returns {Number} The size of the body in bytes
    */
-  constructor(buffer) {
-    super(buffer);
-    this.read(buffer.slice(super.getLength()));
-  }
-
-  read(buffer) {
+  readBody(buffer) {
     // always SHA-384
     const hashLength = SHA_384.length;
     this.digestType = buffer.readInt32BE();
     const {length, bytes} = readLengthAndBytes(buffer.slice(INT_SIZE), hashLength, hashLength, false);
-    this.dataLength = INT_SIZE + length;
     this.hash = bytes;
-  }
 
-  getLength() {
-    return super.getLength() + this.dataLength;
+    return INT_SIZE + length;
   }
 }
 
