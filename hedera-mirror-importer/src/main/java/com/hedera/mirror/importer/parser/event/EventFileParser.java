@@ -40,25 +40,32 @@ import com.hedera.mirror.importer.util.Utility;
 public class EventFileParser implements StreamFileParser<EventFile> {
 
     private final EventFileRepository eventFileRepository;
-    private final EventParserProperties properties;
+    private final EventParserProperties parserProperties;
 
     @Override
-    @Retryable(backoff = @Backoff(delay = 200L, maxDelay = 10_000L, multiplier = 2), maxAttempts = Integer.MAX_VALUE)
+    @Retryable(backoff = @Backoff(
+            delayExpression = "#{@eventParserProperties.getRetry().getMinBackoff().toMillis()}",
+            maxDelayExpression = "#{@eventParserProperties.getRetry().getMaxBackoff().toMillis()}",
+            multiplierExpression = "#{@eventParserProperties.getRetry().getMultiplier()}"),
+            maxAttemptsExpression = "#{@eventParserProperties.getRetry().getMaxAttempts()}")
     @ServiceActivator(inputChannel = CHANNEL_EVENT,
             poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.event.frequency:100}")
     )
-
     @Transactional
     public void parse(EventFile eventFile) {
-        if (!properties.isEnabled()) {
+        if (!parserProperties.isEnabled()) {
             return;
         }
 
-        if (!properties.isPersistBytes()) {
+        byte[] bytes = eventFile.getBytes();
+        if (!parserProperties.isPersistBytes()) {
             eventFile.setBytes(null);
         }
 
         eventFileRepository.save(eventFile);
-        Utility.archiveFile(eventFile, properties);
+
+        if (parserProperties.isKeepFiles()) {
+            Utility.archiveFile(eventFile.getName(), bytes, parserProperties.getParsedPath());
+        }
     }
 }

@@ -28,13 +28,9 @@ public interface ParserProperties {
 
     int getQueueCapacity();
 
-    Path getStreamPath();
+    Path getParsedPath();
 
     StreamType getStreamType();
-
-    default Path getParsedPath() {
-        return getStreamPath().resolve(getStreamType().getParsed());
-    }
 
     boolean isEnabled();
 

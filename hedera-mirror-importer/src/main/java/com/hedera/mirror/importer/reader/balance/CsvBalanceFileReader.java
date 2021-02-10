@@ -62,9 +62,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
         InputStream inputStream = streamFileData.getInputStream();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), BUFFER_SIZE)) {
-            inputStream.mark(BUFFER_SIZE);
             String firstLine = reader.readLine();
-            inputStream.reset();
             return firstLine != null && supports(firstLine);
         } catch (Exception e) {
             throw new InvalidDatasetException("Error reading account balance file", e);

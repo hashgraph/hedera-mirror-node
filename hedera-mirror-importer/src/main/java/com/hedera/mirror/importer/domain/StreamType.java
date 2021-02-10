@@ -34,7 +34,6 @@ public enum StreamType {
 
     private static final String PARSED = "parsed";
     private static final String SIGNATURES = "signatures";
-    private static final String TEMP = "tmp";
     private static final String VALID = "valid";
     private static final String SIGNATURE_EXTENSION = "_sig";
 

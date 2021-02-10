@@ -92,7 +92,7 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
         IS_COMPLETE, CONSENSUS_TIMESTAMP
     }
 
-    private final BalanceParserProperties balanceParserProperties;
+    private final BalanceParserProperties parserProperties;
     private final DataSource dataSource;
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
@@ -100,25 +100,25 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
 
-    public AccountBalanceFileParser(BalanceParserProperties balanceParserProperties, DataSource dataSource,
+    public AccountBalanceFileParser(BalanceParserProperties parserProperties, DataSource dataSource,
                                     MeterRegistry meterRegistry,
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
                                     AccountBalanceFileRepository accountBalanceFileRepository) {
-        this.balanceParserProperties = balanceParserProperties;
+        this.parserProperties = parserProperties;
         this.dataSource = dataSource;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
 
         Timer.Builder parseDurationTimerBuilder = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in seconds it took to parse the file and store it in the database")
-                .tag("type", balanceParserProperties.getStreamType().toString());
+                .tag("type", parserProperties.getStreamType().toString());
         parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
         parseDurationMetricSuccess = parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
 
         parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file " +
                         "and the time at which the file was processed successfully")
-                .tag("type", balanceParserProperties.getStreamType().toString())
+                .tag("type", parserProperties.getStreamType().toString())
                 .register(meterRegistry);
     }
 
@@ -126,21 +126,26 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
      * Process the file and load all the data into the database.
      */
     @Override
-    @Retryable(backoff = @Backoff(delay = 200L, maxDelay = 10_000L, multiplier = 2), maxAttempts = 3)
+    @Retryable(backoff = @Backoff(
+            delayExpression = "#{@balanceParserProperties.getRetry().getMinBackoff().toMillis()}",
+            maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
+            multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
+            maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
     @ServiceActivator(inputChannel = CHANNEL_BALANCE,
-            poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.balance.frequency:100}"))
+            poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.balance.frequency:100}")
+    )
     @Transactional
     public void parse(AccountBalanceFile accountBalanceFile) {
-        if (!balanceParserProperties.isEnabled()) {
+        if (!parserProperties.isEnabled()) {
             return;
         }
 
         log.info("Starting processing account balances file {}", accountBalanceFile.getName());
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = false;
-        int insertBatchSize = balanceParserProperties.getBatchSize();
+        int insertBatchSize = parserProperties.getBatchSize();
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
-                .getDateRangeFilter(balanceParserProperties.getStreamType());
+                .getDateRangeFilter(parserProperties.getStreamType());
 
         Connection connection = DataSourceUtils.getConnection(dataSource);
         try (PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
@@ -193,7 +198,8 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
                 updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             }
 
-            if (!balanceParserProperties.isPersistBytes()) {
+            byte[] bytes = accountBalanceFile.getBytes();
+            if (!parserProperties.isPersistBytes()) {
                 accountBalanceFile.setBytes(null);
             }
 
@@ -201,7 +207,10 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
             accountBalanceFile.setCount(validCount);
             accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
             accountBalanceFileRepository.save(accountBalanceFile);
-            Utility.archiveFile(accountBalanceFile, balanceParserProperties);
+
+            if (parserProperties.isKeepFiles()) {
+                Utility.archiveFile(accountBalanceFile.getName(), bytes, parserProperties.getParsedPath());
+            }
 
             if (!skip) {
                 log.info("Successfully processed account balances file {}, {} records inserted in {}",

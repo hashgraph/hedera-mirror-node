@@ -45,10 +45,8 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
-import com.hedera.mirror.importer.parser.ParserProperties;
 
 @Log4j2
 @UtilityClass
@@ -141,21 +139,14 @@ public class Utility {
     // Moves a file in the form 2019-08-30T18_10_00.419072Z.rcd to destinationRoot/2019/08/30
     public static void archiveFile(String filename, byte[] contents, Path destinationRoot) {
         String date = filename.substring(0, 10).replace("-", File.separator);
-        Path destination = destinationRoot.resolve(date);
+        Path destination = destinationRoot.resolve(date).resolve(filename);
 
         try {
-            destination.toFile().mkdirs();
-            Files.write(destination
-                    .resolve(filename), contents, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            log.trace("Wrote {} to {}", filename, destination);
+            destination.getParent().toFile().mkdirs();
+            Files.write(destination, contents, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            log.trace("Archived file to {}", destination);
         } catch (Exception e) {
-            log.error("Error writing file {} to {}", filename, destination, e);
-        }
-    }
-
-    public static void archiveFile(StreamFile streamFile, ParserProperties parserProperties) {
-        if (parserProperties.isKeepFiles()) {
-            archiveFile(streamFile.getName(), streamFile.getBytes(), parserProperties.getParsedPath());
+            log.error("Error archiving file to {}", destination, e);
         }
     }
 

@@ -128,7 +128,11 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
      * @param recordFile containing information about file to be processed
      */
     @Override
-    @Retryable(backoff = @Backoff(delay = 200L, maxDelay = 10_000L, multiplier = 2), maxAttempts = Integer.MAX_VALUE)
+    @Retryable(backoff = @Backoff(
+            delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
+            maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
+            multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
+            maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
     @ServiceActivator(inputChannel = CHANNEL_RECORD,
             poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.record.frequency:100}")
     )
@@ -152,6 +156,7 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
                 }
             });
 
+            byte[] bytes = recordFile.getBytes();
             if (!parserProperties.isPersistBytes()) {
                 recordFile.setBytes(null);
             }
@@ -161,7 +166,10 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
             recordFile.setLoadEnd(loadEnd.getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
 
-            Utility.archiveFile(recordFile, parserProperties);
+            if (parserProperties.isKeepFiles()) {
+                Utility.archiveFile(recordFile.getName(), bytes, parserProperties.getParsedPath());
+            }
+
             Instant consensusEnd = Instant.ofEpochSecond(0L, recordFile.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusEnd, loadEnd));
             success = true;

@@ -20,42 +20,26 @@ package com.hedera.mirror.importer.parser.event;
  * ‍
  */
 
-import java.nio.file.Path;
-import java.time.Duration;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.ParserProperties;
+import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
+@Component("eventParserProperties")
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.parser.event")
-public class EventParserProperties implements ParserProperties {
+public class EventParserProperties extends AbstractParserProperties {
 
     private final MirrorProperties mirrorProperties;
 
-    private boolean enabled = true;
-
-    @DurationMin(millis = 10L)
-    @NotNull
-    private Duration frequency = Duration.ofMillis(100L);
-
-    private boolean keepFiles = false;
-
-    private boolean persistBytes = false;
-
-    @Min(1)
-    private int queueCapacity = 100;
-
-    @Override
-    public Path getStreamPath() {
-        return mirrorProperties.getDataPath().resolve(getStreamType().getPath());
+    public EventParserProperties(MirrorProperties mirrorProperties) {
+        this.mirrorProperties = mirrorProperties;
+        setEnabled(false);
     }
 
     @Override
