@@ -20,7 +20,7 @@
 
 'use strict';
 
-const {SHA_384} = require('./constants');
+const {INT_SIZE, SHA_384} = require('./constants');
 
 // the sum of the length field and the checksum field
 const SIMPLE_SUM = 101;
@@ -36,7 +36,7 @@ const SIMPLE_SUM = 101;
 const readLengthAndBytes = (buffer, minLength, maxLength, hasChecksum) => {
   const message = 'Error reading length and bytes';
   const length = buffer.readInt32BE();
-  let offset = 4;
+  let offset = INT_SIZE;
   if (minLength === maxLength) {
     if (length !== minLength) {
       throw new Error(`${message}, expect length ${minLength} got ${length}`);
@@ -48,7 +48,7 @@ const readLengthAndBytes = (buffer, minLength, maxLength, hasChecksum) => {
   if (hasChecksum) {
     const checksum = buffer.readInt32BE(offset);
     const expected = SIMPLE_SUM - length;
-    offset += 4;
+    offset += INT_SIZE;
     if (checksum !== expected) {
       throw new Error(`${message}, expect checksum ${checksum} to be ${expected}`);
     }
@@ -103,8 +103,8 @@ class HashObject extends StreamObject {
     // always SHA-384
     const hashLength = SHA_384.length;
     this.digestType = buffer.readInt32BE();
-    const {length, bytes} = readLengthAndBytes(buffer.slice(4), hashLength, hashLength, false);
-    this.dataLength = 4 + length;
+    const {length, bytes} = readLengthAndBytes(buffer.slice(INT_SIZE), hashLength, hashLength, false);
+    this.dataLength = INT_SIZE + length;
     this.hash = bytes;
   }
 

@@ -29,7 +29,7 @@ const SHA_384_WITH_RSA = {
   maxLength: 384,
 };
 
-// version (byte), object stream signature version (int)
+// version, object stream signature version
 const V5_FILE_HASH_OFFSET = BYTE_SIZE + INT_SIZE;
 
 class SignatureObject extends StreamObject {
@@ -49,8 +49,8 @@ class SignatureObject extends StreamObject {
       throw new Error(`${message}, expect type ${SHA_384_WITH_RSA.type} got ${type}`);
     }
 
-    const {length, bytes} = readLengthAndBytes(buffer.slice(4), 1, SHA_384_WITH_RSA.maxLength, true);
-    this.dataLength = 4 + length;
+    const {length, bytes} = readLengthAndBytes(buffer.slice(INT_SIZE), BYTE_SIZE, SHA_384_WITH_RSA.maxLength, true);
+    this.dataLength = INT_SIZE + length;
     this.signature = bytes;
   }
 
@@ -85,17 +85,20 @@ class SignatureFile {
 
   parseV2SignatureFile(buffer) {
     // skip type, already checked
-    this.fileHash = readNBytes(buffer.slice(1), SHA_384.length);
+    buffer = buffer.slice(BYTE_SIZE);
+    this.fileHash = readNBytes(buffer, SHA_384.length);
 
-    buffer = buffer.slice(1 + SHA_384.length);
+    buffer = buffer.slice(SHA_384.length);
     const type = buffer.readInt8();
     if (type !== 3) {
       throw new Error(`Unexpected type delimiter '${type}' in signature file`);
     }
-    const {length, bytes} = readLengthAndBytes(buffer.slice(1), 1, SHA_384_WITH_RSA.maxLength, false);
+
+    buffer = buffer.slice(BYTE_SIZE);
+    const {length, bytes} = readLengthAndBytes(buffer, BYTE_SIZE, SHA_384_WITH_RSA.maxLength, false);
     this.fileHashSignature = bytes;
 
-    buffer = buffer.slice(1 + length);
+    buffer = buffer.slice(length);
     if (buffer.length !== 0) {
       throw new Error('Extra data discovered in signature file ');
     }

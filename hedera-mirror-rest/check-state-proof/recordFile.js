@@ -30,10 +30,10 @@ const {readLengthAndBytes, HashObject, StreamObject} = require('./streamObject')
 const MAX_TRANSACTION_LENGTH = 64 * 1024;
 const MAX_RECORD_LENGTH = 64 * 1024;
 
-// version (int), hapiVersion (int), previous hash marker (byte), SHA-384 hash
+// version, hapiVersion, previous hash marker, SHA-384 hash
 const PRE_V5_HEADER_LENGTH = INT_SIZE + INT_SIZE + BYTE_SIZE + SHA_384.length;
 
-// version (int), hapi version major/minor/patch (int), object stream version (int)
+// version, hapi version major/minor/patch, object stream version
 const V5_START_HASH_OFFSET = INT_SIZE + (INT_SIZE + INT_SIZE + INT_SIZE) + INT_SIZE;
 
 class RecordStreamObject extends StreamObject {
@@ -47,8 +47,8 @@ class RecordStreamObject extends StreamObject {
   }
 
   read(buffer) {
-    const record = readLengthAndBytes(buffer, 1, MAX_RECORD_LENGTH, false);
-    const transaction = readLengthAndBytes(buffer.slice(record.length), 1, MAX_TRANSACTION_LENGTH, false);
+    const record = readLengthAndBytes(buffer, BYTE_SIZE, MAX_RECORD_LENGTH, false);
+    const transaction = readLengthAndBytes(buffer.slice(record.length), BYTE_SIZE, MAX_TRANSACTION_LENGTH, false);
     this.record = record.bytes;
     this.transaction = transaction.bytes;
     this.dataLength = record.length + transaction.length;
@@ -91,11 +91,12 @@ class RecordFile {
         throw new Error(`Unsupported marker ${marker}, expect 2`);
       }
 
-      const transaction = readLengthAndBytes(buffer.slice(1), 1, MAX_TRANSACTION_LENGTH, false);
-      const record = readLengthAndBytes(buffer.slice(1 + transaction.length), 1, MAX_RECORD_LENGTH, false);
+      buffer = buffer.slice(BYTE_SIZE);
+      const transaction = readLengthAndBytes(buffer, BYTE_SIZE, MAX_TRANSACTION_LENGTH, false);
+      const record = readLengthAndBytes(buffer.slice(transaction.length), BYTE_SIZE, MAX_RECORD_LENGTH, false);
       this.mapSuccessfulTransactions(record.bytes);
 
-      buffer = buffer.slice(1 + transaction.length + record.length);
+      buffer = buffer.slice(transaction.length + record.length);
     }
   }
 
@@ -103,7 +104,22 @@ class RecordFile {
     this.fileHash = crypto.createHash(SHA_384.name).update(buffer).digest(SHA_384.encoding);
     const metadataDigest = crypto.createHash(SHA_384.name).update(buffer.slice(0, V5_START_HASH_OFFSET));
 
-    // skip the bytes before the start hash object
+    // skip the bytes before the start hash object to read a list of stream objects organized as follows:
+    //
+    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    // |  Start Object Running Hash  |
+    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    // |    Record Stream Object     |
+    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    // |    ...                      |
+    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    // |    Record Stream Object     |
+    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    // |   End Object Running Hash   |
+    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    //
+    // Note the start object running hash and the end object running hash are of the same type HashObject and
+    // they have the same classId.
     buffer = buffer.slice(V5_START_HASH_OFFSET);
     const startHashObject = new HashObject(buffer);
     metadataDigest.update(buffer.slice(0, startHashObject.getLength()));
