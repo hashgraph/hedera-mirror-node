@@ -25,13 +25,11 @@ import java.time.Duration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.importer.MirrorProperties;
 
-@NoArgsConstructor
 @Data
 @Validated
 public abstract class AbstractParserProperties implements ParserProperties {

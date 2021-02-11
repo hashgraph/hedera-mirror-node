@@ -13,6 +13,11 @@ hedera:
       parser:
         balance:
           enabled: false
+          retry:
+            maxAttempts: 0
+        event:
+          retry:
+            maxAttempts: 0
         exclude:
           - entity: 0.0.999
         record:
@@ -21,6 +26,8 @@ hedera:
           entity:
             redis:
               enabled: false
+          retry:
+            maxAttempts: 0
       network: TESTNET
       startDate: 1970-01-01T00:00:00Z
 

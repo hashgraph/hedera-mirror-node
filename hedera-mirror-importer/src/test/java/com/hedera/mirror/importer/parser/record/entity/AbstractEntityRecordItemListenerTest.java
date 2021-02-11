@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
@@ -176,17 +177,21 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
-        String fileName = UUID.randomUUID().toString();
+        Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        String fileName = Utility.getStreamFilenameFromInstant(StreamType.RECORD, instant);
         EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
         RecordFile recordFile = RecordFile.builder()
                 .consensusStart(recordItem.getConsensusTimestamp())
                 .consensusEnd(recordItem.getConsensusTimestamp() + 1)
-                .count(0L)
+                .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA384)
+                .fileHash(UUID.randomUUID().toString())
+                .hash(UUID.randomUUID().toString())
+                .loadEnd(Instant.now().getEpochSecond())
+                .loadStart(Instant.now().getEpochSecond())
                 .name(fileName)
                 .nodeAccountId(nodeAccountId)
-                .fileHash(UUID.randomUUID().toString())
-                .previousHash("")
+                .previousHash(UUID.randomUUID().toString())
                 .build();
         recordStreamFileListener.onStart();
         entityRecordItemListener.onItem(recordItem);
@@ -195,16 +200,20 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
-        String fileName = UUID.randomUUID().toString();
+        Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
+        String fileName = Utility.getStreamFilenameFromInstant(StreamType.RECORD, instant);
         EntityId nodeAccountId = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
         RecordFile recordFile = RecordFile.builder()
                 .consensusStart(recordItems[0].getConsensusTimestamp())
                 .consensusEnd(recordItems[recordItems.length - 1].getConsensusTimestamp())
                 .count(0L)
                 .digestAlgorithm(DigestAlgorithm.SHA384)
+                .fileHash(UUID.randomUUID().toString())
+                .hash(UUID.randomUUID().toString())
+                .loadEnd(Instant.now().getEpochSecond())
+                .loadStart(Instant.now().getEpochSecond())
                 .name(fileName)
                 .nodeAccountId(nodeAccountId)
-                .fileHash(UUID.randomUUID().toString())
                 .previousHash("")
                 .build();
         recordStreamFileListener.onStart();

@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EventFile;
@@ -52,7 +51,7 @@ public class EventFileReaderV3 implements EventFileReader {
         eventFile.setCount(0L);
         eventFile.setDigestAlgorithm(DIGEST_ALGORITHM);
         eventFile.setLoadStart(Instant.now().getEpochSecond());
-        eventFile.setName(FilenameUtils.getName(fileName));
+        eventFile.setName(fileName);
 
         try (DataInputStream dis = new DataInputStream(streamFileData.getInputStream())) {
             // MessageDigest for getting the file Hash

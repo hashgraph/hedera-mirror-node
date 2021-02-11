@@ -40,8 +40,6 @@ import com.hedera.mirror.importer.util.Utility;
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
 
-    private static final Instant STARTUP_INSTANT = Instant.now();
-
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 

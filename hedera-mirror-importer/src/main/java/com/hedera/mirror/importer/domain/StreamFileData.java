@@ -39,7 +39,7 @@ public class StreamFileData {
     public static StreamFileData from(@NonNull File file) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
-            return new StreamFileData(file.getAbsolutePath(), bytes);
+            return new StreamFileData(file.getName(), bytes);
         } catch (Exception e) {
             throw new FileOperationException("Unable to read file to byte array", e);
         }

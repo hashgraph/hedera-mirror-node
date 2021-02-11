@@ -31,7 +31,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -52,7 +51,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
     @Override
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
-        String filename = FilenameUtils.getName(streamFileData.getFilename());
+        String filename = streamFileData.getFilename();
 
         try (RecordFileDigest digest = getRecordFileDigest(streamFileData.getInputStream());
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)) {

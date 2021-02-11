@@ -35,7 +35,6 @@ import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -94,7 +93,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
             accountBalanceFile.setBytes(streamFileData.getBytes());
             accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
             accountBalanceFile.setLoadStart(Instant.now().getEpochSecond());
-            accountBalanceFile.setName(FilenameUtils.getName(streamFileData.getFilename()));
+            accountBalanceFile.setName(streamFileData.getFilename());
 
             reader.lines()
                     .map(line -> {

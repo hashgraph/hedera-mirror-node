@@ -79,8 +79,6 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
@@ -410,8 +408,7 @@ public abstract class AbstractDownloaderTest {
         // the difference between file1 and file2.
         Duration interval = getCloseInterval().multipliedBy(2);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
-        String lastFileName = Utility.getStreamFilenameFromInstant(streamType, lastFileInstant);
-        doReturn(lastFileName).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        doReturn(lastFileInstant).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
 
         fileCopier.copy();
         downloader.download();
@@ -423,9 +420,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(Utility.getStreamFilenameFromInstant(streamType, Instant.now()))
-                .when(dateRangeProcessor)
-                .getEffectiveStartDate(downloaderProperties);
+        doReturn(Instant.now()).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
         fileCopier.copy();
         downloader.download();
         verifyForSuccess(List.of());
@@ -441,9 +436,7 @@ public abstract class AbstractDownloaderTest {
     })
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
-        doReturn(Utility.getStreamFilenameFromInstant(streamType, startDate))
-                .when(dateRangeProcessor)
-                .getEffectiveStartDate(downloaderProperties);
+        doReturn(startDate).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
@@ -530,7 +523,8 @@ public abstract class AbstractDownloaderTest {
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
-        doReturn(file1).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        doReturn(Instant.ofEpochSecond(0, timestamp)).when(dateRangeProcessor)
+                .getEffectiveStartDate(downloaderProperties);
 
         downloader.download();
 
@@ -614,12 +608,5 @@ public abstract class AbstractDownloaderTest {
 
     private static Stream<Arguments> provideAllNodeAccountIds() {
         return allNodeAccountIds.stream().map(Arguments::of);
-    }
-
-    protected StreamFile streamFile(String name, String hash) {
-        RecordFile recordFile = new RecordFile(); // The exact implementation class doesn't matter
-        recordFile.setHash(hash);
-        recordFile.setName(name);
-        return recordFile;
     }
 }

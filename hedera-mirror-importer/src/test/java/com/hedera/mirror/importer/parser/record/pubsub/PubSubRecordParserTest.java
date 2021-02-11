@@ -24,82 +24,49 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
+import org.springframework.core.io.Resource;
 
-import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.util.Utility;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordFileParser;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 
 public class PubSubRecordParserTest extends PubSubIntegrationTest {
+
     private static final int NUM_TXNS = 34; // number of transactions in test record files
 
-    @TempDir
-    Path dataPath;
-    @Value("classpath:data")
-    Path testResourcesPath;
-    @Resource
-    private RecordParserProperties parserProperties;
-    @Resource
-    private RecordFileRepository recordFileRepository;
-    private FileCopier fileCopier;
+    @Value("classpath:data/pubsub-messages.txt")
+    Path pubSubMessages;
 
-    @BeforeEach
-    void beforeEach() throws IOException {
-        parserProperties.getMirrorProperties().setDataPath(dataPath);
+    @Value("classpath:data/recordstreams/v2/record0.0.3/*.rcd")
+    Resource[] testFiles;
 
-        StreamType streamType = StreamType.RECORD;
-        fileCopier = FileCopier.create(testResourcesPath, dataPath)
-                .from(streamType.getPath(), "v2", "record0.0.3")
-                .filterFiles("*.rcd")
-                .to(streamType.getPath(), streamType.getValid());
+    @Autowired
+    private RecordFileReader recordFileReader;
 
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        Files.walk(Path.of(testResourcesPath.toString(), streamType.getPath(), "v2", "record0.0.3"))
-                .filter(p -> p.toString().endsWith(".rcd"))
-                .forEach(p -> {
-                    String filename = FilenameUtils.getName(p.toString());
-                    RecordFile rf = RecordFile.builder()
-                            .consensusStart(Utility.getTimestampFromFilename(filename))
-                            .consensusEnd(0L)
-                            .count(0L)
-                            .digestAlgorithm(DigestAlgorithm.SHA384)
-                            .fileHash(filename)
-                            .name(filename)
-                            .nodeAccountId(nodeAccountId)
-                            .previousHash(filename)
-                            .version(2)
-                            .build();
-                    recordFileRepository.save(rf);
-                });
-    }
+    @Autowired
+    private RecordFileParser recordFileParser;
 
     @Test
     public void testPubSubExporter() throws Exception {
-        // given
-        fileCopier.copy();
-
-        // when
-        //recordFilePoller.poll();
+        for (Resource resource : testFiles) {
+            RecordFile recordFile = recordFileReader.read(StreamFileData.from(resource.getFile()));
+            recordFile.setNodeAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
+            recordFileParser.parse(recordFile);
+        }
 
         // then
-        List<String> expectedMessages = Files.readAllLines(testResourcesPath.resolve("pubsub-messages.txt"));
+        List<String> expectedMessages = Files.readAllLines(pubSubMessages);
         List<String> actualMessages = getAllMessages(NUM_TXNS).stream()
                 .map(PubsubMessage::getData)
                 .map(ByteString::toStringUtf8)
