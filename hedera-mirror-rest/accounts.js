@@ -155,7 +155,7 @@ const getAccounts = async (req, res) => {
         next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
       };
 
-      if (process.env.NODE_ENV === 'test') {
+      if (utils.isTestEnv()) {
         ret.sqlQuery = results.sqlQuery;
       }
 
@@ -246,7 +246,7 @@ const getOneAccount = async (req, res) => {
 
       Object.assign(ret, processRow(entityResults.rows[0]));
 
-      if (process.env.NODE_ENV === 'test') {
+      if (utils.isTestEnv()) {
         ret.entitySqlQuery = entityResults.sqlQuery;
       }
 
@@ -255,7 +255,7 @@ const getOneAccount = async (req, res) => {
       ret.transactions = transferList.transactions;
       const {anchorSecNs} = transferList;
 
-      if (process.env.NODE_ENV === 'test') {
+      if (utils.isTestEnv()) {
         ret.transactionsSqlQuery = transactionsResults.sqlQuery;
       }
 

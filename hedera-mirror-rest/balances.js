@@ -24,7 +24,42 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
-const {DbError} = require('./errors/dbError');
+
+const formatBalancesResult = (req, result, limit, order) => {
+  const {rows, sqlQuery} = result;
+  const ret = {
+    timestamp: null,
+    balances: [],
+    links: {
+      next: null,
+    },
+  };
+
+  if (rows.length > 0) {
+    ret.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
+  }
+
+  ret.balances = rows.map((row) => {
+    return {
+      account: EntityId.fromString(row.account_id).toString(),
+      balance: Number(row.balance),
+      tokens: utils.parseTokenBalances(row.token_balances),
+    };
+  });
+
+  const anchorAccountId = ret.balances.length > 0 ? ret.balances[ret.balances.length - 1].account : 0;
+
+  // Pagination links
+  ret.links = {
+    next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order),
+  };
+
+  if (utils.isTestEnv()) {
+    ret.sqlQuery = sqlQuery;
+  }
+
+  return ret;
+};
 
 /**
  * Handler function for /balances API.
@@ -98,47 +133,9 @@ const getBalances = async (req, res) => {
   }
 
   // Execute query
-  return pool
-    .query(pgSqlQuery, sqlParams)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((result) => {
-      const ret = {
-        timestamp: null,
-        balances: [],
-        links: {
-          next: null,
-        },
-      };
-
-      if (result.rows.length > 0) {
-        ret.timestamp = utils.nsToSecNs(result.rows[0].consensus_timestamp);
-      }
-
-      ret.balances = result.rows.map((row) => {
-        return {
-          account: EntityId.fromString(row.account_id).toString(),
-          balance: Number(row.balance),
-          tokens: utils.parseTokenBalances(row.token_balances),
-        };
-      });
-
-      const anchorAccountId = ret.balances.length > 0 ? ret.balances[ret.balances.length - 1].account : 0;
-
-      // Pagination links
-      ret.links = {
-        next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order),
-      };
-
-      if (process.env.NODE_ENV === 'test') {
-        ret.sqlQuery = result.sqlQuery;
-      }
-
-      logger.debug(`getBalances returning ${ret.balances.length} entries`);
-
-      res.locals[constants.responseDataLabel] = ret;
-    });
+  const result = await utils.queryQuietly(pgSqlQuery, ...sqlParams);
+  res.locals[constants.responseDataLabel] = formatBalancesResult(req, result, limit, order);
+  logger.debug(`getBalances returning ${result.rows.length} entries`);
 };
 
 module.exports = {

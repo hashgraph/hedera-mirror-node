@@ -27,6 +27,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
+const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const transactionTypes = require('./transactionTypes');
 
@@ -214,7 +215,7 @@ const filterValidityChecks = async (param, op, val) => {
 
 /**
  * Validate input http request object
- * @param {HTTPRequest} req HTTP request object
+ * @param {Request} req HTTP request object
  * @return {Object} result of validity check, and return http code/contents
  */
 const validateReq = async (req) => {
@@ -519,7 +520,7 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
 const nsToSecNs = (ns) => {
-  return math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString();
+  return ns !== null ? math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString() : null;
 };
 
 /**
@@ -781,6 +782,22 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   throw new InvalidArgumentError(`Invalid transactionType value '${transactionType}'`);
 };
 
+const isTestEnv = () => process.env.NODE_ENV === 'test';
+
+/**
+ * Runs the sql query with params
+ * @param {String} query SQL query string
+ * @param params SQL query params
+ * @returns {Promise<pg.Result | DbError>} The query result or DbError
+ */
+const queryQuietly = async (query, ...params) => {
+  try {
+    return await pool.query(query, params);
+  } catch (err) {
+    throw new DbError(err.message);
+  }
+};
+
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
@@ -798,6 +815,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
+  isTestEnv,
   isValidEntityNum,
   isValidLimitNum,
   isValidNum,
@@ -813,6 +831,7 @@ module.exports = {
   parseResultParams,
   parseBooleanValue,
   parseTimestampParam,
+  queryQuietly,
   nsToSecNs,
   nsToSecNsWithHyphen,
   randomString,

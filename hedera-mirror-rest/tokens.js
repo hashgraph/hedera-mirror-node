@@ -411,8 +411,8 @@ module.exports = {
   getTokenBalances,
 };
 
-if (process.env.NODE_ENV === 'test') {
-  module.exports = Object.assign(module.exports, {
+if (utils.isTestEnv()) {
+  Object.assign(module.exports, {
     extractSqlFromTokenRequest,
     formatTokenRow,
     formatTokenInfoRow,
