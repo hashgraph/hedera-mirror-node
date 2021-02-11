@@ -8,7 +8,6 @@ applicationResource:
 global:
   db:
     host: RELEASE-NAME-postgres-postgresql
-    schema: mirrornode
   rest:
     username: mirror_api
     password: mirror_api_pass

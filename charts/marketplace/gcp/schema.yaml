@@ -18,18 +18,16 @@ x-google-marketplace:
   publishedVersionMetadata:
     releaseNote: >-
       v0.27 brings many new features to the mirror node marketplace application since v0.13.
-      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/master/charts/marketplace/gcp#v0.13-to-v0.27+">v0.13 to v0.27+ Upgrade</a> for additional upgrade steps.
+      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/master/charts/marketplace/gcp#v0.27">v0.27 Upgrade</a> for additional upgrade steps.
 
       The largest feature introduced since v0.13 is that of the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
       Token entity types are now ingested to the DB and can be queried through new REST APIs.
-      Support for the new v5 record file and signature file formats was added to be able to parse additional hash information made available by the network in HAPI v0.11.0.
-      Topic fragmentation support was added to the ingestion process as well as exposed through the appropriate REST and gRPC APIs
-      State Proof alpha REST API was added to enable Mirror node users who want to verify the cryptographic claims of submitted transactions for themselves.
-      <a href"https://swagger.io/specification">OpenAPI 3.0</a> specification support was added to the REST API long with a docs endpoint for upto date documentation and REST API curl support.
-      A Redis service was added to support ~10,000 TPS ingestion while still remaining under 10 seconds from submitting the topic message and receiving it back via the mirror node's streaming API.
+      Support for the new v5 <a href="https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats">Record and Event Stream File Formats</a> introduced in HAPI v0.11.0 was added.
+      Topic fragmentation support was added to the ingestion process as well as exposed through the appropriate REST and gRPC APIs.
+      State Proof alpha REST API was added to support Mirror node users who want to verify the cryptographic claims of submitted transactions for themselves.
+      <a href"https://swagger.io/specification">OpenAPI 3.0</a> specification support was added to the REST API along with a docs endpoint for up to date documentation and REST API curl support.
       DB and process memory optimizations were made to improve the ingestion rate with at least 2x-3x improvements.
       `startDate` and `endDate` properties were added to enable Mirror node users the ability to specify a time range for data processing.
-      <a href"https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">AWS default credential provider chain</a> support was added to provide greater flexibility for mirror node operators.
 
       Many more features went into the release, for detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>.
     # releaseTypes - Feature | BugFix | Security
@@ -84,15 +82,6 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
-  global.redis.password:
-    type: string
-    description: The password used by the redis service to connect to the database
-    title: Redis database password
-    x-google-marketplace:
-      type: GENERATED_PASSWORD
-      generatedPassword:
-        length: 24
-        base64: False
   global.rest.password:
     type: string
     description: The password used by the REST API to connect to the database
@@ -152,11 +141,6 @@ properties:
     type: string
     description: The Google Cloud Storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.importer.network` value.
     title: Importer GCS bucket name
-  importer.config.hedera.mirror.importer.downloader.cloudProvider:
-    default: GCP
-    type: string
-    description: The cloud provider to download files from. Either S3 or GCP.
-    title: Importer cloud provider
   importer.config.hedera.mirror.importer.downloader.gcpProjectId:
     type: string
     description: GCP project id to bill for requests to GCS bucket with requester pays enabled.
@@ -165,14 +149,6 @@ properties:
     type: string
     description: The Google Cloud secret key used to pay for downloaded streamed files
     title: Importer GCP secret key
-  importer.config.hedera.mirror.importer.endDate:
-    type: string
-    description: The end date (inclusive) of the data to import. Items after this date will be ignored. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
-    title: Importer data end date
-  importer.config.hedera.mirror.importer.initialAddressBook:
-    type: string
-    description: The path to the bootstrap address book used to override the built-in address book
-    title: Importer bootstrap address book
   importer.config.hedera.mirror.importer.network:
     default: MAINNET
     type: string
@@ -188,25 +164,6 @@ properties:
     type: string
     description: The start date (inclusive) of the data to import. Items before this date will be ignored. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
     title: Importer data start date
-  importer.config.hedera.mirror.importer.verifyHashAfter:
-    type: string
-    description: Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
-    title: Importer data verify hash after date
-  importer.config.spring.flyway.baselineVersion:
-    default: '0'
-    type: string
-    description: The version to tag an existing schema with when executing baseline.
-    title: Importer data migration baseline version
-  importer.config.spring.flyway.locations:
-    default: classpath:db/migration/v1
-    type: string
-    description: Comma-separated list of locations to scan recursively for migrations.
-    title: Importer data migration scripts location
-  importer.config.spring.flyway.target:
-    default: '1.999.999'
-    type: string
-    description: Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
-    title: Importer data migration target version
   importer.persistence.size:
     default: 10Gi
     description: The storage size for the importer persistent volume
