@@ -20,18 +20,21 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-class SystemUndeleteTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
+
+    public SystemUndeleteTransactionHandlerTest() {
+        super(false);
+    }
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new SystemUndeleteTransactionHandler();
@@ -60,18 +63,5 @@ class SystemUndeleteTransactionHandlerTest extends AbstractUpdatesEntityTransact
 
         testGetEntityIdHelper(transactionBody, getDefaultTransactionRecord().build(),
                 EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, EntityTypeEnum.CONTRACT));
-    }
-
-    @Override
-    ByteString getUpdateEntityTransactionBody() {
-        return TransactionBody.newBuilder()
-                .setSystemUndelete(
-                        SystemUndeleteTransactionBody.newBuilder().build()
-                ).build().toByteString();
-    }
-
-    @Override
-    void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setDeleted(false);
     }
 }

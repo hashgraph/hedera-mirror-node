@@ -20,15 +20,14 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-class ConsensusDeleteTopicTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+class ConsensusDeleteTopicTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ConsensusDeleteTopicTransactionHandler();
@@ -44,18 +43,5 @@ class ConsensusDeleteTopicTransactionHandlerTest extends AbstractUpdatesEntityTr
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.TOPIC;
-    }
-
-    @Override
-    ByteString getUpdateEntityTransactionBody() {
-        return TransactionBody.newBuilder()
-                .setConsensusDeleteTopic(
-                        ConsensusDeleteTopicTransactionBody.newBuilder().build()
-                ).build().toByteString();
-    }
-
-    @Override
-    void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setDeleted(true);
     }
 }

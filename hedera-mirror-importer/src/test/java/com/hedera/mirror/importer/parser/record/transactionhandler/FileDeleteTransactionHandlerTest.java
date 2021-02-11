@@ -20,15 +20,14 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-class FileDeleteTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+class FileDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new FileDeleteTransactionHandler();
@@ -44,18 +43,5 @@ class FileDeleteTransactionHandlerTest extends AbstractUpdatesEntityTransactionH
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.FILE;
-    }
-
-    @Override
-    ByteString getUpdateEntityTransactionBody() {
-        return TransactionBody.newBuilder()
-                .setFileDelete(
-                        FileDeleteTransactionBody.newBuilder().build()
-                ).build().toByteString();
-    }
-
-    @Override
-    void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setDeleted(true);
     }
 }
