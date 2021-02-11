@@ -8,9 +8,6 @@ applicationResource:
 global:
   db:
     host: RELEASE-NAME-postgres-postgresql
-  rest:
-    username: mirror_api
-    password: mirror_api_pass
   useReleaseForNameLabel: true
 
 grpc:
@@ -72,7 +69,7 @@ postgresql:
   postgresql:
     upgradeRepmgrExtension: true #upgrade repmgr version to 5.2 or else container spinup fails
   postgresqlImage:
-    tag: 11.10.0-debian-10-r83
+    tag: 12.5.0-debian-10-r88
 
 redis:
   enabled: false
