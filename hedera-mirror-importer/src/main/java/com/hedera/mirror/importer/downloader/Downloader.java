@@ -68,10 +68,11 @@ import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
-public abstract class Downloader {
+public abstract class Downloader<T extends StreamFile> {
 
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
@@ -82,11 +83,12 @@ public abstract class Downloader {
     private final CommonDownloaderProperties commonDownloaderProperties;
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
-    protected final StreamFileReader<?, ?> streamFileReader;
+    protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
+    protected final StreamFileRepository<T, ?> streamFileRepository;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
-    private Optional<StreamFile> lastStreamFile = Optional.empty();
+    private volatile Optional<T> lastStreamFile = Optional.empty();
 
     // Metrics
     private final MeterRegistry meterRegistry;
@@ -96,8 +98,8 @@ public abstract class Downloader {
     public Downloader(S3AsyncClient s3Client,
                       AddressBookService addressBookService, DownloaderProperties downloaderProperties,
                       MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
-                      SignatureFileReader signatureFileReader, StreamFileReader<?, ?> streamFileReader,
-                      StreamFileNotifier streamFileNotifier,
+                      SignatureFileReader signatureFileReader, StreamFileReader<T, ?> streamFileReader,
+                      StreamFileNotifier streamFileNotifier, StreamFileRepository<T, ?> streamFileRepository,
                       MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.s3Client = s3Client;
         this.addressBookService = addressBookService;
@@ -108,6 +110,7 @@ public abstract class Downloader {
         this.signatureFileReader = signatureFileReader;
         this.streamFileReader = streamFileReader;
         this.streamFileNotifier = streamFileNotifier;
+        this.streamFileRepository = streamFileRepository;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
         mirrorProperties = downloaderProperties.getMirrorProperties();
@@ -261,7 +264,7 @@ public abstract class Downloader {
      * @return last signature file name
      */
     private String getLastSignature() {
-        return lastStreamFile
+        String lastSignature = lastStreamFile
                 .map(StreamFile::getName)
                 .or(() -> {
                     StreamType streamType = downloaderProperties.getStreamType();
@@ -270,6 +273,12 @@ public abstract class Downloader {
                 })
                 .map(name -> name + "_sig")
                 .orElse("");
+
+        if (lastStreamFile.isEmpty()) {
+            lastStreamFile = streamFileRepository.findLatest();
+        }
+
+        return lastSignature;
     }
 
     /**
@@ -358,7 +367,7 @@ public abstract class Downloader {
 
                     StreamFileData streamFileData = new StreamFileData(pendingDownload.getFilename(),
                             pendingDownload.getBytes());
-                    StreamFile streamFile = streamFileReader.read(streamFileData);
+                    T streamFile = streamFileReader.read(streamFileData);
                     streamFile.setNodeAccountId(signature.getNodeAccountId());
 
                     verify(streamFile, signature);

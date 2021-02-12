@@ -52,7 +52,6 @@ import com.hedera.mirror.importer.leader.LeaderAspect;
 
 @Configuration
 @EnableAsync
-@EnableRetry
 @Log4j2
 @RequiredArgsConstructor
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
@@ -132,6 +131,12 @@ public class MirrorImporterConfiguration {
             }
             configuration.getPlaceholders().put("topicRunningHashV2AddedTimestamp", timestamp.toString());
         };
+    }
+
+    @Configuration
+    @ConditionalOnProperty(prefix = "spring.retry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @EnableRetry
+    protected static class RetryConfiguration {
     }
 
     @Configuration

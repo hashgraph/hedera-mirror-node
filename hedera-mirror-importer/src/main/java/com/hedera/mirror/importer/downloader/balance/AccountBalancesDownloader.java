@@ -28,27 +28,29 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 
 @Log4j2
 @Named
-public class AccountBalancesDownloader extends Downloader {
+public class AccountBalancesDownloader extends Downloader<AccountBalanceFile> {
 
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, AddressBookService addressBookService,
             BalanceDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader, BalanceFileReader balanceFileReader,
-            StreamFileNotifier streamFileNotifier,
+            StreamFileNotifier streamFileNotifier, AccountBalanceFileRepository accountBalanceFileRepository,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(s3Client, addressBookService, downloaderProperties,
                 meterRegistry, nodeSignatureVerifier, signatureFileReader, balanceFileReader, streamFileNotifier,
-                mirrorDateRangePropertiesProcessor);
+                accountBalanceFileRepository, mirrorDateRangePropertiesProcessor);
     }
 
     @Override

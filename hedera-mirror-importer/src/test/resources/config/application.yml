@@ -13,11 +13,6 @@ hedera:
       parser:
         balance:
           enabled: false
-          retry:
-            maxAttempts: 1
-        event:
-          retry:
-            maxAttempts: 1
         exclude:
           - entity: 0.0.999
         record:
@@ -26,8 +21,6 @@ hedera:
           entity:
             redis:
               enabled: false
-          retry:
-            maxAttempts: 1
       network: TESTNET
       startDate: 1970-01-01T00:00:00Z
 
@@ -37,6 +30,8 @@ spring:
     user: ${hedera.mirror.importer.db.username}
   redis:
     url: redis://${embedded.redis.user}:${embedded.redis.password}@${embedded.redis.host}:${embedded.redis.port}
+  retry:
+    enabled: false
   task:
     scheduling:
       enabled: false

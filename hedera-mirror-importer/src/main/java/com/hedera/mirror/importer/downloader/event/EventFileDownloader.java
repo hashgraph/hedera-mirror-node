@@ -27,25 +27,27 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.repository.EventFileRepository;
 
 @Named
-public class EventFileDownloader extends Downloader {
+public class EventFileDownloader extends Downloader<EventFile> {
 
     public EventFileDownloader(
             S3AsyncClient s3Client, AddressBookService addressBookService,
             EventDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry, EventFileReader eventFileReader,
             NodeSignatureVerifier nodeSignatureVerifier, SignatureFileReader signatureFileReader,
-            StreamFileNotifier streamFileNotifier,
+            StreamFileNotifier streamFileNotifier, EventFileRepository eventFileRepository,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(s3Client, addressBookService, downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, eventFileReader, streamFileNotifier,
+                nodeSignatureVerifier, signatureFileReader, eventFileReader, streamFileNotifier, eventFileRepository,
                 mirrorDateRangePropertiesProcessor);
     }
 

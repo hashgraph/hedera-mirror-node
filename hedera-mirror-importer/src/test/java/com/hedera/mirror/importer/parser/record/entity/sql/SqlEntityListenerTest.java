@@ -39,7 +39,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
@@ -397,7 +396,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
             prevHash = UUID.randomUUID().toString();
         }
 
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        EntityId nodeAccountId = EntityId.of("0.0.3", ACCOUNT);
         RecordFile rf = RecordFile.builder()
                 .consensusStart(consensusStart)
                 .consensusEnd(consensusStart + 1)

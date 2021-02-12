@@ -25,6 +25,7 @@ import static org.mockito.Mockito.doReturn;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -64,6 +65,7 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
+        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
 
         downloader.download();
 

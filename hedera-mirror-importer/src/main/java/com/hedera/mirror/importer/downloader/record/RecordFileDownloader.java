@@ -39,9 +39,10 @@ import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
-public class RecordFileDownloader extends Downloader {
+public class RecordFileDownloader extends Downloader<RecordFile> {
 
     private final Timer downloadLatencyMetric;
     private final Timer streamCloseMetric;
@@ -51,10 +52,10 @@ public class RecordFileDownloader extends Downloader {
             RecordDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader, RecordFileReader recordFileReader,
-            StreamFileNotifier streamFileNotifier,
+            StreamFileNotifier streamFileNotifier, RecordFileRepository recordFileRepository,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(s3Client, addressBookService, downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier,
+                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, recordFileRepository,
                 mirrorDateRangePropertiesProcessor);
 
         downloadLatencyMetric = Timer.builder("hedera.mirror.download.latency")
