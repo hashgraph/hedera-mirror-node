@@ -1,0 +1,21 @@
+{
+  "description": "Schedule api calls for a specific schedule using non-schedule id",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1024
+      }
+    ]
+  },
+  "url": "/api/v1/schedules/0.0.1024",
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+        "message": "Not found"
+        }
+      ]
+    }
+  }
+}

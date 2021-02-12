@@ -1,0 +1,68 @@
+{
+  "description": "Schedule api calls for a specific schedule using schedule id, not executed yet",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1024
+      }
+    ],
+    "entities": [
+      {
+        "entity_num": 2000,
+        "entity_type": 6,
+        "memo": "Created per council decision dated 02/01/21",
+        "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
+        "key": [1, 1, 1]
+      }
+    ],
+    "schedules": [
+      {
+        "consensus_timestamp": "1234567890000000001",
+        "creator_account_id": "0.0.1024",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.2000"
+      }
+    ],
+    "schedulesignatures": [
+      {
+        "consensus_timestamp": "1234567890000000001",
+        "public_key_prefix": [1, 1, 1],
+        "schedule_id": "0.0.2000",
+        "signature": [2, 2, 2]
+      },
+      {
+        "consensus_timestamp": "1234567890000000010",
+        "public_key_prefix": [3, 3, 3],
+        "schedule_id": "0.0.2000",
+        "signature": [4, 4, 4]
+      }
+    ]
+  },
+  "url": "/api/v1/schedules/0.0.2000",
+  "responseStatus": 200,
+  "responseJson": {
+    "admin_key": {
+      "_type": "ProtobufEncoded",
+      "key": "7b2231222c2231222c2231227d"
+    },
+    "consensus_timestamp": "1234567890.000000001",
+    "creator_account_id": "0.0.1024",
+    "executed_timestamp": null,
+    "memo": "Created per council decision dated 02/01/21",
+    "payer_account_id": "0.0.1024",
+    "schedule_id": "0.0.2000",
+    "signatures": [
+      {
+        "consensus_timestamp": "1234567890.000000001",
+        "public_key_prefix": "010101",
+        "signature": "020202"
+      },
+      {
+        "consensus_timestamp": "1234567890.000000010",
+        "public_key_prefix": "030303",
+        "signature": "040404"
+      }
+    ],
+    "transaction_body": "AQECAgMD"
+  }
+}

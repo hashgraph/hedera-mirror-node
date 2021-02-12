@@ -34,13 +34,13 @@ describe('schedule formatScheduleRow tests', () => {
     signatures: [
       {
         consensus_timestamp: '1234567890000000001',
-        public_key_prefix: [0xa1, 0xb1, 0xc1],
-        signature: [0xa2, 0xb2, 0xc2],
+        public_key_prefix: Buffer.from([0xa1, 0xb1, 0xc1]).toString('base64'),
+        signature: Buffer.from([0xa2, 0xb2, 0xc2]).toString('base64'),
       },
       {
         consensus_timestamp: '1234567890000000010',
-        public_key_prefix: [0xd1, 0xe1, 0xf1],
-        signature: [0xd2, 0xe2, 0xf2],
+        public_key_prefix: Buffer.from([0xd1, 0xe1, 0xf1]).toString('base64'),
+        signature: Buffer.from([0xd2, 0xe2, 0xf2]).toString('base64'),
       },
     ],
     transaction_body: Buffer.from([0x29, 0xde, 0xad, 0xbe, 0xef]),

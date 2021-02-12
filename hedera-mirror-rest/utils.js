@@ -560,7 +560,7 @@ const returnEntriesLimit = (type) => {
 
 /**
  * Converts the byte array returned by SQL queries into hex string
- * @param {ByteArray} byteArray Array of bytes to be converted to hex string
+ * @param {Array} byteArray Array of bytes to be converted to hex string
  * @return {hexString} Converted hex string
  */
 const toHexString = (byteArray) => {

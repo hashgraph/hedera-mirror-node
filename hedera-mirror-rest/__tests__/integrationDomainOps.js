@@ -37,6 +37,8 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadEntities(testDataJson.entities);
+  await loadSchedules(testDataJson.schedules);
+  await loadScheduleSignatures(testDataJson.schedulesignatures);
   await loadTransactions(testDataJson.transactions);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
@@ -80,6 +82,26 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadSchedules = async (schedules) => {
+  if (schedules == null) {
+    return;
+  }
+
+  for (const schedule of schedules) {
+    await addSchedule(schedule);
+  }
+};
+
+const loadScheduleSignatures = async (scheduleSignatures) => {
+  if (scheduleSignatures == null) {
+    return;
+  }
+
+  for (const scheduleSignature of scheduleSignatures) {
+    await addScheduleSignature(scheduleSignature);
   }
 };
 
@@ -132,6 +154,7 @@ const addEntity = async (defaults, entity) => {
     entity_type: 1,
     auto_renew_period: null,
     key: null,
+    memo: '',
     ...defaults,
     ...entity,
   };
@@ -139,8 +162,8 @@ const addEntity = async (defaults, entity) => {
   await sqlConnection.query(
     `INSERT INTO t_entities (
       id, fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex,
-      auto_renew_period, key)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
+      auto_renew_period, key, memo)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
     [
       EntityId.of(entity.entity_shard, entity.entity_realm, entity.entity_num).getEncodedId(),
       entity.entity_type,
@@ -152,6 +175,7 @@ const addEntity = async (defaults, entity) => {
       entity.public_key,
       entity.auto_renew_period,
       entity.key,
+      entity.memo,
     ]
   );
 };
@@ -309,6 +333,51 @@ const addTopicMessage = async (message) => {
       message.running_hash,
       message.seq_num,
       message.running_hash_version,
+    ]
+  );
+};
+
+const addSchedule = async (schedule) => {
+  schedule = {
+    creator_account_id: '0.0.1024',
+    payer_account_id: '0.0.1024',
+    transaction_body: Buffer.from([1, 1, 2, 2, 3, 3]),
+    ...schedule,
+  };
+
+  await sqlConnection.query(
+    `INSERT INTO schedule (
+      consensus_timestamp,
+      creator_account_id,
+      executed_timestamp,
+      payer_account_id,
+      schedule_id,
+      transaction_body)
+     VALUES($1, $2, $3, $4, $5, $6)`,
+    [
+      schedule.consensus_timestamp,
+      EntityId.fromString(schedule.creator_account_id).getEncodedId().toString(),
+      schedule.executed_timestamp,
+      EntityId.fromString(schedule.payer_account_id).getEncodedId().toString(),
+      EntityId.fromString(schedule.schedule_id).getEncodedId().toString(),
+      schedule.transaction_body,
+    ]
+  );
+};
+
+const addScheduleSignature = async (scheduleSignature) => {
+  await sqlConnection.query(
+    `INSERT INTO schedule_signature (
+      consensus_timestamp,
+      public_key_prefix,
+      schedule_id,
+      signature)
+     VALUES($1, $2, $3, $4)`,
+    [
+      scheduleSignature.consensus_timestamp,
+      Buffer.from(scheduleSignature.public_key_prefix),
+      EntityId.fromString(scheduleSignature.schedule_id).getEncodedId().toString(),
+      Buffer.from(scheduleSignature.signature),
     ]
   );
 };

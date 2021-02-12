@@ -38,8 +38,8 @@ const scheduleSelectFields = [
   `json_agg(
     json_build_object(
       'consensus_timestamp', ss.consensus_timestamp::text,
-      'public_key_prefix', ss.public_key_prefix,
-      'signature', ss.signature
+      'public_key_prefix', encode(ss.public_key_prefix, 'base64'),
+      'signature', encode(ss.signature, 'base64')
     ) order by ss.consensus_timestamp
   ) as signatures`,
 ];
@@ -62,8 +62,8 @@ const formatScheduleRow = (row) => {
   const signatures = row.signatures.map((signature) => {
     return {
       consensus_timestamp: utils.nsToSecNs(signature.consensus_timestamp),
-      public_key_prefix: utils.toHexString(signature.public_key_prefix),
-      signature: utils.toHexString(signature.signature),
+      public_key_prefix: utils.toHexString(Buffer.from(signature.public_key_prefix, 'base64')),
+      signature: utils.toHexString(Buffer.from(signature.signature, 'base64')),
     };
   });
 
