@@ -78,14 +78,16 @@ describe('schedule formatScheduleRow tests', () => {
       expected: {...defaultExpected},
     },
     {
-      description: 'input with "executed_timestamp" nullified',
+      description: 'input with "key" and "executed_timestamp" nullified',
       input: {
         ...defaultInput,
         executed_timestamp: null,
+        key: null,
       },
       expected: {
         ...defaultExpected,
-        executed_timestamp: null,
+        executed_timestamp: '0.000000000',
+        admin_key: null,
       },
     },
   ];

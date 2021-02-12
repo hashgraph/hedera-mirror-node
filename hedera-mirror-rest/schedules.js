@@ -93,6 +93,9 @@ const getScheduleById = async (req, res) => {
   }
 
   const encodedScheduleId = EntityId.fromString(scheduleId).getEncodedId();
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${encodedScheduleId}`);
+  }
   const {rows} = await utils.queryQuietly(getScheduleByIdQuery, encodedScheduleId);
   if (rows.length !== 1) {
     throw new NotFoundError();

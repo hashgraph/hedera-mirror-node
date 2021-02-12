@@ -520,7 +520,7 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
 const nsToSecNs = (ns) => {
-  return ns !== null ? math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString() : null;
+  return math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString();
 };
 
 /**
