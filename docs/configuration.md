@@ -66,7 +66,23 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
-| `hedera.mirror.importer.parser.balance.keepFiles`                    | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
+| `hedera.mirror.importer.parser.balance.frequency`                    | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
+| `hedera.mirror.importer.parser.balance.keepFiles`                    | false                   | Whether to keep parsed files after successful parsing.                                         |
+| `hedera.mirror.importer.parser.balance.persistBytes`                 | false                   | Whether to persist the balance file bytes to the database after successful parsing.            |
+| `hedera.mirror.importer.parser.balance.queueCapacity`                | 40                      | How many balance files to queue in memory while waiting to be persisted by the parser          |
+| `hedera.mirror.importer.parser.balance.retry.maxAttempts`            | 3                       | How many attempts should be made to retry file parsing errors                                  |
+| `hedera.mirror.importer.parser.balance.retry.maxBackoff`             | 10s                     | The maximum amount of time to wait between retries                                             |
+| `hedera.mirror.importer.parser.balance.retry.minBackoff`             | 250ms                   | The minimum amount of time to wait between retries                                             |
+| `hedera.mirror.importer.parser.balance.retry.multiplier`             | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
+| `hedera.mirror.importer.parser.event.frequency`                      | 100ms                   | How often to poll for new messages                                                             |
+| `hedera.mirror.importer.parser.event.keepFiles`                      | false                   | Whether to keep parsed files after successful parsing.                                         |
+| `hedera.mirror.importer.parser.event.persistBytes`                   | false                   | Whether to persist the event file bytes to the database after successful parsing.              |
+| `hedera.mirror.importer.parser.event.queueCapacity`                  | 100                     | How many event files to queue in memory while waiting to be persisted by the parser            |
+| `hedera.mirror.importer.parser.event.retry.maxAttempts`              | Integer.MAX_VALUE       | How many attempts should be made to retry file parsing errors                                  |
+| `hedera.mirror.importer.parser.event.retry.maxBackoff`               | 10s                     | The maximum amount of time to wait between retries                                             |
+| `hedera.mirror.importer.parser.event.retry.minBackoff`               | 250ms                   | The minimum amount of time to wait between retries                                             |
+| `hedera.mirror.importer.parser.event.retry.multiplier`               | 2                       | Used to generate the next delay for backoff                                                    |
 | `hedera.mirror.importer.parser.exclude`                              | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`                       | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
 | `hedera.mirror.importer.parser.exclude.transaction`                  | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
@@ -74,8 +90,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.include.entity`                       | []                      | A list of entity IDs to store in shard.realm.num (e.g. 0.0.3) format                           |
 | `hedera.mirror.importer.parser.include.transaction`                  | []                      | A list of transaction types to store. See `TransactionTypeEnum.java` for possible values       |
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
-| `hedera.mirror.importer.parser.record.frequency`                     | 100ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
-| `hedera.mirror.importer.parser.record.keepFiles`                     | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
 | `hedera.mirror.importer.parser.record.entity.notify.enabled`                | false                   | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                    |
 | `hedera.mirror.importer.parser.record.entity.notify.maxJsonPayloadSize`     | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
 | `hedera.mirror.importer.parser.record.entity.persist.claims`                | false                   | Persist claim data to the database                                                             |
@@ -92,8 +106,16 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 20_000                  | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.entity.sql.bufferSize`                | 11441                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.record.entity.sql.enabled`                   | true                    | Whether to use PostgreSQL Copy mechanism to insert into the database                           |
+| `hedera.mirror.importer.parser.record.frequency`                            | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
+| `hedera.mirror.importer.parser.record.keepFiles`                            | false                   | Whether to keep parsed files after successful parsing.                                         |
+| `hedera.mirror.importer.parser.record.persistBytes`                         | false                   | Whether to persist the record file bytes to the database after successful parsing.             |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
+| `hedera.mirror.importer.parser.record.queueCapacity`                        | 100                     | How many record files to queue in memory while waiting to be persisted by the parser           |
+| `hedera.mirror.importer.parser.record.retry.maxAttempts`                    | Integer.MAX_VALUE       | How many attempts should be made to retry file parsing errors                                  |
+| `hedera.mirror.importer.parser.record.retry.maxBackoff`                     | 10s                     | The maximum amount of time to wait between retries                                             |
+| `hedera.mirror.importer.parser.record.retry.minBackoff`                     | 250ms                   | The minimum amount of time to wait between retries                                             |
+| `hedera.mirror.importer.parser.record.retry.multiplier`                     | 2                       | Used to generate the next delay for backoff                                                    |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 | `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
