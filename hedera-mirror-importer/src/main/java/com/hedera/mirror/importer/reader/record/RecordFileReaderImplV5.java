@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.reader.record;
  */
 
 import com.google.common.primitives.Longs;
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.security.DigestInputStream;
@@ -58,8 +59,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         // the first DigestInputStream is for file hash and the second is for metadata hash. Any BufferedInputStream
         // should not wrap, directly or indirectly, the second DigestInputStream. The BufferedInputStream after the
         // first DigestInputStream is needed to avoid digesting some class ID fields twice.
-        try (DigestInputStream digestInputStream = new DigestInputStream(new DigestInputStream(streamFileData
-                .getInputStream(), messageDigestFile),
+        try (DigestInputStream digestInputStream = new DigestInputStream(
+                new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
                 messageDigestMetadata);
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
             RecordFile recordFile = new RecordFile();
