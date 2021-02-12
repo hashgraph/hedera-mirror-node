@@ -25,41 +25,37 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
 
-import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestRecordFiles;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.exception.MissingFileException;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @RequiredArgsConstructor
-abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
+class RecordFileParserIntegrationTest extends IntegrationTest {
 
-    private final static EntityId NODE_ACCOUNT_ID = EntityId.of(TestUtils.toAccountId("0.0.3"));
-    protected final static Map<String, RecordFile> ALL_RECORD_FILE_MAP = TestRecordFiles.getAll();
+    private final static EntityId NODE_ACCOUNT_ID = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
 
-    @TempDir
-    static Path dataPath;
+    @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_00.419072Z.rcd")
+    Path recordFilePath1;
 
-    @Value("classpath:data")
-    Path testPath;
+    @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_05.249678Z.rcd")
+    Path recordFilePath2;
 
     @Resource
     private RecordFileParser recordFileParser;
@@ -79,65 +75,53 @@ abstract class AbstractRecordFileParserIntegrationTest extends IntegrationTest {
     @Resource
     private RecordFileRepository recordFileRepository;
 
-    private final RecordFileDescriptor recordFileDescriptor1;
-    private final RecordFileDescriptor recordFileDescriptor2;
+    @Resource
+    private RecordFileReader recordFileReader;
 
-    private RecordFile recordFile1;
-    private RecordFile recordFile2;
+    private RecordFileDescriptor recordFileDescriptor1;
+    private RecordFileDescriptor recordFileDescriptor2;
 
     @BeforeEach
     void before() {
-        var mirrorProperties = new MirrorProperties();
-        mirrorProperties.setDataPath(dataPath);
-        parserProperties = new RecordParserProperties(mirrorProperties);
+        RecordFile recordFile1 = recordFileReader.read(StreamFileData.from(recordFilePath1.toFile()));
+        recordFile1.setNodeAccountId(NODE_ACCOUNT_ID);
+        RecordFile recordFile2 = recordFileReader.read(StreamFileData.from(recordFilePath2.toFile()));
+        recordFile2.setNodeAccountId(NODE_ACCOUNT_ID);
+        recordFileDescriptor1 = new RecordFileDescriptor(93, 8, recordFile1);
+        recordFileDescriptor2 = new RecordFileDescriptor(75, 5, recordFile2);
+        parserProperties = new RecordParserProperties(new MirrorProperties());
         parserProperties.setKeepFiles(false);
-
-        recordFile1 = recordFileDescriptor1.getRecordFile().toBuilder().nodeAccountId(NODE_ACCOUNT_ID).build();
-        recordFile2 = recordFileDescriptor2.getRecordFile().toBuilder().nodeAccountId(NODE_ACCOUNT_ID).build();
-
-        FileCopier fileCopier = FileCopier
-                .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
-                .from(StreamType.RECORD.getPath(), "v" + recordFile1.getVersion(), "record0.0.3")
-                .filterFiles("*.rcd");
-        fileCopier.copy();
     }
 
     @Test
     void parse() {
-        // given
-        recordFileRepository.save(recordFile1);
-
         // when
-        recordFileParser.parse(recordFile1);
+        recordFileParser.parse(recordFileDescriptor1.getRecordFile());
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
 
-        // given
-        recordFileRepository.save(recordFile2);
-
         // when parse second file
-        recordFileParser.parse(recordFile2);
+        recordFileParser.parse(recordFileDescriptor2.getRecordFile());
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1, recordFileDescriptor2);
     }
 
     @Test
-    void verifyRollbackAndPostFunctionalityOnRecordFileRepositoryError() {
-        // given
+    void rollback() {
+        // when
+        recordFileParser.parse(recordFileDescriptor1.getRecordFile());
+
+        // then
+        verifyFinalDatabaseState(recordFileDescriptor1);
 
         // when
-        Assertions.assertThrows(MissingFileException.class, () -> {
-            recordFileParser.parse(recordFile1);
+        Assertions.assertThrows(ParserException.class, () -> {
+            recordFileParser.parse(recordFileDescriptor1.getRecordFile());
         });
 
         // then
-        verifyFinalDatabaseState();
-
-        // verify continue functionality
-        recordFileRepository.save(recordFile1);
-        recordFileParser.parse(recordFile1);
         verifyFinalDatabaseState(recordFileDescriptor1);
     }
 
