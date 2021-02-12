@@ -110,6 +110,37 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - balances
+  /api/v1/schedules/{id}:
+    get:
+      summary: Get schedule by id
+      description: Returns schedule information based on the given schedule id
+      operationId: getScheduleById
+      parameters:
+        - $ref: '#/components/parameters/scheduleIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    $ref: '#/components/schemas/Schedule'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: scheduleid"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - schedules
   /api/v1/transactions:
     get:
       summary: List transactions
@@ -474,6 +505,8 @@ tags:
     description: The balance object represents the balance of accounts on the Hedera network.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
+  - name: schedules
+    description: The schedules object represents the information associated with a schedule entity.
   - name: transactions
     description: The transaction object represents the transactions processed on the Hedera network.
     externalDocs:
@@ -615,6 +648,50 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/AccountInfo'
+    Schedule:
+      type: object
+      properties:
+        admin_key:
+          type: object
+          nullable: true
+          example: null
+        consensus_timestamp:
+          type: string
+          example: "1234567890.000000001"
+        creator_account_id:
+          type: string
+          example: 0.0.2000
+        executed_timestamp:
+          type: string
+          example: "1234567890.000000100"
+        memo:
+          type: string
+          example: 'created on 02/10/2021'
+        payer_account_id:
+          type: string
+          example: 0.0.3000
+        schedule_id:
+          type: string
+          example: 0.0.3010
+        signatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleSignature'
+        transaction_body:
+          type: string
+          example: Kd6tvu8=
+    ScheduleSignature:
+      type: object
+      properties:
+        consensus_timestmap:
+          type: string
+          example: "1234567890.000000001"
+        public_key_prefix:
+          type: string
+          example: "112233"
+        signature:
+          type: string
+          example: "445566"
     Transaction:
       type: object
       properties:
@@ -1052,6 +1129,14 @@ components:
       in: query
       description: The ED25519 publickey to compare against
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
+      schema:
+        type: string
+    scheduleIdPathParam:
+      name: id
+      in: path
+      required: true
+      description: Schedule entity id
+      example: 0.0.2035
       schema:
         type: string
     timestampQueryParam:

@@ -1,0 +1,16 @@
+{
+  "description": "Schedule api calls with invalid schedule id",
+  "setup": {
+  },
+  "url": "/api/v1/schedules/0.7",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: scheduleid"
+        }
+      ]
+    }
+  }
+}
