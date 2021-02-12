@@ -20,9 +20,6 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
@@ -42,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.util.Utility;
@@ -68,8 +66,8 @@ class PubSubMessageTest {
                 getTransactionRecord(),
                 nonFeeTransfers);
         ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
-        JsonNode expected = objectMapper.readTree("{" +
+        String actual = objectMapper.writeValueAsString(pubSubMessage);
+        String expected = "{" +
                 "  \"consensusTimestamp\" : 123456789," +
                 "  \"entity\" : {" +
                 "    \"shardNum\" : 0," +
@@ -95,8 +93,8 @@ class PubSubMessageTest {
                 "      }," +
                 "    \"amount\": \"100000000\"" +
                 "  } ]" +
-                "}");
-        assertThat(actual).isEqualTo(expected);
+                "}";
+        JSONAssert.assertEquals(expected, actual, true);
     }
 
     @Test
@@ -105,21 +103,23 @@ class PubSubMessageTest {
                 new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
                 getTransactionRecord(), null);
         ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
-        JsonNode expected = objectMapper.readTree("{" +
+        String actual = objectMapper.writeValueAsString(pubSubMessage);
+        String expected = "{" +
                 "  \"consensusTimestamp\" : 123456789," +
                 "  \"transactionType\" : 10," +
                 getExpectedTransactionJson() + "," +
                 getExpectedTransactionRecord() +
-                "}");
-        assertThat(actual).isEqualTo(expected);
+                "}";
+        JSONAssert.assertEquals(expected, actual, true);
     }
 
     private static TransactionBody getTransactionBody() {
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(TIMESTAMP)
                         .setAccountID(ACCOUNT_ID)
+                        .setNonce(BYTE_STRING)
+                        .setScheduled(false)
+                        .setTransactionValidStart(TIMESTAMP)
                         .build())
                 .setNodeAccountID(ACCOUNT_ID)
                 .setTransactionFee(INT64_VALUE)
@@ -156,8 +156,8 @@ class PubSubMessageTest {
                 "        \"realmNum\": \"0\"," +
                 "        \"accountNum\": \"10\"" +
                 "      }," +
-                "      \"scheduled\": false," +
-                "      \"nonce\": \"\"" +
+                "      \"nonce\": \"YWJjZGVm\"," +
+                "      \"scheduled\": false" +
                 "    }," +
                 "    \"nodeAccountID\": {" +
                 "      \"shardNum\": \"0\"," +

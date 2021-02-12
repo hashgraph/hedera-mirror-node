@@ -20,16 +20,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.util.Utility;
 
-class ContractUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -46,25 +43,5 @@ class ContractUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransact
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.CONTRACT;
-    }
-
-    @Override
-    ByteString getUpdateEntityTransactionBody() {
-        return TransactionBody.newBuilder().setContractUpdateInstance(
-                ContractUpdateTransactionBody.newBuilder()
-                        .setAdminKey(DEFAULT_KEY)
-                        .setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
-                        .setExpirationTime(DEFAULT_EXPIRATION_TIME)
-                        .setMemo(DEFAULT_MEMO)
-                        .build())
-                .build().toByteString();
-    }
-
-    @Override
-    void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
-        entity.setExpiryTimeNs(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
-        entity.setKey(DEFAULT_KEY.toByteArray());
-        entity.setMemo(DEFAULT_MEMO);
     }
 }

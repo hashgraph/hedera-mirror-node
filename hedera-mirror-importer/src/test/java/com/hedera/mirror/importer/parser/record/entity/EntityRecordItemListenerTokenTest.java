@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -47,7 +48,6 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -59,13 +59,19 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
 public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
 
-    private static final String SYMBOL = "FOOCOIN";
-    private static final Key TOKEN_REF_KEY = keyFromString(
-            "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
-    private static final TokenID TOKEN_ID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(2).build();
-    private static final long CREATE_TIMESTAMP = 1L;
     private static final long ASSOCIATE_TIMESTAMP = 5L;
+    private static final long AUTO_RENEW_PERIOD = 30L;
+    private static final long CREATE_TIMESTAMP = 1L;
+    private static final Timestamp EXPIRY_TIMESTAMP = Timestamp.newBuilder().setSeconds(360L).build();
+    private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
     private static final long INITIAL_SUPPLY = 1_000_000L;
+    private static final String SYMBOL = "FOOCOIN";
+    private static final String TOKEN_CREATE_MEMO = "TokenCreate memo";
+    private static final TokenID TOKEN_ID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(2).build();
+    private static final Key TOKEN_REF_KEY = keyFromString(KEY);
+    private static final long TOKEN_UPDATE_AUTO_RENEW_PERIOD = 12L;
+    private static final Key TOKEN_UPDATE_REF_KEY = keyFromString(KEY2);
+    private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
 
     @Resource
     protected TokenRepository tokenRepository;
@@ -85,12 +91,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     void tokenCreate() throws InvalidProtocolBufferException {
         createTokenEntity(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, false, false);
 
-        // verify entity count
-        Entities tokenEntities = getTokenEntity(TOKEN_ID);
-        var expectedEntity = createEntity(tokenEntities, null, null, TOKEN_REF_KEY, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.TOKEN);
-        assertEquals(5, entityRepository.count()); // Node, payer, token and autorenew
-        assertThat(getEntity(tokenEntities.getId())).isEqualTo(expectedEntity);
+        Entities expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
+        assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
+        assertEntity(expected);
 
         // verify token
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
@@ -149,14 +153,11 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
         insertAndParseTransaction(deleteTransaction, 10L, INITIAL_SUPPLY);
 
-        Entities tokenEntities = getTokenEntity(TOKEN_ID);
-        var expectedEntity = createEntity(tokenEntities, null, null, TOKEN_REF_KEY, null, TRANSACTION_MEMO, 1L,
-                30L, EntityTypeEnum.TOKEN);
+        Entities expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+                true, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
+        assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
+        assertEntity(expected);
 
-        expectedEntity.setDeleted(true);
-        assertThat(getEntity(tokenEntities.getId())).isEqualTo(expectedEntity);
-
-        assertEquals(5, entityRepository.count());
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
     }
 
@@ -168,10 +169,16 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction transaction = tokenUpdateTransaction(
                 TOKEN_ID,
                 newSymbol,
-                keyFromString("updated-key"),
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build());
+                TOKEN_UPDATE_MEMO,
+                TOKEN_UPDATE_REF_KEY,
+                PAYER2);
         long updateTimeStamp = 10L;
         insertAndParseTransaction(transaction, updateTimeStamp, INITIAL_SUPPLY);
+
+        Entities expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
+                TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null);
+        assertEquals(5, entityRepository.count()); // Node, payer, token, old autorenew, and new autorenew
+        assertEntity(expected);
 
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimeStamp, newSymbol, INITIAL_SUPPLY);
     }
@@ -182,6 +189,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction transaction = tokenUpdateTransaction(
                 TOKEN_ID,
                 newSymbol,
+                TOKEN_UPDATE_MEMO,
                 keyFromString("updated-key"),
                 AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build());
         insertAndParseTransaction(transaction, 10L, INITIAL_SUPPLY);
@@ -424,16 +432,17 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         return buildTransaction(builder -> {
             builder.getTokenCreationBuilder()
                     .setAdminKey(TOKEN_REF_KEY)
+                    .setAutoRenewAccount(PAYER)
+                    .setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD))
                     .setDecimals(1000)
-                    .setExpiry(Timestamp.newBuilder().setSeconds(360))
-                    .setInitialSupply(INITIAL_SUPPLY)
+                    .setExpiry(EXPIRY_TIMESTAMP)
                     .setFreezeDefault(false)
+                    .setInitialSupply(INITIAL_SUPPLY)
+                    .setMemo(TOKEN_CREATE_MEMO)
+                    .setName(symbol + "_token_name")
                     .setSupplyKey(TOKEN_REF_KEY)
                     .setSymbol(symbol)
                     .setTreasury(PAYER)
-                    .setAutoRenewAccount(PAYER)
-                    .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
-                    .setName(symbol + "_token_name")
                     .setWipeKey(TOKEN_REF_KEY);
 
             if (setFreezeKey) {
@@ -447,19 +456,20 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         });
     }
 
-    private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, Key newKey, AccountID accountID) {
+    private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey, AccountID accountID) {
         return buildTransaction(builder -> builder.getTokenUpdateBuilder()
-                .setToken(tokenID)
                 .setAdminKey(newKey)
+                .setAutoRenewAccount(accountID)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(TOKEN_UPDATE_AUTO_RENEW_PERIOD))
+                .setExpiry(EXPIRY_TIMESTAMP)
+                .setFreezeKey(newKey)
                 .setKycKey(newKey)
+                .setMemo(StringValue.of(memo))
+                .setName(symbol + "_update_name")
                 .setSupplyKey(newKey)
                 .setSymbol(symbol)
-                .setName(symbol + "_update_name")
+                .setToken(tokenID)
                 .setTreasury(accountID)
-                .setAutoRenewAccount(accountID)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(12))
-                .setExpiry(Timestamp.newBuilder().setSeconds(360))
-                .setFreezeKey(newKey)
                 .setWipeKey(newKey)
         );
     }
@@ -597,10 +607,6 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                         .of(tokenID), EntityId.of(accountID))).get();
         assertThat(tokenTransfer)
                 .returns(amount, from(com.hedera.mirror.importer.domain.TokenTransfer::getAmount));
-    }
-
-    private Entities getTokenEntity(TokenID tokenID) {
-        return getEntity(EntityId.of(tokenID).getId());
     }
 
     private void createTokenEntity(TokenID tokenID, String symbol, long consensusTimestamp, boolean setFreezeKey,

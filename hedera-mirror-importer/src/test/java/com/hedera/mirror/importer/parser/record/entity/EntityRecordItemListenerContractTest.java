@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -43,6 +44,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.Entities;
@@ -57,7 +60,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1002).build();
 
     @BeforeEach
-    void before() throws Exception {
+    void before() {
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
         entityProperties.getPersist().setContracts(true);
@@ -161,8 +164,9 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         );
     }
 
-    @Test
-    void contractUpdateAllToExisting() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void contractUpdateAllToExisting(boolean updateMemoWrapperOrMemo) throws Exception {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
         TransactionBody createTransactionBody = getTransactionBody(contractCreateTransaction);
@@ -171,7 +175,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now update
-        Transaction transaction = contractUpdateAllTransaction();
+        Transaction transaction = contractUpdateAllTransaction(updateMemoWrapperOrMemo);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = createOrUpdateRecord(transactionBody);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
@@ -191,9 +195,10 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         );
     }
 
-    @Test
-    void contractUpdateAllToNew() throws Exception {
-        Transaction transaction = contractUpdateAllTransaction();
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void contractUpdateAllToNew(boolean updateMemoWrapperOrMemo) throws Exception {
+        Transaction transaction = contractUpdateAllTransaction(updateMemoWrapperOrMemo);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = createOrUpdateRecord(transactionBody);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
@@ -225,15 +230,12 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now update
-        Transaction transaction = contractUpdateAllTransaction();
+        Transaction transaction = contractUpdateAllTransaction(true);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = createOrUpdateRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
-
-        Entities actualContract = getTransactionEntity(record.getConsensusTimestamp());
-        Entities actualProxyAccount = getEntity(actualContract.getProxyAccountId());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -245,13 +247,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
                 , () -> assertEquals(0, fileDataRepository.count())
                 , () -> assertContractTransaction(transactionBody, record, false)
                 // Additional entity checks
-                , () -> assertEquals(contractCreateTransactionBody.getAutoRenewPeriod().getSeconds(),
-                        actualContract.getAutoRenewPeriod())
-                , () -> assertArrayEquals(contractCreateTransactionBody.getAdminKey().toByteArray(),
-                        actualContract.getKey())
-                , () -> assertAccount(contractCreateTransactionBody.getProxyAccountID(), actualProxyAccount)
-                , () -> assertFalse(actualContract.isDeleted())
-                , () -> assertNull(actualContract.getExpiryTimeNs())
+                , () -> assertContractEntity(contractCreateTransactionBody, recordCreate.getConsensusTimestamp())
         );
     }
 
@@ -515,7 +511,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualContract.getAutoRenewPeriod()),
                 () -> assertArrayEquals(expected.getAdminKey().toByteArray(), actualContract.getKey()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccount),
-                () -> assertEquals(expected.getMemo(), actualContract.getMemo()),
+                () -> assertEquals(getMemoFromContractUpdateTransactionBody(expected), actualContract.getMemo()),
                 () -> assertEquals(
                         Utility.timeStampInNanos(expected.getExpirationTime()), actualContract.getExpiryTimeNs()));
     }
@@ -597,7 +593,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         });
     }
 
-    private Transaction contractUpdateAllTransaction() {
+    private Transaction contractUpdateAllTransaction(boolean setMemoWrapperOrMemo) {
         return buildTransaction(builder -> {
             ContractUpdateTransactionBody.Builder contractUpdate = builder.getContractUpdateInstanceBuilder();
             contractUpdate.setAdminKey(keyFromString(KEY));
@@ -605,7 +601,11 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
             contractUpdate.setContractID(CONTRACT_ID);
             contractUpdate.setExpirationTime(Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
             contractUpdate.setFileID(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
-            contractUpdate.setMemo("contract update memo");
+            if (setMemoWrapperOrMemo) {
+                contractUpdate.setMemoWrapper(StringValue.of("contract update memo"));
+            } else {
+                contractUpdate.setMemo("contract update memo");
+            }
             contractUpdate.setProxyAccountID(PROXY_UPDATE);
         });
     }
@@ -633,5 +633,16 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
     private Optional<ContractResult> getContractResult(Timestamp consensusTimestamp) {
         return contractResultRepository.findById(Utility.timeStampInNanos(consensusTimestamp));
+    }
+
+    private String getMemoFromContractUpdateTransactionBody(ContractUpdateTransactionBody body) {
+        switch (body.getMemoFieldCase()) {
+            case MEMOWRAPPER:
+                return body.getMemoWrapper().getValue();
+            case MEMO:
+                return body.getMemo();
+            default:
+                return null;
+        }
     }
 }

@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -30,11 +29,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.util.Utility;
 
-public class TokenCreateTransactionsHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+public class TokenCreateTransactionsHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -46,18 +43,19 @@ public class TokenCreateTransactionsHandlerTest extends AbstractUpdatesEntityTra
         return TransactionBody.newBuilder()
                 .setTokenCreation(TokenCreateTransactionBody.newBuilder()
                         .setAdminKey(DEFAULT_KEY)
-                        .setDecimals(1000)
-                        .setExpiry(Timestamp.newBuilder().setSeconds(360))
-                        .setInitialSupply(1_000_000L)
-                        .setFreezeDefault(false)
-                        .setKycKey(DEFAULT_KEY)
-                        .setFreezeKey(DEFAULT_KEY)
-                        .setSymbol("SYMBOL")
-                        .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
                         .setAutoRenewAccount(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2)
                                 .build())
                         .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
+                        .setDecimals(1000)
+                        .setExpiry(Timestamp.newBuilder().setSeconds(360))
+                        .setFreezeDefault(false)
+                        .setFreezeKey(DEFAULT_KEY)
+                        .setInitialSupply(1_000_000L)
+                        .setKycKey(DEFAULT_KEY)
+                        .setMemo(DEFAULT_MEMO)
                         .setName("token_name")
+                        .setSymbol("SYMBOL")
+                        .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
                         .setWipeKey(DEFAULT_KEY)
                         .build());
     }
@@ -72,23 +70,5 @@ public class TokenCreateTransactionsHandlerTest extends AbstractUpdatesEntityTra
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.TOKEN;
-    }
-
-    @Override
-    ByteString getUpdateEntityTransactionBody() {
-        return TransactionBody.newBuilder().setTokenCreation(
-                TokenCreateTransactionBody.newBuilder()
-                        .setAdminKey(DEFAULT_KEY)
-                        .setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
-                        .setExpiry(DEFAULT_EXPIRATION_TIME)
-                        .build())
-                .build().toByteString();
-    }
-
-    @Override
-    void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
-        entity.setExpiryTimeNs(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
-        entity.setKey(DEFAULT_KEY.toByteArray());
     }
 }

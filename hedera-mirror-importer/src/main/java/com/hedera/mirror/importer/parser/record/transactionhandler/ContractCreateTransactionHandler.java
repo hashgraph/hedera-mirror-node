@@ -59,12 +59,11 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
-        // Can't clear memo on contracts. 0 length indicates no change
-        if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
-            entity.setMemo(txMessage.getMemo());
-        }
+
         if (txMessage.hasAdminKey()) {
             entity.setKey(txMessage.getAdminKey().toByteArray());
         }
+
+        entity.setMemo(txMessage.getMemo());
     }
 }

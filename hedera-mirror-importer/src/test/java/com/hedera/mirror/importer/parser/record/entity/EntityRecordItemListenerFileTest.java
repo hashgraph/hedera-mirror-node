@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -745,6 +746,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         assertAll(
                 () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
                         .getExpiryTimeNs()),
+                () -> assertEquals(expected.getMemo(), actualFile.getMemo()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
                 () -> assertNull(actualFile.getProxyAccountId())
@@ -761,6 +763,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         assertAll(
                 () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
                         .getExpiryTimeNs()),
+                () -> assertEquals(expected.getMemo().getValue(), actualFile.getMemo()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
                 () -> assertNull(actualFile.getProxyAccountId())
@@ -865,6 +868,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         return buildTransaction(builder -> builder.getFileCreateBuilder()
                 .setContents(ByteString.copyFromUtf8("Hedera hashgraph is great!"))
                 .setExpirationTime(expirationTime)
+                .setMemo("FileCreate memo")
                 .setNewRealmAdminKey(keyFromString(KEY2))
                 .setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build())
                 .setShardID(ShardID.newBuilder().setShardNum(0))
@@ -890,6 +894,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 .setContents(ByteString.copyFrom(contents))
                 .setFileID(fileToUpdate)
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
+                .setMemo(StringValue.of("FileUpdate memo"))
                 .getKeysBuilder().addKeys(keyFromString(KEY)));
     }
 

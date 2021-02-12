@@ -74,10 +74,13 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 import com.hedera.mirror.importer.util.Utility;
 
 public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
+
     protected static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     protected static final AccountID PAYER =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build();
+    protected static final AccountID PAYER2 =
+            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2003).build();
     protected static final AccountID NODE =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
     protected static final AccountID TREASURY =
@@ -86,7 +89,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1003).build();
     protected static final AccountID PROXY_UPDATE =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3000).build();
-    static final String TRANSACTION_MEMO = "transaction memo";
+    protected static final String TRANSACTION_MEMO = "transaction memo";
 
     @Resource
     protected TransactionRepository transactionRepository;
@@ -356,30 +359,29 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
     }
 
-    protected Entities createEntity(Entities entities, Long expirationTimeSeconds, Integer expirationTimeNanos,
-                                    Key adminKey, Key submitKey, String memo, Long autoRenewAccountNum,
-                                    Long autoRenewPeriod, EntityTypeEnum entityTypeEnum) {
-        if (autoRenewAccountNum != null) {
-            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
-            entityRepository.findById(autoRenewAccount.getId())
-                    .orElse(entityRepository.save(autoRenewAccount.toEntity()));
-            entities.setAutoRenewAccountId(autoRenewAccount);
+    protected Entities createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
+            boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
+        if (autoRenewAccountId != null) {
+            entityRepository.save(autoRenewAccountId.toEntity());
         }
-        if (autoRenewPeriod != null) {
-            entities.setAutoRenewPeriod(autoRenewPeriod);
-        }
-        if (expirationTimeSeconds != null && expirationTimeNanos != null) {
-            entities.setExpiryTimeNs(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
-        }
-        if (null != adminKey) {
-            entities.setKey(adminKey.toByteArray());
-        }
-        if (null != submitKey) {
-            entities.setSubmitKey(submitKey.toByteArray());
-        }
-        entities.setMemo(memo);
-        entities.setEntityTypeId(entityTypeEnum.getId());
-        return entities;
+
+        byte[] adminKeyBytes = rawBytesFromKey(adminKey);
+        byte[] submitKeyBytes = rawBytesFromKey(submitKey);
+
+        Entities entity = entityId.toEntity();
+        entity.setAutoRenewAccountId(autoRenewAccountId);
+        entity.setAutoRenewPeriod(autoRenewPeriod);
+        entity.setDeleted(deleted);
+        entity.setExpiryTimeNs(expiryTimeNs);
+        entity.setMemo(memo);
+        entity.setKey(adminKeyBytes);
+        entity.setSubmitKey(submitKeyBytes);
+
+        return entity;
+    }
+
+    private byte[] rawBytesFromKey(Key key) {
+        return key != null ? key.toByteArray() : null;
     }
 
     protected void assertTransactionInRepository(
@@ -405,5 +407,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .allMatch(entity -> entity.getEntityTypeId() != null)
                 .extracting(Entities::toEntityId)
                 .containsExactlyInAnyOrder(entityIds);
+    }
+
+    protected void assertEntity(Entities expected) {
+        Entities actual = getEntity(expected.getId());
+        assertThat(actual).isEqualTo(expected);
     }
 }

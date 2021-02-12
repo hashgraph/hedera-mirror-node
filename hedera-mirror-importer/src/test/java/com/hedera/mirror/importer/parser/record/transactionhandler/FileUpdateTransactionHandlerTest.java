@@ -20,18 +20,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Arrays;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.util.Utility;
 
-class FileUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionHandlerTest {
+class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final KeyList KEY_LIST = KeyList.newBuilder().addAllKeys(
             Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
@@ -52,21 +49,5 @@ class FileUpdateTransactionHandlerTest extends AbstractUpdatesEntityTransactionH
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.FILE;
-    }
-
-    @Override
-    ByteString getUpdateEntityTransactionBody() {
-        return TransactionBody.newBuilder().setFileUpdate(
-                FileUpdateTransactionBody.newBuilder()
-                        .setExpirationTime(DEFAULT_EXPIRATION_TIME)
-                        .setKeys(KEY_LIST)
-                        .build())
-                .build().toByteString();
-    }
-
-    @Override
-    void buildUpdateEntityExpectedEntity(Entities entity) {
-        entity.setExpiryTimeNs(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
-        entity.setKey(KEY_LIST.toByteArray());
     }
 }
