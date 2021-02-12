@@ -76,7 +76,7 @@ class StreamFileDataTest {
 
             StreamFileData streamFileData = StreamFileData.from(file);
 
-            assertThat(streamFileData.getFilename()).isEqualTo(file.getAbsolutePath());
+            assertThat(streamFileData.getFilename()).isEqualTo(file.getName());
             assertThat(streamFileData.getInputStream()).isNotNull();
         } else {
             if (createDirectory) {

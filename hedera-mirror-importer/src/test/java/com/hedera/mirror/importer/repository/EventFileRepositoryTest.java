@@ -26,6 +26,7 @@ import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.EventFile;
@@ -52,11 +53,14 @@ class EventFileRepositoryTest extends AbstractRepositoryTest {
         eventFile.setConsensusStart(id);
         eventFile.setConsensusEnd(id);
         eventFile.setCount(id);
+        eventFile.setDigestAlgorithm(DigestAlgorithm.SHA384);
         eventFile.setFileHash("fileHash" + id);
+        eventFile.setHash("fileHash" + id);
         eventFile.setLoadEnd(id);
         eventFile.setLoadStart(id);
         eventFile.setName(id + ".evt");
         eventFile.setNodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
+        eventFile.setPreviousHash("fileHash" + id);
         return eventFile;
     }
 }
