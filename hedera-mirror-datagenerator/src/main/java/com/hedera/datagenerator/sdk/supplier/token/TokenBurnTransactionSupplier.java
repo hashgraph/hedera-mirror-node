@@ -26,8 +26,9 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.token.TokenBurnTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenBurnTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
 
 @Data
 public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBurnTransaction> {
@@ -44,9 +45,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
     @Override
     public TokenBurnTransaction get() {
 
-        return new TokenBurnTransaction()
-                .setAmount(amount)
-                .setMaxTransactionFee(maxTransactionFee)
+        return new TokenBurnTransaction().setAmount(amount).setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node burned test token"));
     }

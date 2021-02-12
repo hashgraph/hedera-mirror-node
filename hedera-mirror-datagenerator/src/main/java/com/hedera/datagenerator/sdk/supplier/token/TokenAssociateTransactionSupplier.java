@@ -1,5 +1,7 @@
 package com.hedera.datagenerator.sdk.supplier.token;
 
+import java.util.List;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -26,9 +28,10 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenAssociateTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
 
 @Data
 public class TokenAssociateTransactionSupplier implements TransactionSupplier<TokenAssociateTransaction> {
@@ -45,10 +48,9 @@ public class TokenAssociateTransactionSupplier implements TransactionSupplier<To
     @Override
     public TokenAssociateTransaction get() {
 
-        return new TokenAssociateTransaction()
-                .addTokenId(TokenId.fromString(tokenId))
+        return new TokenAssociateTransaction().setTokenIds(List.of(TokenId.fromString(tokenId)))
                 .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTransactionMemo(Utility.getMemo("Mirror node associated test token"));
     }
 }

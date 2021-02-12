@@ -26,9 +26,10 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenId;
-import com.hedera.hashgraph.sdk.token.TokenWipeTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 
 @Data
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
@@ -48,11 +49,8 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
     @Override
     public TokenWipeTransaction get() {
 
-        return new TokenWipeTransaction()
-                .setAccountId(AccountId.fromString(accountId))
-                .setAmount(amount)
-                .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(TokenId.fromString(tokenId))
+        return new TokenWipeTransaction().setAccountId(AccountId.fromString(accountId)).setAmount(amount)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee)).setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node wiped test token"));
     }
 }

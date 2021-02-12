@@ -26,9 +26,10 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountCreateTransaction;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 
 @Data
 @Log4j2
@@ -46,18 +47,18 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountCreateTransaction get() {
-        return new AccountCreateTransaction()
-                .setInitialBalance(initialBalance)
-                .setKey(publicKey != null ? Ed25519PublicKey.fromString(publicKey) : generateKeys())
-                .setMaxTransactionFee(maxTransactionFee)
+        return new AccountCreateTransaction().setInitialBalance(Hbar.fromTinybars(initialBalance))
+                .setKey(publicKey != null ? PublicKey.fromString(publicKey) : generateKeys())
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTransactionMemo(Utility.getMemo("Mirror node created test account"));
     }
 
-    private Ed25519PublicKey generateKeys() {
-        Ed25519PrivateKey privateKey = Ed25519PrivateKey.generate();
-        Ed25519PublicKey publicKey = privateKey.publicKey;
+    private PublicKey generateKeys() {
+        PrivateKey privateKey = PrivateKey.generate();
+        PublicKey publicKey = privateKey.getPublicKey();
 
-        // Since these keys will never be seen again, if we want to reuse this account provide an option to print them
+        // Since these keys will never be seen again, if we want to reuse this account
+        // provide an option to print them
         if (logKeys) {
             log.info("privateKey: {}", privateKey);
             log.info("publicKey: {}", publicKey);

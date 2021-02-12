@@ -53,8 +53,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.mirror.monitor.MirrorNodeProperties;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
@@ -89,7 +89,7 @@ class RestSubscriberTest {
         subscriberProperties.getRetry().setMaxBackoff(Duration.ofNanos(2L));
 
         builder = WebClient.builder().exchangeFunction(exchangeFunction);
-        this.restSubscriber = Suppliers
+        restSubscriber = Suppliers
                 .memoize(() -> new RestSubscriber(meterRegistry, monitorProperties, subscriberProperties, builder));
     }
 
@@ -258,7 +258,7 @@ class RestSubscriberTest {
                         .type(TransactionType.CONSENSUS_SUBMIT_MESSAGE)
                         .build())
                 .timestamp(Instant.now())
-                .transactionId(TransactionId.withValidStart(AccountId.fromString("0.0.1000"), Instant.ofEpochSecond(1)))
+                .transactionId(new TransactionId(AccountId.fromString("0.0.1000"), Instant.ofEpochSecond(1)))
                 .build();
     }
 

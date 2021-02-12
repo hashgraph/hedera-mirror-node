@@ -27,9 +27,10 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
-import com.hedera.hashgraph.sdk.token.TokenCreateTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TokenCreateTransaction;
 
 @Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
@@ -51,8 +52,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     @NotBlank
     private String symbol = RANDOM.ints(5, 'A', 'Z')
-            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-            .toString();
+            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
 
     @NotBlank
     private String treasuryAccountId;
@@ -61,24 +61,15 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     public TokenCreateTransaction get() {
         AccountId treasuryAccount = AccountId.fromString(treasuryAccountId);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
-                .setAutoRenewAccount(treasuryAccount)
-                .setDecimals(decimals)
-                .setInitialSupply(initialSupply)
-                .setFreezeDefault(freezeDefault)
-                .setMaxTransactionFee(maxTransactionFee)
-                .setName(symbol + "_name")
-                .setSymbol(symbol)
+                .setAutoRenewAccountId(treasuryAccount).setDecimals(decimals).setInitialSupply(initialSupply)
+                .setFreezeDefault(freezeDefault).setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenName(symbol + "_name").setTokenSymbol(symbol)
                 .setTransactionMemo(Utility.getMemo("Mirror node created test token"))
-                .setTreasury(treasuryAccount);
+                .setTreasuryAccountId(treasuryAccount);
 
         if (adminKey != null) {
-            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
-            tokenCreateTransaction
-                    .setAdminKey(key)
-                    .setFreezeKey(key)
-                    .setKycKey(key)
-                    .setSupplyKey(key)
-                    .setWipeKey(key);
+            PublicKey key = PublicKey.fromString(adminKey);
+            tokenCreateTransaction.setAdminKey(key).setFreezeKey(key).setKycKey(key).setSupplyKey(key).setWipeKey(key);
         }
 
         return tokenCreateTransaction;

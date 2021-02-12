@@ -26,9 +26,10 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenGrantKycTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenGrantKycTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
 
 @Data
 public class TokenGrantKycTransactionSupplier implements TransactionSupplier<TokenGrantKycTransaction> {
@@ -45,10 +46,8 @@ public class TokenGrantKycTransactionSupplier implements TransactionSupplier<Tok
     @Override
     public TokenGrantKycTransaction get() {
 
-        return new TokenGrantKycTransaction()
-                .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(maxTransactionFee)
-                .setTokenId(TokenId.fromString(tokenId))
+        return new TokenGrantKycTransaction().setAccountId(AccountId.fromString(accountId))
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee)).setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node granted kyc to test token"));
     }
 }

@@ -26,8 +26,9 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.token.TokenId;
-import com.hedera.hashgraph.sdk.token.TokenMintTransaction;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenMintTransaction;
 
 @Data
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
@@ -44,9 +45,7 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     @Override
     public TokenMintTransaction get() {
 
-        return new TokenMintTransaction()
-                .setAmount(amount)
-                .setMaxTransactionFee(maxTransactionFee)
+        return new TokenMintTransaction().setAmount(amount).setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node minted test token"));
     }

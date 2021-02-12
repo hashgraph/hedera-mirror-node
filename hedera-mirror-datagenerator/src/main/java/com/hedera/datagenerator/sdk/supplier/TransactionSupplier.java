@@ -22,9 +22,7 @@ package com.hedera.datagenerator.sdk.supplier;
 
 import java.util.function.Supplier;
 
-import com.hedera.hashgraph.sdk.TransactionBuilder;
-import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.Transaction;
 
-public interface TransactionSupplier<T extends TransactionBuilder<TransactionId, ?, T>>
-        extends Supplier<TransactionBuilder<TransactionId, ?, T>> {
+public interface TransactionSupplier<T extends Transaction> extends Supplier<Transaction> {
 }

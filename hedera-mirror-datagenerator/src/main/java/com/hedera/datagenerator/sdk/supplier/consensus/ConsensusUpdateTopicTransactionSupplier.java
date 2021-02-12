@@ -32,13 +32,13 @@ import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicUpdateTransaction;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
+import com.hedera.hashgraph.sdk.PublicKey;
 
 @Data
-public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicUpdateTransaction> {
+public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<TopicUpdateTransaction> {
 
     private String adminKey;
 
@@ -59,25 +59,20 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     private String topicId;
 
     @Override
-    public ConsensusTopicUpdateTransaction get() {
+    public TopicUpdateTransaction get() {
 
-        ConsensusTopicUpdateTransaction consensusTopicUpdateTransaction = new ConsensusTopicUpdateTransaction()
-                .setExpirationTime(expirationTime)
-                .setTopicId(ConsensusTopicId.fromString(topicId))
-                .setTopicMemo(Utility.getMemo("Mirror node created test topic"))
+        TopicUpdateTransaction topicUpdateTransaction = new TopicUpdateTransaction()
+                .setTopicId(TopicId.fromString(topicId)).setTopicMemo(Utility.getMemo("Mirror node created test topic"))
                 .setTransactionMemo(Utility.getMemo("Mirror node updated test topic"));
 
         if (adminKey != null) {
-            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
-            consensusTopicUpdateTransaction
-                    .setAdminKey(key)
-                    .setSubmitKey(key);
+            PublicKey key = PublicKey.fromString(adminKey);
+            topicUpdateTransaction.setAdminKey(key).setSubmitKey(key);
         }
         if (autoRenewAccountId != null) {
-            consensusTopicUpdateTransaction
-                    .setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId))
+            topicUpdateTransaction.setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId))
                     .setAutoRenewPeriod(autoRenewPeriod);
         }
-        return consensusTopicUpdateTransaction;
+        return topicUpdateTransaction;
     }
 }

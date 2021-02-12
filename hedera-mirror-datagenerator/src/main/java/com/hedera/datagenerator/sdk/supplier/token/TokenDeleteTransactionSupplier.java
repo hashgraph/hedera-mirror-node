@@ -26,8 +26,9 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.token.TokenDeleteTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenDeleteTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
 
 @Data
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
@@ -41,8 +42,7 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
     @Override
     public TokenDeleteTransaction get() {
 
-        return new TokenDeleteTransaction()
-                .setMaxTransactionFee(maxTransactionFee)
+        return new TokenDeleteTransaction().setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node deleted test token"));
     }

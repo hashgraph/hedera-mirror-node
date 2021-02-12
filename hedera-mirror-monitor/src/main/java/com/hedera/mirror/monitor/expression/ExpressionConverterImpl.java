@@ -122,9 +122,9 @@ public class ExpressionConverterImpl implements ExpressionConverter {
     @RequiredArgsConstructor
     private enum ExpressionType {
 
-        ACCOUNT(TransactionType.ACCOUNT_CREATE, r -> r.getAccountId().toString()),
-        TOKEN(TransactionType.TOKEN_CREATE, r -> r.getTokenId().toString()),
-        TOPIC(TransactionType.CONSENSUS_CREATE_TOPIC, r -> r.getConsensusTopicId().toString());
+        ACCOUNT(TransactionType.ACCOUNT_CREATE, r -> r.accountId.toString()),
+        TOKEN(TransactionType.TOKEN_CREATE, r -> r.tokenId.toString()),
+        TOPIC(TransactionType.CONSENSUS_CREATE_TOPIC, r -> r.topicId.toString());
 
         private final TransactionType transactionType;
         private final Function<TransactionReceipt, String> idExtractor;

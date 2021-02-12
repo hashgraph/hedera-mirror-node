@@ -28,9 +28,10 @@ import lombok.Getter;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.TransferTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
 
 @Data
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<TransferTransaction> {
@@ -65,7 +66,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     public TransferTransaction get() {
 
         TransferTransaction transferTransaction = new TransferTransaction()
-                .setMaxTransactionFee(maxTransactionFee);
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee));
 
         switch (transferType) {
             case CRYPTO:
@@ -87,17 +88,15 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     }
 
     private void addCryptoTransfers(TransferTransaction transferTransaction, AccountId recipientId,
-                                    AccountId senderId) {
-        transferTransaction
-                .addHbarTransfer(recipientId, amount)
-                .addHbarTransfer(senderId, Math.negateExact(amount));
+            AccountId senderId) {
+        Hbar hbarAmount = Hbar.fromTinybars(amount);
+        transferTransaction.addHbarTransfer(recipientId, hbarAmount).addHbarTransfer(senderId, hbarAmount.negated());
     }
 
     private void addTokenTransfers(TransferTransaction transferTransaction, TokenId token, AccountId recipientId,
-                                   AccountId senderId) {
-        transferTransaction
-                .addTokenTransfer(token, recipientId, amount)
-                .addTokenTransfer(token, senderId, Math.negateExact(amount));
+            AccountId senderId) {
+        transferTransaction.addTokenTransfer(token, recipientId, amount).addTokenTransfer(token, senderId,
+                Math.negateExact(amount));
     }
 
     public enum TransferType {

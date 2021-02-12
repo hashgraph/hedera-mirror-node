@@ -53,23 +53,22 @@ public class PublishResponse {
         }
 
         if (receipt != null) {
-            com.hedera.hashgraph.proto.TransactionReceipt receiptProto = receipt.toProto();
-            toStringBuilder.append("status", receiptProto.getStatus());
+            toStringBuilder.append("status", receipt.status);
 
-            if (receiptProto.hasAccountID()) {
-                toStringBuilder.append("accountId", receiptProto.getAccountID().getAccountNum());
-            } else if (receiptProto.hasContractID()) {
-                toStringBuilder.append("contractId", receiptProto.getContractID().getContractNum());
-            } else if (receiptProto.hasFileID()) {
-                toStringBuilder.append("fileId", receiptProto.getFileID().getFileNum());
-            } else if (receiptProto.hasTokenID()) {
-                toStringBuilder.append("tokenId", receiptProto.getTokenID().getTokenNum());
-            } else if (receiptProto.hasTopicID()) {
-                toStringBuilder.append("topicId", receiptProto.getTopicID().getTopicNum());
+            if (receipt.accountId != null) {
+                toStringBuilder.append("accountId", receipt.accountId.num);
+            } else if (receipt.contractId != null) {
+                toStringBuilder.append("contractId", receipt.contractId.num);
+            } else if (receipt.fileId != null) {
+                toStringBuilder.append("fileId", receipt.fileId.num);
+            } else if (receipt.tokenId != null) {
+                toStringBuilder.append("tokenId", receipt.tokenId.num);
+            } else if (receipt.topicId != null) {
+                toStringBuilder.append("topicId", receipt.topicId.num);
             }
 
-            if (receiptProto.getTopicSequenceNumber() > 0) {
-                toStringBuilder.append("topicSequenceNumber", receiptProto.getTopicSequenceNumber());
+            if (receipt.topicSequenceNumber > 0) {
+                toStringBuilder.append("topicSequenceNumber", receipt.topicSequenceNumber);
             }
         }
 

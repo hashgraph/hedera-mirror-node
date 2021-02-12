@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.annotation.PreDestroy;
@@ -35,11 +35,14 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountInfoQuery;
 import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.AccountInfoQuery;
-import com.hedera.hashgraph.sdk.crypto.PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 
@@ -60,7 +63,7 @@ public class TransactionPublisher {
 
         for (Client client : clients.get()) {
             try {
-                client.close(200, TimeUnit.MILLISECONDS);
+                client.close();
             } catch (Exception e) {
                 // Ignore
             }
@@ -71,12 +74,14 @@ public class TransactionPublisher {
         return publishMetrics.record(request, this::doPublish);
     }
 
-    private PublishResponse doPublish(PublishRequest request) throws Exception {
+    private PublishResponse doPublish(PublishRequest request) throws TimeoutException, PrecheckStatusException,
+            ReceiptStatusException {
         log.trace("Publishing: {}", request);
         int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(index);
 
-        var transactionId = request.getTransactionBuilder().execute(client);
+        TransactionResponse transactionResponse = (TransactionResponse) request.getTransactionBuilder().execute(client);
+        TransactionId transactionId = transactionResponse.transactionId;
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
                 .request(request)
                 .timestamp(Instant.now())
@@ -152,10 +157,10 @@ public class TransactionPublisher {
     private Client toClient(NodeProperties nodeProperties) {
         AccountId nodeAccount = AccountId.fromString(nodeProperties.getAccountId());
         AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
-        PrivateKey<?> operatorPrivateKey = Ed25519PrivateKey
+        PrivateKey operatorPrivateKey = PrivateKey
                 .fromString(monitorProperties.getOperator().getPrivateKey());
 
-        Client client = new Client(Map.of(nodeAccount, nodeProperties.getEndpoint()));
+        Client client = Client.forNetwork(Map.of(nodeProperties.getEndpoint(), nodeAccount));
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
     }

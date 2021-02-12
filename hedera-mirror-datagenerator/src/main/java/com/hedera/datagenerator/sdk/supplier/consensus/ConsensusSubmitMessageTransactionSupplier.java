@@ -33,11 +33,11 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.HederaThrowable;
-import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
+import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 
 @Data
-public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
+public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<TopicMessageSubmitTransaction> {
 
     @Min(1)
     private long maxTransactionFee = 1_000_000;
@@ -55,22 +55,20 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
     // Internal variables that are cached for performance reasons
     @Getter(lazy = true)
-    private final ConsensusTopicId consensusTopicId = ConsensusTopicId.fromString(topicId);
+    private final TopicId consensusTopicId = TopicId.fromString(topicId);
 
     @Getter(lazy = true)
     private final byte[] messageSuffix = randomByteArray();
 
     @Override
-    public ConsensusMessageSubmitTransaction get() {
-        return new RetryConfigurableConsensusMessageSubmitTransaction()
-                .setMaxTransactionFee(maxTransactionFee)
-                .setMessage(generateMessage())
-                .setTopicId(getConsensusTopicId());
+    public TopicMessageSubmitTransaction get() {
+        return new RetryConfigurableConsensusMessageSubmitTransaction().setMessage(generateMessage())
+                .setTopicId(topicId);
     }
 
     private byte[] generateMessage() {
         byte[] timestamp = Longs.toByteArray(System.currentTimeMillis());
-        return ArrayUtils.addAll(timestamp, getMessageSuffix());
+        return ArrayUtils.addAll(timestamp, messageSuffix);
     }
 
     private byte[] randomByteArray() {
@@ -83,7 +81,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
         return bytes;
     }
 
-    private class RetryConfigurableConsensusMessageSubmitTransaction extends ConsensusMessageSubmitTransaction {
+    private class RetryConfigurableConsensusMessageSubmitTransaction extends TopicMessageSubmitTransaction {
 
         @Override
         protected boolean shouldRetry(HederaThrowable e) {
@@ -91,4 +89,3 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
         }
     }
 }
-
