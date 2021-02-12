@@ -64,31 +64,31 @@ public class ClientConfiguration {
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public SDKClient sdkClient() {
+    public SDKClient sdkClient() throws InterruptedException {
         return new SDKClient(acceptanceTestProperties);
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public MirrorNodeClient mirrorNodeClient() {
-        return new MirrorNodeClient(acceptanceTestProperties);
+    public MirrorNodeClient mirrorNodeClient() throws InterruptedException {
+        return new MirrorNodeClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public TopicClient topicClient() {
+    public TopicClient topicClient() throws InterruptedException {
         return new TopicClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public AccountClient accountClient() {
+    public AccountClient accountClient() throws InterruptedException {
         return new AccountClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public TokenClient tokenClient() {
+    public TokenClient tokenClient() throws InterruptedException {
         return new TokenClient(sdkClient());
     }
 
