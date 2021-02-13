@@ -257,8 +257,8 @@ public abstract class Downloader<T extends StreamFile> {
 
     /**
      * Returns the last signature file name that was successfully verified. On startup, this will be the last file
-     * successfully imported into the database since all files are downloaded into memory will have been discarded.
-     * Unless startDate or demo network is set, then those take precedence. Since 'foo.rcd' is lexicographically before
+     * successfully imported into the database since all files are downloaded into memory will have been discarded. If
+     * startDate or demo network is set, those take precedence. Since 'foo.rcd' is lexicographically before
      * 'foo.rcd_sig' we have to start listing from after 'foo.rcd_sig'.
      *
      * @return last signature file name

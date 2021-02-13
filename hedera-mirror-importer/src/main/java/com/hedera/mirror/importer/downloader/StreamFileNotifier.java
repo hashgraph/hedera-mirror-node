@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.IntegrationConfiguration.CHANNEL_STREAM;
+import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_STREAM;
 
 import javax.inject.Named;
 import org.springframework.integration.annotation.MessagingGateway;

@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.event;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.IntegrationConfiguration.CHANNEL_EVENT;
+import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_EVENT;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.integration.annotation.MessageEndpoint;

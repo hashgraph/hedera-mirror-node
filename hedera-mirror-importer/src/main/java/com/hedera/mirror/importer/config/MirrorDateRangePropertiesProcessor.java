@@ -116,11 +116,11 @@ public class MirrorDateRangePropertiesProcessor {
         Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
         Duration adjustment = mirrorProperties.getStartDateAdjustment();
         Instant effectiveStartDate = STARTUP_TIME.minus(adjustment);
+        boolean hasStreamFile = lastFileInstant != null;
 
         if (startDate != null) {
-            effectiveStartDate = max(startDate
-                    .minus(adjustment), lastFileInstant != null ? lastFileInstant : Instant.EPOCH);
-        } else if (lastFileInstant != null) {
+            effectiveStartDate = max(startDate.minus(adjustment), hasStreamFile ? lastFileInstant : Instant.EPOCH);
+        } else if (hasStreamFile) {
             effectiveStartDate = lastFileInstant;
         } else if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
             effectiveStartDate = Instant.EPOCH; // Demo network contains only data in the past, so don't default to now

@@ -33,8 +33,9 @@ import com.hedera.mirror.importer.parser.event.EventParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @Configuration
-public class IntegrationConfiguration {
+public class MessagingConfiguration {
 
+    // Shared channel containing all stream types until they're routed to the individual channels
     public static final String CHANNEL_STREAM = "stream";
     public static final String CHANNEL_BALANCE = CHANNEL_STREAM + ".balance";
     public static final String CHANNEL_EVENT = CHANNEL_STREAM + ".event";

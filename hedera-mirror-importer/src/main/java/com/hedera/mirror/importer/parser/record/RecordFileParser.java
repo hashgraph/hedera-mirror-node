@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.IntegrationConfiguration.CHANNEL_RECORD;
+import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_RECORD;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
 import com.google.common.base.Stopwatch;
