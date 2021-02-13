@@ -49,10 +49,6 @@ public interface DownloaderProperties {
         return getStreamPath().resolve(getStreamType().getSignatures());
     }
 
-    default Path getValidPath() {
-        return getStreamPath().resolve(getStreamType().getValid());
-    }
-
     boolean isEnabled();
 
     void setBatchSize(int batchSize);

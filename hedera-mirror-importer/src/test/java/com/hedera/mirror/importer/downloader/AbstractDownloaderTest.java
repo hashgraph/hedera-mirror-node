@@ -114,7 +114,6 @@ public abstract class AbstractDownloaderTest {
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
-    protected Path validPath;
     protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
     protected String file1;
     protected String file2;
@@ -196,8 +195,6 @@ public abstract class AbstractDownloaderTest {
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
-
-        validPath = downloaderProperties.getValidPath();
 
         startS3Proxy();
 

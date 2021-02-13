@@ -34,7 +34,6 @@ public enum StreamType {
 
     private static final String PARSED = "parsed";
     private static final String SIGNATURES = "signatures";
-    private static final String VALID = "valid";
     private static final String SIGNATURE_EXTENSION = "_sig";
 
     private final String path;
@@ -52,10 +51,6 @@ public enum StreamType {
 
     public String getSignatures() {
         return SIGNATURES;
-    }
-
-    public String getValid() {
-        return VALID;
     }
 
     public static StreamType fromFilename(String filename) {
