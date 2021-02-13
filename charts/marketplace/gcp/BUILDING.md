@@ -79,7 +79,7 @@ Or you can simply delete the entire namespace if you created it during the insta
 
 # Releasing
 
-Once all local testing is completed succesfully and the images are tagged, run the below commands to republish the images
+Once all local testing is completed successfully and the images are tagged, run the below commands to republish the images
 to the staging registry:
 
     git checkout "tags/v${TAG}"

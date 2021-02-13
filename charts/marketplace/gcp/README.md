@@ -383,6 +383,16 @@ helm upgrade "${APP_NAME}" charts/hedera-mirror \
   -f custom-values.yaml
 ```
 
+## v0.27
+
+The Marketplace solution update from v0.13 to v0.27+ includes many noteworthy improvements and changes.
+Unfortunately, 2 such changes introduce breaking stateful set changes from the mirror node and postgres sub charts.
+To ensure a smooth upgrade process:
+
+1. Verify your importer is up to date on file processing by inspecting logs before beginning.
+2. Delete the `${APP_NAME}-importer` and `${APP_NAME}-postgres` Stateful Set workloads.
+3. Install the v0.27 solution
+
 # Scaling
 
 Scaling the Importer or PostgreSQL components is not currently supported. The gRPC and REST
