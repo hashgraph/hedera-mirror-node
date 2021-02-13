@@ -447,7 +447,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
-    private boolean verifyHashChain(StreamFile streamFile, String expectedPreviousHash) {
+    boolean verifyHashChain(StreamFile streamFile, String expectedPreviousHash) {
         if (!streamFile.getType().isChained()) {
             return true;
         }

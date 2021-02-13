@@ -45,11 +45,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import com.hedera.mirror.importer.converter.InstantConverter;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.FileOperationException;
 
@@ -274,27 +272,6 @@ public class UtilityTest {
         assertThrows(ArithmeticException.class, () -> {
             Utility.timeStampInNanos(timestamp);
         });
-    }
-
-    @ParameterizedTest(name = "verifyHashChain {5}")
-    @CsvSource({
-            // @formatter:off
-            "'', '', 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.rcd, true,  passes if both hashes are empty",
-            "xx, '', 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.rcd, true,  passes if hash mismatch and expected hash is empty", // starting stream in middle
-            "'', xx, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.rcd, false, fails if hash mismatch and actual hash is empty", // bad db state
-            "xx, yy, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.rcd, false, fails if hash mismatch and hashes are non-empty",
-            "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10_00_00.000000Z.rcd, true,  passes if hash mismatch but verifyHashAfter is after filename",
-            "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10_00_00.000000Z.rcd, true,  passes if hash mismatch but verifyHashAfter is same as filename",
-            "xx, yy, 2000-01-01T09:59:59.999999Z, 2000-01-01T10_00_00.000000Z.rcd, false, fails if hash mismatch and verifyHashAfter is before filename",
-            "xx, xx, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.rcd, true,  passes if hashes are equal"
-            // @formatter:on
-    })
-    void testVerifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
-                             @ConvertWith(InstantConverter.class) Instant verifyHashAfter, String fileName,
-                             Boolean expectedResult, String testName) {
-//        assertThat(Utility.verifyHashChain(actualPrevFileHash, expectedPrevFileHash, verifyHashAfter, fileName))
-//                .as(testName)
-//                .isEqualTo(expectedResult);
     }
 
     @ParameterizedTest(name = "openQuietly {3}")

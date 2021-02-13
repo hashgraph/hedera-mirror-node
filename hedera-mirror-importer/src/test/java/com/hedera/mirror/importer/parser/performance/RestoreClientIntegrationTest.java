@@ -60,6 +60,6 @@ public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
     @Test
     public void parseAndIngestTransactions() throws Exception {
         clearLastProcessedRecordHash();
-        parse("*.rcd");
+        parse();
     }
 }
