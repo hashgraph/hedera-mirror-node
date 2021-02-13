@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.balance;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.primitives.Longs;
 import java.nio.file.Files;
@@ -35,7 +34,6 @@ import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -114,19 +112,6 @@ public class AccountBalanceFileParserTest extends IntegrationTest {
         accountBalanceFileParser.parse(accountBalanceFile3);
 
         assertAccountBalances(accountBalanceFile1, accountBalanceFile3);
-    }
-
-    @Test
-    void error() {
-        AccountBalanceFile accountBalanceFile1 = accountBalanceFile(1);
-        AccountBalanceFile accountBalanceFile2 = accountBalanceFile(2);
-        accountBalanceFile2.setName(accountBalanceFile1.getName());
-
-        accountBalanceFileParser.parse(accountBalanceFile1);
-        assertThatThrownBy(() -> accountBalanceFileParser.parse(accountBalanceFile2))
-                .isInstanceOf(DataIntegrityViolationException.class);
-
-        assertAccountBalances(accountBalanceFile1);
     }
 
     @Test

@@ -54,8 +54,8 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
 @Tag("migration")
 @Tag("v1")
-@TestPropertySource(properties = "spring.flyway.target=1.31.1")
-class V_1_31_2__Remove_Invalid_EntitiesTest extends IntegrationTest {
+@TestPropertySource(properties = {"embedded.postgresql.reuseContainer=false", "spring.flyway.target=1.31.1"})
+class V1_31_2RemoveInvalidEntitiesTest extends IntegrationTest {
 
     @Resource
     private JdbcOperations jdbcOperations;
