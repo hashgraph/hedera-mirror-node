@@ -82,6 +82,8 @@ abstract class RecordFileReaderTest {
 
                     // then
                     assertThat(actual).isEqualToIgnoringGivenFields(recordFile, "bytes", "items", "loadStart");
+                    assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
+                    assertThat(actual.getLoadStart()).isNotNull().isPositive();
                     ArgumentCaptor<RecordItem> captor = ArgumentCaptor.forClass(RecordItem.class);
                     verify(itemConsumer, times(recordFile.getCount().intValue())).accept(captor.capture());
                     List<Long> timestamps = captor.getAllValues().stream()
@@ -110,6 +112,8 @@ abstract class RecordFileReaderTest {
 
                     // then
                     assertThat(actual).isEqualToIgnoringGivenFields(recordFile, "bytes", "items", "loadStart");
+                    assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
+                    assertThat(actual.getLoadStart()).isNotNull().isPositive();
                 });
     }
 
