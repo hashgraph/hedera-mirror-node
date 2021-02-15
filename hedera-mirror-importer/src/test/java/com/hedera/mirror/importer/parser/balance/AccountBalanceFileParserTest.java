@@ -48,7 +48,7 @@ import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-public class AccountBalanceFileParserTest extends IntegrationTest {
+class AccountBalanceFileParserTest extends IntegrationTest {
 
     @TempDir
     Path dataPath;

@@ -117,9 +117,9 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         verifyFinalDatabaseState(recordFileDescriptor1);
 
         // when
-        Assertions.assertThrows(ParserException.class, () -> {
-            recordFileParser.parse(recordFileDescriptor1.getRecordFile());
-        });
+        Assertions.assertThrows(ParserException.class, () -> recordFileParser
+                .parse(recordFileDescriptor1.getRecordFile())
+        );
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);

@@ -45,6 +45,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -88,19 +89,19 @@ public abstract class Downloader<T extends StreamFile> {
     protected final StreamFileRepository<T, ?> streamFileRepository;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
-    private volatile Optional<T> lastStreamFile = Optional.empty();
+    private final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
 
     // Metrics
     private final MeterRegistry meterRegistry;
     private final Counter.Builder signatureVerificationMetric;
     private final Timer.Builder streamVerificationMetric;
 
-    public Downloader(S3AsyncClient s3Client,
-                      AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-                      MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
-                      SignatureFileReader signatureFileReader, StreamFileReader<T, ?> streamFileReader,
-                      StreamFileNotifier streamFileNotifier, StreamFileRepository<T, ?> streamFileRepository,
-                      MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+    protected Downloader(S3AsyncClient s3Client,
+                         AddressBookService addressBookService, DownloaderProperties downloaderProperties,
+                         MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
+                         SignatureFileReader signatureFileReader, StreamFileReader<T, ?> streamFileReader,
+                         StreamFileNotifier streamFileNotifier, StreamFileRepository<T, ?> streamFileRepository,
+                         MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.s3Client = s3Client;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
@@ -264,7 +265,7 @@ public abstract class Downloader<T extends StreamFile> {
      * @return last signature file name
      */
     private String getLastSignature() {
-        String lastSignature = lastStreamFile
+        String lastSignature = lastStreamFile.get()
                 .map(StreamFile::getName)
                 .or(() -> {
                     StreamType streamType = downloaderProperties.getStreamType();
@@ -274,8 +275,8 @@ public abstract class Downloader<T extends StreamFile> {
                 .map(name -> name + "_sig")
                 .orElse("");
 
-        if (lastStreamFile.isEmpty()) {
-            lastStreamFile = streamFileRepository.findLatest();
+        if (lastStreamFile.get().isEmpty()) {
+            lastStreamFile.set(streamFileRepository.findLatest());
         }
 
         return lastSignature;
@@ -380,7 +381,7 @@ public abstract class Downloader<T extends StreamFile> {
 
                     signatures.forEach(this::moveSignatureFile);
                     streamFileNotifier.verified(streamFile);
-                    lastStreamFile = Optional.of(streamFile);
+                    lastStreamFile.set(Optional.of(streamFile));
                     onVerified(streamFile);
                     valid = true;
                     break;
@@ -403,7 +404,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
-    private PendingDownload downloadSignedDataFile(FileStreamSignature fileStreamSignature) throws Exception {
+    private PendingDownload downloadSignedDataFile(FileStreamSignature fileStreamSignature) {
         String fileName = fileStreamSignature.getFilename().replace("_sig", "");
         String s3Prefix = downloaderProperties.getPrefix();
         String nodeAccountId = fileStreamSignature.getNodeAccountIdString();
@@ -424,7 +425,7 @@ public abstract class Downloader<T extends StreamFile> {
      */
     private void verify(StreamFile streamFile, FileStreamSignature signature) {
         String filename = streamFile.getName();
-        String expectedPrevHash = lastStreamFile.map(StreamFile::getHash).orElse(null);
+        String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
         if (!verifyHashChain(streamFile, expectedPrevHash)) {
             throw new HashMismatchException(filename, expectedPrevHash, streamFile.getPreviousHash());

@@ -65,7 +65,7 @@ public class MirrorDateRangePropertiesProcessor {
      * @return the DateRangeFilter
      */
     public DateRangeFilter getDateRangeFilter(StreamType type) {
-        return filters.computeIfAbsent(type, t -> newDateRangeFilter(t));
+        return filters.computeIfAbsent(type, this::newDateRangeFilter);
     }
 
     private DateRangeFilter newDateRangeFilter(StreamType streamType) {

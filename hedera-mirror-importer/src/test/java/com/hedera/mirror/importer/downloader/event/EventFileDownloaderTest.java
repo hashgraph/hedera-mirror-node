@@ -25,9 +25,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -35,7 +33,6 @@ import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
 import com.hedera.mirror.importer.repository.EventFileRepository;
 
-@ExtendWith(MockitoExtension.class)
 class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Mock

@@ -25,7 +25,7 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.StreamFile;
 
-public interface StreamFileRepository<T extends StreamFile, ID> extends CrudRepository<T, ID> {
+public interface StreamFileRepository<T extends StreamFile, I> extends CrudRepository<T, I> {
 
     Optional<T> findLatest();
 }

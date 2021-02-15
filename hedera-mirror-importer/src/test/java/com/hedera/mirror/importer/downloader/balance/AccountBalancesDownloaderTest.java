@@ -26,9 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
@@ -41,7 +39,6 @@ import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@ExtendWith(MockitoExtension.class)
 class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Mock

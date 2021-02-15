@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,6 +39,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -50,6 +53,9 @@ class RecordFileParserPerformanceTest extends IntegrationTest {
 
     @Autowired
     private RecordFileReader recordFileReader;
+
+    @Autowired
+    private RecordFileRepository recordFileRepository;
 
     private final List<RecordFile> recordFiles = new ArrayList<>();
 
@@ -67,5 +73,6 @@ class RecordFileParserPerformanceTest extends IntegrationTest {
     @Timeout(15)
     void parse() {
         recordFiles.forEach(recordFileParser::parse);
+        assertThat(recordFileRepository.count()).isEqualTo(recordFiles.size());
     }
 }

@@ -27,13 +27,10 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 
 // Common tests for streams (record and events) which are linked by previous file's hash.
-@ExtendWith(MockitoExtension.class)
 public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloaderTest {
 
     @Test
