@@ -1,0 +1,2 @@
+cd hedera-mirror-rest
+npx pretty-quick --staged

@@ -8,11 +8,12 @@
     "node": ">=12.6.0"
   },
   "scripts": {
-    "test": "jest --testPathPattern='__tests__/*'",
-    "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js",
+    "integrationtest": "jest --testPathPattern='__tests__/integration.test.js' --collectCoverage=false",
     "lint": "eslint \"**/*.js\"",
-    "integrationtest": "jest --testPathPattern='__tests__/integration.test.js' --collectCoverage=false"
+    "perftest": "__performancetests__/perfTest.js",
+    "postinstall": "cd .. && husky install hedera-mirror-rest/.husky",
+    "test": "jest --testPathPattern='__tests__/*'"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
@@ -87,11 +88,6 @@
     "sinon": "^9.2.4",
     "supertest": "^6.1.3",
     "testcontainers": "^7.4.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "pretty-quick --staged"
-    }
   },
   "jest": {
     "collectCoverage": true,
