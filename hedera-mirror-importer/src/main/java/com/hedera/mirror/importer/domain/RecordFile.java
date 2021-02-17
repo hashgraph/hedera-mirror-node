@@ -47,11 +47,14 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @NoArgsConstructor
 public class RecordFile implements StreamFile {
 
+    private long blockIndex;
+
     @ToString.Exclude
     private byte[] bytes;
 
     private Long consensusStart;
 
+    @Id
     private Long consensusEnd;
 
     private Long count;
@@ -70,10 +73,6 @@ public class RecordFile implements StreamFile {
 
     @ToString.Exclude
     private String hash;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.pubsub;
+package com.hedera.mirror.importer.parser.record;
 
 /*-
  * ‌
@@ -20,31 +20,22 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
-import javax.inject.Named;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.record.AbstractRecordStreamFileListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
-@Named
-@ConditionalOnPubSubRecordParser
-public class PubSubRecordStreamFileListener extends AbstractRecordStreamFileListener {
+@RequiredArgsConstructor
+public abstract class AbstractRecordStreamFileListener implements RecordStreamFileListener {
 
-    public PubSubRecordStreamFileListener(RecordFileRepository recordFileRepository) {
-        super(recordFileRepository);
-    }
+    private final RecordFileRepository recordFileRepository;
 
-    @Override
-    public void onStart() throws ImporterException {
-    }
-
-    @Override
-    public void onEnd(RecordFile recordFile) throws ImporterException {
-        saveRecordFile(recordFile);
-    }
-
-    @Override
-    public void onError() {
+    @Transactional
+    protected void saveRecordFile(RecordFile recordFile) {
+        Optional<RecordFile> latest = recordFileRepository.findLatest();
+        recordFile.setBlockIndex(latest.map((rf) -> rf.getBlockIndex() + 1).orElse(0L));
+        recordFileRepository.save(recordFile);
     }
 }
