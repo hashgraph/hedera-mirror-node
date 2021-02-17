@@ -75,6 +75,8 @@ class Pool {
         const result = entry.match(/\/(\w+?).js:/);
         return result ? result[1] : '';
       });
+      // transactions / balances / accounts may call pool.query directly or through utils,
+      // so if the stack frame at index 0 is utils, look one more up the stack for the callerFile
       callerFile = callerFiles[2];
       if (callerFile === 'utils') {
         callerFile = callerFiles[3];

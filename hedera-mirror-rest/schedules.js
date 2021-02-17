@@ -48,7 +48,7 @@ const entityIdJoinQuery = 'join t_entities e on e.id = s.schedule_id';
 const groupByQuery = 'group by e.key, e.memo, s.consensus_timestamp, s.schedule_id';
 const scheduleIdMatchQuery = 'where s.schedule_id = $1';
 const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
-const signatureJoinQuery = 'join schedule_signature ss on ss.schedule_id = s.schedule_id';
+const signatureJoinQuery = 'left join schedule_signature ss on ss.schedule_id = s.schedule_id';
 
 const getScheduleByIdQuery = [
   scheduleSelectQuery,
@@ -59,19 +59,21 @@ const getScheduleByIdQuery = [
 ].join('\n');
 
 const formatScheduleRow = (row) => {
-  const signatures = row.signatures.map((signature) => {
-    return {
-      consensus_timestamp: utils.nsToSecNs(signature.consensus_timestamp),
-      public_key_prefix: utils.toHexString(Buffer.from(signature.public_key_prefix, 'base64')),
-      signature: utils.toHexString(Buffer.from(signature.signature, 'base64')),
-    };
-  });
+  const signatures = row.signatures
+    .filter((signature) => signature.consensus_timestamp !== null)
+    .map((signature) => {
+      return {
+        consensus_timestamp: utils.nsToSecNs(signature.consensus_timestamp),
+        public_key_prefix: signature.public_key_prefix,
+        signature: signature.signature,
+      };
+    });
 
   return {
     admin_key: utils.encodeKey(row.key),
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
     creator_account_id: EntityId.fromString(row.creator_account_id).toString(),
-    executed_timestamp: utils.nsToSecNs(row.executed_timestamp),
+    executed_timestamp: row.executed_timestamp === null ? null : utils.nsToSecNs(row.executed_timestamp),
     memo: row.memo,
     payer_account_id: EntityId.fromString(row.payer_account_id).toString(),
     schedule_id: EntityId.fromString(row.schedule_id).toString(),

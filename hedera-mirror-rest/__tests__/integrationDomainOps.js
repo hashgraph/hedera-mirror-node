@@ -393,7 +393,6 @@ const addToken = async (token) => {
     initial_supply: 1000000,
     kyc_key: null,
     kyc_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-    modified_timestamp: 0,
     name: 'Token name',
     supply_key: null,
     supply_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
@@ -405,27 +404,29 @@ const addToken = async (token) => {
     ...token,
   };
 
+  if (!token.modified_timestamp) {
+    token.modified_timestamp = token.created_timestamp;
+  }
+
   await sqlConnection.query(
-    `INSERT INTO token (
-                   token_id,
-                   created_timestamp,
-                   decimals,
-                   freeze_default,
-                   freeze_key_ed25519_hex,
-                   initial_supply,
-                   kyc_key,
-                   kyc_key_ed25519_hex,
-                   modified_timestamp,
-                   name,
-                   supply_key,
-                   supply_key_ed25519_hex,
-                   symbol,
-                   total_supply,
-                   treasury_account_id,
-                   wipe_key,
-                   wipe_key_ed25519_hex
-                   )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);`,
+    `INSERT INTO token (token_id,
+                          created_timestamp,
+                          decimals,
+                          freeze_default,
+                          freeze_key_ed25519_hex,
+                          initial_supply,
+                          kyc_key,
+                          kyc_key_ed25519_hex,
+                          modified_timestamp,
+                          name,
+                          supply_key,
+                          supply_key_ed25519_hex,
+                          symbol,
+                          total_supply,
+                          treasury_account_id,
+                          wipe_key,
+                          wipe_key_ed25519_hex)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);`,
     [
       EntityId.fromString(token.token_id).getEncodedId(),
       token.created_timestamp,
@@ -460,6 +461,10 @@ const addTokenAccount = async (tokenAccount) => {
     token_id: '0.0.0',
     ...tokenAccount,
   };
+
+  if (!tokenAccount.modified_timestamp) {
+    tokenAccount.modified_timestamp = tokenAccount.created_timestamp;
+  }
 
   await sqlConnection.query(
     `INSERT INTO token_account (

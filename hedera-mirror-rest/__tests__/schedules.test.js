@@ -59,13 +59,13 @@ describe('schedule formatScheduleRow tests', () => {
     signatures: [
       {
         consensus_timestamp: '1234567890.000000001',
-        public_key_prefix: 'a1b1c1',
-        signature: 'a2b2c2',
+        public_key_prefix: 'obHB',
+        signature: 'orLC',
       },
       {
         consensus_timestamp: '1234567890.000000010',
-        public_key_prefix: 'd1e1f1',
-        signature: 'd2e2f2',
+        public_key_prefix: '0eHx',
+        signature: '0uLy',
       },
     ],
     transaction_body: 'Kd6tvu8=',
@@ -86,8 +86,25 @@ describe('schedule formatScheduleRow tests', () => {
       },
       expected: {
         ...defaultExpected,
-        executed_timestamp: '0.000000000',
+        executed_timestamp: null,
         admin_key: null,
+      },
+    },
+    {
+      description: 'input with null signature entry',
+      input: {
+        ...defaultInput,
+        signatures: [
+          {
+            consensus_timestamp: null,
+            public_key_prefix: null,
+            signature: null,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        signatures: [],
       },
     },
   ];
