@@ -215,16 +215,16 @@ GET `/api/v1/schedules`
       "signatures": [
         {
           "consensus_timestamp": "1234567890.000000001",
-          "public_key_prefix": "1f4be98a",
-          "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71"
+          "public_key_prefix": "H0vpig==",
+          "signature": "0o0gC7p9SPUH4UD6Yiirp/Kf+LKj8qjuuFdC3AU87HE="
         },
         {
           "consensus_timestamp": "1234567890.000000002",
-          "public_key_prefix": "1afc6e5e",
-          "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0"
+          "public_key_prefix": "GvxuXg==",
+          "signature": "w9mHyHQpTrlbLfn9NrBlZiMxV2mvLvNEw1hoeAECtcA="
         }
       ],
-      "transaction_body": "29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c=="
+      "transaction_body": "KcyxTMX2XFL+t0KSsB1S/c8t5kXTlLU3BGgNttEy7Gw="
     }
   ],
   "links": {
@@ -261,16 +261,16 @@ GET `/api/v1/schedules/{scheduleId}`
   "signatures": [
     {
       "consensus_timestamp": "1234567890.000000001",
-      "public_key_prefix": "1f4be98a",
-      "signature": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71"
+      "public_key_prefix": "H0vpig==",
+      "signature": "0o0gC7p9SPUH4UD6Yiirp/Kf+LKj8qjuuFdC3AU87HE="
     },
     {
       "consensus_timestamp": "1234567890.000000002",
-      "public_key_prefix": "1afc6e5e",
-      "signature": "c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0"
+      "public_key_prefix": "GvxuXg==",
+      "signature": "w9mHyHQpTrlbLfn9NrBlZiMxV2mvLvNEw1hoeAECtcA="
     }
   ],
-  "transaction_body": "29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c=="
+  "transaction_body": "KcyxTMX2XFL+t0KSsB1S/c8t5kXTlLU3BGgNttEy7Gw="
 }
 ```
 
