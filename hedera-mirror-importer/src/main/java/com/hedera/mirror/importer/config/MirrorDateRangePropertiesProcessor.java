@@ -107,13 +107,12 @@ public class MirrorDateRangePropertiesProcessor {
     }
 
     /**
-     * Gets the effective startDate for downloader based on startDate in MirrorProperties, the startDateAdjustment and
-     * last valid downloaded file.
+     * Gets the latest stream file for downloader based on startDate in MirrorProperties, the startDateAdjustment and
+     * last valid downloaded stream file.
      *
      * @param streamType What type of stream to retrieve
-     * @return The effective startDate: null if downloader is disabled; if startDate is set, the effective startDate is
-     * startDate if the database is empty or max(startDate, timestamp of last valid downloaded file); if startDate is
-     * not set, the effective startDate is now if the database is empty, or the timestamp of last valid downloaded file
+     * @return The latest stream file from the database or a dummy stream file if it calculated a different effective
+     * start date
      */
     public <T extends StreamFile> Optional<T> getLastStreamFile(StreamType streamType) {
         Instant startDate = mirrorProperties.getStartDate();
