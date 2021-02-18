@@ -654,6 +654,7 @@ components:
       properties:
         _type:
           type: string
+          enum: [ED25519, ProtobufEncoded]
           example: ProtobufEncoded
         key:
           type: string

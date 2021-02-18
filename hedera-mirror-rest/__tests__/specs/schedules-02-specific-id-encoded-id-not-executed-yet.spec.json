@@ -1,5 +1,5 @@
 {
-  "description": "Schedule api calls for a specific schedule using schedule id, no admin key, not executed yet",
+  "description": "Schedule api calls for a specific schedule using encoded schedule id, no admin key, not executed yet",
   "setup": {
     "accounts": [
       {
@@ -36,7 +36,7 @@
       }
     ]
   },
-  "url": "/api/v1/schedules/0.0.2000",
+  "url": "/api/v1/schedules/2000",
   "responseStatus": 200,
   "responseJson": {
     "admin_key": null,
