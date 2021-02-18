@@ -1,2 +1,2 @@
 cd hedera-mirror-rest
-npx pretty-quick --staged
+npx --no-install pretty-quick --staged
