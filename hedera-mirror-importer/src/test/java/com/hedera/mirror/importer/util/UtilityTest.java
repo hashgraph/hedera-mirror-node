@@ -31,13 +31,11 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -45,9 +43,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.hedera.mirror.importer.domain.StreamType;
 
 public class UtilityTest {
-
-    @TempDir
-    Path tempDir;
 
     @DisplayName("Get Instant from filename")
     @ParameterizedTest(name = "{0}")

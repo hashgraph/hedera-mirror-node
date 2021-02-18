@@ -226,8 +226,8 @@ public class MirrorDateRangePropertiesProcessorTest {
         }
 
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThatThrownBy(() ->
-                    mirrorDateRangePropertiesProcessor.getLastStreamFile(downloaderProperties.getStreamType()))
+            StreamType streamType = downloaderProperties.getStreamType();
+            assertThatThrownBy(() -> mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
                     .isInstanceOf(InvalidConfigurationException.class);
         }
     }

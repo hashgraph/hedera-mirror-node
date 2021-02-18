@@ -4,6 +4,7 @@
 - [Importer](#importer)
 - [Monitor](#monitor)
 - [REST API](#rest-api)
+- [Rosetta API](#rosetta-api)
 
 ## GRPC API
 
@@ -118,9 +119,10 @@ For mirror node operators running the v1 database schema, the following steps ca
 
 2. Stop the importer
 
-   If still on a version that still downloads files to the filesystem, ensure the valid directory for each stream type
-   is empty (e.g. `/var/lib/hedera-mirror-importer/*/valid/`   where `/var/lib/hedera-mirror-importer` is the
-   configured `dataPath`). If it's not empty, let the importer process fully catch up before attempting the migration.
+   If on a version that still downloads files to the filesystem, ensure the valid directory for each stream type is
+   empty. For example if `dataPath` is set to `/var/lib/hedera-mirror-importer` then
+   `/var/lib/hedera-mirror-importer/*/valid/` should be empty. If it's not empty, let the importer process fully catch
+   up before attempting the migration.
 
 3. Set up a new TimescaleDB database
 
