@@ -45,8 +45,6 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -138,11 +136,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         sigMap.addSigPair(sigPair);
 
         return sigMap.build();
-    }
-
-    @BeforeEach
-    void beforeEach(TestInfo testInfo) {
-        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
     }
 
     protected static Key keyFromString(String key) {
@@ -361,7 +354,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected Entities createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-            boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
+                                    boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
         if (autoRenewAccountId != null) {
             entityRepository.save(autoRenewAccountId.toEntity());
         }

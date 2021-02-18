@@ -34,7 +34,6 @@ import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.repository.EventFileRepository;
 
 @Named
 public class EventFileDownloader extends Downloader<EventFile> {
@@ -44,10 +43,10 @@ public class EventFileDownloader extends Downloader<EventFile> {
             EventDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry, EventFileReader eventFileReader,
             NodeSignatureVerifier nodeSignatureVerifier, SignatureFileReader signatureFileReader,
-            StreamFileNotifier streamFileNotifier, EventFileRepository eventFileRepository,
+            StreamFileNotifier streamFileNotifier,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(s3Client, addressBookService, downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, eventFileReader, streamFileNotifier, eventFileRepository,
+                nodeSignatureVerifier, signatureFileReader, eventFileReader, streamFileNotifier,
                 mirrorDateRangePropertiesProcessor);
     }
 

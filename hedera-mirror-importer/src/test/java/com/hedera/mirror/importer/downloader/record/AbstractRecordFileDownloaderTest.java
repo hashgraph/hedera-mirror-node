@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.downloader.record;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
@@ -34,12 +33,8 @@ import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
-
-    @Mock
-    private RecordFileRepository recordFileRepository;
 
     private Map<String, RecordFile> recordFileMap;
 
@@ -60,12 +55,10 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
 
     @Override
     protected Downloader getDownloader() {
-        streamFileRepository = recordFileRepository;
         RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5());
         return new RecordFileDownloader(s3AsyncClient, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier,
-                recordFileRepository, dateRangeProcessor);
+                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, dateRangeProcessor);
     }
 }

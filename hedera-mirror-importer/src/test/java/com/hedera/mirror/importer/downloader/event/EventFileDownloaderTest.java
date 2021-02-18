@@ -25,18 +25,13 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
 
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
-import com.hedera.mirror.importer.repository.EventFileRepository;
 
 class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
-
-    @Mock
-    private EventFileRepository eventFileRepository;
 
     @Override
     @BeforeEach
@@ -54,11 +49,10 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
     protected Downloader getDownloader() {
-        streamFileRepository = eventFileRepository;
         return new EventFileDownloader(s3AsyncClient, addressBookService,
                 (EventDownloaderProperties) downloaderProperties, meterRegistry,
                 new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader, streamFileNotifier,
-                eventFileRepository, dateRangeProcessor);
+                dateRangeProcessor);
     }
 
     @Override

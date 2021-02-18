@@ -30,9 +30,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,7 +43,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.exception.FileOperationException;
 
 @Log4j2
 @UtilityClass
@@ -150,25 +146,6 @@ public class Utility {
         }
     }
 
-    public static void ensureDirectory(Path path) {
-        if (path == null) {
-            throw new IllegalArgumentException("Empty path");
-        }
-
-        File directory = path.toFile();
-        directory.mkdirs();
-
-        if (!directory.exists()) {
-            throw new IllegalStateException("Unable to create directory " + directory.getAbsolutePath());
-        }
-        if (!directory.isDirectory()) {
-            throw new IllegalStateException("Not a directory " + directory.getAbsolutePath());
-        }
-        if (!directory.canRead() || !directory.canWrite()) {
-            throw new IllegalStateException("Insufficient permissions for directory " + directory.getAbsolutePath());
-        }
-    }
-
     public static File getResource(String path) {
         ClassLoader[] classLoaders = {Thread
                 .currentThread().getContextClassLoader(), Utility.class.getClassLoader(),
@@ -223,21 +200,6 @@ public class Utility {
 
     public static final boolean isStreamFileAfterInstant(String filename, Instant instant) {
         return instant != null && getInstantFromFilename(filename).isAfter(instant);
-    }
-
-    /**
-     * Opens a file and returns a {@link InputStream} object. Throws {@link FileOperationException} if some error
-     * occurs.
-     *
-     * @param file the input file
-     * @return {@link InputStream} object representing the file
-     */
-    public static InputStream openQuietly(File file) {
-        try {
-            return new FileInputStream(file);
-        } catch (IOException e) {
-            throw new FileOperationException("Unable to open file " + file.getPath(), e);
-        }
     }
 
     /**

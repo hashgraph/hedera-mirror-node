@@ -38,9 +38,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
@@ -96,8 +96,8 @@ public class MirrorDateRangePropertiesProcessorTest {
         Instant expectedDate = adjustStartDate(startUpInstant);
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            assertThat(mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties))
-                    .isEqualTo(expectedDate);
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+                    .isEqualTo(streamFile(streamType, expectedDate));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType)).isEqualTo(expectedFilter);
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(STARTUP_TIME));
@@ -108,14 +108,14 @@ public class MirrorDateRangePropertiesProcessorTest {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
         Instant past = STARTUP_TIME.minusSeconds(100);
 
-        doReturn(streamFile(past)).when(accountBalanceFileRepository).findLatest();
-        doReturn(streamFile(past)).when(eventFileRepository).findLatest();
-        doReturn(streamFile(past)).when(recordFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
+        doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThat(mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties))
-                    .isEqualTo(past);
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+            StreamType streamType = downloaderProperties.getStreamType();
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, Utility.MAX_INSTANT_LONG));
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
@@ -125,14 +125,14 @@ public class MirrorDateRangePropertiesProcessorTest {
     void notSetAndDatabaseNotEmpty() {
         Instant past = STARTUP_TIME.minusSeconds(100);
 
-        doReturn(streamFile(past)).when(accountBalanceFileRepository).findLatest();
-        doReturn(streamFile(past)).when(eventFileRepository).findLatest();
-        doReturn(streamFile(past)).when(recordFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
+        doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThat(mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties))
-                    .isEqualTo(past);
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+            StreamType streamType = downloaderProperties.getStreamType();
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, Utility.MAX_INSTANT_LONG));
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
@@ -143,14 +143,14 @@ public class MirrorDateRangePropertiesProcessorTest {
         Instant past = STARTUP_TIME.minusSeconds(100);
         mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG.plusNanos(1));
 
-        doReturn(streamFile(past)).when(accountBalanceFileRepository).findLatest();
-        doReturn(streamFile(past)).when(eventFileRepository).findLatest();
-        doReturn(streamFile(past)).when(recordFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
+        doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThat(mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties))
-                    .isEqualTo(past);
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+            StreamType streamType = downloaderProperties.getStreamType();
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, Utility.MAX_INSTANT_LONG));
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
@@ -162,14 +162,14 @@ public class MirrorDateRangePropertiesProcessorTest {
         Instant past = STARTUP_TIME.minusSeconds(100);
         mirrorProperties.setStartDate(past.minusNanos(nanos));
 
-        doReturn(streamFile(past)).when(accountBalanceFileRepository).findLatest();
-        doReturn(streamFile(past)).when(eventFileRepository).findLatest();
-        doReturn(streamFile(past)).when(recordFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
+        doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
-            assertThat(mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties))
-                    .isEqualTo(past);
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+            StreamType streamType = downloaderProperties.getStreamType();
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, null));
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
@@ -180,18 +180,19 @@ public class MirrorDateRangePropertiesProcessorTest {
     void startDateAfterDatabase(long diffNanos) {
         Instant lastFileInstant = Instant.now().minusSeconds(200);
 
-        doReturn(streamFile(lastFileInstant)).when(accountBalanceFileRepository).findLatest();
-        doReturn(streamFile(lastFileInstant)).when(eventFileRepository).findLatest();
-        doReturn(streamFile(lastFileInstant)).when(recordFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, lastFileInstant)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.EVENT, lastFileInstant)).when(eventFileRepository).findLatest();
+        doReturn(streamFile(StreamType.RECORD, lastFileInstant)).when(recordFileRepository).findLatest();
 
         Instant startDate = lastFileInstant.plusNanos(diffNanos);
         mirrorProperties.setStartDate(startDate);
 
         DateRangeFilter expectedFilter = new DateRangeFilter(startDate, null);
         for (var downloaderProperties : downloaderPropertiesList) {
+            StreamType streamType = downloaderProperties.getStreamType();
             Instant effectiveStartDate = max(adjustStartDate(startDate), lastFileInstant);
-            assertThat(mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties))
-                    .isEqualTo(effectiveStartDate);
+            Optional<StreamFile> streamFile = streamFile(streamType, effectiveStartDate);
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).isEqualTo(streamFile);
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
                     .isEqualTo(expectedFilter);
         }
@@ -217,16 +218,16 @@ public class MirrorDateRangePropertiesProcessorTest {
     void startDateNotBeforeEndDate(Instant startDate, Instant endDate, Instant lastFileDate) {
         mirrorProperties.setStartDate(startDate);
         mirrorProperties.setEndDate(endDate);
-        if (lastFileDate != null) {
 
-            doReturn(streamFile(lastFileDate)).when(accountBalanceFileRepository).findLatest();
-            doReturn(streamFile(lastFileDate)).when(eventFileRepository).findLatest();
-            doReturn(streamFile(lastFileDate)).when(recordFileRepository).findLatest();
+        if (lastFileDate != null) {
+            doReturn(streamFile(StreamType.BALANCE, lastFileDate)).when(accountBalanceFileRepository).findLatest();
+            doReturn(streamFile(StreamType.EVENT, lastFileDate)).when(eventFileRepository).findLatest();
+            doReturn(streamFile(StreamType.RECORD, lastFileDate)).when(recordFileRepository).findLatest();
         }
 
         for (var downloaderProperties : downloaderPropertiesList) {
             assertThatThrownBy(() ->
-                    mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties))
+                    mirrorDateRangePropertiesProcessor.getLastStreamFile(downloaderProperties.getStreamType()))
                     .isInstanceOf(InvalidConfigurationException.class);
         }
     }
@@ -257,9 +258,13 @@ public class MirrorDateRangePropertiesProcessorTest {
         return startDate.minus(mirrorProperties.getStartDateAdjustment());
     }
 
-    private Optional<StreamFile> streamFile(Instant instant) {
-        StreamFile streamFile = new RecordFile();
-        streamFile.setName(Utility.getStreamFilenameFromInstant(StreamType.RECORD, instant));
+    private boolean matches(Optional<StreamFile> streamFile, Instant instant) {
+        return instant.equals(streamFile.map(StreamFile::getName).map(Utility::getInstantFromFilename).orElse(null));
+    }
+
+    private Optional<StreamFile> streamFile(StreamType streamType, Instant instant) {
+        StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
+        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
         return Optional.of(streamFile);
     }
 }

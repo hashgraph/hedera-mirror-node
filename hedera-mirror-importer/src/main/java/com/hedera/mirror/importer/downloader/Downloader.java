@@ -64,12 +64,10 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -86,7 +84,6 @@ public abstract class Downloader<T extends StreamFile> {
     protected final SignatureFileReader signatureFileReader;
     protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
-    protected final StreamFileRepository<T, ?> streamFileRepository;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     private final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
@@ -100,7 +97,7 @@ public abstract class Downloader<T extends StreamFile> {
                          AddressBookService addressBookService, DownloaderProperties downloaderProperties,
                          MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
                          SignatureFileReader signatureFileReader, StreamFileReader<T, ?> streamFileReader,
-                         StreamFileNotifier streamFileNotifier, StreamFileRepository<T, ?> streamFileRepository,
+                         StreamFileNotifier streamFileNotifier,
                          MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.s3Client = s3Client;
         this.addressBookService = addressBookService;
@@ -111,7 +108,6 @@ public abstract class Downloader<T extends StreamFile> {
         this.signatureFileReader = signatureFileReader;
         this.streamFileReader = streamFileReader;
         this.streamFileNotifier = streamFileNotifier;
-        this.streamFileRepository = streamFileRepository;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
         mirrorProperties = downloaderProperties.getMirrorProperties();
@@ -265,21 +261,16 @@ public abstract class Downloader<T extends StreamFile> {
      * @return last signature file name
      */
     private String getLastSignature() {
-        String lastSignature = lastStreamFile.get()
-                .map(StreamFile::getName)
+        return lastStreamFile.get()
                 .or(() -> {
-                    StreamType streamType = downloaderProperties.getStreamType();
-                    Instant startDate = mirrorDateRangePropertiesProcessor.getEffectiveStartDate(downloaderProperties);
-                    return Optional.of(Utility.getStreamFilenameFromInstant(streamType, startDate));
+                    Optional<T> streamFile = mirrorDateRangePropertiesProcessor
+                            .getLastStreamFile(downloaderProperties.getStreamType());
+                    lastStreamFile.compareAndSet(Optional.empty(), streamFile);
+                    return streamFile;
                 })
+                .map(StreamFile::getName)
                 .map(name -> name + "_sig")
                 .orElse("");
-
-        if (lastStreamFile.get().isEmpty()) {
-            lastStreamFile.set(streamFileRepository.findLatest());
-        }
-
-        return lastSignature;
     }
 
     /**
