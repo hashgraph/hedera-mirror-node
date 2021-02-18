@@ -20,19 +20,19 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.util.List;
+import java.util.concurrent.TimeoutException;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.HederaStatusException;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.Transaction;
-import com.hedera.hashgraph.sdk.TransactionBuilder;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionList;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.account.AccountBalanceQuery;
-import com.hedera.hashgraph.sdk.crypto.PrivateKey;
+import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
@@ -46,50 +46,36 @@ public abstract class AbstractNetworkClient {
         client = sdkClient.getClient();
     }
 
-    public TransactionId executeTransaction(TransactionBuilder transactionBuilder, PrivateKey key) throws HederaStatusException {
-
-        Transaction builtTransaction = (Transaction) transactionBuilder.build(client);
+    public TransactionId executeTransaction(Transaction transaction, PrivateKey key) throws TimeoutException,
+            PrecheckStatusException {
 
         if (key != null) {
-            builtTransaction = builtTransaction.sign(key);
+            transaction.freezeWith(client); // Signing requires transaction to be frozen
+            transaction.sign(key);
         }
 
-        TransactionId transactionId = builtTransaction.execute(client);
+        TransactionResponse transactionResponse = (TransactionResponse) transaction.execute(client);
+        TransactionId transactionId = transactionResponse.transactionId;
         log.debug("Executed transaction {}.", transactionId);
 
         return transactionId;
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(TransactionBuilder transactionBuilder,
-                                                                           PrivateKey key) throws HederaStatusException {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
+                                                                           PrivateKey key) throws TimeoutException,
+            PrecheckStatusException, ReceiptStatusException {
         long startBalance = getBalance();
-        TransactionId transactionId = executeTransaction(transactionBuilder, key);
+        TransactionId transactionId = executeTransaction(transaction, key);
         TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 
-    public List<TransactionId> executeTransactionList(TransactionBuilder transactionBuilder, PrivateKey key) throws HederaStatusException {
-
-        TransactionList transactionList = (TransactionList) transactionBuilder.build(client);
-
-        if (key != null) {
-            transactionList = transactionList.sign(key);
-        }
-
-        List<TransactionId> transactionIdList = transactionList.executeAll(client);
-        if (transactionIdList.size() == 1) {
-            log.debug("Executed transaction {}.", transactionIdList.get(0));
-        } else {
-            log.debug("Executed {} transactions.", transactionIdList.size());
-        }
-
-        return transactionIdList;
-    }
-
-    public long getBalance() throws HederaStatusException {
+    public long getBalance() throws TimeoutException, PrecheckStatusException {
         return new AccountBalanceQuery()
                 .setAccountId(sdkClient.getOperatorId())
-                .execute(client).asTinybar();
+                .execute(client)
+                .hbars
+                .toTinybars();
     }
 }

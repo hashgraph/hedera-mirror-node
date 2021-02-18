@@ -12,8 +12,8 @@ Feature: Setup entities for various features
 
     @FundAccount
     Scenario Outline: Fund account
-        When I send <amount> tℏ to account <account>
+        When I send <amount> ℏ to account <account>
         Then the new balance should reflect cryptotransfer of <amount>
         Examples:
-            | amount     | account |
-            | 1000000000 | 1562    |
+            | amount | account |
+            | 1000   | 1043    |

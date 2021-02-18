@@ -23,15 +23,15 @@ package com.hedera.mirror.test.e2e.acceptance.props;
 import lombok.Data;
 import lombok.ToString;
 
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 
 @Data
 public class ExpandedAccountId {
     private final AccountId accountId;
     @ToString.Exclude
-    private final Ed25519PrivateKey privateKey;
+    private final PrivateKey privateKey;
     @ToString.Exclude
-    private final Ed25519PublicKey publicKey;
+    private final PublicKey publicKey;
 }

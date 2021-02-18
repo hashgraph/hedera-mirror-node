@@ -12,7 +12,7 @@ Feature: Account Coverage Feature
     @CreateCryptoAccount
     Scenario Outline: Create crypto account
         When I create a new account with balance <amount> tℏ
-        Then the crypto balance should be greater than or equal to <amount>
+        Then the new balance should reflect cryptotransfer of <amount>
         Examples:
-            | amount     |
-            | 1000000000 |
+            | amount    |
+            | 100000000 |
