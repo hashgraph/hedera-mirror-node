@@ -153,7 +153,7 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
 
   await integrationDomainOps.setAccountBalance({
     timestamp: ts,
-    id: id,
+    id,
     realm_num: realm,
     balance: bal,
   });
@@ -277,7 +277,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
   const sql = await transactions.reqToSql({query: {'account.id': '0.15.5'}});
-  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
     '5, null',
@@ -296,7 +296,7 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
   await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
 
   const sql = await transactions.reqToSql({query: {timestamp: '0.000001070'}});
-  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
   expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
     'UNKNOWN, UNKNOWN',
@@ -316,7 +316,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
 
   const sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
-  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
   // Note bank is out of desired range but is expected in query result

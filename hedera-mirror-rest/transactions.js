@@ -24,7 +24,6 @@ const utils = require('./utils');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
-const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const transactionTypes = require('./transactionTypes');
 
@@ -396,35 +395,30 @@ const getTransactions = async (req, res) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   }
+
   // Execute query
-  return pool
-    .query(query.query, query.params)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      const transferList = createTransferLists(results.rows);
-      const ret = {
-        transactions: transferList.transactions,
-      };
+  const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
+  const transferList = createTransferLists(rows);
+  const ret = {
+    transactions: transferList.transactions,
+  };
 
-      ret.links = {
-        next: utils.getPaginationLink(
-          req,
-          ret.transactions.length !== query.limit,
-          'timestamp',
-          transferList.anchorSecNs,
-          query.order
-        ),
-      };
+  ret.links = {
+    next: utils.getPaginationLink(
+      req,
+      ret.transactions.length !== query.limit,
+      'timestamp',
+      transferList.anchorSecNs,
+      query.order
+    ),
+  };
 
-      if (process.env.NODE_ENV === 'test') {
-        ret.sqlQuery = results.sqlQuery;
-      }
+  if (utils.isTestEnv()) {
+    ret.sqlQuery = sqlQuery;
+  }
 
-      logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
-      res.locals[constants.responseDataLabel] = ret;
-    });
+  logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
+  res.locals[constants.responseDataLabel] = ret;
 };
 
 /**
@@ -481,21 +475,16 @@ const getOneTransaction = async (req, res) => {
   }
 
   // Execute query
-  return pool
-    .query(pgSqlQuery, sqlParams)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      const transferList = createTransferLists(results.rows);
-      if (transferList.transactions.length === 0) {
-        throw new NotFoundError('Not found');
-      }
-      logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
-      res.locals[constants.responseDataLabel] = {
-        transactions: transferList.transactions,
-      };
-    });
+  const {rows} = await utils.queryQuietly(pgSqlQuery, ...sqlParams);
+  if (rows.length === 0) {
+    throw new NotFoundError('Not found');
+  }
+
+  const transferList = createTransferLists(rows);
+  logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
+  res.locals[constants.responseDataLabel] = {
+    transactions: transferList.transactions,
+  };
 };
 
 module.exports = {
