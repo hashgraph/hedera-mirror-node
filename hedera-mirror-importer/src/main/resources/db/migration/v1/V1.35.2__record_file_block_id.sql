@@ -3,7 +3,10 @@
 -- Also drop the id column and its sequence
 -------------------
 
-alter table if exists record_file drop column id;
+alter table if exists record_file
+    drop column id,
+    alter column consensus_start drop default,
+    alter column consensus_end drop default;
 drop index if exists record_file__consensus_end;
 drop sequence if exists s_record_files_seq;
 

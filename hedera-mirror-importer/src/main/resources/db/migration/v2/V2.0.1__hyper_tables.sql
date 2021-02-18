@@ -50,7 +50,7 @@ select create_hypertable('non_fee_transfer', 'consensus_timestamp', chunk_time_i
                          create_default_indexes => false, if_not_exists => true);
 
 -- record_file
-select create_hypertable('record_file', 'consensus_start', chunk_time_interval => ${chunkTimeInterval},
+select create_hypertable('record_file', 'consensus_end', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
 -- schedule
