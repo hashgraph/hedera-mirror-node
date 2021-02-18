@@ -65,8 +65,8 @@ func TestShouldSuccessFindByIndex(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
-		WithArgs(dbRecordFile.BlockIndex + expectedSkippedRecordFiles).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByBlockIndex)).
+		WithArgs(dbRecordFile.BlockIndex, expectedSkippedRecordFiles).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
 			AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
@@ -88,7 +88,7 @@ func TestShouldFailFindByIndexNoRecordFile(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByBlockIndex)).
 		WillReturnError(gorm.ErrRecordNotFound)
 
 	// when
@@ -239,8 +239,8 @@ func TestShouldSuccessRetrieveGenesis(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
-		WithArgs(expectedSkippedRecordFiles).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByBlockIndex)).
+		WithArgs(0, expectedSkippedRecordFiles).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
 			AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
@@ -262,7 +262,7 @@ func TestShouldFailRetrieveGenesisNoRecordFile(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByBlockIndex)).
 		WillReturnError(gorm.ErrRecordNotFound)
 
 	// when
@@ -510,6 +510,7 @@ func TestShouldSuccessConstructBlockResponse(t *testing.T) {
 	// given
 	blockIndex := int64(1)
 	rf := &recordFile{
+		BlockIndex:     blockIndex,
 		Hash:           "0x123",
 		PrevHash:       "0x234",
 		ConsensusStart: 1,
@@ -527,7 +528,7 @@ func TestShouldSuccessConstructBlockResponse(t *testing.T) {
 	br, _ := setupRepository(t)
 
 	// when
-	result := br.constructBlockResponse(rf, blockIndex)
+	result := br.constructBlockResponse(rf)
 
 	// then
 	assert.Equal(t, expectedBlock, result)
@@ -554,7 +555,7 @@ func TestShouldSuccessConstructBlockResponseQueryingFirstBlock(t *testing.T) {
 	br, _ := setupRepository(t)
 
 	// when
-	result := br.constructBlockResponse(rf, blockIndex)
+	result := br.constructBlockResponse(rf)
 
 	// then
 	assert.Equal(t, expectedBlock, result)
