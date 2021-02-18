@@ -20,10 +20,8 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -44,24 +42,19 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
-        InputStream inputStream = signatureFileData.getInputStream();
-
-        try (DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream))) {
-            dataInputStream.mark(Byte.BYTES);
+        try (DataInputStream dataInputStream = new DataInputStream(signatureFileData.getInputStream())) {
             byte version = dataInputStream.readByte();
-            dataInputStream.reset();
             SignatureFileReader fileReader;
 
             if (version == SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION) {
                 fileReader = signatureFileReaderV5;
-            }
-            // Version 2 of the signature file begins with a byte of value 4.
-            else if (version <= SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH) {
+            } else if (version <= SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH) { // Begins with a byte of value 4
                 fileReader = signatureFileReaderV2;
             } else {
                 throw new SignatureFileParsingException("Unsupported signature file version: " + version);
             }
-            return fileReader.read(new StreamFileData(signatureFileData.getFilename(), dataInputStream));
+
+            return fileReader.read(signatureFileData);
         } catch (IOException ex) {
             throw new SignatureFileParsingException("Error reading signature file", ex);
         }

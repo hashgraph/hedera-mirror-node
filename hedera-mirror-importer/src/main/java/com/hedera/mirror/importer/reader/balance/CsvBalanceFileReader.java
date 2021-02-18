@@ -35,7 +35,6 @@ import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -62,9 +61,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
         InputStream inputStream = streamFileData.getInputStream();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), BUFFER_SIZE)) {
-            inputStream.mark(BUFFER_SIZE);
             String firstLine = reader.readLine();
-            inputStream.reset();
             return firstLine != null && supports(firstLine);
         } catch (Exception e) {
             throw new InvalidDatasetException("Error reading account balance file", e);
@@ -93,9 +90,10 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
             AtomicLong count = new AtomicLong(0L);
 
             AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
+            accountBalanceFile.setBytes(streamFileData.getBytes());
             accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
             accountBalanceFile.setLoadStart(Instant.now().getEpochSecond());
-            accountBalanceFile.setName(FilenameUtils.getName(streamFileData.getFilename()));
+            accountBalanceFile.setName(streamFileData.getFilename());
 
             reader.lines()
                     .map(line -> {

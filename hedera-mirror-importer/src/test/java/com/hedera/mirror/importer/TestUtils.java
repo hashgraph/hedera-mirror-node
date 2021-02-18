@@ -26,14 +26,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
 
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.util.Utility;
 
 @UtilityClass

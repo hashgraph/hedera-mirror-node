@@ -20,43 +20,38 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import static org.mockito.Mockito.doReturn;
-
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.hedera.mirror.importer.domain.RecordFile;
 
 // Common tests for streams (record and events) which are linked by previous file's hash.
-@ExtendWith(MockitoExtension.class)
 public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloaderTest {
 
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
-        doReturn("2019-01-01T01_00_00.000000Z." + downloaderProperties.getStreamType().getExtension())
-                .when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
-        doReturn("123").when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileHashKey());
+        RecordFile recordFile = new RecordFile();
+        recordFile.setName("2019-08-30T18_10_00.419072Z.rcd");
+        recordFile.setHash("123");
+        expectLastSignature(Instant.EPOCH);
+
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
-        assertNoFilesinValidPath();
+        verifyUnsuccessful();
     }
 
     @Test
     @DisplayName("Bypass previous hash mismatch")
-    void hashMismatchWithBypass() throws Exception {
-        doReturn("2019-01-01T14_12_00.000000Z." + downloaderProperties.getStreamType().getExtension())
-                .when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
-        doReturn("123").when(applicationStatusRepository)
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileHashKey());
+    void hashMismatchWithBypass() {
+        Instant instant = Instant.ofEpochSecond(1546373520, 0);
+        expectLastSignature(instant);
+
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
-        assertValidFiles(List.of(file2));
+        verifyStreamFiles(List.of(file2));
     }
 }

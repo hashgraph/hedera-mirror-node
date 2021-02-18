@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,10 +20,14 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-class RecordFileV2ParserIntegrationTest extends AbstractRecordFileParserIntegrationTest {
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 
-    RecordFileV2ParserIntegrationTest() {
-        super(new RecordFileDescriptor(93, 8, ALL_RECORD_FILE_MAP.get("2019-08-30T18_10_00.419072Z.rcd")),
-                new RecordFileDescriptor(75, 5, ALL_RECORD_FILE_MAP.get("2019-08-30T18_10_05.249678Z.rcd")));
-    }
+import com.hedera.mirror.importer.domain.EventFile;
+
+public interface EventFileRepository extends StreamFileRepository<EventFile, String> {
+
+    @Override
+    @Query(value = "select * from event_file order by consensus_end desc limit 1", nativeQuery = true)
+    Optional<EventFile> findLatest();
 }

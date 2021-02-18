@@ -20,16 +20,33 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.List;
 import lombok.NonNull;
 
+import com.hedera.mirror.importer.parser.domain.StreamItem;
+
 public interface StreamFile {
+
+    byte[] getBytes();
+
+    Long getConsensusStart();
+
+    Long getConsensusEnd();
+
+    Long getCount();
+
+    String getFileHash();
 
     // Get the chained hash of the stream file
     default String getHash() {
         return null;
     }
 
-    String getFileHash();
+    <T extends StreamItem> List<T> getItems();
+
+    Long getLoadEnd();
+
+    Long getLoadStart();
 
     default String getMetadataHash() {
         return null;
@@ -37,10 +54,16 @@ public interface StreamFile {
 
     String getName();
 
+    void setName(String name);
+
+    EntityId getNodeAccountId();
+
+    void setNodeAccountId(@NonNull EntityId nodeAccountId);
+
     // Get the chained hash of the previous stream file
     default String getPreviousHash() {
         return null;
     }
 
-    void setNodeAccountId(@NonNull EntityId nodeAccountId);
+    StreamType getType();
 }

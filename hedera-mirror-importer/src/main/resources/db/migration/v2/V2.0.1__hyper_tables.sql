@@ -33,6 +33,10 @@ select create_hypertable('contract_result', 'consensus_timestamp', chunk_time_in
 select create_hypertable('crypto_transfer', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
+-- event_file
+select create_hypertable('event_file', 'consensus_end', chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
 -- file_data
 select create_hypertable('file_data', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
@@ -45,6 +49,10 @@ select create_hypertable('live_hash', 'consensus_timestamp', chunk_time_interval
 select create_hypertable('non_fee_transfer', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
+-- record_file
+select create_hypertable('record_file', 'consensus_start', chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
 -- schedule
 select create_hypertable('schedule', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
@@ -52,12 +60,6 @@ select create_hypertable('schedule', 'consensus_timestamp', chunk_time_interval 
 -- schedule_signature
 select create_hypertable('schedule_signature', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
-
--- record_file
-select create_hypertable('record_file', 'consensus_start', chunk_time_interval => ${chunkTimeInterval},
-                         create_default_indexes => false, if_not_exists => true);
-
--- t_application_status hyper table creation skipped as it serves only as a reference table
 
 -- t_entities
 select create_hypertable('t_entities', 'id', chunk_time_interval => ${chunkIdInterval},

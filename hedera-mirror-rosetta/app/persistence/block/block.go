@@ -46,8 +46,8 @@ const (
                                            rcd_index.block_index
                                     FROM   (SELECT *
                                             FROM   record_file
-                                            WHERE  hash = (SELECT status_value FROM t_application_status
-                                                                WHERE status_code = 'LAST_PROCESSED_RECORD_HASH')) AS rd,
+                                            ORDER BY consensus_end DESC
+                                            LIMIT 1) AS rd,
                                            (SELECT COUNT(*) - 1 - $1 AS block_index
                                             FROM   record_file
                                             WHERE  load_end IS NOT NULL) AS rcd_index`

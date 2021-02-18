@@ -25,15 +25,12 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
 
-@ExtendWith(MockitoExtension.class)
 class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
@@ -52,9 +49,10 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
     protected Downloader getDownloader() {
-        return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (EventDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
-                new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader);
+        return new EventFileDownloader(s3AsyncClient, addressBookService,
+                (EventDownloaderProperties) downloaderProperties, meterRegistry,
+                new EventFileReaderV3(), nodeSignatureVerifier, signatureFileReader, streamFileNotifier,
+                dateRangeProcessor);
     }
 
     @Override
@@ -65,21 +63,5 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
     @Override
     protected Duration getCloseInterval() {
         return Duration.ofSeconds(5L);
-    }
-
-    @Override
-    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
-        EventDownloaderProperties properties = (EventDownloaderProperties) downloaderProperties;
-        properties.setBatchSize(batchSize);
-    }
-
-    @Override
-    protected void reset() {
-        // no-op, add the logic when event file is saved into db
-    }
-
-    @Override
-    protected void verifyStreamFileRecord(List<String> files) {
-        // no-op, add the logic when event file is saved into db
     }
 }

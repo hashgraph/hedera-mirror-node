@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
@@ -50,7 +50,6 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.ScheduleSignature;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -59,7 +58,6 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -101,9 +99,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @BeforeEach
     final void beforeEach() {
         String newFileHash = UUID.randomUUID().toString();
-        recordFile = insertRecordFileRecord(fileName, newFileHash, "fileHash0", 1L);
+        recordFile = recordFile(fileName, newFileHash, "fileHash0", 1L);
 
-        sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener.onStart();
     }
 
     @Test
@@ -127,6 +125,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, cryptoTransferRepository.count());
         assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer1, cryptoTransfer1.getId());
         assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer2, cryptoTransfer2.getId());
@@ -146,6 +145,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, nonFeeTransferRepository.count());
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, nonFeeTransfer1.getId());
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, nonFeeTransfer2.getId());
@@ -161,6 +161,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, topicMessageRepository.count());
         assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
     }
@@ -176,6 +177,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, fileDataRepository.count());
         assertExistsAndEquals(fileDataRepository, expectedFileData, 11L);
     }
@@ -191,6 +193,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, contractResultRepository.count());
         assertExistsAndEquals(contractResultRepository, expectedContractResult, 15L);
     }
@@ -205,6 +208,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, liveHashRepository.count());
         assertExistsAndEquals(liveHashRepository, expectedLiveHash, 20L);
     }
@@ -219,6 +223,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, transactionRepository.count());
         assertExistsAndEquals(transactionRepository, expectedTransaction, 101L);
     }
@@ -233,6 +238,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
     }
@@ -247,33 +253,15 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
 
-        recordFile = insertRecordFileRecord(UUID.randomUUID().toString(), null, null, 2L);
-        sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        RecordFile recordFile2 = recordFile(UUID.randomUUID().toString(), null, null, 2L);
+        sqlEntityListener.onStart();
         sqlEntityListener.onEntityId(entityId); // duplicate across files
-        completeFileAndCommit();
+        sqlEntityListener.onEnd(recordFile2);
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile, recordFile2);
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
-    }
-
-    @Test
-    void testRecordFile() {
-        // when
-        completeFileAndCommit();
-
-        // then
-        assertThat(recordFileRepository.count()).isEqualTo(1);
-        assertThat(recordFileRepository.findByName(fileName)).isPresent();
-    }
-
-    @Test
-    void testMissingFileInRecordFileRepository() {
-        recordFileRepository.deleteAll();
-
-        assertThrows(MissingFileException.class, () -> {
-            sqlEntityListener.onStart(new StreamFileData(fileName, null));
-        });
     }
 
     @Test
@@ -287,6 +275,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, tokenRepository.count());
         assertExistsAndEquals(tokenRepository, token1, token1.getTokenId());
         assertExistsAndEquals(tokenRepository, token2, token2.getTokenId());
@@ -307,6 +296,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, tokenAccountRepository.count());
         assertExistsAndEquals(tokenAccountRepository, tokenAccount1, new TokenAccount.Id(EntityId
                 .of(tokenId1, EntityTypeEnum.TOKEN), EntityId.of(accountId1, ACCOUNT)));
@@ -327,6 +317,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(3, tokenTransferRepository.count());
         EntityId tokenId1 = EntityId.of("0.0.3", EntityTypeEnum.TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.7", EntityTypeEnum.TOKEN);
@@ -351,6 +342,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, scheduleRepository.count());
         assertExistsAndEquals(scheduleRepository, schedule1, 1L);
         assertExistsAndEquals(scheduleRepository, schedule2, 2L);
@@ -376,6 +368,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(3, scheduleSignatureRepository.count());
         assertExistsAndEquals(scheduleSignatureRepository, scheduleSignature1, new ScheduleSignature.Id(1L,
                 pubKeyPrefix1));
@@ -391,12 +384,11 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertEquals(expected, actual.get());
     }
 
-    private String completeFileAndCommit() {
+    private void completeFileAndCommit() {
         sqlEntityListener.onEnd(recordFile);
-        return recordFile.getFileHash();
     }
 
-    private RecordFile insertRecordFileRecord(String filename, String fileHash, String prevHash, long consensusStart) {
+    private RecordFile recordFile(String filename, String fileHash, String prevHash, long consensusStart) {
         if (fileHash == null) {
             fileHash = UUID.randomUUID().toString();
         }
@@ -404,18 +396,20 @@ public class SqlEntityListenerTest extends IntegrationTest {
             prevHash = UUID.randomUUID().toString();
         }
 
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
+        EntityId nodeAccountId = EntityId.of("0.0.3", ACCOUNT);
         RecordFile rf = RecordFile.builder()
                 .consensusStart(consensusStart)
                 .consensusEnd(consensusStart + 1)
-                .count(0L)
+                .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(fileHash)
+                .hash(fileHash)
+                .loadEnd(Instant.now().getEpochSecond())
+                .loadStart(Instant.now().getEpochSecond())
                 .name(filename)
                 .nodeAccountId(nodeAccountId)
                 .previousHash(prevHash)
                 .build();
-        recordFileRepository.save(rf);
         return rf;
     }
 

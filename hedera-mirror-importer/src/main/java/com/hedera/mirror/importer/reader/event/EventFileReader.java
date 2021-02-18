@@ -22,8 +22,8 @@ package com.hedera.mirror.importer.reader.event;
 
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.parser.domain.EventItem;
-import com.hedera.mirror.importer.reader.FileReader;
+import com.hedera.mirror.importer.reader.StreamFileReader;
 
-public interface EventFileReader extends FileReader<EventFile, EventItem> {
+public interface EventFileReader extends StreamFileReader<EventFile, EventItem> {
 
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,9 +20,12 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFileData;
+import java.util.Optional;
+import org.springframework.data.repository.CrudRepository;
 
-public interface FileParser<T extends StreamFileData> {
+import com.hedera.mirror.importer.domain.StreamFile;
 
-    void parse(T streamFileData);
+public interface StreamFileRepository<T extends StreamFile, I> extends CrudRepository<T, I> {
+
+    Optional<T> findLatest();
 }

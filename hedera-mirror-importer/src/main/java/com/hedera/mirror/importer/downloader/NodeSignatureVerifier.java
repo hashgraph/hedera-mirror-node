@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.downloader;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.io.File;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Collection;
@@ -71,8 +70,7 @@ public class NodeSignatureVerifier {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = currentAddressBook.getNodeAccountIDPubKeyMap();
 
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
-        String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
-                .orElse(null);
+        String filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst().orElse("unknown");
         int consensusCount = 0;
 
         long sigFileCount = signatures.size();

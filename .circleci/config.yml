@@ -30,7 +30,7 @@ references:
 
   # Maven helpers
   maven_opts: &maven_opts
-    MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dgroups=!failincci -Dskip.npm
+    MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dskip.npm
     # Disable embedded testcontainers. Use externally provided postgres and pubsub emulator
     MAVEN_SPRING_OPTS: -Dspring.config.additional-location=file:${WORKSPACE}/ -Dembedded.containers.enabled=false -Dembedded.google.pubsub.enabled=false
 
@@ -127,6 +127,8 @@ commands:
             spring:
               redis:
                 url: redis://127.0.0.1:6379
+              retry:
+                enabled: false
             ---
             spring:
               profiles: pubsub

@@ -42,6 +42,12 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
     where entity_id != 98;
 -- id corresponding to treasury address 0.0.98
 
+-- event_file
+alter table event_file
+    add primary key (consensus_end);
+create unique index if not exists event_file__hash
+    on event_file (hash, consensus_end);
+
 -- file_data
 alter table file_data
     add primary key (consensus_timestamp);

@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -48,13 +47,10 @@ public class CompositeRecordFileReader implements RecordFileReader {
 
     @Override
     public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(streamFileData.getInputStream()))) {
+        try (DataInputStream dis = new DataInputStream(streamFileData.getInputStream())) {
             RecordFileReader reader;
             String filename = streamFileData.getFilename();
-
-            dis.mark(Integer.BYTES);
             int version = dis.readInt();
-            dis.reset();
             log.info("Loading record format version {} from record file: {}", version, filename);
 
             switch (version) {
@@ -72,7 +68,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
                             version, filename));
             }
 
-            return reader.read(new StreamFileData(streamFileData.getFilename(), dis), itemConsumer);
+            return reader.read(streamFileData, itemConsumer);
         } catch (IOException e) {
             throw new StreamFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
         }

@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.downloader;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -257,7 +256,7 @@ class NodeSignatureVerifierTest {
 
     private FileStreamSignature buildBareBonesFileStreamSignature() {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
-        fileStreamSignature.setFile(new File(""));
+        fileStreamSignature.setFilename("");
         fileStreamSignature.setNodeAccountId(nodeId);
         fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
         return fileStreamSignature;

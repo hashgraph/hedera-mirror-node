@@ -26,10 +26,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Iterator;
@@ -38,15 +34,15 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ClassPathResource;
 
-import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -58,45 +54,12 @@ abstract class RecordFileReaderTest {
 
     private static final Collection<RecordFile> ALL_RECORD_FILES = TestRecordFiles.getAll().values();
 
-    protected FileCopier fileCopier;
     protected RecordFileReader recordFileReader;
-
-    @TempDir
-    Path dataPath;
-
-    private static void corruptFile(Path p) {
-        try {
-            File file = p.toFile();
-            if (file.isFile()) {
-                FileUtils.writeStringToFile(file, "corrupt", "UTF-8", true);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void truncateFile(Path p) {
-        try {
-            File file = p.toFile();
-            if (file.isFile()) {
-                FileChannel outChan = new FileOutputStream(file, true).getChannel();
-                if (outChan.size() <= 48) {
-                    outChan.truncate(outChan.size() / 2);
-                } else {
-                    outChan.truncate(48);
-                }
-                outChan.close();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    protected Path testPath;
 
     @BeforeEach
-    void setup() {
-        fileCopier = FileCopier
-                .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
-                .from("recordstreams");
+    void setup() throws Exception {
+        testPath = new ClassPathResource("data/recordstreams").getFile().toPath();
         recordFileReader = getRecordFileReader();
     }
 
@@ -108,19 +71,19 @@ abstract class RecordFileReaderTest {
                 getFilteredFiles(false),
                 (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
                 (recordFile) -> {
-                    String filename = recordFile.getName();
                     Consumer<RecordItem> itemConsumer = mock(Consumer.class);
 
                     // given
-                    fileCopier.from(getSubPath(recordFile.getVersion())).filterFiles(filename).copy();
-                    File file = fileCopier.getTo().resolve(filename).toFile();
-                    StreamFileData streamFileData = StreamFileData.from(file);
+                    Path testFile = getTestFile(recordFile);
+                    StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
 
                     // when
                     RecordFile actual = recordFileReader.read(streamFileData, itemConsumer);
 
                     // then
-                    assertThat(actual).isEqualTo(recordFile);
+                    assertThat(actual).isEqualToIgnoringGivenFields(recordFile, "bytes", "items", "loadStart");
+                    assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
+                    assertThat(actual.getLoadStart()).isNotNull().isPositive();
                     ArgumentCaptor<RecordItem> captor = ArgumentCaptor.forClass(RecordItem.class);
                     verify(itemConsumer, times(recordFile.getCount().intValue())).accept(captor.capture());
                     List<Long> timestamps = captor.getAllValues().stream()
@@ -140,18 +103,17 @@ abstract class RecordFileReaderTest {
                 getFilteredFiles(false),
                 (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
                 (recordFile) -> {
-                    String filename = recordFile.getName();
-
                     // given
-                    fileCopier.from(getSubPath(recordFile.getVersion())).filterFiles(filename).copy();
-                    File file = fileCopier.getTo().resolve(filename).toFile();
-                    StreamFileData streamFileData = StreamFileData.from(file);
+                    Path testFile = getTestFile(recordFile);
+                    StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
 
                     // when
                     RecordFile actual = recordFileReader.read(streamFileData);
 
                     // then
-                    assertThat(actual).isEqualTo(recordFile);
+                    assertThat(actual).isEqualToIgnoringGivenFields(recordFile, "bytes", "items", "loadStart");
+                    assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
+                    assertThat(actual.getLoadStart()).isNotNull().isPositive();
                 });
     }
 
@@ -163,13 +125,11 @@ abstract class RecordFileReaderTest {
                 getFilteredFiles(false),
                 (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
                 (recordFile) -> {
-                    String filename = recordFile.getName();
-
                     // given
-                    fileCopier.from(getSubPath(recordFile.getVersion())).filterFiles(filename).copy();
-                    File file = fileCopier.getTo().resolve(filename).toFile();
-                    Files.walk(dataPath).forEach(RecordFileReaderTest::corruptFile);
-                    StreamFileData streamFileData = StreamFileData.from(file);
+                    Path testFile = getTestFile(recordFile);
+                    byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
+                    byte[] bytesCorrupted = ArrayUtils.addAll(bytes, new byte[] {0, 1, 2, 3});
+                    StreamFileData streamFileData = new StreamFileData(recordFile.getName(), bytesCorrupted);
 
                     // when
                     assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));
@@ -184,13 +144,11 @@ abstract class RecordFileReaderTest {
                 getFilteredFiles(false),
                 (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
                 (recordFile) -> {
-                    String filename = recordFile.getName();
-
                     // given
-                    fileCopier.from(getSubPath(recordFile.getVersion())).filterFiles(filename).copy();
-                    File file = fileCopier.getTo().resolve(filename).toFile();
-                    Files.walk(dataPath).forEach(RecordFileReaderTest::truncateFile);
-                    StreamFileData streamFileData = StreamFileData.from(file);
+                    Path testFile = getTestFile(recordFile);
+                    byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
+                    byte[] bytesTruncated = ArrayUtils.subarray(bytes, 0, bytes.length - 48);
+                    StreamFileData streamFileData = new StreamFileData(recordFile.getName(), bytesTruncated);
 
                     // when
                     assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));
@@ -204,8 +162,8 @@ abstract class RecordFileReaderTest {
                 .iterator();
     }
 
-    protected Path getSubPath(int version) {
-        return Path.of("v" + version, "record0.0.3");
+    protected Path getTestFile(RecordFile recordFile) {
+        return testPath.resolve("v" + recordFile.getVersion()).resolve("record0.0.3").resolve(recordFile.getName());
     }
 
     protected abstract RecordFileReader getRecordFileReader();

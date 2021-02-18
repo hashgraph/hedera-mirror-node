@@ -30,7 +30,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -60,9 +59,6 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     @Min(1)
     private int threads = 15;
 
-    @NotNull
-    private Duration startDateAdjustment = Duration.ofSeconds(1L);
-
     @Override
     public Path getStreamPath() {
         return mirrorProperties.getDataPath().resolve(getStreamType().getPath());
@@ -71,15 +67,5 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     @Override
     public StreamType getStreamType() {
         return StreamType.BALANCE;
-    }
-
-    @Override
-    public ApplicationStatusCode getLastValidDownloadedFileKey() {
-        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
-    }
-
-    @Override
-    public ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return null;
     }
 }

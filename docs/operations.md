@@ -4,6 +4,7 @@
 - [Importer](#importer)
 - [Monitor](#monitor)
 - [REST API](#rest-api)
+- [Rosetta API](#rosetta-api)
 
 ## GRPC API
 
@@ -47,6 +48,7 @@ sudo journalctl -fu hedera-mirror-grpc.service
 ```
 
 ### Verifying
+
 The gRPC streaming endpoint can be verified using clients that support [HTTP/2](https://http2.github.io/). Some useful
 clients we've encountered include:
 
@@ -69,10 +71,6 @@ said, we recommend Ubuntu 18.04 be used as the base operating system as that is 
 - `/etc/systemd/system/hedera-mirror-importer.service` - systemd service definitions
 - `/usr/etc/hedera-mirror-importer/application.yml` - Configuration file
 - `/usr/lib/hedera-mirror-importer` - Binaries
-- `/var/lib/hedera-mirror-importer` - Data
-  - `accountBalances` - The downloaded balance and signature files
-  - `eventsStreams` - The downloaded event and signature files
-  - `recordstreams` - The downloaded record and signature files
 
 ### Starting
 
@@ -121,9 +119,10 @@ For mirror node operators running the v1 database schema, the following steps ca
 
 2. Stop the importer
 
-   Ensure the valid directory for each stream type is empty (e.g. `/var/lib/hedera-mirror-importer/*/valid/`
-   where `/var/lib/hedera-mirror-importer` is the configured `dataPath`). If it's not empty, let the importer process
-   fully catch up before attempting the migration.
+   If on a version that still downloads files to the filesystem, ensure the valid directory for each stream type is
+   empty. For example if `dataPath` is set to `/var/lib/hedera-mirror-importer` then
+   `/var/lib/hedera-mirror-importer/*/valid/` should be empty. If it's not empty, let the importer process fully catch
+   up before attempting the migration.
 
 3. Set up a new TimescaleDB database
 
@@ -272,6 +271,7 @@ pm2 logs <port>
 ```
 
 ### Verifying
+
 The REST API endpoints can be verified either through the browser or the terminal. The following endpoints are
 suggestions that can be accessed from your browser. Modify the below IP's and ports if they differ from your running
 containers.
@@ -330,8 +330,8 @@ Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest
 
 ### Initial Installation / Upgrade
 
-The Rosetta API runs on [Go](https://golang.org/) and should be able to run on any platform that Golang supports.
-That said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
+The Rosetta API runs on [Go](https://golang.org/) and should be able to run on any platform that Golang supports. That
+said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
 
 ```shell script
 wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.27.0/hedera-mirror-rosetta-v0.27.0.tgz"
@@ -346,9 +346,11 @@ sudo ./deploy.sh
 - `/usr/etc/hedera-mirror-rosetta/application.yml` - Configuration file
 
 ### Starting
+
 ```
 sudo systemctl start hedera-mirror-rosetta.service
 ```
+
 The Rosetta API container will display logs similar to the below at start:
 
     Successfully connected to Database
@@ -356,18 +358,20 @@ The Rosetta API container will display logs similar to the below at start:
     Listening on port 5700
 
 ### Stopping
+
 ```
 sudo systemctl stop hedera-mirror-rosetta.service
 ```
 
-
 ### Monitoring
+
 ```
 systemctl status hedera-mirror-rosetta.service
 sudo journalctl -fu hedera-mirror-rosetta.service
 ```
 
 ### Verifying
+
 The REST API endpoints can be verified through the terminal using the `curl` command. The following endpoint is a
 suggestion to get the genesis block. Modify the below IP's and ports if they differ from your running containers.
 

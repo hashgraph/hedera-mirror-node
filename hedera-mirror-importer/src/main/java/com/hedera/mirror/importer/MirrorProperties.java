@@ -22,12 +22,14 @@ package com.hedera.mirror.importer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -56,13 +58,12 @@ public class MirrorProperties {
 
     private Instant startDate;
 
+    @DurationMin(seconds = 0L)
+    @NotNull
+    private Duration startDateAdjustment = Duration.ofSeconds(30L);
+
     @NotNull
     private Instant endDate = Utility.MAX_INSTANT_LONG;
-
-    public void setDataPath(Path dataPath) {
-        Utility.ensureDirectory(dataPath);
-        this.dataPath = dataPath;
-    }
 
     @Getter
     @RequiredArgsConstructor

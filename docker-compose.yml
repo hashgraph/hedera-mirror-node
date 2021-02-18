@@ -32,12 +32,10 @@ services:
     image: gcr.io/mirrornode/hedera-mirror-importer:0.27.0-rc2
     restart: unless-stopped
     environment:
-      HEDERA_MIRROR_IMPORTER_DATAPATH: /var/lib/hedera-mirror-importer
       HEDERA_MIRROR_IMPORTER_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
       SPRING_REDIS_HOST: redis
     volumes:
-      - ./data:/var/lib/hedera-mirror-importer
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 
   monitor:

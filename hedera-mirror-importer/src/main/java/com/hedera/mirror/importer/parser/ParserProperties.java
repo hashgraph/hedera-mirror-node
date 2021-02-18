@@ -21,32 +21,20 @@ package com.hedera.mirror.importer.parser;
  */
 
 import java.nio.file.Path;
-import javax.annotation.PostConstruct;
 
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.util.Utility;
 
 public interface ParserProperties {
 
-    Path getStreamPath();
+    int getQueueCapacity();
+
+    Path getParsedPath();
 
     StreamType getStreamType();
-
-    default Path getParsedPath() {
-        return getStreamPath().resolve(getStreamType().getParsed());
-    }
-
-    default Path getValidPath() {
-        return getStreamPath().resolve(getStreamType().getValid());
-    }
 
     boolean isEnabled();
 
     boolean isKeepFiles();
 
-    @PostConstruct
-    default void init() {
-        Utility.ensureDirectory(getParsedPath());
-        Utility.ensureDirectory(getValidPath());
-    }
+    boolean isPersistBytes();
 }

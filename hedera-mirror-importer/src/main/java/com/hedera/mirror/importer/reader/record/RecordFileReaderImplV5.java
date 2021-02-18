@@ -27,12 +27,12 @@ import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -54,7 +54,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     public RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
         MessageDigest messageDigestFile = createMessageDigest(DIGEST_ALGORITHM);
         MessageDigest messageDigestMetadata = createMessageDigest(DIGEST_ALGORITHM);
-        String filename = FilenameUtils.getName(streamFileData.getFilename());
+        String filename = streamFileData.getFilename();
 
         // the first DigestInputStream is for file hash and the second is for metadata hash. Any BufferedInputStream
         // should not wrap, directly or indirectly, the second DigestInputStream. The BufferedInputStream after the
@@ -64,9 +64,10 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
                 messageDigestMetadata);
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
             RecordFile recordFile = new RecordFile();
-
-            recordFile.setName(filename);
+            recordFile.setBytes(streamFileData.getBytes());
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
+            recordFile.setLoadStart(Instant.now().getEpochSecond());
+            recordFile.setName(filename);
 
             readHeader(vdis, recordFile);
             readBody(vdis, itemConsumer, digestInputStream, recordFile);

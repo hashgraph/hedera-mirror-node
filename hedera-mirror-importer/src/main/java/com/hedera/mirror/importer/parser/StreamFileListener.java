@@ -22,13 +22,12 @@ package com.hedera.mirror.importer.parser;
 
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.domain.StreamFileData;
 
 public interface StreamFileListener<T extends StreamFile> {
     /**
      * Called when starting to process a new stream file.
      */
-    T onStart(StreamFileData streamFileData) throws ImporterException;
+    void onStart() throws ImporterException;
 
     void onEnd(T streamFile) throws ImporterException;
 

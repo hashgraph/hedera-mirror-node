@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser;
 
 /*-
  * ‌
@@ -20,11 +20,9 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
-import lombok.Value;
+import com.hedera.mirror.importer.domain.StreamFile;
 
-@Value
-public class BalanceFile {
-    long consensusTimestamp;
-    long count;
-    String filename;
+public interface StreamFileParser<T extends StreamFile> {
+
+    void parse(T streamFile);
 }

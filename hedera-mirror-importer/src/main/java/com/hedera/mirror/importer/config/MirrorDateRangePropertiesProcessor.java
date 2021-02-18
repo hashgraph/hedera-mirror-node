@@ -24,26 +24,25 @@ import static org.apache.commons.lang3.ObjectUtils.max;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.config.event.MirrorDateRangePropertiesProcessedEvent;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
+import com.hedera.mirror.importer.repository.EventFileRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -53,31 +52,13 @@ public class MirrorDateRangePropertiesProcessor {
 
     static final Instant STARTUP_TIME = Instant.now();
 
-    private final ApplicationEventPublisher applicationEventPublisher;
     private final MirrorProperties mirrorProperties;
-    private final ApplicationStatusRepository applicationStatusRepository;
     private final List<DownloaderProperties> downloaderPropertiesList;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final EventFileRepository eventFileRepository;
+    private final RecordFileRepository recordFileRepository;
 
-    private final Map<StreamType, DateRangeFilter> filters = new HashMap<>();
-
-    @Transactional
-    @Async
-    @EventListener(ApplicationReadyEvent.class)
-    public void process() {
-        Instant startDate = mirrorProperties.getStartDate();
-        Instant endDate = mirrorProperties.getEndDate();
-        if (startDate != null && startDate.compareTo(endDate) > 0) {
-            throw new InvalidConfigurationException(String.format("Date range constraint violation: " +
-                    "startDate (%s) > endDate (%s)", startDate, endDate));
-        }
-
-        for (DownloaderProperties downloaderProperties : downloaderPropertiesList) {
-            processDateRange(downloaderProperties);
-        }
-
-        applicationEventPublisher.publishEvent(new MirrorDateRangePropertiesProcessedEvent(this));
-        log.debug("Mirror date range properties processed successfully, MirrorDateRangePropertiesProcessedEvent fired");
-    }
+    private final Map<StreamType, DateRangeFilter> filters = new ConcurrentHashMap<>();
 
     /**
      * Gets the DateRangeFilter for the downloader (record, balance, event).
@@ -86,57 +67,27 @@ public class MirrorDateRangePropertiesProcessor {
      * @return the DateRangeFilter
      */
     public DateRangeFilter getDateRangeFilter(StreamType type) {
-        return filters.get(type);
+        return filters.computeIfAbsent(type, this::newDateRangeFilter);
     }
 
-    /**
-     * Validates the configured [startDate, endDate] range for downloader and updates its application status if needed.
-     *
-     * @param downloaderProperties the properties of the downloader to validate the [startDate, endDate] range for
-     * @throws InvalidConfigurationException if the constraint effective startDate <= endDate is violated
-     */
-    private void processDateRange(DownloaderProperties downloaderProperties) {
-        StreamType streamType = downloaderProperties.getStreamType();
+    private DateRangeFilter newDateRangeFilter(StreamType streamType) {
+        DownloaderProperties downloaderProperties = getDownloaderProperties(streamType);
+
         if (!downloaderProperties.isEnabled()) {
-            filters.put(streamType, DateRangeFilter.empty());
-            return;
+            return DateRangeFilter.empty();
         }
 
-        Instant effectiveStartDate = validateDateRange(downloaderProperties);
-        setDateRangeFilter(downloaderProperties);
-        updateApplicationStatus(downloaderProperties, effectiveStartDate);
-    }
-
-    /**
-     * Validates that effective startDate <= endDate for the downloader.
-     *
-     * @param downloaderProperties the properties of the downloader
-     * @return effective startDate
-     * @throws InvalidConfigurationException if effective startDate > endDate
-     */
-    private Instant validateDateRange(DownloaderProperties downloaderProperties) {
-        Instant effectiveStartDate = getEffectiveStartDate(downloaderProperties);
-        Instant endDate = mirrorProperties.getEndDate();
-        if (effectiveStartDate.compareTo(endDate) > 0) {
-            throw new InvalidConfigurationException(String
-                    .format("Date range constraint violation for %s downloader: " +
-                                    "effective startDate (%s) > endDate (%s)", downloaderProperties.getStreamType(),
-                            effectiveStartDate, endDate));
-        }
-
-        return effectiveStartDate;
-    }
-
-    /**
-     * Sets DateRangeFilter for downloader
-     *
-     * @param downloaderProperties the properties of the downloader
-     */
-    private void setDateRangeFilter(DownloaderProperties downloaderProperties) {
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
-        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
+        Instant lastFileInstant = findLatest(streamType).map(StreamFile::getName)
+                .map(Utility::getInstantFromFilename)
+                .orElse(null);
         Instant filterStartDate = lastFileInstant;
+
+        if (startDate != null && startDate.compareTo(endDate) > 0) {
+            throw new InvalidConfigurationException(String.format("Date range constraint violation: " +
+                    "startDate (%s) > endDate (%s)", startDate, endDate));
+        }
 
         if (startDate != null) {
             if (lastFileInstant != null && startDate.isAfter(lastFileInstant)) {
@@ -148,77 +99,92 @@ public class MirrorDateRangePropertiesProcessor {
             }
         }
 
-        filters.put(downloaderProperties.getStreamType(), new DateRangeFilter(filterStartDate, endDate));
+        DateRangeFilter filter = new DateRangeFilter(filterStartDate, endDate);
+
+        log.info("{}: parser will parse items in the range [{}, {}]",
+                downloaderProperties.getStreamType(), filter.getStartAsInstant(), filter.getEndAsInstant());
+        return filter;
     }
 
     /**
-     * Updates application status for the downloader. The last valid downloaded file in application status is set to the
-     * file at effectiveStartDate of the downloader's format if effectiveStartDate is different than the timestamp of
-     * the file in application status.
+     * Gets the latest stream file for downloader based on startDate in MirrorProperties, the startDateAdjustment and
+     * last valid downloaded stream file.
      *
-     * @param downloaderProperties the properties of the downloader
-     * @param effectiveStartDate   the effective startDate
+     * @param streamType What type of stream to retrieve
+     * @return The latest stream file from the database or a dummy stream file if it calculated a different effective
+     * start date
      */
-    private void updateApplicationStatus(DownloaderProperties downloaderProperties, Instant effectiveStartDate) {
-        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
-        StreamType streamType = downloaderProperties.getStreamType();
+    public <T extends StreamFile> Optional<T> getLastStreamFile(StreamType streamType) {
+        Instant startDate = mirrorProperties.getStartDate();
+        Optional<T> streamFile = findLatest(streamType);
+        Instant lastFileInstant = streamFile.map(StreamFile::getName)
+                .map(Utility::getInstantFromFilename)
+                .orElse(null);
+        Duration adjustment = mirrorProperties.getStartDateAdjustment();
+        Instant effectiveStartDate = STARTUP_TIME.minus(adjustment);
+        boolean hasStreamFile = lastFileInstant != null;
+
+        if (startDate != null) {
+            effectiveStartDate = max(startDate.minus(adjustment), hasStreamFile ? lastFileInstant : Instant.EPOCH);
+        } else if (hasStreamFile) {
+            effectiveStartDate = lastFileInstant;
+        } else if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
+            effectiveStartDate = Instant.EPOCH; // Demo network contains only data in the past, so don't default to now
+        }
+
+        Instant endDate = mirrorProperties.getEndDate();
+        if (startDate != null && startDate.compareTo(endDate) > 0) {
+            throw new InvalidConfigurationException(String.format("Date range constraint violation: " +
+                    "startDate (%s) > endDate (%s)", startDate, endDate));
+        }
+
+        if (effectiveStartDate.compareTo(endDate) > 0) {
+            throw new InvalidConfigurationException(String.format(
+                    "Date range constraint violation for %s downloader: effective startDate (%s) > endDate (%s)",
+                    streamType, effectiveStartDate, endDate));
+        }
 
         if (!effectiveStartDate.equals(lastFileInstant)) {
-            String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
-            applicationStatusRepository
-                    .updateStatusValue(downloaderProperties.getLastValidDownloadedFileKey(), filename);
-            log.debug("Set last valid downloaded file to {} for {} downloader", filename, streamType);
-
             Instant verifyHashAfter = mirrorProperties.getVerifyHashAfter();
+
             if (verifyHashAfter == null || verifyHashAfter.isBefore(effectiveStartDate)) {
                 mirrorProperties.setVerifyHashAfter(effectiveStartDate);
                 log.debug("Set verifyHashAfter to {}", effectiveStartDate);
             }
 
-            if (log.isInfoEnabled()) {
-                DateRangeFilter filter = filters.get(streamType);
-                log.info("{}: downloader will download files in time range ({}, {}], parser will parse items " +
-                                "in time range [{}, {}]", streamType, effectiveStartDate, mirrorProperties.getEndDate(),
-                        filter.getStartAsInstant(), filter.getEndAsInstant());
-            }
+            String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
+            T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
+            effectiveStreamFile.setName(filename);
+            streamFile = Optional.of(effectiveStreamFile);
+        }
+
+        log.info("{}: downloader will download files in time range ({}, {}]", streamType, effectiveStartDate,
+                mirrorProperties.getEndDate());
+        return streamFile;
+    }
+
+    private <T extends StreamFile> Optional<T> findLatest(StreamType streamType) {
+        return (Optional<T>) getStreamFileRepository(streamType).findLatest();
+    }
+
+    private StreamFileRepository<?, ?> getStreamFileRepository(StreamType streamType) {
+        switch (streamType) {
+            case BALANCE:
+                return accountBalanceFileRepository;
+            case EVENT:
+                return eventFileRepository;
+            case RECORD:
+                return recordFileRepository;
+            default:
+                throw new UnsupportedOperationException("Unsupported stream type " + streamType);
         }
     }
 
-    /**
-     * Gets the effective startDate for downloader based on startDate in MirrorProperties, the startDateAdjustment and
-     * last valid downloaded file.
-     *
-     * @param downloaderProperties The downloader's properties
-     * @return The effective startDate: null if downloader is disabled; if startDate is set, the effective startDate is
-     * startDate if the database is empty or max(startDate, timestamp of last valid downloaded file); if startDate is
-     * not set, the effective startDate is now if the database is empty, or the timestamp of last valid downloaded file
-     */
-    private Instant getEffectiveStartDate(DownloaderProperties downloaderProperties) {
-        Instant startDate = mirrorProperties.getStartDate();
-        Instant startUpInstant = STARTUP_TIME;
-        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
-        Duration adjustment = downloaderProperties.getStartDateAdjustment();
-
-        if (startDate != null) {
-            return max(startDate.minus(adjustment), lastFileInstant != null ? lastFileInstant : Instant.EPOCH);
-        } else if (lastFileInstant != null) {
-            return lastFileInstant;
-        } else if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
-            return Instant.EPOCH; // Demo network contains only data in the past, so don't default to now
-        } else {
-            return startUpInstant.minus(adjustment);
-        }
-    }
-
-    private Instant getLastValidDownloadedFileInstant(DownloaderProperties downloaderProperties) {
-        String filename = applicationStatusRepository
-                .findByStatusCode(downloaderProperties.getLastValidDownloadedFileKey());
-
-        if (StringUtils.isBlank(filename)) {
-            return null;
-        }
-
-        return Utility.getInstantFromFilename(filename);
+    private DownloaderProperties getDownloaderProperties(StreamType streamType) {
+        return downloaderPropertiesList.stream()
+                .filter(p -> p.getStreamType() == streamType)
+                .findFirst()
+                .orElseThrow(() -> new UnsupportedOperationException("Unsupported stream type " + streamType));
     }
 
     @Value

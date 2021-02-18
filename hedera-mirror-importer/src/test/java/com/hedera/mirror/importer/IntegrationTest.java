@@ -20,6 +20,10 @@ package com.hedera.mirror.importer;
  * ‍
  */
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
@@ -31,4 +35,11 @@ import org.springframework.test.context.jdbc.Sql;
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
 public class IntegrationTest {
+
+    protected final Logger log = LogManager.getLogger(getClass());
+
+    @BeforeEach
+    void logTest(TestInfo testInfo) {
+        log.info("Executing: {}", testInfo.getDisplayName());
+    }
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.config.event;
+package com.hedera.mirror.importer.downloader;
 
 /*-
  * ‌
@@ -20,13 +20,16 @@ package com.hedera.mirror.importer.config.event;
  * ‍
  */
 
-import org.springframework.context.ApplicationEvent;
+import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_STREAM;
 
-public class MirrorDateRangePropertiesProcessedEvent extends ApplicationEvent {
+import javax.inject.Named;
+import org.springframework.integration.annotation.MessagingGateway;
 
-    private static final long serialVersionUID = 9169259081841180576L;
+import com.hedera.mirror.importer.domain.StreamFile;
 
-    public MirrorDateRangePropertiesProcessedEvent(Object source) {
-        super(source);
-    }
+@Named
+@MessagingGateway(defaultRequestChannel = CHANNEL_STREAM)
+public interface StreamFileNotifier {
+
+    void verified(StreamFile streamFile);
 }

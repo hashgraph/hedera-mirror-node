@@ -98,7 +98,6 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
-        parserProperties.init();
     }
 
     @Test

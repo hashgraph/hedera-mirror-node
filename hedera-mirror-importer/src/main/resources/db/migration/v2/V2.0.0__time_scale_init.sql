@@ -14,11 +14,12 @@ comment on table account_balance is 'Account balances (historical) in tinybars a
 
 create table if not exists account_balance_file
 (
+    bytes               bytea        null,
     consensus_timestamp bigint       not null,
     count               bigint       not null,
-    load_start          bigint,
-    load_end            bigint,
-    file_hash           varchar(96),
+    file_hash           varchar(96)  null,
+    load_start          bigint       not null,
+    load_end            bigint       not null,
     name                varchar(250) not null,
     node_account_id     bigint       not null
 );
@@ -80,6 +81,24 @@ create table if not exists crypto_transfer
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
+-- event_file
+create table if not exists event_file
+(
+    bytes            bytea                  null,
+    consensus_start  bigint                 not null,
+    consensus_end    bigint                 not null,
+    count            bigint                 not null,
+    digest_algorithm int                    not null,
+    file_hash        character varying(96)  not null,
+    hash             character varying(96)  not null,
+    load_start       bigint                 not null,
+    load_end         bigint                 not null,
+    name             character varying(250) not null,
+    node_account_id  bigint                 not null,
+    previous_hash    character varying(96)  not null,
+    version          integer                not null
+);
+
 -- file_data
 create table if not exists file_data
 (
@@ -110,21 +129,22 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 -- id seq from v1.0 no longer explicitly created as s_record_files_seq
 create table if not exists record_file
 (
-    id                 serial,
-    name               character varying(250) not null,
-    load_start         bigint,
-    load_end           bigint,
-    hash               character varying(96),
-    file_hash          character varying(96),
-    prev_hash          character varying(96),
+    bytes              bytea                  null,
     consensus_start    bigint default 0       not null,
     consensus_end      bigint default 0       not null,
-    node_account_id    bigint                 not null,
     count              bigint                 not null,
     digest_algorithm   int                    not null,
+    file_hash          character varying(96)  not null,
     hapi_version_major int,
     hapi_version_minor int,
     hapi_version_patch int,
+    hash               character varying(96)  not null,
+    id                 serial                 not null,
+    load_start         bigint                 not null,
+    load_end           bigint                 not null,
+    name               character varying(250) not null,
+    node_account_id    bigint                 not null,
+    prev_hash          character varying(96)  not null,
     version            int                    not null
 );
 comment on table record_file is 'Network record file stream entries';
@@ -150,26 +170,6 @@ create table if not exists schedule_signature
     signature           bytea  not null
 );
 comment on table schedule is 'Schedule transaction signatories';
-
--- t_application_status
-create table if not exists t_application_status
-(
-    status_name  character varying(40),
-    status_code  character varying(40),
-    status_value character varying(100)
-);
-comment on table t_application_status is 'Parser application status cache values. Assists continuity between parser restarts';
-
-insert into t_application_status (status_name, status_code)
-values ('Last valid downloaded record file name', 'LAST_VALID_DOWNLOADED_RECORD_FILE'),
-       ('Last valid downloaded record file hash', 'LAST_VALID_DOWNLOADED_RECORD_FILE_HASH'),
-       ('Last valid downloaded balance file name', 'LAST_VALID_DOWNLOADED_BALANCE_FILE'),
-       ('Last valid downloaded event file name', 'LAST_VALID_DOWNLOADED_EVENT_FILE'),
-       ('Last valid downloaded event file hash', 'LAST_VALID_DOWNLOADED_EVENT_FILE_HASH'),
-       ('Event hash mismatch bypass until after', 'EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER'),
-       ('Record hash mismatch bypass until after', 'RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER'),
-       ('Last processed record hash', 'LAST_PROCESSED_RECORD_HASH'),
-       ('Last processed event hash', 'LAST_PROCESSED_EVENT_HASH');
 
 -- t_entities
 create table if not exists t_entities
@@ -515,7 +515,7 @@ create table if not exists transaction
     valid_duration_seconds bigint,
     node_account_id        bigint   not null,
     entity_id              bigint,
-    initial_balance        bigint   default 0,
+    initial_balance        bigint            default 0,
     max_fee                bigint,
     charged_tx_fee         bigint,
     memo                   bytea,

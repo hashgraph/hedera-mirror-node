@@ -20,41 +20,46 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_BALANCE;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import javax.inject.Named;
 import javax.sql.DataSource;
-import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.integration.annotation.MessageEndpoint;
+import org.springframework.integration.annotation.Poller;
+import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.TokenBalance;
-import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
+import com.hedera.mirror.importer.parser.StreamFileParser;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
  * Parse an account balances file and load it into the database.
  */
 @Log4j2
-@Named
-public class AccountBalancesFileLoader {
+@MessageEndpoint
+public class AccountBalanceFileParser implements StreamFileParser<AccountBalanceFile> {
+
     private static final String INSERT_SET_STATEMENT = "insert into account_balance_sets (consensus_timestamp) " +
             "values (?) on conflict do nothing;";
     private static final String INSERT_BALANCE_STATEMENT = "insert into account_balance " +
@@ -66,13 +71,6 @@ public class AccountBalancesFileLoader {
     private static final String UPDATE_SET_STATEMENT = "update account_balance_sets set is_complete = ?, " +
             "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = " +
             "false;";
-    private static final String UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT = "update account_balance_file " +
-            "set " +
-            "   consensus_timestamp = ?," +
-            "   count = ?," +
-            "   load_start = ?," +
-            "   load_end = ?" +
-            "where name = ?;";
 
     enum F_INSERT_SET {
         ZERO,
@@ -94,80 +92,90 @@ public class AccountBalancesFileLoader {
         IS_COMPLETE, CONSENSUS_TIMESTAMP
     }
 
-    enum F_UPDATE_ACCOUNT_BALANCE_FILE {
-        ZERO,
-        CONSENSUS_TIMESTAMP, COUNT, LOAD_START, LOAD_END, NAME
-    }
-
-    private final int insertBatchSize;
+    private final BalanceParserProperties parserProperties;
     private final DataSource dataSource;
-    private final BalanceFileReader balanceFileReader;
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
     private final Timer parseLatencyMetric;
+    private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
 
-    public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
-                                     BalanceFileReader balanceFileReader, MeterRegistry meterRegistry) {
-        insertBatchSize = balanceParserProperties.getBatchSize();
+    public AccountBalanceFileParser(BalanceParserProperties parserProperties, DataSource dataSource,
+                                    MeterRegistry meterRegistry,
+                                    MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+                                    AccountBalanceFileRepository accountBalanceFileRepository) {
+        this.parserProperties = parserProperties;
         this.dataSource = dataSource;
-        this.balanceFileReader = balanceFileReader;
+        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
 
         Timer.Builder parseDurationTimerBuilder = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in seconds it took to parse the file and store it in the database")
-                .tag("type", balanceParserProperties.getStreamType().toString());
+                .tag("type", parserProperties.getStreamType().toString());
         parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
         parseDurationMetricSuccess = parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
 
         parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file " +
                         "and the time at which the file was processed successfully")
-                .tag("type", balanceParserProperties.getStreamType().toString())
+                .tag("type", parserProperties.getStreamType().toString())
                 .register(meterRegistry);
     }
 
     /**
      * Process the file and load all the data into the database.
      */
+    @Override
+    @Retryable(backoff = @Backoff(
+            delayExpression = "#{@balanceParserProperties.getRetry().getMinBackoff().toMillis()}",
+            maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
+            multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
+            maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
+    @ServiceActivator(inputChannel = CHANNEL_BALANCE,
+            poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.balance.frequency:100}")
+    )
     @Transactional
-    public void loadAccountBalances(@NonNull File balanceFile, DateRangeFilter dateRangeFilter) {
-        log.info("Starting processing account balances file {}", balanceFile.getPath());
-        String fileName = balanceFile.getName();
+    public void parse(AccountBalanceFile accountBalanceFile) {
+        if (!parserProperties.isEnabled()) {
+            return;
+        }
+
+        log.info("Starting processing account balances file {}", accountBalanceFile.getName());
         Stopwatch stopwatch = Stopwatch.createStarted();
-        Instant startTime = Instant.now();
         boolean success = false;
+        int insertBatchSize = parserProperties.getBatchSize();
+        DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
+                .getDateRangeFilter(parserProperties.getStreamType());
 
         Connection connection = DataSourceUtils.getConnection(dataSource);
         try (PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
              PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
              PreparedStatement insertTokenBalanceStatement = connection
                      .prepareStatement(INSERT_TOKEN_BALANCE_STATEMENT);
-             PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
-             PreparedStatement updateAccountBalanceFileStatement = connection
-                     .prepareStatement(UPDATE_ACCOUNT_BALANCE_FILE_STATEMENT)) {
-            List<AccountBalance> accountBalances = new ArrayList<>();
-            balanceFileReader.read(StreamFileData.from(balanceFile), accountBalances::add);
+             PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT)) {
+
             long consensusTimestamp = -1;
-            long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
             List<AccountBalance> accountBalanceList = new ArrayList<>();
             List<TokenBalance> tokenBalanceList = new ArrayList<>();
             boolean skip = false;
-            int validCount = 0;
+            long validCount = 0;
 
-            for (AccountBalance accountBalance : accountBalances) {
+            for (AccountBalance accountBalance : accountBalanceFile.getItems()) {
                 if (consensusTimestamp == -1) {
                     consensusTimestamp = accountBalance.getId().getConsensusTimestamp();
-                    if (timestampFromFileName != consensusTimestamp) {
+                    if (accountBalanceFile.getConsensusTimestamp() != consensusTimestamp) {
                         // The assumption is that the dataset has been validated via signatures and running hashes,
                         // so it is the "next" dataset, and the consensus timestamp in it is correct. The fact that
                         // the filename timestamp and timestamp in the file differ should still be investigated.
                         log.error("Account balance dataset timestamp mismatch! Processing can continue, but this " +
                                         "must be investigated! Dataset {} internal timestamp {} filename timestamp {}.",
-                                fileName, consensusTimestamp, timestampFromFileName);
+                                accountBalanceFile.getName(), consensusTimestamp, accountBalanceFile
+                                        .getConsensusTimestamp());
                     }
 
                     if (dateRangeFilter != null && !dateRangeFilter.filter(consensusTimestamp)) {
                         log.warn("Account balances file {} not in configured date range {}, skip it",
-                                fileName, dateRangeFilter);
+                                accountBalanceFile.getName(), dateRangeFilter);
                         skip = true;
                     } else {
                         insertAccountBalanceSet(insertSetStatement, consensusTimestamp);
@@ -190,17 +198,34 @@ public class AccountBalancesFileLoader {
                 updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
             }
 
-            updateAccountBalanceFile(updateAccountBalanceFileStatement, consensusTimestamp, validCount,
-                    startTime.getEpochSecond(), Instant.now().getEpochSecond(), fileName);
+            byte[] bytes = accountBalanceFile.getBytes();
+            if (!parserProperties.isPersistBytes()) {
+                accountBalanceFile.setBytes(null);
+            }
+
+            Instant loadEnd = Instant.now();
+            accountBalanceFile.setCount(validCount);
+            accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
+            accountBalanceFileRepository.save(accountBalanceFile);
+
+            if (parserProperties.isKeepFiles()) {
+                Utility.archiveFile(accountBalanceFile.getName(), bytes, parserProperties.getParsedPath());
+            }
 
             if (!skip) {
                 log.info("Successfully processed account balances file {}, {} records inserted in {}",
-                        fileName, validCount, stopwatch);
+                        accountBalanceFile.getName(), validCount, stopwatch);
             }
 
+            Instant consensusInstant = Instant.ofEpochSecond(0L, consensusTimestamp);
+            parseLatencyMetric.record(Duration.between(consensusInstant, loadEnd));
             success = true;
         } catch (SQLException ex) {
-            throw new ParserSQLException("Error processing account balance file " + fileName, ex);
+            log.error("Failed to load account balance file {}", accountBalanceFile.getName(), ex);
+            throw new ParserSQLException("Error processing account balance file " + accountBalanceFile.getName(), ex);
+        } catch (Exception ex) {
+            log.error("Failed to load account balance file {}", accountBalanceFile.getName(), ex);
+            throw ex;
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
             Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
@@ -272,22 +297,5 @@ public class AccountBalancesFileLoader {
         updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), true);
         updateSetStatement.setLong(F_UPDATE_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
         updateSetStatement.execute();
-    }
-
-    private void updateAccountBalanceFile(PreparedStatement statement, long consensusTimestamp, long count,
-                                          long loadStart, long loadEnd, String filename) throws SQLException {
-        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.COUNT.ordinal(), count);
-        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_START.ordinal(), loadStart);
-        statement.setLong(F_UPDATE_ACCOUNT_BALANCE_FILE.LOAD_END.ordinal(), loadEnd);
-        statement.setString(F_UPDATE_ACCOUNT_BALANCE_FILE.NAME.ordinal(), filename);
-
-        if (statement.executeUpdate() != 1) {
-            throw new MissingFileException("File " + filename + " not in the database, thus not updated");
-        }
-
-        long loadEndMillis = loadEnd * 1_000; // s -> ms
-        long consensusEndMillis = consensusTimestamp / 1_000_000; // ns -> ms
-        parseLatencyMetric.record(loadEndMillis - consensusEndMillis, TimeUnit.MILLISECONDS);
     }
 }
