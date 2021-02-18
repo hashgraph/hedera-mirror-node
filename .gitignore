@@ -122,3 +122,7 @@ local.properties
 # End of https://www.gitignore.io/api/eclipse
 .idea/
 *.iml
+
+# husky 5
+hedera-mirror-rest/.husky/.gitignore
+hedera-mirror-rest/.husky/_
