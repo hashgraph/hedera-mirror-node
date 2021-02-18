@@ -55,12 +55,16 @@ class AccountBalanceFileParserPerformanceTest extends IntegrationTest {
     private BalanceFileReader balanceFileReader;
 
     @Autowired
+    private BalanceParserProperties balanceParserProperties;
+
+    @Autowired
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
     private final List<AccountBalanceFile> accountBalanceFiles = new ArrayList<>();
 
     @BeforeAll
     void setup() throws Exception {
+        balanceParserProperties.setEnabled(true);
         EntityId nodeAccountId = EntityId.of(0L, 0L, 3L, EntityTypeEnum.ACCOUNT);
         for (Resource resource : testFiles) {
             AccountBalanceFile accountBalanceFile = balanceFileReader.read(StreamFileData.from(resource.getFile()));
