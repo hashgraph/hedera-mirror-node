@@ -51,7 +51,7 @@ const (
 	selectByHashWithIndex string = `SELECT block_index - $2 as block_index,
                                            consensus_start,
                                            consensus_end,
-										   hash,
+                                           hash,
                                            prev_hash
                                     FROM record_file
                                     WHERE hash = $1`
@@ -81,9 +81,9 @@ const (
                                                   consensus_start,
                                                   consensus_end,
                                                   hash,
-											      prev_hash
-										   FROM record_file
-										   WHERE block_index = $1 + $2`
+                                                  prev_hash
+                                           FROM record_file
+                                           WHERE block_index = $1 + $2`
 )
 
 type recordFile struct {
