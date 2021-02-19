@@ -20,6 +20,7 @@
 
 'use strict';
 
+const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -44,9 +45,29 @@ const scheduleSelectFields = [
   ) as signatures`,
 ];
 
+// select columns
+const sqlQueryColumns = {
+  ACCOUNT: 'payer_account_id',
+  EXECUTED: 'executed_timestamp',
+  SCHEDULE_ID: 's.schedule_id',
+};
+
+// query to column maps
+const filterColumnMap = {
+  'account.id': sqlQueryColumns.ACCOUNT,
+  executed: sqlQueryColumns.EXECUTED,
+  'schedule.id': sqlQueryColumns.SCHEDULE_ID,
+};
+
 const entityIdJoinQuery = 'join t_entities e on e.id = s.schedule_id';
 const groupByQuery = 'group by e.key, e.memo, s.consensus_timestamp, s.schedule_id';
 const scheduleIdMatchQuery = 'where s.schedule_id = $1';
+const scheduleLimitQuery = (paramCount) => {
+  return ` limit $${paramCount}`;
+};
+const scheduleOrderQuery = (order) => {
+  return ` order by s.consensus_timestamp ${order}`;
+};
 const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
 const signatureJoinQuery = 'left join schedule_signature ss on ss.schedule_id = s.schedule_id';
 
@@ -57,6 +78,18 @@ const getScheduleByIdQuery = [
   scheduleIdMatchQuery,
   groupByQuery,
 ].join('\n');
+
+const getSchedulesQuery = (whereQuery, order, paramCount) => {
+  return [
+    scheduleSelectQuery,
+    entityIdJoinQuery,
+    signatureJoinQuery,
+    whereQuery,
+    groupByQuery,
+    scheduleOrderQuery(order),
+    scheduleLimitQuery(paramCount),
+  ].join('\n');
+};
 
 const formatScheduleRow = (row) => {
   const signatures = row.signatures
@@ -106,8 +139,109 @@ const getScheduleById = async (req, res) => {
   res.locals[constants.responseDataLabel] = formatScheduleRow(rows[0]);
 };
 
+const getWhereClausesFromFilters = (filters) => {
+  let response = {
+    query: '',
+    params: [config.maxLimit],
+    order: 'asc',
+    limit: 1000,
+  };
+
+  // if no filters return empty string
+  if (filters && filters.length === 0) {
+    return response;
+  }
+
+  const pgSqlParams = [];
+  let whereQuery = '';
+  let applicableFilters = 0;
+  let paramCount = 1;
+
+  for (const filter of filters) {
+    if (filter.key === constants.filterKeys.LIMIT) {
+      response.limit = filter.value;
+      continue;
+    }
+
+    if (filter.key === constants.filterKeys.ORDER) {
+      response.order = filter.value;
+      continue;
+    }
+
+    const columnKey = filterColumnMap[filter.key];
+    if (columnKey === undefined) {
+      continue;
+    }
+
+    whereQuery += applicableFilters === 0 ? `where ` : ` and `;
+    applicableFilters++;
+
+    if (filter.key === constants.filterKeys.EXECUTED) {
+      const notQualifier = filter.value === 'true' ? 'not null' : 'null';
+      whereQuery += `${filterColumnMap[filter.key]} is ${notQualifier}`;
+      continue;
+    }
+
+    whereQuery += `${filterColumnMap[filter.key]}${filter.operator}$${paramCount++}`;
+    pgSqlParams.push(filter.value);
+  }
+
+  // add limit
+  pgSqlParams.push(response.limit);
+
+  response.query = whereQuery;
+  response.params = pgSqlParams;
+
+  return response;
+};
+
+const getSchedules = async (req, res) => {
+  // extract filters from query param
+  const filters = utils.buildFilterObject(req.query);
+
+  // validate filters
+  await utils.validateAndParseFilters(filters);
+
+  // get where clause, params and orders from query filters
+  const {query, params, order, limit} = getWhereClausesFromFilters(filters);
+  const schedulesWhereQuery = getSchedulesQuery(query, order, params.length);
+
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getScheduleById query: ${schedulesWhereQuery}, params: ${params}`);
+  }
+
+  const schedulesResponse = {
+    schedules: [],
+    links: {
+      next: null,
+    },
+  };
+
+  return utils.queryQuietly(schedulesWhereQuery, ...params).then((schedules) => {
+    schedulesResponse.schedules = schedules.rows.map((m) => formatScheduleRow(m));
+    logger.debug(`getSchedules returning ${schedulesResponse.schedules.length} entries`);
+
+    // populate next link
+    const lastScheduleId =
+      schedulesResponse.schedules.length > 0
+        ? schedulesResponse.schedules[schedulesResponse.schedules.length - 1].schedule_id
+        : null;
+
+    schedulesResponse.links.next = utils.getPaginationLink(
+      req,
+      schedules.length !== limit,
+      constants.filterKeys.TOKEN_ID,
+      lastScheduleId,
+      order
+    );
+
+    res.locals[constants.responseDataLabel] = schedulesResponse;
+  });
+};
+
 module.exports = {
   getScheduleById,
+  getSchedules,
 };
 
 if (utils.isTestEnv()) {
