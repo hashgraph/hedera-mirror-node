@@ -255,6 +255,19 @@ const verifyInvalidFilters = async (filters) => {
   await expect(utils.validateAndParseFilters(filters)).rejects.toThrowErrorMatchingSnapshot();
 };
 
+const validateAndParseFiltersNoExMessage = 'Verify validateAndParseFilters for valid filters does not throw exception';
+const verifyValidAndInvalidFilters = async (invalidFilters, validFilters) => {
+  invalidFilters.forEach((filter) => {
+    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
+      await verifyInvalidFilters([filter]);
+    });
+  });
+
+  test(`${validateAndParseFiltersNoExMessage}`, async () => {
+    await utils.validateAndParseFilters(validFilters);
+  });
+};
+
 describe('utils validateAndParseFilters boolean key tests', () => {
   const booleanFilterKeys = [constants.filterKeys.EXECUTED, constants.filterKeys.SCHEDULED];
   booleanFilterKeys.forEach((key) => {
@@ -269,12 +282,6 @@ describe('utils validateAndParseFilters boolean key tests', () => {
       utils.buildComparatorFilter(key, 'invalid'),
     ];
 
-    invalidFilters.forEach((filter) => {
-      test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-        await verifyInvalidFilters([filter]);
-      });
-    });
-
     const filters = [
       utils.buildComparatorFilter(key, 'true'),
       utils.buildComparatorFilter(key, 'false'),
@@ -282,9 +289,7 @@ describe('utils validateAndParseFilters boolean key tests', () => {
       utils.buildComparatorFilter(key, 'False'),
     ];
 
-    test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-      await utils.validateAndParseFilters(filters);
-    });
+    verifyValidAndInvalidFilters(invalidFilters, filters);
   });
 });
 
@@ -297,12 +302,6 @@ describe('utils validateAndParseFilters timestamp key tests', () => {
     utils.buildComparatorFilter(key, 'lte:23456789012345678901234'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-      await verifyInvalidFilters([filter]);
-    });
-  });
-
   const filters = [
     utils.buildComparatorFilter(key, '1234567890.000000003'),
     utils.buildComparatorFilter(key, 'eq:1234567890.000000003'),
@@ -312,9 +311,7 @@ describe('utils validateAndParseFilters timestamp key tests', () => {
     utils.buildComparatorFilter(key, 'lte:1234567890.000000003'),
   ];
 
-  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-    await utils.validateAndParseFilters(filters);
-  });
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
 
 describe('utils validateAndParseFilters order key tests', () => {
@@ -324,20 +321,9 @@ describe('utils validateAndParseFilters order key tests', () => {
     utils.buildComparatorFilter(key, 'chronological'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-      await verifyInvalidFilters([filter]);
-    });
-  });
+  const filters = [utils.buildComparatorFilter(key, 'asc'), utils.buildComparatorFilter(key, 'desc')];
 
-  const filters = [
-    utils.buildComparatorFilter(key, 'asc'),
-    utils.buildComparatorFilter(key, 'desc'),
-  ];
-
-  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-    await utils.validateAndParseFilters(filters);
-  });
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
 
 describe('utils validateAndParseFilters limit key tests', () => {
@@ -349,12 +335,6 @@ describe('utils validateAndParseFilters limit key tests', () => {
     utils.buildComparatorFilter(key, '2.3'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-      await verifyInvalidFilters([filter]);
-    });
-  });
-
   const filters = [
     utils.buildComparatorFilter(key, 'asc'),
     utils.buildComparatorFilter(key, 'desc'),
@@ -362,9 +342,7 @@ describe('utils validateAndParseFilters limit key tests', () => {
     utils.buildComparatorFilter(key, 'DESC'),
   ];
 
-  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-    await utils.validateAndParseFilters(filters);
-  });
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
 
 describe('utils validateAndParseFilters entity key tests', () => {
@@ -381,12 +359,6 @@ describe('utils validateAndParseFilters entity key tests', () => {
       utils.buildComparatorFilter(key, 'lt:0.1.23456789012345'),
     ];
 
-    invalidFilters.forEach((filter) => {
-      test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-        await verifyInvalidFilters([filter]);
-      });
-    });
-
     const filters = [
       utils.buildComparatorFilter(key, '123'),
       utils.buildComparatorFilter(key, '1.2.3'),
@@ -398,9 +370,7 @@ describe('utils validateAndParseFilters entity key tests', () => {
       utils.buildComparatorFilter(key, 'lte:1234567890'),
     ];
 
-    test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-      await utils.validateAndParseFilters(filters);
-    });
+    verifyValidAndInvalidFilters(invalidFilters, filters);
   });
 });
 
@@ -415,20 +385,12 @@ describe('utils validateAndParseFilters integer key tests', () => {
       utils.buildComparatorFilter(key, '<=:2'),
     ];
 
-    invalidFilters.forEach((filter) => {
-      test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-        await verifyInvalidFilters([filter]);
-      });
-    });
-
     const filters = [
       utils.buildComparatorFilter(key, '1'),
       utils.buildComparatorFilter(key, '9007199254740991'), // MAX_SAFE_INTEGER
     ];
 
-    test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-      await utils.validateAndParseFilters(filters);
-    });
+    verifyValidAndInvalidFilters(invalidFilters, filters);
   });
 });
 
@@ -442,12 +404,6 @@ describe('utils validateAndParseFilters credit type key tests', () => {
     utils.buildComparatorFilter(key, 'deb'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-      await verifyInvalidFilters([filter]);
-    });
-  });
-
   const filters = [
     utils.buildComparatorFilter(key, 'credit'),
     utils.buildComparatorFilter(key, 'debit'),
@@ -455,9 +411,7 @@ describe('utils validateAndParseFilters credit type key tests', () => {
     utils.buildComparatorFilter(key, 'DEBIT'),
   ];
 
-  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-    await utils.validateAndParseFilters(filters);
-  });
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
 
 describe('utils validateAndParseFilters result type key tests', () => {
@@ -470,12 +424,6 @@ describe('utils validateAndParseFilters result type key tests', () => {
     utils.buildComparatorFilter(key, 'n'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-      await verifyInvalidFilters([filter]);
-    });
-  });
-
   const filters = [
     utils.buildComparatorFilter(key, 'success'),
     utils.buildComparatorFilter(key, 'fail'),
@@ -483,9 +431,7 @@ describe('utils validateAndParseFilters result type key tests', () => {
     utils.buildComparatorFilter(key, 'FAIL'),
   ];
 
-  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-    await utils.validateAndParseFilters(filters);
-  });
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
 
 describe('utils validateAndParseFilters account balance key tests', () => {
@@ -498,21 +444,13 @@ describe('utils validateAndParseFilters account balance key tests', () => {
     utils.buildComparatorFilter(key, '23456789012345678901234'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-      await verifyInvalidFilters([filter]);
-    });
-  });
-
   const filters = [
     utils.buildComparatorFilter(key, '0'),
     utils.buildComparatorFilter(key, '1000000000'),
     utils.buildComparatorFilter(key, '1234567890123456789'),
   ];
 
-  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-    await utils.validateAndParseFilters(filters);
-  });
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
 
 describe('utils validateAndParseFilters encoding key tests', () => {
@@ -525,20 +463,9 @@ describe('utils validateAndParseFilters encoding key tests', () => {
     utils.buildComparatorFilter(key, 'b64'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-      await verifyInvalidFilters([filter]);
-    });
-  });
+  const filters = [utils.buildComparatorFilter(key, 'utf-8'), utils.buildComparatorFilter(key, 'base64')];
 
-  const filters = [
-    utils.buildComparatorFilter(key, 'utf-8'),
-    utils.buildComparatorFilter(key, 'base64'),
-  ];
-
-  test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-    await utils.validateAndParseFilters(filters);
-  });
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
 
 describe('utils validateAndParseFilters crypto key tests', () => {
@@ -551,18 +478,10 @@ describe('utils validateAndParseFilters crypto key tests', () => {
       utils.buildComparatorFilter(key, '3c3d546321ff6f63d701d2ec5c2'),
     ];
 
-    invalidFilters.forEach((filter) => {
-      test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
-        await verifyInvalidFilters([filter]);
-      });
-    });
-
     const filters = [
       utils.buildComparatorFilter(key, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be'),
     ];
 
-    test('Verify validateAndParseFilters for valid filters does not throw exception', async () => {
-      await utils.validateAndParseFilters(filters);
-    });
+    verifyValidAndInvalidFilters(invalidFilters, filters);
   });
 });

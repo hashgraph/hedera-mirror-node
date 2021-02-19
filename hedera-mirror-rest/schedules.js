@@ -140,7 +140,7 @@ const getScheduleById = async (req, res) => {
 };
 
 const extractSqlFromSchedulesRequest = (filters) => {
-  let response = {
+  const response = {
     query: '',
     params: [config.maxLimit],
     order: 'asc',
@@ -176,14 +176,15 @@ const extractSqlFromSchedulesRequest = (filters) => {
     whereQuery += applicableFilters === 0 ? `where ` : ` and `;
     applicableFilters++;
 
-    // handle executed case and utilize is (not) null sql query
+    // handle executed case and utilize 'is (not) null' sql query
     if (filter.key === constants.filterKeys.EXECUTED) {
       const notQualifier = filter.value === 'true' ? 'not null' : 'null';
       whereQuery += `${filterColumnMap[filter.key]} is ${notQualifier}`;
       continue;
     }
 
-    whereQuery += `${filterColumnMap[filter.key]}${filter.operator}$${paramCount++}`;
+    whereQuery += `${filterColumnMap[filter.key]}${filter.operator}$${paramCount}`;
+    paramCount++;
     pgSqlParams.push(filter.value);
   }
 
