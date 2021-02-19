@@ -110,7 +110,6 @@ public class DomainDriver implements ApplicationRunner {
                 .count(0L)
                 .fileHash("")
                 .hash("")
-                .id(1L)
                 .loadStart(0L)
                 .loadEnd(1L)
                 .name("")

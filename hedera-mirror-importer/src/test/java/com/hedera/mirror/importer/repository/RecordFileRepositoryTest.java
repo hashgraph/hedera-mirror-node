@@ -50,6 +50,7 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
     private RecordFile recordFile() {
         long id = ++count;
         return RecordFile.builder()
+                .blockIndex(id)
                 .consensusStart(id)
                 .consensusEnd(id)
                 .count(id)
