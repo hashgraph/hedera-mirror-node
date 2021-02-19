@@ -11,8 +11,6 @@ hedera:
       downloader:
         bucketName: test
       parser:
-        balance:
-          enabled: false
         exclude:
           - entity: 0.0.999
         record:

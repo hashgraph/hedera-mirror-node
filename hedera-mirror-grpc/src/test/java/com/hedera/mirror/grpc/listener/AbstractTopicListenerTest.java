@@ -165,7 +165,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .then(() -> publish(domainBuilder.topicMessages(10, future)))
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofMillis(1000));
     }
 
     @Test

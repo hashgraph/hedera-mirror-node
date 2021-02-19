@@ -20,11 +20,8 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import static org.mockito.Mockito.doReturn;
-
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -39,8 +36,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
         RecordFile recordFile = new RecordFile();
         recordFile.setName("2019-08-30T18_10_00.419072Z.rcd");
         recordFile.setHash("123");
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
-        doReturn(Optional.of(recordFile)).when(streamFileRepository).findLatest();
+        expectLastSignature(Instant.EPOCH);
 
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
@@ -51,7 +47,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() {
         Instant instant = Instant.ofEpochSecond(1546373520, 0);
-        doReturn(instant).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(instant);
 
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash

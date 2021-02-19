@@ -26,11 +26,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamFile;
@@ -77,7 +79,9 @@ public class MirrorDateRangePropertiesProcessor {
 
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
-        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
+        Instant lastFileInstant = findLatest(streamType).map(StreamFile::getName)
+                .map(Utility::getInstantFromFilename)
+                .orElse(null);
         Instant filterStartDate = lastFileInstant;
 
         if (startDate != null && startDate.compareTo(endDate) > 0) {
@@ -103,17 +107,19 @@ public class MirrorDateRangePropertiesProcessor {
     }
 
     /**
-     * Gets the effective startDate for downloader based on startDate in MirrorProperties, the startDateAdjustment and
-     * last valid downloaded file.
+     * Gets the latest stream file for downloader based on startDate in MirrorProperties, the startDateAdjustment and
+     * last valid downloaded stream file.
      *
-     * @param downloaderProperties The downloader's properties
-     * @return The effective startDate: null if downloader is disabled; if startDate is set, the effective startDate is
-     * startDate if the database is empty or max(startDate, timestamp of last valid downloaded file); if startDate is
-     * not set, the effective startDate is now if the database is empty, or the timestamp of last valid downloaded file
+     * @param streamType What type of stream to retrieve
+     * @return The latest stream file from the database or a dummy stream file if it calculated a different effective
+     * start date
      */
-    public Instant getEffectiveStartDate(DownloaderProperties downloaderProperties) {
+    public <T extends StreamFile> Optional<T> getLastStreamFile(StreamType streamType) {
         Instant startDate = mirrorProperties.getStartDate();
-        Instant lastFileInstant = getLastValidDownloadedFileInstant(downloaderProperties);
+        Optional<T> streamFile = findLatest(streamType);
+        Instant lastFileInstant = streamFile.map(StreamFile::getName)
+                .map(Utility::getInstantFromFilename)
+                .orElse(null);
         Duration adjustment = mirrorProperties.getStartDateAdjustment();
         Instant effectiveStartDate = STARTUP_TIME.minus(adjustment);
         boolean hasStreamFile = lastFileInstant != null;
@@ -133,10 +139,9 @@ public class MirrorDateRangePropertiesProcessor {
         }
 
         if (effectiveStartDate.compareTo(endDate) > 0) {
-            throw new InvalidConfigurationException(String
-                    .format("Date range constraint violation for %s downloader: " +
-                                    "effective startDate (%s) > endDate (%s)", downloaderProperties.getStreamType(),
-                            effectiveStartDate, endDate));
+            throw new InvalidConfigurationException(String.format(
+                    "Date range constraint violation for %s downloader: effective startDate (%s) > endDate (%s)",
+                    streamType, effectiveStartDate, endDate));
         }
 
         if (!effectiveStartDate.equals(lastFileInstant)) {
@@ -146,19 +151,20 @@ public class MirrorDateRangePropertiesProcessor {
                 mirrorProperties.setVerifyHashAfter(effectiveStartDate);
                 log.debug("Set verifyHashAfter to {}", effectiveStartDate);
             }
+
+            String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
+            T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
+            effectiveStreamFile.setName(filename);
+            streamFile = Optional.of(effectiveStreamFile);
         }
 
-        log.info("{}: downloader will download files in time range ({}, {}]",
-                downloaderProperties.getStreamType(), effectiveStartDate, mirrorProperties.getEndDate());
-        return effectiveStartDate;
+        log.info("{}: downloader will download files in time range ({}, {}]", streamType, effectiveStartDate,
+                mirrorProperties.getEndDate());
+        return streamFile;
     }
 
-    private Instant getLastValidDownloadedFileInstant(DownloaderProperties downloaderProperties) {
-        StreamFileRepository<?, ?> streamFileRepository = getStreamFileRepository(downloaderProperties.getStreamType());
-        return streamFileRepository.findLatest()
-                .map(StreamFile::getName)
-                .map(Utility::getInstantFromFilename)
-                .orElse(null);
+    private <T extends StreamFile> Optional<T> findLatest(StreamType streamType) {
+        return (Optional<T>) getStreamFileRepository(streamType).findLatest();
     }
 
     private StreamFileRepository<?, ?> getStreamFileRepository(StreamType streamType) {

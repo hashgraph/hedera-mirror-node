@@ -133,36 +133,31 @@ const getAccounts = async (req, res) => {
   }
 
   // Execute query
-  return pool
-    .query(pgEntityQuery, entityParams)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      const ret = {
-        accounts: results.rows.map((row) => processRow(row)),
-        links: {
-          next: null,
-        },
-      };
+  const result = await utils.queryQuietly(pgEntityQuery, ...entityParams);
+  const ret = {
+    accounts: result.rows.map((row) => processRow(row)),
+    links: {
+      next: null,
+    },
+  };
 
-      let anchorAcc = '0.0.0';
-      if (ret.accounts.length > 0) {
-        anchorAcc = ret.accounts[ret.accounts.length - 1].account;
-      }
+  let anchorAcc = '0.0.0';
+  if (ret.accounts.length > 0) {
+    anchorAcc = ret.accounts[ret.accounts.length - 1].account;
+  }
 
-      ret.links = {
-        next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
-      };
+  ret.links = {
+    next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
+  };
 
-      if (process.env.NODE_ENV === 'test') {
-        ret.sqlQuery = results.sqlQuery;
-      }
+  if (utils.isTestEnv()) {
+    ret.sqlQuery = result.sqlQuery;
+  }
 
-      logger.debug(`getAccounts returning ${ret.accounts.length} entries`);
-      res.locals[constants.responseDataLabel] = ret;
-    });
+  logger.debug(`getAccounts returning ${ret.accounts.length} entries`);
+  res.locals[constants.responseDataLabel] = ret;
 };
+
 /**
  * Handler function for /account/:id API.
  * @param {Request} req HTTP request object
@@ -246,7 +241,7 @@ const getOneAccount = async (req, res) => {
 
       Object.assign(ret, processRow(entityResults.rows[0]));
 
-      if (process.env.NODE_ENV === 'test') {
+      if (utils.isTestEnv()) {
         ret.entitySqlQuery = entityResults.sqlQuery;
       }
 
@@ -255,7 +250,7 @@ const getOneAccount = async (req, res) => {
       ret.transactions = transferList.transactions;
       const {anchorSecNs} = transferList;
 
-      if (process.env.NODE_ENV === 'test') {
+      if (utils.isTestEnv()) {
         ret.transactionsSqlQuery = transactionsResults.sqlQuery;
       }
 

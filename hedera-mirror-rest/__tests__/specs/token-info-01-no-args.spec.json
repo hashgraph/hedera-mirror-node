@@ -62,7 +62,7 @@
     "freeze_key": null,
     "initial_supply": "1000000",
     "kyc_key": null,
-    "modified_timestamp": "0.000000000",
+    "modified_timestamp": "1234567890.000000002",
     "name": "Token name",
     "supply_key": null,
     "total_supply": "1000000",

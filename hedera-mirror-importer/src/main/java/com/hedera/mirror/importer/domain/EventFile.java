@@ -80,6 +80,6 @@ public class EventFile implements StreamFile {
 
     @Override
     public StreamType getType() {
-        return StreamType.RECORD;
+        return StreamType.EVENT;
     }
 }

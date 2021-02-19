@@ -37,8 +37,7 @@ occurred.
 #### PostgreSQL (V1)
 
 Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql`. Edit the file and
-change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, `grpc_password`, `rosetta_user`
-or `rosetta_password` as appropriate.
+change the name and password variables at the top of the file as appropriate.
 
 ```console
 psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql
@@ -47,7 +46,7 @@ psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sq
 #### TimescaleDB (V2)
 
 Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql`. Edit the file and
-change the db user names, passwords and schema as appropriate.
+change the db usernames, passwords, and schema as appropriate.
 
 ```console
 psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql
@@ -146,11 +145,11 @@ Currently, Rosetta CLI Validation supports only `DEMO` and `TESTNET`, where
 
 #### Rosetta All-in-One Dockerfile configuration
 
-The `All-in-One` configuration aggregates the PostgreSQL, Importer and Rosetta services in a single Dockerfile
-configuration. Configuration is based on Rosetta specification,
+The `All-in-One` configuration aggregates the PostgreSQL, Importer, and Rosetta services into a single Dockerfile
+configuration. Configuration is based on the Rosetta specification,
 found [here](https://www.rosetta-api.org/docs/node_deployment.html). Data Persistence is based on Rosetta specification
-as well, found [here](https://www.rosetta-api.org/docs/standard_storage_location.html). Exposed ports are `5432` (
-PostgreSQL) and `5700` (Rosetta).
+as well, found [here](https://www.rosetta-api.org/docs/standard_storage_location.html). Exposed ports are `5432`
+(PostgreSQL) and `5700` (Rosetta).
 
 To build the Dockerfile, run:
 
@@ -183,8 +182,8 @@ docker run -e MODE=offline <image>
 You can override Importer and Rosetta services default configuration by passing
 `environment variables`, specified [here](./configuration.md).
 
-For ease, an additional environment variable, called `NETWORK` is added, where you can both override the Importer and
-Rosetta default network configuration:
+For ease, the `NETWORK` environment variable can be set to override the Importer and Rosetta default Hedera network
+configuration:
 
 ```console
 docker run -e NETWORK=TESTNET <image>
@@ -242,7 +241,7 @@ Containers use the following persisted volumes:
 To utilize the TimescaleDB database over the default PostgreSQL database, disable the PostgreSQL container and enable
 the TimescaleDB container.
 
-To achieve this the `docker-compose.yml` can be updated to set the postgres `db` service replicas to 0 whiles removing
+To achieve this the `docker-compose.yml` can be updated to set the postgres `db` service replicas to 0, while removing
 this same setting from the `timescaledb` service as follows:
 
 ```yaml

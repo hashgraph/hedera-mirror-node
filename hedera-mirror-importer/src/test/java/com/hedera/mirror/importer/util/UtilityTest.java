@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.util;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -32,42 +31,18 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.exception.FileOperationException;
 
 public class UtilityTest {
-
-    @TempDir
-    Path tempDir;
-
-    @Test
-    void ensureDirectory() throws Exception {
-        Path directory = tempDir.resolve("created");
-        Path file = tempDir.resolve("file");
-
-        Utility.ensureDirectory(directory); // Creates successfully
-        Utility.ensureDirectory(directory); // Already exists
-
-        file.toFile().createNewFile();
-        assertThatThrownBy(() -> Utility.ensureDirectory(file)).isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> Utility.ensureDirectory(null)).isInstanceOf(IllegalArgumentException.class);
-    }
 
     @DisplayName("Get Instant from filename")
     @ParameterizedTest(name = "{0}")
@@ -272,34 +247,6 @@ public class UtilityTest {
         assertThrows(ArithmeticException.class, () -> {
             Utility.timeStampInNanos(timestamp);
         });
-    }
-
-    @ParameterizedTest(name = "openQuietly {3}")
-    @CsvSource({
-            "true, false, false, open empty file should return non-null InputStream",
-            "true, true, false, open file with content should return non-null InputStream",
-            "false, false, false, open non-existent file expect FileOperationException",
-            "false, false, true, open directory expect FileOperationException",
-    })
-    void openQuietly(boolean createFile, boolean writeData, boolean createDirectory, String testName) throws IOException {
-        File file = FileUtils.getFile(tempDir.toFile(), "testfile");
-
-        if (createFile) {
-            FileUtils.touch(file);
-
-            if (writeData) {
-                FileUtils.write(file, "testdata", StandardCharsets.UTF_8);
-            }
-
-            InputStream is = Utility.openQuietly(file);
-            assertThat(is).as(testName).isNotNull();
-        } else {
-            if (createDirectory) {
-                FileUtils.forceMkdir(file);
-            }
-
-            assertThrows(FileOperationException.class, () -> Utility.openQuietly(file), testName);
-        }
     }
 }
 

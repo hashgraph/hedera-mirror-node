@@ -110,6 +110,37 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - balances
+  /api/v1/schedules/{id}:
+    get:
+      summary: Get schedule by id
+      description: Returns schedule information based on the given schedule id
+      operationId: getScheduleById
+      parameters:
+        - $ref: '#/components/parameters/scheduleIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    $ref: '#/components/schemas/Schedule'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: scheduleid"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - schedules
   /api/v1/transactions:
     get:
       summary: List transactions
@@ -474,6 +505,8 @@ tags:
     description: The balance object represents the balance of accounts on the Hedera network.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
+  - name: schedules
+    description: The schedules object represents the information associated with a schedule entity.
   - name: transactions
     description: The transaction object represents the transactions processed on the Hedera network.
     externalDocs:
@@ -596,7 +629,7 @@ components:
         auto_renew_period:
           nullable: true
         key:
-          nullable: true
+          $ref: '#/components/schemas/Key'
         deleted:
           type: boolean
       example:
@@ -615,6 +648,63 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/AccountInfo'
+    Key:
+      type: object
+      nullable: true
+      properties:
+        _type:
+          type: string
+          enum: [ED25519, ProtobufEncoded]
+          example: ProtobufEncoded
+        key:
+          type: string
+          example: 7b2231222c2231222c2231227d
+    Schedule:
+      type: object
+      properties:
+        admin_key:
+          $ref: '#/components/schemas/Key'
+        consensus_timestamp:
+          type: string
+          example: "1234567890.000000001"
+        creator_account_id:
+          type: string
+          example: 0.0.2000
+        executed_timestamp:
+          type: string
+          nullable: true
+          example: "1234567890.000000100"
+        memo:
+          type: string
+          example: 'created on 02/10/2021'
+        payer_account_id:
+          type: string
+          example: 0.0.3000
+        schedule_id:
+          type: string
+          example: 0.0.3010
+        signatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleSignature'
+        transaction_body:
+          type: string
+          format: byte
+          example: Kd6tvu8=
+    ScheduleSignature:
+      type: object
+      properties:
+        consensus_timestmap:
+          type: string
+          example: "1234567890.000000001"
+        public_key_prefix:
+          type: string
+          format: byte
+          example: "AAEBAwuqAwzB"
+        signature:
+          type: string
+          format: byte
+          example: "3q2+7wABAQMLqgMMwQ=="
     Transaction:
       type: object
       properties:
@@ -622,6 +712,7 @@ components:
           type: string
         transaction_hash:
           type: string
+          format: byte
         valid_start_timestamp:
           type: string
         charged_tx_fee:
@@ -714,7 +805,7 @@ components:
         auto_renew_period:
           nullable: true
         key:
-          nullable: true
+          $ref: '#/components/schemas/Key'
         deleted:
           type: boolean
         links:
@@ -728,8 +819,10 @@ components:
           type: string
         message:
           type: string
+          format: byte
         running_hash:
           type: string
+          format: byte
         running_hash_version:
           type: number
         sequence_number:
@@ -760,7 +853,7 @@ components:
         symbol:
           type: string
         admin_key:
-          nullable: true
+          $ref: '#/components/schemas/Key'
       required:
         - token_id
         - symbol
@@ -777,8 +870,7 @@ components:
       type: object
       properties:
         admin_key:
-          example: null
-          nullable: true
+          $ref: '#/components/schemas/Key'
         auto_renew_account:
           example: null
           nullable: true
@@ -787,7 +879,7 @@ components:
           nullable: true
         created_timestamp:
           type: string
-          example: 0.000000000
+          example: 1234567890.000000001
         decimals:
           type: string
           example: 1000
@@ -798,23 +890,20 @@ components:
           type: boolean
           example: false
         freeze_key:
-          example: null
-          nullable: true
+          $ref: '#/components/schemas/Key'
         initial_supply:
           type: string
           example: 1000000
         kyc_key:
-          example: null
-          nullable: true
+          $ref: '#/components/schemas/Key'
         modified_timestamp:
           type: string
-          example: 0.000000000
+          example: 1234567890.000000001
         name:
           type: string
           example: Token name
         supply_key:
-          example: null
-          nullable: true
+          $ref: '#/components/schemas/Key'
         symbol:
           type: string
           example: ORIGINALRDKSE
@@ -828,8 +917,7 @@ components:
           type: string
           example: 0.0.98
         wipe_key:
-          example: null
-          nullable: true
+          $ref: '#/components/schemas/Key'
     TokenDistribution:
       type: array
       items:
@@ -850,33 +938,40 @@ components:
       properties:
         record_file:
           type: string
+          format: byte
         address_books:
           type: array
           items:
             type: string
+            format: byte
         signature_files:
           type: object
           properties:
             0.0.3:
               type: string
+              format: byte
             0.0.4:
               type: string
+              format: byte
             0.0.5:
               type: string
+              format: byte
             0.0.6:
               type: string
+              format: byte
           additionalProperties:
             type: string
+            format: byte
       example:
-        record_file: c3d987c874294eb95b2df9fd36b0656623315769af2ef344c35868780102b5c0
+        record_file: YzNkOTg3Yzg3NDI5NGViOTViMmRmOWZkMzZiMDY1NjYyMzMxNTc2OWFmMmVmMzQ0YzM1ODY4NzgwMTAyYjVjMA==
         address_books:
-          - 29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c
+          - MjljY2IxNGNjNWY2NWM1MmZlYjc0MjkyYjAxZDUyZmRjZjJkZTY0NWQzOTRiNTM3MDQ2ODBkYjZkMTMyZWM2Yw==
         signature_files:
-          0.0.3: 1afc6e5ec4bbe84ebc55d0eb45b216386e46653e62bc5616a8fdbc745eb21415
-          0.0.4: d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71
-          0.0.5: 1f4be98a75a87cd649e3e1a58259275805c5cdf63fb04b3317efb511074645c7
-          0.0.6: 73be5f16d6f854827b7c8113faecb5c204b9f1d68b37d37358894d9abfc97e83
-          0.0.7: 42be5f16d6f854827b7c8113faecb5c204b9f1d68b37d37358894d9abfc97e83
+          0.0.3: MWFmYzZlNWVjNGJiZTg0ZWJjNTVkMGViNDViMjE2Mzg2ZTQ2NjUzZTYyYmM1NjE2YThmZGJjNzQ1ZWIyMTQxNQ==
+          0.0.4: ZDI4ZDIwMGJiYTdkNDhmNTA3ZTE0MGZhNjIyOGFiYTdmMjlmZjhiMmEzZjJhOGVlYjg1NzQyZGMwNTNjZWM3MQ==
+          0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
+          0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
+          0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
     Links:
       type: object
       properties:
@@ -1052,6 +1147,14 @@ components:
       in: query
       description: The ED25519 publickey to compare against
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
+      schema:
+        type: string
+    scheduleIdPathParam:
+      name: id
+      in: path
+      required: true
+      description: Schedule entity id
+      example: 0.0.2035
       schema:
         type: string
     timestampQueryParam:

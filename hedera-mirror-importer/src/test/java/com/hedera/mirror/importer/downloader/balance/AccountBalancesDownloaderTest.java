@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
@@ -36,13 +35,9 @@ import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
-import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
-
-    @Mock
-    private AccountBalanceFileRepository accountBalanceFileRepository;
 
     private final Map<String, AccountBalanceFile> accountBalanceFileMap = new HashMap<>();
 
@@ -53,13 +48,11 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected Downloader getDownloader() {
-        streamFileRepository = accountBalanceFileRepository;
         BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(mirrorProperties),
                 new AccountBalanceLineParserV1());
         return new AccountBalancesDownloader(s3AsyncClient, addressBookService,
                 (BalanceDownloaderProperties) downloaderProperties, meterRegistry, nodeSignatureVerifier,
-                signatureFileReader, balanceFileReader, streamFileNotifier, accountBalanceFileRepository,
-                dateRangeProcessor);
+                signatureFileReader, balanceFileReader, streamFileNotifier, dateRangeProcessor);
     }
 
     @Override

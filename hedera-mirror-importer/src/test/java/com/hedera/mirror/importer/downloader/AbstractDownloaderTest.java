@@ -68,8 +68,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -86,12 +85,12 @@ import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
-import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,9 +104,6 @@ public abstract class AbstractDownloaderTest {
     protected MirrorDateRangePropertiesProcessor dateRangeProcessor;
     @Mock(lenient = true)
     protected AddressBookService addressBookService;
-    @Mock
-    protected PlatformTransactionManager platformTransactionManager;
-    protected TransactionTemplate transactionTemplate;
     @TempDir
     protected Path s3Path;
     protected S3Proxy s3Proxy;
@@ -126,7 +122,6 @@ public abstract class AbstractDownloaderTest {
     protected NodeSignatureVerifier nodeSignatureVerifier;
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
-    protected StreamFileRepository<?, ?> streamFileRepository;
 
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
@@ -183,7 +178,6 @@ public abstract class AbstractDownloaderTest {
 
     protected void beforeEach() throws Exception {
         initProperties();
-        transactionTemplate = new TransactionTemplate(platformTransactionManager);
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
                 AnonymousCredentialsProvider.create())
@@ -251,7 +245,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("Download and verify files")
     void download() throws Exception {
         fileCopier.copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();
@@ -262,7 +256,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("Non-unanimous consensus reached")
     void partialConsensus() throws Exception {
         fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();
@@ -278,7 +272,7 @@ public abstract class AbstractDownloaderTest {
         String nodeAccountId = entries.get(0).getNodeAccountIdString();
         log.info("Only copy node {}'s stream files and signature files for a 3-node network", nodeAccountId);
         fileCopier.filterDirectories("*" + nodeAccountId).copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();
@@ -288,7 +282,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("Missing signatures")
     void missingSignatures() throws Exception {
         fileCopier.filterFiles(file -> !isSigFile(file.toPath())).copy();  // only copy data files
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyUnsuccessful();
     }
@@ -297,7 +291,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("Missing data files")
     void missingDataFiles() throws Exception {
         fileCopier.filterFiles("*_sig").copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyUnsuccessful();
     }
@@ -306,7 +300,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("Less than 1/3 signatures")
     void lessThanOneThirdSignatures() throws Exception {
         fileCopier.filterDirectories("*0.0.3").copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyUnsuccessful();
     }
@@ -316,7 +310,7 @@ public abstract class AbstractDownloaderTest {
     void signatureMismatch() throws Exception {
         fileCopier.copy();
         Files.walk(s3Path).filter(this::isSigFile).forEach(AbstractDownloaderTest::corruptFile);
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyUnsuccessful();
     }
@@ -326,7 +320,7 @@ public abstract class AbstractDownloaderTest {
     void invalidFileWithGarbageAppended() throws Exception {
         fileCopier.copy();
         Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::corruptFile);
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyUnsuccessful();
     }
@@ -336,7 +330,7 @@ public abstract class AbstractDownloaderTest {
     void invalidFileWithDataTruncated() throws Exception {
         fileCopier.copy();
         Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::truncateFile);
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyUnsuccessful();
     }
@@ -346,7 +340,7 @@ public abstract class AbstractDownloaderTest {
     void keepSignatureFiles() throws Exception {
         downloaderProperties.setKeepSignatures(true);
         fileCopier.copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         assertThat(Files.walk(downloaderProperties.getSignaturesPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -359,7 +353,7 @@ public abstract class AbstractDownloaderTest {
     void overwriteOnDownload() throws Exception {
         downloaderProperties.setKeepSignatures(true);
         fileCopier.copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyForSuccess();
 
@@ -411,7 +405,7 @@ public abstract class AbstractDownloaderTest {
         // the difference between file1 and file2.
         Duration interval = getCloseInterval().multipliedBy(2);
         Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
-        doReturn(lastFileInstant).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(lastFileInstant);
 
         fileCopier.copy();
         downloader.download();
@@ -423,7 +417,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("startDate not set, default to now, no files should be downloaded")
     void startDateDefaultNow() throws Exception {
-        doReturn(Instant.now()).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.now());
         fileCopier.copy();
         downloader.download();
         verifyForSuccess(List.of());
@@ -439,7 +433,7 @@ public abstract class AbstractDownloaderTest {
     })
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
-        doReturn(startDate).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(startDate);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
@@ -465,7 +459,7 @@ public abstract class AbstractDownloaderTest {
                 .stream()
                 .filter(name -> !Utility.getInstantFromFilename(name).isAfter(mirrorProperties.getEndDate()))
                 .collect(Collectors.toList());
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
 
         fileCopier.copy();
 
@@ -483,7 +477,7 @@ public abstract class AbstractDownloaderTest {
         Files.walk(s3Path).filter(this::isSigFile)
                 .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
                 .forEach(AbstractDownloaderTest::corruptFile);
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyForSuccess();
     }
@@ -496,7 +490,7 @@ public abstract class AbstractDownloaderTest {
         Files.walk(s3Path).filter(Predicate.not(this::isSigFile))
                 .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
                 .forEach(AbstractDownloaderTest::corruptFile);
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
         downloader.download();
         verifyForSuccess();
     }
@@ -506,7 +500,7 @@ public abstract class AbstractDownloaderTest {
     void maxDownloadItemsReached() throws Exception {
         downloaderProperties.setBatchSize(1);
         fileCopier.copy();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
 
         downloader.download();
 
@@ -557,8 +551,7 @@ public abstract class AbstractDownloaderTest {
 
         RecordFile recordFile = new RecordFile();
         recordFile.setName(file1);
-        doReturn(Optional.of(recordFile)).when(streamFileRepository).findLatest();
-        doReturn(Instant.EPOCH).when(dateRangeProcessor).getEffectiveStartDate(downloaderProperties);
+        expectLastSignature(Instant.EPOCH);
 
         downloader.download();
 
@@ -604,6 +597,12 @@ public abstract class AbstractDownloaderTest {
 
         file1Instant = Utility.getInstantFromFilename(file1);
         file2Instant = Utility.getInstantFromFilename(file2);
+    }
+
+    protected void expectLastSignature(Instant instant) {
+        StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
+        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
+        doReturn(Optional.of(streamFile)).when(dateRangeProcessor).getLastStreamFile(streamType);
     }
 
     protected static AddressBook loadAddressBook(String filename) throws IOException {

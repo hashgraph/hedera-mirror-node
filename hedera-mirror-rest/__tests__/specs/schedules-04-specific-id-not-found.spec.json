@@ -1,0 +1,15 @@
+{
+  "description": "Schedule api calls for a specific schedule using schedule id, not found",
+  "setup": {},
+  "url": "/api/v1/schedules/0.0.2000",
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}

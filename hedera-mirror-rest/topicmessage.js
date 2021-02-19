@@ -25,7 +25,6 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
-const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
@@ -94,16 +93,8 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
             JOIN t_entity_types tet
                 ON te.fk_entity_type_id = tet.id
             WHERE te.id = $1`;
-  const pgSqlParams = [encodedId];
 
-  let result;
-  try {
-    result = await pool.query(pgSqlQuery, pgSqlParams);
-  } catch (err) {
-    throw new DbError(err.message);
-  }
-
-  const {rows} = result;
+  const {rows} = await utils.queryQuietly(pgSqlQuery, encodedId);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
   }
@@ -148,9 +139,7 @@ const getMessageByConsensusTimestamp = async (req, res) => {
   const pgSqlQuery = `SELECT * FROM topic_message WHERE consensus_timestamp = $1`;
   const pgSqlParams = [consensusTimestamp];
 
-  return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
-    res.locals[constants.responseDataLabel] = message;
-  });
+  res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
 };
 
 /**
@@ -176,9 +165,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
     limit 1`;
   const pgSqlParams = [topicId.realm, topicId.num, seqNum];
 
-  return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
-    res.locals[constants.responseDataLabel] = message;
-  });
+  res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
 };
 
 /**
@@ -201,35 +188,32 @@ const getTopicMessages = async (req, res) => {
   const messageEncoding = req.query[constants.filterKeys.ENCODING];
 
   const topicMessagesResponse = {
-    messages: [],
     links: {
       next: null,
     },
   };
 
   // get results and return formatted response
-  return getMessages(query, params).then((messages) => {
-    // format messages
-    topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
+  const messages = await getMessages(query, params);
+  topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
 
-    // populate next
-    const lastTimeStamp =
-      topicMessagesResponse.messages.length > 0
-        ? topicMessagesResponse.messages[topicMessagesResponse.messages.length - 1][
-            topicMessageColumns.CONSENSUS_TIMESTAMP
-          ]
-        : null;
+  // populate next
+  const lastTimeStamp =
+    topicMessagesResponse.messages.length > 0
+      ? topicMessagesResponse.messages[topicMessagesResponse.messages.length - 1][
+          topicMessageColumns.CONSENSUS_TIMESTAMP
+        ]
+      : null;
 
-    topicMessagesResponse.links.next = utils.getPaginationLink(
-      req,
-      topicMessagesResponse.messages.length !== limit,
-      constants.filterKeys.TIMESTAMP,
-      lastTimeStamp,
-      order
-    );
+  topicMessagesResponse.links.next = utils.getPaginationLink(
+    req,
+    topicMessagesResponse.messages.length !== limit,
+    constants.filterKeys.TIMESTAMP,
+    lastTimeStamp,
+    order
+  );
 
-    res.locals[constants.responseDataLabel] = topicMessagesResponse;
-  });
+  res.locals[constants.responseDataLabel] = topicMessagesResponse;
 };
 
 const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
@@ -283,20 +267,14 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  return pool
-    .query(pgSqlQuery, pgSqlParams)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
-      if (results.rowCount === 1) {
-        logger.debug('getMessage returning single entry');
-        return formatTopicMessageRow(results.rows[0]);
-      } else {
-        throw new NotFoundError();
-      }
-    });
+  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
+  if (rows.length !== 1) {
+    throw new NotFoundError();
+  }
+
+  logger.debug('getMessage returning single entry');
+  return formatTopicMessageRow(rows[0]);
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams) => {
@@ -304,22 +282,9 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const messages = [];
-
-  return pool
-    .query(pgSqlQuery, pgSqlParams)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      for (let i = 0; i < results.rowCount; i++) {
-        messages.push(results.rows[i]);
-      }
-
-      logger.debug(`getMessages returning ${messages.length} entries`);
-
-      return messages;
-    });
+  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  logger.debug(`getMessages returning ${rows.length} entries`);
+  return rows;
 };
 
 module.exports = {

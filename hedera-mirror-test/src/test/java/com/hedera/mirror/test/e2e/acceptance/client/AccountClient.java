@@ -20,20 +20,21 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.hashgraph.sdk.AccountBalanceQuery;
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.HbarUnit;
-import com.hedera.hashgraph.sdk.HederaStatusException;
-import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.account.AccountBalanceQuery;
-import com.hedera.hashgraph.sdk.account.AccountCreateTransaction;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.TransferTransaction;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.TransactionResponse;
+import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 @Log4j2
@@ -46,7 +47,8 @@ public class AccountClient extends AbstractNetworkClient {
         log.debug("Creating Account Client");
     }
 
-    public ExpandedAccountId getTokenTreasuryAccount() throws HederaStatusException {
+    public ExpandedAccountId getTokenTreasuryAccount() throws ReceiptStatusException, PrecheckStatusException,
+            TimeoutException {
         if (tokenTreasuryAccount == null) {
             tokenTreasuryAccount = createNewAccount(1_000_000_000L);
             log.debug("Treasury Account: {} will be used for current test session", tokenTreasuryAccount);
@@ -55,31 +57,34 @@ public class AccountClient extends AbstractNetworkClient {
         return tokenTreasuryAccount;
     }
 
-    public static long getBalance(Client client, String accountIdString) throws HederaStatusException {
+    public static long getBalance(Client client, String accountIdString) {
         return getBalance(client, accountIdString);
     }
 
     @Override
-    public long getBalance() throws HederaStatusException {
+    public long getBalance() throws TimeoutException, PrecheckStatusException {
         return getBalance(sdkClient.getOperatorId());
     }
 
-    public long getBalance(AccountId accountId) throws HederaStatusException {
+    public long getBalance(AccountId accountId) throws TimeoutException, PrecheckStatusException {
         Hbar balance = new AccountBalanceQuery()
                 .setAccountId(accountId)
-                .execute(client);
+                .execute(client)
+                .hbars;
 
         log.debug("{} balance is {}", accountId, balance);
 
-        return balance.asTinybar();
+        return balance.toTinybars();
     }
 
-    public TransactionReceipt sendCryptoTransfer(AccountId recipient, long amount) throws HederaStatusException {
-        log.debug("Send CryptoTransfer of {} tℏ from {} to {}", amount, sdkClient.getOperatorId(), recipient);
+    public TransactionReceipt sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
+        log.debug("Send CryptoTransfer of {} tℏ from {} to {}", hbarAmount.toTinybars(), sdkClient
+                .getOperatorId(), recipient);
 
         TransferTransaction cryptoTransferTransaction = new TransferTransaction()
-                .addHbarTransfer(sdkClient.getOperatorId(), Math.negateExact(amount))
-                .addHbarTransfer(recipient, amount)
+                .addHbarTransfer(sdkClient.getOperatorId(), hbarAmount.negated())
+                .addHbarTransfer(recipient, hbarAmount)
                 .setTransactionMemo("transfer test");
 
         TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null)
@@ -90,24 +95,25 @@ public class AccountClient extends AbstractNetworkClient {
         return transactionReceipt;
     }
 
-    public ExpandedAccountId createNewAccount(long initialBalance) throws HederaStatusException {
+    public ExpandedAccountId createNewAccount(long initialBalance) throws TimeoutException, PrecheckStatusException,
+            ReceiptStatusException {
         // 1. Generate a Ed25519 private, public key pair
-        Ed25519PrivateKey privateKey = Ed25519PrivateKey.generate();
-        Ed25519PublicKey publicKey = privateKey.publicKey;
+        PrivateKey privateKey = PrivateKey.generate();
+        PublicKey publicKey = privateKey.getPublicKey();
 
         log.debug("Private key = {}", privateKey);
         log.debug("Public key = {}", publicKey);
 
-        Transaction tx = new AccountCreateTransaction()
+        TransactionResponse transactionResponse = new AccountCreateTransaction()
                 // The only _required_ property here is `key`
                 .setKey(publicKey)
-                .setInitialBalance(Hbar.from(initialBalance, HbarUnit.Tinybar))
-                .build(client);
+                .setInitialBalance(Hbar.fromTinybars(initialBalance))
+                .execute(client);
 
         // This will wait for the receipt to become available
-        TransactionReceipt receipt = tx.execute(client).getReceipt(client);
+        TransactionReceipt receipt = transactionResponse.getReceipt(client);
 
-        AccountId newAccountId = receipt.getAccountId();
+        AccountId newAccountId = receipt.accountId;
 
         log.debug("Created new account {}", newAccountId);
         return new ExpandedAccountId(newAccountId, privateKey, publicKey);

@@ -35,7 +35,6 @@ import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 
 @Log4j2
 @Named
@@ -46,11 +45,11 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile> {
             BalanceDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader, BalanceFileReader balanceFileReader,
-            StreamFileNotifier streamFileNotifier, AccountBalanceFileRepository accountBalanceFileRepository,
+            StreamFileNotifier streamFileNotifier,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(s3Client, addressBookService, downloaderProperties,
                 meterRegistry, nodeSignatureVerifier, signatureFileReader, balanceFileReader, streamFileNotifier,
-                accountBalanceFileRepository, mirrorDateRangePropertiesProcessor);
+                mirrorDateRangePropertiesProcessor);
     }
 
     @Override

@@ -22,9 +22,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -33,18 +33,14 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.hedera.hashgraph.sdk.mirror.MirrorClient;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
-import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.hashgraph.sdk.SubscriptionHandle;
+import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorBalancesResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
-public class MirrorNodeClient {
-    private final MirrorClient mirrorClient;
-    private final AcceptanceTestProperties acceptanceProps;
+public class MirrorNodeClient extends AbstractNetworkClient {
 
     @Autowired
     private WebClient webClient;
@@ -59,21 +55,19 @@ public class MirrorNodeClient {
     // FILTER QUERIES
     private static final String ACCOUNTS_ID_QUERY = "account.id";
 
-    public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties) {
-        String mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
+    public MirrorNodeClient(SDKClient sdkClient) {
+        super(sdkClient);
+        String mirrorNodeAddress = sdkClient.getMirrorNodeAddress();
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
-        mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
-        acceptanceProps = acceptanceTestProperties;
     }
 
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
-    public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
+    public SubscriptionResponse subscribeToTopic(TopicMessageQuery topicMessageQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
-        MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
-                .subscribe(mirrorClient,
-                        subscriptionResponse::handleMirrorConsensusTopicResponse,
-                        subscriptionResponse::handleThrowable);
+        SubscriptionHandle subscription = topicMessageQuery
+                .subscribe(client,
+                        subscriptionResponse::handleConsensusTopicResponse);
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -83,26 +77,25 @@ public class MirrorNodeClient {
         return subscriptionResponse;
     }
 
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
-    public SubscriptionResponse subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
+    //    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
+    public SubscriptionResponse subscribeToTopicAndRetrieveMessages(TopicMessageQuery topicMessageQuery,
                                                                     int numMessages,
                                                                     long latency) throws Throwable {
-        latency = latency <= 0 ? acceptanceProps.getMessageTimeout().toSeconds() : latency;
+        latency = latency <= 0 ? sdkClient.getMessageTimeoutSeconds() : latency;
         log.debug("Subscribing to topic, expecting {} within {} seconds.", numMessages, latency);
 
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
-                .subscribe(mirrorClient, resp -> {
-                            // add expected messages only to messages list
-                            if (subscriptionResponse.getMessages().size() < numMessages) {
-                                subscriptionResponse.handleMirrorConsensusTopicResponse(resp);
-                            }
-                            messageLatch.countDown();
-                        },
-                        subscriptionResponse::handleThrowable);
+        SubscriptionHandle subscription = topicMessageQuery
+                .subscribe(client, resp -> {
+                    // add expected messages only to messages list
+                    if (subscriptionResponse.getMirrorHCSResponses().size() < numMessages) {
+                        subscriptionResponse.handleConsensusTopicResponse(resp);
+                    }
+                    messageLatch.countDown();
+                });
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -184,14 +177,14 @@ public class MirrorNodeClient {
         return response;
     }
 
-    public void unSubscribeFromTopic(MirrorSubscriptionHandle subscription) {
+    public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
     }
 
-    public void close() throws InterruptedException {
+    public void close() throws TimeoutException {
         log.debug("Closing Mirror Node client, waits up to 10 s for valid close");
-        mirrorClient.close(10, TimeUnit.SECONDS);
+        client.close();
     }
 
     /**
@@ -199,11 +192,11 @@ public class MirrorNodeClient {
      * exception parameter
      *
      * @param t
-     * @param mirrorConsensusTopicQuery
+     * @param topicMessageQuery
      * @throws InterruptedException
      */
     @Recover
-    public void recover(StatusRuntimeException t, MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws InterruptedException {
+    public void recover(StatusRuntimeException t, TopicMessageQuery topicMessageQuery) throws InterruptedException {
         log.error("Subscription w retry failure: {}", t.getMessage());
         throw t;
     }
@@ -213,13 +206,13 @@ public class MirrorNodeClient {
      * this method after exception parameter
      *
      * @param t
-     * @param mirrorConsensusTopicQuery
+     * @param topicMessageQuery
      * @param numMessages
      * @param latency
      * @throws InterruptedException
      */
     @Recover
-    public void recover(StatusRuntimeException t, MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
+    public void recover(StatusRuntimeException t, TopicMessageQuery topicMessageQuery,
                         int numMessages,
                         long latency) throws InterruptedException {
         log.error("Subscription w retry failure: {}", t.getMessage());

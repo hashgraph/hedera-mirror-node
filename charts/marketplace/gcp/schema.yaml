@@ -17,14 +17,26 @@ x-google-marketplace:
   publishedVersion: "$TAG"
   publishedVersionMetadata:
     releaseNote: >-
-      Initial release of the Hedera Mirror Node
+      v0.27 brings many new features to the mirror node marketplace application since v0.13.
+      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/master/charts/marketplace/gcp#v0.27">v0.27 Upgrade</a> for additional upgrade steps.
+
+      The largest feature introduced since v0.13 is that of the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
+      Token entity types are now ingested to the DB and can be queried through new REST APIs.
+      Support for the new v5 <a href="https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats">Record and Event Stream File Formats</a> introduced in HAPI v0.11.0 was added.
+      Topic fragmentation support was added to the ingestion process as well as exposed through the appropriate REST and gRPC APIs.
+      State Proof alpha REST API was added to support Mirror node users who want to verify the cryptographic claims of submitted transactions for themselves.
+      <a href"https://swagger.io/specification">OpenAPI 3.0</a> specification support was added to the REST API along with a docs endpoint for up to date documentation and REST API curl support.
+      DB and process memory optimizations were made to improve the ingestion rate with at least 2x-3x improvements.
+      `startDate` and `endDate` properties were added to enable Mirror node users the ability to specify a time range for data processing.
+
+      Many more features went into the release, for detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>.
     # releaseTypes - Feature | BugFix | Security
     releaseTypes:
       - Feature
     # If "recommended" is "true", users using older releases are encouraged
     # to update as soon as possible. This is useful if, for example, this release
     # fixes a critical issue.
-    recommended: false
+    recommended: true
 
   # images for subcharts. Primary image is importer
   images:
@@ -40,12 +52,6 @@ x-google-marketplace:
           type: REPO_WITH_REGISTRY
         grpc.image.tag:
           type: TAG
-    rest:
-      properties:
-        rest.image.repository:
-          type: REPO_WITH_REGISTRY
-        rest.image.tag:
-          type: TAG
     postgresql-repmgr:
       properties:
         postgresql.postgresqlImage.registry:
@@ -53,6 +59,12 @@ x-google-marketplace:
         postgresql.postgresqlImage.repository:
           type: REPO_WITHOUT_REGISTRY
         postgresql.postgresqlImage.tag:
+          type: TAG
+    rest:
+      properties:
+        rest.image.repository:
+          type: REPO_WITH_REGISTRY
+        rest.image.tag:
           type: TAG
     test:
       properties:
@@ -70,6 +82,15 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
+  global.rest.password:
+    type: string
+    description: The password used by the REST API to connect to the database
+    title: REST API database password
+    x-google-marketplace:
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
   grpc.config.hedera.mirror.grpc.db.password:
     type: string
     description: The password used by the gRPC API to connect to the database
@@ -89,10 +110,10 @@ properties:
   grpc.serviceAccount.name:
     type: string
     title: gRPC API service account
-    description: The Kubernetes service account to assign to the gRPC API
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
+        description: The Kubernetes service account to assign to the gRPC API
         roles:
           - type: Role
             rulesType: CUSTOM
@@ -122,7 +143,7 @@ properties:
     title: Importer GCS bucket name
   importer.config.hedera.mirror.importer.downloader.gcpProjectId:
     type: string
-    description: GCP project id to bill for requests to GCS bucket with requester pays enabled
+    description: GCP project id to bill for requests to GCS bucket with requester pays enabled.
     title: Importer GCP billing project ID
   importer.config.hedera.mirror.importer.downloader.secretKey:
     type: string
@@ -139,6 +160,10 @@ properties:
       - PREVIEWNET
       - DEMO
       - OTHER
+  importer.config.hedera.mirror.importer.startDate:
+    type: string
+    description: The start date (inclusive) of the data to import. Items before this date will be ignored. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
+    title: Importer data start date
   importer.persistence.size:
     default: 10Gi
     description: The storage size for the importer persistent volume
@@ -147,10 +172,10 @@ properties:
   importer.serviceAccount.name:
     type: string
     title: Importer service account
-    description: The Kubernetes service account to assign to the importer
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
+        description: The Kubernetes service account to assign to the importer
         roles:
           - type: Role
             rulesType: CUSTOM
@@ -179,15 +204,6 @@ properties:
     type: string
     description: The password used by the PostgreSQL Replication Manager to connect to the database
     title: PostgreSQL Repmgr password
-    x-google-marketplace:
-      type: GENERATED_PASSWORD
-      generatedPassword:
-        length: 24
-        base64: False
-  global.rest.password:
-    type: string
-    description: The password used by the REST API to connect to the database
-    title: REST API database password
     x-google-marketplace:
       type: GENERATED_PASSWORD
       generatedPassword:

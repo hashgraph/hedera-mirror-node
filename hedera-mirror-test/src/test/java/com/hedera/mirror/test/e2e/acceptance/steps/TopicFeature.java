@@ -27,24 +27,25 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
-import io.grpc.StatusRuntimeException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
-import com.hedera.hashgraph.sdk.HederaStatusException;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
@@ -58,10 +59,10 @@ public class TopicFeature {
     private AcceptanceTestProperties acceptanceProps;
     private int messageSubscribeCount;
     private long latency;
-    private MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
-    private ConsensusTopicId consensusTopicId;
+    private TopicMessageQuery topicMessageQuery;
+    private TopicId consensusTopicId;
     private SubscriptionResponse subscriptionResponse;
-    private Ed25519PrivateKey submitKey;
+    private PrivateKey submitKey;
     private Instant testInstantReference;
     private List<TransactionReceipt> publishedTransactionReceipts;
     @Autowired
@@ -70,58 +71,56 @@ public class TopicFeature {
     private TopicClient topicClient;
 
     @Given("I successfully create a new topic id")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void createNewTopic() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void createNewTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         testInstantReference = Instant.now();
 
-        submitKey = Ed25519PrivateKey.generate();
-        Ed25519PublicKey submitPublicKey = submitKey.publicKey;
+        submitKey = PrivateKey.generate();
+        PublicKey submitPublicKey = submitKey.getPublicKey();
         log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
         TransactionReceipt receipt = topicClient
                 .createTopic(topicClient.getSdkClient().getPayerPublicKey(), submitPublicKey);
         assertNotNull(receipt);
-        ConsensusTopicId topicId = receipt.getConsensusTopicId();
+        TopicId topicId = receipt.topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
-        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
+        topicMessageQuery = new TopicMessageQuery()
                 .setTopicId(consensusTopicId)
                 .setStartTime(Instant.EPOCH);
 
-        log.debug("Set mirrorConsensusTopicQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
+        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
     }
 
     @Given("I successfully create a new open topic")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void createNewOpenTopic() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void createNewOpenTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         testInstantReference = Instant.now();
 
         TransactionReceipt receipt = topicClient
                 .createTopic(topicClient.getSdkClient().getPayerPublicKey(), null);
         assertNotNull(receipt);
-        ConsensusTopicId topicId = receipt.getConsensusTopicId();
+        TopicId topicId = receipt.topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
-        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
+        topicMessageQuery = new TopicMessageQuery()
                 .setTopicId(consensusTopicId)
                 .setStartTime(Instant.EPOCH);
 
-        log.debug("Set mirrorConsensusTopicQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
+        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
     }
 
     @When("I successfully update an existing topic")
-    public void updateTopic() throws HederaStatusException {
+    public void updateTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId);
 
         assertNotNull(receipt);
     }
 
     @When("I successfully delete the topic")
-    public void deleteTopic() throws HederaStatusException {
+    public void deleteTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId);
 
         assertNotNull(receipt);
@@ -130,15 +129,15 @@ public class TopicFeature {
     @Given("I provide a topic id {string}")
     public void setTopicIdParam(String topicId) {
         testInstantReference = Instant.now();
-        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
+        topicMessageQuery = new TopicMessageQuery();
 
         Long topicNum = topicId.isEmpty() ? acceptanceProps.getExistingTopicNum() : Long.parseLong(topicId);
-        consensusTopicId = new ConsensusTopicId(0, 0, topicNum);
+        consensusTopicId = new TopicId(0, 0, topicNum);
 
-        mirrorConsensusTopicQuery
+        topicMessageQuery
                 .setTopicId(consensusTopicId)
                 .setStartTime(Instant.EPOCH);
-        log.debug("Set mirrorConsensusTopicQuery with topic: {}, StartTime: {}", consensusTopicId, Instant.EPOCH);
+        log.debug("Set TopicMessageQuery with topic: {}, StartTime: {}", consensusTopicId, Instant.EPOCH);
 
         messageSubscribeCount = 0;
     }
@@ -164,12 +163,12 @@ public class TopicFeature {
         messageSubscribeCount = numMessages;
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
-        log.debug("Subscribe mirrorConsensusTopicQuery startTime : {}", startTime);
+        log.debug("Subscribe TopicMessageQuery startTime : {}", startTime);
 
-        mirrorConsensusTopicQuery
+        topicMessageQuery
                 .setStartTime(startTime);
 
-        log.debug("Set mirrorConsensusTopicQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
+        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
     }
 
     @Given("I provide a starting timestamp {string} and ending timestamp {string} and a number of messages {int} I " +
@@ -179,10 +178,10 @@ public class TopicFeature {
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
         Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endTimestamp, Instant.now());
-        log.trace("Set mirrorConsensusTopicQuery with topic: {}, startTime : {}. endTime : {}", consensusTopicId,
+        log.trace("Set TopicMessageQuery with topic: {}, startTime : {}. endTime : {}", consensusTopicId,
                 startTime, endTime);
 
-        mirrorConsensusTopicQuery
+        topicMessageQuery
                 .setStartTime(startTime)
                 .setEndTime(endTime);
     }
@@ -193,13 +192,13 @@ public class TopicFeature {
 
         Instant startTime = topicClient.getInstantOfPublishedMessage(startSequence - 1).minusMillis(10);
         Instant endTime = topicClient.getInstantOfPublishedMessage(endSequence - 1).plusMillis(10);
-        log.trace("Subscribe mirrorConsensusTopicQuery startTime : {}. endTime : {}", startTime, endTime);
+        log.trace("Subscribe TopicMessageQuery startTime : {}. endTime : {}", startTime, endTime);
 
-        mirrorConsensusTopicQuery
+        topicMessageQuery
                 .setStartTime(startTime)
                 .setEndTime(endTime);
 
-        log.debug("Set mirrorConsensusTopicQuery with topic: {}, startTime: {}, endTime: {}",
+        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}, endTime: {}",
                 consensusTopicId, startTime, endTime);
     }
 
@@ -210,24 +209,24 @@ public class TopicFeature {
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp);
         Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endTimestamp);
-        mirrorConsensusTopicQuery
+        topicMessageQuery
                 .setStartTime(startTime)
                 .setEndTime(endTime)
                 .setLimit(limit);
 
-        log.debug("Set mirrorConsensusTopicQuery with topic: {}, startTime: {}, endTime: {}, limit: {}",
+        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}, endTime: {}, limit: {}",
                 consensusTopicId, startTime, endTime, limit);
     }
 
     @When("I subscribe to the topic")
     public void verifySubscriptionChannelConnection() throws Throwable {
-        subscriptionResponse = mirrorClient.subscribeToTopic(mirrorConsensusTopicQuery);
+        subscriptionResponse = mirrorClient.subscribeToTopic(topicMessageQuery);
         assertNotNull(subscriptionResponse);
     }
 
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
-            HederaStatusException {
+            PrecheckStatusException, ReceiptStatusException, TimeoutException {
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);
             publishTopicMessages(messageCount);
@@ -238,16 +237,16 @@ public class TopicFeature {
         messageSubscribeCount = numGroups * messageCount;
     }
 
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void publishTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void publishTopicMessages(int messageCount) throws ReceiptStatusException, PrecheckStatusException,
+            TimeoutException {
         topicClient.publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, false);
     }
 
     @When("I publish and verify {int} messages sent")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void publishAndVerifyTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void publishAndVerifyTopicMessages(int messageCount) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, true);
@@ -283,7 +282,7 @@ public class TopicFeature {
     @Then("I subscribe with a filter to retrieve messages")
     public void retrieveTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
-        assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
+        assertNotNull(topicMessageQuery, "TopicMessageQuery null");
 
         subscriptionResponse = subscribeWithBackgroundMessageEmission();
     }
@@ -291,20 +290,20 @@ public class TopicFeature {
     @Then("I subscribe with a filter to retrieve these published messages")
     public void retrievePublishedTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
-        assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
+        assertNotNull(topicMessageQuery, "TopicMessageQuery null");
 
         // get start time from first published messages
         Instant startTime;
         if (publishedTransactionReceipts == null) {
             startTime = topicClient.getInstantOfFirstPublishedMessage();
         } else {
-            long firstMessageSeqNum = publishedTransactionReceipts.get(0).getConsensusTopicSequenceNumber();
+            long firstMessageSeqNum = publishedTransactionReceipts.get(0).topicSequenceNumber;
             startTime = topicClient.getInstantOfPublishedMessage(firstMessageSeqNum);
         }
 
-        mirrorConsensusTopicQuery.setStartTime(startTime);
+        topicMessageQuery.setStartTime(startTime);
 
-        log.debug("Set mirrorConsensusTopicQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
+        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
 
         subscriptionResponse = subscribeWithBackgroundMessageEmission();
     }
@@ -314,7 +313,7 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse, "subscriptionResponse is null");
         assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
 
-        assertEquals(messageSubscribeCount, subscriptionResponse.getMessages().size());
+        assertEquals(messageSubscribeCount, subscriptionResponse.getMirrorHCSResponses().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
@@ -324,7 +323,7 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse, "subscriptionResponse is null");
         assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
 
-        assertEquals(expectedMessageCount, subscriptionResponse.getMessages().size());
+        assertEquals(expectedMessageCount, subscriptionResponse.getMirrorHCSResponses().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
@@ -369,7 +368,7 @@ public class TopicFeature {
                             consensusTopicId,
                             "backgroundMessage".getBytes(StandardCharsets.UTF_8),
                             submitKey);
-                } catch (HederaStatusException e) {
+                } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
                     e.printStackTrace();
                 }
             }, 0, 1, TimeUnit.SECONDS);
@@ -379,7 +378,7 @@ public class TopicFeature {
 
         try {
             subscriptionResponse = mirrorClient
-                    .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, messageSubscribeCount, latency);
+                    .subscribeToTopicAndRetrieveMessages(topicMessageQuery, messageSubscribeCount, latency);
         } finally {
             if (scheduler != null) {
                 scheduler.shutdownNow();
@@ -396,7 +395,7 @@ public class TopicFeature {
      * @param t
      */
     @Recover
-    public void recover(StatusRuntimeException t) {
+    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
         log.error("Transaction submissions for topic operation failed after retries w: {}", t.getMessage());
         throw t;
     }
@@ -408,7 +407,7 @@ public class TopicFeature {
      * @param t
      */
     @Recover
-    public void recover(StatusRuntimeException t, int messageCount) {
+    public void recover(PrecheckStatusException t, int messageCount) throws PrecheckStatusException {
         log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
         throw t;
     }
@@ -420,7 +419,7 @@ public class TopicFeature {
      * @param t
      */
     @Recover
-    public void recover(StatusRuntimeException t, int numGroups, int messageCount, long milliSleep) {
+    public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
         log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
         throw t;
     }

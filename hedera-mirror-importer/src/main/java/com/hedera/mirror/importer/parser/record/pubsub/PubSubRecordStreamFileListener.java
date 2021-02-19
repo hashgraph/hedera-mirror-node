@@ -37,6 +37,7 @@ public class PubSubRecordStreamFileListener extends AbstractRecordStreamFileList
 
     @Override
     public void onStart() throws ImporterException {
+        // Do nothing
     }
 
     @Override
@@ -46,5 +47,6 @@ public class PubSubRecordStreamFileListener extends AbstractRecordStreamFileList
 
     @Override
     public void onError() {
+        // Do nothing
     }
 }

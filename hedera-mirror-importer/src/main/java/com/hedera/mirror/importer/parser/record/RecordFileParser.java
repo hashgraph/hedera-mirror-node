@@ -31,7 +31,6 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.integration.annotation.MessageEndpoint;
@@ -142,14 +141,14 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
             return;
         }
 
-        Instant startTime = Instant.now();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
                 .getDateRangeFilter(parserProperties.getStreamType());
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
+
         try {
             recordStreamFileListener.onStart();
-            Stopwatch stopwatch = Stopwatch.createStarted();
             recordFile.getItems().forEach(recordItem -> {
                 if (processRecordItem(recordItem, dateRangeFilter)) {
                     counter.incrementAndGet();
@@ -162,7 +161,6 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
             }
 
             Instant loadEnd = Instant.now();
-            log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             recordFile.setLoadEnd(loadEnd.getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
 
@@ -175,14 +173,12 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
             success = true;
         } catch (Exception ex) {
             log.error("Error parsing file {}", recordFile.getName(), ex);
-            recordStreamFileListener.onError(); // rollback
+            recordStreamFileListener.onError();
             throw ex;
         } finally {
-            var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
-            var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;
-            log.info("Finished parsing {} transactions from record file {} in {}ms ({}/s). Success: {}",
-                    counter, recordFile.getName(), elapsedTimeMillis, rate, success);
-            parseDurationMetrics.get(success).record(elapsedTimeMillis, TimeUnit.MILLISECONDS);
+            log.info("Finished parsing {} transactions from record file {} in {}. Success: {}",
+                    counter, recordFile.getName(), stopwatch, success);
+            parseDurationMetrics.get(success).record(stopwatch.elapsed());
         }
     }
 

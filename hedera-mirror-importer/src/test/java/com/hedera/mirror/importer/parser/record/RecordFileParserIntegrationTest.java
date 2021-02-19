@@ -111,15 +111,14 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     @Test
     void rollback() {
         // when
-        recordFileParser.parse(recordFileDescriptor1.getRecordFile());
+        RecordFile recordFile = recordFileDescriptor1.getRecordFile();
+        recordFileParser.parse(recordFile);
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
 
         // when
-        Assertions.assertThrows(ParserException.class, () -> recordFileParser
-                .parse(recordFileDescriptor1.getRecordFile())
-        );
+        Assertions.assertThrows(ParserException.class, () -> recordFileParser.parse(recordFile));
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
