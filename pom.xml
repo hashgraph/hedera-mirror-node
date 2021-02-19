@@ -61,7 +61,7 @@
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
         <embedded.testcontainers.version>2.0.3</embedded.testcontainers.version>
-        <grpc-spring-boot.version>2.10.1.RELEASE</grpc-spring-boot.version>
+        <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.35.0</grpc.version>
         <hedera-protobuf.version>0.12.0-rc.1</hedera-protobuf.version>
         <hedera-sdk.version>1.3.3</hedera-sdk.version>
@@ -84,7 +84,7 @@
         <sonar.organization>hashgraph</sonar.organization>
         <sonar.projectKey>${project.artifactId}</sonar.projectKey>
     </properties>
-    
+
     <scm>
         <connection>https://github.com/hashgraph/hedera-mirror-node.git</connection>
         <tag>master</tag>
