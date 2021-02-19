@@ -148,7 +148,7 @@ paths:
                   messages:
                     - message: "Invalid parameter: schedule.id"
       tags:
-        - transactions
+        - schedules
   /api/v1/schedules/{id}:
     get:
       summary: Get schedule by id
@@ -727,6 +727,10 @@ components:
           type: string
           format: byte
           example: Kd6tvu8=
+    Schedules:
+      type: array
+      items:
+        $ref: '#/components/schemas/Schedule'
     ScheduleSignature:
       type: object
       properties:
