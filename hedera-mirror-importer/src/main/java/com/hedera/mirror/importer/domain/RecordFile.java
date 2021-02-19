@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @NoArgsConstructor
 public class RecordFile implements StreamFile {
 
-    private long blockIndex;
+    private Long blockIndex;
 
     @ToString.Exclude
     private byte[] bytes;

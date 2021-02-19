@@ -39,7 +39,6 @@ import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
 public class RecordFileDownloader extends Downloader<RecordFile> {
