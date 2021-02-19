@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record;
 
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -32,10 +31,9 @@ public abstract class AbstractRecordStreamFileListener implements RecordStreamFi
 
     private final RecordFileRepository recordFileRepository;
 
-    @Transactional
     protected void saveRecordFile(RecordFile recordFile) {
         Optional<RecordFile> latest = recordFileRepository.findLatest();
-        recordFile.setBlockIndex(latest.map((rf) -> rf.getBlockIndex() + 1).orElse(0L));
+        recordFile.setBlockIndex(latest.map(rf -> rf.getBlockIndex() + 1).orElse(0L));
         recordFileRepository.save(recordFile);
     }
 }
