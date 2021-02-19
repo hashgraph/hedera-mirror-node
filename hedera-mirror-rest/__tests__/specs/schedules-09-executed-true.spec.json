@@ -1,5 +1,5 @@
 {
-  "description": "Schedules api calls for all executed schedules",
+  "description": "Schedules api call for all executed schedules",
   "setup": {
     "accounts": [
       {

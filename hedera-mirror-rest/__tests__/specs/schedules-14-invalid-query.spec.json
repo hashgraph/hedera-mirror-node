@@ -1,5 +1,5 @@
 {
-  "description": "Schedules api invalid query",
+  "description": "Schedules api call with invalid query",
   "setup": {
     "accounts": [],
     "entities": [],

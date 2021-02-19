@@ -172,6 +172,25 @@ describe('utils buildFilterObject tests', () => {
     verifyFilter(formattedFilters[0], constants.filterKeys.SCHEDULED, 'eq', 'true');
     verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULED, 'eq', 'false');
   });
+
+  test('Verify buildComparatorFilter for /api/v1/schedules?executed=false&account.id=0.0.1024&schedule.id=gte:4000&order=desc&limit=10', () => {
+    const filters = {
+      executed: 'false',
+      'account.id': 'lt:0.0.1024',
+      'schedule.id': 'gte:4000',
+      order: 'desc',
+      limit: '10',
+    };
+
+    const formattedFilters = utils.buildFilterObject(filters);
+
+    expect(formattedFilters).toHaveLength(5);
+    verifyFilter(formattedFilters[0], constants.filterKeys.EXECUTED, 'eq', 'false');
+    verifyFilter(formattedFilters[1], constants.filterKeys.ACCOUNT_ID, 'lt', '0.0.1024');
+    verifyFilter(formattedFilters[2], constants.filterKeys.SCHEDULE_ID, 'gte', '4000');
+    verifyFilter(formattedFilters[3], constants.filterKeys.ORDER, 'eq', 'desc');
+    verifyFilter(formattedFilters[4], constants.filterKeys.LIMIT, 'eq', '10');
+  });
 });
 
 describe('utils formatComparator tests', () => {

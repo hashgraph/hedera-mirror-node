@@ -139,7 +139,7 @@ const getScheduleById = async (req, res) => {
   res.locals[constants.responseDataLabel] = formatScheduleRow(rows[0]);
 };
 
-const getWhereClausesFromFilters = (filters) => {
+const extractSqlFromSchedulesRequest = (filters) => {
   let response = {
     query: '',
     params: [config.maxLimit],
@@ -147,7 +147,7 @@ const getWhereClausesFromFilters = (filters) => {
     limit: 1000,
   };
 
-  // if no filters return empty string
+  // if no filters return default
   if (filters && filters.length === 0) {
     return response;
   }
@@ -176,6 +176,7 @@ const getWhereClausesFromFilters = (filters) => {
     whereQuery += applicableFilters === 0 ? `where ` : ` and `;
     applicableFilters++;
 
+    // handle executed case and utilize is (not) null sql query
     if (filter.key === constants.filterKeys.EXECUTED) {
       const notQualifier = filter.value === 'true' ? 'not null' : 'null';
       whereQuery += `${filterColumnMap[filter.key]} is ${notQualifier}`;
@@ -202,8 +203,8 @@ const getSchedules = async (req, res) => {
   // validate filters
   await utils.validateAndParseFilters(filters);
 
-  // get where clause, params and orders from query filters
-  const {query, params, order, limit} = getWhereClausesFromFilters(filters);
+  // get sql filter query, params, order and limit from query filters
+  const {query, params, order, limit} = extractSqlFromSchedulesRequest(filters);
   const schedulesWhereQuery = getSchedulesQuery(query, order, params.length);
 
   if (logger.isTraceEnabled()) {
