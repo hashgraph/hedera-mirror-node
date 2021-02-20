@@ -47,7 +47,7 @@ const scheduleSelectFields = [
 
 // select columns
 const sqlQueryColumns = {
-  ACCOUNT: 'payer_account_id',
+  ACCOUNT: 'creator_account_id',
   EXECUTED: 'executed_timestamp',
   SCHEDULE_ID: 's.schedule_id',
 };
@@ -62,14 +62,10 @@ const filterColumnMap = {
 const entityIdJoinQuery = 'join t_entities e on e.id = s.schedule_id';
 const groupByQuery = 'group by e.key, e.memo, s.consensus_timestamp, s.schedule_id';
 const scheduleIdMatchQuery = 'where s.schedule_id = $1';
-const scheduleLimitQuery = (paramCount) => {
-  return ` limit $${paramCount}`;
-};
-const scheduleOrderQuery = (order) => {
-  return ` order by s.consensus_timestamp ${order}`;
-};
+const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
+const scheduleOrderQuery = (order) => `order by s.consensus_timestamp ${order}`;
 const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
-const signatureJoinQuery = 'left join schedule_signature ss on ss.schedule_id = s.schedule_id';
+const signatureJoinQuery = 'left join schedule_signature ss on ss.schedule_id = s.schedule_id and s.executed_timestamp';
 
 const getScheduleByIdQuery = [
   scheduleSelectQuery,
@@ -79,7 +75,7 @@ const getScheduleByIdQuery = [
   groupByQuery,
 ].join('\n');
 
-const getSchedulesQuery = (whereQuery, order, paramCount) => {
+const getSchedulesQuery = (whereQuery, order, count) => {
   return [
     scheduleSelectQuery,
     entityIdJoinQuery,
@@ -87,7 +83,7 @@ const getSchedulesQuery = (whereQuery, order, paramCount) => {
     whereQuery,
     groupByQuery,
     scheduleOrderQuery(order),
-    scheduleLimitQuery(paramCount),
+    scheduleLimitQuery(count),
   ].join('\n');
 };
 
@@ -159,7 +155,7 @@ const extractSqlFromSchedulesRequest = (filters) => {
 
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
-      response.limit = filter.value;
+      response.limit = Number(filter.value);
       continue;
     }
 
@@ -197,6 +193,17 @@ const extractSqlFromSchedulesRequest = (filters) => {
   return response;
 };
 
+const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getScheduleById query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  }
+
+  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  logger.debug(`getScheduleEntities returning ${rows.length} entries`);
+
+  return rows.map((m) => formatScheduleRow(m));
+};
+
 const getSchedules = async (req, res) => {
   // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
@@ -206,11 +213,7 @@ const getSchedules = async (req, res) => {
 
   // get sql filter query, params, order and limit from query filters
   const {query, params, order, limit} = extractSqlFromSchedulesRequest(filters);
-  const schedulesWhereQuery = getSchedulesQuery(query, order, params.length);
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getScheduleById query: ${schedulesWhereQuery}, params: ${params}`);
-  }
+  const schedulesQuery = getSchedulesQuery(query, order, params.length);
 
   const schedulesResponse = {
     schedules: [],
@@ -219,26 +222,23 @@ const getSchedules = async (req, res) => {
     },
   };
 
-  return utils.queryQuietly(schedulesWhereQuery, ...params).then((schedules) => {
-    schedulesResponse.schedules = schedules.rows.map((m) => formatScheduleRow(m));
-    logger.debug(`getSchedules returning ${schedulesResponse.schedules.length} entries`);
+  schedulesResponse.schedules = await getScheduleEntities(schedulesQuery, params);
 
-    // populate next link
-    const lastScheduleId =
-      schedulesResponse.schedules.length > 0
-        ? schedulesResponse.schedules[schedulesResponse.schedules.length - 1].schedule_id
-        : null;
+  // populate next link
+  const lastScheduleId =
+    schedulesResponse.schedules.length > 0
+      ? schedulesResponse.schedules[schedulesResponse.schedules.length - 1].schedule_id
+      : null;
 
-    schedulesResponse.links.next = utils.getPaginationLink(
-      req,
-      schedules.length !== limit,
-      constants.filterKeys.TOKEN_ID,
-      lastScheduleId,
-      order
-    );
+  schedulesResponse.links.next = utils.getPaginationLink(
+    req,
+    schedulesResponse.schedules.length !== limit,
+    constants.filterKeys.SCHEDULE_ID,
+    lastScheduleId,
+    order
+  );
 
-    res.locals[constants.responseDataLabel] = schedulesResponse;
-  });
+  res.locals[constants.responseDataLabel] = schedulesResponse;
 };
 
 module.exports = {

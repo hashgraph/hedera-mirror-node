@@ -112,8 +112,8 @@ paths:
         - balances
   /api/v1/schedules:
     get:
-      summary: List schedules
-      description: Lists schedules on the network.
+      summary: List schedules entities
+      description: Lists schedules on the network that govern the execution logic of scheduled transactions. This includes executed and non executed schedules.
       operationId: listSchedules
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
@@ -121,7 +121,7 @@ paths:
           in: query
           description: The execution status.
           schema:
-            enum: [ true, false ]
+            type: boolean
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/scheduleIdQueryParam'

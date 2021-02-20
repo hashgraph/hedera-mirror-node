@@ -1,5 +1,5 @@
 {
-  "description": "Schedules api call for all schedules from a specific creator account",
+  "description": "Schedules api call for all schedules",
   "setup": {
     "accounts": [
       {
@@ -44,7 +44,7 @@
     "schedules": [
       {
         "consensus_timestamp": "1234567890000010001",
-        "creator_account_id": "0.0.3333",
+        "creator_account_id": "0.0.1024",
         "executed_timestamp": "1234567890000001100",
         "payer_account_id": "0.0.1024",
         "schedule_id": "0.0.2000"
@@ -53,12 +53,12 @@
         "consensus_timestamp": "1234567890000020002",
         "creator_account_id": "0.0.1024",
         "executed_timestamp": "1234767890000002102",
-        "payer_account_id": "0.0.3333",
+        "payer_account_id": "0.0.1024",
         "schedule_id": "0.0.3000"
       },
       {
         "consensus_timestamp": "1234567890000030003",
-        "creator_account_id": "0.0.3333",
+        "creator_account_id": "0.0.1024",
         "executed_timestamp": "1234967890000003103",
         "payer_account_id": "0.0.1024",
         "schedule_id": "0.0.4000"
@@ -137,17 +137,62 @@
       }
     ]
   },
-  "url": "/api/v1/schedules?account.id=3333",
+  "url": "/api/v1/schedules?order=desc",
   "responseStatus": 200,
   "responseJson": {
     "schedules": [
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
+          "key": "7b2233222c2233222c2233227d"
+        },
+        "consensus_timestamp": "1234567890.000030003",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234967890.000003103",
+        "memo": "Created per product team decision dated 02/03/21",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.4000",
+        "signatures": [
+          {
+            "consensus_timestamp": "1234567890.000030001",
+            "public_key_prefix": "CQkJ",
+            "signature": "CQkJ"
+          }
+        ],
+        "transaction_body": "AQECAgMD"
+      },
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "7b2232222c2232222c2232227d"
+        },
+        "consensus_timestamp": "1234567890.000020002",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234767890.000002102",
+        "memo": "Created per mirror team decision dated 02/02/21",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.3000",
+        "signatures": [
+          {
+            "consensus_timestamp": "1234567890.000020001",
+            "public_key_prefix": "BQUF",
+            "signature": "BgYG"
+          },
+          {
+            "consensus_timestamp": "1234567890.000020010",
+            "public_key_prefix": "BwcH",
+            "signature": "CAgI"
+          }
+        ],
+        "transaction_body": "AQECAgMD"
+      },
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
           "key": "7b2231222c2231222c2231227d"
         },
         "consensus_timestamp": "1234567890.000010001",
-        "creator_account_id": "0.0.3333",
+        "creator_account_id": "0.0.1024",
         "executed_timestamp": "1234567890.000001100",
         "memo": "Created per council decision dated 02/01/21",
         "payer_account_id": "0.0.1024",
@@ -162,26 +207,6 @@
             "consensus_timestamp": "1234567890.000010010",
             "public_key_prefix": "AwMD",
             "signature": "BAQE"
-          }
-        ],
-        "transaction_body": "AQECAgMD"
-      },
-      {
-        "admin_key": {
-          "_type": "ProtobufEncoded",
-          "key": "7b2233222c2233222c2233227d"
-        },
-        "consensus_timestamp": "1234567890.000030003",
-        "creator_account_id": "0.0.3333",
-        "executed_timestamp": "1234967890.000003103",
-        "memo": "Created per product team decision dated 02/03/21",
-        "payer_account_id": "0.0.1024",
-        "schedule_id": "0.0.4000",
-        "signatures": [
-          {
-            "consensus_timestamp": "1234567890.000030001",
-            "public_key_prefix": "CQkJ",
-            "signature": "CQkJ"
           }
         ],
         "transaction_body": "AQECAgMD"
