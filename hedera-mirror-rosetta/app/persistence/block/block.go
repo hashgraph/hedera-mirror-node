@@ -36,7 +36,7 @@ const (
 
 const (
 	// selectLatestWithIndex - Selects the latest row
-	selectLatestWithIndex string = `SELECT block_index - $1 as block_index,
+	selectLatestWithIndex string = `SELECT block_index,
                                            consensus_start,
                                            consensus_end,
                                            hash,
@@ -45,10 +45,8 @@ const (
                                     ORDER BY consensus_end DESC
                                     LIMIT 1`
 
-	// selectByHashWithIndex - Selects the row which is loaded by a given hash
-	// and adds additional info about the position of that row using count.
-	// The information about the position is used as Block Index
-	selectByHashWithIndex string = `SELECT block_index - $2 as block_index,
+	// selectByHashWithIndex - Selects the row by given hash
+	selectByHashWithIndex string = `SELECT block_index,
                                            consensus_start,
                                            consensus_end,
                                            hash,
@@ -77,13 +75,13 @@ const (
                                                             LIMIT 1`
 
 	// selectRecordFileByBlockIndex - Selects the record_file by its block_index
-	selectRecordFileByBlockIndex string = `SELECT $1 as block_index,
+	selectRecordFileByBlockIndex string = `SELECT block_index,
                                                   consensus_start,
                                                   consensus_end,
                                                   hash,
                                                   prev_hash
                                            FROM record_file
-                                           WHERE block_index = $1 + $2`
+                                           WHERE block_index = $1`
 )
 
 type recordFile struct {
@@ -130,12 +128,13 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 		return nil, err
 	}
 
+	blockIndex := index + startingIndex
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectRecordFileByBlockIndex, index, startingIndex).Find(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectRecordFileByBlockIndex, blockIndex).Find(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
-	return br.constructBlockResponse(rf), nil
+	return br.constructBlockResponse(rf)
 }
 
 // FindByHash retrieves a block by a given Hash
@@ -145,7 +144,7 @@ func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error)
 		return nil, err
 	}
 
-	return br.constructBlockResponse(rf), nil
+	return br.constructBlockResponse(rf)
 }
 
 // FindByIdentifier retrieves a block by Index && Hash
@@ -154,10 +153,17 @@ func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 	if err != nil {
 		return nil, err
 	}
-	if rf.BlockIndex != index {
+
+	block, err := br.constructBlockResponse(rf)
+	if err != nil {
+		return nil, err
+	}
+
+	if block.Index != index {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
-	return br.constructBlockResponse(rf), nil
+
+	return block, nil
 }
 
 // RetrieveGenesis retrieves the genesis block
@@ -168,7 +174,7 @@ func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectRecordFileByBlockIndex, 0, startingIndex).Find(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectRecordFileByBlockIndex, startingIndex).Find(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -182,30 +188,20 @@ func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 
 // RetrieveLatest retrieves the latest block
 func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
-	startingIndex, err := br.getRecordFilesStartingIndex()
-	if err != nil {
-		return nil, err
-	}
-
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectLatestWithIndex, startingIndex).Scan(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectLatestWithIndex).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 	if rf.Hash == "" {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
-	return br.constructBlockResponse(rf), nil
+	return br.constructBlockResponse(rf)
 }
 
 func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTypes.Error) {
-	startingIndex, err := br.getRecordFilesStartingIndex()
-	if err != nil {
-		return nil, err
-	}
-
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectByHashWithIndex, hash, startingIndex).Scan(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectByHashWithIndex, hash).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -216,9 +212,15 @@ func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTyp
 	return rf, nil
 }
 
-// constructBlockResponse returns the constructed Block. Takes into account genesis block. Block index is passed separately due to FindByIndex
-func (br *BlockRepository) constructBlockResponse(rf *recordFile) *types.Block {
-	parentIndex := rf.BlockIndex - 1
+// constructBlockResponse returns the constructed Block
+func (br *BlockRepository) constructBlockResponse(rf *recordFile) (*types.Block, *rTypes.Error) {
+	startingIndex, err := br.getRecordFilesStartingIndex()
+	if err != nil {
+		return nil, err
+	}
+
+	index := rf.BlockIndex - startingIndex
+	parentIndex := index - 1
 	parentHash := rf.PrevHash
 
 	// Handle the edge case for querying first block
@@ -227,13 +229,13 @@ func (br *BlockRepository) constructBlockResponse(rf *recordFile) *types.Block {
 		parentHash = rf.Hash // Parent hash should be same as current block hash
 	}
 	return &types.Block{
-		Index:               rf.BlockIndex,
+		Index:               index,
 		Hash:                rf.Hash,
 		ParentIndex:         parentIndex,
 		ParentHash:          parentHash,
 		ConsensusStartNanos: rf.ConsensusStart,
 		ConsensusEndNanos:   rf.ConsensusEnd,
-	}
+	}, nil
 }
 
 func (br *BlockRepository) getRecordFilesStartingIndex() (int64, *rTypes.Error) {

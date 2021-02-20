@@ -126,3 +126,6 @@ local.properties
 # husky 5
 hedera-mirror-rest/.husky/.gitignore
 hedera-mirror-rest/.husky/_
+
+# Rosetta
+hedera-mirror-rosetta/scripts/validation/rosetta-cli
