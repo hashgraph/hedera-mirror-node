@@ -65,7 +65,7 @@ const scheduleIdMatchQuery = 'where s.schedule_id = $1';
 const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
 const scheduleOrderQuery = (order) => `order by s.consensus_timestamp ${order}`;
 const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
-const signatureJoinQuery = 'left join schedule_signature ss on ss.schedule_id = s.schedule_id and s.executed_timestamp';
+const signatureJoinQuery = 'left join schedule_signature ss on ss.schedule_id = s.schedule_id';
 
 const getScheduleByIdQuery = [
   scheduleSelectQuery,
