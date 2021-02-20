@@ -99,7 +99,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @BeforeEach
     final void beforeEach() {
         String newFileHash = UUID.randomUUID().toString();
-        recordFile = recordFile(0L, 1L, fileName, newFileHash, "fileHash0");
+        recordFile = recordFile(1L, fileName, newFileHash, 0L, "fileHash0");
 
         sqlEntityListener.onStart();
     }
@@ -253,10 +253,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
 
-        RecordFile recordFile2 = recordFile(1L, 2L, UUID.randomUUID().toString(), null, null);
+        RecordFile recordFile2 = recordFile(2L, UUID.randomUUID().toString(), null, 1L, null);
         sqlEntityListener.onStart();
         sqlEntityListener.onEntityId(entityId); // duplicate across files
-        sqlEntityListener.onEnd(cloneAndClearBlockIndex(recordFile2));
+        sqlEntityListener.onEnd(clone(recordFile2));
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile, recordFile2);
@@ -385,10 +385,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private void completeFileAndCommit() {
-        sqlEntityListener.onEnd(cloneAndClearBlockIndex(recordFile));
+        sqlEntityListener.onEnd(clone(recordFile));
     }
 
-    private RecordFile recordFile(long blockIndex, long consensusStart, String filename, String fileHash, String prevHash) {
+    private RecordFile recordFile(long consensusStart, String filename, String fileHash, long index, String prevHash) {
         if (fileHash == null) {
             fileHash = UUID.randomUUID().toString();
         }
@@ -398,13 +398,13 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         EntityId nodeAccountId = EntityId.of("0.0.3", ACCOUNT);
         RecordFile rf = RecordFile.builder()
-                .blockIndex(blockIndex)
                 .consensusStart(consensusStart)
                 .consensusEnd(consensusStart + 1)
                 .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(fileHash)
                 .hash(fileHash)
+                .index(index)
                 .loadEnd(Instant.now().getEpochSecond())
                 .loadStart(Instant.now().getEpochSecond())
                 .name(filename)
@@ -515,7 +515,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return scheduleSignature;
     }
 
-    private RecordFile cloneAndClearBlockIndex(RecordFile recordFile) {
-        return recordFile.toBuilder().blockIndex(null).build();
+    private RecordFile clone(RecordFile recordFile) {
+        return recordFile.toBuilder().build();
     }
 }

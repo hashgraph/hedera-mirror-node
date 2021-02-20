@@ -78,9 +78,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
     }
 
     @Override
-    protected void onVerified(StreamFile streamFile) {
-        RecordFile recordFile = (RecordFile) streamFile;
-
+    protected void onVerified(RecordFile recordFile) {
         Instant consensusEnd = Instant.ofEpochSecond(0, recordFile.getConsensusEnd());
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 

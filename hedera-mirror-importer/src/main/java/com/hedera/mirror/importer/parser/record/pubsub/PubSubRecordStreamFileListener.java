@@ -21,19 +21,19 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  */
 
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.record.AbstractRecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
+@RequiredArgsConstructor
 @ConditionalOnPubSubRecordParser
-public class PubSubRecordStreamFileListener extends AbstractRecordStreamFileListener {
+public class PubSubRecordStreamFileListener implements RecordStreamFileListener {
 
-    public PubSubRecordStreamFileListener(RecordFileRepository recordFileRepository) {
-        super(recordFileRepository);
-    }
+    private final RecordFileRepository recordFileRepository;
 
     @Override
     public void onStart() throws ImporterException {
@@ -42,7 +42,7 @@ public class PubSubRecordStreamFileListener extends AbstractRecordStreamFileList
 
     @Override
     public void onEnd(RecordFile recordFile) throws ImporterException {
-        saveRecordFile(recordFile);
+        recordFileRepository.save(recordFile);
     }
 
     @Override

@@ -53,7 +53,7 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.record.AbstractRecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
@@ -68,10 +68,11 @@ import com.hedera.mirror.importer.repository.TokenRepository;
 @Named
 @Order(0)
 @ConditionOnEntityRecordParser
-public class SqlEntityListener extends AbstractRecordStreamFileListener implements EntityListener {
+public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
     private final DataSource dataSource;
     private final EntityRepository entityRepository;
+    private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
     private final ApplicationEventPublisher eventPublisher;
     private final TokenRepository tokenRepository;
@@ -109,9 +110,9 @@ public class SqlEntityListener extends AbstractRecordStreamFileListener implemen
                              EntityRepository entityRepository, ApplicationEventPublisher eventPublisher,
                              TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository,
                              ScheduleRepository scheduleRepository) {
-        super(recordFileRepository);
         this.dataSource = dataSource;
         this.entityRepository = entityRepository;
+        this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
         this.eventPublisher = eventPublisher;
@@ -154,7 +155,7 @@ public class SqlEntityListener extends AbstractRecordStreamFileListener implemen
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-        saveRecordFile(recordFile);
+        recordFileRepository.save(recordFile);
     }
 
     @Override

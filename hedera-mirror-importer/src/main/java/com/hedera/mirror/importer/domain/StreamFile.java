@@ -42,6 +42,10 @@ public interface StreamFile {
         return null;
     }
 
+    default Long getIndex() {
+        return null;
+    }
+
     <T extends StreamItem> List<T> getItems();
 
     Long getLoadEnd();
@@ -54,9 +58,19 @@ public interface StreamFile {
 
     String getName();
 
+    default boolean hasIndex() {
+        return false;
+    }
+
+    default void setHash(String hash) {
+    }
+
     void setName(String name);
 
     EntityId getNodeAccountId();
+
+    default void setIndex(Long index) {
+    }
 
     void setNodeAccountId(@NonNull EntityId nodeAccountId);
 

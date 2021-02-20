@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,7 +65,7 @@ import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentMatchers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -122,6 +123,7 @@ public abstract class AbstractDownloaderTest {
     protected NodeSignatureVerifier nodeSignatureVerifier;
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
+    protected long firstIndex = 0L;
 
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
@@ -576,8 +578,15 @@ public abstract class AbstractDownloaderTest {
     }
 
     protected void verifyStreamFiles(List<String> files) {
-        verify(streamFileNotifier, times(files.size()))
-                .verified(ArgumentMatchers.argThat(s -> files.contains(s.getName())));
+        ArgumentCaptor<StreamFile> captor = ArgumentCaptor.forClass(StreamFile.class);
+        AtomicLong index = new AtomicLong(firstIndex);
+        verify(streamFileNotifier, times(files.size())).verified(captor.capture());
+        assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
+                .allSatisfy(streamFile -> {
+                    if (streamFile.hasIndex()) {
+                        assertThat(streamFile.getIndex()).isEqualTo(index.getAndIncrement());;
+                    }
+                });
     }
 
     private Instant chooseFileInstant(String choice) {
@@ -599,10 +608,20 @@ public abstract class AbstractDownloaderTest {
         file2Instant = Utility.getInstantFromFilename(file2);
     }
 
-    protected void expectLastSignature(Instant instant) {
+    protected void expectLastSignature(String hash, Long index, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
         streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
+        streamFile.setHash(hash);
+        streamFile.setIndex(index);
         doReturn(Optional.of(streamFile)).when(dateRangeProcessor).getLastStreamFile(streamType);
+
+        if (index != null) {
+            firstIndex = index + 1;
+        }
+    }
+
+    protected void expectLastSignature(Instant instant) {
+        expectLastSignature(null, null, instant);
     }
 
     protected static AddressBook loadAddressBook(String filename) throws IOException {

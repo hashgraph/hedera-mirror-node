@@ -128,7 +128,6 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 -- record_file
 create table if not exists record_file
 (
-    block_index        bigint                 not null,
     bytes              bytea                  null,
     consensus_start    bigint                 not null,
     consensus_end      bigint                 not null,
@@ -139,6 +138,7 @@ create table if not exists record_file
     hapi_version_minor int,
     hapi_version_patch int,
     hash               character varying(96)  not null,
+    index              bigint                 not null,
     load_start         bigint                 not null,
     load_end           bigint                 not null,
     name               character varying(250) not null,

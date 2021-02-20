@@ -163,7 +163,7 @@ public class MirrorDateRangePropertiesProcessor {
         return streamFile;
     }
 
-    private <T extends StreamFile> Optional<T> findLatest(StreamType streamType) {
+    public <T extends StreamFile> Optional<T> findLatest(StreamType streamType) {
         return (Optional<T>) getStreamFileRepository(streamType).findLatest();
     }
 

@@ -50,13 +50,13 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
     private RecordFile recordFile() {
         long id = ++count;
         return RecordFile.builder()
-                .blockIndex(id)
                 .consensusStart(id)
                 .consensusEnd(id)
                 .count(id)
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash("fileHash" + id)
                 .hash("hash" + id)
+                .index(id)
                 .loadEnd(id)
                 .loadStart(id)
                 .name(id + ".rcd")

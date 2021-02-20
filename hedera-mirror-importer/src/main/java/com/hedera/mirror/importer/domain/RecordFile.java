@@ -45,8 +45,6 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @NoArgsConstructor
 public class RecordFile implements StreamFile {
 
-    private Long blockIndex;
-
     @ToString.Exclude
     private byte[] bytes;
 
@@ -71,6 +69,8 @@ public class RecordFile implements StreamFile {
 
     @ToString.Exclude
     private String hash;
+
+    private Long index;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
@@ -99,5 +99,10 @@ public class RecordFile implements StreamFile {
     @Override
     public StreamType getType() {
         return StreamType.RECORD;
+    }
+
+    @Override
+    public boolean hasIndex() {
+        return true;
     }
 }
