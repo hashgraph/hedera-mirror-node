@@ -124,12 +124,7 @@ jobs:
         run: npm test -- --maxWorkers 2
         working-directory: ${{env.working-directory}}
         env:
-          CI_CONTAINERS: false
           MIRROR_NODE_INT_DB: v2
-          POSTGRES_DB: mirror_node_integration
-          POSTGRES_PASSWORD: mirror_api_pass
-          POSTGRES_USER: mirror_api
-          #TEST_S3_HOST: "127.0.0.1"
 
       - name: Upload rest test results
         if: always()
