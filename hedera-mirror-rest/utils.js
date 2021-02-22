@@ -347,7 +347,7 @@ const parseParamsAccountId = (paramValues, columnName, processOpAndValue) => {
   const partialQueries = [];
   let values = [];
   // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
-  let equalValues = [];
+  const equalValues = [];
   for (const paramValue of paramValues) {
     const opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
     if (opAndValue === null) {
@@ -363,7 +363,7 @@ const parseParamsAccountId = (paramValues, columnName, processOpAndValue) => {
       }
     }
   }
-  if (equalValues.length != 0) {
+  if (equalValues.length !== 0) {
     const partialEqualQueryStart = `${columnName} IN (?`.concat(', ?'.repeat(equalValues.length - 1)).concat(')');
     partialQueries.push(partialEqualQueryStart);
     values = values.concat(equalValues);
