@@ -22,6 +22,7 @@
 const EntityId = require('../entityId');
 const utils = require('../utils.js');
 const constants = require('../constants.js');
+const config = require('../config.js');
 
 describe('utils buildComparatorFilter tests', () => {
   test('Verify buildComparatorFilter for scheduled=true', () => {
@@ -248,10 +249,19 @@ describe('utils validateAndParseFilters tests', () => {
     utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_PUBLICKEY, '3c3d546321ff6f63d701d2ec5c2'),
     utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '23456789012345678901234'),
     utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'invalid'),
+    // too many params
+    utils.buildMultipleComparatorFilter(
+      constants.filterKeys.ACCOUNT_ID,
+      '0.0.3',
+      config.queryParams[constants.filterKeys.ACCOUNT_ID].max + 1
+    ),
   ];
 
   invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for ${JSON.stringify(filter)}`, async () => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for ${filterString}`, async () => {
       await verifyInvalidFilters([filter]);
     });
   });

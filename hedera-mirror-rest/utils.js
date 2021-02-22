@@ -222,6 +222,10 @@ const validateReq = async (req) => {
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
+      if (config.queryParams.hasOwnProperty(key) && config.queryParams[key].max < req.query[key].length) {
+        badParams.push(key);
+        continue;
+      }
       for (const val of req.query[key]) {
         if (!(await paramValidityChecks(key, val))) {
           badParams.push(key);
@@ -715,6 +719,11 @@ const buildComparatorFilter = (name, filter) => {
   };
 };
 
+const buildMultipleComparatorFilter = (name, filter, number) => {
+  const singleFilter = buildComparatorFilter(name, filter);
+  return Array(number).fill(singleFilter);
+};
+
 /**
  * Verify param and filters meet expected format
  * Additionally update format to be persistence query compatible
@@ -824,6 +833,7 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
+  buildMultipleComparatorFilter,
   buildPgSqlObject,
   createTransactionId,
   convertMySqlStyleQueryToPostgres,

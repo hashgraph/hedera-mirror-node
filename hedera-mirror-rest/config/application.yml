@@ -27,6 +27,9 @@ hedera:
         specFileName: 'openapi'
         swaggerUIPath: 'docs'
       port: 5551
+      queryParams:
+        account.id:
+          max: 100
       shard: 0
       stateproof:
         addressBookHistory: false
