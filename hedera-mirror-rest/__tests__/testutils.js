@@ -92,6 +92,23 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
       }
     });
 
+    let eqParams = sql.match(/(\w+?)\s*(IN)\s*?\(\s*((?:\$\d+,?\s*?)+)\)/g);
+    eqParams = eqParams === null ? [] : eqParams;
+
+    eqParams.forEach((e) => {
+      const matches = e.match(/(\w+?)\s*(IN)\s*?\(\s*((?:\$\d+,?\s*?)+)\)/);
+      if (matches.length >= 4) {
+        const eqParamSplit = matches[3].split(',');
+        eqParamSplit.forEach((es) => {
+          parsedparams.push({
+            field: matches[1],
+            operator: 'in',
+            value: sqlparams[parseInt(matches[3].trim()[1]) - 1],
+          });
+        });
+      }
+    });
+
     // And lastly, deal with the textual parameters like order and result
     // Find the order parameter by searching for 'desc' or 'asc'
 

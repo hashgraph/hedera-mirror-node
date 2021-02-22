@@ -325,10 +325,50 @@ const parseParams = (paramValues, processOpAndValue) => {
 };
 
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], (op, value) => {
+  const attemp1 = parseParamsAccountId(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], columnName, (op, value) => {
     const accountId = EntityId.fromString(value);
     return [`${columnName} ${op} ?`, [accountId.getEncodedId()]];
   });
+  // return attemp1.split(' and ').join(' or ')
+  // attemp1[0] = attemp1[0].split(' and ').join(' or ')
+  return attemp1;
+};
+
+const parseParamsAccountId = (paramValues, columnName, processOpAndValue) => {
+  if (paramValues === undefined) {
+    return ['', []];
+  }
+  // We either have a single entry of account filter, or an array (multiple entries)
+  // Convert a single entry into an array to keep the processing consistent
+  if (!Array.isArray(paramValues)) {
+    paramValues = [paramValues];
+  }
+  const partialQueries = [];
+  let values = [];
+  // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
+  let equalValues = [];
+  for (const paramValue of paramValues) {
+    const opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
+    if (opAndValue === null) {
+      continue;
+    }
+    if (opAndValue.op === ' = ') {
+      equalValues.push(EntityId.fromString(opAndValue.value).getEncodedId());
+    } else {
+      const queryAndValues = processOpAndValue(opAndValue.op, opAndValue.value);
+      if (queryAndValues !== null) {
+        partialQueries.push(queryAndValues[0]);
+        values = values.concat(queryAndValues[1]);
+      }
+    }
+  }
+  if (equalValues.length != 0) {
+    const partialEqualQueryStart = `${columnName} IN (?`.concat(', ?'.repeat(equalValues.length - 1)).concat(')');
+    partialQueries.push(partialEqualQueryStart);
+    values = values.concat(equalValues);
+  }
+
+  return [partialQueries.join(' and '), values];
 };
 
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {

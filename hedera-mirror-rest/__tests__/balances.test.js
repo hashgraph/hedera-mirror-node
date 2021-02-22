@@ -214,7 +214,7 @@ const singletests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'account_id', operator: '=', value: 3333}],
+    checks: [{field: 'account_id', operator: 'in', value: 3333}],
     checkFunctions: [
       {func: validateAccNumRange, args: [3333, 3333]},
       {func: validateFields, args: []},

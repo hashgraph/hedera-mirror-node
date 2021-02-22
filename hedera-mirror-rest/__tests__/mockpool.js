@@ -362,6 +362,7 @@ class Pool {
         pVar.low = param.value + 1;
         break;
       case '=':
+      case 'in':
         pVar.low = param.value;
         pVar.high = param.value;
         break;
