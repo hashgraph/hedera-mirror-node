@@ -27,7 +27,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-http-context": "^1.2.4",
-    "express-oas-generator": "^1.0.30",
+    "express-oas-generator": "^1.0.32",
     "js-yaml": "^4.0.0",
     "lodash": "^4.17.20",
     "log4js": "^6.3.0",
