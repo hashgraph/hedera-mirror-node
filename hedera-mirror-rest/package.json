@@ -12,7 +12,7 @@
     "integrationtest": "jest --testPathPattern='__tests__/integration.test.js' --collectCoverage=false",
     "lint": "eslint \"**/*.js\"",
     "perftest": "__performancetests__/perfTest.js",
-    "postinstall": "cd .. && husky install hedera-mirror-rest/.husky",
+    "postinstall": "node ./npm_scripts/postinstall.js",
     "test": "jest --testPathPattern='__tests__/*'"
   },
   "author": "Hedera Mirror Node Team",
