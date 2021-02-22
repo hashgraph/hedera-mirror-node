@@ -20,26 +20,17 @@
 
 'use strict';
 
-const glob = require('glob');
+const {execSync} = require('child_process');
 const path = require('path');
-const {readJSONFile} = require('../utils');
 
-const loadStateProofSamples = () => {
-  const getVersionFromPath = (filepath) => {
-    const segments = path.parse(filepath).dir.split(path.sep);
-    return parseInt(segments[segments.length - 1][1]);
-  };
+if (
+  process.env.NODE_ENV === 'production' ||
+  process.env.npm_config_only === 'prod' ||
+  process.env.npm_config_only === 'production'
+) {
+  process.exit(0);
+}
 
-  const jsonFiles = glob.sync(`${__dirname}/../sample/v*/*.json`);
-  return jsonFiles.map((jsonFile) => {
-    return {
-      data: readJSONFile(jsonFile),
-      filepath: jsonFile,
-      version: getVersionFromPath(jsonFile),
-    };
-  });
-};
-
-module.exports = {
-  loadStateProofSamples,
-};
+// run "husky install" only when dev dependencies are installed
+const huskyPath = ['hedera-mirror-rest', '.husky'].join(path.sep);
+console.log(execSync(`cd .. && husky install ${huskyPath}`, {encoding: 'utf8'}));
