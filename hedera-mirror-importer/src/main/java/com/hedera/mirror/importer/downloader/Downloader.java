@@ -422,7 +422,7 @@ public abstract class Downloader<T extends StreamFile> {
 
         long index = lastStreamFile.get()
                 .map(StreamFile::getIndex)
-                .or(() -> mirrorDateRangePropertiesProcessor.findLatest(streamFile.getType()))
+                .or(() -> mirrorDateRangePropertiesProcessor.findLatest(streamFile.getType()).map(StreamFile::getIndex))
                 .map(v -> v + 1)
                 .orElse(0L);
         streamFile.setIndex(index);
