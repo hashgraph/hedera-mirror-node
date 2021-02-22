@@ -86,7 +86,6 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), bufferSize)) {
             long consensusTimestamp = parseConsensusTimestamp(reader);
-            long shard = balanceParserProperties.getMirrorProperties().getShard();
             AtomicLong count = new AtomicLong(0L);
 
             AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
