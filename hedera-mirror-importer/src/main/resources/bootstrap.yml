@@ -2,3 +2,5 @@ spring:
   cloud:
     kubernetes:
       enabled: false
+  flyway:
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
