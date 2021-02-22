@@ -137,7 +137,7 @@
       }
     ]
   },
-  "url": "/api/v1/schedules?executed=false&account.id=0.0.1024&schedule.id=4000&order=desc&limit=10",
+  "url": "/api/v1/schedules?account.id=0.0.1024&schedule.id=4000&order=desc&limit=10",
   "responseStatus": 200,
   "responseJson": {
     "schedules": [

@@ -48,14 +48,12 @@ const scheduleSelectFields = [
 // select columns
 const sqlQueryColumns = {
   ACCOUNT: 'creator_account_id',
-  EXECUTED: 'executed_timestamp',
   SCHEDULE_ID: 's.schedule_id',
 };
 
 // query to column maps
 const filterColumnMap = {
   'account.id': sqlQueryColumns.ACCOUNT,
-  executed: sqlQueryColumns.EXECUTED,
   'schedule.id': sqlQueryColumns.SCHEDULE_ID,
 };
 
@@ -185,13 +183,6 @@ const extractSqlFromScheduleFilters = (filters) => {
     // add prefix. 'where' for the 1st param and 'and' for subsequent
     whereQuery += applicableFilters === 0 ? `where ` : ` and `;
     applicableFilters++;
-
-    // handle executed case and utilize 'is (not) null' sql query
-    if (filter.key === constants.filterKeys.EXECUTED) {
-      const notQualifier = filter.value === 'true' ? 'not null' : 'null';
-      whereQuery += `${filterColumnMap[filter.key]} is ${notQualifier}`;
-      continue;
-    }
 
     whereQuery += `${filterColumnMap[filter.key]}${filter.operator}$${paramCount}`;
     paramCount++;

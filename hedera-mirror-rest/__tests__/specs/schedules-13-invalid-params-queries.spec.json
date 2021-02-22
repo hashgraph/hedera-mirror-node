@@ -6,14 +6,11 @@
     "schedules": [],
     "schedulesignatures": []
   },
-  "url": "/api/v1/schedules?executed=f&account.id=-1&schedule.id=x.y.z&order=d&limit=-1",
+  "url": "/api/v1/schedules?account.id=-1&schedule.id=x.y.z&order=d&limit=-1",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
-        {
-          "message": "Invalid parameter: executed"
-        },
         {
           "message": "Invalid parameter: account.id"
         },
