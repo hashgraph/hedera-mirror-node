@@ -117,11 +117,6 @@ paths:
       operationId: listSchedules
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
-        - name: executed
-          in: query
-          description: The execution status.
-          schema:
-            type: boolean
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/scheduleIdQueryParam'

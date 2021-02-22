@@ -134,7 +134,7 @@ const verifyExtractSqlFromScheduleFilters = (
   expect(limit).toStrictEqual(expectedLimit);
 };
 
-describe('schedule extractSqlFromTokenRequest tests', () => {
+describe('schedule extractSqlFromScheduleFilters tests', () => {
   test('Verify simple discovery query /api/v1/schedules', () => {
     const filters = [];
 
@@ -152,7 +152,7 @@ describe('schedule extractSqlFromTokenRequest tests', () => {
     );
   });
 
-  test('Verify all filter params query /api/v1/schedules?account.id=0.0.1024&schedule.id=4000&order=desc&limit=10', () => {
+  test('Verify all filter params query /api/v1/schedules?account.id=gte:0.0.123&schedule.id=lt:456&order=desc&limit=10', () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'gte:123'),
       utils.buildComparatorFilter(constants.filterKeys.SCHEDULE_ID, 'lt:456'),
