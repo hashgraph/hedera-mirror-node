@@ -1,0 +1,20 @@
+{
+  "description": "Schedules api call with invalid query",
+  "setup": {
+    "accounts": [],
+    "entities": [],
+    "schedules": [],
+    "schedulesignatures": []
+  },
+  "url": "/api/v1/schedules?crypto=true",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: crypto"
+        }
+      ]
+    }
+  }
+}

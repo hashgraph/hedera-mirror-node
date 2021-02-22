@@ -76,6 +76,9 @@ create index if not exists record_file__prev_hash
 create unique index if not exists schedule__schedule_id
     on schedule (schedule_id desc, consensus_timestamp desc);
 
+create index if not exists schedule__creator_account_id
+    on schedule (creator_account_id desc);
+
 -- schedule_signature
 create index if not exists schedule_signature__schedule_id
     on schedule_signature (schedule_id desc, consensus_timestamp desc);

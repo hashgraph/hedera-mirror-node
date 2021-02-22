@@ -20,7 +20,10 @@
 
 'use strict';
 
+const config = require('../config');
+const constants = require('../constants');
 const schedules = require('../schedules');
+const utils = require('../utils');
 
 describe('schedule formatScheduleRow tests', () => {
   const defaultInput = {
@@ -113,5 +116,65 @@ describe('schedule formatScheduleRow tests', () => {
     test(testSpec.description, () => {
       expect(schedules.formatScheduleRow(testSpec.input)).toStrictEqual(testSpec.expected);
     });
+  });
+});
+
+const verifyExtractSqlFromScheduleFilters = (
+  filters,
+  expectedQuery,
+  expectedParams,
+  expectedOrder,
+  expectedLimit
+) => {
+  const {filterQuery, params, order, limit} = schedules.extractSqlFromScheduleFilters(filters);
+
+  expect(filterQuery).toStrictEqual(expectedQuery);
+  expect(params).toStrictEqual(expectedParams);
+  expect(order).toStrictEqual(expectedOrder);
+  expect(limit).toStrictEqual(expectedLimit);
+};
+
+describe('schedule extractSqlFromScheduleFilters tests', () => {
+  test('Verify simple discovery query /api/v1/schedules', () => {
+    const filters = [];
+
+    const expectedquery = '';
+    const expectedparams = [config.maxLimit];
+    const expectedorder = constants.orderFilterValues.ASC;
+    const expectedlimit = config.maxLimit;
+
+    verifyExtractSqlFromScheduleFilters(
+      filters,
+      expectedquery,
+      expectedparams,
+      expectedorder,
+      expectedlimit
+    );
+  });
+
+  test('Verify all filter params query /api/v1/schedules?account.id=gte:0.0.123&schedule.id=lt:456&order=desc&limit=10', () => {
+    const filters = [
+      utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'gte:123'),
+      utils.buildComparatorFilter(constants.filterKeys.SCHEDULE_ID, 'lt:456'),
+      utils.buildComparatorFilter(constants.filterKeys.ORDER, 'desc'),
+      utils.buildComparatorFilter(constants.filterKeys.LIMIT, '10'),
+    ];
+
+    for (const filter of filters) {
+      utils.formatComparator(filter);
+    }
+
+    const expectedquery = 'where creator_account_id >= $1 and s.schedule_id < $2';
+    const expectedparams = ['123', '456', 10];
+    const expectedorder = constants.orderFilterValues.DESC;
+    const expectedlimit = 10;
+
+    verifyExtractSqlFromScheduleFilters(
+      filters,
+      expectedquery,
+      expectedparams,
+      expectedorder,
+      expectedlimit
+    );
   });
 });

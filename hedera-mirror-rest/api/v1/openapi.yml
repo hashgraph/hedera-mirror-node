@@ -110,6 +110,40 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - balances
+  /api/v1/schedules:
+    get:
+      summary: List schedules entities
+      description: Lists schedules on the network that govern the execution logic of scheduled transactions. This includes executed and non executed schedules.
+      operationId: listSchedules
+      parameters:
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/scheduleIdQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schedules:
+                    $ref: '#/components/schemas/Schedules'
+                  links:
+                    $ref: '#/components/schemas/Links'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: schedule.id"
+      tags:
+        - schedules
   /api/v1/schedules/{id}:
     get:
       summary: Get schedule by id
@@ -123,10 +157,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    $ref: '#/components/schemas/Schedule'
+                $ref: '#/components/schemas/Schedule'
         400:
           description: Bad Request
           content:
@@ -691,6 +722,10 @@ components:
           type: string
           format: byte
           example: Kd6tvu8=
+    Schedules:
+      type: array
+      items:
+        $ref: '#/components/schemas/Schedule'
     ScheduleSignature:
       type: object
       properties:
@@ -1157,6 +1192,18 @@ components:
       example: 0.0.2035
       schema:
         type: string
+    scheduleIdQueryParam:
+      name: schedule.id
+      in: query
+      example:
+        - 2
+        - lt:0.30000.0
+        - gt:0.7.25301
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
     timestampQueryParam:
       name: timestamp
       in: query
