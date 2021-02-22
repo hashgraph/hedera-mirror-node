@@ -1,5 +1,29 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for [{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0 1`] = `
+Array [
+  "Invalid parameter: undefined",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for [{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","val 1`] = `
+Array [
+  "Invalid parameter: undefined",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for [{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":" 1`] = `
+Array [
+  "Invalid parameter: undefined",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for [{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"},{"key":"account.id","operator":"eq","value":"0.0.3"}] 1`] = `
+Array [
+  "Invalid parameter: undefined",
+]
+`;
+
 exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.balance","operator":"eq","value":"-1"} 1`] = `
 Array [
   "Invalid parameter: account.balance",
@@ -9,6 +33,18 @@ Array [
 exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.balance","operator":"eq","value":"23456789012345678901234"} 1`] = `
 Array [
   "Invalid parameter: account.balance",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.id","operator":"eq","value":"0.0.3"} 101 times 1`] = `
+Array [
+  "Invalid parameter: undefined",
+]
+`;
+
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for {"key":"account.id","operator":"eq","value":"0.0.3"} x 101 1`] = `
+Array [
+  "Invalid parameter: undefined",
 ]
 `;
 
