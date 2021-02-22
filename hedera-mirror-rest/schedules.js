@@ -75,6 +75,13 @@ const getScheduleByIdQuery = [
   groupByQuery,
 ].join('\n');
 
+/**
+ * Get the schedules list sql query to be used given the where clause, order and param count
+ * @param whereQuery
+ * @param order
+ * @param count
+ * @returns {string}
+ */
 const getSchedulesQuery = (whereQuery, order, count) => {
   return [
     scheduleSelectQuery,
@@ -135,32 +142,38 @@ const getScheduleById = async (req, res) => {
   res.locals[constants.responseDataLabel] = formatScheduleRow(rows[0]);
 };
 
+/**
+ * Extract the sql where clause, params, order and limit values to be used from the provided schedule query param filters
+ * If no modifying filters are provided the default of no where clause, the config maxLimit and asc order will be returned
+ * @param filters
+ * @returns {{limit: Number, params: [*], filterQuery: string, order: string}}
+ */
 const extractSqlFromScheduleFilters = (filters) => {
-  const response = {
-    query: '',
+  const filterQuery = {
+    filterQuery: '',
     params: [config.maxLimit],
     order: 'asc',
     limit: config.maxLimit,
   };
 
-  // if no filters return default
+  // if no filters return default filter of no where clause, maxLimit and asc order
   if (filters && filters.length === 0) {
-    return response;
+    return filterQuery;
   }
 
   const pgSqlParams = [];
   let whereQuery = '';
-  let applicableFilters = 0;
-  let paramCount = 1;
+  let applicableFilters = 0; // track the number of schedule specific filters
+  let paramCount = 1; // track the param count used for substitution, not affected by order and executed params
 
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
-      response.limit = Number(filter.value);
+      filterQuery.limit = Number(filter.value);
       continue;
     }
 
     if (filter.key === constants.filterKeys.ORDER) {
-      response.order = filter.value;
+      filterQuery.order = filter.value;
       continue;
     }
 
@@ -169,6 +182,7 @@ const extractSqlFromScheduleFilters = (filters) => {
       continue;
     }
 
+    // add prefix. 'where' for the 1st param and 'and' for subsequent
     whereQuery += applicableFilters === 0 ? `where ` : ` and `;
     applicableFilters++;
 
@@ -185,14 +199,20 @@ const extractSqlFromScheduleFilters = (filters) => {
   }
 
   // add limit
-  pgSqlParams.push(response.limit);
+  pgSqlParams.push(filterQuery.limit);
 
-  response.query = whereQuery;
-  response.params = pgSqlParams;
+  filterQuery.filterQuery = whereQuery;
+  filterQuery.params = pgSqlParams;
 
-  return response;
+  return filterQuery;
 };
 
+/**
+ * Get formatted schedule entities from db
+ * @param pgSqlQuery
+ * @param pgSqlParams
+ * @returns {Promise<void>}
+ */
 const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getScheduleById query: ${pgSqlQuery}, params: ${pgSqlParams}`);
@@ -204,6 +224,12 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
   return rows.map((m) => formatScheduleRow(m));
 };
 
+/**
+ * Handler function for /schedules/:id API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
 const getSchedules = async (req, res) => {
   // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
@@ -212,8 +238,8 @@ const getSchedules = async (req, res) => {
   await utils.validateAndParseFilters(filters);
 
   // get sql filter query, params, order and limit from query filters
-  const {query, params, order, limit} = extractSqlFromScheduleFilters(filters);
-  const schedulesQuery = getSchedulesQuery(query, order, params.length);
+  const {filterQuery, params, order, limit} = extractSqlFromScheduleFilters(filters);
+  const schedulesQuery = getSchedulesQuery(filterQuery, order, params.length);
 
   const schedulesResponse = {
     schedules: [],
