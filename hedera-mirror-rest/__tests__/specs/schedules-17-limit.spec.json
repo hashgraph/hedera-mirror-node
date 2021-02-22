@@ -1,5 +1,5 @@
 {
-  "description": "Schedules api call for all schedules from a specific creator account",
+  "description": "Schedules api call for all schedules with limit query param filter",
   "setup": {
     "accounts": [
       {

@@ -135,12 +135,12 @@ const getScheduleById = async (req, res) => {
   res.locals[constants.responseDataLabel] = formatScheduleRow(rows[0]);
 };
 
-const extractSqlFromSchedulesRequest = (filters) => {
+const extractSqlFromScheduleFilters = (filters) => {
   const response = {
     query: '',
     params: [config.maxLimit],
     order: 'asc',
-    limit: 1000,
+    limit: config.maxLimit,
   };
 
   // if no filters return default
@@ -212,7 +212,7 @@ const getSchedules = async (req, res) => {
   await utils.validateAndParseFilters(filters);
 
   // get sql filter query, params, order and limit from query filters
-  const {query, params, order, limit} = extractSqlFromSchedulesRequest(filters);
+  const {query, params, order, limit} = extractSqlFromScheduleFilters(filters);
   const schedulesQuery = getSchedulesQuery(query, order, params.length);
 
   const schedulesResponse = {
@@ -248,6 +248,7 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    extractSqlFromScheduleFilters,
     formatScheduleRow,
   });
 }
