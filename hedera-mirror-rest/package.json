@@ -17,7 +17,7 @@
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
-    "@awaitjs/express": "^0.6.3",
+    "@awaitjs/express": "^0.7.2",
     "@godaddy/terminus": "^4.5.0",
     "asn1js": "^2.0.26",
     "aws-sdk": "^2.824.0",
