@@ -329,13 +329,10 @@ const parseParams = (paramValues, processOpAndValue) => {
 };
 
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
-  const attemp1 = parseParamsAccountId(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], columnName, (op, value) => {
+  return parseParamsAccountId(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], columnName, (op, value) => {
     const accountId = EntityId.fromString(value);
     return [`${columnName} ${op} ?`, [accountId.getEncodedId()]];
   });
-  // return attemp1.split(' and ').join(' or ')
-  // attemp1[0] = attemp1[0].split(' and ').join(' or ')
-  return attemp1;
 };
 
 const parseParamsAccountId = (paramValues, columnName, processOpAndValue) => {
