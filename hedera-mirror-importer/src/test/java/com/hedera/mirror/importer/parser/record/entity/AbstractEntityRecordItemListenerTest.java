@@ -107,9 +107,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     @Resource
     protected EntityRecordItemListener entityRecordItemListener;
 
-//    @Resource
-//    protected RecordParserProperties parserProperties;
-
     @Resource
     protected EntityProperties entityProperties;
 

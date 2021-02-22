@@ -19,7 +19,7 @@ with block as (
     from record_file
     order by consensus_end
 )
-update record_file set index = block.row_number from block where consensus_end = block.ce;
+update record_file set index = block.row_number - 1 from block where consensus_end = block.ce;
 
 alter table if exists record_file alter column index set not null;
 create unique index if not exists record_file__index on record_file (index);

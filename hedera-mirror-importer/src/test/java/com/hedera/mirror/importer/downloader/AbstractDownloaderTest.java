@@ -101,7 +101,7 @@ public abstract class AbstractDownloaderTest {
 
     @Mock
     protected StreamFileNotifier streamFileNotifier;
-    @Mock(lenient = true)
+    @Mock
     protected MirrorDateRangePropertiesProcessor dateRangeProcessor;
     @Mock(lenient = true)
     protected AddressBookService addressBookService;
@@ -435,7 +435,7 @@ public abstract class AbstractDownloaderTest {
     })
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
-        expectLastStreamFile("123", 100L, startDate, false);
+        expectLastStreamFile(null, 100L, startDate);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
                 .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
@@ -454,7 +454,7 @@ public abstract class AbstractDownloaderTest {
             "0, file2",
             "1, file2",
     })
-    void endDate(long seconds, String fileChoice) throws Exception {
+    void endDate(long seconds, String fileChoice) {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
         downloaderProperties.setBatchSize(1);
         List<String> expectedFiles = List.of(file1, file2)
@@ -582,11 +582,7 @@ public abstract class AbstractDownloaderTest {
         AtomicLong index = new AtomicLong(firstIndex);
         verify(streamFileNotifier, times(files.size())).verified(captor.capture());
         assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
-                .allSatisfy(streamFile -> {
-                    if (streamFile.hasIndex()) {
-                        assertThat(streamFile.getIndex()).isEqualTo(index.getAndIncrement());;
-                    }
-                });
+                .allMatch(s -> s.getIndex() == null || s.getIndex() == index.getAndIncrement());
     }
 
     private Instant chooseFileInstant(String choice) {
@@ -609,44 +605,32 @@ public abstract class AbstractDownloaderTest {
     }
 
     /**
-     * Sets the expected last stream file. If the stream file is in db, i.e., it's a real stream file, set its hash,
-     * and set its index to nextIndex - 1, then set the mock dateRangeProcessor to return it as the
-     * lastStreamFile and the latest file; otherwise, if nextIndex is greater than 0, create a StreamFile which
-     * is 1 nanos before the last stream file, set its hash and set its index to nextIndex - 1, then set
-     * the mock dataRangeProcessor to return the previous stream file as lastStreamFile and the current StreamFile as
-     * the latest.
+     * Sets the expected last stream file. If the precondition is there is no stream files in db, pass in a null index.
      *
      * @param hash hash of the StreamFile
-     * @param nextIndex the expected next index of the stream
+     * @param index the index of the StreamFile
      * @param instant the instant of the StreamFile
-     * @param isFileInDb whether the file is a real file in the db
      */
-    protected void expectLastStreamFile(String hash, long nextIndex, Instant instant, boolean isFileInDb) {
-        StreamFile lastStreamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        lastStreamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
-        StreamFile lastStreamFileInDb = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        lastStreamFileInDb.setName(Utility.getStreamFilenameFromInstant(streamType, instant.minusNanos(1L)));
-        StreamFile streamFile = isFileInDb ? lastStreamFile : lastStreamFileInDb;
-        if (nextIndex > 0L) {
-            streamFile.setHash(hash);
-            streamFile.setIndex(nextIndex - 1);
-        }
+    protected void expectLastStreamFile(String hash, Long index, Instant instant) {
+        StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
+        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
+        streamFile.setHash(hash);
+        streamFile.setIndex(index);
 
-        firstIndex = nextIndex;
-        doReturn(Optional.of(lastStreamFile)).when(dateRangeProcessor).getLastStreamFile(streamType);
-        Optional<StreamFile> latest = nextIndex > 0L ? Optional.of(streamFile) : Optional.empty();
-        doReturn(latest).when(dateRangeProcessor).findLatest(streamType);
-        downloaderProperties.getMirrorProperties().setVerifyHashAfter(instant);
+        if (hash != null) {
+            downloaderProperties.getMirrorProperties().setVerifyHashAfter(instant);
+        }
+        firstIndex = index == null ? 0L : index + 1;
+        doReturn(Optional.of(streamFile)).when(dateRangeProcessor).getLastStreamFile(streamType);
     }
 
     /**
-     * Sets the last stream file based on instant, with the assumption that the stream file db table is empty and the
-     * last stream file is not a real file.
+     * Sets the last stream file based on instant, with the assumption that the stream file db table is empty.
      *
      * @param instant the instant of the stream file
      */
     protected void expectLastStreamFile(Instant instant) {
-        expectLastStreamFile(null, 0L, instant, false);
+        expectLastStreamFile(null, null, instant);
     }
 
     protected static AddressBook loadAddressBook(String filename) throws IOException {

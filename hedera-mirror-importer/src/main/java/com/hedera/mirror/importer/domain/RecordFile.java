@@ -100,9 +100,4 @@ public class RecordFile implements StreamFile {
     public StreamType getType() {
         return StreamType.RECORD;
     }
-
-    @Override
-    public boolean hasIndex() {
-        return true;
-    }
 }

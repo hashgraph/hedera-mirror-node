@@ -32,8 +32,8 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
 
     @Test
     @DisplayName("Doesn't match last valid hash")
-    void hashMismatchWithPrevious() throws Exception {
-        expectLastStreamFile("123", 1L, Instant.EPOCH.plusNanos(100L), true);
+    void hashMismatchWithPrevious() {
+        expectLastStreamFile("123", 1L, Instant.EPOCH.plusNanos(100L));
 
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
         downloader.download();
@@ -43,7 +43,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @Test
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() {
-        expectLastStreamFile("123", 1L, Instant.EPOCH.plusNanos(100L), true);
+        expectLastStreamFile("123", 1L, Instant.EPOCH.plusNanos(100L));
 
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
         fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash

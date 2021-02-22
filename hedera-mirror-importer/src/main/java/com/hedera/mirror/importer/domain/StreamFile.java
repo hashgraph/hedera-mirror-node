@@ -58,16 +58,12 @@ public interface StreamFile {
 
     String getName();
 
-    default boolean hasIndex() {
-        return false;
-    }
+    EntityId getNodeAccountId();
 
     default void setHash(String hash) {
     }
 
     void setName(String name);
-
-    EntityId getNodeAccountId();
 
     default void setIndex(Long index) {
     }

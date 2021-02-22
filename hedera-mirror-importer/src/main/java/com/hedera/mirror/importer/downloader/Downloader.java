@@ -409,20 +409,13 @@ public abstract class Downloader<T extends StreamFile> {
     }
 
     /**
-     * Sets the index of the streamFile to the lastStreamFile's index plus 1. If the lastStreamFile has a NULL index
-     * which indicates it's created based on startDate, set the index to the db's latest stream file's index plus 1.
-     * If it's the first streamFile, set index to 0.
+     * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
      *
      * @param streamFile the stream file object
      */
     private void setStreamFileIndex(StreamFile streamFile) {
-        if (!streamFile.hasIndex()) {
-            return;
-        }
-
         long index = lastStreamFile.get()
                 .map(StreamFile::getIndex)
-                .or(() -> mirrorDateRangePropertiesProcessor.findLatest(streamFile.getType()).map(StreamFile::getIndex))
                 .map(v -> v + 1)
                 .orElse(0L);
         streamFile.setIndex(index);
