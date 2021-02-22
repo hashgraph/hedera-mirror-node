@@ -65,8 +65,6 @@ alter table record_file
     add primary key (consensus_end);
 create unique index if not exists record_file__index
     on record_file (index, consensus_end); -- have to add consensus_end due to partitioning
-create unique index if not exists record_file__name
-    on record_file (name, consensus_end); -- have to add consensus_end due to partitioning
 create unique index if not exists record_file__hash
     on record_file (hash, consensus_end); -- have to add consensus_end due to partitioning
 create index if not exists record_file__prev_hash

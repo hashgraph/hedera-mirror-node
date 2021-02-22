@@ -7,7 +7,7 @@ alter table if exists record_file
     drop column id,
     alter column consensus_start drop default,
     alter column consensus_end drop default;
-drop index if exists record_file__consensus_end;
+drop index if exists idx_t_record_files_name, record_file__consensus_end;
 drop sequence if exists s_record_files_seq;
 
 alter table if exists record_file
