@@ -16,7 +16,6 @@ importer:
       flyway:
         baselineVersion: 1.999.999
         locations: "classpath:db/migration/v2"
-        target: 2.999.999
 postgresql:
   enabled: false
 timescaledb:

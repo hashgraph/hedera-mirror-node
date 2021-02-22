@@ -32,7 +32,6 @@ spring:
     username: ${hedera.mirror.grpc.db.username}
   flyway:
     baselineOnMigrate: true
-    baselineVersion: 0
     connectRetries: 10
     ignoreMissingMigrations: true
     locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
@@ -45,6 +44,8 @@ spring:
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       topicRunningHashV2AddedTimestamp: 0
-    target: 1.999.999
   redis:
-    url: redis://${embedded.redis.user}:${embedded.redis.password}@${embedded.redis.host}:${embedded.redis.port}
+    host: ${embedded.redis.host}
+    password: ${embedded.redis.password}
+    port: ${embedded.redis.port}
+    username: "" # Redis 5 does not support authentication with a username and will fail if provided

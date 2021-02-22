@@ -48,7 +48,6 @@ const v1SchemaConfigs = {
   flyway: {
     baselineVersion: '0',
     locations: 'hedera-mirror-importer/src/main/resources/db/migration/v1',
-    target: '1.999.999',
   },
 };
 const v2SchemaConfigs = {
@@ -59,7 +58,6 @@ const v2SchemaConfigs = {
   flyway: {
     baselineVersion: '1.999.999',
     locations: 'hedera-mirror-importer/src/main/resources/db/migration/v2',
-    target: '2.999.999',
   },
 };
 
@@ -131,11 +129,10 @@ const flywayMigrate = () => {
     "placeholders.db-name": "${dbConfig.name}",
     "placeholders.db-user": "${dbAdminUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
-    "target": "${schemaConfigs.flyway.target}",
     "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}",
     "user": "${dbAdminUser}"
   },
-  "version": "6.5.7",
+  "version": "7.1.1",
   "downloads": {
     "storageDirectory": "${flywayDataPath}"
   }

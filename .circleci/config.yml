@@ -131,7 +131,9 @@ commands:
                 enabled: false
             ---
             spring:
-              profiles: pubsub
+              config:
+                activate:
+                  on-profile: pubsub
               cloud:
                 gcp:
                   pubsub:

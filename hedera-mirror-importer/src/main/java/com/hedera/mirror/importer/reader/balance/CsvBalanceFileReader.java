@@ -98,7 +98,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
             reader.lines()
                     .map(line -> {
                         try {
-                            AccountBalance accountBalance = parser.parse(line, consensusTimestamp, shard);
+                            AccountBalance accountBalance = parser.parse(line, consensusTimestamp);
                             count.incrementAndGet();
                             return accountBalance;
                         } catch (InvalidDatasetException ex) {
