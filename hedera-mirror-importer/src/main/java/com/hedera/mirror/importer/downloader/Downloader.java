@@ -86,7 +86,7 @@ public abstract class Downloader<T extends StreamFile> {
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
-    private final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
+    protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
 
     // Metrics
     private final MeterRegistry meterRegistry;
@@ -371,6 +371,7 @@ public abstract class Downloader<T extends StreamFile> {
                     }
 
                     signatures.forEach(this::moveSignatureFile);
+                    setStreamFileIndex(streamFile);
                     streamFileNotifier.verified(streamFile);
                     lastStreamFile.set(Optional.of(streamFile));
                     onVerified(streamFile);
@@ -404,7 +405,20 @@ public abstract class Downloader<T extends StreamFile> {
         return pendingDownload(s3ObjectKey);
     }
 
-    protected void onVerified(StreamFile streamFile) {
+    protected void onVerified(T streamFile) {
+    }
+
+    /**
+     * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
+     *
+     * @param streamFile the stream file object
+     */
+    private void setStreamFileIndex(StreamFile streamFile) {
+        long index = lastStreamFile.get()
+                .map(StreamFile::getIndex)
+                .map(v -> v + 1)
+                .orElse(0L);
+        streamFile.setIndex(index);
     }
 
     /**

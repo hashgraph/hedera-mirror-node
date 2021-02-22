@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -62,8 +63,9 @@ class RecordFileParserPerformanceTest extends IntegrationTest {
     @BeforeAll
     void setup() throws Exception {
         EntityId nodeAccountId = EntityId.of(0L, 0L, 3L, EntityTypeEnum.ACCOUNT);
-        for (Resource resource : testFiles) {
-            RecordFile recordFile = recordFileReader.read(StreamFileData.from(resource.getFile()));
+        for (int index = 0; index < testFiles.length; index++) {
+            RecordFile recordFile = recordFileReader.read(StreamFileData.from(testFiles[index].getFile()));
+            recordFile.setIndex((long) index);
             recordFile.setNodeAccountId(nodeAccountId);
             recordFiles.add(recordFile);
         }

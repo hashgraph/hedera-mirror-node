@@ -99,7 +99,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @BeforeEach
     final void beforeEach() {
         String newFileHash = UUID.randomUUID().toString();
-        recordFile = recordFile(fileName, newFileHash, "fileHash0", 1L);
+        recordFile = recordFile(1L, fileName, newFileHash, 0L, "fileHash0");
 
         sqlEntityListener.onStart();
     }
@@ -253,10 +253,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntityId(entityId); // duplicate within file
         completeFileAndCommit();
 
-        RecordFile recordFile2 = recordFile(UUID.randomUUID().toString(), null, null, 2L);
+        RecordFile recordFile2 = recordFile(2L, UUID.randomUUID().toString(), null, 1L, null);
         sqlEntityListener.onStart();
         sqlEntityListener.onEntityId(entityId); // duplicate across files
-        sqlEntityListener.onEnd(recordFile2);
+        sqlEntityListener.onEnd(clone(recordFile2));
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile, recordFile2);
@@ -385,10 +385,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private void completeFileAndCommit() {
-        sqlEntityListener.onEnd(recordFile);
+        sqlEntityListener.onEnd(clone(recordFile));
     }
 
-    private RecordFile recordFile(String filename, String fileHash, String prevHash, long consensusStart) {
+    private RecordFile recordFile(long consensusStart, String filename, String fileHash, long index, String prevHash) {
         if (fileHash == null) {
             fileHash = UUID.randomUUID().toString();
         }
@@ -404,6 +404,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(fileHash)
                 .hash(fileHash)
+                .index(index)
                 .loadEnd(Instant.now().getEpochSecond())
                 .loadStart(Instant.now().getEpochSecond())
                 .name(filename)
@@ -512,5 +513,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
         scheduleSignature.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
         scheduleSignature.setSignature("scheduled transaction signature".getBytes());
         return scheduleSignature;
+    }
+
+    private RecordFile clone(RecordFile recordFile) {
+        return recordFile.toBuilder().build();
     }
 }

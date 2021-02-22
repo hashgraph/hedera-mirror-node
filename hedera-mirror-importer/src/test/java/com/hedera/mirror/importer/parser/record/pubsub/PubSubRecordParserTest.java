@@ -59,8 +59,9 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
 
     @Test
     public void testPubSubExporter() throws Exception {
-        for (Resource resource : testFiles) {
-            RecordFile recordFile = recordFileReader.read(StreamFileData.from(resource.getFile()));
+        for (int index = 0; index < testFiles.length; index++) {
+            RecordFile recordFile = recordFileReader.read(StreamFileData.from(testFiles[index].getFile()));
+            recordFile.setIndex((long) index);
             recordFile.setNodeAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
             recordFileParser.parse(recordFile);
         }

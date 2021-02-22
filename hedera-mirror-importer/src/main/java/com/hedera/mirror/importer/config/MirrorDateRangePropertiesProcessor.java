@@ -155,6 +155,7 @@ public class MirrorDateRangePropertiesProcessor {
             String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
             T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
             effectiveStreamFile.setName(filename);
+            effectiveStreamFile.setIndex(streamFile.map(StreamFile::getIndex).orElse(null));
             streamFile = Optional.of(effectiveStreamFile);
         }
 

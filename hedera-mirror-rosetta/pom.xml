@@ -39,6 +39,7 @@
                         <id>default-test</id>
                         <configuration>
                             <buildFlags>
+                                <flag>-race</flag>
                                 <flag>-v</flag>
                             </buildFlags>
                             <packages>
@@ -52,6 +53,7 @@
                             <buildFlags>
                                 <flag>-a</flag>
                                 <flag>-i</flag>
+                                <flag>-race</flag>
                             </buildFlags>
                             <sources>${project.basedir}${file.separator}cmd</sources>
                         </configuration>

@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -83,10 +84,8 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
 
     @BeforeEach
     void before() {
-        RecordFile recordFile1 = recordFileReader.read(StreamFileData.from(recordFilePath1.toFile()));
-        recordFile1.setNodeAccountId(NODE_ACCOUNT_ID);
-        RecordFile recordFile2 = recordFileReader.read(StreamFileData.from(recordFilePath2.toFile()));
-        recordFile2.setNodeAccountId(NODE_ACCOUNT_ID);
+        RecordFile recordFile1 = recordFile(recordFilePath1.toFile(), 0L);
+        RecordFile recordFile2 = recordFile(recordFilePath2.toFile(), 1L);
         recordFileDescriptor1 = new RecordFileDescriptor(93, 8, recordFile1);
         recordFileDescriptor2 = new RecordFileDescriptor(75, 5, recordFile2);
         parserProperties = new RecordParserProperties(new MirrorProperties());
@@ -150,6 +149,13 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
                     assertThat(rf.getLoadEnd()).isGreaterThan(0L);
                     assertThat(rf.getLoadEnd()).isGreaterThanOrEqualTo(rf.getLoadStart());
                 }).last().extracting(RecordFile::getHash).isEqualTo(lastHash);
+    }
+
+    RecordFile recordFile(File file, long index) {
+        RecordFile recordFile = recordFileReader.read(StreamFileData.from(file));
+        recordFile.setIndex(index);
+        recordFile.setNodeAccountId(NODE_ACCOUNT_ID);
+        return recordFile;
     }
 
     @lombok.Value
