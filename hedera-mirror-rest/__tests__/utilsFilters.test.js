@@ -24,21 +24,6 @@ const utils = require('../utils.js');
 const constants = require('../constants.js');
 
 describe('utils buildComparatorFilter tests', () => {
-  test('Verify buildComparatorFilter for executed=true', () => {
-    verifyBuildComparatorFilter(constants.filterKeys.EXECUTED, 'true', {
-      key: constants.filterKeys.EXECUTED,
-      operator: 'eq',
-      value: 'true',
-    });
-  });
-
-  test('Verify buildComparatorFilter for executed=false', () => {
-    verifyBuildComparatorFilter(constants.filterKeys.EXECUTED, 'false', {
-      key: constants.filterKeys.EXECUTED,
-      operator: 'eq',
-      value: 'false',
-    });
-  });
 
   test('Verify buildComparatorFilter for scheduled=true', () => {
     verifyBuildComparatorFilter(constants.filterKeys.SCHEDULED, 'true', {
@@ -173,9 +158,8 @@ describe('utils buildFilterObject tests', () => {
     verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULED, 'eq', 'false');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/schedules?executed=false&account.id=0.0.1024&schedule.id=gte:4000&order=desc&limit=10', () => {
+  test('Verify buildComparatorFilter for /api/v1/schedules?account.id=0.0.1024&schedule.id=gte:4000&order=desc&limit=10', () => {
     const filters = {
-      executed: 'false',
       'account.id': 'lt:0.0.1024',
       'schedule.id': 'gte:4000',
       order: 'desc',
@@ -184,12 +168,11 @@ describe('utils buildFilterObject tests', () => {
 
     const formattedFilters = utils.buildFilterObject(filters);
 
-    expect(formattedFilters).toHaveLength(5);
-    verifyFilter(formattedFilters[0], constants.filterKeys.EXECUTED, 'eq', 'false');
-    verifyFilter(formattedFilters[1], constants.filterKeys.ACCOUNT_ID, 'lt', '0.0.1024');
-    verifyFilter(formattedFilters[2], constants.filterKeys.SCHEDULE_ID, 'gte', '4000');
-    verifyFilter(formattedFilters[3], constants.filterKeys.ORDER, 'eq', 'desc');
-    verifyFilter(formattedFilters[4], constants.filterKeys.LIMIT, 'eq', '10');
+    expect(formattedFilters).toHaveLength(4);
+    verifyFilter(formattedFilters[0], constants.filterKeys.ACCOUNT_ID, 'lt', '0.0.1024');
+    verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULE_ID, 'gte', '4000');
+    verifyFilter(formattedFilters[2], constants.filterKeys.ORDER, 'eq', 'desc');
+    verifyFilter(formattedFilters[3], constants.filterKeys.LIMIT, 'eq', '10');
   });
 });
 
@@ -269,7 +252,7 @@ const verifyValidAndInvalidFilters = async (invalidFilters, validFilters) => {
 };
 
 describe('utils validateAndParseFilters boolean key tests', () => {
-  const booleanFilterKeys = [constants.filterKeys.EXECUTED, constants.filterKeys.SCHEDULED];
+  const booleanFilterKeys = [constants.filterKeys.SCHEDULED];
   booleanFilterKeys.forEach((key) => {
     const invalidFilters = [
       // erroneous data

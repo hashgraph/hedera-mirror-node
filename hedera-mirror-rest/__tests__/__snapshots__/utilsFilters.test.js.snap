@@ -18,42 +18,6 @@ Array [
 ]
 `;
 
-exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"executed","operator":"eq","value":"invalid"} 1`] = `
-Array [
-  "Invalid parameter: executed",
-]
-`;
-
-exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"executed","operator":"gt","value":"true"} 1`] = `
-Array [
-  "Invalid parameter: executed",
-]
-`;
-
-exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"executed","operator":"gte","value":"true"} 1`] = `
-Array [
-  "Invalid parameter: executed",
-]
-`;
-
-exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"executed","operator":"lt","value":"true"} 1`] = `
-Array [
-  "Invalid parameter: executed",
-]
-`;
-
-exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"executed","operator":"lte","value":"true"} 1`] = `
-Array [
-  "Invalid parameter: executed",
-]
-`;
-
-exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"executed","operator":"ne","value":"true"} 1`] = `
-Array [
-  "Invalid parameter: executed",
-]
-`;
-
 exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"scheduled","operator":"eq","value":"invalid"} 1`] = `
 Array [
   "Invalid parameter: scheduled",

@@ -126,9 +126,9 @@ const verifyExtractSqlFromScheduleFilters = (
   expectedOrder,
   expectedLimit
 ) => {
-  const {query, params, order, limit} = schedules.extractSqlFromScheduleFilters(filters);
+  const {filterQuery, params, order, limit} = schedules.extractSqlFromScheduleFilters(filters);
 
-  expect(query).toStrictEqual(expectedQuery);
+  expect(filterQuery).toStrictEqual(expectedQuery);
   expect(params).toStrictEqual(expectedParams);
   expect(order).toStrictEqual(expectedOrder);
   expect(limit).toStrictEqual(expectedLimit);
@@ -152,9 +152,8 @@ describe('schedule extractSqlFromTokenRequest tests', () => {
     );
   });
 
-  test('Verify all filter params query /api/v1/schedules?executed=false&account.id=0.0.1024&schedule.id=4000&order=desc&limit=10', () => {
+  test('Verify all filter params query /api/v1/schedules?account.id=0.0.1024&schedule.id=4000&order=desc&limit=10', () => {
     const filters = [
-      utils.buildComparatorFilter(constants.filterKeys.EXECUTED, 'true'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'gte:123'),
       utils.buildComparatorFilter(constants.filterKeys.SCHEDULE_ID, 'lt:456'),
       utils.buildComparatorFilter(constants.filterKeys.ORDER, 'desc'),
@@ -165,7 +164,7 @@ describe('schedule extractSqlFromTokenRequest tests', () => {
       utils.formatComparator(filter);
     }
 
-    const expectedquery = 'where executed_timestamp is not null and creator_account_id >= $1 and s.schedule_id < $2';
+    const expectedquery = 'where creator_account_id >= $1 and s.schedule_id < $2';
     const expectedparams = ['123', '456', 10];
     const expectedorder = constants.orderFilterValues.DESC;
     const expectedlimit = 10;

@@ -175,9 +175,6 @@ const filterValidityChecks = async (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
-    case constants.filterKeys.EXECUTED:
-      ret = isValidBooleanOpAndValue(op, val);
-      break;
     case constants.filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
       ret = isValidLimitNum(val);

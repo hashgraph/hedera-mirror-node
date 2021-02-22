@@ -28,7 +28,6 @@ const filterKeys = {
   CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
   ENTITY_PUBLICKEY: 'publickey',
-  EXECUTED: 'executed',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
