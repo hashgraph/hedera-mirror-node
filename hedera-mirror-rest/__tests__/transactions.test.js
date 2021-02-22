@@ -225,6 +225,14 @@ const singleTests = {
     checks: [{field: 'entity_id', operator: 'in', value: '3333'}],
     checkFunctions: [{func: validateAccNumRange, args: [3333, 3333]}],
   },
+  accountid_multiple: {
+    urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
+    checks: [
+      {field: 'entity_id', operator: 'in', value: '3333'},
+      {field: 'entity_id', operator: 'in', value: '3334'},
+    ],
+    checkFunctions: [{func: validateAccNumRange, args: [3333, 3334]}],
+  },
   limit: {
     urlparam: 'limit=99',
     checks: [{field: 'limit', operator: '=', value: '99'}],

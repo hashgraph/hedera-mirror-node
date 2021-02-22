@@ -103,7 +103,7 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
           parsedparams.push({
             field: matches[1],
             operator: 'in',
-            value: sqlparams[parseInt(matches[3].trim()[1]) - 1],
+            value: sqlparams[parseInt(es.trim()[1]) - 1],
           });
         });
       }
