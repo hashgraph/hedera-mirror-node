@@ -139,6 +139,12 @@ const flywayMigrate = () => {
 }
 `;
 
+  const cwd = process.cwd();
+  logger.info(`flywayConfigPath: ${flywayConfigPath}, cwd: ${cwd}`);
+  logger.info(`flywayConfig: ${flywayConfig}`);
+  fs.readdirSync(locations).forEach((file) => {
+    logger.info(`migrations: ${file}`);
+  });
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
 
