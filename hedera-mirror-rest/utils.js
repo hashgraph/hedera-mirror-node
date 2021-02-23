@@ -44,6 +44,8 @@ const opsMap = {
   ne: ' != ',
 };
 
+const queryParamMax = config.hasOwnProperty("queryParams") ? config.queryParams : {};
+
 /**
  * Check if the given number is numeric
  * @param {String} n Number to test
@@ -227,7 +229,7 @@ const validateReq = async (req) => {
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
-      if (config.queryParams.hasOwnProperty(key) && config.queryParams[key].max < req.query[key].length) {
+      if (queryParamMax.hasOwnProperty(key) && queryParamMax[key].max < req.query[key].length) {
         badParams.push(key);
         continue;
       }
