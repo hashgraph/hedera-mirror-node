@@ -77,7 +77,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
-    //    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
     public SubscriptionResponse subscribeToTopicAndRetrieveMessages(TopicMessageQuery topicMessageQuery,
                                                                     int numMessages,
                                                                     long latency) throws Throwable {

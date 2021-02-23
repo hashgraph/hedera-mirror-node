@@ -1,0 +1,102 @@
+package com.hedera.mirror.test.e2e.acceptance.client;
+
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import java.util.concurrent.TimeoutException;
+import lombok.Value;
+import lombok.extern.log4j.Log4j2;
+
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
+import com.hedera.hashgraph.sdk.ScheduleDeleteTransaction;
+import com.hedera.hashgraph.sdk.ScheduleId;
+import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
+import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+
+@Log4j2
+@Value
+public class ScheduleClient extends AbstractNetworkClient {
+
+    private static Hbar MAX_TRANSACTION_FEE = Hbar.fromTinybars(1_000_000_000);
+
+    public ScheduleClient(SDKClient sdkClient) {
+        super(sdkClient);
+        log.debug("Creating Schedule Client");
+    }
+
+    public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId,
+                                                     Transaction transaction, String memo, byte[] signature) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
+
+        log.debug("Create new schedule");
+        ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
+                .setAdminKey(payerAccountId.getPrivateKey())
+                .setTransactionMemo(memo)
+                .setPayerAccountId(payerAccountId.getAccountId())
+                .setTransaction(transaction);
+
+        if (signature != null) {
+            // add scheduled signature
+//            scheduleCreateTransaction.addSignature(payerAccountId.getPublicKey(), signature);
+        }
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(scheduleCreateTransaction, null);
+        ScheduleId scheduleId = networkTransactionResponse.getReceipt().scheduleId;
+        log.debug("Created new schedule {}", scheduleId);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId, byte[] signature,
+                                                   ScheduleId scheduleId) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
+
+        log.debug("Sign schedule {}", scheduleId);
+        ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
+                .setScheduleId(scheduleId)
+                .addScheduleSignature(expandedAccountId.getPublicKey(), signature);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(scheduleSignTransaction, expandedAccountId.getPrivateKey());
+        log.debug("Signed schedule {}", scheduleId);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
+
+        log.debug("Sign schedule {}", scheduleId);
+        ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
+                .setScheduleId(scheduleId);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction, null);
+        log.debug("Deleted schedule {}", scheduleId);
+
+        return networkTransactionResponse;
+    }
+}

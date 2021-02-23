@@ -77,15 +77,19 @@ public class AccountClient extends AbstractNetworkClient {
         return balance.toTinybars();
     }
 
+    public TransferTransaction getCryptoTransferTransaction(AccountId recipient, Hbar hbarAmount) {
+        return new TransferTransaction()
+                .addHbarTransfer(sdkClient.getOperatorId(), hbarAmount.negated())
+                .addHbarTransfer(recipient, hbarAmount)
+                .setTransactionMemo("transfer test");
+    }
+
     public TransactionReceipt sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
         log.debug("Send CryptoTransfer of {} tℏ from {} to {}", hbarAmount.toTinybars(), sdkClient
                 .getOperatorId(), recipient);
 
-        TransferTransaction cryptoTransferTransaction = new TransferTransaction()
-                .addHbarTransfer(sdkClient.getOperatorId(), hbarAmount.negated())
-                .addHbarTransfer(recipient, hbarAmount)
-                .setTransactionMemo("transfer test");
+        TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(recipient, hbarAmount);
 
         TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null)
                 .getReceipt();
