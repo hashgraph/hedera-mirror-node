@@ -28,7 +28,8 @@ beforeAll(async () => {
   jest.setTimeout(1000);
 });
 
-afterAll(() => {});
+afterAll(() => {
+});
 
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
@@ -224,11 +225,7 @@ const singletests = {
     urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
     checks: [
       {field: 'account_id', operator: 'in', value: '3333'},
-      {
-        field: 'account_id',
-        operator: 'in',
-        value: '3334',
-      },
+      {field: 'account_id', operator: 'in', value: '3334'},
     ],
     checkFunctions: [{func: validateAccNumRange, args: [3333, 3334]}],
   },
