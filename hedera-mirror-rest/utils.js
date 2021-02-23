@@ -295,47 +295,32 @@ const getIntegerParam = (param, limit = undefined) => {
   return '';
 };
 
+const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
+    (value) => {
+      return EntityId.fromString(value).getEncodedId();
+    },
+    (op, value) => {
+      return Array.isArray(value)
+        ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
+        : [`${columnName} ${op} ?`, [value]];
+    },
+    true
+  );
+};
+
 /**
  * Parse the query filer parameter
  * @param paramValues Value of the query param after parsing by ExpressJS
- * @param {Function} processOpAndValue function to compute partial sql clause and sql params using comparator and value
+ * @param {Function} processValue function to sql params using comparator and value
  *          in the query param.
+ * @param {Function} processOpAndValue function to compute partial sql clause using comparator and value
+ *          in the query param.
+ * @param {Boolean} allowMultiple whether the sql clause should build multiple = ops as an IN() clause
  * @return {Array} [query, params] Constructed SQL query fragment and corresponding values
  */
-const parseParams = (paramValues, processOpAndValue) => {
-  if (paramValues === undefined) {
-    return ['', []];
-  }
-  // We either have a single entry of account filter, or an array (multiple entries)
-  // Convert a single entry into an array to keep the processing consistent
-  if (!Array.isArray(paramValues)) {
-    paramValues = [paramValues];
-  }
-  const partialQueries = [];
-  let values = [];
-  // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
-  for (const paramValue of paramValues) {
-    const opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
-    if (opAndValue === null) {
-      continue;
-    }
-    const queryAndValues = processOpAndValue(opAndValue.op, opAndValue.value);
-    if (queryAndValues !== null) {
-      partialQueries.push(queryAndValues[0]);
-      values = values.concat(queryAndValues[1]);
-    }
-  }
-  return [partialQueries.join(' and '), values];
-};
-
-const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
-  return parseParamsAccountId(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], columnName, (op, value) => {
-    const accountId = EntityId.fromString(value);
-    return [`${columnName} ${op} ?`, [accountId.getEncodedId()]];
-  });
-};
-
-const parseParamsAccountId = (paramValues, columnName, processOpAndValue) => {
+const parseParams = (paramValues, processValue, processQuery, allowMultiple) => {
   if (paramValues === undefined) {
     return ['', []];
   }
@@ -353,10 +338,12 @@ const parseParamsAccountId = (paramValues, columnName, processOpAndValue) => {
     if (opAndValue === null) {
       continue;
     }
-    if (opAndValue.op === ' = ') {
-      equalValues.push(EntityId.fromString(opAndValue.value).getEncodedId());
+    const processedValue = processValue(opAndValue.value);
+    //Equal ops have to be processed in bulk at the end to format the IN() correctly.
+    if (opAndValue.op === ' = ' && allowMultiple) {
+      equalValues.push(processedValue);
     } else {
-      const queryAndValues = processOpAndValue(opAndValue.op, opAndValue.value);
+      const queryAndValues = processQuery(opAndValue.op, processedValue);
       if (queryAndValues !== null) {
         partialQueries.push(queryAndValues[0]);
         values = values.concat(queryAndValues[1]);
@@ -364,53 +351,82 @@ const parseParamsAccountId = (paramValues, columnName, processOpAndValue) => {
     }
   }
   if (equalValues.length !== 0) {
-    const partialEqualQueryStart = `${columnName} IN (?`.concat(', ?'.repeat(equalValues.length - 1)).concat(')');
-    partialQueries.push(partialEqualQueryStart);
-    values = values.concat(equalValues);
+    const queryAndValues = processQuery(` = `, equalValues);
+    partialQueries.push(queryAndValues[0]);
+    values = values.concat(queryAndValues[1]);
   }
 
   return [partialQueries.join(' and '), values];
 };
 
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.TIMESTAMP], (op, value) => {
-    return [`${columnName} ${op in opOverride ? opOverride[op] : op} ?`, [parseTimestampParam(value)]];
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.TIMESTAMP],
+    (value) => {
+      return parseTimestampParam(value);
+    },
+    (op, value) => {
+      return [`${columnName} ${op in opOverride ? opOverride[op] : op} ?`, [value]];
+    },
+    false
+  );
 };
 
 const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE], (op, value) => {
-    if (isNumeric(value)) {
-      return [`${columnName} ${op} ?`, [value]];
-    }
-    return null;
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE],
+    (value) => {
+      return value;
+    },
+    (op, value) => {
+      if (isNumeric(value)) {
+        return [`${columnName} ${op} ?`, [value]];
+      }
+      return null;
+    },
+    false
+  );
 };
 
 const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY], (op, value) => {
-    let key = value.toLowerCase();
-    // If the supplied key is DER encoded, decode it
-    const decodedKey = ed25519.derToEd25519(key);
-    if (decodedKey != null) {
-      key = decodedKey;
-    }
-    return [`${columnName} ${op} ?`, [key]];
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY],
+    (value) => {
+      let key = value.toLowerCase();
+      // If the supplied key is DER encoded, decode it
+      const decodedKey = ed25519.derToEd25519(key);
+      if (decodedKey != null) {
+        key = decodedKey;
+      }
+      return key;
+    },
+    (op, value) => {
+      return [`${columnName} ${op} ?`, [value]];
+    },
+    false
+  );
 };
 
 /**
  * Parse the type=[credit | debit | creditDebit] parameter
  */
 const parseCreditDebitParams = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.CREDIT_TYPE], (op, value) => {
-    if (value === 'credit') {
-      return [`${columnName} > 0`, []];
-    }
-    if (value === 'debit') {
-      return [`${columnName} < 0`, []];
-    }
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
+
+    (value) => {
+      return value;
+    },
+    (op, value) => {
+      if (value === 'credit') {
+        return [`${columnName} > 0`, []];
+      }
+      if (value === 'debit') {
+        return [`${columnName} < 0`, []];
+      }
+    },
+    false
+  );
 };
 
 /**
