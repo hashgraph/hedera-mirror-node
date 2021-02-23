@@ -74,11 +74,11 @@ const tokenIdMatchQuery = 'where token_id = $1';
  * Given top level select columns and filters from request query, extract filters and create final sql query with
  * appropriate where clauses.
  */
-const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, filters, extraConditions) => {
+const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
   // add filters
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.ASC;
-  const whereConditions = extraConditions || [];
+  conditions = conditions || [];
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
@@ -96,17 +96,15 @@ const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, fil
       continue;
     }
 
-    whereConditions.push(`${filterColumnMap[filter.key]}${filter.operator}$${nextParamCount++}`);
-    pgSqlParams.push(filter.value);
+    conditions.push(`${filterColumnMap[filter.key]}${filter.operator}$${params.push(filter.value)}`);
   }
 
-  const whereQuery = whereConditions.length !== 0 ? `where ${whereConditions.join(' and ')}` : '';
+  const whereQuery = conditions.length !== 0 ? `where ${conditions.join(' and ')}` : '';
   const orderQuery = `order by ${sqlQueryColumns.TOKEN_ID} ${order}`;
-  const limitQuery = `limit $${nextParamCount++}`;
-  pgSqlQuery = [pgSqlQuery, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
-  pgSqlParams.push(limit);
+  const limitQuery = `limit $${params.push(limit)}`;
+  query = [query, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
 
-  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
+  return utils.buildPgSqlObject(query, params, order, limit);
 };
 
 /**
@@ -153,7 +151,6 @@ const getTokensRequest = async (req, res) => {
   const extraConditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
   const getTokenSqlParams = [];
-  let nextParamCount = 1;
 
   // if account.id filter is present join on token_account and filter dissociated tokens
   const accountId = req.query[constants.filterKeys.ACCOUNT_ID];
@@ -161,7 +158,6 @@ const getTokensRequest = async (req, res) => {
     extraConditions.push('ta.associated is true');
     getTokensSqlQuery.push(accountIdJoinQuery);
     getTokenSqlParams.push(accountId);
-    nextParamCount++;
   }
 
   // add join with entities table to sql query
@@ -171,7 +167,6 @@ const getTokensRequest = async (req, res) => {
   const {query, params, order, limit} = extractSqlFromTokenRequest(
     getTokensSqlQuery.join('\n'),
     getTokenSqlParams,
-    nextParamCount,
     filters,
     extraConditions
   );
@@ -245,20 +240,19 @@ const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'
  * Extracts SQL query, params, order, and limit
  *
  * @param {EntityId} tokenId token ID object
- * @param {string} pgSqlQuery initial pg SQL query string
+ * @param {string} query initial pg SQL query string
  * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
-const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
+const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
   const {opsMap} = utils;
 
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.DESC;
   let joinEntityClause = '';
-  const whereConditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
-  let nextParamCount = 2;
-  const pgSqlParams = [tokenId.getEncodedId()];
-  const tsQueryWhereConditions = [];
+  const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
+  const params = [tokenId.getEncodedId()];
+  const tsQueryConditions = [];
 
   for (const filter of filters) {
     switch (filter.key) {
@@ -266,8 +260,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
         joinEntityClause = `join t_entities e
           on e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
           and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
-          and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${nextParamCount++}`;
-        pgSqlParams.push(filter.value);
+          and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -278,8 +271,8 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
       case constants.filterKeys.TIMESTAMP:
         // transform '=' operator for timestamp to '<='
         const op = filter.operator !== opsMap.eq ? filter.operator : opsMap.lte;
-        tsQueryWhereConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${nextParamCount++}`);
-        pgSqlParams.push(filter.value);
+        params.push(filter.value);
+        tsQueryConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${params.length}`);
         break;
       default:
         const columnKey = tokenBalancesFilterColumnMap[filter.key];
@@ -287,28 +280,25 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
           break;
         }
 
-        whereConditions.push(`${columnKey} ${filter.operator} $${nextParamCount++}`);
-        pgSqlParams.push(filter.value);
+        conditions.push(`${columnKey} ${filter.operator} $${params.push(filter.value)}`);
         break;
     }
   }
 
-  const tsQueryWhereClause = tsQueryWhereConditions.length !== 0 ? `where ${tsQueryWhereConditions.join(' and ')}` : '';
+  const tsQueryWhereClause = tsQueryConditions.length !== 0 ? `where ${tsQueryConditions.join(' and ')}` : '';
   const tsQuery = `select ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
     from token_balance tb
     ${tsQueryWhereClause}
     order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
     limit 1`;
-  whereConditions.push(`tb.consensus_timestamp = (${tsQuery})`);
+  conditions.push(`tb.consensus_timestamp = (${tsQuery})`);
 
-  const whereQuery = `where ${whereConditions.join('\nand ')}`;
+  const whereQuery = `where ${conditions.join('\nand ')}`;
   const orderQuery = `order by ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}`;
-  const limitQuery = `limit $${nextParamCount}`;
+  const limitQuery = `limit $${params.push(limit)}`;
+  query = [query, joinEntityClause, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
 
-  const query = [pgSqlQuery, joinEntityClause, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
-  pgSqlParams.push(limit);
-
-  return utils.buildPgSqlObject(query, pgSqlParams, order, limit);
+  return utils.buildPgSqlObject(query, params, order, limit);
 };
 
 const formatTokenBalanceRow = (row) => {
