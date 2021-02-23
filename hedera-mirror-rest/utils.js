@@ -227,7 +227,7 @@ const validateReq = async (req) => {
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
-      if (isRepeatedQueryParameerValidLength(req.query[key])) {
+      if (!isRepeatedQueryParameerValidLength(req.query[key])) {
         badParams.push(key);
         continue;
       }
