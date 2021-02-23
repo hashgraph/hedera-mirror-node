@@ -227,26 +227,31 @@ const validateReq = async (req) => {
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
-      if (!isRepeatedQueryParameerValidLength(req.query[key])) {
-        badParams.push(key);
+      if (!isRepeatedQueryParameterValidLength(req.query[key])) {
+        badParams.push({
+          code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
+          key: key,
+          count: req.query[key].length,
+          max: config.maxRepeatedQueryParameters
+        });
         continue;
       }
       for (const val of req.query[key]) {
         if (!(await paramValidityChecks(key, val))) {
-          badParams.push(key);
+          badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
         }
       }
     } else if (!(await paramValidityChecks(key, req.query[key]))) {
-      badParams.push(key);
+      badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
     }
   }
 
   if (badParams.length > 0) {
-    throw InvalidArgumentError.forParams(badParams);
+    throw InvalidArgumentError.forRequestValidation(badParams);
   }
 };
 
-const isRepeatedQueryParameerValidLength = (values => {
+const isRepeatedQueryParameterValidLength = (values => {
   return values.length <= config.maxRepeatedQueryParameters;
 })
 
@@ -326,7 +331,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
   const partialQueries = [];
   let values = [];
   // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
-  const equalValues = [];
+  const equalValues = new Set();
   for (const paramValue of paramValues) {
     const opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
     if (opAndValue === null) {
@@ -335,7 +340,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     const processedValue = processValue(opAndValue.value);
     //Equal ops have to be processed in bulk at the end to format the IN() correctly.
     if (opAndValue.op === opsMap.eq && allowMultiple) {
-      equalValues.push(processedValue);
+      equalValues.add(processedValue);
     } else {
       const queryAndValues = processQuery(opAndValue.op, processedValue);
       if (queryAndValues !== null) {
@@ -344,8 +349,8 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
       }
     }
   }
-  if (equalValues.length !== 0) {
-    const queryAndValues = processQuery(opsMap.eq, equalValues);
+  if (equalValues.size !== 0) {
+    const queryAndValues = processQuery(opsMap.eq, Array.from(equalValues));
     partialQueries.push(queryAndValues[0]);
     values = values.concat(queryAndValues[1]);
   }
@@ -879,7 +884,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
-  isRepeatedQueryParameerValidLength,
+  isRepeatedQueryParameterValidLength,
   isTestEnv,
   isValidEntityNum,
   isValidLimitNum,
