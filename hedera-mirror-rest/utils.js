@@ -302,21 +302,6 @@ const getIntegerParam = (param, limit = undefined) => {
   return '';
 };
 
-const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(
-    parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
-    (value) => {
-      return EntityId.fromString(value).getEncodedId();
-    },
-    (op, value) => {
-      return Array.isArray(value)
-        ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
-        : [`${columnName} ${op} ?`, [value]];
-    },
-    true
-  );
-};
-
 /**
  * Parse the query filer parameter
  * @param paramValues Value of the query param after parsing by ExpressJS
@@ -365,6 +350,22 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
 
   return [partialQueries.join(' and '), values];
 };
+
+const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
+    (value) => {
+      return EntityId.fromString(value).getEncodedId();
+    },
+    (op, value) => {
+      return Array.isArray(value)
+        ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
+        : [`${columnName} ${op} ?`, [value]];
+    },
+    true
+  );
+};
+
 
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
   return parseParams(
