@@ -307,7 +307,7 @@ const getIntegerParam = (param, limit = undefined) => {
 /**
  * Parse the query filer parameter
  * @param paramValues Value of the query param after parsing by ExpressJS
- * @param {Function} processValue function to sql params using comparator and value
+ * @param {Function} processValue function to extract sql params using comparator and value
  *          in the query param.
  * @param {Function} processOpAndValue function to compute partial sql clause using comparator and value
  *          in the query param.

@@ -27,7 +27,8 @@ beforeAll(async () => {
   jest.setTimeout(1000);
 });
 
-afterAll(() => {});
+afterAll(() => {
+});
 
 // Validation functions
 /**
@@ -180,11 +181,7 @@ const singletests = {
     urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
     checks: [
       {field: 'account_id', operator: 'in', value: '3333'},
-      {
-        field: 'account_id',
-        operator: 'in',
-        value: '3334',
-      },
+      {field: 'account_id', operator: 'in', value: '3334'},
     ],
     checkFunctions: [{func: validateAccNumRange, args: [3333, 3334]}],
   },
