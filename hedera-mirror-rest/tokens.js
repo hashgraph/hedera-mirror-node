@@ -49,7 +49,8 @@ const entityIdJoinQuery = 'join t_entities e on e.id = t.token_id';
 
 // token info sql queries
 const tokenInfoSelectFields = [
-  'symbol,token_id',
+  'symbol',
+  'token_id',
   'name',
   'decimals',
   'initial_supply',
@@ -148,14 +149,14 @@ const getTokensRequest = async (req, res) => {
   // validate filters
   await utils.validateAndParseFilters(filters);
 
-  const extraConditions = [];
+  const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
   const getTokenSqlParams = [];
 
   // if account.id filter is present join on token_account and filter dissociated tokens
   const accountId = req.query[constants.filterKeys.ACCOUNT_ID];
   if (accountId) {
-    extraConditions.push('ta.associated is true');
+    conditions.push('ta.associated is true');
     getTokensSqlQuery.push(accountIdJoinQuery);
     getTokenSqlParams.push(accountId);
   }
@@ -168,7 +169,7 @@ const getTokensRequest = async (req, res) => {
     getTokensSqlQuery.join('\n'),
     getTokenSqlParams,
     filters,
-    extraConditions
+    conditions
   );
 
   const rows = await getTokens(query, params);
