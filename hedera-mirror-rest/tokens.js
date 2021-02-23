@@ -158,7 +158,7 @@ const getTokensRequest = async (req, res) => {
   if (accountId) {
     conditions.push('ta.associated is true');
     getTokensSqlQuery.push(accountIdJoinQuery);
-    getTokenSqlParams.push(accountId);
+    getTokenSqlParams.push(EntityId.fromString(accountId).getEncodedId());
   }
 
   // add join with entities table to sql query
@@ -194,14 +194,7 @@ const getTokensRequest = async (req, res) => {
 };
 
 const getTokenInfoRequest = async (req, res) => {
-  let tokenId = req.params.id;
-
-  if (!utils.isValidEntityNum(tokenId)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
-  }
-
-  // ensure encoded format is used
-  tokenId = EntityId.fromString(tokenId).getEncodedId();
+  const tokenId = getEncodedTokenId(req.params.id);
 
   // concatenate queries to produce final sql query
   const pgSqlQuery = [tokenInfoSelectQuery, entityIdJoinQuery, tokenIdMatchQuery].join('\n');
@@ -240,7 +233,7 @@ const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'
 /**
  * Extracts SQL query, params, order, and limit
  *
- * @param {EntityId} tokenId token ID object
+ * @param {string} tokenId encoded token ID
  * @param {string} query initial pg SQL query string
  * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
@@ -252,7 +245,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
   let order = constants.orderFilterValues.DESC;
   let joinEntityClause = '';
   const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
-  const params = [tokenId.getEncodedId()];
+  const params = [tokenId];
   const tsQueryConditions = [];
 
   for (const filter of filters) {
@@ -309,6 +302,14 @@ const formatTokenBalanceRow = (row) => {
   };
 };
 
+const getEncodedTokenId = (tokenIdStr) => {
+  if (!utils.isValidEntityNum(tokenIdStr)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
+  }
+
+  return EntityId.fromString(tokenIdStr).getEncodedId();
+};
+
 /**
  * Handler function for /tokens/:id/balances API.
  *
@@ -316,13 +317,7 @@ const formatTokenBalanceRow = (row) => {
  * @param {Response} res HTTP response object
  */
 const getTokenBalances = async (req, res) => {
-  let tokenId;
-  try {
-    tokenId = EntityId.fromString(req.params.id);
-  } catch (err) {
-    throw InvalidArgumentError.forParams('tokenId');
-  }
-
+  const tokenId = getEncodedTokenId(req.params.id);
   const filters = utils.buildFilterObject(req.query);
   await utils.validateAndParseFilters(filters);
 
@@ -385,5 +380,6 @@ if (utils.isTestEnv()) {
     tokenBalancesSelectQuery,
     extractSqlFromTokenBalancesRequest,
     formatTokenBalanceRow,
+    getEncodedTokenId,
   });
 }

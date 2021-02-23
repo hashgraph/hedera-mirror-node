@@ -1,5 +1,5 @@
 {
-  "description": "Token api call for all tokens associated with a given account id",
+  "description": "Token api call for all tokens associated with a given account number",
   "setup": {
     "accounts": [
       {
@@ -76,7 +76,7 @@
       }
     ]
   },
-  "url": "/api/v1/tokens?account.id=0.0.2",
+  "url": "/api/v1/tokens?account.id=2",
   "responseStatus": 200,
   "responseJson": {
     "tokens": [
