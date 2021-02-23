@@ -70,7 +70,9 @@
       {
         "token_id": "0.23.45678",
         "account_id": "0.0.2",
-        "created_timestamp": "1234567890000000008"
+        "associated": false,
+        "created_timestamp": "1234567890000000008",
+        "modified_timestamp": "1234569990000000088"
       }
     ]
   },
@@ -81,11 +83,6 @@
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
-        "admin_key": null
-      },
-      {
-        "token_id": "0.23.45678",
-        "symbol": "HEDERACOIN",
         "admin_key": null
       }
     ],
