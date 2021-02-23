@@ -427,12 +427,7 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
       return value;
     },
     (op, value) => {
-      if (value === 'credit') {
-        return [`${columnName} > 0`, []];
-      }
-      if (value === 'debit') {
-        return [`${columnName} < 0`, []];
-      }
+      return value === 'credit' ? [`${columnName} > 0`, []] : [`${columnName} < 0`, []];
     },
     false
   );
