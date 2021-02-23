@@ -44,7 +44,7 @@ const opsMap = {
   ne: ' != ',
 };
 
-const queryParamMax = config.hasOwnProperty("queryParams") ? config.queryParams : {};
+const queryParamMax = config.hasOwnProperty("queryParams") ? new Map(config.queryParams.map(obj => [obj.name, obj.max])) : new Map;
 
 /**
  * Check if the given number is numeric
@@ -229,7 +229,7 @@ const validateReq = async (req) => {
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
-      if (queryParamMax.hasOwnProperty(key) && queryParamMax[key].max < req.query[key].length) {
+      if (queryParamMax.has(key) && queryParamMax.get(key) < req.query[key].length) {
         badParams.push(key);
         continue;
       }
@@ -332,7 +332,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     }
     const processedValue = processValue(opAndValue.value);
     //Equal ops have to be processed in bulk at the end to format the IN() correctly.
-    if (opAndValue.op === ' = ' && allowMultiple) {
+    if (opAndValue.op === opsMap.eq && allowMultiple) {
       equalValues.push(processedValue);
     } else {
       const queryAndValues = processQuery(opAndValue.op, processedValue);
@@ -343,7 +343,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     }
   }
   if (equalValues.length !== 0) {
-    const queryAndValues = processQuery(` = `, equalValues);
+    const queryAndValues = processQuery(opsMap.eq, equalValues);
     partialQueries.push(queryAndValues[0]);
     values = values.concat(queryAndValues[1]);
   }
@@ -421,7 +421,6 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
 const parseCreditDebitParams = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
-
     (value) => {
       return value;
     },
@@ -918,4 +917,5 @@ module.exports = {
   validateReq,
   parseTokenBalances,
   opsMap,
+  queryParamMax,
 };

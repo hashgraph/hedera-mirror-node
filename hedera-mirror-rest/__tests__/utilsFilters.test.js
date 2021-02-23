@@ -345,7 +345,7 @@ describe('utils validateAndParseFilters entity key tests', () => {
       utils.buildComparatorFilter(key, 'lt:-1'),
       // invalid format
       utils.buildComparatorFilter(key, 'lt:0.1.23456789012345'),
-      utils.buildMultipleComparatorFilter(constants.filterKeys.ACCOUNT_ID, '0.0.3', config.queryParams[constants.filterKeys.ACCOUNT_ID].max + 1),
+      utils.buildMultipleComparatorFilter(constants.filterKeys.ACCOUNT_ID, '0.0.3', utils.queryParamMax.get(constants.filterKeys.ACCOUNT_ID) + 1),
     ];
 
     const filters = [
