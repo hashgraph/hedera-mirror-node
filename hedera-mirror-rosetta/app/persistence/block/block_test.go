@@ -38,17 +38,18 @@ var (
 	countColumns                                    = []string{"count"}
 	expectedSkippedRecordFiles                      = int64(123)
 	expectedLatestConsensusTimeStampAccountBalances = int64(42)
-	selectRecordFileColumns                         = []string{"hash", "consensus_start", "consensus_end", "prev_hash", "block_index"}
+	index                                           = int64(1)
+	selectRecordFileColumns                         = []string{"hash", "consensus_start", "consensus_end", "index", "prev_hash"}
 	recordFileColumns                               = mocks.GetFieldsNamesToSnakeCase(recordFile{})
 	dbRecordFile                                    = &recordFile{
-		Hash:           "0x12345",
-		PrevHash:       "0x23456",
 		ConsensusStart: 1,
 		ConsensusEnd:   2,
-		BlockIndex:     1,
+		Hash:           "0x12345",
+		Index:          index + expectedSkippedRecordFiles,
+		PrevHash:       "0x23456",
 	}
 	expectedBlock = &types.Block{
-		Index:               dbRecordFile.BlockIndex,
+		Index:               index,
 		Hash:                dbRecordFile.Hash,
 		ConsensusStartNanos: dbRecordFile.ConsensusStart,
 		ConsensusEndNanos:   dbRecordFile.ConsensusEnd,
@@ -65,13 +66,13 @@ func TestShouldSuccessFindByIndex(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
-		WithArgs(dbRecordFile.BlockIndex + expectedSkippedRecordFiles).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
+		WithArgs(dbRecordFile.Index).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
 			AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
 	// when
-	result, err := br.FindByIndex(dbRecordFile.BlockIndex)
+	result, err := br.FindByIndex(index)
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -88,7 +89,7 @@ func TestShouldFailFindByIndexNoRecordFile(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
 		WillReturnError(gorm.ErrRecordNotFound)
 
 	// when
@@ -122,6 +123,9 @@ func TestShouldFailFindByHashNoAccountBalances(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
+	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
+		WithArgs(dbRecordFile.Hash).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
 
@@ -139,14 +143,13 @@ func TestShouldSuccessFindByHash(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
+	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
+		WithArgs(dbRecordFile.Hash).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash, expectedSkippedRecordFiles).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
 	// when
 	result, err := br.FindByHash(dbRecordFile.Hash)
@@ -162,6 +165,9 @@ func TestShouldFailFindByIdentifierNoAccountBalances(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
+	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
+		WithArgs(dbRecordFile.Hash).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
 
@@ -179,16 +185,16 @@ func TestShouldSuccessFindByIdentifier(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
+	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
+		WithArgs(dbRecordFile.Hash).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash, expectedSkippedRecordFiles).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
 	// when
-	result, err := br.FindByIdentifier(dbRecordFile.BlockIndex, dbRecordFile.Hash)
+	result, err := br.FindByIdentifier(index, dbRecordFile.Hash)
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -199,23 +205,23 @@ func TestShouldSuccessFindByIdentifier(t *testing.T) {
 func TestShouldFailFindByIdentifierMismatchIndices(t *testing.T) {
 	// given
 	mismatchingRecordFileIndex := &recordFile{
-		BlockIndex: dbRecordFile.BlockIndex + 1,
-		Hash:       "0x12345",
+		Index: dbRecordFile.Index + 1,
+		Hash:  "0x12345",
 	}
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
+	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
+		WithArgs(dbRecordFile.Hash).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).
+			AddRow(mocks.GetFieldsValuesAsDriverValue(mismatchingRecordFileIndex)...))
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash, expectedSkippedRecordFiles).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(mismatchingRecordFileIndex)...))
 
 	// when
-	result, err := br.FindByIdentifier(dbRecordFile.BlockIndex, dbRecordFile.Hash)
+	result, err := br.FindByIdentifier(index, dbRecordFile.Hash)
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -239,7 +245,7 @@ func TestShouldSuccessRetrieveGenesis(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
 		WithArgs(expectedSkippedRecordFiles).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
 			AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
@@ -262,7 +268,7 @@ func TestShouldFailRetrieveGenesisNoRecordFile(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectFirstRecordFileOrderedByConsensusEndWithOffset)).
+	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
 		WillReturnError(gorm.ErrRecordNotFound)
 
 	// when
@@ -297,20 +303,18 @@ func TestShouldSuccessRetrieveLatest(t *testing.T) {
 		dbRecordFile.Hash,
 		dbRecordFile.ConsensusStart,
 		dbRecordFile.ConsensusEnd,
+		dbRecordFile.Index,
 		dbRecordFile.PrevHash,
-		dbRecordFile.BlockIndex,
 	}
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
+	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
+		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
-		WithArgs(expectedSkippedRecordFiles).
-		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
 
 	// when
 	result, err := br.RetrieveLatest()
@@ -327,19 +331,13 @@ func TestShouldFailRetrieveLatestRecordFileHashIsEmpty(t *testing.T) {
 		"",
 		dbRecordFile.ConsensusStart,
 		dbRecordFile.ConsensusEnd,
+		dbRecordFile.Index,
 		dbRecordFile.PrevHash,
-		dbRecordFile.BlockIndex,
 	}
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
-		WithArgs(expectedSkippedRecordFiles).
 		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
 
 	// when
@@ -356,13 +354,7 @@ func TestShouldFailRetrieveLatestRecordFileNotFound(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
-		WithArgs(expectedSkippedRecordFiles).
 		WillReturnError(gorm.ErrRecordNotFound)
 
 	// when
@@ -376,9 +368,18 @@ func TestShouldFailRetrieveLatestRecordFileNotFound(t *testing.T) {
 
 func TestShouldFailRetrieveLatestNoAccountBalances(t *testing.T) {
 	// given
+	dbSelectRecordFile := []driver.Value{
+		dbRecordFile.Hash,
+		dbRecordFile.ConsensusStart,
+		dbRecordFile.ConsensusEnd,
+		dbRecordFile.Index,
+		dbRecordFile.PrevHash,
+	}
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
+	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
+		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
 
@@ -391,39 +392,17 @@ func TestShouldFailRetrieveLatestNoAccountBalances(t *testing.T) {
 	assert.Nil(t, result)
 }
 
-func TestShouldFailFindRecordFileByHashNoAccountBalances(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
-
-	// when
-	result, err := br.findRecordFileByHash(dbRecordFile.Hash)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
-	assert.Nil(t, result)
-}
-
 func TestShouldFailFindRecordFileByHashNegativeBlockIndex(t *testing.T) {
 	// given
 	invalidRecordFile := &recordFile{
-		BlockIndex: -1,
+		Index: -1,
 	}
 
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash, expectedSkippedRecordFiles).
+		WithArgs(dbRecordFile.Hash).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(invalidRecordFile)...))
 
 	// when
@@ -442,13 +421,8 @@ func TestShouldFailFindRecordFileByHashFileHashIsEmpty(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash, expectedSkippedRecordFiles).
+		WithArgs(dbRecordFile.Hash).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(invalidRecordFile)...))
 
 	// when
@@ -465,13 +439,8 @@ func TestShouldSuccessFindRecordFileByHash(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash, expectedSkippedRecordFiles).
+		WithArgs(dbRecordFile.Hash).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
 	// when
@@ -488,13 +457,8 @@ func TestShouldFailFindRecordFileByHashNoRecordFound(t *testing.T) {
 	br, mock := setupRepository(t)
 	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash, expectedSkippedRecordFiles).
+		WithArgs(dbRecordFile.Hash).
 		WillReturnError(gorm.ErrRecordNotFound)
 
 	// when
@@ -508,28 +472,33 @@ func TestShouldFailFindRecordFileByHashNoRecordFound(t *testing.T) {
 
 func TestShouldSuccessConstructBlockResponse(t *testing.T) {
 	// given
-	blockIndex := int64(1)
 	rf := &recordFile{
-		Hash:           "0x123",
-		PrevHash:       "0x234",
+		Index:          dbRecordFile.Index,
 		ConsensusStart: 1,
 		ConsensusEnd:   2,
+		Hash:           "0x123",
+		PrevHash:       "0x234",
 	}
 	expectedBlock := &types.Block{
-		Index:               blockIndex,
-		Hash:                "0x123",
 		ConsensusStartNanos: 1,
 		ConsensusEndNanos:   2,
-		ParentIndex:         blockIndex - 1,
+		Hash:                "0x123",
+		Index:               index,
 		ParentHash:          "0x234",
+		ParentIndex:         index - 1,
 	}
 
-	br, _ := setupRepository(t)
+	br, mock := setupRepository(t)
+	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
+		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
+	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
+		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 
 	// when
-	result := br.constructBlockResponse(rf, blockIndex)
+	result, err := br.constructBlockResponse(rf)
 
 	// then
+	assert.Nil(t, err)
 	assert.Equal(t, expectedBlock, result)
 }
 
@@ -537,6 +506,7 @@ func TestShouldSuccessConstructBlockResponseQueryingFirstBlock(t *testing.T) {
 	// given
 	blockIndex := int64(0)
 	rf := &recordFile{
+		Index:          expectedSkippedRecordFiles,
 		Hash:           "0x123",
 		PrevHash:       "0x234",
 		ConsensusStart: 1,
@@ -551,12 +521,17 @@ func TestShouldSuccessConstructBlockResponseQueryingFirstBlock(t *testing.T) {
 		ParentHash:          "0x123",
 	}
 
-	br, _ := setupRepository(t)
+	br, mock := setupRepository(t)
+	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
+		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
+	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
+		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 
 	// when
-	result := br.constructBlockResponse(rf, blockIndex)
+	result, err := br.constructBlockResponse(rf)
 
 	// then
+	assert.Nil(t, err)
 	assert.Equal(t, expectedBlock, result)
 }
 
@@ -567,7 +542,6 @@ func TestShouldSuccessGetRecordFilesStartingIndexRepeatedly(t *testing.T) {
 
 	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-
 	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
 		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 

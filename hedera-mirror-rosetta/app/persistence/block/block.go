@@ -35,50 +35,38 @@ const (
 )
 
 const (
-	// selectLatestWithIndex - Selects row which hash is equal to the last processed record hash
-	// and adds additional information about the position of that row using count (counts only loaded record files).
-	// The information about the position is used as Block Index
-	selectLatestWithIndex string = `SELECT rd.consensus_start,
-                                           rd.consensus_end,
-                                           rd.hash,
-                                           rd.prev_hash,
-                                           rd.version,
-                                           rcd_index.block_index
-                                    FROM   (SELECT *
-                                            FROM   record_file
-                                            WHERE  hash = (SELECT status_value FROM t_application_status
-                                                                WHERE status_code = 'LAST_PROCESSED_RECORD_HASH')) AS rd,
-                                           (SELECT COUNT(*) - 1 - $1 AS block_index
-                                            FROM   record_file
-                                            WHERE  load_end IS NOT NULL) AS rcd_index`
+	// selectLatestWithIndex - Selects the latest row
+	selectLatestWithIndex string = `SELECT consensus_start,
+                                           consensus_end,
+                                           hash,
+                                           index,
+                                           prev_hash
+                                    FROM record_file
+                                    ORDER BY consensus_end DESC
+                                    LIMIT 1`
 
-	// selectByHashWithIndex - Selects the row which is loaded by a given hash
-	// and adds additional info about the position of that row using count.
-	// The information about the position is used as Block Index
-	selectByHashWithIndex string = `SELECT rd.hash,
-                                           rd.consensus_start,
-                                           rd.consensus_end,
-                                           rd.prev_hash,
-                                           rcd.block_index
-                                    FROM   (SELECT *
-                                            FROM   record_file
-                                            WHERE  hash = $1 AND load_end IS NOT NULL) AS rd,
-                                           (SELECT COUNT(*) - 1 - $2 AS block_index
-                                            FROM   record_file
-                                            WHERE  consensus_end <= (SELECT consensus_end
-                                                                     FROM   record_file
-                                                                     WHERE  hash = $1)) AS rcd`
+	// selectByHashWithIndex - Selects the row by given hash
+	selectByHashWithIndex string = `SELECT consensus_start,
+                                           consensus_end,
+                                           hash,
+                                           index,
+                                           prev_hash
+                                    FROM record_file
+                                    WHERE hash = $1`
+
 	// selectSkippedRecordFilesCount - Selects the count of rows from the record_file table,
 	// where each one's consensus_end is before the MIN consensus_timestamp of account_balance table (the first one added).
 	// This way, record files before that timestamp are considered non-existent,
 	// and the first record_file (block) will be considered equal or bigger
 	// than the consensus_timestamp of the first account_balance
-	selectSkippedRecordFilesCount string = `SELECT COUNT(*)
+	selectSkippedRecordFilesCount string = `SELECT index + 1
                                             FROM record_file
                                             WHERE consensus_end <= (SELECT consensus_timestamp
                                                                     FROM account_balance_file
                                                                     ORDER BY consensus_timestamp ASC
-                                                                    LIMIT 1)`
+                                                                    LIMIT 1)
+                                            ORDER BY consensus_end DESC
+                                            LIMIT 1`
 
 	// selectLatestConsensusTimestampAccountBalances - Selects the latest consensus_timestamp from account_balance table
 	selectLatestConsensusTimestampAccountBalances string = `SELECT consensus_timestamp
@@ -86,18 +74,19 @@ const (
                                                             ORDER BY consensus_timestamp DESC
                                                             LIMIT 1`
 
-	// selectFirstRecordFileOrderedByConsensusEndWithOffset - Selects the first record_file
-	// ordered by consensus_end and given offset
-	selectFirstRecordFileOrderedByConsensusEndWithOffset string = `SELECT * FROM record_file
-                                                                   ORDER BY consensus_end ASC
-                                                                   LIMIT 1
-                                                                   OFFSET $1`
+	// selectRecordFileByIndex - Selects the record_file by its index
+	selectRecordFileByIndex string = `SELECT consensus_start,
+                                             consensus_end,
+                                             hash,
+                                             index,
+                                             prev_hash
+                                      FROM record_file
+                                      WHERE index = $1`
 )
 
 type recordFile struct {
-	BlockIndex       int64  `gorm:"type:bigint"`
 	ConsensusStart   int64  `gorm:"type:bigint"`
-	ConsensusEnd     int64  `gorm:"type:bigint"`
+	ConsensusEnd     int64  `gorm:"type:bigint;primary_key"`
 	Count            int64  `gorm:"type:bigint"`
 	DigestAlgorithm  int    `gorm:"type:int"`
 	FileHash         string `gorm:"size:96"`
@@ -105,7 +94,7 @@ type recordFile struct {
 	HapiVersionMinor int    `gorm:"type:int"`
 	HapiVersionPatch int    `gorm:"type:int"`
 	Hash             string `gorm:"size:96"`
-	ID               int64  `gorm:"type:bigint;primary_key"`
+	Index            int64  `gorm:"type:bigint"`
 	LoadEnd          int64  `gorm:"type:bigint"`
 	LoadStart        int64  `gorm:"type:bigint"`
 	Name             string `gorm:"size:250"`
@@ -139,11 +128,11 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectFirstRecordFileOrderedByConsensusEndWithOffset, index+startingIndex).Find(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectRecordFileByIndex, index + startingIndex).Find(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
-	return br.constructBlockResponse(rf, index), nil
+	return br.constructBlockResponse(rf)
 }
 
 // FindByHash retrieves a block by a given Hash
@@ -153,7 +142,7 @@ func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error)
 		return nil, err
 	}
 
-	return br.constructBlockResponse(rf, rf.BlockIndex), nil
+	return br.constructBlockResponse(rf)
 }
 
 // FindByIdentifier retrieves a block by Index && Hash
@@ -162,10 +151,17 @@ func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 	if err != nil {
 		return nil, err
 	}
-	if rf.BlockIndex != index {
+
+	block, err := br.constructBlockResponse(rf)
+	if err != nil {
+		return nil, err
+	}
+
+	if block.Index != index {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
-	return br.constructBlockResponse(rf, index), nil
+
+	return block, nil
 }
 
 // RetrieveGenesis retrieves the genesis block
@@ -176,7 +172,7 @@ func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectFirstRecordFileOrderedByConsensusEndWithOffset, startingIndex).Find(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectRecordFileByIndex, startingIndex).Find(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -190,43 +186,39 @@ func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 
 // RetrieveLatest retrieves the latest block
 func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
-	startingIndex, err := br.getRecordFilesStartingIndex()
-	if err != nil {
-		return nil, err
-	}
-
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectLatestWithIndex, startingIndex).Scan(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectLatestWithIndex).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 	if rf.Hash == "" {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
-	return br.constructBlockResponse(rf, rf.BlockIndex), nil
+	return br.constructBlockResponse(rf)
 }
 
 func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTypes.Error) {
-	startingIndex, err := br.getRecordFilesStartingIndex()
-	if err != nil {
-		return nil, err
-	}
-
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectByHashWithIndex, hash, startingIndex).Scan(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectByHashWithIndex, hash).Scan(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
-	if rf.BlockIndex < 0 || rf.Hash == "" {
+	if rf.Index < 0 || rf.Hash == "" {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
 	return rf, nil
 }
 
-// constructBlockResponse returns the constructed Block. Takes into account genesis block. Block index is passed separately due to FindByIndex
-func (br *BlockRepository) constructBlockResponse(rf *recordFile, blockIndex int64) *types.Block {
-	parentIndex := blockIndex - 1
+// constructBlockResponse returns the constructed Block
+func (br *BlockRepository) constructBlockResponse(rf *recordFile) (*types.Block, *rTypes.Error) {
+	startingIndex, err := br.getRecordFilesStartingIndex()
+	if err != nil {
+		return nil, err
+	}
+
+	index := rf.Index - startingIndex
+	parentIndex := index - 1
 	parentHash := rf.PrevHash
 
 	// Handle the edge case for querying first block
@@ -235,13 +227,13 @@ func (br *BlockRepository) constructBlockResponse(rf *recordFile, blockIndex int
 		parentHash = rf.Hash // Parent hash should be same as current block hash
 	}
 	return &types.Block{
-		Index:               blockIndex,
+		Index:               index,
 		Hash:                rf.Hash,
 		ParentIndex:         parentIndex,
 		ParentHash:          parentHash,
 		ConsensusStartNanos: rf.ConsensusStart,
 		ConsensusEndNanos:   rf.ConsensusEnd,
-	}
+	}, nil
 }
 
 func (br *BlockRepository) getRecordFilesStartingIndex() (int64, *rTypes.Error) {

@@ -28,9 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.SecureRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,8 +60,8 @@ class CompositeSignatureFileReaderTest {
         byte[] versionNumber = {SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH};
         byte[] randomExtraBytes = new byte[3];
         SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
-        InputStream inputStream = getInputStream(Bytes.concat(versionNumber, randomExtraBytes));
-        StreamFileData streamFileData = new StreamFileData("fileV2", inputStream);
+        byte[] bytes = Bytes.concat(versionNumber, randomExtraBytes);
+        StreamFileData streamFileData = new StreamFileData("fileV2", bytes);
         compositeBalanceFileReader.read(streamFileData);
         verify(signatureFileReaderV2, times(1)).read(any(StreamFileData.class));
         verify(signatureFileReaderV5, times(0)).read(any(StreamFileData.class));
@@ -74,8 +72,8 @@ class CompositeSignatureFileReaderTest {
         byte[] versionNumber = {SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION};
         byte[] randomExtraBytes = new byte[3];
         SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
-        InputStream inputStream = getInputStream(Bytes.concat(versionNumber, randomExtraBytes));
-        StreamFileData streamFileData = new StreamFileData("fileV5", inputStream);
+        byte[] bytes = Bytes.concat(versionNumber, randomExtraBytes);
+        StreamFileData streamFileData = new StreamFileData("fileV5", bytes);
         compositeBalanceFileReader.read(streamFileData);
         verify(signatureFileReaderV5, times(1)).read(any(StreamFileData.class));
         verify(signatureFileReaderV2, times(0)).read(any(StreamFileData.class));
@@ -83,7 +81,7 @@ class CompositeSignatureFileReaderTest {
 
     @Test
     void testBlankFile() {
-        StreamFileData blankFileData = new StreamFileData("blankFile", getInputStream(new byte[0]));
+        StreamFileData blankFileData = new StreamFileData("blankFile", new byte[0]);
         SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
             compositeBalanceFileReader.read(blankFileData);
         });
@@ -96,15 +94,10 @@ class CompositeSignatureFileReaderTest {
     @Test
     void testInvalidFileVersion() {
         byte[] invalidVersionNumber = {12};
-        InputStream inputStream = getInputStream(invalidVersionNumber);
-        StreamFileData invalidFileData = new StreamFileData("invalidVersionFile", inputStream);
+        StreamFileData invalidFileData = new StreamFileData("invalidVersionFile", invalidVersionNumber);
         SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
             compositeBalanceFileReader.read(invalidFileData);
         });
         assertTrue(exception.getMessage().contains("Unsupported signature file version: " + invalidVersionNumber[0]));
-    }
-
-    private InputStream getInputStream(byte[] bytes) {
-        return new ByteArrayInputStream(bytes);
     }
 }

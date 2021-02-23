@@ -21,35 +21,33 @@ package com.hedera.mirror.importer.downloader.event;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.File;
 import javax.inject.Named;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.StreamFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
+import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @Named
-public class EventFileDownloader extends Downloader {
-
-    private final EventFileReader eventFileReader;
+public class EventFileDownloader extends Downloader<EventFile> {
 
     public EventFileDownloader(
-            S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-            AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
-            TransactionTemplate transactionTemplate, MeterRegistry meterRegistry, EventFileReader eventFileReader,
-            NodeSignatureVerifier nodeSignatureVerifier, SignatureFileReader signatureFileReader) {
-        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, transactionTemplate,
-                meterRegistry, nodeSignatureVerifier, signatureFileReader);
-        this.eventFileReader = eventFileReader;
+            S3AsyncClient s3Client, AddressBookService addressBookService,
+            EventDownloaderProperties downloaderProperties,
+            MeterRegistry meterRegistry, EventFileReader eventFileReader,
+            NodeSignatureVerifier nodeSignatureVerifier, SignatureFileReader signatureFileReader,
+            StreamFileNotifier streamFileNotifier,
+            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+        super(s3Client, addressBookService, downloaderProperties, meterRegistry,
+                nodeSignatureVerifier, signatureFileReader, eventFileReader, streamFileNotifier,
+                mirrorDateRangePropertiesProcessor);
     }
 
     @Override
@@ -57,21 +55,5 @@ public class EventFileDownloader extends Downloader {
     @Scheduled(fixedDelayString = "${hedera.mirror.downloader.event.frequency:5000}")
     public void download() {
         downloadNextBatch();
-    }
-
-    /**
-     * Reads the event file.
-     *
-     * @param file event file object
-     * @return StreamFile object
-     */
-    @Override
-    protected StreamFile readStreamFile(File file) {
-        return eventFileReader.read(StreamFileData.from(file));
-    }
-
-    @Override
-    protected void saveStreamFileRecord(StreamFile streamFile) {
-        // no-op, save the EventFile record to db when event parser is implemented
     }
 }

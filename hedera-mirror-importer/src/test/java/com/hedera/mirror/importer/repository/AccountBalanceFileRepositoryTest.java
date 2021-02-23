@@ -22,31 +22,40 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
-
+import java.util.List;
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
 
+    @Resource
+    private AccountBalanceFileRepository accountBalanceFileRepository;
+
+    private long count = 0;
+
     @Test
-    void insert() {
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder()
-                .consensusTimestamp(1598810507023456789L)
-                .count(0L)
-                .fileHash("fileHash")
-                .loadEnd(0L)
-                .loadStart(0L)
-                .name("2019-08-30T18_15_00.016002001Z_Balances.csv")
-                .nodeAccountId(nodeAccountId)
+    void findLatest() {
+        AccountBalanceFile accountBalanceFile1 = accountBalanceFile();
+        AccountBalanceFile accountBalanceFile2 = accountBalanceFile();
+        AccountBalanceFile accountBalanceFile3 = accountBalanceFile();
+        accountBalanceFileRepository.saveAll(List.of(accountBalanceFile1, accountBalanceFile2, accountBalanceFile3));
+        assertThat(accountBalanceFileRepository.findLatest()).get().isEqualTo(accountBalanceFile3);
+    }
+
+    private AccountBalanceFile accountBalanceFile() {
+        long id = ++count;
+        return AccountBalanceFile.builder()
+                .consensusTimestamp(id)
+                .count(id)
+                .fileHash("fileHash" + id)
+                .loadEnd(id)
+                .loadStart(id)
+                .name(id + ".csv")
+                .nodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT))
                 .build();
-        accountBalanceFile = accountBalanceFileRepository.save(accountBalanceFile);
-        assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()).get())
-                .isNotNull()
-                .isEqualTo(accountBalanceFile);
     }
 }

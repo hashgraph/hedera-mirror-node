@@ -20,9 +20,14 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 
-public interface AccountBalanceFileRepository extends CrudRepository<AccountBalanceFile, Long> {
+public interface AccountBalanceFileRepository extends StreamFileRepository<AccountBalanceFile, Long> {
+
+    @Override
+    @Query(value = "select * from account_balance_file order by consensus_timestamp desc limit 1", nativeQuery = true)
+    Optional<AccountBalanceFile> findLatest();
 }

@@ -29,23 +29,23 @@ import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
-import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
+import com.hedera.hashgraph.sdk.SubscriptionHandle;
+import com.hedera.hashgraph.sdk.TopicMessage;
 
 @Data
 @Log4j2
 public class SubscriptionResponse {
-    private MirrorSubscriptionHandle subscription;
-    private List<MirrorHCSResponse> messages = new ArrayList<>();
+    private SubscriptionHandle subscription;
+    private List<MirrorHCSResponse> mirrorHCSResponses = new ArrayList<>();
     private Stopwatch elapsedTime;
     private Throwable responseError;
 
-    public void handleMirrorConsensusTopicResponse(MirrorConsensusTopicResponse topicResponse) {
-        messages.add(new SubscriptionResponse.MirrorHCSResponse(topicResponse, Instant.now()));
-        String messageAsString = new String(topicResponse.message, StandardCharsets.UTF_8);
+    public void handleConsensusTopicResponse(TopicMessage topicMessage) {
+        mirrorHCSResponses.add(new SubscriptionResponse.MirrorHCSResponse(topicMessage, Instant.now()));
+        String messageAsString = new String(topicMessage.contents, StandardCharsets.UTF_8);
         log.trace("Received message: " + messageAsString
-                + " consensus timestamp: " + topicResponse.consensusTimestamp
-                + " topic sequence number: " + topicResponse.sequenceNumber);
+                + " consensus timestamp: " + topicMessage.consensusTimestamp
+                + " topic sequence number: " + topicMessage.sequenceNumber);
     }
 
     public void handleThrowable(Throwable err) {
@@ -59,51 +59,52 @@ public class SubscriptionResponse {
 
     public void validateReceivedMessages() throws Exception {
         int invalidMessages = 0;
-        MirrorConsensusTopicResponse lastMirrorConsensusTopicResponse = null;
-        for (MirrorHCSResponse mirrorHCSResponseResponse : messages) {
-            MirrorConsensusTopicResponse mirrorConsensusTopicResponse = mirrorHCSResponseResponse
-                    .getMirrorConsensusTopicResponse();
+        TopicMessage lastTopicMessage = null;
+        for (MirrorHCSResponse mirrorHCSResponseResponse : mirrorHCSResponses) {
+            TopicMessage topicMessage = mirrorHCSResponseResponse
+                    .getTopicMessage();
 
-            Instant publishInstant = Instant.ofEpochMilli(Longs.fromByteArray(mirrorConsensusTopicResponse.message));
+            Instant publishInstant = Instant
+                    .ofEpochMilli(Longs.fromByteArray(topicMessage.contents));
 
             long publishSeconds = publishInstant.getEpochSecond();
-            long consensusSeconds = mirrorConsensusTopicResponse.consensusTimestamp.getEpochSecond();
+            long consensusSeconds = topicMessage.consensusTimestamp.getEpochSecond();
             long receiptSeconds = mirrorHCSResponseResponse.getReceivedInstant().getEpochSecond();
             long e2eSeconds = receiptSeconds - publishSeconds;
             long consensusToDelivery = receiptSeconds - consensusSeconds;
             log.trace("Observed message, e2eSeconds: {}s, consensusToDelivery: {}s, publish timestamp: {}, " +
                             "consensus timestamp: {}, receipt time: {}, topic sequence number: {}",
-                    e2eSeconds, consensusToDelivery, publishInstant, mirrorConsensusTopicResponse.consensusTimestamp,
-                    mirrorHCSResponseResponse.getReceivedInstant(), mirrorConsensusTopicResponse.sequenceNumber);
+                    e2eSeconds, consensusToDelivery, publishInstant, topicMessage.consensusTimestamp,
+                    mirrorHCSResponseResponse.getReceivedInstant(), topicMessage.sequenceNumber);
 
-            if (!validateResponse(lastMirrorConsensusTopicResponse, mirrorConsensusTopicResponse)) {
+            if (!validateResponse(lastTopicMessage, topicMessage)) {
                 invalidMessages++;
             }
 
-            lastMirrorConsensusTopicResponse = mirrorConsensusTopicResponse;
+            lastTopicMessage = topicMessage;
         }
 
         if (invalidMessages > 0) {
             throw new Exception("Retrieved {} invalid messages in response");
         }
 
-        log.info("{} messages were successfully validated", messages.size());
+        log.info("{} messages were successfully validated", mirrorHCSResponses.size());
     }
 
-    public boolean validateResponse(MirrorConsensusTopicResponse previousResponse,
-                                    MirrorConsensusTopicResponse currentResponse) {
+    public boolean validateResponse(TopicMessage previousTopicMessage,
+                                    TopicMessage currentTopicMessage) {
         boolean validResponse = true;
 
-        if (previousResponse != null && currentResponse != null) {
-            if (previousResponse.consensusTimestamp.isAfter(currentResponse.consensusTimestamp)) {
+        if (previousTopicMessage != null && currentTopicMessage != null) {
+            if (previousTopicMessage.consensusTimestamp.isAfter(currentTopicMessage.consensusTimestamp)) {
                 log.error("Previous message {}, has a timestamp greater than current message {}",
-                        previousResponse.consensusTimestamp, currentResponse.consensusTimestamp);
+                        previousTopicMessage.consensusTimestamp, currentTopicMessage.consensusTimestamp);
                 validResponse = false;
             }
 
-            if (previousResponse.sequenceNumber + 1 != currentResponse.sequenceNumber) {
+            if (previousTopicMessage.sequenceNumber + 1 != currentTopicMessage.sequenceNumber) {
                 log.error("Previous message {}, has a sequenceNumber greater than current message {}",
-                        previousResponse.sequenceNumber, currentResponse.sequenceNumber);
+                        previousTopicMessage.sequenceNumber, currentTopicMessage.sequenceNumber);
                 validResponse = false;
             }
         }
@@ -113,7 +114,7 @@ public class SubscriptionResponse {
 
     @Data
     public static class MirrorHCSResponse {
-        private final MirrorConsensusTopicResponse mirrorConsensusTopicResponse;
+        private final TopicMessage topicMessage;
         private final Instant receivedInstant;
     }
 }

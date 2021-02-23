@@ -40,8 +40,6 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     @Resource
     protected ContractResultRepository contractResultRepository;
     @Resource
-    protected RecordFileRepository recordFileRepository;
-    @Resource
     protected CryptoTransferRepository cryptoTransferRepository;
     @Resource
     protected LiveHashRepository liveHashRepository;
@@ -51,10 +49,6 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     protected TransactionResultRepository transactionResultRepository;
     @Resource
     protected TransactionTypeRepository transactionTypeRepository;
-    @Resource
-    protected EntityTypeRepository entityTypeRepository;
-    @Resource
-    protected AccountBalanceFileRepository accountBalanceFileRepository;
 
     private Entities insertEntity(EntityTypeEnum entityType) {
         Random rand = new Random();

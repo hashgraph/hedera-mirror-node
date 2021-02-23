@@ -94,10 +94,10 @@ replicas: 1
 resources:
   limits:
     cpu: 1.5
-    memory: 1536Mi
+    memory: 2048Mi
   requests:
     cpu: 200m
-    memory: 256Mi
+    memory: 512Mi
 
 revisionHistoryLimit: 3
 

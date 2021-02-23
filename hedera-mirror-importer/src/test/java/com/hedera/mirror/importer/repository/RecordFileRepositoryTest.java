@@ -20,41 +20,49 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 
 public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
-    private RecordFile recordFile;
+    @Resource
+    private RecordFileRepository recordFileRepository;
 
-    @BeforeEach
-    void setUp() {
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        recordFile = RecordFile.builder()
-                .consensusStart(0L)
-                .consensusEnd(0L)
-                .count(0L)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
-                .fileHash("fileHash")
-                .hash("hash")
-                .name("fileName")
-                .nodeAccountId(nodeAccountId)
-                .previousHash("previousHash")
-                .version(1)
-                .build();
-    }
+    private long count = 0;
 
     @Test
-    void insert() {
-        recordFile = recordFileRepository.save(recordFile);
-        Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
-                .isNotNull()
-                .isEqualTo(recordFile);
+    void findLatest() {
+        RecordFile recordFile1 = recordFile();
+        RecordFile recordFile2 = recordFile();
+        RecordFile recordFile3 = recordFile();
+        recordFileRepository.saveAll(List.of(recordFile1, recordFile2, recordFile3));
+        assertThat(recordFileRepository.findLatest()).get().isEqualTo(recordFile3);
+    }
+
+    private RecordFile recordFile() {
+        long id = ++count;
+        return RecordFile.builder()
+                .consensusStart(id)
+                .consensusEnd(id)
+                .count(id)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .fileHash("fileHash" + id)
+                .hash("hash" + id)
+                .index(id)
+                .loadEnd(id)
+                .loadStart(id)
+                .name(id + ".rcd")
+                .nodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT))
+                .previousHash("previousHash" + (id - 1))
+                .version(1)
+                .build();
     }
 }

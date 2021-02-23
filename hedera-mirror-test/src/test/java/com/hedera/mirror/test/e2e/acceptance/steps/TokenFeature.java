@@ -27,8 +27,8 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
-import io.grpc.StatusRuntimeException;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.opentest4j.AssertionFailedError;
@@ -38,13 +38,14 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
-import com.hedera.hashgraph.proto.TokenFreezeStatus;
-import com.hedera.hashgraph.proto.TokenKycStatus;
-import com.hedera.hashgraph.sdk.HederaStatusException;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
+import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
@@ -72,103 +73,95 @@ public class TokenFeature {
     private AccountClient accountClient;
     @Autowired
     private MirrorNodeClient mirrorClient;
-    private Ed25519PrivateKey tokenKey;
+    private PrivateKey tokenKey;
     private TokenId tokenId;
     private ExpandedAccountId sender;
     private ExpandedAccountId recipient;
     private NetworkTransactionResponse networkTransactionResponse;
 
     @Given("I successfully create a new token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void createNewToken() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void createNewToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I successfully create a new token {string}")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void createNewToken(String symbol) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void createNewToken(String symbol) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         createNewToken(symbol, TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I successfully onboard a new token account with freeze status {int} and kyc status {int}")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void createNewToken(int freezeStatus, int kycStatus) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void createNewToken(int freezeStatus, int kycStatus) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
     }
 
     @Given("I successfully onboard a new token account")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void onboardNewTokenAccount() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void onboardNewTokenAccount() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         onboardNewTokenAccount(TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I associate with token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void associateWithToken() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void associateWithToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         // associate payer
         sender = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         associateWithToken(sender);
     }
 
     @Given("I associate a new sender account with token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void associateSenderWithToken() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void associateSenderWithToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
 
         sender = accountClient.createNewAccount(10_000_000);
         associateWithToken(sender);
     }
 
     @Given("I associate a new recipient account with token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void associateRecipientWithToken() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void associateRecipientWithToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
 
         recipient = accountClient.createNewAccount(10_000_000);
         associateWithToken(recipient);
     }
 
     @When("I set new account freeze status to {int}")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void setFreezeStatus(int freezeStatus) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void setFreezeStatus(int freezeStatus) throws ReceiptStatusException, PrecheckStatusException,
+            TimeoutException {
         setFreezeStatus(freezeStatus, recipient);
     }
 
     @When("I set new account kyc status to {int}")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void setKycStatus(int kycStatus) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void setKycStatus(int kycStatus) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         setKycStatus(kycStatus, recipient);
     }
 
     @Then("I transfer {int} tokens to payer")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void fundPayerAccountWithTokens(int amount) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void fundPayerAccountWithTokens(int amount) throws PrecheckStatusException, ReceiptStatusException,
+            TimeoutException {
         transferTokens(tokenId, amount, accountClient.getTokenTreasuryAccount(), tokenClient.getSdkClient()
                 .getOperatorId());
     }
 
     @Then("I transfer {int} tokens to recipient")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void transferTokensToRecipient(int amount) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void transferTokensToRecipient(int amount) throws ReceiptStatusException, PrecheckStatusException,
+            TimeoutException {
         transferTokens(tokenId, amount, sender, recipient
                 .getAccountId());
     }
 
     @Given("I update the token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void updateToken() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void updateToken() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
 
         networkTransactionResponse = tokenClient
                 .updateToken(tokenId, tokenClient.getSdkClient().getExpandedOperatorAccountId());
@@ -177,9 +170,8 @@ public class TokenFeature {
     }
 
     @Given("I burn {int} from the token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void burnToken(int amount) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void burnToken(int amount) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
 
         networkTransactionResponse = tokenClient.burn(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -187,9 +179,8 @@ public class TokenFeature {
     }
 
     @Given("I mint {int} from the token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void mintToken(int amount) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void mintToken(int amount) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
 
         networkTransactionResponse = tokenClient.mint(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -197,9 +188,8 @@ public class TokenFeature {
     }
 
     @Given("I wipe {int} from the token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void wipeToken(int amount) throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void wipeToken(int amount) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
 
         networkTransactionResponse = tokenClient.wipe(tokenId, amount, recipient);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -207,18 +197,17 @@ public class TokenFeature {
     }
 
     @Given("I dissociate the account from the token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void dissociateNewAccountFromToken() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void dissociateNewAccountFromToken() throws PrecheckStatusException, ReceiptStatusException,
+            TimeoutException {
         networkTransactionResponse = tokenClient.disssociate(recipient, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I delete the token")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
-            "message.contains('RESOURCE_EXHAUSTED')}")
-    public void deleteToken() throws HederaStatusException {
+    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    public void deleteToken() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
 
         networkTransactionResponse = tokenClient
                 .delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
@@ -271,9 +260,10 @@ public class TokenFeature {
         }
     }
 
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws HederaStatusException {
-        tokenKey = Ed25519PrivateKey.generate();
-        Ed25519PublicKey tokenPublicKey = tokenKey.publicKey;
+    private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws PrecheckStatusException,
+            ReceiptStatusException, TimeoutException {
+        tokenKey = PrivateKey.generate();
+        PublicKey tokenPublicKey = tokenKey.getPublicKey();
         log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
 
         networkTransactionResponse = tokenClient.createToken(
@@ -285,17 +275,19 @@ public class TokenFeature {
                 INITIAL_SUPPLY);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        tokenId = networkTransactionResponse.getReceipt().getTokenId();
+        tokenId = networkTransactionResponse.getReceipt().tokenId;
         assertNotNull(tokenId);
     }
 
-    private void associateWithToken(ExpandedAccountId accountId) throws HederaStatusException {
+    private void associateWithToken(ExpandedAccountId accountId) throws PrecheckStatusException,
+            ReceiptStatusException, TimeoutException {
         networkTransactionResponse = tokenClient.asssociate(accountId, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) throws HederaStatusException {
+    private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) throws PrecheckStatusException,
+            ReceiptStatusException, TimeoutException {
         if (freezeStatus == TokenFreezeStatus.Frozen_VALUE) {
             networkTransactionResponse = tokenClient.freeze(tokenId, accountId.getAccountId(), tokenKey);
         } else if (freezeStatus == TokenFreezeStatus.Unfrozen_VALUE) {
@@ -308,7 +300,8 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void setKycStatus(int kycStatus, ExpandedAccountId accountId) throws HederaStatusException {
+    private void setKycStatus(int kycStatus, ExpandedAccountId accountId) throws PrecheckStatusException,
+            ReceiptStatusException, TimeoutException {
         if (kycStatus == TokenKycStatus.Granted_VALUE) {
             networkTransactionResponse = tokenClient.grantKyc(tokenId, accountId.getAccountId(), tokenKey);
         } else if (kycStatus == TokenKycStatus.Revoked_VALUE) {
@@ -321,13 +314,14 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws HederaStatusException {
+    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void onboardNewTokenAccount(int freezeStatus, int kycStatus) throws HederaStatusException {
+    private void onboardNewTokenAccount(int freezeStatus, int kycStatus) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
         // create token, associate payer and transfer tokens to payer
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
 
@@ -431,7 +425,31 @@ public class TokenFeature {
      * @param t
      */
     @Recover
-    public void recover(StatusRuntimeException t) {
+    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
+        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
+        throw t;
+    }
+
+    /**
+     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
+     * after exception parameter
+     *
+     * @param t
+     */
+    @Recover
+    public void recover(PrecheckStatusException t, int count) throws PrecheckStatusException {
+        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
+        throw t;
+    }
+
+    /**
+     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
+     * after exception parameter
+     *
+     * @param t
+     */
+    @Recover
+    public void recover(PrecheckStatusException t, String param) throws PrecheckStatusException {
         log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
         throw t;
     }

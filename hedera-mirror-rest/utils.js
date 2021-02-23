@@ -27,6 +27,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
+const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const transactionTypes = require('./transactionTypes');
 
@@ -189,6 +190,10 @@ const filterValidityChecks = async (param, op, val) => {
     case constants.filterKeys.SCHEDULED:
       ret = isValidBooleanOpAndValue(op, val);
       break;
+    case constants.filterKeys.TOKEN_ID:
+      // Accepted forms: shard.realm.num or num
+      ret = isValidEntityNum(val);
+      break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
@@ -196,7 +201,7 @@ const filterValidityChecks = async (param, op, val) => {
     case constants.filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
       break;
-    case constants.filterKeys.TOKEN_ID:
+    case constants.filterKeys.SCHEDULE_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
@@ -214,7 +219,7 @@ const filterValidityChecks = async (param, op, val) => {
 
 /**
  * Validate input http request object
- * @param {HTTPRequest} req HTTP request object
+ * @param {Request} req HTTP request object
  * @return {Object} result of validity check, and return http code/contents
  */
 const validateReq = async (req) => {
@@ -616,7 +621,7 @@ const returnEntriesLimit = (type) => {
 
 /**
  * Converts the byte array returned by SQL queries into hex string
- * @param {ByteArray} byteArray Array of bytes to be converted to hex string
+ * @param {Array} byteArray Array of bytes to be converted to hex string
  * @return {hexString} Converted hex string
  */
 const toHexString = (byteArray) => {
@@ -781,6 +786,10 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.SCHEDULED:
         comparator.value = parseBooleanValue(comparator.value);
         break;
+      case constants.filterKeys.SCHEDULE_ID:
+        // Accepted forms: shard.realm.num or num
+        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        break;
       case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
@@ -810,12 +819,12 @@ const formatComparator = (comparator) => {
 const parseTokenBalances = (tokenBalances) => {
   return tokenBalances
     ? tokenBalances.map((tokenBalance) => {
-        const {token_id: tokenId, balance} = tokenBalance;
-        return {
-          token_id: EntityId.fromString(tokenId).toString(),
-          balance,
-        };
-      })
+      const {token_id: tokenId, balance} = tokenBalance;
+      return {
+        token_id: EntityId.fromString(tokenId).toString(),
+        balance,
+      };
+    })
     : [];
 };
 
@@ -843,6 +852,22 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   throw new InvalidArgumentError(`Invalid transactionType value '${transactionType}'`);
 };
 
+const isTestEnv = () => process.env.NODE_ENV === 'test';
+
+/**
+ * Runs the sql query with params
+ * @param {String} query SQL query string
+ * @param params SQL query params
+ * @returns {Promise<pg.Result | DbError>} The query result or DbError
+ */
+const queryQuietly = async (query, ...params) => {
+  try {
+    return await pool.query(query, params);
+  } catch (err) {
+    throw new DbError(err.message);
+  }
+};
+
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
@@ -861,6 +886,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
+  isTestEnv,
   isValidEntityNum,
   isValidLimitNum,
   isValidNum,
@@ -876,6 +902,7 @@ module.exports = {
   parseResultParams,
   parseBooleanValue,
   parseTimestampParam,
+  queryQuietly,
   nsToSecNs,
   nsToSecNsWithHyphen,
   randomString,

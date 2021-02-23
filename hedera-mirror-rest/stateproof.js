@@ -50,14 +50,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
     logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
-  let result;
-  try {
-    result = await pool.query(sqlQuery, sqlParams);
-  } catch (err) {
-    throw new DbError(err.message);
-  }
-
-  const {rows} = result;
+  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
   if (_.isEmpty(rows)) {
     throw new NotFoundError('Transaction not found');
   } else if (rows.length > 1) {
@@ -85,14 +78,7 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
     logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
-  let result;
-  try {
-    result = await pool.query(sqlQuery, sqlParams);
-  } catch (err) {
-    throw new DbError(err.message);
-  }
-
-  const {rows} = result;
+  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No matching RCD file found with ${consensusNs} in the range`);
   }
@@ -138,20 +124,12 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
     logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
-  let addressBookQueryResult;
-  try {
-    addressBookQueryResult = await pool.query(sqlQuery, sqlParams);
-  } catch (err) {
-    throw new DbError(err.message);
-  }
-
-  if (_.isEmpty(addressBookQueryResult.rows)) {
+  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
+  if (_.isEmpty(rows)) {
     throw new NotFoundError('No address book found');
   }
 
-  const {rows} = addressBookQueryResult;
   const lastAddressBook = _.last(rows);
-
   let nodeAccountIds = [];
   if (lastAddressBook.node_account_ids) {
     nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (id) => EntityId.fromString(id).toString());
@@ -297,8 +275,8 @@ module.exports = {
   getStateProofForTransaction,
 };
 
-if (process.env.NODE_ENV === 'test') {
-  module.exports = Object.assign(module.exports, {
+if (utils.isTestEnv()) {
+  Object.assign(module.exports, {
     getSuccessfulTransactionConsensusNs,
     getRCDFileInfoByConsensusNs,
     getAddressBooksAndNodeAccountIdsByConsensusNs,

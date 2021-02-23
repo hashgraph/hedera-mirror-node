@@ -11,8 +11,6 @@ hedera:
       downloader:
         bucketName: test
       parser:
-        balance:
-          enabled: false
         exclude:
           - entity: 0.0.999
         record:
@@ -30,6 +28,8 @@ spring:
     user: ${hedera.mirror.importer.db.username}
   redis:
     url: redis://${embedded.redis.user}:${embedded.redis.password}@${embedded.redis.host}:${embedded.redis.port}
+  retry:
+    enabled: false
   task:
     scheduling:
       enabled: false

@@ -45,21 +45,17 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -67,7 +63,6 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -83,6 +78,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2003).build();
     protected static final AccountID NODE =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
+    protected static final EntityId NODE_ACCOUNT_ID = EntityId.of(NODE);
     protected static final AccountID TREASURY =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(98).build();
     protected static final AccountID PROXY =
@@ -112,16 +108,12 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected EntityRecordItemListener entityRecordItemListener;
 
     @Resource
-    protected RecordParserProperties parserProperties;
-
-    @Resource
     protected EntityProperties entityProperties;
 
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
 
-    @Resource
-    protected RecordFileRepository recordFileRepository;
+    private long nextIndex = 0L;
 
     protected static SignatureMap getSigMap() {
         String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
@@ -143,11 +135,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         sigMap.addSigPair(sigPair);
 
         return sigMap.build();
-    }
-
-    @BeforeEach
-    void beforeEach(TestInfo testInfo) {
-        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
     }
 
     protected static Key keyFromString(String key) {
@@ -182,40 +169,25 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
-        String fileName = UUID.randomUUID().toString();
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile recordFile = RecordFile.builder()
-                .consensusStart(recordItem.getConsensusTimestamp())
-                .consensusEnd(recordItem.getConsensusTimestamp() + 1)
-                .count(0L)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
-                .name(fileName)
-                .nodeAccountId(nodeAccountId)
-                .fileHash(UUID.randomUUID().toString())
-                .previousHash("")
-                .build();
-        recordFileRepository.save(recordFile);
-        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
+        Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        String filename = Utility.getStreamFilenameFromInstant(StreamType.RECORD, instant);
+        long consensusStart = recordItem.getConsensusTimestamp();
+        RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
+
+        recordStreamFileListener.onStart();
         entityRecordItemListener.onItem(recordItem);
         // commit, close connection
         recordStreamFileListener.onEnd(recordFile);
     }
 
     protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
-        String fileName = UUID.randomUUID().toString();
-        EntityId nodeAccountId = EntityId.of(TestUtils.toAccountId("0.0.3"));
-        RecordFile recordFile = RecordFile.builder()
-                .consensusStart(recordItems[0].getConsensusTimestamp())
-                .consensusEnd(recordItems[recordItems.length - 1].getConsensusTimestamp())
-                .count(0L)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
-                .name(fileName)
-                .nodeAccountId(nodeAccountId)
-                .fileHash(UUID.randomUUID().toString())
-                .previousHash("")
-                .build();
-        recordFileRepository.save(recordFile);
-        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
+        Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
+        String filename = Utility.getStreamFilenameFromInstant(StreamType.RECORD, instant);
+        long consensusStart = recordItems[0].getConsensusTimestamp();
+        long consensusEnd = recordItems[recordItems.length - 1].getConsensusTimestamp();
+        RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);
+
+        recordStreamFileListener.onStart();
 
         // process each record item
         for (RecordItem recordItem : recordItems) {
@@ -360,7 +332,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected Entities createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-            boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
+                                    boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
         if (autoRenewAccountId != null) {
             entityRepository.save(autoRenewAccountId.toEntity());
         }
@@ -412,5 +384,22 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void assertEntity(Entities expected) {
         Entities actual = getEntity(expected.getId());
         assertThat(actual).isEqualTo(expected);
+    }
+
+    private RecordFile recordFile(long consensusStart, long consensusEnd, String filename) {
+        return RecordFile.builder()
+                .consensusStart(consensusStart)
+                .consensusEnd(consensusEnd)
+                .count(0L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .fileHash(UUID.randomUUID().toString())
+                .hash(UUID.randomUUID().toString())
+                .index(nextIndex++)
+                .loadEnd(Instant.now().getEpochSecond())
+                .loadStart(Instant.now().getEpochSecond())
+                .name(filename)
+                .nodeAccountId(NODE_ACCOUNT_ID)
+                .previousHash("")
+                .build();
     }
 }

@@ -16,7 +16,7 @@ COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
 WORKDIR /tmp/hedera-mirror-node/hedera-mirror-rosetta
 RUN go build -o rosetta-executable ./cmd
 
-# ---------------------------- Importer/GRPC ----------------------------- #
+# ---------------------------- Importer ----------------------------- #
 FROM openjdk:11.0 as java-builder
 
 RUN apt-get update

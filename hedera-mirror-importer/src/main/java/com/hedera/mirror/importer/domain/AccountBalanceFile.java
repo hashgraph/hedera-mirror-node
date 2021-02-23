@@ -20,13 +20,18 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 
@@ -37,12 +42,21 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @NoArgsConstructor
 public class AccountBalanceFile implements StreamFile {
 
+    @ToString.Exclude
+    private byte[] bytes;
+
     @Id
     private Long consensusTimestamp;
 
     private Long count;
 
+    @ToString.Exclude
     private String fileHash;
+
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private List<AccountBalance> items = new ArrayList<>();
 
     private Long loadEnd;
 
@@ -52,4 +66,19 @@ public class AccountBalanceFile implements StreamFile {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
+
+    @Override
+    public Long getConsensusEnd() {
+        return consensusTimestamp;
+    }
+
+    @Override
+    public Long getConsensusStart() {
+        return consensusTimestamp;
+    }
+
+    @Override
+    public StreamType getType() {
+        return StreamType.BALANCE;
+    }
 }

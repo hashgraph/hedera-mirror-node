@@ -20,20 +20,23 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Builder(toBuilder = true)
 @Data
@@ -42,8 +45,12 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @NoArgsConstructor
 public class RecordFile implements StreamFile {
 
+    @ToString.Exclude
+    private byte[] bytes;
+
     private Long consensusStart;
 
+    @Id
     private Long consensusEnd;
 
     private Long count;
@@ -51,6 +58,7 @@ public class RecordFile implements StreamFile {
     @Enumerated
     private DigestAlgorithm digestAlgorithm;
 
+    @ToString.Exclude
     private String fileHash;
 
     private Integer hapiVersionMajor;
@@ -59,16 +67,21 @@ public class RecordFile implements StreamFile {
 
     private Integer hapiVersionPatch;
 
+    @ToString.Exclude
     private String hash;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long index;
+
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private List<RecordItem> items = new ArrayList<>();
 
     private Long loadEnd;
 
     private Long loadStart;
 
+    @ToString.Exclude
     @Transient
     private String metadataHash;
 
@@ -78,7 +91,13 @@ public class RecordFile implements StreamFile {
     private EntityId nodeAccountId;
 
     @Column(name = "prev_hash")
+    @ToString.Exclude
     private String previousHash;
 
     private int version;
+
+    @Override
+    public StreamType getType() {
+        return StreamType.RECORD;
+    }
 }

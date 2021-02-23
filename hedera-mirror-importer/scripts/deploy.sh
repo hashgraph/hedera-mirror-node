@@ -7,7 +7,6 @@ cd "$(dirname $0)/.."
 name=hedera-mirror-importer
 usretc="/usr/etc/${name}"
 usrlib="/usr/lib/${name}"
-varlib="/var/lib/${name}"
 jarname="$(ls -1 ${name}-*.jar)"
 
 if [[ ! -f "${jarname}" ]]; then
@@ -15,7 +14,7 @@ if [[ ! -f "${jarname}" ]]; then
     exit 1
 fi
 
-mkdir -p "${usretc}" "${usrlib}" "${varlib}"
+mkdir -p "${usretc}" "${usrlib}"
 systemctl stop "${name}.service" || true
 
 if [[ ! -f "${usretc}/application.yml" ]]; then
@@ -29,7 +28,6 @@ if [[ ! -f "${usretc}/application.yml" ]]; then
 hedera:
   mirror:
     importer:
-      dataPath: ${varlib}
       db:
         restPassword: ${restPassword}
         host: ${dbHost}

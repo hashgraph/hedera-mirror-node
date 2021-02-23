@@ -32,6 +32,8 @@ const filterKeys = {
   ORDER: 'order',
   RESULT: 'result',
   SCHEDULED: 'scheduled',
+  SCHEDULEID: 'scheduleid',
+  SCHEDULE_ID: 'schedule.id',
   SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
   TOKENID: 'tokenid',

@@ -64,9 +64,10 @@ The beta mirror node works as follows:
   the balance files for long term storage.
 
 ### Rosetta API
-In addition to the REST API which exposes the persisted network entities (accounts, balances, transactions, topics and tokens),
-the Mirror Node also provides a [Rosetta API](https://www.rosetta-api.org/docs/welcome.html) compliant REST API server.
-This exposes a subset of data with a focus on blockchain data integration.
+
+In addition to the REST API which exposes the persisted network entities (accounts, balances, transactions, topics and
+tokens), the Mirror Node also provides a [Rosetta API](https://www.rosetta-api.org/docs/welcome.html) compliant REST API
+server. This exposes a subset of data with a focus on blockchain data integration.
 See [rosetta-server](docs/rosetta-server.md) for more details.
 
 ## Getting Started
@@ -214,7 +215,6 @@ The gRPC container will display logs similar to the below at start
 
 To manually verify the gRPC streaming endpoint follow the [Operations](docs/operations.md#verifying) details.
 
-
 Additionally, logs of each module container can be viewed to verify expected operation or decipher issues.
 See [Troubleshooting](docs/troubleshooting.md) for details.
 
@@ -240,7 +240,6 @@ To manually verify the Rosetta API endpoints follow the [Operations](docs/operat
 
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
-- [Database](docs/database.md)
 - [Operations](docs/operations.md)
 - [Testing](docs/testing.md)
 - [Troubleshooting](docs/troubleshooting.md)

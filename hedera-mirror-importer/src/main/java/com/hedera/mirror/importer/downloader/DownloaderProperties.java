@@ -21,13 +21,9 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import java.nio.file.Path;
-import java.time.Duration;
-import javax.annotation.PostConstruct;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.util.Utility;
 
 public interface DownloaderProperties {
 
@@ -53,14 +49,6 @@ public interface DownloaderProperties {
         return getStreamPath().resolve(getStreamType().getSignatures());
     }
 
-    default Path getTempPath() {
-        return getStreamPath().resolve(getStreamType().getTemp());
-    }
-
-    default Path getValidPath() {
-        return getStreamPath().resolve(getStreamType().getValid());
-    }
-
     boolean isEnabled();
 
     void setBatchSize(int batchSize);
@@ -70,17 +58,4 @@ public interface DownloaderProperties {
     boolean isKeepSignatures();
 
     void setKeepSignatures(boolean keepSignatures);
-
-    ApplicationStatusCode getLastValidDownloadedFileKey();
-
-    ApplicationStatusCode getLastValidDownloadedFileHashKey();
-
-    Duration getStartDateAdjustment();
-
-    @PostConstruct
-    default void init() {
-        Utility.ensureDirectory(getTempPath());
-        Utility.ensureDirectory(getValidPath());
-        Utility.purgeDirectory(getTempPath());
-    }
 }

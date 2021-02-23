@@ -20,35 +20,24 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import java.nio.file.Path;
-import java.time.Duration;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.ParserProperties;
+import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
+@Component("recordParserProperties")
 @Data
+@RequiredArgsConstructor
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.parser.record")
-public class RecordParserProperties implements ParserProperties {
+public class RecordParserProperties extends AbstractParserProperties {
 
     private final MirrorProperties mirrorProperties;
-
-    private boolean enabled = true;
-
-    @NotNull
-    private Duration frequency = Duration.ofMillis(100L);
-
-    private boolean keepFiles = false;
-
-    @Override
-    public Path getStreamPath() {
-        return mirrorProperties.getDataPath().resolve(getStreamType().getPath());
-    }
 
     @Override
     public StreamType getStreamType() {

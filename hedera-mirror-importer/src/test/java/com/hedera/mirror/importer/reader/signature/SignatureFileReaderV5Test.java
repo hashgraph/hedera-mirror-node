@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.reader.signature;
  */
 
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -70,18 +71,19 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             "+xFHwmKhAvsKXyp2ZFIrB+PGMQI8wr1cCMYLKYpI4VceCkLTIB3XOOVKZPWZaOs8MK9Aj9ZeT3REqf" +
             "d252N19j2yA45x8Zs2kRIC2iKNNEPwcaUbGNHiPmsZ5Ezq0lnNKuomJECMsYHu";
 
-
     private final SignatureFileReaderV5 fileReaderV5 = new SignatureFileReaderV5();
     private final File signatureFile = Utility
             .getResource(Path.of("data", "signature", "v5", "2021-01-11T22_16_11.299356001Z.rcd_sig").toString());
 
     @Test
     void testReadValidFile() {
-        FileStreamSignature fileStreamSignature = fileReaderV5.read(StreamFileData.from(signatureFile));
+        StreamFileData streamFileData = StreamFileData.from(signatureFile);
+        FileStreamSignature fileStreamSignature = fileReaderV5.read(streamFileData);
 
         assertNotNull(fileStreamSignature);
+        assertThat(fileStreamSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
         assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
-        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()),fileStreamSignature
+        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
                 .getFileHashSignature());
         assertArrayEquals(Base64.decodeBase64(metadataHashBase64.getBytes()), fileStreamSignature.getMetadataHash());
         assertArrayEquals(Base64.decodeBase64(metadataSignatureBase64.getBytes()), fileStreamSignature
@@ -92,7 +94,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     Iterable<DynamicTest> testReadCorruptSignatureFileV5() {
 
         SignatureFileSection fileVersion = new SignatureFileSection(
-                new byte[] { SIGNATURE_FILE_FORMAT_VERSION },
+                new byte[] {SIGNATURE_FILE_FORMAT_VERSION},
                 "invalidFileFormatVersion",
                 incrementLastByte,
                 "fileVersion");
@@ -115,7 +117,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
         SignatureFileSection invalidExtraData = new SignatureFileSection(
                 new byte[0],
                 "invalidExtraData",
-                bytes -> new byte[] { 1 },
+                bytes -> new byte[] {1},
                 "Extra data discovered in signature file");
 
         signatureFileSections.add(invalidExtraData);

@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.reader.record;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -40,12 +40,9 @@ abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
                 getFilteredFiles(true),
                 (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
                 (recordFile) -> {
-                    String filename = recordFile.getName();
-
                     // given
-                    fileCopier.from(getSubPath(recordFile.getVersion())).filterFiles(filename).copy();
-                    File file = fileCopier.getTo().resolve(filename).toFile();
-                    StreamFileData streamFileData = StreamFileData.from(file);
+                    Path testFile = getTestFile(recordFile);
+                    StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
 
                     // when
                     assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));

@@ -19,28 +19,34 @@ runnable Mirror Node JAR file in the `target` directory.
 ## Running Locally
 
 ### Database Setup
-In addition to OpenJDK 11, you will need to install a database and initialize it.
-The Mirror Node utilizes [PostgreSQL](https://postgresql.org) v9.6 or [TimescaleDB](https://docs.timescale.com/latest/main) v2 depending on the version of its database schema.
 
-For both databases, since [Flyway](https://flywaydb.org) will manage the database schema, the only required setup steps include:
+In addition to OpenJDK 11, you will need to install a database and initialize it. The Mirror Node
+utilizes [PostgreSQL](https://postgresql.org) v9.6 or [TimescaleDB](https://docs.timescale.com/latest/main) v2 depending
+on the version of its database schema.
+
+For both databases, since [Flyway](https://flywaydb.org) will manage the database schema, the only required setup steps
+include:
+
 * creating the database, users, schema, and extensions.
 * ensuring all permissions are set.
 
-Scripts for v1 and v2 are provided to accomplish this.
-Make sure the application [configuration](configuration.md) matches the values in the script.
-Run the script as a super user and check the output carefully to ensure no errors occurred.
+Scripts for v1 and v2 are provided to accomplish this. Make sure the application [configuration](configuration.md)
+matches the values in the script. Run the script as a super user and check the output carefully to ensure no errors
+occurred.
 
 #### PostgreSQL (V1)
-Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql`.
-Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, `grpc_password`, `rosetta_user` or `rosetta_password` as appropriate.
+
+Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql`. Edit the file and
+change the name and password variables at the top of the file as appropriate.
 
 ```console
 psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql
 ```
 
 #### TimescaleDB (V2)
-Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql`.
-Edit the file and change the db user names, passwords and schema as appropriate.
+
+Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql`. Edit the file and
+change the db usernames, passwords, and schema as appropriate.
 
 ```console
 psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql
@@ -100,6 +106,7 @@ npm test
 ### Rosetta API
 
 #### Prerequisites
+
 ``
 Go 1.13+
 ``
@@ -114,6 +121,7 @@ go run cmd/*
 #### Unit Tests
 
 Run the unit tests by executing:
+
 ```console
 cd hedera-mirror-rosetta
 go test ./...
@@ -130,37 +138,43 @@ cd hedera-mirror-rosetta/scripts/validation
 
 Currently, Rosetta CLI Validation supports only `DEMO` and `TESTNET`, where
 `DEMO` is default and `TESTNET` can be run via:
+
 ```console
 ./run-validation.sh testnet
 ```
 
 #### Rosetta All-in-One Dockerfile configuration
 
-The `All-in-One` configuration aggregates the PostgreSQL, Importer and Rosetta services in a single Dockerfile configuration.
-Configuration is based on Rosetta specification, found [here](https://www.rosetta-api.org/docs/node_deployment.html).
-Data Persistence is based on Rosetta specification as well, found [here](https://www.rosetta-api.org/docs/standard_storage_location.html).
-Exposed ports are `5432` (PostgreSQL) and `5700` (Rosetta).
+The `All-in-One` configuration aggregates the PostgreSQL, Importer, and Rosetta services into a single Dockerfile
+configuration. Configuration is based on the Rosetta specification,
+found [here](https://www.rosetta-api.org/docs/node_deployment.html). Data Persistence is based on Rosetta specification
+as well, found [here](https://www.rosetta-api.org/docs/standard_storage_location.html). Exposed ports are `5432`
+(PostgreSQL) and `5700` (Rosetta).
 
 To build the Dockerfile, run:
+
 ```console
 cd hedera-mirror-rosetta/build
 docker build .
 ```
 
 Image container can be run via:
+
 ```console
 docker run <image>
 ```
 
 With a mounted volume:
+
 ```console
 docker run -v <volume>:/data <image>
 ```
 
-The built Docker image can be run in `online` (default) and `offline` mode.
-The `online` mode runs all the above specified services, where in `offline` - only the Rosetta service.
+The built Docker image can be run in `online` (default) and `offline` mode. The `online` mode runs all the above
+specified services, where in `offline` - only the Rosetta service.
 
 To run in `offline` mode:
+
 ```console
 docker run -e MODE=offline <image>
 ```
@@ -168,14 +182,15 @@ docker run -e MODE=offline <image>
 You can override Importer and Rosetta services default configuration by passing
 `environment variables`, specified [here](./configuration.md).
 
-For ease, an additional environment variable, called `NETWORK` is added, where you can both override
-the Importer and Rosetta default network configuration:
+For ease, the `NETWORK` environment variable can be set to override the Importer and Rosetta default Hedera network
+configuration:
+
 ```console
 docker run -e NETWORK=TESTNET <image>
 ```
 
-In order Importer to sync data, different from default,
-the following environment variables need to be overridden:
+In order Importer to sync data, different from default, the following environment variables need to be overridden:
+
 ```console
 HEDERA_MIRROR_IMPORTER_DOWNLOADER_ACCESSKEY=
 HEDERA_MIRROR_IMPORTER_DOWNLOADER_BUCKETNAME=
@@ -184,9 +199,11 @@ HEDERA_MIRROR_IMPORTER_DOWNLOADER_GCPPROJECTID=
 HEDERA_MIRROR_IMPORTER_DOWNLOADER_SECRETKEY=
 HEDERA_MIRROR_IMPORTER_START_DATE=
 ```
+
 regardless of specified `NETWORK`.
 
 A full example for `testnet` network in `online` mode:
+
 ```console
 docker run -e NETWORK=TESTNET \
 -e HEDERA_MIRROR_IMPORTER_DOWNLOADER_ACCESSKEY= \
@@ -195,7 +212,6 @@ docker run -e NETWORK=TESTNET \
 -e HEDERA_MIRROR_IMPORTER_DOWNLOADER_GCPPROJECTID= \
 -e HEDERA_MIRROR_IMPORTER_DOWNLOADER_SECRETKEY= \
 -e HEDERA_MIRROR_IMPORTER_START_DATE= \
--v <volume>:/data \
 -p 5700:5700 \
 <image>
 ```
@@ -218,16 +234,16 @@ Containers use the following persisted volumes:
   you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will
   not be run.
 
-- `./data` on your local machine maps to `/var/lib/hedera-mirror-importer` in the container. This contains files
-  downloaded from S3 or GCP. These are necessary not only for the database data to be persisted, but also so that the
-  parsing containers can access file obtained via the downloading containers
-
 ### Configuration
 
 #### TimescaleDB vs PostgreSQL
-To utilize the TimescaleDB database over the default PostgreSQL database, disable the PostgreSQL container and enable the TimescaleDB container.
 
-To achieve this the `docker-compose.yml` can be updated to set the postgres `db` service replicas to 0 whiles removing this same setting from the `timescaledb` service as follows:
+To utilize the TimescaleDB database over the default PostgreSQL database, disable the PostgreSQL container and enable
+the TimescaleDB container.
+
+To achieve this the `docker-compose.yml` can be updated to set the postgres `db` service replicas to 0, while removing
+this same setting from the `timescaledb` service as follows:
+
 ```yaml
     ...
     services:
@@ -236,8 +252,8 @@ To achieve this the `docker-compose.yml` can be updated to set the postgres `db`
           replicas: 0
       ...
       timescaledb:
-        #    deploy:
-        #      replicas: 0
+      #    deploy:
+      #      replicas: 0
       ...
 ```
 

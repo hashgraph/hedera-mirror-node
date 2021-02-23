@@ -20,16 +20,16 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
@@ -37,16 +37,20 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 @Value
 public class SDKClient {
     private final Client client;
-    private final Ed25519PublicKey payerPublicKey;
-    private final Ed25519PrivateKey operatorKey;
+    private final PublicKey payerPublicKey;
+    private final PrivateKey operatorKey;
     private final AccountId operatorId;
+    private final String mirrorNodeAddress;
+    private final long messageTimeoutSeconds;
 
-    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) {
+    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException {
 
         // Grab configuration variables from the .env file
         operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
-        operatorKey = Ed25519PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
-        payerPublicKey = operatorKey.publicKey;
+        operatorKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
+        payerPublicKey = operatorKey.getPublicKey();
+        mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
+        messageTimeoutSeconds = acceptanceTestProperties.getMessageTimeout().toSeconds();
 
         Client client;
         var nodeAddress = acceptanceTestProperties.getNodeAddress();
@@ -61,10 +65,11 @@ public class SDKClient {
             log.debug("Creating SDK client for node {} at {}", nodeId, nodeAddress);
 
             // Build client
-            client = new Client(Map.of(nodeId, nodeAddress));
+            client = Client.forNetwork(Map.of(nodeAddress, nodeId));
         }
 
         client.setOperator(operatorId, operatorKey);
+        client.setMirrorNetwork(List.of(acceptanceTestProperties.getMirrorNodeAddress()));
 
         this.client = client;
     }
@@ -73,8 +78,7 @@ public class SDKClient {
         return new ExpandedAccountId(operatorId, operatorKey, payerPublicKey);
     }
 
-    public void close() throws TimeoutException, InterruptedException {
-        log.debug("Closing SDK client, waits up to 10 s for valid close");
-        client.close(10, TimeUnit.SECONDS);
+    public void close() throws TimeoutException {
+        client.close();
     }
 }

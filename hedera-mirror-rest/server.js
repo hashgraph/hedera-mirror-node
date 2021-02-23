@@ -37,6 +37,7 @@ const balances = require('./balances');
 const config = require('./config');
 const constants = require('./constants');
 const health = require('./health');
+const schedules = require('./schedules');
 const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
@@ -46,6 +47,7 @@ const {metricsHandler} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
+const {isTestEnv} = require('./utils');
 
 // Logger
 const logger = log4js.getLogger();
@@ -72,7 +74,7 @@ log4js.configure({
 global.logger = log4js.getLogger();
 
 let {port} = config;
-if (process.env.NODE_ENV === 'test') {
+if (isTestEnv()) {
   port = 3000; // Use a dummy port for jest unit tests
 }
 if (port === undefined || Number.isNaN(Number(port))) {
@@ -82,10 +84,10 @@ if (port === undefined || Number.isNaN(Number(port))) {
 
 // Postgres pool
 let Pool;
-if (process.env.NODE_ENV !== 'test') {
-  Pool = require('pg').Pool;
-} else {
+if (isTestEnv()) {
   Pool = require('./__tests__/mockpool'); // Use a mocked up DB for jest unit tests
+} else {
+  Pool = require('pg').Pool;
 }
 
 const pool = new Pool({
@@ -138,7 +140,7 @@ app.getAsync(`${apiPrefix}/accounts/:id`, accounts.getOneAccount);
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
 // stateproof route
-if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
+if (config.stateproof.enabled || isTestEnv()) {
   logger.info('stateproof REST API is enabled, install handler');
   app.getAsync(`${apiPrefix}/transactions/:id/stateproof`, stateproof.getStateProofForTransaction);
 } else {
@@ -155,6 +157,10 @@ app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
 app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
+// schedules routes
+app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
+app.getAsync(`${apiPrefix}/schedules/:id`, schedules.getScheduleById);
+
 // transactions routes
 app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
 app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
@@ -165,7 +171,7 @@ app.use(responseHandler);
 // response error handling middleware
 app.use(handleError);
 
-if (process.env.NODE_ENV !== 'test') {
+if (!isTestEnv()) {
   const server = app.listen(port, () => {
     logger.info(`Server running on port: ${port}`);
   });

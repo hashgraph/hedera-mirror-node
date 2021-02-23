@@ -29,7 +29,6 @@ import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -38,7 +37,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -48,21 +46,18 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.ScheduleSignature;
-import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.MissingFileException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
@@ -76,7 +71,6 @@ import com.hedera.mirror.importer.repository.TokenRepository;
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
     private final DataSource dataSource;
-    private final ApplicationStatusRepository applicationStatusRepository;
     private final EntityRepository entityRepository;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
@@ -113,12 +107,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
-                             ApplicationStatusRepository applicationStatusRepository,
                              EntityRepository entityRepository, ApplicationEventPublisher eventPublisher,
                              TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository,
                              ScheduleRepository scheduleRepository) {
         this.dataSource = dataSource;
-        this.applicationStatusRepository = applicationStatusRepository;
         this.entityRepository = entityRepository;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
@@ -156,20 +148,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public RecordFile onStart(StreamFileData streamFileData) {
-        String fileName = FilenameUtils.getName(streamFileData.getFilename());
-        RecordFile recordFile = recordFileRepository.findByName(fileName)
-                .orElseThrow(() -> new MissingFileException("File not found in the database: " + fileName));
+    public void onStart() {
         cleanup();
-        return recordFile;
     }
 
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
         recordFileRepository.save(recordFile);
-        applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getHash());
     }
 
     @Override

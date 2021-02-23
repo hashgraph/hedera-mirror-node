@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.performance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,25 +29,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Resource;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
 import org.springframework.data.repository.CrudRepository;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
 
-import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.db.DBProperties;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordFilePoller;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordFileParser;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
-import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -56,43 +54,36 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @SpringBootTest
 public abstract class PerformanceIntegrationTest {
 
-    @TempDir
-    static Path dataPath;
+    @Value("classpath:data/recordstreams/performance/v2")
+    Resource[] testFiles;
 
-    @Value("classpath:data")
-    Path testPath;
+    @Autowired
+    private RecordFileReader recordFileReader;
 
-    @Resource
-    private RecordFilePoller recordFilePoller;
+    @Autowired
+    private RecordFileParser recordFileParser;
 
-    private FileCopier fileCopier;
-
-    private StreamType streamType;
-
-    @Resource
-    private RecordParserProperties parserProperties;
-
-    @Resource
+    @Autowired
     DataSource dataSource;
 
     Connection connection;
 
-    @Resource
+    @Autowired
     private DBProperties dbProperties;
 
-    @Resource
-    private ApplicationStatusRepository applicationStatusRepository;
+    @Autowired
+    private RecordFileRepository recordFileRepository;
 
-    @Resource
+    @Autowired
     private EntityRepository entityRepository;
 
-    @Resource
+    @Autowired
     private AccountBalanceRepository accountBalanceRepository;
 
-    @Resource
+    @Autowired
     private TopicMessageRepository topicMessageRepository;
 
-    @Resource
+    @Autowired
     private TransactionRepository transactionRepository;
 
     private static final String restoreClientImagePrefix = "gcr.io/mirrornode/hedera-mirror-node/postgres-restore" +
@@ -111,23 +102,16 @@ public abstract class PerformanceIntegrationTest {
                 );
     }
 
-    void parse(String filePath) {
-        streamType = parserProperties.getStreamType();
-        parserProperties.getMirrorProperties().setDataPath(dataPath);
-        parserProperties.init();
-
-        fileCopier = FileCopier.create(testPath, dataPath)
-                .from(streamType.getPath(), "performance")
-                .filterFiles(filePath)
-                .to(streamType.getPath(), streamType.getValid());
-        fileCopier.copy();
-
-        recordFilePoller.poll();
+    void parse() throws Exception {
+        for (Resource resource : testFiles) {
+            RecordFile recordFile = recordFileReader.read(StreamFileData.from(resource.getFile()));
+            recordFileParser.parse(recordFile);
+        }
     }
 
     void checkSeededTablesArePresent() throws SQLException {
         String[] tables = new String[] {"account_balance_sets", "account_balance", "flyway_schema_history",
-                "non_fee_transfer", "t_application_status", "contract_result", "crypto_transfer",
+                "non_fee_transfer", "contract_result", "crypto_transfer",
                 "t_entities", "t_entity_types", "file_data", "live_hash", "record_file",
                 "t_transaction_results",
                 "t_transaction_types", "transaction", "topic_message"
@@ -163,8 +147,10 @@ public abstract class PerformanceIntegrationTest {
         assertThat(count).isGreaterThan(0);
     }
 
-    void clearLastProcessedRecordHash() throws SQLException {
-        log.debug("Clear LastProcessedRecordHash");
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "");
+    void clearLastProcessedRecordHash() {
+        recordFileRepository.findLatest().ifPresent(r -> {
+            r.setHash("");
+            recordFileRepository.save(r);
+        });
     }
 }

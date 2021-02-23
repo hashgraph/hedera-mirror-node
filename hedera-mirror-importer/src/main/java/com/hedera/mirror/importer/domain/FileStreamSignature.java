@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.io.File;
+import java.util.Comparator;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +29,15 @@ import lombok.ToString;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
-@ToString(exclude = {"fileHash", "fileHashSignature", "metadataHash", "metadataHashSignature"})
+@ToString(exclude = {"bytes", "fileHash", "fileHashSignature", "metadataHash", "metadataHashSignature"})
 public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
-    private File file;
+    private static final Comparator<FileStreamSignature> COMPARATOR = Comparator
+            .comparing(FileStreamSignature::getNodeAccountId)
+            .thenComparing(FileStreamSignature::getFilename);
+
+    private byte[] bytes;
+    private String filename;
     private byte[] fileHash;
     private EntityId nodeAccountId;
     private SignatureType signatureType;
@@ -43,7 +48,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
     @Override
     public int compareTo(FileStreamSignature other) {
-        return file.compareTo(other.getFile());
+        return COMPARATOR.compare(this, other);
     }
 
     public String getFileHashAsHex() {

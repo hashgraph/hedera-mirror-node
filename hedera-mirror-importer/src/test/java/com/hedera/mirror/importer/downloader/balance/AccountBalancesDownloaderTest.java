@@ -20,22 +20,12 @@ package com.hedera.mirror.importer.downloader.balance;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
@@ -45,17 +35,9 @@ import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
-import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@ExtendWith(MockitoExtension.class)
 class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
-
-    @Mock
-    private AccountBalanceFileRepository accountBalanceFileRepository;
-
-    @Captor
-    private ArgumentCaptor<AccountBalanceFile> valueCaptor;
 
     private final Map<String, AccountBalanceFile> accountBalanceFileMap = new HashMap<>();
 
@@ -68,9 +50,9 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     protected Downloader getDownloader() {
         BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(mirrorProperties),
                 new AccountBalanceLineParserV1());
-        return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
-                (BalanceDownloaderProperties) downloaderProperties, transactionTemplate, meterRegistry,
-                accountBalanceFileRepository, nodeSignatureVerifier, signatureFileReader, balanceFileReader);
+        return new AccountBalancesDownloader(s3AsyncClient, addressBookService,
+                (BalanceDownloaderProperties) downloaderProperties, meterRegistry, nodeSignatureVerifier,
+                signatureFileReader, balanceFileReader, streamFileNotifier, dateRangeProcessor);
     }
 
     @Override
@@ -81,30 +63,6 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     @Override
     protected Duration getCloseInterval() {
         return Duration.ofMinutes(15L);
-    }
-
-    @Override
-    protected void setDownloaderBatchSize(DownloaderProperties downloaderProperties, int batchSize) {
-        BalanceDownloaderProperties properties = (BalanceDownloaderProperties) downloaderProperties;
-        properties.setBatchSize(batchSize);
-    }
-
-    @Override
-    protected void reset() {
-        Mockito.reset(accountBalanceFileRepository);
-        valueCaptor = ArgumentCaptor.forClass(AccountBalanceFile.class);
-    }
-
-    @Override
-    protected void verifyStreamFileRecord(List<String> files) {
-        verify(accountBalanceFileRepository, times(files.size())).save(valueCaptor.capture());
-        List<AccountBalanceFile> captured = valueCaptor.getAllValues();
-        assertThat(captured).hasSize(files.size()).allSatisfy(actual -> {
-            AccountBalanceFile expected = accountBalanceFileMap.get(actual.getName());
-
-            assertThat(actual).isEqualToComparingOnlyGivenFields(expected, "name", "consensusTimestamp", "fileHash");
-            assertThat(actual.getNodeAccountId()).isIn(allNodeAccountIds).isNotEqualTo(corruptedNodeAccountId);
-        });
     }
 
     @Override

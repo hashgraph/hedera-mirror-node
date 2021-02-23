@@ -22,9 +22,9 @@ package com.hedera.mirror.importer.reader.record;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.reader.FileReader;
+import com.hedera.mirror.importer.reader.StreamFileReader;
 
-public interface RecordFileReader extends FileReader<RecordFile, RecordItem> {
+public interface RecordFileReader extends StreamFileReader<RecordFile, RecordItem> {
 
     int MAX_TRANSACTION_LENGTH = 64 * 1024;
 }

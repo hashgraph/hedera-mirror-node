@@ -1,7 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-sleep 5
+if [ "$CI" = "true" ];
+then
+    sleep 30
+else
+    sleep 5
+fi
 network_identifier=""
 
 echo Waiting for Mirror Node to start syncing
