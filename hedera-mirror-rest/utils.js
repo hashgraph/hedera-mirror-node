@@ -323,10 +323,11 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
   if (paramValues === undefined) {
     return ['', []];
   }
-  // We either have a single entry of account filter, or an array (multiple entries)
-  // Convert a single entry into an array to keep the processing consistent
+  // Convert paramValues to a set to remove duplicates
   if (!Array.isArray(paramValues)) {
-    paramValues = [paramValues];
+    paramValues = new Set([paramValues]);
+  } else {
+    paramValues = new Set(paramValues);
   }
   const partialQueries = [];
   let values = [];
