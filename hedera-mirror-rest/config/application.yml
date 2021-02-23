@@ -28,8 +28,10 @@ hedera:
         swaggerUIPath: 'docs'
       port: 5551
       queryParams:
-        account.id:
-          max: 100
+        - max: 100
+          name: account.id
+        - max: 2
+          name: test
       shard: 0
       stateproof:
         addressBookHistory: false
