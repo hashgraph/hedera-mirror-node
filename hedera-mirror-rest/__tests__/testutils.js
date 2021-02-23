@@ -92,11 +92,11 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
       }
     });
 
-    let eqParams = sql.match(/(\w+?)\s*(IN)\s*?\(\s*((?:\$\d+,?\s*?)+)\)/g);
+    let eqParams = sql.match(/(\w+?)\s*?IN\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/g);
     eqParams = eqParams === null ? [] : eqParams;
 
     eqParams.forEach((e) => {
-      const matches = e.match(/(\w+?)\s*(IN)\s*?\(\s*((?:\$\d+,?\s*?)+)\)/);
+      const matches = e.match(/(\w+?)\s*?(IN)\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/);
       if (matches.length >= 4) {
         const eqParamSplit = matches[3].split(',');
         eqParamSplit.forEach((es) => {
