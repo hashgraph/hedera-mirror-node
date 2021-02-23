@@ -114,24 +114,6 @@ Array [
 ]
 `;
 
-exports[`utils validateAndParseFilters entity key tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"0.0.3"} 101 times 1`] = `
-Array [
-  "Invalid parameter: undefined",
-]
-`;
-
-exports[`utils validateAndParseFilters entity key tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"0.0.3"} 101 times 2`] = `
-Array [
-  "Invalid parameter: undefined",
-]
-`;
-
-exports[`utils validateAndParseFilters entity key tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"0.0.3"} 101 times 3`] = `
-Array [
-  "Invalid parameter: undefined",
-]
-`;
-
 exports[`utils validateAndParseFilters entity key tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"lt","value":"-1"} 1`] = `
 Array [
   "Invalid parameter: account.id",

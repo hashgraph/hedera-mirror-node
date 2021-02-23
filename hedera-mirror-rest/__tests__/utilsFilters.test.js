@@ -345,7 +345,6 @@ describe('utils validateAndParseFilters entity key tests', () => {
       utils.buildComparatorFilter(key, 'lt:-1'),
       // invalid format
       utils.buildComparatorFilter(key, 'lt:0.1.23456789012345'),
-      utils.buildMultipleComparatorFilter(constants.filterKeys.ACCOUNT_ID, '0.0.3', utils.queryParamMax.get(constants.filterKeys.ACCOUNT_ID) + 1),
     ];
 
     const filters = [
@@ -472,5 +471,14 @@ describe('utils validateAndParseFilters crypto key tests', () => {
     ];
 
     verifyValidAndInvalidFilters(invalidFilters, filters);
+  });
+});
+
+describe('utils isRepeatedQueryParameerValidLength', () => {
+  test(`utils isRepeatedQueryParameerValidLength verify account.id with valid amount ${config.maxRepeatedQueryParameters - 1} `, () => {
+    expect(utils.isRepeatedQueryParameerValidLength(Array(config.maxRepeatedQueryParameters - 1).fill("0.0.3"))).toBeTruthy();
+  });
+  test(`utils isRepeatedQueryParameerValidLength verify account.id with invalid amount ${config.maxRepeatedQueryParameters + 1}`, () => {
+    expect(utils.isRepeatedQueryParameerValidLength(Array(config.maxRepeatedQueryParameters + 1).fill("0.0.3"))).toBeFalsy();
   });
 });

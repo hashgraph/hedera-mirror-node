@@ -44,8 +44,6 @@ const opsMap = {
   ne: ' != ',
 };
 
-const queryParamMax = config.hasOwnProperty("queryParams") ? new Map(config.queryParams.map(obj => [obj.name, obj.max])) : new Map;
-
 /**
  * Check if the given number is numeric
  * @param {String} n Number to test
@@ -229,7 +227,7 @@ const validateReq = async (req) => {
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
-      if (queryParamMax.has(key) && queryParamMax.get(key) < req.query[key].length) {
+      if (isRepeatedQueryParameerValidLength(req.query[key])) {
         badParams.push(key);
         continue;
       }
@@ -247,6 +245,10 @@ const validateReq = async (req) => {
     throw InvalidArgumentError.forParams(badParams);
   }
 };
+
+const isRepeatedQueryParameerValidLength = (values => {
+  return values.length <= config.maxRepeatedQueryParameters;
+})
 
 const parseTimestampParam = (timestampParam) => {
   // Expect timestamp input as (a) just seconds,
@@ -739,11 +741,6 @@ const buildComparatorFilter = (name, filter) => {
   };
 };
 
-const buildMultipleComparatorFilter = (name, filter, number) => {
-  const singleFilter = buildComparatorFilter(name, filter);
-  return Array(number).fill(singleFilter);
-};
-
 /**
  * Verify param and filters meet expected format
  * Additionally update format to be persistence query compatible
@@ -873,7 +870,6 @@ const queryQuietly = async (query, ...params) => {
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
-  buildMultipleComparatorFilter,
   buildPgSqlObject,
   createTransactionId,
   convertMySqlStyleQueryToPostgres,
@@ -888,6 +884,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
+  isRepeatedQueryParameerValidLength,
   isTestEnv,
   isValidEntityNum,
   isValidLimitNum,
@@ -917,5 +914,4 @@ module.exports = {
   validateReq,
   parseTokenBalances,
   opsMap,
-  queryParamMax,
 };

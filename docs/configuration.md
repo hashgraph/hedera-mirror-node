@@ -285,9 +285,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
 | `hedera.mirror.rest.includeHostInLink`                   | false                   | Whether to include the hostname and port in the next link in the response                      |
 | `hedera.mirror.rest.maxLimit`                            | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
+| `hedera.mirror.rest.maxRepeatedQueryParameters`          | 100                     | The maximum number of times any query parameter can be repeated in the uri                     |
 | `hedera.mirror.rest.log.level`                           | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
 | `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
-| `hedera.mirror.rest.queryParams[].max`                   |                         | The max number of query param values allowed for a given query param                           |
 | `hedera.mirror.rest.queryParams[].name`                  |                         | The name of the query param                                                                    |
 | `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
 | `hedera.mirror.rest.metrics.config.authentication`       | true                    | Whether access to metrics for the REST API is authenticated                                    |

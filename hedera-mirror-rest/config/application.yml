@@ -16,6 +16,7 @@ hedera:
       log:
         level: debug
       maxLimit: 1000
+      maxRepeatedQueryParameters: 100
       metrics:
         enabled: true
         config:
@@ -27,9 +28,6 @@ hedera:
         specFileName: 'openapi'
         swaggerUIPath: 'docs'
       port: 5551
-      queryParams:
-        - max: 100
-          name: account.id
       shard: 0
       stateproof:
         addressBookHistory: false
