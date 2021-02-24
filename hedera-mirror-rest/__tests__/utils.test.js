@@ -321,6 +321,16 @@ describe('Utils randomString tests', () => {
   });
 });
 
+const parseQueryParamTest = (testPrefix, testSpecs, parseParam) => {
+  testSpecs.forEach((testSpec) => {
+    test(`Utils parseAccountIdQueryParam - ${testSpec.name}`, () => {
+      const val = parseParam(testSpec);
+      expect(val[0]).toEqual(testSpec.expectedClause);
+      expect(val[1]).toEqual(testSpec.expectedValues);
+    });
+  });
+};
+
 describe('Utils parseAccountIdQueryParam tests', () => {
   const testSpecs = [
     {
@@ -364,15 +374,8 @@ describe('Utils parseAccountIdQueryParam tests', () => {
     },
 
   ];
-  testSpecs.forEach((testSpec) => {
-    test(`Utils parseAccountIdQueryParam - ${testSpec.name}`, () => {
-      const val = utils.parseAccountIdQueryParam(testSpec.parsedQueryParams, "test");
-      expect(val[0]).toEqual(testSpec.expectedClause);
-      expect(val[1]).toEqual(testSpec.expectedValues);
-    });
-  });
+  parseQueryParamTest('Utils parseAccountIdQueryParam - ', testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, "test"));
 });
-
 
 describe('Utils parseTimestampQueryParam tests', () => {
   const testSpecs = [
@@ -425,13 +428,7 @@ describe('Utils parseTimestampQueryParam tests', () => {
       }
     },
   ];
-  testSpecs.forEach((testSpec) => {
-    test(`Utils parseTimestampQueryParam - ${testSpec.name}`, () => {
-      const val = utils.parseTimestampQueryParam(testSpec.parsedQueryParams, "test", testSpec.opOverride);
-      expect(val[0]).toEqual(testSpec.expectedClause);
-      expect(val[1]).toEqual(testSpec.expectedValues);
-    });
-  });
+  parseQueryParamTest('Utils parseTimestampQueryParam - ', testSpecs, (spec) => utils.parseTimestampQueryParam(spec.parsedQueryParams, "test", spec.opOverride));
 });
 
 describe('Utils parseBalanceQueryParam tests', () => {
@@ -482,13 +479,7 @@ describe('Utils parseBalanceQueryParam tests', () => {
       expectedValues: []
     },
   ];
-  testSpecs.forEach((testSpec) => {
-    test(`Utils parseBalanceQueryParam - ${testSpec.name}`, () => {
-      const val = utils.parseBalanceQueryParam(testSpec.parsedQueryParams, "test");
-      expect(val[0]).toEqual(testSpec.expectedClause);
-      expect(val[1]).toEqual(testSpec.expectedValues);
-    });
-  });
+  parseQueryParamTest('Utils parseBalanceQueryParam - ', testSpecs, (spec) => utils.parseBalanceQueryParam(spec.parsedQueryParams, "test"));
 });
 
 describe('Utils parsePublicKeyQueryParam tests', () => {
@@ -541,13 +532,7 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
       expectedValues: ["key1", "key2", "key2", "key3"]
     },
   ];
-  testSpecs.forEach((testSpec) => {
-    test(`Utils parsePublicKeyQueryParam - ${testSpec.name}`, () => {
-      const val = utils.parsePublicKeyQueryParam(testSpec.parsedQueryParams, "test");
-      expect(val[0]).toEqual(testSpec.expectedClause);
-      expect(val[1]).toEqual(testSpec.expectedValues);
-    });
-  });
+  parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, "test"));
 });
 
 describe('Utils parseCreditDebitParams tests', () => {
@@ -557,39 +542,39 @@ describe('Utils parseCreditDebitParams tests', () => {
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"type": "credit"},
       expectedClause: "test > 0",
+      expectedValues: [],
     },
     {
       name: "Debit",
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"type": "debit"},
       expectedClause: "test < 0",
+      expectedValues: [],
     },
     {
       name: "Empty",
       parsedQueryParams: {},
       expectedClause: "",
+      expectedValues: [],
     },
     {
       name: "Both",
       parsedQueryParams: {"type": ["credit", "debit"]},
       expectedClause: "test > 0 and test < 0",
+      expectedValues: [],
     },
     {
       name: "Op ignored",
       parsedQueryParams: {"type": ["gte:credit"]},
       expectedClause: "test > 0",
+      expectedValues: [],
     },
     {
       name: "Invalid value",
       parsedQueryParams: {"type": ["cash"]},
       expectedClause: "",
+      expectedValues: [],
     },
   ];
-  testSpecs.forEach((testSpec) => {
-    test(`Utils parseCreditDebitParams - ${testSpec.name}`, () => {
-      const val = utils.parseCreditDebitParams(testSpec.parsedQueryParams, "test");
-      expect(val[0]).toEqual(testSpec.expectedClause);
-    });
-  });
+  parseQueryParamTest('Utils parseCreditDebitParams - ', testSpecs, (spec) => utils.parseCreditDebitParams(spec.parsedQueryParams, "test"));
 });
-//parseCreditDebitParams
