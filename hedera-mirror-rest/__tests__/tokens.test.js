@@ -660,28 +660,3 @@ describe('token formatTokenInfoRow tests', () => {
     expect(JSON.stringify(formattedInput)).toStrictEqual(JSON.stringify(expectedFormat));
   });
 });
-
-describe('token getEncodedTokenId test', function () {
-  const entityIdModule = require('../entityId');
-  const utilsModule = require('../utils');
-
-  afterEach(() => {
-    sinon.restore();
-  });
-
-  test('valid token ID', () => {
-    sinon.stub(utilsModule, 'isValidEntityNum').returns(true);
-    const entityId = {getEncodedId: () => {}};
-    const mock = sinon.mock(entityId);
-    mock.expects('getEncodedId').once().returns('111');
-    sinon.stub(entityIdModule, 'fromString').returns(entityId);
-
-    expect(tokens.getEncodedTokenId('0.0.111')).toEqual('111');
-    mock.verify();
-  });
-
-  test('invalid token ID expect error', () => {
-    sinon.stub(utilsModule, 'isValidEntityNum').returns(false);
-    expect(() => tokens.getEncodedTokenId('0.0.111')).toThrowErrorMatchingSnapshot();
-  });
-});

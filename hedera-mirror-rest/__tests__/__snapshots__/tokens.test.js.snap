@@ -1,7 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`token getEncodedTokenId test invalid token ID expect error 1`] = `
-Array [
-  "Invalid parameter: tokenid",
-]
-`;

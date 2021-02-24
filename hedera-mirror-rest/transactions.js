@@ -75,8 +75,8 @@ const createTokenTransferList = (tokenTransferList) => {
   return tokenTransferList.map((transfer) => {
     const {token_id: tokenId, account_id: accountId, amount} = transfer;
     return {
-      token_id: EntityId.fromString(tokenId).toString(),
-      account: EntityId.fromString(accountId).toString(),
+      token_id: EntityId.fromEncodedId(tokenId).toString(),
+      account: EntityId.fromEncodedId(accountId).toString(),
       amount,
     };
   });
@@ -106,13 +106,13 @@ const createTransferLists = (rows) => {
         max_fee: utils.getNullableNumber(row.max_fee),
         memo_base64: utils.encodeBase64(row.memo),
         name: row.name,
-        node: EntityId.fromString(row.node_account_id).toString(),
+        node: EntityId.fromEncodedId(row.node_account_id).toString(),
         result: row.result,
         scheduled: row.scheduled,
         token_transfers: createTokenTransferList(row.token_transfer_list),
         transaction_hash: utils.encodeBase64(row.transaction_hash),
         transaction_id: utils.createTransactionId(
-          EntityId.fromString(row.payer_account_id).toString(),
+          EntityId.fromEncodedId(row.payer_account_id).toString(),
           validStartTimestamp
         ),
         transfers: [],
@@ -123,7 +123,7 @@ const createTransferLists = (rows) => {
 
     if (row.ctl_entity_id !== null) {
       transactions[row.consensus_ns].transfers.push({
-        account: EntityId.fromString(row.ctl_entity_id).toString(),
+        account: EntityId.fromEncodedId(row.ctl_entity_id).toString(),
         amount: Number(row.amount),
       });
     }

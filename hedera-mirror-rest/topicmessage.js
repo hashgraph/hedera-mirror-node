@@ -57,7 +57,7 @@ const validateConsensusTimestampParam = (consensusTimestamp) => {
  */
 const validateGetSequenceMessageParams = (topicId, seqNum) => {
   const badParams = [];
-  if (!utils.isValidEntityNum(topicId)) {
+  if (!EntityId.isValidEntityId(topicId)) {
     badParams.push(topicMessageColumns.TOPIC_NUM);
   }
 
@@ -74,7 +74,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
  * Verify topicId and sequencenumber meet entity_num and limit format
  */
 const validateGetTopicMessagesParams = (topicId) => {
-  if (!utils.isValidEntityNum(topicId)) {
+  if (!EntityId.isValidEntityId(topicId)) {
     throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_NUM);
   }
 };

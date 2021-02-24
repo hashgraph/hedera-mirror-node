@@ -135,39 +135,6 @@ describe('Utils parseTimestampParam tests', () => {
   });
 });
 
-describe('Utils isValidEntityNum tests', () => {
-  test('Verify invalid for null', () => {
-    expect(utils.isValidEntityNum(null)).toBe(false);
-  });
-  test('Verify invalid for empty input', () => {
-    expect(utils.isValidEntityNum('')).toBe(false);
-  });
-  test('Verify invalid for invalid input', () => {
-    expect(utils.isValidEntityNum('1234567890.000000001')).toBe(false);
-  });
-  test('Verify invalid for negative shard', () => {
-    expect(utils.isValidEntityNum('-1.0.1')).toBe(false);
-  });
-  test('Verify invalid for negative realm', () => {
-    expect(utils.isValidEntityNum('0.-1.1')).toBe(false);
-  });
-  test('Verify invalid for negative entity_num', () => {
-    expect(utils.isValidEntityNum('0.0.-1')).toBe(false);
-  });
-  test('Verify invalid for negative num', () => {
-    expect(utils.isValidEntityNum('-1')).toBe(false);
-  });
-  test('Verify valid for entity_num only', () => {
-    expect(utils.isValidEntityNum('3')).toBe(true);
-  });
-  test('Verify valid for full entity', () => {
-    expect(utils.isValidEntityNum('1.2.3')).toBe(true);
-  });
-  test('Verify valid for full entity 2', () => {
-    expect(utils.isValidEntityNum('0.2.3')).toBe(true);
-  });
-});
-
 describe('Utils isValidLimitNum tests', () => {
   test('Verify invalid for null', () => {
     expect(utils.isValidLimitNum(null)).toBe(false);

@@ -23,6 +23,48 @@
 const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
+describe('Utils isValidEntityId tests', () => {
+  test('Verify invalid for null', () => {
+    expect(EntityId.isValidEntityId(null)).toBe(false);
+  });
+  test('Verify invalid for empty input', () => {
+    expect(EntityId.isValidEntityId('')).toBe(false);
+  });
+  test('Verify invalid for more than 3 "." separated number parts', () => {
+    expect(EntityId.isValidEntityId('0.1.2.3')).toBe(false);
+  });
+  test('Verify invalid for negative shard', () => {
+    expect(EntityId.isValidEntityId('-1.0.1')).toBe(false);
+  });
+  test('Verify invalid for negative realm', () => {
+    expect(EntityId.isValidEntityId('0.-1.1')).toBe(false);
+  });
+  test('Verify invalid for negative entity_num', () => {
+    expect(EntityId.isValidEntityId('0.0.-1')).toBe(false);
+  });
+  test('Verify invalid for negative num', () => {
+    expect(EntityId.isValidEntityId('-1')).toBe(false);
+  });
+  test('Verify invalid for float number', () => {
+    expect(EntityId.isValidEntityId(123.321)).toBe(false);
+  });
+  test('Verify valid for entity_num only', () => {
+    expect(EntityId.isValidEntityId('3')).toBe(true);
+  });
+  test('Verify valid for realm.num', () => {
+    expect(EntityId.isValidEntityId('1234567890.000000001')).toBe(true);
+  });
+  test('Verify valid for full entity', () => {
+    expect(EntityId.isValidEntityId('1.2.3')).toBe(true);
+  });
+  test('Verify valid for full entity 2', () => {
+    expect(EntityId.isValidEntityId('0.2.3')).toBe(true);
+  });
+  test('Verify valid for integer number', () => {
+    expect(EntityId.isValidEntityId(123)).toBe(true);
+  });
+});
+
 describe('EntityId fromString', () => {
   const specs = [
     {
@@ -50,19 +92,22 @@ describe('EntityId fromString', () => {
       expected: EntityId.of(0, 0, 4294967295),
     },
     {
-      entityIdStr: '2814792716779530',
-      expected: EntityId.of(10, 10, 10),
+      entityIdStr: '0.1',
+      expected: EntityId.of(0, 0, 1),
     },
     {
-      entityIdStr: '9223372036854775807',
-      expected: EntityId.of(32767, 65535, 4294967295),
+      entityIdStr: null,
+      isNullable: true,
+      expected: EntityId.of(null, null, null),
     },
     {
-      entityIdStr: '9223090561878065152',
-      expected: EntityId.of(32767, 0, 0),
+      entityIdStr: null,
+      isNullable: false,
+      expectErr: true,
     },
     {
       entityIdStr: '0.1.x',
+      paramName: 'demo param',
       expectErr: true,
     },
     {
@@ -71,10 +116,6 @@ describe('EntityId fromString', () => {
     },
     {
       entityIdStr: '0.1.2.3',
-      expectErr: true,
-    },
-    {
-      entityIdStr: '0.1',
       expectErr: true,
     },
     {
@@ -92,14 +133,14 @@ describe('EntityId fromString', () => {
   ];
 
   for (const spec of specs) {
-    const {entityIdStr, expectErr, expected} = spec;
-    test(entityIdStr, () => {
+    const {entityIdStr, paramName, isNullable, expectErr, expected} = spec;
+    test(`${entityIdStr}`, () => {
       if (!expectErr) {
-        expect(EntityId.fromString(entityIdStr)).toEqual(expected);
+        expect(EntityId.fromString(entityIdStr, paramName, isNullable)).toEqual(expected);
       } else {
         expect(() => {
-          EntityId.fromString(entityIdStr);
-        }).toThrowError(InvalidArgumentError);
+          EntityId.fromString(entityIdStr, paramName, isNullable);
+        }).toThrowErrorMatchingSnapshot();
       }
     });
   }
@@ -141,11 +182,11 @@ describe('EntityId encoding', () => {
   });
 
   test('nullable', () => {
-    expect(EntityId.fromString(null, true).getEncodedId()).toBeNull();
+    expect(EntityId.fromString(null, '', true).getEncodedId()).toBeNull();
   });
 });
 
-describe('EntityId fromInt', () => {
+describe('EntityId fromEncodedId', () => {
   const specs = [
     {
       encodedId: 0,
@@ -165,6 +206,10 @@ describe('EntityId fromInt', () => {
     },
     {
       encodedId: BigInt(4294967295),
+      expected: EntityId.of(0, 0, 4294967295),
+    },
+    {
+      encodedId: '4294967295',
       expected: EntityId.of(0, 0, 4294967295),
     },
     {
@@ -188,7 +233,7 @@ describe('EntityId fromInt', () => {
       expectErr: true,
     },
     {
-      encodedId: '4294967295',
+      encodedId: 2n ** 63n,
       expectErr: true,
     },
     {
@@ -206,10 +251,10 @@ describe('EntityId fromInt', () => {
     const {encodedId, isNullable, expectErr, expected} = spec;
     test(`${encodedId}`, () => {
       if (!expectErr) {
-        expect(EntityId.fromInt(encodedId, isNullable)).toEqual(expected);
+        expect(EntityId.fromEncodedId(encodedId, isNullable)).toEqual(expected);
       } else {
         expect(() => {
-          EntityId.fromInt(encodedId);
+          EntityId.fromEncodedId(encodedId, isNullable);
         }).toThrowError(InvalidArgumentError);
       }
     });

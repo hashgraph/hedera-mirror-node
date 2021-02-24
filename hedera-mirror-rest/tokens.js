@@ -25,7 +25,6 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
 const {NotFoundError} = require('./errors/notFoundError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 // select columns
 const sqlQueryColumns = {
@@ -113,7 +112,7 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
  */
 const formatTokenRow = (row) => {
   return {
-    token_id: EntityId.fromString(row.token_id).toString(),
+    token_id: EntityId.fromEncodedId(row.token_id).toString(),
     symbol: row.symbol,
     admin_key: utils.encodeKey(row.key),
   };
@@ -122,7 +121,7 @@ const formatTokenRow = (row) => {
 const formatTokenInfoRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
-    auto_renew_account: EntityId.fromString(row.auto_renew_account_id, true).toString(),
+    auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
     decimals: row.decimals,
@@ -135,9 +134,9 @@ const formatTokenInfoRow = (row) => {
     name: row.name,
     supply_key: utils.encodeKey(row.supply_key),
     symbol: row.symbol,
-    token_id: EntityId.fromString(row.token_id).toString(),
+    token_id: EntityId.fromEncodedId(row.token_id).toString(),
     total_supply: row.total_supply,
-    treasury_account_id: EntityId.fromString(row.treasury_account_id).toString(),
+    treasury_account_id: EntityId.fromEncodedId(row.treasury_account_id).toString(),
     wipe_key: utils.encodeKey(row.wipe_key),
   };
 };
@@ -158,7 +157,7 @@ const getTokensRequest = async (req, res) => {
   if (accountId) {
     conditions.push('ta.associated is true');
     getTokensSqlQuery.push(accountIdJoinQuery);
-    getTokenSqlParams.push(EntityId.fromString(accountId).getEncodedId());
+    getTokenSqlParams.push(EntityId.fromString(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
   }
 
   // add join with entities table to sql query
@@ -194,7 +193,7 @@ const getTokensRequest = async (req, res) => {
 };
 
 const getTokenInfoRequest = async (req, res) => {
-  const tokenId = getEncodedTokenId(req.params.id);
+  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
 
   // concatenate queries to produce final sql query
   const pgSqlQuery = [tokenInfoSelectQuery, entityIdJoinQuery, tokenIdMatchQuery].join('\n');
@@ -297,17 +296,9 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
 
 const formatTokenBalanceRow = (row) => {
   return {
-    account: EntityId.fromString(row.account_id).toString(),
+    account: EntityId.fromEncodedId(row.account_id).toString(),
     balance: Number(row.balance),
   };
-};
-
-const getEncodedTokenId = (tokenIdStr) => {
-  if (!utils.isValidEntityNum(tokenIdStr)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
-  }
-
-  return EntityId.fromString(tokenIdStr).getEncodedId();
 };
 
 /**
@@ -317,7 +308,7 @@ const getEncodedTokenId = (tokenIdStr) => {
  * @param {Response} res HTTP response object
  */
 const getTokenBalances = async (req, res) => {
-  const tokenId = getEncodedTokenId(req.params.id);
+  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
   const filters = utils.buildFilterObject(req.query);
   await utils.validateAndParseFilters(filters);
 
@@ -380,6 +371,5 @@ if (utils.isTestEnv()) {
     tokenBalancesSelectQuery,
     extractSqlFromTokenBalancesRequest,
     formatTokenBalanceRow,
-    getEncodedTokenId,
   });
 }

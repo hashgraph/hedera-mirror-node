@@ -165,7 +165,7 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  * @returns {*}
  */
 const mapTransactionResults = (rows) => {
-  return rows.map((v) => `${v.consensus_ns}, ${EntityId.fromString(v.ctl_entity_id).toString()}, ${v.amount}`);
+  return rows.map((v) => `${v.consensus_ns}, ${EntityId.fromEncodedId(v.ctl_entity_id).toString()}, ${v.amount}`);
 };
 
 const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
@@ -333,7 +333,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
 describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
-  const s3TestDataRoot = path.join(__dirname, 'data/s3');
+  const s3TestDataRoot = path.join(__dirname, 'data', 's3');
 
   let configOverriden = false;
   let configClone;
