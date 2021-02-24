@@ -65,7 +65,7 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
-        expectLastSignature(Instant.EPOCH);
+        expectLastStreamFile(Instant.EPOCH);
 
         downloader.download();
 

@@ -62,19 +62,20 @@ create index if not exists non_fee_transfer__consensus_timestamp
 
 -- record_file
 alter table record_file
-    add primary key (consensus_start);
-create unique index if not exists record_file__name
-    on record_file (name, consensus_start); -- have to add consensus_start due to partitioning
+    add primary key (consensus_end);
+create unique index if not exists record_file__index
+    on record_file (index, consensus_end); -- have to add consensus_end due to partitioning
 create unique index if not exists record_file__hash
-    on record_file (hash, consensus_start); -- have to add consensus_start due to partitioning
-create index if not exists record_file__consensus_end
-    on record_file (consensus_end);
+    on record_file (hash, consensus_end); -- have to add consensus_end due to partitioning
 create index if not exists record_file__prev_hash
     on record_file (prev_hash);
 
 -- schedule
 create unique index if not exists schedule__schedule_id
     on schedule (schedule_id desc, consensus_timestamp desc);
+
+create index if not exists schedule__creator_account_id
+    on schedule (creator_account_id desc);
 
 -- schedule_signature
 create index if not exists schedule_signature__schedule_id

@@ -158,6 +158,7 @@ app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.ge
 app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
 // schedules routes
+app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
 app.getAsync(`${apiPrefix}/schedules/:id`, schedules.getScheduleById);
 
 // transactions routes

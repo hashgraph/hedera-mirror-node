@@ -1,0 +1,167 @@
+{
+  "description": "Schedules api call for all schedules",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1024
+      }
+    ],
+    "entities": [
+      {
+        "entity_num": 2000,
+        "entity_type": 6,
+        "memo": "Created per council decision dated 02/01/21",
+        "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
+        "key": [1, 1, 1]
+      },
+      {
+        "entity_num": 3000,
+        "entity_type": 6,
+        "memo": "Created per mirror team decision dated 02/02/21",
+        "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
+        "key": [2, 2, 2]
+      },
+      {
+        "entity_num": 4000,
+        "entity_type": 6,
+        "memo": "Created per product team decision dated 02/03/21",
+        "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
+        "key": [3, 3, 3]
+      }
+    ],
+    "schedules": [
+      {
+        "consensus_timestamp": "1234567890000010001",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234567890000001100",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.2000"
+      },
+      {
+        "consensus_timestamp": "1234567890000020002",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234767890000002102",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.3000"
+      },
+      {
+        "consensus_timestamp": "1234567890000030003",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234967890000003103",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.4000"
+      }
+    ],
+    "schedulesignatures": [
+      {
+        "consensus_timestamp": "1234567890000010001",
+        "public_key_prefix": [1, 1, 1],
+        "schedule_id": "0.0.2000",
+        "signature": [2, 2, 2]
+      },
+      {
+        "consensus_timestamp": "1234567890000010010",
+        "public_key_prefix": [3, 3, 3],
+        "schedule_id": "0.0.2000",
+        "signature": [4, 4, 4]
+      },
+      {
+        "consensus_timestamp": "1234567890000020001",
+        "public_key_prefix": [5, 5, 5],
+        "schedule_id": "0.0.3000",
+        "signature": [6, 6, 6]
+      },
+      {
+        "consensus_timestamp": "1234567890000020010",
+        "public_key_prefix": [7, 7, 7],
+        "schedule_id": "0.0.3000",
+        "signature": [8, 8, 8]
+      },
+      {
+        "consensus_timestamp": "1234567890000030001",
+        "public_key_prefix": [9, 9, 9],
+        "schedule_id": "0.0.4000",
+        "signature": [9, 9, 9]
+      }
+    ]
+  },
+  "url": "/api/v1/schedules",
+  "responseStatus": 200,
+  "responseJson": {
+    "schedules": [
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "7b2231222c2231222c2231227d"
+        },
+        "consensus_timestamp": "1234567890.000010001",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234567890.000001100",
+        "memo": "Created per council decision dated 02/01/21",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.2000",
+        "signatures": [
+          {
+            "consensus_timestamp": "1234567890.000010001",
+            "public_key_prefix": "AQEB",
+            "signature": "AgIC"
+          },
+          {
+            "consensus_timestamp": "1234567890.000010010",
+            "public_key_prefix": "AwMD",
+            "signature": "BAQE"
+          }
+        ],
+        "transaction_body": "AQECAgMD"
+      },
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "7b2232222c2232222c2232227d"
+        },
+        "consensus_timestamp": "1234567890.000020002",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234767890.000002102",
+        "memo": "Created per mirror team decision dated 02/02/21",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.3000",
+        "signatures": [
+          {
+            "consensus_timestamp": "1234567890.000020001",
+            "public_key_prefix": "BQUF",
+            "signature": "BgYG"
+          },
+          {
+            "consensus_timestamp": "1234567890.000020010",
+            "public_key_prefix": "BwcH",
+            "signature": "CAgI"
+          }
+        ],
+        "transaction_body": "AQECAgMD"
+      },
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "7b2233222c2233222c2233227d"
+        },
+        "consensus_timestamp": "1234567890.000030003",
+        "creator_account_id": "0.0.1024",
+        "executed_timestamp": "1234967890.000003103",
+        "memo": "Created per product team decision dated 02/03/21",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.4000",
+        "signatures": [
+          {
+            "consensus_timestamp": "1234567890.000030001",
+            "public_key_prefix": "CQkJ",
+            "signature": "CQkJ"
+          }
+        ],
+        "transaction_body": "AQECAgMD"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

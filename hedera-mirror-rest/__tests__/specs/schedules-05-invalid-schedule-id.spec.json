@@ -1,7 +1,6 @@
 {
   "description": "Schedule api calls with invalid schedule id",
-  "setup": {
-  },
+  "setup": {},
   "url": "/api/v1/schedules/0.7",
   "responseStatus": 400,
   "responseJson": {

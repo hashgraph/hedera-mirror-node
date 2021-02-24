@@ -32,6 +32,10 @@ beforeAll(async () => {
 
 afterAll(() => {});
 
+const formatSqlQueryString = (query) => {
+  return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
+};
+
 describe('token formatTokenRow tests', () => {
   const rowInput = {
     key: [3, 3, 3],
@@ -60,13 +64,12 @@ describe('token formatTokenRow tests', () => {
 
 describe('token extractSqlFromTokenRequest tests', () => {
   test('Verify simple discovery query', () => {
-    const initialQuery = `${tokens.tokensSelectQuery}${tokens.entityIdJoinQuery}`;
+    const initialQuery = [tokens.tokensSelectQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [];
-    const nextParamCount = 1;
     const filters = [];
 
     const expectedquery =
-      'select t.token_id, symbol, e.key from token t join t_entities e on e.id = t.token_id order by t.token_id asc limit $1;';
+      'select t.token_id, symbol, e.key from token t join t_entities e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -74,8 +77,8 @@ describe('token extractSqlFromTokenRequest tests', () => {
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
-      nextParamCount,
       filters,
+      null,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -84,9 +87,8 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify public key filter', () => {
-    const initialQuery = `${tokens.tokensSelectQuery}${tokens.entityIdJoinQuery}`;
+    const initialQuery = [tokens.tokensSelectQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [];
-    const nextParamCount = 1;
     const filters = [
       {
         key: filterKeys.ENTITY_PUBLICKEY,
@@ -95,8 +97,11 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery =
-      'select t.token_id, symbol, e.key from token t join t_entities e on e.id = t.token_id where e.ed25519_public_key_hex = $1 order by t.token_id asc limit $2;';
+    const expectedquery = `select t.token_id, symbol, e.key from token t
+        join t_entities e on e.id = t.token_id
+        where e.ed25519_public_key_hex = $1
+        order by t.token_id asc
+        limit $2`;
     const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -104,8 +109,8 @@ describe('token extractSqlFromTokenRequest tests', () => {
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
-      nextParamCount,
       filters,
+      undefined,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -114,9 +119,9 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify account id filter', () => {
-    const initialQuery = `${tokens.tokensSelectQuery}${tokens.accountIdJoinQuery}${tokens.entityIdJoinQuery}`;
+    const extraConditions = ['ta.associated is true'];
+    const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [5];
-    const nextParamCount = 2;
     const filters = [
       {
         key: filterKeys.ACCOUNT_ID,
@@ -125,8 +130,12 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery =
-      'select t.token_id, symbol, e.key from token t join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id join t_entities e on e.id = t.token_id order by t.token_id asc limit $2;';
+    const expectedquery = `select t.token_id, symbol, e.key from token t
+        join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+        join t_entities e on e.id = t.token_id
+        where ta.associated is true
+        order by t.token_id asc
+        limit $2`;
     const expectedparams = [5, maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -134,8 +143,8 @@ describe('token extractSqlFromTokenRequest tests', () => {
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
-      nextParamCount,
       filters,
+      extraConditions,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -144,9 +153,8 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify all filters', () => {
-    const initialQuery = `${tokens.tokensSelectQuery}${tokens.accountIdJoinQuery}${tokens.entityIdJoinQuery}`;
+    const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [5];
-    const nextParamCount = 2;
     const filters = [
       {
         key: filterKeys.ACCOUNT_ID,
@@ -163,8 +171,13 @@ describe('token extractSqlFromTokenRequest tests', () => {
       {key: filterKeys.ORDER, operator: ' = ', value: orderFilterValues.DESC},
     ];
 
-    const expectedquery =
-      'select t.token_id, symbol, e.key from token t join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id join t_entities e on e.id = t.token_id where e.ed25519_public_key_hex = $2 and t.token_id > $3 order by t.token_id desc limit $4;';
+    const expectedquery = `select t.token_id, symbol, e.key
+        from token t
+        join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+        join t_entities e on e.id = t.token_id
+        where e.ed25519_public_key_hex = $2 and t.token_id > $3
+        order by t.token_id desc
+        limit $4`;
     const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', '3'];
     const expectedorder = orderFilterValues.DESC;
     const expectedlimit = 3;
@@ -172,8 +185,8 @@ describe('token extractSqlFromTokenRequest tests', () => {
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
-      nextParamCount,
       filters,
+      [],
       expectedquery,
       expectedparams,
       expectedorder,
@@ -185,8 +198,8 @@ describe('token extractSqlFromTokenRequest tests', () => {
 const verifyExtractSqlFromTokenRequest = (
   pgSqlQuery,
   pgSqlParams,
-  nextParamCount,
   filters,
+  extraConditions,
   expectedquery,
   expectedparams,
   expectedorder,
@@ -195,11 +208,11 @@ const verifyExtractSqlFromTokenRequest = (
   const {query, params, order, limit} = tokens.extractSqlFromTokenRequest(
     pgSqlQuery,
     pgSqlParams,
-    nextParamCount,
-    filters
+    filters,
+    extraConditions
   );
 
-  expect(query).toStrictEqual(expectedquery);
+  expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
   expect(params).toStrictEqual(expectedparams);
   expect(order).toStrictEqual(expectedorder);
   expect(limit).toStrictEqual(expectedlimit);
@@ -221,10 +234,6 @@ describe('token formatTokenBalanceRow tests', () => {
 });
 
 describe('token extractSqlFromTokenBalancesRequest tests', () => {
-  const formatSqlQueryString = (query) => {
-    return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
-  };
-
   const operators = Object.values(opsMap);
   const initialQuery = tokens.tokenBalancesSelectQuery;
   const encodedTokenIdStr = '1009';

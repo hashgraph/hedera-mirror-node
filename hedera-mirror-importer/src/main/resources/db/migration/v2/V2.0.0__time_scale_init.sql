@@ -126,12 +126,11 @@ create table if not exists non_fee_transfer
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
 -- record_file
--- id seq from v1.0 no longer explicitly created as s_record_files_seq
 create table if not exists record_file
 (
     bytes              bytea                  null,
-    consensus_start    bigint default 0       not null,
-    consensus_end      bigint default 0       not null,
+    consensus_start    bigint                 not null,
+    consensus_end      bigint                 not null,
     count              bigint                 not null,
     digest_algorithm   int                    not null,
     file_hash          character varying(96)  not null,
@@ -139,7 +138,7 @@ create table if not exists record_file
     hapi_version_minor int,
     hapi_version_patch int,
     hash               character varying(96)  not null,
-    id                 serial                 not null,
+    index              bigint                 not null,
     load_start         bigint                 not null,
     load_end           bigint                 not null,
     name               character varying(250) not null,

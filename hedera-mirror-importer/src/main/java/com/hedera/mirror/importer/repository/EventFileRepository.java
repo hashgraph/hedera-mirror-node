@@ -25,7 +25,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import com.hedera.mirror.importer.domain.EventFile;
 
-public interface EventFileRepository extends StreamFileRepository<EventFile, String> {
+public interface EventFileRepository extends StreamFileRepository<EventFile, Long> {
 
     @Override
     @Query(value = "select * from event_file order by consensus_end desc limit 1", nativeQuery = true)

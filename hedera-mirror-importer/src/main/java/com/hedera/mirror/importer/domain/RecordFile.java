@@ -26,8 +26,6 @@ import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
@@ -52,6 +50,7 @@ public class RecordFile implements StreamFile {
 
     private Long consensusStart;
 
+    @Id
     private Long consensusEnd;
 
     private Long count;
@@ -71,9 +70,7 @@ public class RecordFile implements StreamFile {
     @ToString.Exclude
     private String hash;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long index;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude

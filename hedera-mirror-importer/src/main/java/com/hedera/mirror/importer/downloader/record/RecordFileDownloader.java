@@ -32,7 +32,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
@@ -78,9 +77,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
     }
 
     @Override
-    protected void onVerified(StreamFile streamFile) {
-        RecordFile recordFile = (RecordFile) streamFile;
-
+    protected void onVerified(RecordFile recordFile) {
         Instant consensusEnd = Instant.ofEpochSecond(0, recordFile.getConsensusEnd());
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 
