@@ -7,8 +7,8 @@ on:
 env:
   MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dskip.npm
     -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Djib.skip -Ddocker.skip
-  MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0 -Dgroups=!v1
-    -Dspring.flyway.locations=classpath:/db/migration/v2,filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2
+  MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0 -Dgroups='!v1'
+    -Dspring.flyway.locations=filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2
     -Dspring.flyway.baseline-version=1.999.999
 
 jobs:
@@ -83,35 +83,9 @@ jobs:
     env:
       working-directory: ./hedera-mirror-rest
 
-    #    services:
-    #      localstack:
-    #        image: localstack/localstack:0.11.3
-    #        env:
-    #          SERVICES: s3
-    #        ports:
-    #          - 4566:4566
-    #      timescaledb:
-    #        image: timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
-    #        env:
-    #          POSTGRES_DB: mirror_node_integration
-    #          POSTGRES_PASSWORD: mirror_api_pass
-    #          POSTGRES_USER: mirror_api
-    #        ports:
-    #          - 5432:5432
-    #        # Set health checks to wait until postgres has started
-    #        options: >-
-    #          --health-cmd pg_isready
-    #          --health-interval 10s
-    #          --health-timeout 5s
-    #          --health-retries 5
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
-      - name: Install npm dependencies
-        run: npm ci
-        working-directory: ${{env.working-directory}}
 
       - name: Cache Node packages
         uses: actions/cache@v1
@@ -120,9 +94,8 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: ${{ runner.os }}-node-
 
-      - name: Run tests
-        run: npm test -- --maxWorkers 2
-        working-directory: ${{env.working-directory}}
+      - name: Maven verify
+        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl hedera-mirror-rest/
         env:
           MIRROR_NODE_INT_DB: v2
 

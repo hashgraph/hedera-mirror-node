@@ -92,6 +92,13 @@ class MirrorBaseJavaMigrationTest {
         assertThat(newMigration.isMigrationCompleted()).isFalse();
     }
 
+    @Test
+    void verifyMigrateWhenLatest() throws IOException {
+        V0_0_5__MirrorBaseJavaMigration newMigration = new V0_0_5__MirrorBaseJavaMigration();
+        newMigration.migrate(new FlywayContext(getConfiguration("0", "latest")));
+        assertThat(newMigration.isMigrationCompleted()).isTrue();
+    }
+
     private ClassicConfiguration getConfiguration(String baseLine, String target) {
         ClassicConfiguration configuration = new ClassicConfiguration();
         configuration.setBaselineVersionAsString(baseLine);

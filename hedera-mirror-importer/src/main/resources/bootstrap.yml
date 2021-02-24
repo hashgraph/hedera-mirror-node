@@ -5,3 +5,4 @@ spring:
   flyway:
     baselineVersion: 0
     locations: "classpath:db/migration/v1"
+    target: "latest"

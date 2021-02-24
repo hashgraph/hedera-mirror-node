@@ -20,7 +20,7 @@
 
 'use strict';
 
-const {exec} = require('child_process');
+const {execSync} = require('child_process');
 const fs = require('fs');
 const log4js = require('log4js');
 const path = require('path');
@@ -69,7 +69,7 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
  * testContainers/dockerized postgresql instance.
  */
 const instantiateDatabase = async () => {
-  if (!process.env.CIRCLECI && !process.env.CI_CONTAINERS) {
+  if (!process.env.CIRCLECI) {
     if (!(await isDockerInstalled())) {
       throw new Error('Docker not found');
     }
@@ -129,42 +129,22 @@ const flywayMigrate = () => {
     "placeholders.db-name": "${dbConfig.name}",
     "placeholders.db-user": "${dbAdminUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
+    "target": "latest",
     "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}",
     "user": "${dbAdminUser}"
   },
-  "version": "7.1.1",
+  "version": "6.5.7",
   "downloads": {
     "storageDirectory": "${flywayDataPath}"
   }
 }
 `;
 
-  const cwd = process.cwd();
-  logger.info(`flywayConfigPath: ${flywayConfigPath}, cwd: ${cwd}`);
-  logger.info(`flywayConfig: ${flywayConfig}`);
-  fs.readdirSync(locations).forEach((file) => {
-    logger.info(`migrations: ${file}`);
-  });
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
 
-  return new Promise((resolve, reject) => {
-    let args = ['node', exePath, '-c', flywayConfigPath, 'clean'];
-    exec(args.join(' '), {}, (err) => {
-      if (err) {
-        reject(err);
-      }
-      args = ['node', exePath, '-c', flywayConfigPath, 'migrate'];
-      exec(args.join(' '), {}, (err, stdout) => {
-        if (err) {
-          reject(err);
-        } else {
-          logger.info(stdout);
-          resolve();
-        }
-      });
-    });
-  });
+  execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
+  execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
 
 const closeConnection = async () => {

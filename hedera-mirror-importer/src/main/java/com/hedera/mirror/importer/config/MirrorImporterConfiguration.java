@@ -130,8 +130,6 @@ public class MirrorImporterConfiguration {
                 }
             }
             configuration.getPlaceholders().put("topicRunningHashV2AddedTimestamp", timestamp.toString());
-            log.info("baselineVersion: {}, target: {}, locations: {}", configuration.getBaselineVersion(), configuration
-                    .getTarget(), configuration.getLocations());
         };
     }
 

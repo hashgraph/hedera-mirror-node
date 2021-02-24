@@ -79,7 +79,6 @@ spring:
     baselineOnMigrate: true
     connectRetries: 20
     ignoreMissingMigrations: true
-    locations: "classpath:db/migration/v1"
     password: ${hedera.mirror.importer.db.ownerPassword}
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}
