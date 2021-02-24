@@ -334,25 +334,25 @@ const parseQueryParamTest = (testPrefix, testSpecs, parseParam) => {
 describe('Utils parseAccountIdQueryParam tests', () => {
   const testSpecs = [
     {
-      name: "Basic",
+      name: "Single parameter",
       parsedQueryParams: {"account.id": "gte:0.0.3"},
       expectedClause: "test >= ?",
       expectedValues: ["3"]
     },
     {
-      name: "Empty",
+      name: "No parameters",
       parsedQueryParams: {},
       expectedClause: "",
       expectedValues: []
     },
     {
-      name: "Compound",
+      name: "Multiple parameters different ops",
       parsedQueryParams: {"account.id": ["gte:0.0.3", "lt:0.0.5", "2"]},
       expectedClause: "test >= ? and test < ? and test IN (?)",
       expectedValues: ["3", "5", "2"]
     },
     {
-      name: "Extra param",
+      name: "Extra useless parameter",
       parsedQueryParams: {
         "account.id": "0.0.3",
         "timestamp": "2000"
@@ -361,13 +361,13 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       expectedValues: ["3"]
     },
     {
-      name: "Multiple eq",
+      name: "Multiple =",
       parsedQueryParams: {"account.id": ["0.0.3", "4"]},
       expectedClause: "test IN (?, ?)",
       expectedValues: ["3", "4"]
     },
     {
-      name: "Duplicates",
+      name: "Duplicate parameters",
       parsedQueryParams: {"account.id": ["0.0.5", "5", "eq:0.0.5", "lte:0.0.3", "lte:0.0.3", "gte:0.0.3", "gte:0.0.4"]},
       expectedClause: "test <= ? and test >= ? and test >= ? and test IN (?)",
       expectedValues: ["3", "3", "4", "5"]
@@ -380,25 +380,25 @@ describe('Utils parseAccountIdQueryParam tests', () => {
 describe('Utils parseTimestampQueryParam tests', () => {
   const testSpecs = [
     {
-      name: "Basic",
+      name: "Single parameter",
       parsedQueryParams: {"timestamp": "1000"},
       expectedClause: "test = ?",
       expectedValues: ["1000000000000"]
     },
     {
-      name: "Empty",
+      name: "No parameters",
       parsedQueryParams: {},
       expectedClause: "",
       expectedValues: []
     },
     {
-      name: "Compound",
+      name: "Multiple parameters different ops",
       parsedQueryParams: {"timestamp": ["gte:1000", "lt:2000.222", "3000.333333333"]},
       expectedClause: "test >= ? and test < ? and test = ?",
       expectedValues: ["1000000000000", "2000222000000", "3000333333333"]
     },
     {
-      name: "Extra param",
+      name: "Extra useless parameter",
       parsedQueryParams: {
         "timestamp": "1000",
         "fake.id": "2000"
@@ -407,19 +407,19 @@ describe('Utils parseTimestampQueryParam tests', () => {
       expectedValues: ["1000000000000"]
     },
     {
-      name: "Multiple eq",
+      name: "Multiple =",
       parsedQueryParams: {"timestamp": ["1000", "4000"]},
       expectedClause: "test = ? and test = ?",
       expectedValues: ["1000000000000", "4000000000000"]
     },
     {
-      name: "Duplicates",
+      name: "Duplicate parameters",
       parsedQueryParams: {"timestamp": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
       expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
       expectedValues: ["5000000000000", "1000000000000", "1000000000000", "2000000000000"]
     },
     {
-      name: "OpOverride",
+      name: "Single parameter with OpOverride",
       parsedQueryParams: {"timestamp": "1000"},
       expectedClause: "test <= ?",
       expectedValues: ["1000000000000"],
@@ -434,25 +434,25 @@ describe('Utils parseTimestampQueryParam tests', () => {
 describe('Utils parseBalanceQueryParam tests', () => {
   const testSpecs = [
     {
-      name: "Basic",
+      name: "Single parameter",
       parsedQueryParams: {"account.balance": "gte:1000"},
       expectedClause: "test >= ?",
       expectedValues: ["1000"]
     },
     {
-      name: "Empty",
+      name: "No parameters",
       parsedQueryParams: {},
       expectedClause: "",
       expectedValues: []
     },
     {
-      name: "Compound",
+      name: "Multiple parameters different ops",
       parsedQueryParams: {"account.balance": ["gte:1000", "lt:2000.222", "3000.333333333"]},
       expectedClause: "test >= ? and test < ? and test = ?",
       expectedValues: ["1000", "2000.222", "3000.333333333"]
     },
     {
-      name: "Extra param",
+      name: "Extra useless parameter",
       parsedQueryParams: {
         "account.balance": "1000",
         "fake.id": "2000"
@@ -461,19 +461,19 @@ describe('Utils parseBalanceQueryParam tests', () => {
       expectedValues: ["1000"]
     },
     {
-      name: "Multiple eq",
+      name: "Multiple =",
       parsedQueryParams: {"account.balance": ["1000", "4000"]},
       expectedClause: "test = ? and test = ?",
       expectedValues: ["1000", "4000"]
     },
     {
-      name: "Duplicates",
+      name: "Duplicate parameters",
       parsedQueryParams: {"account.balance": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
       expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
       expectedValues: ["5000", "1000", "1000", "2000"]
     },
     {
-      name: "Not Numeric",
+      name: "Single parameter not numeric",
       parsedQueryParams: {"account.balance": "gte:QQQ"},
       expectedClause: "",
       expectedValues: []
@@ -485,33 +485,26 @@ describe('Utils parseBalanceQueryParam tests', () => {
 describe('Utils parsePublicKeyQueryParam tests', () => {
   const testSpecs = [
     {
-      name: "Basic",
+      name: "Single parameter",
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"account.publickey": "gte:key"},
       expectedClause: "test >= ?",
       expectedValues: ["key"]
     },
     {
-      name: "DER Encoded",
-      //DER borrowed from ed25519.test.js
-      parsedQueryParams: {"account.publickey": "gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc"},
-      expectedClause: "test >= ?",
-      expectedValues: ["7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC"]
-    },
-    {
-      name: "Empty",
+      name: "No parameters",
       parsedQueryParams: {},
       expectedClause: "",
       expectedValues: []
     },
     {
-      name: "Compound",
+      name: "Multiple parameters different ops",
       parsedQueryParams: {"account.publickey": ["gte:key1", "lt:key2", "key3"]},
       expectedClause: "test >= ? and test < ? and test = ?",
       expectedValues: ["key1", "key2", "key3"]
     },
     {
-      name: "Extra param",
+      name: "Extra useless parameter",
       parsedQueryParams: {
         "account.publickey": "key",
         "fake.id": "2000"
@@ -520,16 +513,22 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
       expectedValues: ["key"]
     },
     {
-      name: "Multiple eq",
+      name: "Multiple =",
       parsedQueryParams: {"account.publickey": ["key1", "key2"]},
       expectedClause: "test = ? and test = ?",
       expectedValues: ["key1", "key2"]
     },
     {
-      name: "Duplicates",
+      name: "Duplicate parameters",
       parsedQueryParams: {"account.publickey": ["key1", "key1", "lte:key2", "lte:key2", "gte:key2", "gte:key3"]},
       expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
       expectedValues: ["key1", "key2", "key2", "key3"]
+    },
+    {
+      name: "Single parameter DER encoded",
+      parsedQueryParams: {"account.publickey": "gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc"},
+      expectedClause: "test >= ?",
+      expectedValues: ["7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC"]
     },
   ];
   parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, "test"));
@@ -538,14 +537,14 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
 describe('Utils parseCreditDebitParams tests', () => {
   const testSpecs = [
     {
-      name: "Credit",
+      name: "Single parameter credit",
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"type": "credit"},
       expectedClause: "test > 0",
       expectedValues: [],
     },
     {
-      name: "Debit",
+      name: "Single parameter debit",
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"type": "debit"},
       expectedClause: "test < 0",
@@ -558,19 +557,19 @@ describe('Utils parseCreditDebitParams tests', () => {
       expectedValues: [],
     },
     {
-      name: "Both",
+      name: "Multiple parameters both values",
       parsedQueryParams: {"type": ["credit", "debit"]},
       expectedClause: "test > 0 and test < 0",
       expectedValues: [],
     },
     {
-      name: "Op ignored",
+      name: "Single parameter op ignored",
       parsedQueryParams: {"type": ["gte:credit"]},
       expectedClause: "test > 0",
       expectedValues: [],
     },
     {
-      name: "Invalid value",
+      name: "Single parameter invalid value",
       parsedQueryParams: {"type": ["cash"]},
       expectedClause: "",
       expectedValues: [],
