@@ -47,7 +47,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/tokens/0.0.1135",
+  "urls": ["/api/v1/tokens/0.0.1135", "/api/v1/tokens/0.1135", "/api/v1/tokens/1135"],
   "responseStatus": 200,
   "responseJson": {
     "token_id": "0.0.1135",

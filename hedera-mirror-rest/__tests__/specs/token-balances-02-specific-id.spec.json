@@ -14,7 +14,7 @@
     ],
     "tokens": [
       {
-        "token_id": "0.20.7",
+        "token_id": "0.0.2007",
         "symbol": "TOKEN1",
         "created_timestamp": "1234567890000000001"
       },
@@ -36,8 +36,8 @@
         "balance": 70,
         "tokens": [
           {
-            "token_realm": 20,
-            "token_num": 7,
+            "token_realm": 0,
+            "token_num": 2007,
             "balance": 700
           },
           {
@@ -53,8 +53,8 @@
         "balance": 80,
         "tokens": [
           {
-            "token_realm": 20,
-            "token_num": 7,
+            "token_realm": 0,
+            "token_num": 2007,
             "balance": 1000
           },
           {
@@ -73,7 +73,11 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/tokens/0.20.7/balances?account.id=0.0.8",
+  "urls": [
+    "/api/v1/tokens/0.0.2007/balances?account.id=0.0.8",
+    "/api/v1/tokens/0.2007/balances?account.id=0.8",
+    "/api/v1/tokens/2007/balances?account.id=8"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "timestamp": "0.000002345",

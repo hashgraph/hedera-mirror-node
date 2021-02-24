@@ -489,16 +489,19 @@ describe('DB integration test - spec based', () => {
     const p = path.join(specPath, file);
     const specText = fs.readFileSync(p, 'utf8');
     const spec = JSON.parse(specText);
-    test(`DB integration test - ${file} - ${spec.url}`, async () => {
-      await specSetupSteps(spec.setup);
-      const response = await request(server).get(spec.url);
+    const urls = spec.urls || [spec.url];
+    urls.forEach((url) =>
+      test(`DB integration test - ${file} - ${url}`, async () => {
+        await specSetupSteps(spec.setup);
+        const response = await request(server).get(url);
 
-      expect(response.status).toEqual(spec.responseStatus);
-      const jsonObj = JSON.parse(response.text);
-      if (file.startsWith('stateproof')) {
-        transformStateProofResponse(jsonObj);
-      }
-      expect(jsonObj).toEqual(spec.responseJson);
-    });
+        expect(response.status).toEqual(spec.responseStatus);
+        const jsonObj = JSON.parse(response.text);
+        if (file.startsWith('stateproof')) {
+          transformStateProofResponse(jsonObj);
+        }
+        expect(jsonObj).toEqual(spec.responseJson);
+      })
+    );
   });
 });
