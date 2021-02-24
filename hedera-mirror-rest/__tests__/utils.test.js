@@ -336,7 +336,7 @@ describe('Utils parseAccountIdQueryParam tests', () => {
     {
       name: "Single parameter",
       parsedQueryParams: {"account.id": "gte:0.0.3"},
-      expectedClause: "test >= ?",
+      expectedClause: "account.id >= ?",
       expectedValues: ["3"]
     },
     {
@@ -348,7 +348,7 @@ describe('Utils parseAccountIdQueryParam tests', () => {
     {
       name: "Multiple parameters different ops",
       parsedQueryParams: {"account.id": ["gte:0.0.3", "lt:0.0.5", "2"]},
-      expectedClause: "test >= ? and test < ? and test IN (?)",
+      expectedClause: "account.id >= ? and account.id < ? and account.id IN (?)",
       expectedValues: ["3", "5", "2"]
     },
     {
@@ -357,24 +357,24 @@ describe('Utils parseAccountIdQueryParam tests', () => {
         "account.id": "0.0.3",
         "timestamp": "2000"
       },
-      expectedClause: "test IN (?)",
+      expectedClause: "account.id IN (?)",
       expectedValues: ["3"]
     },
     {
       name: "Multiple =",
       parsedQueryParams: {"account.id": ["0.0.3", "4"]},
-      expectedClause: "test IN (?, ?)",
+      expectedClause: "account.id IN (?, ?)",
       expectedValues: ["3", "4"]
     },
     {
       name: "Duplicate parameters",
       parsedQueryParams: {"account.id": ["0.0.5", "5", "eq:0.0.5", "lte:0.0.3", "lte:0.0.3", "gte:0.0.3", "gte:0.0.4"]},
-      expectedClause: "test <= ? and test >= ? and test >= ? and test IN (?)",
+      expectedClause: "account.id <= ? and account.id >= ? and account.id >= ? and account.id IN (?)",
       expectedValues: ["3", "3", "4", "5"]
     },
 
   ];
-  parseQueryParamTest('Utils parseAccountIdQueryParam - ', testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, "test"));
+  parseQueryParamTest('Utils parseAccountIdQueryParam - ', testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, "account.id"));
 });
 
 describe('Utils parseTimestampQueryParam tests', () => {
@@ -382,7 +382,7 @@ describe('Utils parseTimestampQueryParam tests', () => {
     {
       name: "Single parameter",
       parsedQueryParams: {"timestamp": "1000"},
-      expectedClause: "test = ?",
+      expectedClause: "timestamp = ?",
       expectedValues: ["1000000000000"]
     },
     {
@@ -394,7 +394,7 @@ describe('Utils parseTimestampQueryParam tests', () => {
     {
       name: "Multiple parameters different ops",
       parsedQueryParams: {"timestamp": ["gte:1000", "lt:2000.222", "3000.333333333"]},
-      expectedClause: "test >= ? and test < ? and test = ?",
+      expectedClause: "timestamp >= ? and timestamp < ? and timestamp = ?",
       expectedValues: ["1000000000000", "2000222000000", "3000333333333"]
     },
     {
@@ -403,32 +403,32 @@ describe('Utils parseTimestampQueryParam tests', () => {
         "timestamp": "1000",
         "fake.id": "2000"
       },
-      expectedClause: "test = ?",
+      expectedClause: "timestamp = ?",
       expectedValues: ["1000000000000"]
     },
     {
       name: "Multiple =",
       parsedQueryParams: {"timestamp": ["1000", "4000"]},
-      expectedClause: "test = ? and test = ?",
+      expectedClause: "timestamp = ? and timestamp = ?",
       expectedValues: ["1000000000000", "4000000000000"]
     },
     {
       name: "Duplicate parameters",
       parsedQueryParams: {"timestamp": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
-      expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
+      expectedClause: "timestamp = ? and timestamp <= ? and timestamp >= ? and timestamp >= ?",
       expectedValues: ["5000000000000", "1000000000000", "1000000000000", "2000000000000"]
     },
     {
       name: "Single parameter with OpOverride",
       parsedQueryParams: {"timestamp": "1000"},
-      expectedClause: "test <= ?",
+      expectedClause: "timestamp <= ?",
       expectedValues: ["1000000000000"],
       opOverride: {
         [utils.opsMap.eq]: utils.opsMap.lte
       }
     },
   ];
-  parseQueryParamTest('Utils parseTimestampQueryParam - ', testSpecs, (spec) => utils.parseTimestampQueryParam(spec.parsedQueryParams, "test", spec.opOverride));
+  parseQueryParamTest('Utils parseTimestampQueryParam - ', testSpecs, (spec) => utils.parseTimestampQueryParam(spec.parsedQueryParams, "timestamp", spec.opOverride));
 });
 
 describe('Utils parseBalanceQueryParam tests', () => {
@@ -436,7 +436,7 @@ describe('Utils parseBalanceQueryParam tests', () => {
     {
       name: "Single parameter",
       parsedQueryParams: {"account.balance": "gte:1000"},
-      expectedClause: "test >= ?",
+      expectedClause: "account.balance >= ?",
       expectedValues: ["1000"]
     },
     {
@@ -448,7 +448,7 @@ describe('Utils parseBalanceQueryParam tests', () => {
     {
       name: "Multiple parameters different ops",
       parsedQueryParams: {"account.balance": ["gte:1000", "lt:2000.222", "3000.333333333"]},
-      expectedClause: "test >= ? and test < ? and test = ?",
+      expectedClause: "account.balance >= ? and account.balance < ? and account.balance = ?",
       expectedValues: ["1000", "2000.222", "3000.333333333"]
     },
     {
@@ -457,19 +457,19 @@ describe('Utils parseBalanceQueryParam tests', () => {
         "account.balance": "1000",
         "fake.id": "2000"
       },
-      expectedClause: "test = ?",
+      expectedClause: "account.balance = ?",
       expectedValues: ["1000"]
     },
     {
       name: "Multiple =",
       parsedQueryParams: {"account.balance": ["1000", "4000"]},
-      expectedClause: "test = ? and test = ?",
+      expectedClause: "account.balance = ? and account.balance = ?",
       expectedValues: ["1000", "4000"]
     },
     {
       name: "Duplicate parameters",
       parsedQueryParams: {"account.balance": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
-      expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
+      expectedClause: "account.balance = ? and account.balance <= ? and account.balance >= ? and account.balance >= ?",
       expectedValues: ["5000", "1000", "1000", "2000"]
     },
     {
@@ -479,7 +479,7 @@ describe('Utils parseBalanceQueryParam tests', () => {
       expectedValues: []
     },
   ];
-  parseQueryParamTest('Utils parseBalanceQueryParam - ', testSpecs, (spec) => utils.parseBalanceQueryParam(spec.parsedQueryParams, "test"));
+  parseQueryParamTest('Utils parseBalanceQueryParam - ', testSpecs, (spec) => utils.parseBalanceQueryParam(spec.parsedQueryParams, "account.balance"));
 });
 
 describe('Utils parsePublicKeyQueryParam tests', () => {
@@ -488,7 +488,7 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
       name: "Single parameter",
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"account.publickey": "gte:key"},
-      expectedClause: "test >= ?",
+      expectedClause: "account.publickey >= ?",
       expectedValues: ["key"]
     },
     {
@@ -500,7 +500,7 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
     {
       name: "Multiple parameters different ops",
       parsedQueryParams: {"account.publickey": ["gte:key1", "lt:key2", "key3"]},
-      expectedClause: "test >= ? and test < ? and test = ?",
+      expectedClause: "account.publickey >= ? and account.publickey < ? and account.publickey = ?",
       expectedValues: ["key1", "key2", "key3"]
     },
     {
@@ -509,29 +509,29 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
         "account.publickey": "key",
         "fake.id": "2000"
       },
-      expectedClause: "test = ?",
+      expectedClause: "account.publickey = ?",
       expectedValues: ["key"]
     },
     {
       name: "Multiple =",
       parsedQueryParams: {"account.publickey": ["key1", "key2"]},
-      expectedClause: "test = ? and test = ?",
+      expectedClause: "account.publickey = ? and account.publickey = ?",
       expectedValues: ["key1", "key2"]
     },
     {
       name: "Duplicate parameters",
       parsedQueryParams: {"account.publickey": ["key1", "key1", "lte:key2", "lte:key2", "gte:key2", "gte:key3"]},
-      expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
+      expectedClause: "account.publickey = ? and account.publickey <= ? and account.publickey >= ? and account.publickey >= ?",
       expectedValues: ["key1", "key2", "key2", "key3"]
     },
     {
       name: "Single parameter DER encoded",
       parsedQueryParams: {"account.publickey": "gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc"},
-      expectedClause: "test >= ?",
+      expectedClause: "account.publickey >= ?",
       expectedValues: ["7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC"]
     },
   ];
-  parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, "test"));
+  parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, "account.publickey"));
 });
 
 describe('Utils parseCreditDebitParams tests', () => {
@@ -540,14 +540,14 @@ describe('Utils parseCreditDebitParams tests', () => {
       name: "Single parameter credit",
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"type": "credit"},
-      expectedClause: "test > 0",
+      expectedClause: "type > 0",
       expectedValues: [],
     },
     {
       name: "Single parameter debit",
-      //DER borrowed from ed25519.test.js
+      //DER borrowed from ed25519.type.js
       parsedQueryParams: {"type": "debit"},
-      expectedClause: "test < 0",
+      expectedClause: "type < 0",
       expectedValues: [],
     },
     {
@@ -559,13 +559,13 @@ describe('Utils parseCreditDebitParams tests', () => {
     {
       name: "Multiple parameters both values",
       parsedQueryParams: {"type": ["credit", "debit"]},
-      expectedClause: "test > 0 and test < 0",
+      expectedClause: "type > 0 and type < 0",
       expectedValues: [],
     },
     {
       name: "Single parameter op ignored",
       parsedQueryParams: {"type": ["gte:credit"]},
-      expectedClause: "test > 0",
+      expectedClause: "type > 0",
       expectedValues: [],
     },
     {
@@ -575,5 +575,5 @@ describe('Utils parseCreditDebitParams tests', () => {
       expectedValues: [],
     },
   ];
-  parseQueryParamTest('Utils parseCreditDebitParams - ', testSpecs, (spec) => utils.parseCreditDebitParams(spec.parsedQueryParams, "test"));
+  parseQueryParamTest('Utils parseCreditDebitParams - ', testSpecs, (spec) => utils.parseCreditDebitParams(spec.parsedQueryParams, "type"));
 });
