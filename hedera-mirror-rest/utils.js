@@ -251,9 +251,7 @@ const validateReq = async (req) => {
   }
 };
 
-const isRepeatedQueryParameterValidLength = (values => {
-  return values.length <= config.maxRepeatedQueryParameters;
-})
+const isRepeatedQueryParameterValidLength = (values) => values.length <= config.maxRepeatedQueryParameters;
 
 const parseTimestampParam = (timestampParam) => {
   // Expect timestamp input as (a) just seconds,
@@ -362,9 +360,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
-    (value) => {
-      return EntityId.fromString(value).getEncodedId();
-    },
+    (value) => EntityId.fromString(value).getEncodedId(),
     (op, value) => {
       return Array.isArray(value)
         ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
@@ -378,12 +374,8 @@ const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.TIMESTAMP],
-    (value) => {
-      return parseTimestampParam(value);
-    },
-    (op, value) => {
-      return [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]];
-    },
+    (value) => parseTimestampParam(value),
+    (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
     false
   );
 };
@@ -391,15 +383,8 @@ const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}
 const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE],
-    (value) => {
-      return value;
-    },
-    (op, value) => {
-      if (isNumeric(value)) {
-        return [`${columnName}${op}?`, [value]];
-      }
-      return null;
-    },
+    (value) => value,
+    (op, value) => isNumeric(value) ? [`${columnName}${op}?`, [value]] : null,
     false
   );
 };
@@ -416,9 +401,7 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
       }
       return key;
     },
-    (op, value) => {
-      return [`${columnName}${op}?`, [value]];
-    },
+    (op, value) => [`${columnName}${op}?`, [value]],
     false
   );
 };
@@ -429,9 +412,7 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
 const parseCreditDebitParams = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
-    (value) => {
-      return value;
-    },
+    (value) => value,
     (op, value) => {
       if (value === 'credit') {
         return [`${columnName} > 0`, []];
