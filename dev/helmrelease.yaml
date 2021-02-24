@@ -7,7 +7,7 @@ spec:
   chart:
     git: https://github.com/hashgraph/hedera-mirror-node.git
     path: charts/hedera-mirror
-    ref: 6b4cf70da29bc859cdafc182a1684b7a31ae67ea
+    ref: f24eac8e1d2433e5c07da663b903044d0bf2b4c6
   rollback:
     enable: true
     force: true
@@ -18,7 +18,7 @@ spec:
   values:
     grpc:
       image:
-        tag: master-6b4cf70da29bc859cdafc182a1684b7a31ae67ea
+        tag: master-f24eac8e1d2433e5c07da663b903044d0bf2b4c6
       prometheusRules:
         GrpcNoSubscribers:
           enabled: false
@@ -32,7 +32,7 @@ spec:
               network: TESTNET
               startDate: 1970-01-01T00:00:00Z
       image:
-        tag: master-6b4cf70da29bc859cdafc182a1684b7a31ae67ea
+        tag: master-f24eac8e1d2433e5c07da663b903044d0bf2b4c6
     monitor:
       config:
         hedera:
@@ -45,12 +45,12 @@ spec:
                   host: dev-mirror-rest
                   port: 80
       image:
-        tag: master-6b4cf70da29bc859cdafc182a1684b7a31ae67ea
+        tag: master-f24eac8e1d2433e5c07da663b903044d0bf2b4c6
     postgresql:
       enabled: false
     rest:
       image:
-        tag: master-6b4cf70da29bc859cdafc182a1684b7a31ae67ea
+        tag: master-f24eac8e1d2433e5c07da663b903044d0bf2b4c6
       prometheusRules:
         RestNoRequests:
           enabled: false
