@@ -1,0 +1,178 @@
+{
+  "description": "Transaction api calls for transactions via account id query filter",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 3
+      },
+      {
+        "entity_num": 8
+      },
+      {
+        "entity_num": 9
+      },
+      {
+        "entity_num": 10
+      },
+      {
+        "entity_num": 11
+      },
+      {
+        "entity_num": 98
+      }
+    ],
+    "balances": [],
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.8",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1565779444711927001",
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15"
+      }
+    ],
+    "cryptotransfers": [
+      {
+        "consensus_timestamp": "1565779111711927001",
+        "payerAccountId": "0.0.10",
+        "recipientAccountId": "0.0.9",
+        "amount": 10,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1565779209711927001",
+        "payerAccountId": "0.0.10",
+        "recipientAccountId": "0.0.8",
+        "amount": 40,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1565779333711927001",
+        "payerAccountId": "0.0.8",
+        "recipientAccountId": "0.0.9",
+        "amount": 30,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1565779333711927002",
+        "payerAccountId": "0.0.10",
+        "recipientAccountId": "0.0.11",
+        "amount": 50,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ]
+  },
+  "url": "/api/v1/transactions?account.id=0.0.8&account.id=0.0.9",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "1565779444.711927001",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOUPDATEACCOUNT",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "scheduled": false,
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.8-1565779444-711927000",
+        "transfers": [],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1565779444.711927000"
+      },
+      {
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1565779333.711927001",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "scheduled": false,
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.8-1565779333-711927000",
+        "transfers": [
+          {
+            "account": "0.0.8",
+            "amount": -31
+          },
+          {
+            "account": "0.0.9",
+            "amount": 30
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1565779333.711927000"
+      },
+      {
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1565779209.711927001",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "scheduled": false,
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.10-1565779209-711927000",
+        "transfers": [
+          {
+            "account": "0.0.8",
+            "amount": 40
+          },
+          {
+            "account": "0.0.10",
+            "amount": -41
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1565779209.711927000"
+      },
+      {
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1565779111.711927001",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "scheduled": false,
+        "transaction_hash": "aGFzaA==",
+        "transaction_id": "0.0.10-1565779111-711927000",
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 10
+          },
+          {
+            "account": "0.0.10",
+            "amount": -11
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1565779111.711927000"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}
