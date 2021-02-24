@@ -30,7 +30,7 @@ const config = require('../config');
 const mustLoadYaml = (fileName) => {
   try {
     console.log(`Loading yaml file ${fileName}`);
-    return yaml.safeLoad(fs.readFileSync(fileName, 'utf8'));
+    return yaml.load(fs.readFileSync(fileName, 'utf8'));
   } catch (err) {
     console.log(`Failed to load yaml file ${fileName}: ${err}`);
     process.exit(1);
