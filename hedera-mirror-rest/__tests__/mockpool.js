@@ -191,10 +191,19 @@ class Pool {
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
       row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
+      //account.id can be a range or a list of acceptable values
+      const accountNumValue = ((accountNum, i) => {
+        if (accountNum.equals) {
+          return `${accountNum.equals[i % accountNum.equals.length]}`;
+        } else {
+          return Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
+        }
+      })(accountNum, i);
+
       row.ctl_entity_id = EntityId.of(
         0,
         0,
-        Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
+        accountNumValue
       ).getEncodedId();
       row.amount = i * 1000;
       row.charged_tx_fee = 100 + i;
@@ -269,9 +278,15 @@ class Pool {
     for (let i = 0; i < limit.high; i++) {
       const row = {};
       row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
-      row.account_id = `${
-        Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
-      }`;
+      //account.id can be a range or a list of acceptable values
+      row.account_id = ((accountNum, i) => {
+        if (accountNum.equals) {
+          return `${accountNum.equals[i % accountNum.equals.length]}`;
+        } else {
+          return `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
+        }
+      })(accountNum, i);
+
       row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
 
       rows.push(row);
@@ -334,9 +349,15 @@ class Pool {
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
-      row.entity_id = `${
-        Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
-      }`;
+
+      row.entity_id = ((accountNum, i) => {
+        if (accountNum.equals) {
+          return `${accountNum.equals[i % accountNum.equals.length]}`;
+        } else {
+          return `${Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
+        }
+      })(accountNum, i);
+
       row.exp_time_ns = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;
       row.key = Buffer.from(`Key for row ${i}`);
@@ -371,9 +392,16 @@ class Pool {
         pVar.low = param.value + 1;
         break;
       case '=':
-      case 'in':
         pVar.low = param.value;
         pVar.high = param.value;
+        break;
+      //Only account.id supports in currently
+      case 'in':
+        if (pVar.equals) {
+          pVar.equals.push(param.value);
+        } else {
+          pVar.equals = [param.value];
+        }
         break;
     }
     if (param.field === 'limit') {

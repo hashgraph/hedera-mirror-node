@@ -64,6 +64,29 @@ const validateAccNumRange = function (accounts, low, high) {
   return ret;
 };
 
+
+/**
+ * Validate that account ids in the accounts returned by the api are in the list of valid account ids
+ * @param {Array} accounts Array of accounts returned by the rest api
+ * @param {Array} list of valid account ids
+ * @return {Boolean}  Result of the check
+ */
+const validateAccNumInArray = function (accounts, potentialValues) {
+  let ret = true;
+  let offender = null;
+  for (const acc of accounts.accounts) {
+    const accNum = acc.account.split('.')[2];
+    if (!potentialValues.includes(Number(accNum))) {
+      offender = accNum;
+      ret = false;
+    }
+  }
+  if (!ret) {
+    console.log(`validateAccNumRange check failed: ${offender} is not in ${potentialValues}`);
+  }
+  return ret;
+};
+
 /**
  * Validate the range of account balances in the accounts returned by the api
  * @param {Array} balances Array of accounts returned by the rest api
@@ -173,7 +196,7 @@ const singletests = {
     urlparam: 'account.id=0.0.3333',
     checks: [{field: 'account_id', operator: 'in', value: 3333}],
     checkFunctions: [
-      {func: validateAccNumRange, args: [3333, 3333]},
+      {func: validateAccNumInArray, args: [[3333]]},
       {func: validateFields, args: []},
     ],
   },
@@ -183,7 +206,10 @@ const singletests = {
       {field: 'account_id', operator: 'in', value: '3333'},
       {field: 'account_id', operator: 'in', value: '3334'},
     ],
-    checkFunctions: [{func: validateAccNumRange, args: [3333, 3334]}],
+    checkFunctions: [
+      {func: validateAccNumInArray, args: [[3333, 3334]]},
+      {func: validateFields, args: []},
+    ],
   },
   accountbalance_lowerlimit: {
     urlparam: 'account.balance=gte:54321',
