@@ -23,7 +23,7 @@
 const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
-describe('Utils isValidEntityId tests', () => {
+describe('EntityId isValidEntityId tests', () => {
   test('Verify invalid for null', () => {
     expect(EntityId.isValidEntityId(null)).toBe(false);
   });

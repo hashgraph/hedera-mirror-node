@@ -83,7 +83,7 @@ const fromEncodedId = (id, isNullable = false) => {
   }
 
   const encodedId = BigInt(id);
-  if (encodedId < 0n || encodedId > maxEncodedId) {
+  if (encodedId < 0 || encodedId > maxEncodedId) {
     throw new InvalidArgumentError(message);
   }
 
