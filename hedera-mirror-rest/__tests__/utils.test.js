@@ -320,3 +320,49 @@ describe('Utils randomString tests', () => {
     expect(val).toMatch(/^[0-9a-z]{8}$/);
   });
 });
+
+describe('Utils parseAccountIdQueryParam tests', () => {
+  const testSpecs = [
+    {
+      name: "Basic",
+      parsedQueryParams: {"account.id": "gte:0.0.3"},
+      expectedClause: "test >= ?",
+      expectedValues: ["3"]
+    },
+    {
+      name: "Compound",
+      parsedQueryParams: {"account.id": ["gte:0.0.3", "lt:0.0.5", "2"]},
+      expectedClause: "test >= ? and test < ? and test IN (?)",
+      expectedValues: ["3", "5", "2"]
+    },
+    {
+      name: "Extra param",
+      parsedQueryParams: {
+        "account.id": "0.0.3",
+        "timestamp": "2000"
+      },
+      expectedClause: "test IN (?)",
+      expectedValues: ["3"]
+    },
+    {
+      name: "Multiple eq",
+      parsedQueryParams: {"account.id": ["0.0.3", "4"]},
+      expectedClause: "test IN (?, ?)",
+      expectedValues: ["3", "4"]
+    },
+    {
+      name: "Duplicates",
+      parsedQueryParams: {"account.id": ["0.0.5", "5", "eq:0.0.5", "lte:0.0.3", "lte:0.0.3", "gte:0.0.3", "gte:0.0.4"]},
+      expectedClause: "test <= ? and test >= ? and test >= ? and test IN (?)",
+      expectedValues: ["3", "3", "4", "5"]
+    },
+
+  ];
+  testSpecs.forEach((testSpec) => {
+    test(`Utils parseAccountIdQueryParam - ${testSpec.name}`, () => {
+      const val = utils.parseAccountIdQueryParam(testSpec.parsedQueryParams, "test");
+      expect(val[0]).toEqual(testSpec.expectedClause);
+      expect(val[1]).toEqual(testSpec.expectedValues);
+    });
+  });
+});

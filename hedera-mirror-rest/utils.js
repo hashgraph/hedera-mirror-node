@@ -368,7 +368,7 @@ const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
     (op, value) => {
       return Array.isArray(value)
         ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
-        : [`${columnName} ${op} ?`, [value]];
+        : [`${columnName}${op}?`, [value]];
     },
     true
   );
