@@ -330,6 +330,12 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       expectedValues: ["3"]
     },
     {
+      name: "Empty",
+      parsedQueryParams: {},
+      expectedClause: "",
+      expectedValues: []
+    },
+    {
       name: "Compound",
       parsedQueryParams: {"account.id": ["gte:0.0.3", "lt:0.0.5", "2"]},
       expectedClause: "test >= ? and test < ? and test IN (?)",
@@ -366,3 +372,224 @@ describe('Utils parseAccountIdQueryParam tests', () => {
     });
   });
 });
+
+
+describe('Utils parseTimestampQueryParam tests', () => {
+  const testSpecs = [
+    {
+      name: "Basic",
+      parsedQueryParams: {"timestamp": "1000"},
+      expectedClause: "test = ?",
+      expectedValues: ["1000000000000"]
+    },
+    {
+      name: "Empty",
+      parsedQueryParams: {},
+      expectedClause: "",
+      expectedValues: []
+    },
+    {
+      name: "Compound",
+      parsedQueryParams: {"timestamp": ["gte:1000", "lt:2000.222", "3000.333333333"]},
+      expectedClause: "test >= ? and test < ? and test = ?",
+      expectedValues: ["1000000000000", "2000222000000", "3000333333333"]
+    },
+    {
+      name: "Extra param",
+      parsedQueryParams: {
+        "timestamp": "1000",
+        "fake.id": "2000"
+      },
+      expectedClause: "test = ?",
+      expectedValues: ["1000000000000"]
+    },
+    {
+      name: "Multiple eq",
+      parsedQueryParams: {"timestamp": ["1000", "4000"]},
+      expectedClause: "test = ? and test = ?",
+      expectedValues: ["1000000000000", "4000000000000"]
+    },
+    {
+      name: "Duplicates",
+      parsedQueryParams: {"timestamp": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
+      expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
+      expectedValues: ["5000000000000", "1000000000000", "1000000000000", "2000000000000"]
+    },
+    {
+      name: "OpOverride",
+      parsedQueryParams: {"timestamp": "1000"},
+      expectedClause: "test <= ?",
+      expectedValues: ["1000000000000"],
+      opOverride: {
+        [utils.opsMap.eq]: utils.opsMap.lte
+      }
+    },
+  ];
+  testSpecs.forEach((testSpec) => {
+    test(`Utils parseTimestampQueryParam - ${testSpec.name}`, () => {
+      const val = utils.parseTimestampQueryParam(testSpec.parsedQueryParams, "test", testSpec.opOverride);
+      expect(val[0]).toEqual(testSpec.expectedClause);
+      expect(val[1]).toEqual(testSpec.expectedValues);
+    });
+  });
+});
+
+describe('Utils parseBalanceQueryParam tests', () => {
+  const testSpecs = [
+    {
+      name: "Basic",
+      parsedQueryParams: {"account.balance": "gte:1000"},
+      expectedClause: "test >= ?",
+      expectedValues: ["1000"]
+    },
+    {
+      name: "Empty",
+      parsedQueryParams: {},
+      expectedClause: "",
+      expectedValues: []
+    },
+    {
+      name: "Compound",
+      parsedQueryParams: {"account.balance": ["gte:1000", "lt:2000.222", "3000.333333333"]},
+      expectedClause: "test >= ? and test < ? and test = ?",
+      expectedValues: ["1000", "2000.222", "3000.333333333"]
+    },
+    {
+      name: "Extra param",
+      parsedQueryParams: {
+        "account.balance": "1000",
+        "fake.id": "2000"
+      },
+      expectedClause: "test = ?",
+      expectedValues: ["1000"]
+    },
+    {
+      name: "Multiple eq",
+      parsedQueryParams: {"account.balance": ["1000", "4000"]},
+      expectedClause: "test = ? and test = ?",
+      expectedValues: ["1000", "4000"]
+    },
+    {
+      name: "Duplicates",
+      parsedQueryParams: {"account.balance": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
+      expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
+      expectedValues: ["5000", "1000", "1000", "2000"]
+    },
+    {
+      name: "Not Numeric",
+      parsedQueryParams: {"account.balance": "gte:QQQ"},
+      expectedClause: "",
+      expectedValues: []
+    },
+  ];
+  testSpecs.forEach((testSpec) => {
+    test(`Utils parseBalanceQueryParam - ${testSpec.name}`, () => {
+      const val = utils.parseBalanceQueryParam(testSpec.parsedQueryParams, "test");
+      expect(val[0]).toEqual(testSpec.expectedClause);
+      expect(val[1]).toEqual(testSpec.expectedValues);
+    });
+  });
+});
+
+describe('Utils parsePublicKeyQueryParam tests', () => {
+  const testSpecs = [
+    {
+      name: "Basic",
+      //DER borrowed from ed25519.test.js
+      parsedQueryParams: {"account.publickey": "gte:key"},
+      expectedClause: "test >= ?",
+      expectedValues: ["key"]
+    },
+    {
+      name: "DER Encoded",
+      //DER borrowed from ed25519.test.js
+      parsedQueryParams: {"account.publickey": "gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc"},
+      expectedClause: "test >= ?",
+      expectedValues: ["7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC"]
+    },
+    {
+      name: "Empty",
+      parsedQueryParams: {},
+      expectedClause: "",
+      expectedValues: []
+    },
+    {
+      name: "Compound",
+      parsedQueryParams: {"account.publickey": ["gte:key1", "lt:key2", "key3"]},
+      expectedClause: "test >= ? and test < ? and test = ?",
+      expectedValues: ["key1", "key2", "key3"]
+    },
+    {
+      name: "Extra param",
+      parsedQueryParams: {
+        "account.publickey": "key",
+        "fake.id": "2000"
+      },
+      expectedClause: "test = ?",
+      expectedValues: ["key"]
+    },
+    {
+      name: "Multiple eq",
+      parsedQueryParams: {"account.publickey": ["key1", "key2"]},
+      expectedClause: "test = ? and test = ?",
+      expectedValues: ["key1", "key2"]
+    },
+    {
+      name: "Duplicates",
+      parsedQueryParams: {"account.publickey": ["key1", "key1", "lte:key2", "lte:key2", "gte:key2", "gte:key3"]},
+      expectedClause: "test = ? and test <= ? and test >= ? and test >= ?",
+      expectedValues: ["key1", "key2", "key2", "key3"]
+    },
+  ];
+  testSpecs.forEach((testSpec) => {
+    test(`Utils parsePublicKeyQueryParam - ${testSpec.name}`, () => {
+      const val = utils.parsePublicKeyQueryParam(testSpec.parsedQueryParams, "test");
+      expect(val[0]).toEqual(testSpec.expectedClause);
+      expect(val[1]).toEqual(testSpec.expectedValues);
+    });
+  });
+});
+
+describe('Utils parseCreditDebitParams tests', () => {
+  const testSpecs = [
+    {
+      name: "Credit",
+      //DER borrowed from ed25519.test.js
+      parsedQueryParams: {"type": "credit"},
+      expectedClause: "test > 0",
+    },
+    {
+      name: "Debit",
+      //DER borrowed from ed25519.test.js
+      parsedQueryParams: {"type": "debit"},
+      expectedClause: "test < 0",
+    },
+    {
+      name: "Empty",
+      parsedQueryParams: {},
+      expectedClause: "",
+    },
+    {
+      name: "Both",
+      parsedQueryParams: {"type": ["credit", "debit"]},
+      expectedClause: "test > 0 and test < 0",
+    },
+    {
+      name: "Op ignored",
+      parsedQueryParams: {"type": ["gte:credit"]},
+      expectedClause: "test > 0",
+    },
+    {
+      name: "Invalid value",
+      parsedQueryParams: {"type": ["cash"]},
+      expectedClause: "",
+    },
+  ];
+  testSpecs.forEach((testSpec) => {
+    test(`Utils parseCreditDebitParams - ${testSpec.name}`, () => {
+      const val = utils.parseCreditDebitParams(testSpec.parsedQueryParams, "test");
+      expect(val[0]).toEqual(testSpec.expectedClause);
+    });
+  });
+});
+//parseCreditDebitParams

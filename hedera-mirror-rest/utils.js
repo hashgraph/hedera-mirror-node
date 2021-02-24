@@ -382,7 +382,7 @@ const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}
       return parseTimestampParam(value);
     },
     (op, value) => {
-      return [`${columnName} ${op in opOverride ? opOverride[op] : op} ?`, [value]];
+      return [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]];
     },
     false
   );
@@ -396,7 +396,7 @@ const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
     },
     (op, value) => {
       if (isNumeric(value)) {
-        return [`${columnName} ${op} ?`, [value]];
+        return [`${columnName}${op}?`, [value]];
       }
       return null;
     },
@@ -417,14 +417,14 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
       return key;
     },
     (op, value) => {
-      return [`${columnName} ${op} ?`, [value]];
+      return [`${columnName}${op}?`, [value]];
     },
     false
   );
 };
 
 /**
- * Parse the type=[credit | debit | creditDebit] parameter
+ * Parse the type=[credit | debit] parameter
  */
 const parseCreditDebitParams = (parsedQueryParams, columnName) => {
   return parseParams(
@@ -433,7 +433,13 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
       return value;
     },
     (op, value) => {
-      return value === 'credit' ? [`${columnName} > 0`, []] : [`${columnName} < 0`, []];
+      if (value === 'credit') {
+        return [`${columnName} > 0`, []];
+      } else if (value === 'debit') {
+        return [`${columnName} < 0`, []];
+      } else {
+        return null;
+      }
     },
     false
   );
