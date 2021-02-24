@@ -35,7 +35,7 @@ tests:
     filterAxis: ACCOUNTID
     multipleFilters: true
     count: 10
-    queries: 10
+    numberOfQueries: 10
   # Tests for /balances
   - name: 'balances - accountid point lookup'
     query: '/balances'
@@ -64,7 +64,7 @@ tests:
     filterAxis: ACCOUNTID
     multipleFilters: true
     count: 10
-    queries: 10
+    numberOfQueries: 10
     # Tests for /accounts
   - name: 'accounts - accountid point lookup'
     query: '/accounts'
@@ -89,7 +89,7 @@ tests:
     filterAxis: ACCOUNTID
     multipleFilters: true
     count: 10
-    queries: 10
+    numberOfQueries: 10
   # Tests for /tokens
   - name: 'tokens - tokenid point lookup'
     query: '/tokens'

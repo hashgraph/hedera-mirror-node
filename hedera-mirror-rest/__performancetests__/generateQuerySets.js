@@ -93,7 +93,7 @@ const timestampToParamValue = (timestamp) => {
 const populateParamValues = async (test, paramName, rangeFieldName, getSamples, convertToParam) => {
   let paramValues = [];
   if (test.multipleFilters) {
-    for (let i = 0; i < test.queries; i++) {
+    for (let i = 0; i < test.numberOfQueries; i++) {
       let samples = await getSamples(test.count);
       const allValues = [];
       samples.forEach((sample) => {
