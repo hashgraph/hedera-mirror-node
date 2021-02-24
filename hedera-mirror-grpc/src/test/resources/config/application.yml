@@ -32,10 +32,8 @@ spring:
     username: ${hedera.mirror.grpc.db.username}
   flyway:
     baselineOnMigrate: true
-    baselineVersion: 0
     connectRetries: 10
     ignoreMissingMigrations: true
-    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
     placeholders:
       api-password: mirror_api_pass
       api-user: mirror_api
