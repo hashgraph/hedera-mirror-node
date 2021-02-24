@@ -349,7 +349,7 @@ class Pool {
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
-
+      //account.id can be a range or a list of acceptable values
       row.entity_id = ((accountNum, i) => {
         if (accountNum.equals) {
           return `${accountNum.equals[i % accountNum.equals.length]}`;
