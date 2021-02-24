@@ -95,10 +95,7 @@ const populateParamValues = async (test, paramName, rangeFieldName, getSamples, 
   if (test.multipleFilters) {
     for (let i = 0; i < test.numberOfQueries; i++) {
       const samples = await getSamples(test.count);
-      const allValues = [];
-      samples.forEach((sample) => {
-        allValues.push(convertToParam(sample));
-      });
+      const allValues = samples.map((sample) => convertToParam(sample));
       paramValues.push(allValues);
     }
   } else {
