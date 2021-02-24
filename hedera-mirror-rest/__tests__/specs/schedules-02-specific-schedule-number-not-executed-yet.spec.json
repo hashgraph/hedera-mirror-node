@@ -1,5 +1,5 @@
 {
-  "description": "Schedule api calls for a specific schedule using encoded schedule id, no admin key, not executed yet",
+  "description": "Schedule api calls for a specific schedule number, no admin key, not executed yet",
   "setup": {
     "accounts": [
       {

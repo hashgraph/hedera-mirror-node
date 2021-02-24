@@ -28,7 +28,7 @@
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages",
+  "urls": ["/api/v1/topics/0.0.7/messages", "/api/v1/topics/0.7/messages", "/api/v1/topics/7/messages"],
   "responseStatus": 200,
   "responseJson": {
     "messages": [

@@ -76,7 +76,7 @@
       }
     ]
   },
-  "url": "/api/v1/tokens?account.id=2",
+  "urls": ["/api/v1/tokens?account.id=0.0.2", "/api/v1/tokens?account.id=0.2", "/api/v1/tokens?account.id=2"],
   "responseStatus": 200,
   "responseJson": {
     "tokens": [

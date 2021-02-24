@@ -41,7 +41,7 @@ const formatBalancesResult = (req, result, limit, order) => {
 
   ret.balances = rows.map((row) => {
     return {
-      account: EntityId.fromString(row.account_id).toString(),
+      account: EntityId.fromEncodedId(row.account_id).toString(),
       balance: Number(row.balance),
       tokens: utils.parseTokenBalances(row.token_balances),
     };

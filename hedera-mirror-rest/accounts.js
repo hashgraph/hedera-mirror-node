@@ -25,7 +25,6 @@ const EntityId = require('./entityId');
 const utils = require('./utils');
 const transactions = require('./transactions');
 const {NotFoundError} = require('./errors/notFoundError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {DbError} = require('./errors/dbError');
 
 /**
@@ -36,7 +35,7 @@ const {DbError} = require('./errors/dbError');
 const processRow = (row) => {
   const accRecord = {};
   accRecord.balance = {};
-  accRecord.account = EntityId.fromString(row.entity_id).toString();
+  accRecord.account = EntityId.fromEncodedId(row.entity_id).toString();
   accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
   accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
   accRecord.balance.tokens = utils.parseTokenBalances(row.token_balances);
@@ -166,12 +165,7 @@ const getAccounts = async (req, res) => {
  */
 const getOneAccount = async (req, res) => {
   // Parse the filter parameters for account-numbers, balance, and pagination
-  let accountId;
-  try {
-    accountId = EntityId.fromString(req.params.id);
-  } catch (err) {
-    throw InvalidArgumentError.forParams('account.id');
-  }
+  const accountId = EntityId.fromString(req.params.id, constants.filterKeys.ACCOUNT_ID).getEncodedId();
   const parsedQueryParams = req.query;
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
@@ -184,8 +178,7 @@ const getOneAccount = async (req, res) => {
   // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
   // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
   const entitySql = getAccountQuery(` (ab.account_id = ? or e.id = ?)`);
-  const encodedAccountId = accountId.getEncodedId();
-  const entityParams = [encodedAccountId, encodedAccountId];
+  const entityParams = [accountId, accountId];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
 
   if (logger.isTraceEnabled()) {
@@ -197,7 +190,7 @@ const getOneAccount = async (req, res) => {
 
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
-  const accountParams = [encodedAccountId];
+  const accountParams = [accountId];
   const transactionTypeQuery = await utils.getTransactionTypeQuery(parsedQueryParams);
 
   const innerQuery = transactions.getTransactionsInnerQuery(

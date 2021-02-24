@@ -21,10 +21,12 @@
 'use strict';
 
 const _ = require('lodash');
+const {shard: systemShard} = require('./config');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
 const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
+const maxEncodedId = 2n ** 63n - 1n;
 
 class EntityId {
   constructor(shard, realm, num) {
@@ -47,41 +49,42 @@ class EntityId {
   }
 }
 
+const isValidEntityId = (entityId) => {
+  // Accepted forms: num, realm.num, or shard.realm.num
+  return (typeof entityId === 'string' && /^(\d{1,10}\.){0,2}\d{1,10}$/.test(entityId)) || /^\d{1,10}$/.test(entityId);
+};
+
 const of = (shard, realm, num) => {
   return new EntityId(shard, realm, num);
 };
 
 /**
- * Converts encoded entity ID BigInt to EntityId object.
+ * Converts encoded entity ID (BigInt, int or string) to EntityId object.
  *
- * @param encodedId
+ * @param {BigInt|int|string} id
+ * @param {boolean} isNullable
  * @return {EntityId}
  */
-const fromInt = (id, isNullable) => {
+const fromEncodedId = (id, isNullable = false) => {
   if (_.isNull(id)) {
     if (isNullable) {
       return of(null, null, null);
     }
 
-    throw new InvalidArgumentError(`Null entity ID"`);
+    throw new InvalidArgumentError('Null entity ID');
   }
 
-  let encodedId;
-  // support int or bigint types provided for precision
-  if (typeof id === 'bigint') {
-    encodedId = id;
-  } else if (_.isInteger(id)) {
-    try {
-      encodedId = BigInt(id);
-    } catch (err) {
-      throw new InvalidArgumentError(`invalid entity ID "${id}"`);
-    }
-  } else {
-    throw new InvalidArgumentError(`invalid entity ID "${id}"`);
+  // Javascript's precision limit is 2^53 - 1. Precision needed to handle encoded ids is 2^63 - 1 (highest number
+  // for java's long and postgres' bigint). Limit use of BigInt types to this function, everything returned by this
+  // function should be normal JS number for compatibility.
+  const message = `Invalid entity ID "${id}"`;
+  if (!/^\d+$/.test(id)) {
+    throw new InvalidArgumentError(message);
   }
 
-  if (encodedId < 0n) {
-    throw new InvalidArgumentError(`invalid entity ID int "${encodedId}"`);
+  const encodedId = BigInt(id);
+  if (encodedId < 0 || encodedId > maxEncodedId) {
+    throw new InvalidArgumentError(message);
   }
 
   const shard = encodedId / shardOffset; // quotient is shard
@@ -92,52 +95,49 @@ const fromInt = (id, isNullable) => {
 };
 
 /**
- * Converts entity ID string to EntityId object. Supports both 'shard.realm.num' and encoded entity ID string.
+ * Converts entity ID string to EntityId object. Supports 'shard.realm.num', 'realm.num', and 'num'.
  *
- * @param entityStr
+ * @param {string} entityIdStr
+ * @param {string} paramName
+ * @param {boolean} isNullable
  * @return {EntityId}
  */
-const fromString = (entityStr, isNullable) => {
-  if (_.isNull(entityStr)) {
+const fromString = (entityIdStr, paramName = '', isNullable = false) => {
+  const error = (message) =>
+    paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(message);
+
+  if (_.isNull(entityIdStr)) {
     if (isNullable) {
       return of(null, null, null);
     }
 
-    throw new InvalidArgumentError(`Null entity ID"`);
+    throw error('Null entity ID');
   }
 
-  if (entityStr.includes('.')) {
-    const parts = entityStr.split('.');
-    if (parts.length === 3) {
-      return of(
-        ...parts.map((part) => {
-          const num = Number(part);
-          if (Number.isNaN(num) || num < 0) {
-            throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
-          }
-          return num;
-        })
-      );
-    }
-  } else {
-    // Javascript's precision limit is 2^53 - 1. Precision needed to handle encoded ids is 2^63 - 1 (highest number
-    // for java's long and postgres' bigint). Limit use of BigInt types to this function, everything returned by this
-    // function should be normal JS number for compatibility.
-    let encodedId;
-    try {
-      encodedId = BigInt(entityStr);
-    } catch (err) {
-      throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
-    }
-
-    return fromInt(encodedId);
+  if (!isValidEntityId(entityIdStr)) {
+    throw error(`invalid entity ID string "${entityIdStr}"`);
   }
 
-  throw new InvalidArgumentError(`invalid entity ID string "${entityStr}"`);
+  const defaultShardRealm = [systemShard, '0'];
+  const parts = entityIdStr.split('.');
+  if (parts.length < 3) {
+    parts.unshift(...defaultShardRealm.slice(0, 3 - parts.length));
+  }
+
+  return of(
+    ...parts.map((part) => {
+      const num = Number(part);
+      if (Number.isNaN(num) || num < 0) {
+        throw error(`invalid entity ID string "${entityIdStr}"`);
+      }
+      return num;
+    })
+  );
 };
 
 module.exports = {
+  isValidEntityId,
   of,
-  fromInt,
+  fromEncodedId,
   fromString,
 };
