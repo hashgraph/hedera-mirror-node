@@ -91,10 +91,10 @@ const timestampToParamValue = (timestamp) => {
 };
 
 const populateParamValues = async (test, paramName, rangeFieldName, getSamples, convertToParam) => {
-  let paramValues = [];
+  const paramValues = [];
   if (test.multipleFilters) {
     for (let i = 0; i < test.numberOfQueries; i++) {
-      let samples = await getSamples(test.count);
+      const samples = await getSamples(test.count);
       const allValues = [];
       samples.forEach((sample) => {
         allValues.push(convertToParam(sample));
@@ -102,8 +102,8 @@ const populateParamValues = async (test, paramName, rangeFieldName, getSamples, 
       paramValues.push(allValues);
     }
   } else {
-    let isRangeQuery = rangeFieldName in test;
-    let samples = await getSamples(test.count);
+    const isRangeQuery = rangeFieldName in test;
+    const samples = await getSamples(test.count);
     samples.forEach((sample) => {
       if (isRangeQuery) {
         paramValues.push([convertToParam(sample), convertToParam(sample + test[rangeFieldName])]);
