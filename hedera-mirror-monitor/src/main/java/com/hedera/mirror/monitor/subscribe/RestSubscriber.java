@@ -85,7 +85,7 @@ public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties>
 
     @Override
     public void onPublish(PublishResponse response) {
-        sink.tryEmitNext(response);
+        sink.emitNext(response, Sinks.EmitFailureHandler.FAIL_FAST);
     }
 
     @Override

@@ -8,4 +8,4 @@ embedded:
   flyway:
     baselineVersion: 0
     locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
-    target: "latest"
+    target: latest

@@ -53,9 +53,8 @@ class RedisEntityListenerIntegrationTest extends BatchEntityListenerTest {
 
         RedisCallback<TopicMessage> redisCallback = connection -> {
             byte[] channel = stringSerializer.serialize("topic.0.0." + topicNum);
-            connection.subscribe((message, pattern) -> {
-                sink.tryEmitNext(serializer.deserialize(message.getBody()));
-            }, channel);
+            connection.subscribe((message, pattern) -> sink.emitNext(serializer.deserialize(message.getBody()),
+                    Sinks.EmitFailureHandler.FAIL_FAST), channel);
             return null;
         };
 

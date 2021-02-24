@@ -20,12 +20,7 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
-import lombok.extern.log4j.Log4j2;
-import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -37,17 +32,4 @@ import org.springframework.test.context.jdbc.Sql;
 @SpringBootTest
 public abstract class GrpcIntegrationTest {
 
-    @Configuration
-    @Log4j2
-    public static class Config {
-        @Bean
-        FlywayConfigurationCustomizer flywayConfigurationCustomizer(FlywayProperties flywayProperties) {
-            return configuration -> {
-                log.info("baselineVersion: {}, target: {}, locations: {}", flywayProperties
-                        .getBaselineVersion(), flywayProperties.getTarget(), flywayProperties.getLocations());
-                log.info("baselineVersion: {}, target: {}, locations: {}", configuration
-                        .getBaselineVersion(), configuration.getTarget(), configuration.getLocations());
-            };
-        }
-    }
 }
