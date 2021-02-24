@@ -1,3 +1,4 @@
+debug: true
 hedera:
   mirror:
     grpc:
@@ -18,6 +19,7 @@ logging:
   level:
     root: warn
     com.hedera.mirror.grpc: info
+    org.springframework.boot: trace
     # io.grpc: debug
     # org.hibernate.SQL: debug
     # org.hibernate.type.descriptor.sql.BasicBinder: trace
