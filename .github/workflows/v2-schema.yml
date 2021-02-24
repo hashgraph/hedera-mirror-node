@@ -5,9 +5,9 @@ on:
     branches: [ master, release/** ]
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dskip.npm
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version
     -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Djib.skip -Ddocker.skip
-  MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0 -Dgroups='!v1'
+  MAVEN_SPRING_OPTS: -Dembedded.postgresql.docker-image=timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0 -Dgroups=!v1
     -Dspring.flyway.locations=filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2
     -Dspring.flyway.baseline-version=1.999.999
 
