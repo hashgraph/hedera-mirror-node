@@ -191,14 +191,10 @@ class Pool {
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
       row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
-      //account.id can be a range or a list of acceptable values
-      const accountNumValue = ((accountNum, i) => {
-        if (accountNum.equals) {
-          return `${accountNum.equals[i % accountNum.equals.length]}`;
-        } else {
-          return Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
-        }
-      })(accountNum, i);
+
+      const accountNumValue = this.getAccountId(accountNum, i, (accountNum, i) => {
+        return Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
+      });
 
       row.ctl_entity_id = EntityId.of(
         0,
@@ -278,14 +274,9 @@ class Pool {
     for (let i = 0; i < limit.high; i++) {
       const row = {};
       row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
-      //account.id can be a range or a list of acceptable values
-      row.account_id = ((accountNum, i) => {
-        if (accountNum.equals) {
-          return `${accountNum.equals[i % accountNum.equals.length]}`;
-        } else {
-          return `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
-        }
-      })(accountNum, i);
+      row.account_id = this.getAccountId(accountNum, i, (accountNum, i) => {
+        return `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
+      });
 
       row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
 
@@ -349,14 +340,9 @@ class Pool {
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
-      //account.id can be a range or a list of acceptable values
-      row.entity_id = ((accountNum, i) => {
-        if (accountNum.equals) {
-          return `${accountNum.equals[i % accountNum.equals.length]}`;
-        } else {
-          return `${Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
-        }
-      })(accountNum, i);
+      row.entity_id = this.getAccountId(accountNum, i, (accountNum, i) => {
+        return `${Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
+      });
 
       row.exp_time_ns = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;
@@ -372,6 +358,15 @@ class Pool {
     }
 
     return rows;
+  }
+
+  //account.id can be a range or a list of acceptable values
+  getAccountId(accountNum, i, opExpression) {
+    if (accountNum.equals) {
+      return `${accountNum.equals[i % accountNum.equals.length]}`;
+    } else {
+      return opExpression(accountNum, i);
+    }
   }
 
   /**

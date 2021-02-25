@@ -123,7 +123,7 @@ const validateAccNumInArray = function (transactions, potentialValues) {
 
     if (!ret) {
       console.log(
-        `validateAccNumRange check failed: No transfer with account in ${potentialValues} was found in transaction : ${JSON.stringify(
+        `validateAccNumInArray check failed: No transfer with account in ${potentialValues} was found in transaction : ${JSON.stringify(
           tx
         )}`
       );

@@ -101,7 +101,7 @@ const validateAccNumInArray = function (balances, potentialValues) {
     }
   }
   if (!ret) {
-    console.log(`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
+    console.log(`validateAccNumInArray check failed: ${offender} is not in ${potentialValues}`);
   }
   return ret;
 };

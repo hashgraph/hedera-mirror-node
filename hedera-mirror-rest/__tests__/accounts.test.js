@@ -82,7 +82,7 @@ const validateAccNumInArray = function (accounts, potentialValues) {
     }
   }
   if (!ret) {
-    console.log(`validateAccNumRange check failed: ${offender} is not in ${potentialValues}`);
+    console.log(`validateAccNumInArray check failed: ${offender} is not in ${potentialValues}`);
   }
   return ret;
 };
