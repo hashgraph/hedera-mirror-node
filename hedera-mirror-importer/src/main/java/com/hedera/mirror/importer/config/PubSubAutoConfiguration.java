@@ -21,21 +21,20 @@ package com.hedera.mirror.importer.config;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.spring.autoconfigure.pubsub.GcpPubSubAutoConfiguration;
+import com.google.cloud.spring.pubsub.core.PubSubTemplate;
+import com.google.cloud.spring.pubsub.integration.outbound.PubSubMessageHandler;
+import com.google.cloud.spring.pubsub.support.converter.JacksonPubSubMessageConverter;
+import com.hedera.mirror.importer.parser.record.pubsub.ConditionalOnPubSubRecordParser;
+import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.cloud.gcp.autoconfigure.pubsub.GcpPubSubAutoConfiguration;
-import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
-import org.springframework.cloud.gcp.pubsub.integration.outbound.PubSubMessageHandler;
-import org.springframework.cloud.gcp.pubsub.support.converter.JacksonPubSubMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
-
-import com.hedera.mirror.importer.parser.record.pubsub.ConditionalOnPubSubRecordParser;
-import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 
 @Configuration
 @AutoConfigureAfter(GcpPubSubAutoConfiguration.class)  // for SubscriberFactory and PublisherFactory

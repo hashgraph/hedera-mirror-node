@@ -125,13 +125,19 @@ commands:
                 grpc:
                   \<<: *db
             spring:
+              flyway:
+                target: latest
               redis:
-                url: redis://127.0.0.1:6379
+                host: 127.0.0.1
+                password: ""
+                port: 6379
               retry:
                 enabled: false
             ---
             spring:
-              profiles: pubsub
+              config:
+                activate:
+                  on-profile: pubsub
               cloud:
                 gcp:
                   pubsub:

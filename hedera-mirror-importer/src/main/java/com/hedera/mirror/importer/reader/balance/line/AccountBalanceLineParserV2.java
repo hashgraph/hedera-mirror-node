@@ -28,8 +28,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -37,8 +39,12 @@ import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
+@RequiredArgsConstructor
 public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
+
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
+
+    private final MirrorProperties mirrorProperties;
 
     /**
      * Parses an account balance line to extract shard, realm, account, balance, and token balances. If the shard
@@ -47,12 +53,11 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
      *
      * @param line               The account balance line
      * @param consensusTimestamp The consensus timestamp of the account balance line
-     * @param systemShardNum     The system shard number
      * @return {@code AccountBalance} entity object
      * @throws InvalidDatasetException if the line is malformed or the shard does not match {@code systemShardNum}
      */
     @Override
-    public AccountBalance parse(String line, long consensusTimestamp, long systemShardNum) {
+    public AccountBalance parse(String line, long consensusTimestamp) {
         try {
             if (line == null) {
                 throw new InvalidDatasetException("Null line cannot be parsed");
@@ -76,9 +81,9 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
                 throw new InvalidDatasetException("Invalid account balance line: " + line);
             }
 
-            if (shardNum != systemShardNum) {
+            if (shardNum != mirrorProperties.getShard()) {
                 throw new InvalidDatasetException(String.format("Invalid account balance line: %s. Expect " +
-                        "shard (%d), got shard (%d)", line, systemShardNum, shardNum));
+                        "shard (%d), got shard (%d)", line, mirrorProperties.getShard(), shardNum));
             }
 
             EntityId accountId = EntityId

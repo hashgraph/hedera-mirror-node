@@ -5,3 +5,8 @@ embedded:
     docker-image: postgres:9.6-alpine #  postgres:12-alpine is current default
   redis:
     docker-image: redis:5.0.9-alpine
+spring:
+  flyway:
+    baselineVersion: 0
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
+    target: latest

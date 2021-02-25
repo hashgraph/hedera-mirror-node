@@ -16,3 +16,8 @@ updates:
     directory: "/hedera-mirror-rest/monitoring/monitor_apis"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/hedera-mirror-rosetta"
+    schedule:
+      interval: "weekly"

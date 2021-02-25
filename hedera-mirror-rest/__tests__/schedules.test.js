@@ -119,13 +119,7 @@ describe('schedule formatScheduleRow tests', () => {
   });
 });
 
-const verifyExtractSqlFromScheduleFilters = (
-  filters,
-  expectedQuery,
-  expectedParams,
-  expectedOrder,
-  expectedLimit
-) => {
+const verifyExtractSqlFromScheduleFilters = (filters, expectedQuery, expectedParams, expectedOrder, expectedLimit) => {
   const {filterQuery, params, order, limit} = schedules.extractSqlFromScheduleFilters(filters);
 
   expect(filterQuery).toStrictEqual(expectedQuery);
@@ -143,13 +137,7 @@ describe('schedule extractSqlFromScheduleFilters tests', () => {
     const expectedorder = constants.orderFilterValues.ASC;
     const expectedlimit = config.maxLimit;
 
-    verifyExtractSqlFromScheduleFilters(
-      filters,
-      expectedquery,
-      expectedparams,
-      expectedorder,
-      expectedlimit
-    );
+    verifyExtractSqlFromScheduleFilters(filters, expectedquery, expectedparams, expectedorder, expectedlimit);
   });
 
   test('Verify all filter params query /api/v1/schedules?account.id=gte:0.0.123&schedule.id=lt:456&order=desc&limit=10', () => {
@@ -169,12 +157,6 @@ describe('schedule extractSqlFromScheduleFilters tests', () => {
     const expectedorder = constants.orderFilterValues.DESC;
     const expectedlimit = 10;
 
-    verifyExtractSqlFromScheduleFilters(
-      filters,
-      expectedquery,
-      expectedparams,
-      expectedorder,
-      expectedlimit
-    );
+    verifyExtractSqlFromScheduleFilters(filters, expectedquery, expectedparams, expectedorder, expectedlimit);
   });
 });
