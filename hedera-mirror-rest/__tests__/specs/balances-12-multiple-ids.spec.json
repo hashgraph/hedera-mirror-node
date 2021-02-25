@@ -1,5 +1,5 @@
 {
-  "description": "Balance api calls for a specific account",
+  "description": "Balance api calls for specific accounts using multiple account.id query params",
   "setup": {
     "accounts": [
       {

@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions via account id query filter",
+  "description": "Transaction api calls for transactions from specific accounts using multiple account.id query params",
   "setup": {
     "accounts": [
       {

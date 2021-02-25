@@ -1,5 +1,5 @@
 {
-  "description": "Account api calls for specific account using query param",
+  "description": "Account api calls for specific accounts using multiple account.id query params",
   "setup": {
     "accounts": [
       {
