@@ -192,9 +192,7 @@ class Pool {
       row.name = 'CRYPTOTRANSFER';
       row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
 
-      const accountNumValue = this.getAccountId(accountNum, i, () => {
-        return Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
-      });
+      const accountNumValue = this.getAccountId(accountNum, i)
 
       row.ctl_entity_id = EntityId.of(
         0,
@@ -274,9 +272,7 @@ class Pool {
     for (let i = 0; i < limit.high; i++) {
       const row = {};
       row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
-      row.account_id = this.getAccountId(accountNum, i, () => {
-        return `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
-      });
+      row.account_id = this.getAccountId(accountNum, i);
 
       row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
 
@@ -340,9 +336,7 @@ class Pool {
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
-      row.entity_id = this.getAccountId(accountNum, i, () => {
-        return `${Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
-      });
+      row.entity_id = this.getAccountId(accountNum, i);
 
       row.exp_time_ns = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;
@@ -361,11 +355,11 @@ class Pool {
   }
 
   //account.id can be a range or a list of acceptable values
-  getAccountId(accountNum, i, opExpression) {
+  getAccountId(accountNum, i) {
     if (accountNum.equals) {
       return `${accountNum.equals[i % accountNum.equals.length]}`;
     } else {
-      return opExpression();
+      return `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
     }
   }
 
