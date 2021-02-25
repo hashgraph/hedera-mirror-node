@@ -42,6 +42,7 @@ public class SDKClient {
     private final AccountId operatorId;
     private final String mirrorNodeAddress;
     private final long messageTimeoutSeconds;
+    private final AccountId nodeId;
 
     public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException {
 
@@ -51,6 +52,7 @@ public class SDKClient {
         payerPublicKey = operatorKey.getPublicKey();
         mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
         messageTimeoutSeconds = acceptanceTestProperties.getMessageTimeout().toSeconds();
+        nodeId = AccountId.fromString(acceptanceTestProperties.getNodeId());
 
         Client client;
         var nodeAddress = acceptanceTestProperties.getNodeAddress();

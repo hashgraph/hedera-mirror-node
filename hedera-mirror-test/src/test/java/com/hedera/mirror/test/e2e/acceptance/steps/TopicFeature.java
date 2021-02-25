@@ -50,6 +50,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
@@ -79,10 +80,10 @@ public class TopicFeature {
         PublicKey submitPublicKey = submitKey.getPublicKey();
         log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-        TransactionReceipt receipt = topicClient
-                .createTopic(topicClient.getSdkClient().getPayerPublicKey(), submitPublicKey);
-        assertNotNull(receipt);
-        TopicId topicId = receipt.topicId;
+        NetworkTransactionResponse networkTransactionResponse = topicClient
+                .createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), submitPublicKey);
+        assertNotNull(networkTransactionResponse.getReceipt());
+        TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
@@ -98,10 +99,10 @@ public class TopicFeature {
     public void createNewOpenTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         testInstantReference = Instant.now();
 
-        TransactionReceipt receipt = topicClient
-                .createTopic(topicClient.getSdkClient().getPayerPublicKey(), null);
-        assertNotNull(receipt);
-        TopicId topicId = receipt.topicId;
+        NetworkTransactionResponse networkTransactionResponse = topicClient
+                .createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), null);
+        assertNotNull(networkTransactionResponse.getReceipt());
+        TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
@@ -114,14 +115,14 @@ public class TopicFeature {
 
     @When("I successfully update an existing topic")
     public void updateTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId);
+        TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
     }
 
     @When("I successfully delete the topic")
     public void deleteTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId);
+        TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
     }

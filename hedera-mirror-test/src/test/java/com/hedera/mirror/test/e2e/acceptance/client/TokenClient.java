@@ -218,17 +218,23 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    public TransferTransaction getTokenTransferTransaction(TokenId tokenId, AccountId sender, AccountId recipient,
+                                                           long amount) {
+        Instant refInstant = Instant.now();
+        return new TransferTransaction()
+                .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
+                .addTokenTransfer(tokenId, recipient, amount)
+                .setMaxTransactionFee(Hbar.fromTinybars(10_000_000L))
+                .setTransactionMemo("Transfer token_" + refInstant);
+    }
+
     public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
                                                     long amount) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
-        Instant refInstant = Instant.now();
-        TransferTransaction tokenTransferTransaction = new TransferTransaction()
-                .addTokenTransfer(tokenId, sender.getAccountId(), Math.negateExact(amount))
-                .addTokenTransfer(tokenId, recipient, amount)
-                .setMaxTransactionFee(Hbar.fromTinybars(10_000_000L))
-                .setTransactionMemo("Transfer token_" + refInstant);
+        TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender
+                .getAccountId(), recipient, amount);
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender.getPrivateKey());
