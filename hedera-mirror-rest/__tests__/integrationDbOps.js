@@ -106,8 +106,12 @@ const instantiateDatabase = async () => {
 };
 
 /**
- * Run the sql (non-java) based migrations stored in the importer project against the target database.
- * @returns {Promise}
+ * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
+ * Note that even though we use Flyway 7 in the other modules, we have to use Flyway 6 here because of an
+ * incompatibility issue. Flyway 7 with node-flywaydb causes the below issue when ran against TimescaleDB:
+ *
+ * ERROR: function create_hypertable(unknown, unknown, chunk_time_interval => bigint, ...) does not exist
+ * Hint: No function matches the given name and argument types. You might need to add explicit type casts.
  */
 const flywayMigrate = () => {
   logger.info('Using flyway CLI to construct schema');

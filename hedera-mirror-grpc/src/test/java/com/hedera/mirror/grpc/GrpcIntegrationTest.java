@@ -31,5 +31,4 @@ import org.springframework.test.context.jdbc.Sql;
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:cleanup.sql")
 @SpringBootTest
 public abstract class GrpcIntegrationTest {
-
 }
