@@ -192,7 +192,7 @@ class Pool {
       row.name = 'CRYPTOTRANSFER';
       row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
 
-      const accountNumValue = this.getAccountId(accountNum, i, (accountNum, i) => {
+      const accountNumValue = this.getAccountId(accountNum, i, () => {
         return Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
       });
 
@@ -274,7 +274,7 @@ class Pool {
     for (let i = 0; i < limit.high; i++) {
       const row = {};
       row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
-      row.account_id = this.getAccountId(accountNum, i, (accountNum, i) => {
+      row.account_id = this.getAccountId(accountNum, i, () => {
         return `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
       });
 
@@ -340,7 +340,7 @@ class Pool {
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
-      row.entity_id = this.getAccountId(accountNum, i, (accountNum, i) => {
+      row.entity_id = this.getAccountId(accountNum, i, () => {
         return `${Number(accountNum.high) - (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
       });
 
@@ -365,7 +365,7 @@ class Pool {
     if (accountNum.equals) {
       return `${accountNum.equals[i % accountNum.equals.length]}`;
     } else {
-      return opExpression(accountNum, i);
+      return opExpression();
     }
   }
 
