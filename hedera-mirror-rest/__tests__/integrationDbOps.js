@@ -100,7 +100,7 @@ const instantiateDatabase = async () => {
   oldPool = global.pool;
   global.pool = sqlConnection;
 
-  await flywayMigrate();
+  flywayMigrate();
 
   return sqlConnection;
 };
