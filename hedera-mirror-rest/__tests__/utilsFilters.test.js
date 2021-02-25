@@ -473,15 +473,3 @@ describe('utils validateAndParseFilters crypto key tests', () => {
     verifyValidAndInvalidFilters(invalidFilters, filters);
   });
 });
-
-describe('utils isRepeatedQueryParameterValidLength', () => {
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${config.maxRepeatedQueryParameters - 1} `, () => {
-    expect(utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters - 1).fill("0.0.3"))).toBeTruthy();
-  });
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with invalid amount ${config.maxRepeatedQueryParameters + 1}`, () => {
-    expect(utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters + 1).fill("0.0.3"))).toBeFalsy();
-  });
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${config.maxRepeatedQueryParameters} `, () => {
-    expect(utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters).fill("0.0.3"))).toBeTruthy();
-  });
-});
