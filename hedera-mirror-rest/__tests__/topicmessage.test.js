@@ -25,8 +25,6 @@ const constants = require('../constants.js');
 const config = require('../config.js');
 const EntityId = require('../entityId');
 
-jest.setTimeout(2000);
-
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
     verifyInvalidConsensusTimestamp(-1234567890.000000001);

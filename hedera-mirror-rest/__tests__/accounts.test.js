@@ -23,8 +23,6 @@ const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils.js');
 
-jest.setTimeout(2000);
-
 // Validation functions
 /**
  * Validate length of the accounts returned by the api

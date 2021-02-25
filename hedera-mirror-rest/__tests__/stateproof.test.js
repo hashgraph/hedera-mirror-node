@@ -33,8 +33,6 @@ const stateproof = require('../stateproof');
 const TransactionId = require('../transactionId');
 const EntityId = require('../entityId');
 
-jest.setTimeout(2000);
-
 const logger = log4js.getLogger();
 // need to set the globals here so when __set__ them with rewire it won't throw ReferenceError 'xxx is not defined'
 global.logger = logger;

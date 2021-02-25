@@ -28,7 +28,6 @@ const {randomString} = require('../utils');
 const requestLogger = async (req, res, next) => {
   httpContext.set(constants.requestIdLabel, randomString(8));
   logger.info(`${req.ip} ${req.method} ${req.originalUrl}`);
-  return next();
 };
 
 /**
