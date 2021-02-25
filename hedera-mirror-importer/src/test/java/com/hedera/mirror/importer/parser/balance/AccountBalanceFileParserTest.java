@@ -154,6 +154,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     void assertAccountBalances(AccountBalanceFile... balanceFiles) {
         IterableAssert<AccountBalanceFile> balanceFileAssert = assertThat(accountBalanceFileRepository.findAll())
+                .usingElementComparatorOnFields("consensusTimestamp")
                 .containsExactlyInAnyOrder(balanceFiles);
 
         IterableAssert<AccountBalanceSet> absIterableAssert = assertThat(accountBalanceSetRepository.findAll())
