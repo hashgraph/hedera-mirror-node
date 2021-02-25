@@ -23,11 +23,7 @@ const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils.js');
 
-beforeAll(async () => {
-  jest.setTimeout(1000);
-});
-
-afterAll(() => {});
+jest.setTimeout(2000);
 
 // Validation functions
 /**
