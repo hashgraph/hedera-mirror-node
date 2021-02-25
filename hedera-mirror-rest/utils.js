@@ -62,10 +62,6 @@ const isValidTimestampParam = (timestamp) => {
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
-const isValidEntityNum = (entityNum) => {
-  return /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(entityNum) || /^\d{1,10}$/.test(entityNum);
-};
-
 const isValidLimitNum = (limit) => {
   return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= config.maxLimit;
 };
@@ -156,8 +152,7 @@ const filterValidityChecks = async (param, op, val) => {
       ret = isValidAccountBalanceQuery(val);
       break;
     case constants.filterKeys.ACCOUNT_ID:
-      // Accepted forms: shard.realm.num or num
-      ret = isValidEntityNum(val);
+      ret = EntityId.isValidEntityId(val);
       break;
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
@@ -191,8 +186,7 @@ const filterValidityChecks = async (param, op, val) => {
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.TOKEN_ID:
-      // Accepted forms: shard.realm.num or num
-      ret = isValidEntityNum(val);
+      ret = EntityId.isValidEntityId(val);
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
@@ -202,8 +196,7 @@ const filterValidityChecks = async (param, op, val) => {
       ret = isValidTimestampParam(val);
       break;
     case constants.filterKeys.SCHEDULE_ID:
-      // Accepted forms: shard.realm.num or num
-      ret = isValidEntityNum(val);
+      ret = EntityId.isValidEntityId(val);
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
@@ -806,12 +799,12 @@ const formatComparator = (comparator) => {
 const parseTokenBalances = (tokenBalances) => {
   return tokenBalances
     ? tokenBalances.map((tokenBalance) => {
-      const {token_id: tokenId, balance} = tokenBalance;
-      return {
-        token_id: EntityId.fromString(tokenId).toString(),
-        balance,
-      };
-    })
+        const {token_id: tokenId, balance} = tokenBalance;
+        return {
+          token_id: EntityId.fromString(tokenId).toString(),
+          balance,
+        };
+      })
     : [];
 };
 
@@ -874,7 +867,6 @@ module.exports = {
   getTransactionTypeQuery,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
-  isValidEntityNum,
   isValidLimitNum,
   isValidNum,
   isValidTimestampParam,

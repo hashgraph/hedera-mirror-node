@@ -24,9 +24,7 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
-const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 // select columns
 const sqlQueryColumns = {
@@ -44,23 +42,43 @@ const filterColumnMap = {
 };
 
 // token discovery sql queries
-const tokensSelectQuery = `select t.token_id, symbol, e.key from token t`;
-const accountIdJoinQuery = ` join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id`;
-const entityIdJoinQuery = ` join t_entities e on e.id = t.token_id`;
+const tokensSelectQuery = 'select t.token_id, symbol, e.key from token t';
+const accountIdJoinQuery = 'join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id';
+const entityIdJoinQuery = 'join t_entities e on e.id = t.token_id';
 
 // token info sql queries
-const tokenInfoSelectQuery = `select symbol, token_id, name, decimals, initial_supply, total_supply, treasury_account_id, created_timestamp, freeze_default, e.key, kyc_key, freeze_key, wipe_key, supply_key, e.exp_time_ns, e.auto_renew_account_id, e.auto_renew_period, modified_timestamp from token t`;
-const tokenIdMatchQuery = ` where token_id = $1`;
+const tokenInfoSelectFields = [
+  'symbol',
+  'token_id',
+  'name',
+  'decimals',
+  'initial_supply',
+  'total_supply',
+  'treasury_account_id',
+  'created_timestamp',
+  'freeze_default',
+  'e.key',
+  'kyc_key',
+  'freeze_key',
+  'wipe_key',
+  'supply_key',
+  'e.exp_time_ns',
+  'e.auto_renew_account_id',
+  'e.auto_renew_period',
+  'modified_timestamp',
+];
+const tokenInfoSelectQuery = ['select', tokenInfoSelectFields.join(',\n'), 'from token t'].join('\n');
+const tokenIdMatchQuery = 'where token_id = $1';
 
 /**
  * Given top level select columns and filters from request query, extract filters and create final sql query with
  * appropriate where clauses.
  */
-const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, filters) => {
+const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
   // add filters
   let limit = config.maxLimit;
-  let order = 'asc';
-  let applicableFilters = 0;
+  let order = constants.orderFilterValues.ASC;
+  conditions = conditions || [];
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
@@ -78,23 +96,15 @@ const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, fil
       continue;
     }
 
-    pgSqlQuery += applicableFilters === 0 ? ` where ` : ` and `;
-    applicableFilters++;
-    pgSqlQuery += `${filterColumnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
-    pgSqlParams.push(filter.value);
+    conditions.push(`${filterColumnMap[filter.key]}${filter.operator}$${params.push(filter.value)}`);
   }
 
-  // add order
-  pgSqlQuery += ` order by ${sqlQueryColumns.TOKEN_ID} ${order}`;
+  const whereQuery = conditions.length !== 0 ? `where ${conditions.join(' and ')}` : '';
+  const orderQuery = `order by ${sqlQueryColumns.TOKEN_ID} ${order}`;
+  const limitQuery = `limit $${params.push(limit)}`;
+  query = [query, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
 
-  // add limit
-  pgSqlQuery += ` limit $${nextParamCount++}`;
-  pgSqlParams.push(limit);
-
-  // close query
-  pgSqlQuery += ';';
-
-  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
+  return utils.buildPgSqlObject(query, params, order, limit);
 };
 
 /**
@@ -102,7 +112,7 @@ const extractSqlFromTokenRequest = (pgSqlQuery, pgSqlParams, nextParamCount, fil
  */
 const formatTokenRow = (row) => {
   return {
-    token_id: EntityId.fromString(row.token_id).toString(),
+    token_id: EntityId.fromEncodedId(row.token_id).toString(),
     symbol: row.symbol,
     admin_key: utils.encodeKey(row.key),
   };
@@ -111,7 +121,7 @@ const formatTokenRow = (row) => {
 const formatTokenInfoRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
-    auto_renew_account: EntityId.fromString(row.auto_renew_account_id, true).toString(),
+    auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
     decimals: row.decimals,
@@ -124,9 +134,9 @@ const formatTokenInfoRow = (row) => {
     name: row.name,
     supply_key: utils.encodeKey(row.supply_key),
     symbol: row.symbol,
-    token_id: EntityId.fromString(row.token_id).toString(),
+    token_id: EntityId.fromEncodedId(row.token_id).toString(),
     total_supply: row.total_supply,
-    treasury_account_id: EntityId.fromString(row.treasury_account_id).toString(),
+    treasury_account_id: EntityId.fromEncodedId(row.treasury_account_id).toString(),
     wipe_key: utils.encodeKey(row.wipe_key),
   };
 };
@@ -138,73 +148,57 @@ const getTokensRequest = async (req, res) => {
   // validate filters
   await utils.validateAndParseFilters(filters);
 
-  let getTokensSqlQuery = tokensSelectQuery;
-  let getTokenSqlParams = [];
-  let nextParamCount = 1;
+  const conditions = [];
+  const getTokensSqlQuery = [tokensSelectQuery];
+  const getTokenSqlParams = [];
 
-  // if account.id filter is present join on token_account
-  const accountFilter = req.query[constants.filterKeys.ACCOUNT_ID];
-  if (accountFilter) {
-    getTokensSqlQuery += accountIdJoinQuery;
-    getTokenSqlParams.push(accountFilter);
-    nextParamCount++;
+  // if account.id filter is present join on token_account and filter dissociated tokens
+  const accountId = req.query[constants.filterKeys.ACCOUNT_ID];
+  if (accountId) {
+    conditions.push('ta.associated is true');
+    getTokensSqlQuery.push(accountIdJoinQuery);
+    getTokenSqlParams.push(EntityId.fromString(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
   }
 
   // add join with entities table to sql query
-  getTokensSqlQuery += entityIdJoinQuery;
+  getTokensSqlQuery.push(entityIdJoinQuery);
 
   // build final sql query
   const {query, params, order, limit} = extractSqlFromTokenRequest(
-    getTokensSqlQuery,
+    getTokensSqlQuery.join('\n'),
     getTokenSqlParams,
-    nextParamCount,
-    filters
+    filters,
+    conditions
   );
 
-  const tokensResponse = {
-    tokens: [],
+  const rows = await getTokens(query, params);
+  const tokens = rows.map((m) => formatTokenRow(m));
+
+  // populate next link
+  const lastTokenId = tokens.length > 0 ? tokens[tokens.length - 1].token_id : null;
+  const nextLink = utils.getPaginationLink(
+    req,
+    tokens.length !== limit,
+    constants.filterKeys.TOKEN_ID,
+    lastTokenId,
+    order
+  );
+
+  res.locals[constants.responseDataLabel] = {
+    tokens,
     links: {
-      next: null,
+      next: nextLink,
     },
   };
-
-  return getTokens(query, params).then((tokens) => {
-    // format messages
-    tokensResponse.tokens = tokens.map((m) => formatTokenRow(m));
-
-    // populate next link
-    const lastTokenId =
-      tokensResponse.tokens.length > 0 ? tokensResponse.tokens[tokensResponse.tokens.length - 1].token_id : null;
-    tokensResponse.links.next = utils.getPaginationLink(
-      req,
-      tokens.length !== limit,
-      constants.filterKeys.TOKEN_ID,
-      lastTokenId,
-      order
-    );
-
-    res.locals[constants.responseDataLabel] = tokensResponse;
-  });
 };
 
 const getTokenInfoRequest = async (req, res) => {
-  let tokenId = req.params.id;
-
-  if (!utils.isValidEntityNum(tokenId)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
-  }
-
-  // ensure encoded format is used
-  tokenId = EntityId.fromString(tokenId).getEncodedId();
+  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
 
   // concatenate queries to produce final sql query
-  const pgSqlQuery = `${tokenInfoSelectQuery}${entityIdJoinQuery}${tokenIdMatchQuery};`;
-  const pgSqlParams = [tokenId];
-
-  return getToken(pgSqlQuery, pgSqlParams).then((tokenResponse) => {
-    const tokenInfo = formatTokenInfoRow(tokenResponse);
-    res.locals[constants.responseDataLabel] = tokenInfo;
-  });
+  const pgSqlQuery = [tokenInfoSelectQuery, entityIdJoinQuery, tokenIdMatchQuery].join('\n');
+  const row = await getToken(pgSqlQuery, tokenId);
+  res.locals[constants.responseDataLabel] = formatTokenInfoRow(row);
 };
 
 const getTokens = async (pgSqlQuery, pgSqlParams) => {
@@ -212,22 +206,9 @@ const getTokens = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getTokens query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const tokens = [];
-
-  return pool
-    .query(pgSqlQuery, pgSqlParams)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      for (let i = 0; i < results.rowCount; i++) {
-        tokens.push(results.rows[i]);
-      }
-
-      logger.debug(`getTokens returning ${tokens.length} entries`);
-
-      return tokens;
-    });
+  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  logger.debug(`getTokens returning ${rows.length} entries`);
+  return rows;
 };
 
 // token balances select columns
@@ -245,31 +226,26 @@ const tokenBalancesFilterColumnMap = {
   'account.id': tokenBalancesSqlQueryColumns.ACCOUNT_ID,
 };
 
-const tokenBalancesSelectQuery = `
-  select
-    tb.consensus_timestamp,
-    tb.account_id,
-    tb.balance
-  from token_balance tb`;
+const tokenBalancesSelectFields = ['tb.consensus_timestamp', 'tb.account_id', 'tb.balance'];
+const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'), 'from token_balance tb'].join('\n');
 
 /**
  * Extracts SQL query, params, order, and limit
  *
- * @param {EntityId} tokenId token ID object
- * @param {string} pgSqlQuery initial pg SQL query string
+ * @param {string} tokenId encoded token ID
+ * @param {string} query initial pg SQL query string
  * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
-const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
+const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
   const {opsMap} = utils;
 
   let limit = config.maxLimit;
-  let order = 'desc';
+  let order = constants.orderFilterValues.DESC;
   let joinEntityClause = '';
-  let whereClause = `where ${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`;
-  let nextParamCount = 2;
-  const pgSqlParams = [tokenId.getEncodedId()];
-  const tsQueryWhereConditions = [];
+  const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
+  const params = [tokenId];
+  const tsQueryConditions = [];
 
   for (const filter of filters) {
     switch (filter.key) {
@@ -277,8 +253,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
         joinEntityClause = `join t_entities e
           on e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
           and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
-          and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${nextParamCount++}`;
-        pgSqlParams.push(filter.value);
+          and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -289,8 +264,8 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
       case constants.filterKeys.TIMESTAMP:
         // transform '=' operator for timestamp to '<='
         const op = filter.operator !== opsMap.eq ? filter.operator : opsMap.lte;
-        tsQueryWhereConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${nextParamCount++}`);
-        pgSqlParams.push(filter.value);
+        params.push(filter.value);
+        tsQueryConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${params.length}`);
         break;
       default:
         const columnKey = tokenBalancesFilterColumnMap[filter.key];
@@ -298,35 +273,30 @@ const extractSqlFromTokenBalancesRequest = (tokenId, pgSqlQuery, filters) => {
           break;
         }
 
-        whereClause = `${whereClause}
-          and ${columnKey} ${filter.operator} $${nextParamCount++}`;
-        pgSqlParams.push(filter.value);
+        conditions.push(`${columnKey} ${filter.operator} $${params.push(filter.value)}`);
         break;
     }
   }
 
-  const tsQueryWhereClause = tsQueryWhereConditions.length === 0 ? '' : `where ${tsQueryWhereConditions.join(' and ')}`;
-  whereClause = `${whereClause}
-    and ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} = (
-      select
-        ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
-      from token_balance tb
-      ${tsQueryWhereClause}
-      order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
-      limit 1
-    )`;
-  const query = `${pgSqlQuery}
-    ${joinEntityClause}
-    ${whereClause}
-    order by ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}
-    limit $${nextParamCount}`;
-  pgSqlParams.push(limit);
-  return utils.buildPgSqlObject(query, pgSqlParams, order, limit);
+  const tsQueryWhereClause = tsQueryConditions.length !== 0 ? `where ${tsQueryConditions.join(' and ')}` : '';
+  const tsQuery = `select ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
+    from token_balance tb
+    ${tsQueryWhereClause}
+    order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
+    limit 1`;
+  conditions.push(`tb.consensus_timestamp = (${tsQuery})`);
+
+  const whereQuery = `where ${conditions.join('\nand ')}`;
+  const orderQuery = `order by ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}`;
+  const limitQuery = `limit $${params.push(limit)}`;
+  query = [query, joinEntityClause, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
+
+  return utils.buildPgSqlObject(query, params, order, limit);
 };
 
 const formatTokenBalanceRow = (row) => {
   return {
-    account: EntityId.fromString(row.account_id).toString(),
+    account: EntityId.fromEncodedId(row.account_id).toString(),
     balance: Number(row.balance),
   };
 };
@@ -336,16 +306,9 @@ const formatTokenBalanceRow = (row) => {
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
- * @return {Promise} Promise for PostgreSQL query
  */
 const getTokenBalances = async (req, res) => {
-  let tokenId;
-  try {
-    tokenId = EntityId.fromString(req.params.id);
-  } catch (err) {
-    throw InvalidArgumentError.forParams('tokenId');
-  }
-
+  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
   const filters = utils.buildFilterObject(req.query);
   await utils.validateAndParseFilters(filters);
 
@@ -354,55 +317,41 @@ const getTokenBalances = async (req, res) => {
     logger.trace(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
   }
 
-  return pool
-    .query(query, params)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((result) => {
-      const {rows} = result;
-      const responseData = {
-        timestamp: rows.length > 0 ? utils.nsToSecNs(rows[0].consensus_timestamp) : null,
-        balances: rows.map((row) => formatTokenBalanceRow(row)),
-        links: {
-          next: null,
-        },
-      };
+  const {rows} = await utils.queryQuietly(query, ...params);
+  const response = {
+    timestamp: rows.length > 0 ? utils.nsToSecNs(rows[0].consensus_timestamp) : null,
+    balances: rows.map((row) => formatTokenBalanceRow(row)),
+    links: {
+      next: null,
+    },
+  };
 
-      const anchorAccountId =
-        responseData.balances.length > 0 ? responseData.balances[responseData.balances.length - 1].account : 0;
-      // Pagination links
-      responseData.links.next = utils.getPaginationLink(
-        req,
-        responseData.balances.length !== limit,
-        constants.filterKeys.ACCOUNT_ID,
-        anchorAccountId,
-        order
-      );
+  // Pagination links
+  const anchorAccountId = response.balances.length > 0 ? response.balances[response.balances.length - 1].account : 0;
+  response.links.next = utils.getPaginationLink(
+    req,
+    response.balances.length !== limit,
+    constants.filterKeys.ACCOUNT_ID,
+    anchorAccountId,
+    order
+  );
 
-      logger.debug(`getTokenBalances returning ${responseData.balances.length} entries`);
-      res.locals[constants.responseDataLabel] = responseData;
-    });
+  logger.debug(`getTokenBalances returning ${response.balances.length} entries`);
+  res.locals[constants.responseDataLabel] = response;
 };
 
-const getToken = async (pgSqlQuery, pgSqlParams) => {
+const getToken = async (pgSqlQuery, tokenId) => {
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenInfo query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+    logger.trace(`getTokenInfo query: ${pgSqlQuery}, params: ${tokenId}`);
   }
 
-  return pool
-    .query(pgSqlQuery, pgSqlParams)
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((results) => {
-      if (results.rows.length !== 1) {
-        throw new NotFoundError();
-      }
+  const {rows} = await utils.queryQuietly(pgSqlQuery, tokenId);
+  if (rows.length !== 1) {
+    throw new NotFoundError();
+  }
 
-      logger.debug('getToken returning single entry');
-      return results.rows[0];
-    });
+  logger.debug('getToken returning single entry');
+  return rows[0];
 };
 
 module.exports = {

@@ -69,8 +69,17 @@ describe('topicmessage validateGetSequenceMessageParams tests', () => {
   test('Verify validateGetSequenceMessageParams does not throw error for 1234567890', () => {
     verifyValidTopicAndSequenceNum(1234567890, 1234567890);
   });
+
   test('Verify validateGetSequenceMessageParams does not throw error for 2', () => {
     verifyValidTopicAndSequenceNum(2, 1234567890);
+  });
+
+  test('Verify validateGetSequenceMessageParams does not throw error for "0.0.2"', () => {
+    verifyValidTopicAndSequenceNum('0.0.2', 1234567890);
+  });
+
+  test('Verify validateGetSequenceMessageParams does not throw error for "0.2"', () => {
+    verifyValidTopicAndSequenceNum('0.2', 1234567890);
   });
 });
 
@@ -94,8 +103,17 @@ describe('topicmessage validateGetTopicMessagesParams tests', () => {
   test('Verify validateGetTopicMessagesParams does not throw error for 1234567890', () => {
     verifyValidTopicMessages(1234567890);
   });
+
   test('Verify validateGetTopicMessagesParams does not throw error for 2', () => {
     verifyValidTopicMessages(2);
+  });
+
+  test('Verify validateGetTopicMessagesParams does not throw error for "0.0.2"', () => {
+    verifyValidTopicMessages('0.0.2');
+  });
+
+  test('Verify validateGetTopicMessagesParams does not throw error for "0.2"', () => {
+    verifyValidTopicMessages('0.2');
   });
 });
 

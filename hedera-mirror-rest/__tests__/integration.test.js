@@ -165,7 +165,7 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  * @returns {*}
  */
 const mapTransactionResults = (rows) => {
-  return rows.map((v) => `${v.consensus_ns}, ${EntityId.fromString(v.ctl_entity_id).toString()}, ${v.amount}`);
+  return rows.map((v) => `${v.consensus_ns}, ${EntityId.fromEncodedId(v.ctl_entity_id).toString()}, ${v.amount}`);
 };
 
 const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
@@ -333,7 +333,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
 describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
-  const s3TestDataRoot = path.join(__dirname, 'data/s3');
+  const s3TestDataRoot = path.join(__dirname, 'data', 's3');
 
   let configOverriden = false;
   let configClone;
@@ -489,16 +489,19 @@ describe('DB integration test - spec based', () => {
     const p = path.join(specPath, file);
     const specText = fs.readFileSync(p, 'utf8');
     const spec = JSON.parse(specText);
-    test(`DB integration test - ${file} - ${spec.url}`, async () => {
-      await specSetupSteps(spec.setup);
-      const response = await request(server).get(spec.url);
+    const urls = spec.urls || [spec.url];
+    urls.forEach((url) =>
+      test(`DB integration test - ${file} - ${url}`, async () => {
+        await specSetupSteps(spec.setup);
+        const response = await request(server).get(url);
 
-      expect(response.status).toEqual(spec.responseStatus);
-      const jsonObj = JSON.parse(response.text);
-      if (file.startsWith('stateproof')) {
-        transformStateProofResponse(jsonObj);
-      }
-      expect(jsonObj).toEqual(spec.responseJson);
-    });
+        expect(response.status).toEqual(spec.responseStatus);
+        const jsonObj = JSON.parse(response.text);
+        if (file.startsWith('stateproof')) {
+          transformStateProofResponse(jsonObj);
+        }
+        expect(jsonObj).toEqual(spec.responseJson);
+      })
+    );
   });
 });

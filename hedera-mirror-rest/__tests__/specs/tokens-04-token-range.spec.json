@@ -44,7 +44,11 @@
       }
     ]
   },
-  "url": "/api/v1/tokens?token.id=gte:18&token.id=lt:0.30000.0&limit=2",
+  "urls": [
+    "/api/v1/tokens?token.id=gte:0.0.18&token.id=lt:0.30000.0&limit=2",
+    "/api/v1/tokens?token.id=gte:0.18&token.id=lt:0.30000.0&limit=2",
+    "/api/v1/tokens?token.id=gte:18&token.id=lt:0.30000.0&limit=2"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "tokens": [

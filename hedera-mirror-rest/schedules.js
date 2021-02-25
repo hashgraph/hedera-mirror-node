@@ -24,7 +24,6 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 const scheduleSelectFields = [
@@ -106,11 +105,11 @@ const formatScheduleRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
-    creator_account_id: EntityId.fromString(row.creator_account_id).toString(),
+    creator_account_id: EntityId.fromEncodedId(row.creator_account_id).toString(),
     executed_timestamp: row.executed_timestamp === null ? null : utils.nsToSecNs(row.executed_timestamp),
     memo: row.memo,
-    payer_account_id: EntityId.fromString(row.payer_account_id).toString(),
-    schedule_id: EntityId.fromString(row.schedule_id).toString(),
+    payer_account_id: EntityId.fromEncodedId(row.payer_account_id).toString(),
+    schedule_id: EntityId.fromEncodedId(row.schedule_id).toString(),
     signatures,
     transaction_body: utils.encodeBase64(row.transaction_body),
   };
@@ -123,16 +122,11 @@ const formatScheduleRow = (row) => {
  * @returns {Promise<void>}
  */
 const getScheduleById = async (req, res) => {
-  const scheduleId = req.params.id;
-  if (!utils.isValidEntityNum(scheduleId)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.SCHEDULEID);
-  }
-
-  const encodedScheduleId = EntityId.fromString(scheduleId).getEncodedId();
+  const scheduleId = EntityId.fromString(req.params.id, constants.filterKeys.SCHEDULEID).getEncodedId();
   if (logger.isTraceEnabled()) {
-    logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${encodedScheduleId}`);
+    logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
   }
-  const {rows} = await utils.queryQuietly(getScheduleByIdQuery, encodedScheduleId);
+  const {rows} = await utils.queryQuietly(getScheduleByIdQuery, scheduleId);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }

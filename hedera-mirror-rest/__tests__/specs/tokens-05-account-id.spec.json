@@ -70,22 +70,19 @@
       {
         "token_id": "0.23.45678",
         "account_id": "0.0.2",
-        "created_timestamp": "1234567890000000008"
+        "associated": false,
+        "created_timestamp": "1234567890000000008",
+        "modified_timestamp": "1234569990000000088"
       }
     ]
   },
-  "url": "/api/v1/tokens?account.id=2",
+  "urls": ["/api/v1/tokens?account.id=0.0.2", "/api/v1/tokens?account.id=0.2", "/api/v1/tokens?account.id=2"],
   "responseStatus": 200,
   "responseJson": {
     "tokens": [
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
-        "admin_key": null
-      },
-      {
-        "token_id": "0.23.45678",
-        "symbol": "HEDERACOIN",
         "admin_key": null
       }
     ],

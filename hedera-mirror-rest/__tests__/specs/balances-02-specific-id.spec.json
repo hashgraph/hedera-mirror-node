@@ -44,7 +44,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/balances?account.id=0.0.8",
+  "urls": ["/api/v1/balances?account.id=0.0.8", "/api/v1/balances?account.id=0.8", "/api/v1/balances?account.id=8"],
   "responseStatus": 200,
   "responseJson": {
     "timestamp": "0.000002345",
