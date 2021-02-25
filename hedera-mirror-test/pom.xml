@@ -21,7 +21,7 @@
         <jmeter.publishThreadCount></jmeter.publishThreadCount>
         <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
         <cucumber.version>6.9.1</cucumber.version>
-        <cucumber-reporting.version>4.0.96</cucumber-reporting.version>
+        <cucumber-reporting.version>4.0.97</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
