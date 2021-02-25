@@ -62,7 +62,7 @@
                             <goal>npm</goal>
                         </goals>
                         <configuration>
-                            <arguments>test</arguments>
+                            <arguments>test -- --maxWorkers 2</arguments>
                             <skip>${skipTests}</skip>
                         </configuration>
                     </execution>

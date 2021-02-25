@@ -55,9 +55,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @RequiredArgsConstructor
 public class RedisEntityListener implements BatchEntityListener {
 
-    // hardcode it now to avoid spring validation performance penalty incurred on RedisProperties.isEnabled() if it were
-    // added to RedisProperties with validation annotations
-    public static final int TASK_QUEUE_SIZE = 8;
+    private static final String TOPIC_FORMAT = "topic.%d.%d.%d";
 
     private final MirrorProperties mirrorProperties;
     private final RedisProperties redisProperties;
@@ -68,7 +66,6 @@ public class RedisEntityListener implements BatchEntityListener {
     private Timer timer;
     private List<TopicMessage> topicMessages;
     private BlockingQueue<List<TopicMessage>> topicMessagesQueue;
-    private String topicPrefix;
 
     @PostConstruct
     void init() {
@@ -79,8 +76,7 @@ public class RedisEntityListener implements BatchEntityListener {
                 .tag("type", "redis")
                 .register(meterRegistry);
         topicMessages = new ArrayList<>();
-        topicMessagesQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
-        topicPrefix = "topic." + mirrorProperties.getShard() + "."; // Cache to avoid reflection penalty
+        topicMessagesQueue = new ArrayBlockingQueue<>(redisProperties.getQueueCapacity());
 
         Executor executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
@@ -148,11 +144,16 @@ public class RedisEntityListener implements BatchEntityListener {
             @Override
             public Object execute(RedisOperations operations) {
                 for (TopicMessage topicMessage : messages) {
-                    String channel = topicPrefix + topicMessage.getRealmNum() + "." + topicMessage.getTopicNum();
+                    String channel = getChannelName(topicMessage);
                     redisOperations.convertAndSend(channel, topicMessage);
                 }
                 return null;
             }
         };
+    }
+
+    private String getChannelName(TopicMessage topicMessage) {
+        return String.format(TOPIC_FORMAT, mirrorProperties.getShard(), topicMessage.getRealmNum(), topicMessage
+                .getTopicNum());
     }
 }

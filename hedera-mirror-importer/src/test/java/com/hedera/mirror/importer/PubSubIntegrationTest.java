@@ -21,14 +21,14 @@ package com.hedera.mirror.importer;
  */
 
 import com.google.api.gax.rpc.NotFoundException;
+import com.google.cloud.spring.pubsub.PubSubAdmin;
+import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.pubsub.v1.PubsubMessage;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.gcp.pubsub.PubSubAdmin;
-import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;

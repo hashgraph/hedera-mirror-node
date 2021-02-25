@@ -275,7 +275,7 @@ abstract class CsvBalanceFileReaderTest extends IntegrationTest {
                 }
 
                 try {
-                    AccountBalance expectedItem = parser.parse(line, consensusTimestamp, mirrorProperties.getShard());
+                    AccountBalance expectedItem = parser.parse(line, consensusTimestamp);
                     AccountBalance actualItem = accountBalanceIter.next();
                     assertThat(actualItem).isEqualTo(expectedItem);
                 } catch (InvalidDatasetException ex) {

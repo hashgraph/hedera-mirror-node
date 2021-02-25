@@ -27,7 +27,7 @@ import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.UnicastProcessor;
+import reactor.core.publisher.Sinks;
 
 import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
@@ -47,19 +47,18 @@ class RedisEntityListenerIntegrationTest extends BatchEntityListenerTest {
 
     @Override
     protected Flux<TopicMessage> subscribe(long topicNum) {
-        UnicastProcessor<TopicMessage> processor = UnicastProcessor.create();
+        Sinks.Many<TopicMessage> sink = Sinks.many().unicast().onBackpressureBuffer();
         RedisSerializer stringSerializer = ((RedisTemplate<String, ?>) redisOperations).getStringSerializer();
         RedisSerializer<TopicMessage> serializer = (RedisSerializer<TopicMessage>) redisOperations.getValueSerializer();
 
         RedisCallback<TopicMessage> redisCallback = connection -> {
             byte[] channel = stringSerializer.serialize("topic.0.0." + topicNum);
-            connection.subscribe((message, pattern) -> {
-                processor.onNext(serializer.deserialize(message.getBody()));
-            }, channel);
+            connection.subscribe((message, pattern) -> sink.emitNext(serializer.deserialize(message.getBody()),
+                    Sinks.EmitFailureHandler.FAIL_FAST), channel);
             return null;
         };
 
         redisOperations.execute(redisCallback);
-        return processor;
+        return sink.asFlux();
     }
 }
