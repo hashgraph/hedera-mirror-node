@@ -29,6 +29,7 @@ const config = require('./config');
 const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {InvalidClauseError} = require('./errors/invalidClauseError');
 const transactionTypes = require('./transactionTypes');
 
 const ENTITY_TYPE_ACCOUNT = 1;
@@ -346,7 +347,11 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     partialQueries.push(queryAndValues[0]);
     values = values.concat(queryAndValues[1]);
   }
-
+  const fullClause = partialQueries.join(' and ');
+  if ((fullClause.match(/\?/g) || []).length !== values.length) {
+    throw new InvalidClauseError(`Invalid clause produced after parsing query parameters: number of replacement
+    parameters does not equal number of values: clause: \"${fullClause}\", values: ${values}`);
+  }
   return [partialQueries.join(' and '), values];
 };
 
@@ -408,9 +413,9 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
     (value) => value,
     (op, value) => {
       if (value === 'credit') {
-        return [`${columnName} > 0`, []];
+        return [`${columnName} > ?`, [0]];
       } else if (value === 'debit') {
-        return [`${columnName} < 0`, []];
+        return [`${columnName} < ?`, [0]];
       } else {
         return null;
       }
@@ -799,12 +804,12 @@ const formatComparator = (comparator) => {
 const parseTokenBalances = (tokenBalances) => {
   return tokenBalances
     ? tokenBalances.map((tokenBalance) => {
-        const {token_id: tokenId, balance} = tokenBalance;
-        return {
-          token_id: EntityId.fromString(tokenId).toString(),
-          balance,
-        };
-      })
+      const {token_id: tokenId, balance} = tokenBalance;
+      return {
+        token_id: EntityId.fromString(tokenId).toString(),
+        balance,
+      };
+    })
     : [];
 };
 
@@ -878,6 +883,7 @@ module.exports = {
   parsePublicKeyQueryParam,
   parseAccountIdQueryParam,
   parseTimestampQueryParam,
+  parseParams,
   parseResultParams,
   parseBooleanValue,
   parseTimestampParam,

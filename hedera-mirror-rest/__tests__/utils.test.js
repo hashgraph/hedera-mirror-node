@@ -22,7 +22,7 @@
 const utils = require('../utils.js');
 const config = require('../config.js');
 const constants = require('../constants.js');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {InvalidClauseError} = require('../errors/invalidClauseError');
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -330,6 +330,15 @@ describe('Utils parseParams tests', () => {
     },
   ]
   parseQueryParamTest('Utils parseParams - ', testSpecs, (spec) => utils.parseParams(spec.parsedQueryParams, (value) => value, (op, paramValue) => [`column${op}?`, paramValue], false));
+
+  test('Utils parseParams - Invalid clause ', () => {
+    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}`, paramValue], false)).toThrow(InvalidClauseError);
+    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}??`], false)).toThrow(InvalidClauseError);
+    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}?`, []], false)).toThrow(InvalidClauseError);
+    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}?`, [paramValue, paramValue]], true)).toThrow(InvalidClauseError);
+
+  })
+
 });
 
 describe('Utils parseAccountIdQueryParam tests', () => {
@@ -535,15 +544,15 @@ describe('Utils parseCreditDebitParams tests', () => {
       name: "Single parameter credit",
       //DER borrowed from ed25519.test.js
       parsedQueryParams: {"type": "credit"},
-      expectedClause: "type > 0",
-      expectedValues: [],
+      expectedClause: "type > ?",
+      expectedValues: [0],
     },
     {
       name: "Single parameter debit",
       //DER borrowed from ed25519.type.js
       parsedQueryParams: {"type": "debit"},
-      expectedClause: "type < 0",
-      expectedValues: [],
+      expectedClause: "type < ?",
+      expectedValues: [0],
     },
     {
       name: noParamTestName,
@@ -554,14 +563,14 @@ describe('Utils parseCreditDebitParams tests', () => {
     {
       name: "Multiple parameters both values",
       parsedQueryParams: {"type": ["credit", "debit"]},
-      expectedClause: "type > 0 and type < 0",
-      expectedValues: [],
+      expectedClause: "type > ? and type < ?",
+      expectedValues: [0, 0],
     },
     {
       name: "Single parameter op ignored",
       parsedQueryParams: {"type": ["gte:credit"]},
-      expectedClause: "type > 0",
-      expectedValues: [],
+      expectedClause: "type > ?",
+      expectedValues: [0],
     },
     {
       name: "Single parameter invalid value",
