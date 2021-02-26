@@ -36,6 +36,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorBalancesResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
@@ -48,6 +49,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     // REST ENDPOINTS
     private static final String ACCOUNTS_ENDPOINT = "accounts";
     private static final String BALANCES_ENDPOINT = "balances";
+    private static final String SCHEDULES_ENDPOINT = "schedules";
     private static final String TOKENS_ENDPOINT = "tokens";
     private static final String TOPICS_ENDPOINT = "topics";
     private static final String TRANSACTIONS_ENDPOINT = "transactions";
@@ -163,6 +165,14 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         // build /tokens/<tokenId>/balances?account.id=<accountId>
         return callRestEndpoint("/{endpoint}/{tokenId}/{path}?{key}={accountId}", TOKENS_ENDPOINT, tokenId,
                 BALANCES_ENDPOINT, ACCOUNTS_ID_QUERY, accountId);
+    }
+
+    public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
+        log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
+        // build /scheduled/<scheduleId>
+        ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{scheduleId}", SCHEDULES_ENDPOINT, scheduleId);
+        return clientResponse.bodyToMono(MirrorScheduleResponse.class)
+                .block();
     }
 
     public ClientResponse callRestEndpoint(String uri, Object... uriVariables) {

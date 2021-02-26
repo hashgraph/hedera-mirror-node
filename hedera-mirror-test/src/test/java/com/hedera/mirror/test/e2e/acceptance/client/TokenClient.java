@@ -31,6 +31,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -103,7 +104,8 @@ public class TokenClient extends AbstractNetworkClient {
         }
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenCreateTransaction, treasuryAccount.getPrivateKey());
+                executeTransactionAndRetrieveReceipt(tokenCreateTransaction, KeyList
+                        .of(treasuryAccount.getPrivateKey()));
         TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
         log.debug("Created new token {}", tokenId);
 
@@ -121,7 +123,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
-                        accountId.getPrivateKey());
+                        KeyList.of(accountId.getPrivateKey()));
 
         log.debug("Associated {} with token {}", accountId, token);
 
@@ -157,7 +159,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction,
-                        freezeKey);
+                        KeyList.of(freezeKey));
 
         log.debug("Freeze account {} with token {}", accountId, tokenId);
 
@@ -175,7 +177,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction,
-                        freezeKey);
+                        KeyList.of(freezeKey));
 
         log.debug("Unfreeze account {} with token {}", accountId, tokenId);
 
@@ -193,7 +195,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Grant kyc for token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenGrantKycTransaction, kycKey);
+                executeTransactionAndRetrieveReceipt(tokenGrantKycTransaction, KeyList.of(kycKey));
 
         log.debug("Granted Kyc for account {} with token {}", accountId, tokenId);
 
@@ -211,7 +213,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Revoke kyc for token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenRevokeKycTransaction, kycKey);
+                executeTransactionAndRetrieveReceipt(tokenRevokeKycTransaction, KeyList.of(kycKey));
 
         log.debug("Revoked Kyc for account {} with token {}", accountId, tokenId);
 
@@ -237,7 +239,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .getAccountId(), recipient, amount);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender.getPrivateKey());
+                executeTransactionAndRetrieveReceipt(tokenTransferTransaction, KeyList.of(sender.getPrivateKey()));
 
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender,
                 recipient);
@@ -315,7 +317,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
-                        accountId.getPrivateKey());
+                        KeyList.of(accountId.getPrivateKey()));
 
         log.debug("Dissociated {} with token {}", accountId, token);
 
@@ -333,7 +335,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
-                        accountId.getPrivateKey());
+                        KeyList.of(accountId.getPrivateKey()));
 
         log.debug("Deleted token {}", accountId, token);
 

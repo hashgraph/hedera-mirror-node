@@ -30,6 +30,8 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.Key;
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -146,12 +148,12 @@ public class AccountClient extends AbstractNetworkClient {
         return transactionReceipt;
     }
 
-    public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, PublicKey publicKey,
+    public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, Key publicKey,
                                                                 boolean receiverSigRequired) {
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
-                .setKey(publicKey)
+                .setKey(KeyList.of(publicKey))
                 .setReceiverSignatureRequired(receiverSigRequired);
     }
 
@@ -175,7 +177,7 @@ public class AccountClient extends AbstractNetworkClient {
                 receiverSigRequired);
 
         TransactionReceipt receipt = executeTransactionAndRetrieveReceipt(accountCreateTransaction,
-                receiverSigRequired ? privateKey : null)
+                receiverSigRequired ? KeyList.of(privateKey) : null)
                 .getReceipt();
 
         AccountId newAccountId = receipt.accountId;

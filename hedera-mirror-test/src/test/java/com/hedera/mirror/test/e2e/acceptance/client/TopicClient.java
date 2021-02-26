@@ -34,8 +34,8 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
@@ -77,7 +77,8 @@ public class TopicClient extends AbstractNetworkClient {
         }
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction, adminAccount.getPrivateKey());
+                executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction, KeyList
+                        .of(adminAccount.getPrivateKey()));
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         log.debug("Created new topic {}", topicId);
 
@@ -121,7 +122,7 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public List<TransactionReceipt> publishMessagesToTopic(TopicId topicId, String baseMessage,
-                                                           PrivateKey submitKey, int numMessages,
+                                                           KeyList submitKeys, int numMessages,
                                                            boolean verify) throws PrecheckStatusException,
             ReceiptStatusException, TimeoutException {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
@@ -132,9 +133,9 @@ public class TopicClient extends AbstractNetworkClient {
             byte[] message = ArrayUtils.addAll(publishTimestampByteArray, suffixByteArray);
 
             if (verify) {
-                transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKey));
+                transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKeys));
             } else {
-                publishMessageToTopic(topicId, message, submitKey);
+                publishMessageToTopic(topicId, message, submitKeys);
             }
         }
 
@@ -147,12 +148,12 @@ public class TopicClient extends AbstractNetworkClient {
                 .setMessage(message);
     }
 
-    public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, PrivateKey submitKey) throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
+    public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
         TopicMessageSubmitTransaction consensusMessageSubmitTransaction = new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message);
 
-        TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKey);
+        TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKeys);
 
         TransactionRecord transactionRecord = transactionId.getRecord(client);
         // get only the 1st sequence number
@@ -168,8 +169,8 @@ public class TopicClient extends AbstractNetworkClient {
         return transactionId;
     }
 
-    public TransactionReceipt publishMessageToTopicAndVerify(TopicId topicId, byte[] message, PrivateKey submitKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        TransactionId transactionId = publishMessageToTopic(topicId, message, submitKey);
+    public TransactionReceipt publishMessageToTopicAndVerify(TopicId topicId, byte[] message, KeyList submitKeys) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        TransactionId transactionId = publishMessageToTopic(topicId, message, submitKeys);
         TransactionReceipt transactionReceipt = null;
         try {
             transactionReceipt = transactionId.getReceipt(client);

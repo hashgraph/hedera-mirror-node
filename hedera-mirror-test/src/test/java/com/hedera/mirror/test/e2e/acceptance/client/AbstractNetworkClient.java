@@ -26,6 +26,7 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
@@ -46,12 +47,12 @@ public abstract class AbstractNetworkClient {
         client = sdkClient.getClient();
     }
 
-    public TransactionId executeTransaction(Transaction transaction, PrivateKey key) throws TimeoutException,
+    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) throws TimeoutException,
             PrecheckStatusException {
 
-        if (key != null) {
+        if (keyList != null) {
             transaction.freezeWith(client); // Signing requires transaction to be frozen
-            transaction.sign(key);
+            keyList.forEach(k -> transaction.sign((PrivateKey) k));
         }
 
         TransactionResponse transactionResponse = (TransactionResponse) transaction.execute(client);
@@ -62,10 +63,10 @@ public abstract class AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
-                                                                           PrivateKey key) throws TimeoutException,
+                                                                           KeyList keyList) throws TimeoutException,
             PrecheckStatusException, ReceiptStatusException {
         long startBalance = getBalance();
-        TransactionId transactionId = executeTransaction(transaction, key);
+        TransactionId transactionId = executeTransaction(transaction, keyList);
         TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);

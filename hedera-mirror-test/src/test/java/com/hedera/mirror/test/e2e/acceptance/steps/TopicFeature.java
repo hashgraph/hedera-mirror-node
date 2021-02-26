@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -241,7 +242,7 @@ public class TopicFeature {
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void publishTopicMessages(int messageCount) throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
-        topicClient.publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, false);
+        topicClient.publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, false);
     }
 
     @When("I publish and verify {int} messages sent")
@@ -250,7 +251,7 @@ public class TopicFeature {
             PrecheckStatusException, TimeoutException {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient
-                .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, true);
+                .publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, true);
         assertEquals(messageCount, publishedTransactionReceipts.size());
     }
 
@@ -368,7 +369,7 @@ public class TopicFeature {
                     topicClient.publishMessageToTopic(
                             consensusTopicId,
                             "backgroundMessage".getBytes(StandardCharsets.UTF_8),
-                            submitKey);
+                            getSubmitKeys());
                 } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
                     e.printStackTrace();
                 }
@@ -387,6 +388,10 @@ public class TopicFeature {
         }
 
         return subscriptionResponse;
+    }
+
+    private KeyList getSubmitKeys() {
+        return submitKey == null ? null : KeyList.of(submitKey);
     }
 
     /**
