@@ -59,7 +59,7 @@ const handleError = async (err, req, res, next) => {
 
   if (shouldReturnMessage(statusCode)) {
     errorMessage = err.message;
-    logger.warn(`${statusCode} processing ${req.originalUrl}: `, err);
+    logger.warn(`${statusCode} processing ${req.originalUrl}: ${err.constructor.name} ${errorMessage}`);
   } else {
     errorMessage = statusCode.message;
     logger.error(`${statusCode} processing ${req.originalUrl}: `, err);
