@@ -21,7 +21,7 @@
         <jmeter.publishThreadCount></jmeter.publishThreadCount>
         <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
         <cucumber.version>6.10.0</cucumber.version>
-        <cucumber-reporting.version>4.0.97</cucumber-reporting.version>
+        <cucumber-reporting.version>4.0.98</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -90,6 +90,12 @@
             <artifactId>reporting-plugin</artifactId>
             <version>${cucumber-reporting.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.cucumber</groupId>
+                    <artifactId>gherkin</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.hibernate.validator</groupId>
@@ -121,6 +127,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
