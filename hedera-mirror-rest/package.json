@@ -13,7 +13,7 @@
     "lint": "eslint \"**/*.js\"",
     "perftest": "__performancetests__/perfTest.js",
     "postinstall": "node ./npm_scripts/postinstall.js",
-    "test": "jest --testPathPattern='__tests__/*'"
+    "test": "CONFIG_PATH=__tests__ jest --testPathPattern='__tests__/*'"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
@@ -101,11 +101,16 @@
       "default",
       "jest-junit"
     ],
+    "setupFilesAfterEnv": [
+      "./__tests__/jest.setup.js"
+    ],
+    "testEnvironment": "node",
     "testPathIgnorePatterns": [
       "__tests__/integrationDbOps.js",
       "__tests__/integrationDomainOps.js",
       "__tests__/integrationS3Ops.js",
       "__tests__/integrationUtils.js",
+      "__tests__/jest.setup.js",
       "__tests__/mockpool.js",
       "__tests__/testutils.js"
     ],

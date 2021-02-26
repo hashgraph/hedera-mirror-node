@@ -1,0 +1,5 @@
+hedera:
+  mirror:
+    rest:
+      metrics:
+        enabled: false

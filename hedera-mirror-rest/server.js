@@ -125,7 +125,7 @@ app.use(cors());
 
 // logging middleware
 app.use(httpContext.middleware);
-app.use(requestLogger);
+app.useAsync(requestLogger);
 
 // metrics middleware
 if (config.metrics.enabled) {
@@ -166,10 +166,10 @@ app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
 app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
 
 // response data handling middleware
-app.use(responseHandler);
+app.useAsync(responseHandler);
 
 // response error handling middleware
-app.use(handleError);
+app.useAsync(handleError);
 
 if (!isTestEnv()) {
   const server = app.listen(port, () => {

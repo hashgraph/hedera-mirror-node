@@ -60,13 +60,14 @@ const transactions = require('../transactions.js');
 const transactionTypes = require('../transactionTypes');
 const utils = require('../utils');
 
+jest.setTimeout(20000);
+
 let sqlConnection;
 
 // set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
 const defaultBeforeAllTimeoutMillis = 120 * 1000;
 
 beforeAll(async () => {
-  jest.setTimeout(20000);
   sqlConnection = await integrationDbOps.instantiateDatabase();
 }, defaultBeforeAllTimeoutMillis);
 
@@ -406,8 +407,9 @@ describe('DB integration test - spec based', () => {
     logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);
   };
 
+  jest.setTimeout(40000);
+
   beforeAll(async () => {
-    jest.setTimeout(40000);
     s3Ops = new S3Ops();
     await s3Ops.start();
     configS3ForStateProof(s3Ops.getEndpointUrl());

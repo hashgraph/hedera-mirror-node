@@ -59,7 +59,7 @@ const of = (shard, realm, num) => {
 };
 
 /**
- * Converts encoded entity ID (BigInt, int or string) to EntityId object.
+ * Converts encoded entity ID (BigInt, int, or string) to EntityId object.
  *
  * @param {BigInt|int|string} id
  * @param {boolean} isNullable
