@@ -308,6 +308,30 @@ const extraParamTestName = "Extra useless parameter";
 const multipleEqualsTestName = "Multiple =";
 const duplicateParamsTestName = "Duplicate parameters"
 
+describe('Utils parseParams tests', () => {
+  const testSpecs = [
+    {
+      name: "Undefined parameters array",
+      parsedQueryParams: undefined,
+      expectedClause: "",
+      expectedValues: []
+    },
+    {
+      name: noParamTestName,
+      parsedQueryParams: [],
+      expectedClause: "",
+      expectedValues: []
+    },
+    {
+      name: singleParamTestName,
+      parsedQueryParams: "gte:1",
+      expectedClause: "column >= ?",
+      expectedValues: ["1"]
+    },
+  ]
+  parseQueryParamTest('Utils parseParams - ', testSpecs, (spec) => utils.parseParams(spec.parsedQueryParams, (value) => value, (op, paramValue) => [`column${op}?`, paramValue], false));
+});
+
 describe('Utils parseAccountIdQueryParam tests', () => {
   const testSpecs = [
     {
@@ -342,12 +366,6 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       parsedQueryParams: {"account.id": ["0.0.3", "4"]},
       expectedClause: "account.id IN (?, ?)",
       expectedValues: ["3", "4"]
-    },
-    {
-      name: duplicateParamsTestName,
-      parsedQueryParams: {"account.id": ["0.0.5", "5", "eq:0.0.5", "lte:0.0.3", "lte:0.0.3", "gte:0.0.3", "gte:0.0.4"]},
-      expectedClause: "account.id <= ? and account.id >= ? and account.id >= ? and account.id IN (?)",
-      expectedValues: ["3", "3", "4", "5"]
     },
 
   ];
