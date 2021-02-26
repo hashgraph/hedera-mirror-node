@@ -4,7 +4,7 @@
 
 -- hyper tables with integer based time_column_name require a function that returns the now() value (current time) in
 -- the units of the time column. This is needed for policies. Return the latest record file's consensus end timestamp
--- to avoid inert/update on compressed chunks in catch-up mode
+-- to avoid insert/update on compressed chunks in catch-up mode
 create or replace function latest_consensus_timestamp() returns bigint
     language sql
     stable as
@@ -97,8 +97,8 @@ select add_compression_policy('file_data', bigint '${compressionAge}');
 select add_compression_policy('live_hash', bigint '${compressionAge}');
 select add_compression_policy('non_fee_transfer', bigint '${compressionAge}');
 select add_compression_policy('record_file', bigint '${compressionAge}');
-select add_compression_policy('token_balance', bigint '${compressionAge}');
 select add_compression_policy('schedule_signature', bigint '${compressionAge}');
+select add_compression_policy('token_balance', bigint '${compressionAge}');
 select add_compression_policy('token_transfer', bigint '${compressionAge}');
 select add_compression_policy('topic_message', bigint '${compressionAge}');
 select add_compression_policy('transaction', bigint '${compressionAge}');
