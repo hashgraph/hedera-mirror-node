@@ -39,7 +39,7 @@ spring:
       api-user: mirror_api
       chunkIdInterval: 10000
       chunkTimeInterval: 604800000000000
-      compressionAge: 40000000000000000000 # use a large number to avoid compression during test
+      compressionAge: 9223372036854775807 # use long max to avoid compression during test
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       topicRunningHashV2AddedTimestamp: 0
