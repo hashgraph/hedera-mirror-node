@@ -4,7 +4,7 @@ Feature: Schedule Base Coverage Feature
   #outer - 3 sigs or 10 signatures
   #Negative - pending
 
-    @Acceptance
+    @Acceptance @Sanity
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoTransfer and ScheduleDelete
         Given I successfully schedule a treasury disbursement
         When the network confirms schedule presence

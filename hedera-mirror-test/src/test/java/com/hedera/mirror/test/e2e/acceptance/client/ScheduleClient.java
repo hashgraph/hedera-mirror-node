@@ -57,11 +57,10 @@ public class ScheduleClient extends AbstractNetworkClient {
         transaction.setNodeAccountIds(Collections.singletonList(sdkClient.getNodeId()));
         transaction.freezeWith(client);
 
-        ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
+        ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setPayerAccountId(payerAccountId.getAccountId())
-                .setTransactionMemo(memo)
-                .setTransaction(transaction);
+                .setTransactionMemo(memo);
 
         if (signatureKeyList != null) {
             // add initial set of required signatures to ScheduleCreate transaction

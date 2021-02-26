@@ -350,7 +350,7 @@ public class ScheduleFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
         verifyTransactions(status);
-//        verifySchedulePresence();
+        verifySchedulePresence();
     }
 
     private MirrorTransaction verifyTransactions(int status) {
