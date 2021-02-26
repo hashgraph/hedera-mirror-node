@@ -142,6 +142,15 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 .block();
     }
 
+    public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
+        log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
+        // build /transactions/<timestamp>
+        ClientResponse clientResponse = callRestEndpoint("/{endpoint}?timestamp={timestamp}", TRANSACTIONS_ENDPOINT,
+                timestamp);
+        return clientResponse.bodyToMono(MirrorTransactionsResponse.class)
+                .block();
+    }
+
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
         // build /transactions/<transactionId>
@@ -169,7 +178,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
 
     public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
         log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
-        // build /scheduled/<scheduleId>
+        // build /schedules/<scheduleId>
         ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{scheduleId}", SCHEDULES_ENDPOINT, scheduleId);
         return clientResponse.bodyToMono(MirrorScheduleResponse.class)
                 .block();

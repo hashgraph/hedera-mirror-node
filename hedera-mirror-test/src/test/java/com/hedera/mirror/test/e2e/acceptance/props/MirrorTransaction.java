@@ -35,5 +35,9 @@ public class MirrorTransaction {
 
     List<MirrorTransfer> transfers;
 
+    private String consensusTimestamp;
+
     private String validStartTimestamp;
+
+    private boolean scheduled;
 }

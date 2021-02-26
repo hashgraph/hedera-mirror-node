@@ -97,12 +97,14 @@ public class ScheduleFeature {
     private Transaction scheduledTransaction;
 
     private int expectedSignersCount;
+    private int currentSignersCount;
 
     @Given("I successfully schedule a treasury disbursement")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewHBarTransferSchedule() throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 2;
+        currentSignersCount = 0;
         additionalAccount = accountClient.getReceiverSigRequiredAccount(0);
         scheduledTransaction = accountClient
                 .getCryptoTransferTransaction(
@@ -118,6 +120,7 @@ public class ScheduleFeature {
     public void createNewCryptoAccountSchedule() throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 1;
+        currentSignersCount = 0;
         additionalAccount = accountClient.getReceiverSigNotRequiredAccount(0);
         scheduledTransaction = accountClient
                 .getAccountCreateTransaction(
@@ -134,6 +137,7 @@ public class ScheduleFeature {
             PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 1 + initSignatureCount;
+        currentSignersCount = initSignatureCount;
         additionalAccount = accountClient.getReceiverSigNotRequiredAccount(0);
 
         KeyList privateKeyList = new KeyList();
@@ -158,6 +162,7 @@ public class ScheduleFeature {
     public void createNewTokenTransferSchedule() throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 2;
+        currentSignersCount = 0;
         additionalAccount = accountClient.getReceiverSigRequiredAccount(0);
 
         // create token
@@ -200,6 +205,7 @@ public class ScheduleFeature {
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewHCSSchedule() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         expectedSignersCount = 1;
+        currentSignersCount = 0;
         additionalAccount = accountClient.getReceiverSigNotRequiredAccount(0);
 
         // create topic w submit key
@@ -235,10 +241,11 @@ public class ScheduleFeature {
         assertNotNull(scheduleId);
     }
 
-    @Then("the scheduled transaction is signed")
-    public void signSignature() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void signSignature(ExpandedAccountId signatoryAccount) throws PrecheckStatusException,
+            ReceiptStatusException, TimeoutException {
+        currentSignersCount++;
         networkTransactionResponse = scheduleClient.signSchedule(
-                additionalAccount,
+                signatoryAccount,
                 scheduledTransaction,
                 scheduleId);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -252,18 +259,7 @@ public class ScheduleFeature {
     public void additionalAccountSignsSignature() throws PrecheckStatusException, ReceiptStatusException,
             TimeoutException {
         log.debug("additionalAccount signs scheduledTransaction");
-        networkTransactionResponse = scheduleClient.signSchedule(
-                additionalAccount,
-                scheduledTransaction,
-                scheduleId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-        scheduleInfo = new ScheduleInfoQuery()
-                .setScheduleId(scheduleId)
-                .setNodeAccountIds(Collections.singletonList(AccountId.fromString(acceptanceProps.getNodeId())))
-                .execute(scheduleClient.getClient());
-        log.debug("schedule {} signatories count: {}", scheduleInfo.scheduleId, scheduleInfo.signatories.size());
+        signSignature(additionalAccount);
     }
 
     @Then("the scheduled transaction is signed by the tokenTreasuryAccount")
@@ -273,18 +269,7 @@ public class ScheduleFeature {
     public void tokenTreasuryAccountSignsSignature() throws PrecheckStatusException, ReceiptStatusException,
             TimeoutException {
         log.debug("tokenTreasuryAccount signs scheduledTransaction");
-        networkTransactionResponse = scheduleClient.signSchedule(
-                accountClient.getTokenTreasuryAccount(),
-                scheduledTransaction,
-                scheduleId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-        scheduleInfo = new ScheduleInfoQuery()
-                .setScheduleId(scheduleId)
-                .setNodeAccountIds(Collections.singletonList(AccountId.fromString(acceptanceProps.getNodeId())))
-                .execute(scheduleClient.getClient());
-        log.debug("schedule {} signatories count: {}", scheduleInfo.scheduleId, scheduleInfo.signatories.size());
+        signSignature(accountClient.getTokenTreasuryAccount());
     }
 
     @When("I successfully delete the schedule")
@@ -293,8 +278,6 @@ public class ScheduleFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-
-        scheduleInfo = null;
     }
 
     @Then("the network confirms schedule presence")
@@ -330,8 +313,8 @@ public class ScheduleFeature {
         log.info("Schedule {} no longer returned from network state", scheduleId);
     }
 
-    @Then("the network confirms all signers have provided their signatures")
-    public void verifyNetworkCompleteSchedule() throws TimeoutException, PrecheckStatusException {
+    private void verifyScheduleInfoFromNetwork(int expectedSignatoriesCount) throws TimeoutException,
+            PrecheckStatusException {
         scheduleInfo = new ScheduleInfoQuery()
                 .setScheduleId(scheduleId)
                 .setNodeAccountIds(Collections.singletonList(AccountId.fromString(acceptanceProps.getNodeId())))
@@ -339,9 +322,13 @@ public class ScheduleFeature {
 
         assertNotNull(scheduleInfo);
         assertThat(scheduleInfo.scheduleId).isEqualTo(scheduleId);
-        log.debug("schedule signatories count: {}", scheduleInfo.signatories.size());
         assertThat(scheduleInfo.signatories).isNotEmpty();
-        assertThat(scheduleInfo.signatories.size()).isEqualTo(scheduleInfo.signatories.threshold);
+        assertThat(scheduleInfo.signatories.size()).isEqualTo(expectedSignatoriesCount);
+    }
+
+    @Then("the network confirms some signers have provided their signatures")
+    public void verifyPartialScheduleFromNetwork() throws TimeoutException, PrecheckStatusException {
+        verifyScheduleInfoFromNetwork(currentSignersCount);
     }
 
     @Then("the mirror node REST API should return status {int} for the schedule transaction")
@@ -349,40 +336,62 @@ public class ScheduleFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
-        verifyTransactions(status);
-        verifySchedulePresence();
+        verifyTransactionFromMirror(status);
+        verifyScheduleFromMirror();
     }
 
-    private MirrorTransaction verifyTransactions(int status) {
+    private void verifyTransactionFromMirror(int status) {
+        log.info("Verify schedule transaction");
         String transactionId = networkTransactionResponse.getTransactionIdString();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
+        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status);
+
+        assertThat(mirrorTransaction.getValidStartTimestamp())
+                .isEqualTo(networkTransactionResponse.getValidStartString());
+        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
+    }
+
+    private void verifyScheduledTransaction(String timestamp) {
+        log.info("Verify scheduled transaction {}", timestamp);
+        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactionInfoByTimestamp(timestamp);
+
+        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, HttpStatus.OK
+                .value());
+
+        assertThat(mirrorTransaction.getConsensusTimestamp()).isEqualTo(timestamp);
+        assertThat(mirrorTransaction.isScheduled()).isTrue();
+    }
+
+    private MirrorTransaction verifyMirrorTransactionsResponse(MirrorTransactionsResponse mirrorTransactionsResponse,
+                                                               int status) {
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
         MirrorTransaction mirrorTransaction = transactions.get(0);
-        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
-        assertThat(mirrorTransaction.getValidStartTimestamp())
-                .isEqualTo(networkTransactionResponse.getValidStartString());
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
         }
 
+        assertThat(mirrorTransaction.getValidStartTimestamp()).isNotNull();
+        assertThat(mirrorTransaction.getName()).isNotNull();
+        assertThat(mirrorTransaction.getResult()).isNotNull();
+        assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
+
         return mirrorTransaction;
     }
 
-    private MirrorScheduleResponse verifySchedulePresence() {
+    private MirrorScheduleResponse verifyScheduleFromMirror() {
         MirrorScheduleResponse mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
-
         assertNotNull(mirrorSchedule);
         assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
-
-        assertThat(mirrorSchedule.getSignatures().size()).isEqualTo(scheduleInfo.signatories.size());
+        assertThat(mirrorSchedule.getSignatures().size()).isEqualTo(currentSignersCount);
 
         // if signature count is expected verify executed timestamp was updated
-        if (scheduleInfo.signatories.size() == expectedSignersCount) {
+        if (mirrorSchedule.getSignatures().size() == expectedSignersCount) {
             assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+            verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
         } else {
 
             assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();

@@ -182,7 +182,7 @@ public class AccountClient extends AbstractNetworkClient {
 
         AccountId newAccountId = receipt.accountId;
 
-        log.debug("Created new account {} w receiverSigRequired = {}", newAccountId, receiverSigRequired);
+        log.debug("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
         return new ExpandedAccountId(newAccountId, privateKey, publicKey);
     }
 }
