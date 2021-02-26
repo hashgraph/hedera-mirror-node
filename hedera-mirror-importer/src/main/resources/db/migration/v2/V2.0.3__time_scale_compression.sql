@@ -6,11 +6,19 @@
 -- the units of the time column. This is needed for policies. Return the latest record file's consensus end timestamp
 -- to avoid insert/update on compressed chunks in catch-up mode
 create or replace function latest_consensus_timestamp() returns bigint
-    language sql
     stable as
 $$
-select coalesce(consensus_end, 0) from record_file order by consensus_end desc limit 1;
-$$;
+declare
+    consensusEnd bigint;
+begin
+    select consensus_end into consensusEnd from record_file order by consensus_end desc limit 1;
+    if not FOUND then
+        consensusEnd := 0;
+    end if;
+
+    return consensusEnd;
+end;
+$$ language plpgsql;
 
 -- set integer now functions for tables
 select set_integer_now_func('account_balance', 'latest_consensus_timestamp');
