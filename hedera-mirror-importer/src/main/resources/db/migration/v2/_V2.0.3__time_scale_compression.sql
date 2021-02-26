@@ -2,6 +2,11 @@
 -- Add compression policies to larger tables
 -------------------
 
+/*
+ completely disable compression until timescaledb release 2.1 which should support adding/renaming columns of compressed
+ hypertables as well as updating compressed chunks
+ */
+
 -- hyper tables with integer based time_column_name require a function that returns the now() value (current time) in the units of the time column
 -- This is needed for policies
 create or replace function unix_now() returns bigint
@@ -21,10 +26,11 @@ select set_integer_now_func('contract_result', 'unix_now');
 select set_integer_now_func('crypto_transfer', 'unix_now');
 select set_integer_now_func('event_file', 'unix_now');
 select set_integer_now_func('file_data', 'unix_now');
+select set_integer_now_func('live_hash', 'unix_now');
 select set_integer_now_func('non_fee_transfer', 'unix_now');
+select set_integer_now_func('record_file', 'unix_now');
 select set_integer_now_func('schedule', 'unix_now');
 select set_integer_now_func('schedule_signature', 'unix_now');
-select set_integer_now_func('record_file', 'unix_now');
 select set_integer_now_func('t_entities', 'unix_now');
 select set_integer_now_func('token', 'unix_now');
 select set_integer_now_func('token_account', 'unix_now');
