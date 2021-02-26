@@ -22,6 +22,7 @@
 const utils = require('../utils.js');
 const config = require('../config.js');
 const constants = require('../constants.js');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -291,9 +292,10 @@ describe('Utils randomString tests', () => {
 const parseQueryParamTest = (testPrefix, testSpecs, parseParam) => {
   testSpecs.forEach((testSpec) => {
     test(`Utils parseAccountIdQueryParam - ${testSpec.name}`, () => {
-      const val = parseParam(testSpec);
-      expect(val[0]).toEqual(testSpec.expectedClause);
-      expect(val[1]).toEqual(testSpec.expectedValues);
+      const clauseAndValues = parseParam(testSpec);
+      expect(clauseAndValues[0]).toEqual(testSpec.expectedClause);
+      expect(clauseAndValues[1]).toEqual(testSpec.expectedValues);
+      expect((clauseAndValues[0].match(/\?/g) || []).length).toEqual(testSpec.expectedValues.length);
     });
   });
 };
