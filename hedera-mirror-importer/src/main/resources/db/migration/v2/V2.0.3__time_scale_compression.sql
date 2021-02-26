@@ -48,6 +48,8 @@ alter table account_balance_file
 alter table account_balance_sets
     set (timescaledb.compress);
 
+-- address_book skipped as update (end_consensus_timestamp) on compressed chunk is not allowed
+
 alter table address_book_entry
     set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, memo');
 
@@ -72,14 +74,22 @@ alter table non_fee_transfer
 alter table record_file
     set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
 
+-- schedule skipped as update (executed_timestamp) on compressed chunk is not allowed
+
 alter table schedule_signature
     set (timescaledb.compress, timescaledb.compress_segmentby = 'schedule_id');
+
+-- t_entities skipped as update on compressed chunk is not allowed
 
 -- t_entity_types skipped as not a hyper table
 
 -- t_transaction_results skipped as not a hyper table
 
 -- t_transaction_types skipped as not a hyper table
+
+-- token skipped as update on compressed chunk is not allowed
+
+-- token_account skipped as update on compressed chunk is not allowed
 
 alter table token_balance
     set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id, token_id');
