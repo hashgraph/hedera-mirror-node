@@ -23,6 +23,7 @@ const utils = require('../utils.js');
 const config = require('../config.js');
 const constants = require('../constants.js');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -591,5 +592,50 @@ describe('utils isRepeatedQueryParameterValidLength', () => {
   });
   test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${config.maxRepeatedQueryParameters} `, () => {
     expect(utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters).fill("0.0.3"))).toBeTruthy();
+  });
+});
+
+describe('utils validateReq', () => {
+
+  const specs = [
+    {
+      name: "Too many parameters",
+      req: {
+        query: {
+          "timestamp": Array(config.maxRepeatedQueryParameters + 1).fill("123")
+        }
+      }
+    },
+    {
+      name: "Invalid account.id",
+      req: {
+        query: {
+          "account.id": "x"
+        }
+      }
+    },
+    {
+      name: "Invalid account.id and timestamp",
+      req: {
+        query: {
+          "account.id": "x",
+          "timestamp": "x"
+        }
+      }
+    },
+    {
+      name: "Invalid account.id array",
+      req: {
+        query: {
+          "account.id": ["0.0.3", "x"],
+        }
+      }
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`utils validateReq - ${spec.name}`, async () => {
+      await expect(() => utils.validateReq(spec.req)).rejects.toThrow(InvalidArgumentError);
+    });
   });
 });
