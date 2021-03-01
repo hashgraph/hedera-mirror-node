@@ -184,6 +184,11 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
         }
 
+        // handle scheduled transaction, even on failure
+        if (tx.isScheduled()) {
+            onScheduledTransaction(recordItem);
+        }
+
         if (isSuccessful) {
             if (entityId != null) {
                 // Only insert entityId on successful transaction, as non null entityIds can be retrieved from
@@ -201,11 +206,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusNs, body, txRecord);
-
-            // handle scheduled transaction
-            if (tx.isScheduled()) {
-                onScheduledTransaction(recordItem);
-            }
 
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
