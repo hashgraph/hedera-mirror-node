@@ -348,12 +348,16 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     values = values.concat(queryAndValues[1]);
   }
   const fullClause = partialQueries.join(' and ');
-  if ((fullClause.match(/\?/g) || []).length !== values.length) {
-    throw new InvalidClauseError(`Invalid clause produced after parsing query parameters: number of replacement
-    parameters does not equal number of values: clause: \"${fullClause}\", values: ${values}`);
-  }
+  validateClauseAndValues(fullClause, values)
   return [partialQueries.join(' and '), values];
 };
+
+const validateClauseAndValues = (clause, values) => {
+  if ((clause.match(/\?/g) || []).length !== values.length) {
+    throw new InvalidClauseError(`Invalid clause produced after parsing query parameters: number of replacement
+    parameters does not equal number of values: clause: \"${clause}\", values: ${values}`);
+  }
+}
 
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(

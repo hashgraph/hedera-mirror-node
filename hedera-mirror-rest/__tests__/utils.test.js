@@ -22,8 +22,9 @@
 const utils = require('../utils.js');
 const config = require('../config.js');
 const constants = require('../constants.js');
-const {InvalidClauseError} = require('../errors/invalidClauseError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {InvalidClauseError} = require('../errors/invalidClauseError');
+
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
