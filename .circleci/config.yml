@@ -232,6 +232,7 @@ jobs:
       - *docker_redis
     steps:
       - checkout
+      - run: apt-get update && apt-get install -y git && git checkout --
       - restore_maven_cache
       - run:
           name: Resolve dependencies
@@ -269,6 +270,7 @@ jobs:
       - *docker_redis
     steps:
       - checkout
+      - run: apt-get update && apt-get install -y git && git checkout --
       - restore_maven_cache
       - write_spring_override_config
       - run:
