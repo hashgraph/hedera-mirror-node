@@ -23,7 +23,7 @@ jobs:
       - name: Cache Go modules
         uses: actions/cache@v2
         with:
-          path: ~/go/pkg/mod
+          path: ~/.mvnGoLang/.go_path/pkg/mod
           key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
