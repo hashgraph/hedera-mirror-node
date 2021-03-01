@@ -1,8 +1,5 @@
 @ScheduleBase @FullSuite
 Feature: Schedule Base Coverage Feature
-  # inner transaction - 1 of 3 transfers - pure HBAR, HBAR and token, HCS message for inner transactions. 2 or 3 signatures
-  #outer - 3 sigs or 10 signatures
-  #Negative - pending
 
     @Acceptance @Sanity
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoTransfer and ScheduleSign
@@ -32,7 +29,7 @@ Feature: Schedule Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @Acceptance
+    @ScheduleSanity
     Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleDelete
         Given I successfully schedule a crypto account create with <initialSignatureCount> initial signatures
         When the network confirms schedule presence
@@ -61,7 +58,7 @@ Feature: Schedule Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @Acceptance
+#    @Acceptance - sdk bug exists where executed HCS submit message fails
     Scenario Outline: Validate scheduled HCS message - ScheduleCreate of TopicMessageSubmit and ScheduleSign
         Given I successfully schedule a topic message submit
         And the network confirms schedule presence

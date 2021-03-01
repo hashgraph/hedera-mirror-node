@@ -53,6 +53,7 @@ import com.hedera.hashgraph.sdk.ScheduleInfoQuery;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
@@ -89,6 +90,7 @@ public class ScheduleFeature {
     private MirrorNodeClient mirrorClient;
 
     private NetworkTransactionResponse networkTransactionResponse;
+    private TransactionId scheduleCreateTransactionId;
 
     private ExpandedAccountId additionalAccount;
 
@@ -236,6 +238,10 @@ public class ScheduleFeature {
                 "New Mirror Acceptance Schedule",
                 signatureKeyList);
         assertNotNull(networkTransactionResponse.getTransactionId());
+
+        // cache schedule create transaction id for confirmation of scheduled transaction later
+        scheduleCreateTransactionId = networkTransactionResponse.getTransactionId();
+
         assertNotNull(networkTransactionResponse.getReceipt());
         scheduleId = networkTransactionResponse.getReceipt().scheduleId;
         assertNotNull(scheduleId);
@@ -303,6 +309,8 @@ public class ScheduleFeature {
                     .setScheduleId(scheduleId)
                     .setNodeAccountIds(Collections.singletonList(AccountId.fromString(acceptanceProps.getNodeId())))
                     .execute(scheduleClient.getClient());
+
+            // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
         } catch (RuntimeException ex) {
             assertThat(ex).hasCauseInstanceOf(IllegalArgumentException.class);
             assertThat(ex).hasMessageContaining("INVALID_SCHEDULE_ID");
@@ -393,7 +401,6 @@ public class ScheduleFeature {
             assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
             verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
         } else {
-
             assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
         }
 

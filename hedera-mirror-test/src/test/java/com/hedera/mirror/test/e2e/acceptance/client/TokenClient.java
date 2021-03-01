@@ -118,6 +118,7 @@ public class TokenClient extends AbstractNetworkClient {
         Instant refInstant = Instant.now();
         TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
                 .setAccountId(accountId.getAccountId())
+                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
                 .setTokenIds((List.of(token)))
                 .setTransactionMemo("Associate w token_" + refInstant);
 
@@ -138,6 +139,7 @@ public class TokenClient extends AbstractNetworkClient {
         TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
                 .setTokenId(tokenId)
                 .setAmount(amount)
+                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
                 .setTransactionMemo("Mint token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -153,7 +155,7 @@ public class TokenClient extends AbstractNetworkClient {
         Instant refInstant = Instant.now();
         TokenFreezeTransaction tokenFreezeAccountTransaction = new TokenFreezeTransaction()
                 .setAccountId(accountId)
-                .setMaxTransactionFee(Hbar.from(1_000_000_000))
+                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
                 .setTokenId(tokenId)
                 .setTransactionMemo("Freeze account_" + refInstant);
 
@@ -226,7 +228,7 @@ public class TokenClient extends AbstractNetworkClient {
         return new TransferTransaction()
                 .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
                 .addTokenTransfer(tokenId, recipient, amount)
-                .setMaxTransactionFee(Hbar.fromTinybars(10_000_000L))
+                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
                 .setTransactionMemo("Transfer token_" + refInstant);
     }
 
@@ -260,7 +262,8 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenSymbol(newSymbol)
                 .setTokenId(tokenId)
                 .setTreasuryAccountId(client.getOperatorAccountId())
-                .setWipeKey(publicKey);
+                .setWipeKey(publicKey)
+                .setMaxTransactionFee(MAX_TRANSACTION_FEE);
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, null);
