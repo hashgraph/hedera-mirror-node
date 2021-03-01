@@ -37,7 +37,6 @@ target/
 # Application specific
 hedera-mirror-importer/data/
 application*.yaml
-application*.yml
 /data/
 /db/
 *.log
