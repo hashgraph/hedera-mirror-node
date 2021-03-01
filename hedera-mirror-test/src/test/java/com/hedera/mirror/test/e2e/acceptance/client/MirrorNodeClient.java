@@ -199,7 +199,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     }
 
     public void close() throws TimeoutException {
-        log.debug("Closing Mirror Node client, waits up to 10 s for valid close");
+        log.debug("Closing Mirror Node client, sdk waits up to 30 s for valid close");
         client.close();
     }
 

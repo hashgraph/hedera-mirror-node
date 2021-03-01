@@ -20,13 +20,22 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import io.cucumber.java.After;
+import com.hedera.hashgraph.sdk.*;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
+import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -34,25 +43,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 
-import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
-import com.hedera.hashgraph.sdk.TopicId;
-import com.hedera.hashgraph.sdk.TopicMessageQuery;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
-import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
-import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Log4j2
 @Cucumber
@@ -333,23 +325,6 @@ public class TopicFeature {
     @Then("the network should confirm valid topic messages were received")
     public void verifyTopicMessages() throws Exception {
         subscriptionResponse.validateReceivedMessages();
-    }
-
-    @After
-    public void closeClients() {
-        try {
-            topicClient.getSdkClient().close();
-        } catch (Exception ex) {
-            log.warn("Error closing SDK client : {}", ex.getMessage());
-        }
-
-        if (mirrorClient != null) {
-            try {
-                mirrorClient.close();
-            } catch (Exception ex) {
-                log.warn("Error closing mirror client : {}", ex.getMessage());
-            }
-        }
     }
 
     /**

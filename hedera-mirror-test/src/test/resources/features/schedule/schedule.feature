@@ -29,7 +29,7 @@ Feature: Schedule Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @ScheduleSanity
+#    @Acceptance - sdk bug exists where signatures for scedulecreate are not being mapped to Schedule
     Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleDelete
         Given I successfully schedule a crypto account create with <initialSignatureCount> initial signatures
         When the network confirms schedule presence
