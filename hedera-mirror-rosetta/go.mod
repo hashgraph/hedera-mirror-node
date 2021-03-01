@@ -7,7 +7,7 @@ require (
 	github.com/caarlos0/env/v6 v6.5.0
 	github.com/coinbase/rosetta-sdk-go v0.4.9
 	github.com/hashgraph/hedera-sdk-go v0.9.1
-	github.com/iancoleman/strcase v0.1.2
+	github.com/iancoleman/strcase v0.1.3
 	github.com/jinzhu/gorm v1.9.16
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
