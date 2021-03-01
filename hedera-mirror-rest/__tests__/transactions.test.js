@@ -106,30 +106,11 @@ const validateAccNumRange = function (transactions, low, high) {
  * @return {Boolean}  Result of the check
  */
 const validateAccNumInArray = function (transactions, ...potentialValues) {
-  let ret = false;
   for (const tx of transactions) {
-    for (const xfer of tx.transfers) {
-      const accNum = xfer.account.split('.')[2];
-      if (potentialValues.includes(Number(accNum))) {
-        // if at least one transfer is valid move to next transaction
-        ret = true;
-        break;
-      }
-    }
-
-    if (!ret) {
-      console.log(
-        `validateAccNumInArray check failed: No transfer with account in ${potentialValues} was found in transaction : ${JSON.stringify(
-          tx
-        )}`
-      );
+    if (!testutils.validateAccNumInArray(tx.transfers, potentialValues)) {
       return false;
     }
-
-    // reset ret
-    ret = false;
   }
-
   return true;
 };
 

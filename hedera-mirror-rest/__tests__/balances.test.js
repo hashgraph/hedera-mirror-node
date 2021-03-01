@@ -84,19 +84,7 @@ const validateAccNumRange = function (balances, low, high) {
  * @return {Boolean}  Result of the check
  */
 const validateAccNumInArray = function (balances, ...potentialValues) {
-  let ret = true;
-  let offender = null;
-  for (const bal of balances.balances) {
-    const accNum = bal.account.split('.')[2];
-    if (!potentialValues.includes(Number(accNum))) {
-      offender = accNum;
-      ret = false;
-    }
-  }
-  if (!ret) {
-    console.log(`validateAccNumInArray check failed: ${offender} is not in ${potentialValues}`);
-  }
-  return ret;
+  return testutils.validateAccNumInArray(balances.balances, potentialValues)
 };
 
 /**

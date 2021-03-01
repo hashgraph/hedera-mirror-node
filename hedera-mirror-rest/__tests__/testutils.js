@@ -178,9 +178,27 @@ const badParamsList = () => {
   ];
 };
 
+/**
+ * Validate that account ids in the responseObjects returned by the api are in the list of valid account ids
+ * @param {Array} transactions Array of transactions returned by the rest api
+ * @param {Array} list of valid account ids
+ * @return {Boolean}  Result of the check
+ */
+const validateAccNumInArray = function (responseObjects, potentialValues) {
+  for (const object of responseObjects) {
+    const accNum = object.account.split('.')[2];
+    if (!potentialValues.includes(Number(accNum))) {
+      console.log(`validateAccNumInArray check failed: ${accNum} is not in [${potentialValues}]`);
+      return false;
+    }
+  }
+  return true;
+};
+
 module.exports = {
   badParamsList,
   checkSql,
   parseSqlQueryAndParams,
   testBadParams,
+  validateAccNumInArray,
 };

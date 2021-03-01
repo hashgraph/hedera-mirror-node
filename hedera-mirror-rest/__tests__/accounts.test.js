@@ -65,19 +65,7 @@ const validateAccNumRange = function (accounts, low, high) {
  * @return {Boolean}  Result of the check
  */
 const validateAccNumInArray = function (accounts, ...potentialValues) {
-  let ret = true;
-  let offender = null;
-  for (const acc of accounts.accounts) {
-    const accNum = acc.account.split('.')[2];
-    if (!potentialValues.includes(Number(accNum))) {
-      offender = accNum;
-      ret = false;
-    }
-  }
-  if (!ret) {
-    console.log(`validateAccNumInArray check failed: ${offender} is not in ${potentialValues}`);
-  }
-  return ret;
+  return testutils.validateAccNumInArray(accounts.accounts, potentialValues)
 };
 
 /**
