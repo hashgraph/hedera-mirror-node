@@ -54,7 +54,7 @@ func GetConfig(config *types.Config, path string) {
 	}
 
 	filename, _ := filepath.Abs(path)
-	yamlFile, err := ioutil.ReadFile(filename)
+	yamlFile, err := ioutil.ReadFile(filename) // #nosec
 	if err != nil {
 		log.Fatal(err)
 	}
