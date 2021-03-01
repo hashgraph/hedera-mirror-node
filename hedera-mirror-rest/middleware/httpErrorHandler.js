@@ -66,7 +66,6 @@ const handleError = async (err, req, res, next) => {
   }
 
   res.status(statusCode.code).json(errorMessageFormat(errorMessage));
-  return next;
 };
 
 const shouldReturnMessage = (statusCode) => {

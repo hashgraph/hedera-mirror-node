@@ -25,9 +25,14 @@ hedera:
 spring:
   flyway:
     password: ${hedera.mirror.importer.db.password}
+    placeholders:
+      compressionAge: 9223372036854775807 # use long max to avoid compression during test
     user: ${hedera.mirror.importer.db.username}
   redis:
-    url: redis://${embedded.redis.user}:${embedded.redis.password}@${embedded.redis.host}:${embedded.redis.port}
+    host: ${embedded.redis.host}
+    password: ${embedded.redis.password}
+    port: ${embedded.redis.port}
+    username: "" # Redis 5 does not support authentication with a username and will fail if provided
   retry:
     enabled: false
   task:

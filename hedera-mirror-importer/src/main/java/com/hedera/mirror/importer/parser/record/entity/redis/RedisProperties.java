@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
  * ‍
  */
 
+import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -32,4 +33,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 public class RedisProperties implements EntityListenerProperties {
 
     private boolean enabled = true;
+
+    @Min(1)
+    private int queueCapacity = 8;
 }

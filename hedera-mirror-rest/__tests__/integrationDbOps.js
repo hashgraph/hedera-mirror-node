@@ -20,7 +20,7 @@
 
 'use strict';
 
-const {exec} = require('child_process');
+const {execSync} = require('child_process');
 const fs = require('fs');
 const log4js = require('log4js');
 const path = require('path');
@@ -48,7 +48,6 @@ const v1SchemaConfigs = {
   flyway: {
     baselineVersion: '0',
     locations: 'hedera-mirror-importer/src/main/resources/db/migration/v1',
-    target: '1.999.999',
   },
 };
 const v2SchemaConfigs = {
@@ -59,7 +58,6 @@ const v2SchemaConfigs = {
   flyway: {
     baselineVersion: '1.999.999',
     locations: 'hedera-mirror-importer/src/main/resources/db/migration/v2',
-    target: '2.999.999',
   },
 };
 
@@ -71,7 +69,7 @@ const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs 
  * testContainers/dockerized postgresql instance.
  */
 const instantiateDatabase = async () => {
-  if (!process.env.CIRCLECI && !process.env.CI_CONTAINERS) {
+  if (!process.env.CIRCLECI) {
     if (!(await isDockerInstalled())) {
       throw new Error('Docker not found');
     }
@@ -102,14 +100,18 @@ const instantiateDatabase = async () => {
   oldPool = global.pool;
   global.pool = sqlConnection;
 
-  await flywayMigrate();
+  flywayMigrate();
 
   return sqlConnection;
 };
 
 /**
- * Run the sql (non-java) based migrations stored in the importer project against the target database.
- * @returns {Promise}
+ * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
+ * Note that even though we use Flyway 7 in the other modules, we have to use Flyway 6 here because of an
+ * incompatibility issue. Flyway 7 with node-flywaydb causes the below issue when ran against TimescaleDB:
+ *
+ * ERROR: function create_hypertable(unknown, unknown, chunk_time_interval => bigint, ...) does not exist
+ * Hint: No function matches the given name and argument types. You might need to add explicit type casts.
  */
 const flywayMigrate = () => {
   logger.info('Using flyway CLI to construct schema');
@@ -127,11 +129,11 @@ const flywayMigrate = () => {
     "placeholders.api-user": "${dbConfig.username}",
     "placeholders.chunkIdInterval": 10000,
     "placeholders.chunkTimeInterval": 604800000000000,
-    "placeholders.compressionAge": 604800000000000,
+    "placeholders.compressionAge": 9007199254740991,
     "placeholders.db-name": "${dbConfig.name}",
     "placeholders.db-user": "${dbAdminUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
-    "target": "${schemaConfigs.flyway.target}",
+    "target": "latest",
     "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}",
     "user": "${dbAdminUser}"
   },
@@ -145,23 +147,8 @@ const flywayMigrate = () => {
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
 
-  return new Promise((resolve, reject) => {
-    let args = ['node', exePath, '-c', flywayConfigPath, 'clean'];
-    exec(args.join(' '), {}, (err) => {
-      if (err) {
-        reject(err);
-      }
-      args = ['node', exePath, '-c', flywayConfigPath, 'migrate'];
-      exec(args.join(' '), {}, (err, stdout) => {
-        if (err) {
-          reject(err);
-        } else {
-          logger.info(stdout);
-          resolve();
-        }
-      });
-    });
-  });
+  execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
+  execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
 
 const closeConnection = async () => {

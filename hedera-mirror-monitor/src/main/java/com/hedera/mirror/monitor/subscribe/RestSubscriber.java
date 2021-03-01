@@ -30,8 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.DirectProcessor;
-import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Sinks;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
@@ -41,7 +40,7 @@ import com.hedera.mirror.monitor.publish.PublishResponse;
 
 public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties> {
 
-    private final FluxSink<PublishResponse> restProcessor;
+    private final Sinks.Many<PublishResponse> sink;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     RestSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
@@ -53,9 +52,6 @@ public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties>
                 .defaultHeaders(h -> h.setAccept(List.of(MediaType.APPLICATION_JSON)))
                 .build();
 
-        DirectProcessor<PublishResponse> directProcessor = DirectProcessor.create();
-        restProcessor = directProcessor.sink();
-
         RetryBackoffSpec retrySpec = Retry
                 .backoff(properties.getRetry().getMaxAttempts(), properties.getRetry().getMinBackoff())
                 .maxBackoff(properties.getRetry().getMaxBackoff())
@@ -63,10 +59,10 @@ public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties>
                 .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
                         r.totalRetries() + 1, r.failure()));
 
-        double samplePercent = properties.getSamplePercent();
-        directProcessor.doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
+        sink = Sinks.many().multicast().directBestEffort();
+        sink.asFlux().doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
                 //Randomly filter out transactions to only validate a sample
-                .filter(r -> RANDOM.nextDouble() < samplePercent)
+                .filter(r -> RANDOM.nextDouble() < properties.getSamplePercent())
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
                 .doFinally(s -> log.warn("Received {} signal", s))
                 .doFinally(s -> close())
@@ -89,9 +85,7 @@ public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties>
 
     @Override
     public void onPublish(PublishResponse response) {
-        if (!restProcessor.isCancelled()) {
-            restProcessor.next(response);
-        }
+        sink.emitNext(response, Sinks.EmitFailureHandler.FAIL_FAST);
     }
 
     @Override

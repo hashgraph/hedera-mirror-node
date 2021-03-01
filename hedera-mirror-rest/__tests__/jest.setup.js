@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.reader.balance.line;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,8 +18,12 @@ package com.hedera.mirror.importer.reader.balance.line;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.AccountBalance;
+'use strict';
 
-public interface AccountBalanceLineParser {
-    AccountBalance parse(String line, long consensusTimestamp);
-}
+const logger = require('log4js').getLogger();
+
+jest.setTimeout(2000);
+
+beforeEach(() => {
+  logger.info(expect.getState().currentTestName);
+});

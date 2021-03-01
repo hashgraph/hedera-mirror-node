@@ -147,7 +147,6 @@ const testBadParams = (request, server, url, param, badValues) => {
     const queryparam = `${param}=${op}${opt}`;
     const fullUrl = url + '?' + queryparam;
     test(`Test: ${fullUrl}`, async () => {
-      console.log(fullUrl);
       let response = await request(server).get(fullUrl);
       expect(response.status).toBeGreaterThanOrEqual(400);
       let check = false;

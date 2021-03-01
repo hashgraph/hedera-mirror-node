@@ -25,7 +25,6 @@ const constants = require('../constants.js');
 const config = require('../config.js');
 
 describe('utils buildComparatorFilter tests', () => {
-
   test('Verify buildComparatorFilter for scheduled=true', () => {
     verifyBuildComparatorFilter(constants.filterKeys.SCHEDULED, 'true', {
       key: constants.filterKeys.SCHEDULED,

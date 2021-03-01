@@ -58,10 +58,13 @@ class RedisEntityListenerTest {
 
     private long consensusTimestamp = 1;
 
+    private RedisProperties redisProperties;
+
     @BeforeEach
     void setup() {
-        entityListener = new RedisEntityListener(new MirrorProperties(),
-                new RedisProperties(), redisOperations, new SimpleMeterRegistry());
+        redisProperties = new RedisProperties();
+        entityListener = new RedisEntityListener(new MirrorProperties(), redisProperties, redisOperations,
+                new SimpleMeterRegistry());
         entityListener.init();
     }
 
@@ -72,7 +75,7 @@ class RedisEntityListenerTest {
 
         // given
         List<TopicMessage> messages = new ArrayList<>();
-        for (int i = 0; i < RedisEntityListener.TASK_QUEUE_SIZE + 2; i++) {
+        for (int i = 0; i < redisProperties.getQueueCapacity() + 2; i++) {
             messages.add(topicMessage());
         }
 
@@ -99,13 +102,13 @@ class RedisEntityListenerTest {
         //Thread is blocked because queue is full, and publisher is blocked on first message.
         verify(redisOperations, timeout(500).times(1))
                 .executePipelined(any(SessionCallback.class));
-        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 1);
+        assertThat(saveCount.get()).isEqualTo(redisProperties.getQueueCapacity() + 1);
 
         latch.countDown();
         //All messages should be queued and published
-        verify(redisOperations, timeout(500).times(RedisEntityListener.TASK_QUEUE_SIZE + 2))
+        verify(redisOperations, timeout(500).times(redisProperties.getQueueCapacity() + 2))
                 .executePipelined(any(SessionCallback.class));
-        assertThat(saveCount.get()).isEqualTo(RedisEntityListener.TASK_QUEUE_SIZE + 2);
+        assertThat(saveCount.get()).isEqualTo(redisProperties.getQueueCapacity() + 2);
     }
 
     @Test

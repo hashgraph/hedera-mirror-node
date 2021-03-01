@@ -28,11 +28,10 @@ const responseHandler = async (req, res, next) => {
   const responseData = res.locals[constants.responseDataLabel];
   if (responseData === undefined) {
     // unmatched route will have no response data, pass NotFoundError to next middleware
-    next(new NotFoundError());
+    throw new NotFoundError();
   } else {
     // set response json
     res.json(res.locals[constants.responseDataLabel]);
-    next();
   }
 };
 

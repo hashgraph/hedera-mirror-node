@@ -26,10 +26,6 @@ const testutils = require('./testutils');
 const utils = require('../utils');
 const {buildWhereClause} = require('../transactions');
 
-beforeAll(async () => {
-  jest.setTimeout(1000);
-});
-
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
 

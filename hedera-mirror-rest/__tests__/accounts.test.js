@@ -23,13 +23,6 @@ const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils.js');
 
-beforeAll(async () => {
-  jest.setTimeout(1000);
-});
-
-afterAll(() => {
-});
-
 // Validation functions
 /**
  * Validate length of the accounts returned by the api

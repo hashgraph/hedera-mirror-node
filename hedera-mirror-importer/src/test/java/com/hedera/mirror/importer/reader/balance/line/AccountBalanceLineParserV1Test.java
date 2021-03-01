@@ -29,17 +29,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 class AccountBalanceLineParserV1Test {
+
     private static final long timestamp = 1596340377922333444L;
-    private static final long systemShardNum = 0;
     private AccountBalanceLineParserV1 parser;
+    private MirrorProperties mirrorProperties;
 
     @BeforeEach
     void setup() {
-        parser = new AccountBalanceLineParserV1();
+        mirrorProperties = new MirrorProperties();
+        parser = new AccountBalanceLineParserV1(mirrorProperties);
     }
 
     @DisplayName("Parse account balance line")
@@ -70,16 +73,17 @@ class AccountBalanceLineParserV1Test {
     }, delimiter = ';')
     void parse(String line, boolean expectThrow, Long expectedRealm, Long expectedAccount, Long expectedBalance) {
         if (!expectThrow) {
-            AccountBalance accountBalance = parser.parse(line, timestamp, systemShardNum);
+            AccountBalance accountBalance = parser.parse(line, timestamp);
             var id = accountBalance.getId();
 
             assertThat(accountBalance.getBalance()).isEqualTo(expectedBalance);
+            assertThat(id.getAccountId().getShardNum()).isEqualTo(mirrorProperties.getShard());
             assertThat(id.getAccountId().getRealmNum()).isEqualTo(expectedRealm);
             assertThat(id.getAccountId().getEntityNum()).isEqualTo(expectedAccount);
             assertThat(id.getConsensusTimestamp()).isEqualTo(timestamp);
         } else {
             assertThrows(InvalidDatasetException.class, () -> {
-                parser.parse(line, timestamp, systemShardNum);
+                parser.parse(line, timestamp);
             });
         }
     }
@@ -87,7 +91,7 @@ class AccountBalanceLineParserV1Test {
     @Test
     void parseNullLine() {
         assertThrows(InvalidDatasetException.class, () -> {
-            parser.parse(null, timestamp, systemShardNum);
+            parser.parse(null, timestamp);
         });
     }
 }

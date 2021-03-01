@@ -33,6 +33,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.retry.Jitter;
 import reactor.retry.Repeat;
+import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -47,7 +48,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
     private final Scheduler scheduler;
 
     public PollingTopicMessageRetriever(RetrieverProperties retrieverProperties,
-            TopicMessageRepository topicMessageRepository) {
+                                        TopicMessageRepository topicMessageRepository) {
         this.retrieverProperties = retrieverProperties;
         this.topicMessageRepository = topicMessageRepository;
         int threadCount = retrieverProperties.getThreadMultiplier() * Runtime.getRuntime().availableProcessors();
@@ -68,7 +69,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                         .withBackoffScheduler(scheduler))
                 .name("retriever")
                 .metrics()
-                .retryBackoff(Long.MAX_VALUE, Duration.ofSeconds(1))
+                .retryWhen(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1)))
                 .timeout(retrieverProperties.getTimeout(), scheduler)
                 .doOnCancel(context::onComplete)
                 .doOnComplete(context::onComplete)
@@ -125,8 +126,8 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
 
         /**
          * Checks if this publisher is complete by comparing if the number of results in the last page was less than the
-         * page size or if the limit has reached if it's set. This avoids the extra query if we were to just check
-         * if last page was empty.
+         * page size or if the limit has reached if it's set. This avoids the extra query if we were to just check if
+         * last page was empty.
          *
          * @return whether all historic messages have been returned
          */

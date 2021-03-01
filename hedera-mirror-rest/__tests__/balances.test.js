@@ -24,13 +24,6 @@ const server = require('../server');
 const testutils = require('./testutils.js');
 const config = require('../config.js');
 
-beforeAll(async () => {
-  jest.setTimeout(1000);
-});
-
-afterAll(() => {
-});
-
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
 

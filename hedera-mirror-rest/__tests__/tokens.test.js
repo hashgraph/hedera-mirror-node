@@ -20,18 +20,10 @@
 
 'use strict';
 
-const sinon = require('sinon');
-
 const tokens = require('../tokens');
 const {filterKeys, orderFilterValues} = require('../constants');
 const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
-
-beforeAll(async () => {
-  jest.setTimeout(1000);
-});
-
-afterAll(() => {});
 
 const formatSqlQueryString = (query) => {
   return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
