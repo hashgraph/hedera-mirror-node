@@ -102,3 +102,4 @@ jobs:
         uses: securego/gosec@master
         with:
           args: ./...
+        working-directory: ${{ env.working-directory }}
