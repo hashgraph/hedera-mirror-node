@@ -63,7 +63,7 @@ jobs:
       - uses: actions/setup-go@v2
         name: Setup GO Env
         with:
-          go-version: '1.13'
+          go-version: '1.14'
       - name: Cache Go modules
         uses: actions/cache@v2
         with:
@@ -92,3 +92,13 @@ jobs:
       - name: Run CLI Validation
         run: bash ./validation/run-validation.sh
         working-directory: ${{env.working-directory}}/scripts
+  go-security-check:
+    runs-on: ubuntu-latest
+      env:
+        GO111MODULE: on
+      steps:
+        - uses: actions/checkout@v2
+        - name: Run Gosec Security Scanner
+          uses: securego/gosec@master
+          with:
+            args: ./...
