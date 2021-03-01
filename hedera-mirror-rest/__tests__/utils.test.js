@@ -330,7 +330,8 @@ describe('Utils parseParams tests', () => {
       expectedValues: ["1"]
     },
   ]
-  parseQueryParamTest('Utils parseParams - ', testSpecs, (spec) => utils.parseParams(spec.parsedQueryParams, (value) => value, (op, paramValue) => [`column${op}?`, paramValue], false));
+  parseQueryParamTest('Utils parseParams - ', testSpecs,
+    (spec) => utils.parseParams(spec.parsedQueryParams, (value) => value, (op, paramValue) => [`column${op}?`, paramValue], false));
 
   test('Utils parseParams - Invalid clause ', () => {
     expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}`, paramValue], false)).toThrow(InvalidClauseError);
