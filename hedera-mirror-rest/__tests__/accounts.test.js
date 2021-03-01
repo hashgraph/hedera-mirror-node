@@ -64,7 +64,7 @@ const validateAccNumRange = function (accounts, low, high) {
  * @param {Array} list of valid account ids
  * @return {Boolean}  Result of the check
  */
-const validateAccNumInArray = function (accounts, potentialValues) {
+const validateAccNumInArray = function (accounts, ...potentialValues) {
   let ret = true;
   let offender = null;
   for (const acc of accounts.accounts) {
@@ -189,7 +189,7 @@ const singletests = {
     urlparam: 'account.id=0.0.3333',
     checks: [{field: 'account_id', operator: 'in', value: 3333}],
     checkFunctions: [
-      {func: validateAccNumInArray, args: [[3333]]},
+      {func: validateAccNumInArray, args: [3333]},
       {func: validateFields, args: []},
     ],
   },
@@ -200,7 +200,7 @@ const singletests = {
       {field: 'account_id', operator: 'in', value: '3334'},
     ],
     checkFunctions: [
-      {func: validateAccNumInArray, args: [[3333, 3334]]},
+      {func: validateAccNumInArray, args: [3333, 3334]},
       {func: validateFields, args: []},
     ],
   },

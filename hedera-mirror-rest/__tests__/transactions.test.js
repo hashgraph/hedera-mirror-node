@@ -105,7 +105,7 @@ const validateAccNumRange = function (transactions, low, high) {
  * @param {Array} list of valid account ids
  * @return {Boolean}  Result of the check
  */
-const validateAccNumInArray = function (transactions, potentialValues) {
+const validateAccNumInArray = function (transactions, ...potentialValues) {
   let ret = false;
   for (const tx of transactions) {
     for (const xfer of tx.transfers) {
@@ -254,7 +254,7 @@ const singleTests = {
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
     checks: [{field: 'entity_id', operator: 'in', value: '3333'}],
-    checkFunctions: [{func: validateAccNumInArray, args: [[3333]]}],
+    checkFunctions: [{func: validateAccNumInArray, args: [3333]}],
   },
   accountid_multiple: {
     urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
@@ -262,7 +262,7 @@ const singleTests = {
       {field: 'entity_id', operator: 'in', value: '3333'},
       {field: 'entity_id', operator: 'in', value: '3334'},
     ],
-    checkFunctions: [{func: validateAccNumInArray, args: [[3333, 3334]]}],
+    checkFunctions: [{func: validateAccNumInArray, args: [3333, 3334]}],
   },
   limit: {
     urlparam: 'limit=99',
