@@ -25,6 +25,8 @@ hedera:
 spring:
   flyway:
     password: ${hedera.mirror.importer.db.password}
+    placeholders:
+      compressionAge: 9223372036854775807 # use long max to avoid compression during test
     user: ${hedera.mirror.importer.db.username}
   redis:
     host: ${embedded.redis.host}

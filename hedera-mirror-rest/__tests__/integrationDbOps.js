@@ -129,7 +129,7 @@ const flywayMigrate = () => {
     "placeholders.api-user": "${dbConfig.username}",
     "placeholders.chunkIdInterval": 10000,
     "placeholders.chunkTimeInterval": 604800000000000,
-    "placeholders.compressionAge": 604800000000000,
+    "placeholders.compressionAge": 9007199254740991,
     "placeholders.db-name": "${dbConfig.name}",
     "placeholders.db-user": "${dbAdminUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
