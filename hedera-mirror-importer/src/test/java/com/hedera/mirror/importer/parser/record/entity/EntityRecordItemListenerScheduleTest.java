@@ -88,7 +88,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, SCHEDULE_CREATE_MEMO , null);
+                null, false, null, SCHEDULE_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 
@@ -99,7 +99,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertScheduleSignatureInRepository(CREATE_TIMESTAMP, SCHEDULE_ID, signaturePairs);
 
         // verify transaction
-        assertTransactionInRepository(CREATE_TIMESTAMP, false);
+        assertTransactionInRepository(CREATE_TIMESTAMP, false, ResponseCodeEnum.SUCCESS.getNumber());
     }
 
     @Test
@@ -127,7 +127,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertScheduleSignatureInRepository(UPDATE_TIMESTAMP, SCHEDULE_ID, combinedSignaturePairs);
 
         // verify transaction
-        assertTransactionInRepository(UPDATE_TIMESTAMP, false);
+        assertTransactionInRepository(UPDATE_TIMESTAMP, false, ResponseCodeEnum.SUCCESS.getNumber());
     }
 
     @Test
@@ -156,7 +156,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertScheduleSignatureInRepository(SIGN_TIMESTAMP, SCHEDULE_ID, additionalSignaturePairs);
 
         // verify transaction
-        assertTransactionInRepository(SIGN_TIMESTAMP, false);
+        assertTransactionInRepository(SIGN_TIMESTAMP, false, ResponseCodeEnum.SUCCESS.getNumber());
     }
 
     @Test
@@ -187,7 +187,16 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
-    void scheduleExecute() throws InvalidProtocolBufferException {
+    void scheduleExecuteOnSuccess() throws InvalidProtocolBufferException {
+        scheduleExecute(ResponseCodeEnum.SUCCESS);
+    }
+
+    @Test
+    void scheduleExecuteOnFailure() throws InvalidProtocolBufferException {
+        scheduleExecute(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID);
+    }
+
+    void scheduleExecute(ResponseCodeEnum responseCodeEnum) throws InvalidProtocolBufferException {
         List<SignaturePair> startingSignaturePairs = getSignaturePairs(2, true);
         insertScheduleCreate(CREATE_TIMESTAMP, startingSignaturePairs, SCHEDULE_ID);
 
@@ -196,7 +205,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleSign(SIGN_TIMESTAMP, additionalSignaturePairs, SCHEDULE_ID);
 
         // scheduled transaction
-        insertScheduledTransaction(EXECUTE_TIMESTAMP, SCHEDULE_ID);
+        insertScheduledTransaction(EXECUTE_TIMESTAMP, SCHEDULE_ID, responseCodeEnum);
 
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
@@ -215,7 +224,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertScheduleSignatureInRepository(SIGN_TIMESTAMP, SCHEDULE_ID, additionalSignaturePairs);
 
         // verify transaction
-        assertTransactionInRepository(EXECUTE_TIMESTAMP, true);
+        assertTransactionInRepository(EXECUTE_TIMESTAMP, true, responseCodeEnum.getNumber());
     }
 
     private Transaction scheduleCreateTransaction(List<SignaturePair> originalSignaturePairs,
@@ -335,11 +344,12 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         parseRecordItemAndCommit(new RecordItem(signTransaction, signTransactionRecord));
     }
 
-    private void insertScheduledTransaction(long signTimestamp, ScheduleID scheduleID) throws InvalidProtocolBufferException {
+    private void insertScheduledTransaction(long signTimestamp, ScheduleID scheduleID,
+                                            ResponseCodeEnum responseCodeEnum) throws InvalidProtocolBufferException {
         Transaction scheduledTransaction = scheduledTransaction();
         TransactionBody scheduledTransactionBody = getTransactionBody(scheduledTransaction);
         var scheduledTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, scheduledTransactionBody,
-                ResponseCodeEnum.SUCCESS, true);
+                responseCodeEnum, true);
 
         parseRecordItemAndCommit(new RecordItem(scheduledTransaction, scheduledTransactionRecord));
     }
@@ -372,8 +382,9 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         });
     }
 
-    private void assertTransactionInRepository(long consensusTimestamp, boolean scheduled) {
+    private void assertTransactionInRepository(long consensusTimestamp, boolean scheduled, int responseCode) {
         assertThat(transactionRepository.findById(consensusTimestamp)).get()
-                .returns(scheduled, from(com.hedera.mirror.importer.domain.Transaction::isScheduled));
+                .returns(scheduled, from(com.hedera.mirror.importer.domain.Transaction::isScheduled))
+                .returns(responseCode, from(com.hedera.mirror.importer.domain.Transaction::getResult));
     }
 }
