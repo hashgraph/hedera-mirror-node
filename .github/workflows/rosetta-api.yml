@@ -16,11 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Cache Maven packages
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('hedera-mirror-rosetta/pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
+          path: ~/.m2/repository
+          restore-keys: ${{ runner.os }}-m2-
       - name: Cache Go modules
         uses: actions/cache@v2
         with:
