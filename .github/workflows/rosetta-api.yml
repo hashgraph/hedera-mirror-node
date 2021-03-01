@@ -94,11 +94,11 @@ jobs:
         working-directory: ${{env.working-directory}}/scripts
   go-security-check:
     runs-on: ubuntu-latest
-      env:
-        GO111MODULE: on
-      steps:
-        - uses: actions/checkout@v2
-        - name: Run Gosec Security Scanner
-          uses: securego/gosec@master
-          with:
-            args: ./...
+    env:
+      GO111MODULE: on
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
