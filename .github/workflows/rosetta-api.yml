@@ -102,6 +102,13 @@ jobs:
         name: Setup GO Env
         with:
           go-version: '1.14'
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-gosec-
       - name: Install Gosec
         run: go get github.com/securego/gosec/v2/cmd/gosec
       - name: Run Gosec Security Scanner
