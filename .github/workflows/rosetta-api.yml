@@ -13,13 +13,14 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        name: Setup GO Env
+      - name: Cache Maven packages
+        uses: actions/cache@v2
         with:
-          go-version: '1.14'
+          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('hedera-mirror-rosetta/pom.xml') }}
+          path: ~/.m2/repository
+          restore-keys: ${{ runner.os }}-m2-
       - name: Cache Go modules
         uses: actions/cache@v2
         with:
@@ -29,6 +30,9 @@ jobs:
             ${{ runner.os }}-go-
       - name: Build hedera-mirror-rosetta
         run: ./mvnw clean package -pl hedera-mirror-rosetta
+      - name: Upload Coverage report to CodeCov
+        run: bash <(curl -s https://codecov.io/bash)
+        working-directory: ${{env.working-directory}}
       - name: Get current version
         id: get_version
         run: |
@@ -56,27 +60,6 @@ jobs:
           name: hedera-mirror-rosetta
           path: hedera-mirror-rosetta-${{ steps.get_version.outputs.VERSION }}.tgz
           if-no-files-found: error
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        name: Setup GO Env
-        with:
-          go-version: '1.13'
-      - name: Cache Go modules
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-test-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-test-
-      - name: Run Unit Tests with Coverage
-        run: go test ./... -coverpkg=./... -race -coverprofile=coverage.txt -covermode=atomic
-        working-directory: ${{env.working-directory}}
-      - name: Upload Coverage report to CodeCov
-        run: bash <(curl -s https://codecov.io/bash)
-        working-directory: ${{env.working-directory}}
   cli-validation:
     runs-on: ubuntu-latest
     steps:
@@ -92,3 +75,25 @@ jobs:
       - name: Run CLI Validation
         run: bash ./validation/run-validation.sh
         working-directory: ${{env.working-directory}}/scripts
+  go-security-check:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        name: Setup GO Env
+        with:
+          go-version: '1.14'
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-gosec-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-gosec-
+      - name: Install Gosec
+        run: go get github.com/securego/gosec/v2/cmd/gosec
+      - name: Run Gosec Security Scanner
+        run: gosec ./...
+        working-directory: ${{ env.working-directory }}

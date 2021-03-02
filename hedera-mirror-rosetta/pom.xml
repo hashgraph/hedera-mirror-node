@@ -20,10 +20,10 @@
     </properties>
 
     <build>
-        <sourceDirectory>${project.basedir}${file.separator}cmd</sourceDirectory>
-        <directory>${basedir}${file.separator}bin</directory>
         <defaultGoal>clean package</defaultGoal>
+        <directory>${basedir}${file.separator}bin</directory>
         <finalName>${project.artifactId}</finalName>
+        <sourceDirectory>${project.basedir}${file.separator}cmd</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>io.fabric8</groupId>
@@ -39,12 +39,14 @@
                         <id>default-test</id>
                         <configuration>
                             <buildFlags>
+                                <flag>-coverpkg=./...</flag>
+                                <flag>-coverprofile=coverage.txt</flag>
+                                <flag>-covermode=atomic</flag>
                                 <flag>-race</flag>
                                 <flag>-v</flag>
                             </buildFlags>
-                            <packages>
-                                <package>${project.basedir}${file.separator}...</package>
-                            </packages>
+                            <sources>${project.basedir}${file.separator}</sources>
+                            <useEnvVars>true</useEnvVars>
                         </configuration>
                     </execution>
                     <execution>
@@ -55,7 +57,7 @@
                                 <flag>-i</flag>
                                 <flag>-race</flag>
                             </buildFlags>
-                            <sources>${project.basedir}${file.separator}cmd</sources>
+                            <useEnvVars>true</useEnvVars>
                         </configuration>
                     </execution>
                 </executions>
