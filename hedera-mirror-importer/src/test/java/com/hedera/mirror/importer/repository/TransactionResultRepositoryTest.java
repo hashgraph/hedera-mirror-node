@@ -22,11 +22,15 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.TransactionResult;
 
 public class TransactionResultRepositoryTest extends AbstractRepositoryTest {
+
+    @Resource
+    private TransactionResultRepository transactionResultRepository;
 
     @Test
     void findByResult() {

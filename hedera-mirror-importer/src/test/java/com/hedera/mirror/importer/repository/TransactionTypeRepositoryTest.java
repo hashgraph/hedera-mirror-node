@@ -22,12 +22,16 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 public class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
+
+    @Resource
+    private TransactionTypeRepository transactionTypeRepository;
 
     @Test
     void findByName() {
