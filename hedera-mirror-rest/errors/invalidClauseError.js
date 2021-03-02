@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*-
  * ‌
  * Hedera Mirror Node
@@ -19,25 +18,17 @@
  * ‍
  */
 
-const fs = require('fs');
-const yaml = require('js-yaml');
+'use strict';
 
-// Load config
-process.env.CONFIG_NAME = 'perfTestConfig';
-process.env.CONFIG_PATH = __dirname;
-const config = require('../config');
+const InvalidClauseErrorMessage = 'Invalid clause produced after parsing query parameters';
 
-const mustLoadYaml = (fileName) => {
-  try {
-    console.log(`Loading yaml file ${fileName}`);
-    return yaml.load(fs.readFileSync(fileName, 'utf8'));
-  } catch (err) {
-    console.log(`Failed to load yaml file ${fileName}: ${err}`);
-    process.exit(1);
+class InvalidClauseError extends Error {
+  constructor(errorMessage) {
+    super();
+    this.message = errorMessage === undefined ? InvalidClauseErrorMessage : errorMessage;
   }
-};
+}
 
 module.exports = {
-  config: config,
-  mustLoadYaml: mustLoadYaml,
+  InvalidClauseError,
 };

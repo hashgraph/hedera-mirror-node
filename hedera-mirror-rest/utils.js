@@ -29,6 +29,7 @@ const config = require('./config');
 const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {InvalidClauseError} = require('./errors/invalidClauseError');
 const transactionTypes = require('./transactionTypes');
 
 const ENTITY_TYPE_ACCOUNT = 1;
@@ -220,20 +221,31 @@ const validateReq = async (req) => {
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
+      if (!isRepeatedQueryParameterValidLength(req.query[key])) {
+        badParams.push({
+          code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
+          key: key,
+          count: req.query[key].length,
+          max: config.maxRepeatedQueryParameters
+        });
+        continue;
+      }
       for (const val of req.query[key]) {
         if (!(await paramValidityChecks(key, val))) {
-          badParams.push(key);
+          badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
         }
       }
     } else if (!(await paramValidityChecks(key, req.query[key]))) {
-      badParams.push(key);
+      badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
     }
   }
 
   if (badParams.length > 0) {
-    throw InvalidArgumentError.forParams(badParams);
+    throw InvalidArgumentError.forRequestValidation(badParams);
   }
 };
+
+const isRepeatedQueryParameterValidLength = (values) => values.length <= config.maxRepeatedQueryParameters;
 
 const parseTimestampParam = (timestampParam) => {
   // Expect timestamp input as (a) just seconds,
@@ -290,84 +302,130 @@ const getIntegerParam = (param, limit = undefined) => {
 };
 
 /**
- * Parse the query filer parameter
+ * Parse the query filter parameter
  * @param paramValues Value of the query param after parsing by ExpressJS
- * @param {Function} processOpAndValue function to compute partial sql clause and sql params using comparator and value
+ * @param {Function} processValue function to extract sql params using comparator and value
  *          in the query param.
+ * @param {Function} processOpAndValue function to compute partial sql clause using comparator and value
+ *          in the query param.
+ * @param {Boolean} allowMultiple whether the sql clause should build multiple = ops as an IN() clause
  * @return {Array} [query, params] Constructed SQL query fragment and corresponding values
  */
-const parseParams = (paramValues, processOpAndValue) => {
+const parseParams = (paramValues, processValue, processQuery, allowMultiple) => {
   if (paramValues === undefined) {
     return ['', []];
   }
-  // We either have a single entry of account filter, or an array (multiple entries)
-  // Convert a single entry into an array to keep the processing consistent
+  // Convert paramValues to a set to remove duplicates
   if (!Array.isArray(paramValues)) {
-    paramValues = [paramValues];
+    paramValues = new Set([paramValues]);
+  } else {
+    paramValues = new Set(paramValues);
   }
   const partialQueries = [];
   let values = [];
   // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
+  const equalValues = new Set();
   for (const paramValue of paramValues) {
     const opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
     if (opAndValue === null) {
       continue;
     }
-    const queryAndValues = processOpAndValue(opAndValue.op, opAndValue.value);
-    if (queryAndValues !== null) {
-      partialQueries.push(queryAndValues[0]);
-      values = values.concat(queryAndValues[1]);
+    const processedValue = processValue(opAndValue.value);
+    //Equal ops have to be processed in bulk at the end to format the IN() correctly.
+    if (opAndValue.op === opsMap.eq && allowMultiple) {
+      equalValues.add(processedValue);
+    } else {
+      const queryAndValues = processQuery(opAndValue.op, processedValue);
+      if (queryAndValues !== null) {
+        partialQueries.push(queryAndValues[0]);
+        values = values.concat(queryAndValues[1]);
+      }
     }
   }
+  if (equalValues.size !== 0) {
+    const queryAndValues = processQuery(opsMap.eq, Array.from(equalValues));
+    partialQueries.push(queryAndValues[0]);
+    values = values.concat(queryAndValues[1]);
+  }
+  const fullClause = partialQueries.join(' and ');
+  validateClauseAndValues(fullClause, values)
   return [partialQueries.join(' and '), values];
 };
 
+const validateClauseAndValues = (clause, values) => {
+  if ((clause.match(/\?/g) || []).length !== values.length) {
+    throw new InvalidClauseError(`Invalid clause produced after parsing query parameters: number of replacement
+    parameters does not equal number of values: clause: \"${clause}\", values: ${values}`);
+  }
+}
+
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], (op, value) => {
-    const accountId = EntityId.fromString(value);
-    return [`${columnName} ${op} ?`, [accountId.getEncodedId()]];
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
+    (value) => EntityId.fromString(value).getEncodedId(),
+    (op, value) => {
+      return Array.isArray(value)
+        ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
+        : [`${columnName}${op}?`, [value]];
+    },
+    true
+  );
 };
 
+
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.TIMESTAMP], (op, value) => {
-    return [`${columnName} ${op in opOverride ? opOverride[op] : op} ?`, [parseTimestampParam(value)]];
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.TIMESTAMP],
+    (value) => parseTimestampParam(value),
+    (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
+    false
+  );
 };
 
 const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE], (op, value) => {
-    if (isNumeric(value)) {
-      return [`${columnName} ${op} ?`, [value]];
-    }
-    return null;
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE],
+    (value) => value,
+    (op, value) => isNumeric(value) ? [`${columnName}${op}?`, [value]] : null,
+    false
+  );
 };
 
 const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY], (op, value) => {
-    let key = value.toLowerCase();
-    // If the supplied key is DER encoded, decode it
-    const decodedKey = ed25519.derToEd25519(key);
-    if (decodedKey != null) {
-      key = decodedKey;
-    }
-    return [`${columnName} ${op} ?`, [key]];
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY],
+    (value) => {
+      let key = value.toLowerCase();
+      // If the supplied key is DER encoded, decode it
+      const decodedKey = ed25519.derToEd25519(key);
+      if (decodedKey != null) {
+        key = decodedKey;
+      }
+      return key;
+    },
+    (op, value) => [`${columnName}${op}?`, [value]],
+    false
+  );
 };
 
 /**
- * Parse the type=[credit | debit | creditDebit] parameter
+ * Parse the type=[credit | debit] parameter
  */
 const parseCreditDebitParams = (parsedQueryParams, columnName) => {
-  return parseParams(parsedQueryParams[constants.filterKeys.CREDIT_TYPE], (op, value) => {
-    if (value === 'credit') {
-      return [`${columnName} > 0`, []];
-    }
-    if (value === 'debit') {
-      return [`${columnName} < 0`, []];
-    }
-  });
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
+    (value) => value,
+    (op, value) => {
+      if (value === 'credit') {
+        return [`${columnName} > ?`, [0]];
+      } else if (value === 'debit') {
+        return [`${columnName} < ?`, [0]];
+      } else {
+        return null;
+      }
+    },
+    false
+  );
 };
 
 /**
@@ -750,12 +808,12 @@ const formatComparator = (comparator) => {
 const parseTokenBalances = (tokenBalances) => {
   return tokenBalances
     ? tokenBalances.map((tokenBalance) => {
-        const {token_id: tokenId, balance} = tokenBalance;
-        return {
-          token_id: EntityId.fromString(tokenId).toString(),
-          balance,
-        };
-      })
+      const {token_id: tokenId, balance} = tokenBalance;
+      return {
+        token_id: EntityId.fromString(tokenId).toString(),
+        balance,
+      };
+    })
     : [];
 };
 
@@ -816,6 +874,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
+  isRepeatedQueryParameterValidLength,
   isTestEnv,
   isValidLimitNum,
   isValidNum,
@@ -828,6 +887,7 @@ module.exports = {
   parsePublicKeyQueryParam,
   parseAccountIdQueryParam,
   parseTimestampQueryParam,
+  parseParams,
   parseResultParams,
   parseBooleanValue,
   parseTimestampParam,

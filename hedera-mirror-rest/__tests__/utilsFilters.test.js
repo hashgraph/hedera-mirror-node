@@ -22,6 +22,7 @@
 const EntityId = require('../entityId');
 const utils = require('../utils.js');
 const constants = require('../constants.js');
+const config = require('../config.js');
 
 describe('utils buildComparatorFilter tests', () => {
   test('Verify buildComparatorFilter for scheduled=true', () => {
@@ -231,6 +232,7 @@ describe('utils formatComparator tests', () => {
     utils.formatComparator(filter);
     verifyFilter(filter, constants.filterKeys.SCHEDULED, ' = ', false);
   });
+
 });
 
 const verifyInvalidFilters = async (filters) => {
@@ -240,7 +242,10 @@ const verifyInvalidFilters = async (filters) => {
 const validateAndParseFiltersNoExMessage = 'Verify validateAndParseFilters for valid filters does not throw exception';
 const verifyValidAndInvalidFilters = async (invalidFilters, validFilters) => {
   invalidFilters.forEach((filter) => {
-    test(`Verify validateAndParseFilters for invalid ${JSON.stringify(filter)}`, async () => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
       await verifyInvalidFilters([filter]);
     });
   });

@@ -99,6 +99,22 @@ const validateAccNumRange = function (transactions, low, high) {
 };
 
 /**
+ * Validate that account ids in the transactions returned by the api are in the list of valid account ids
+ * At least one transfer in a transaction should be the expected list of values
+ * @param {Array} transactions Array of transactions returned by the rest api
+ * @param {Array} list of valid account ids
+ * @return {Boolean}  Result of the check
+ */
+const validateAccNumInArray = function (transactions, ...potentialValues) {
+  for (const tx of transactions) {
+    if (!testutils.validateAccNumInArray(tx.transfers, potentialValues)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+/**
  * Validate that all required fields are present in the response
  * @param {Array} transactions Array of transactions returned by the rest api
  * @return {Boolean}  Result of the check
@@ -218,8 +234,16 @@ const singleTests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'entity_id', operator: '=', value: '3333'}],
-    checkFunctions: [{func: validateAccNumRange, args: [3333, 3333]}],
+    checks: [{field: 'entity_id', operator: 'in', value: '3333'}],
+    checkFunctions: [{func: validateAccNumInArray, args: [3333]}],
+  },
+  accountid_multiple: {
+    urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
+    checks: [
+      {field: 'entity_id', operator: 'in', value: '3333'},
+      {field: 'entity_id', operator: 'in', value: '3334'},
+    ],
+    checkFunctions: [{func: validateAccNumInArray, args: [3333, 3334]}],
   },
   limit: {
     urlparam: 'limit=99',

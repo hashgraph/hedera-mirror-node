@@ -16,6 +16,7 @@ hedera:
       log:
         level: debug
       maxLimit: 1000
+      maxRepeatedQueryParameters: 100
       metrics:
         enabled: true
         config:

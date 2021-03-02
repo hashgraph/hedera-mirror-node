@@ -207,12 +207,12 @@ const getCryptoTransferTransactionsInnerQuery = function (
   namedTsQuery,
   resultTypeQuery,
   limitQuery,
-  creditDebitQuery,
+  namedCreditDebitQuery,
   transactionTypeQuery,
   order
 ) {
   const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
-  const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, creditDebitQuery);
+  const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, namedCreditDebitQuery);
   const ctlSubQuery = `
     SELECT DISTINCT consensus_timestamp
     FROM crypto_transfer ctl
@@ -328,6 +328,7 @@ const getTransactionsInnerQuery = function (
   const namedAccountQuery = convertToNamedQuery(accountQuery, 'acct');
   const namedTsQuery = convertToNamedQuery(tsQuery, 'ts');
   const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
+  const namedCreditDebitQuery = convertToNamedQuery(creditDebitQuery, 'cd');
 
   if (creditDebitQuery) {
     // limit the query to transactions with cryptotransfer list
@@ -336,7 +337,7 @@ const getTransactionsInnerQuery = function (
       namedTsQuery,
       resultTypeQuery,
       namedLimitQuery,
-      creditDebitQuery,
+      namedCreditDebitQuery,
       transactionTypeQuery,
       order
     );
@@ -353,15 +354,15 @@ const getTransactionsInnerQuery = function (
 };
 
 const reqToSql = async function (req) {
-  // Parse the filter parameters for credit/debit, account-numbers, timestamp, and pagination (limit)
+  // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
   const parsedQueryParams = req.query;
-  const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
+  const [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const resultTypeQuery = utils.parseResultParams(req, 't.result');
   const transactionTypeQuery = await utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  const sqlParams = accountParams.concat(tsParams).concat(params);
+  const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,

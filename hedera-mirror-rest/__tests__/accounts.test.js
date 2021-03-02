@@ -57,6 +57,17 @@ const validateAccNumRange = function (accounts, low, high) {
   return ret;
 };
 
+
+/**
+ * Validate that account ids in the accounts returned by the api are in the list of valid account ids
+ * @param {Array} accounts Array of accounts returned by the rest api
+ * @param {Array} list of valid account ids
+ * @return {Boolean}  Result of the check
+ */
+const validateAccNumInArray = function (accounts, ...potentialValues) {
+  return testutils.validateAccNumInArray(accounts.accounts, potentialValues)
+};
+
 /**
  * Validate the range of account balances in the accounts returned by the api
  * @param {Array} balances Array of accounts returned by the rest api
@@ -164,9 +175,20 @@ const singletests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'account_id', operator: '=', value: 3333}],
+    checks: [{field: 'account_id', operator: 'in', value: 3333}],
     checkFunctions: [
-      {func: validateAccNumRange, args: [3333, 3333]},
+      {func: validateAccNumInArray, args: [3333]},
+      {func: validateFields, args: []},
+    ],
+  },
+  accountid_multiple: {
+    urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
+    checks: [
+      {field: 'account_id', operator: 'in', value: '3333'},
+      {field: 'account_id', operator: 'in', value: '3334'},
+    ],
+    checkFunctions: [
+      {func: validateAccNumInArray, args: [3333, 3334]},
       {func: validateFields, args: []},
     ],
   },

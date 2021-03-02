@@ -92,6 +92,23 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
       }
     });
 
+    let eqParams = sql.match(/(\w+?)\s*?IN\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/g);
+    eqParams = eqParams === null ? [] : eqParams;
+
+    eqParams.forEach((e) => {
+      const matches = e.match(/(\w+?)\s*?(IN)\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/);
+      if (matches.length >= 4) {
+        const eqParamSplit = matches[3].split(',');
+        eqParamSplit.forEach((es) => {
+          parsedparams.push({
+            field: matches[1],
+            operator: 'in',
+            value: sqlparams[parseInt(es.trim()[1]) - 1],
+          });
+        });
+      }
+    });
+
     // And lastly, deal with the textual parameters like order and result
     // Find the order parameter by searching for 'desc' or 'asc'
 
@@ -161,9 +178,27 @@ const badParamsList = () => {
   ];
 };
 
+/**
+ * Validate that account ids in the responseObjects returned by the api are in the list of valid account ids
+ * @param {Array} transactions Array of transactions returned by the rest api
+ * @param {Array} list of valid account ids
+ * @return {Boolean}  Result of the check
+ */
+const validateAccNumInArray = function (responseObjects, potentialValues) {
+  for (const object of responseObjects) {
+    const accNum = object.account.split('.')[2];
+    if (!potentialValues.includes(Number(accNum))) {
+      console.log(`validateAccNumInArray check failed: ${accNum} is not in [${potentialValues}]`);
+      return false;
+    }
+  }
+  return true;
+};
+
 module.exports = {
   badParamsList,
   checkSql,
   parseSqlQueryAndParams,
   testBadParams,
+  validateAccNumInArray,
 };

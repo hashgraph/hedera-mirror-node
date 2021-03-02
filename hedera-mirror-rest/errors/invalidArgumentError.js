@@ -18,9 +18,15 @@
  * ‍
  */
 'use strict';
+
 const InvalidArgumentErrorMessageFormat = 'Invalid parameter: ';
+const ParameterExceedsMaxErrorMessageFormat = 'Parameter values count exceeds maximum number allowed: ';
 
 class InvalidArgumentError extends Error {
+
+  static INVALID_ERROR_CODE = "invalidArgument";
+  static PARAM_COUNT_EXCEEDS_MAX_CODE = "paramCountExceedsMax";
+
   constructor(errorMessage) {
     super();
 
@@ -33,6 +39,21 @@ class InvalidArgumentError extends Error {
       badParams = [badParams];
     }
     return new InvalidArgumentError(badParams.map((message) => `${InvalidArgumentErrorMessageFormat}${message}`));
+  }
+
+  static forRequestValidation(badParams) {
+    if (!Array.isArray(badParams)) {
+      badParams = [badParams];
+    }
+
+    return new InvalidArgumentError(badParams.map((message) => {
+      if (message.code === this.PARAM_COUNT_EXCEEDS_MAX_CODE) {
+        return `${ParameterExceedsMaxErrorMessageFormat}${message.key} count: ${message.count} max: ${message.max}`;
+
+      } else {
+        return `${InvalidArgumentErrorMessageFormat}${message.key}`
+      }
+    }));
   }
 }
 

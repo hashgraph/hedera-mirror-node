@@ -91,16 +91,25 @@ const timestampToParamValue = (timestamp) => {
 };
 
 const populateParamValues = async (test, paramName, rangeFieldName, getSamples, convertToParam) => {
-  let paramValues = [];
-  let isRangeQuery = rangeFieldName in test;
-  let samples = await getSamples(test.count);
-  samples.forEach((sample) => {
-    if (isRangeQuery) {
-      paramValues.push([convertToParam(sample), convertToParam(sample + test[rangeFieldName])]);
-    } else {
-      paramValues.push([convertToParam(sample)]);
+  const paramValues = [];
+  if (test.multipleFilters) {
+    for (let i = 0; i < test.numberOfQueries; i++) {
+      const samples = await getSamples(test.count);
+      const allValues = samples.map((sample) => convertToParam(sample));
+      paramValues.push(allValues);
     }
-  });
+  } else {
+    const isRangeQuery = rangeFieldName in test;
+    const samples = await getSamples(test.count);
+    samples.forEach((sample) => {
+      if (isRangeQuery) {
+        paramValues.push([convertToParam(sample), convertToParam(sample + test[rangeFieldName])]);
+      } else {
+        paramValues.push([convertToParam(sample)]);
+      }
+    });
+  }
+
   return paramValues;
 };
 
@@ -158,6 +167,10 @@ const makeQueryParamsQuerySet = async (test) => {
     query += '?' + querySuffix;
   } else {
     query += '&' + querySuffix;
+  }
+
+  if (test.multipleFilters) {
+    query += ('&' + querySuffix).repeat(test.count - 1);
   }
   return {
     name: test.name,
@@ -218,7 +231,7 @@ const generateQuerySets = () => {
       if (!fs.existsSync(parentDir)) {
         fs.mkdirSync(parentDir);
       }
-      fs.writeFileSync(querySetsFile, yaml.safeDump(querySets));
+      fs.writeFileSync(querySetsFile, yaml.dump(querySets));
     } catch (err) {
       console.log(`Failed to write query sets to ${querySetsFile}: ${err}`);
       process.exit(1);
