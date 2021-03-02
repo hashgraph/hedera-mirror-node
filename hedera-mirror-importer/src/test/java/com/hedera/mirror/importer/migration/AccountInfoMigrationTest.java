@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-public class AccountInfoMigrationTest extends IntegrationTest {
+class AccountInfoMigrationTest extends IntegrationTest {
 
     private final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
 
@@ -128,20 +128,20 @@ public class AccountInfoMigrationTest extends IntegrationTest {
     void disabled() throws Exception {
         mirrorProperties.setImportAccountInfo(false);
         accountInfoMigration.doMigrate();
-        assertThat(entityRepository.count()).isEqualTo(0L);
+        assertThat(entityRepository.count()).isZero();
     }
 
     @Test
     void missingFile() throws Exception {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
         accountInfoMigration.doMigrate();
-        assertThat(entityRepository.count()).isEqualTo(0L);
+        assertThat(entityRepository.count()).isZero();
     }
 
     @Test
     void create() throws Exception {
         AccountInfo.Builder accountInfo = accountInfo();
-        accountInfoMigration.process(accountInfo.build());
+        assertThat(accountInfoMigration.process(accountInfo.build())).isTrue();
 
         Assertions.assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
                 .get()
@@ -154,9 +154,9 @@ public class AccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void emptyValues() {
-        accountInfoMigration.process(AccountInfo.newBuilder().setAccountID(accountId).build());
+        assertThat(accountInfoMigration.process(AccountInfo.newBuilder().setAccountID(accountId).build())).isTrue();
 
-        Assertions.assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
+        assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
                 .get()
                 .returns(null, from(Entities::getAutoRenewPeriod))
                 .returns(false, from(Entities::isDeleted))
@@ -171,9 +171,9 @@ public class AccountInfoMigrationTest extends IntegrationTest {
     void deleted() throws Exception {
         AccountInfo.Builder accountInfo = accountInfo().setDeleted(true);
 
-        accountInfoMigration.process(accountInfo.build());
+        assertThat(accountInfoMigration.process(accountInfo.build())).isTrue();
 
-        Assertions.assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
+        assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
                 .get()
                 .extracting(Entities::isDeleted)
                 .isEqualTo(true);
@@ -183,8 +183,8 @@ public class AccountInfoMigrationTest extends IntegrationTest {
     void longOverflow() throws Exception {
         AccountInfo.Builder accountInfo = accountInfo()
                 .setExpirationTime(Timestamp.newBuilder().setSeconds(31556889864403199L).build());
-        accountInfoMigration.process(accountInfo.build());
-        Assertions.assertThat(entityRepository.findAll())
+        assertThat(accountInfoMigration.process(accountInfo.build())).isTrue();
+        assertThat(entityRepository.findAll())
                 .hasSize(1)
                 .first()
                 .extracting(Entities::getExpiryTimeNs)

@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import java.io.BufferedReader;
@@ -28,6 +27,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -35,7 +35,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -103,22 +102,19 @@ public class AccountInfoMigration extends MirrorBaseJavaMigration {
 
         log.info("Importing account info for {}", network);
         Stopwatch stopwatch = Stopwatch.createStarted();
-        AtomicLong success = new AtomicLong();
-        AtomicLong total = new AtomicLong();
 
         try (
                 InputStream inputStream = new GZIPInputStream(new FileInputStream(accountInfoPath.toFile()));
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, Charsets.UTF_8))
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
         ) {
-            reader.lines()
-                    .peek(a -> total.incrementAndGet())
+            long count = reader.lines()
                     .map(this::parse)
                     .filter(Objects::nonNull)
-                    .peek(a -> success.incrementAndGet())
-                    .forEach(this::process);
+                    .map(this::process)
+                    .filter(Boolean::booleanValue)
+                    .count();
+            log.info("Successfully updated {} accounts in {}", count, stopwatch);
         }
-
-        log.info("Successfully loaded {}/{} accounts in {}", success, total, stopwatch);
     }
 
     private AccountInfo parse(String line) {
@@ -134,14 +130,15 @@ public class AccountInfoMigration extends MirrorBaseJavaMigration {
         return null;
     }
 
-    void process(AccountInfo accountInfo) {
+    boolean process(AccountInfo accountInfo) {
         EntityId accountEntityId = EntityId.of(accountInfo.getAccountID());
         Optional<Entities> entityExists = entityRepository.findById(accountEntityId.getId());
         boolean exists = entityExists.isPresent();
 
         if (exists && hasCreateTransaction(accountEntityId)) {
-            log.trace("Skipping entity {} that was created after the stream reset", accountEntityId.entityIdToString());
-            return;
+            log.trace("Skipping entity {} that was created after the stream reset",
+                    () -> accountEntityId.entityIdToString());
+            return false;
         }
 
         Entities entity = entityExists.orElseGet(accountEntityId::toEntity);
@@ -183,6 +180,8 @@ public class AccountInfoMigration extends MirrorBaseJavaMigration {
             log.info("Saving {} entity: {}", exists ? "existing" : "new", entity);
             entityRepository.save(entity);
         }
+
+        return updated;
     }
 
     private boolean hasCreateTransaction(EntityId entityId) {

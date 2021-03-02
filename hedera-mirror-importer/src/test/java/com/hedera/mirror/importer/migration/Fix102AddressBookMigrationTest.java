@@ -39,7 +39,7 @@ import com.hedera.mirror.importer.repository.AddressBookRepository;
 
 @Tag("migration")
 @Tag("v1")
-public class Fix102AddressBookMigrationTest extends IntegrationTest {
+class Fix102AddressBookMigrationTest extends IntegrationTest {
 
     @Resource
     private AddressBookRepository addressBookRepository;
