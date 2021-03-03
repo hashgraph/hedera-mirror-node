@@ -56,12 +56,12 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .setPort(dbProperties.getPort())
                 .setUser(dbProperties.getUsername());
 
-        Duration frequency = listenerProperties.getFrequency();
+        Duration interval = listenerProperties.getInterval();
         Vertx vertx = Vertx.vertx();
         PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
                 .reconnectPolicy(retries -> {
                     log.warn("Attempting reconnect");
-                    return frequency.toMillis() * Math.min(retries, 4);
+                    return interval.toMillis() * Math.min(retries, 4);
                 });
 
         // Connect asynchronously to avoid crashing the application on startup if the database is down
@@ -80,7 +80,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .name("notify")
                 .metrics()
                 .doOnError(t -> log.error("Error listening for messages", t))
-                .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
+                .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
                 .share();
     }
 

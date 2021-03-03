@@ -64,12 +64,12 @@ public class RedisTopicListener extends SharedTopicListener {
         this.topicMessages = new ConcurrentHashMap<>();
 
         // Workaround Spring DATAREDIS-1208 by lazily starting connection once with retry
-        Duration frequency = listenerProperties.getFrequency();
+        Duration interval = listenerProperties.getInterval();
         this.container = Mono.defer(() -> Mono.just(new ReactiveRedisMessageListenerContainer(connectionFactory)))
                 .doOnError(t -> log.error("Error connecting to Redis: ", t))
                 .doOnSubscribe(s -> log.info("Attempting to connect to Redis"))
                 .doOnSuccess(c -> log.info("Connected to Redis"))
-                .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(8)))
+                .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(8)))
                 .cache();
     }
 
@@ -85,7 +85,7 @@ public class RedisTopicListener extends SharedTopicListener {
     }
 
     private Flux<TopicMessage> subscribe(Topic topic) {
-        Duration frequency = listenerProperties.getFrequency();
+        Duration interval = listenerProperties.getInterval();
 
         return container.flatMapMany(r -> r.receive(Arrays.asList(topic), channelSerializer, messageSerializer))
                 .map(Message::getMessage)
@@ -95,7 +95,7 @@ public class RedisTopicListener extends SharedTopicListener {
                 .doOnComplete(() -> unsubscribe(topic))
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .doOnSubscribe(s -> log.info("Creating shared subscription to {}", topic))
-                .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
+                .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
                 .share();
     }
 

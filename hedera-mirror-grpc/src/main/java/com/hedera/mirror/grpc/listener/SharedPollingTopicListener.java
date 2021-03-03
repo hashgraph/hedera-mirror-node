@@ -55,19 +55,19 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         this.instantToLongConverter = instantToLongConverter;
 
         Scheduler scheduler = Schedulers.newSingle("shared-poll", true);
-        Duration frequency = listenerProperties.getFrequency();
+        Duration interval = listenerProperties.getInterval();
         PollingContext context = new PollingContext();
 
         topicMessages = Flux.defer(() -> poll(context).subscribeOn(scheduler))
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
-                        .fixedBackoff(frequency)
+                        .fixedBackoff(interval)
                         .withBackoffScheduler(scheduler))
                 .name("shared-poll")
                 .metrics()
                 .doOnCancel(() -> log.info("Cancelled polling"))
                 .doOnError(t -> log.error("Error polling the database", t))
                 .doOnSubscribe(context::onStart)
-                .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
+                .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
                 .share();
     }
 
@@ -121,7 +121,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
 
         void onStart(Subscription subscription) {
             lastConsensusTimestamp = instantToLongConverter.convert(Instant.now());
-            log.info("Starting to poll every {}ms", listenerProperties.getFrequency().toMillis());
+            log.info("Starting to poll every {}ms", listenerProperties.getInterval().toMillis());
         }
     }
 }

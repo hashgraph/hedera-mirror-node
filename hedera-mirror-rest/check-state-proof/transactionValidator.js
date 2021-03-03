@@ -90,7 +90,7 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
     }
   });
 
-  // return hash if it was observed by a super majority
+  // return hash if it was observed by at least 1/3 of nodes
   return maxHashCount >= Math.ceil(signatureFilesMap.length / 3.0) ? consensusHashMap.hash : null;
 };
 
