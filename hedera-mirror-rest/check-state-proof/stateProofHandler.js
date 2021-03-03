@@ -23,8 +23,8 @@
 // external libraries
 const _ = require('lodash');
 const {AddressBook} = require('./addressBook');
-const {RecordFile} = require('./recordFile');
-const {SignatureFile} = require('./signatureFile');
+const {RecordFile} = require('../stream/recordFile');
+const {SignatureFile} = require('../stream/signatureFile');
 const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
 const {performStateProof} = require('./transactionValidator');
 

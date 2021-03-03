@@ -24,33 +24,19 @@
 const crypto = require('crypto');
 const {TransactionRecord} = require('@hashgraph/sdk/lib/generated/TransactionRecord_pb');
 
-const {BYTE_SIZE, INT_SIZE, SHA_384} = require('./constants');
-const {readLengthAndBytes, HashObject, StreamObject} = require('./streamObject');
+const {BYTE_SIZE, INT_SIZE} = require('./constants');
+const HashObject = require('./hashObject');
+const RecordStreamObject = require('./recordStreamObject');
+const {readLengthAndBytes} = require('./utils');
 
-const MAX_TRANSACTION_LENGTH = 64 * 1024;
-const MAX_RECORD_LENGTH = 64 * 1024;
+const {MAX_TRANSACTION_LENGTH, MAX_RECORD_LENGTH} = RecordStreamObject;
+const {SHA_384} = HashObject;
 
 // version, hapiVersion, previous hash marker, SHA-384 hash
 const PRE_V5_HEADER_LENGTH = INT_SIZE + INT_SIZE + BYTE_SIZE + SHA_384.length;
 
 // version, hapi version major/minor/patch, object stream version
 const V5_START_HASH_OFFSET = INT_SIZE + (INT_SIZE + INT_SIZE + INT_SIZE) + INT_SIZE;
-
-class RecordStreamObject extends StreamObject {
-  /**
-   * Reads the body of the record stream object
-   * @param {Buffer} buffer
-   * @returns {Number} The size of the body in bytes
-   */
-  readBody(buffer) {
-    const record = readLengthAndBytes(buffer, BYTE_SIZE, MAX_RECORD_LENGTH, false);
-    const transaction = readLengthAndBytes(buffer.slice(record.length), BYTE_SIZE, MAX_TRANSACTION_LENGTH, false);
-    this.record = record.bytes;
-    this.transaction = transaction.bytes;
-
-    return record.length + transaction.length;
-  }
-}
 
 class RecordFile {
   /**
@@ -170,6 +156,4 @@ class RecordFile {
   }
 }
 
-module.exports = {
-  RecordFile,
-};
+module.exports = RecordFile;

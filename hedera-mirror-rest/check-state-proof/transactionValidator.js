@@ -23,7 +23,7 @@
 // external libraries
 const _ = require('lodash');
 const crypto = require('crypto');
-const {SHA_384} = require('./constants');
+const {SHA_384} = require('../stream/constants');
 
 /**
  * Verifies given hash was signed with the provided public key

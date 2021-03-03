@@ -21,36 +21,11 @@
 'use strict';
 
 const {BYTE_SIZE, INT_SIZE, SHA_384} = require('./constants');
-const {readLengthAndBytes, readNBytes, HashObject, StreamObject} = require('./streamObject');
-
-// properties of SHA384WithRsa signature
-const SHA_384_WITH_RSA = {
-  type: 1,
-  maxLength: 384,
-};
+const SignatureObject = require('./signatureObject');
+const {readLengthAndBytes, readNBytes} = require('./utils');
 
 // version, object stream signature version
 const V5_FILE_HASH_OFFSET = BYTE_SIZE + INT_SIZE;
-
-class SignatureObject extends StreamObject {
-  /**
-   * Reads the body of the signature object
-   * @param {Buffer} buffer
-   * @returns {Number} The size of the body in bytes
-   */
-  readBody(buffer) {
-    const message = 'Error reading signature object';
-    const type = buffer.readInt32BE();
-    if (type !== SHA_384_WITH_RSA.type) {
-      throw new Error(`${message}, expect type ${SHA_384_WITH_RSA.type} got ${type}`);
-    }
-
-    const {length, bytes} = readLengthAndBytes(buffer.slice(INT_SIZE), BYTE_SIZE, SHA_384_WITH_RSA.maxLength, true);
-    this.signature = bytes;
-
-    return INT_SIZE + length;
-  }
-}
 
 class SignatureFile {
   /**
@@ -88,7 +63,7 @@ class SignatureFile {
     }
 
     buffer = buffer.slice(BYTE_SIZE);
-    const {length, bytes} = readLengthAndBytes(buffer, BYTE_SIZE, SHA_384_WITH_RSA.maxLength, false);
+    const {length, bytes} = readLengthAndBytes(buffer, BYTE_SIZE, SignatureObject.SHA_384_WITH_RSA.maxLength, false);
     this.fileHashSignature = bytes;
 
     buffer = buffer.slice(length);
@@ -117,6 +92,4 @@ class SignatureFile {
   }
 }
 
-module.exports = {
-  SignatureFile,
-};
+module.exports = SignatureFile;

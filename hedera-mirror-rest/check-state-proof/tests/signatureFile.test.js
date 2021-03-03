@@ -19,7 +19,7 @@
  */
 'use strict';
 
-const {SignatureFile} = require('../signatureFile');
+const {SignatureFile} = require('../../stream/signatureFile');
 const {base64StringToBuffer} = require('../utils');
 const {loadStateProofSamples} = require('./testUtils');
 

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,13 +20,10 @@
 
 'use strict';
 
-const {INT_SIZE, LONG_SIZE, SHA_384} = require('./constants');
+const {INT_SIZE} = require('./constants');
 
 // the sum of the length field and the checksum field
 const SIMPLE_SUM = 101;
-
-// classId, classVersion
-const STREAM_OBJECT_HEADER_SIZE = LONG_SIZE + INT_SIZE;
 
 /**
  * Reads the length field, an optional checksum, and the byte array from buffer
@@ -77,47 +74,7 @@ const readNBytes = (buffer, length) => {
   return buffer.slice(0, length);
 };
 
-class StreamObject {
-  /**
-   * Reads stream object from buffer
-   * @param {Buffer} buffer - The buffer to read the stream object from
-   */
-  constructor(buffer) {
-    this.classId = buffer.readBigInt64BE();
-    this.classVersion = buffer.readInt32BE(LONG_SIZE);
-
-    this.bodyLength = this.readBody(buffer.slice(STREAM_OBJECT_HEADER_SIZE));
-  }
-
-  readBody(buffer) {
-    return 0;
-  }
-
-  getLength() {
-    return STREAM_OBJECT_HEADER_SIZE + this.bodyLength;
-  }
-}
-
-class HashObject extends StreamObject {
-  /**
-   * Reads the body of the hash object
-   * @param {Buffer} buffer
-   * @returns {Number} The size of the body in bytes
-   */
-  readBody(buffer) {
-    // always SHA-384
-    const hashLength = SHA_384.length;
-    this.digestType = buffer.readInt32BE();
-    const {length, bytes} = readLengthAndBytes(buffer.slice(INT_SIZE), hashLength, hashLength, false);
-    this.hash = bytes;
-
-    return INT_SIZE + length;
-  }
-}
-
 module.exports = {
   readLengthAndBytes,
   readNBytes,
-  StreamObject,
-  HashObject,
 };
