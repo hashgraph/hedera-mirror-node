@@ -20,20 +20,30 @@
 
 'use strict';
 
-// properties of SHA-384 hash algorithm
-const SHA_384 = {
-  encoding: 'hex',
-  length: 48,
-  name: 'sha384',
-};
+const {INT_SIZE, LONG_SIZE} = require('./constants');
 
-const BYTE_SIZE = 1;
-const INT_SIZE = 4;
-const LONG_SIZE = 8;
+// classId, classVersion
+const STREAM_OBJECT_HEADER_SIZE = LONG_SIZE + INT_SIZE;
 
-module.exports = {
-  BYTE_SIZE,
-  INT_SIZE,
-  LONG_SIZE,
-  SHA_384,
-};
+class StreamObject {
+  /**
+   * Reads stream object from buffer
+   * @param {Buffer} buffer - The buffer to read the stream object from
+   */
+  constructor(buffer) {
+    this.classId = buffer.readBigInt64BE();
+    this.classVersion = buffer.readInt32BE(LONG_SIZE);
+
+    this.bodyLength = this.readBody(buffer.slice(STREAM_OBJECT_HEADER_SIZE));
+  }
+
+  readBody(buffer) {
+    return 0;
+  }
+
+  getLength() {
+    return STREAM_OBJECT_HEADER_SIZE + this.bodyLength;
+  }
+}
+
+module.exports = StreamObject;

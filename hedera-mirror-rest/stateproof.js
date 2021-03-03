@@ -69,7 +69,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
  */
 let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const sqlParams = [consensusNs];
-  const sqlQuery = `SELECT name, node_account_id
+  const sqlQuery = `SELECT bytes, name, node_account_id
        FROM record_file
        WHERE consensus_end >= $1
        ORDER BY consensus_end
@@ -86,7 +86,8 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const info = rows[0];
   logger.debug(`Found RCD file ${JSON.stringify(info)} for consensus timestamp ${consensusNs}`);
   return {
-    rcdFileName: info.name,
+    data: info.bytes,
+    filename: info.name,
     nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
   };
 };
@@ -178,7 +179,7 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
           .on('end', () => {
             resolve({
               partialFilePath,
-              base64Data: Buffer.concat(buffers).toString('base64'),
+              data: Buffer.concat(buffers),
             });
           })
           // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient
@@ -226,6 +227,16 @@ const getScheduledParamValue = (filters) => {
 };
 
 /**
+ * Format the record file in either the full format or the compact format depending on its version.
+ * @param {Buffer} data
+ * @returns {string|Object}
+ */
+const formatRecordFile = (data) => {
+  // if record file version is not 5, base64 encode it regardless of compact
+  return data.toString('base64');
+}
+
+/**
  * Handler function for /transactions/:transaction_id/stateproof API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
@@ -261,11 +272,11 @@ const getStateProofForTransaction = async (req, res) => {
   const sigFilesMap = {};
   _.forEach(sigFileObjects, (sigFileObject) => {
     const nodeAccountIdStr = _.first(sigFileObject.partialFilePath.split('/'));
-    sigFilesMap[nodeAccountIdStr] = sigFileObject.base64Data;
+    sigFilesMap[nodeAccountIdStr] = sigFileObject.data.toString('base64');
   });
 
   res.locals[constants.responseDataLabel] = {
-    record_file: _.first(rcdFileObjects).base64Data,
+    record_file: formatRecordFile(_.first(rcdFileObjects).data),
     signature_files: sigFilesMap,
     address_books: addressBooks,
   };

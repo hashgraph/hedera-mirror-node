@@ -19,7 +19,7 @@
  */
 'use strict';
 
-const {RecordFile} = require('../recordFile');
+const {RecordFile} = require('../../stream/recordFile');
 const {base64StringToBuffer} = require('../utils');
 const {loadStateProofSamples} = require('./testUtils');
 
