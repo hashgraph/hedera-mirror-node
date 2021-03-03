@@ -26,6 +26,7 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.Key;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -52,7 +53,9 @@ public abstract class AbstractNetworkClient {
 
         if (keyList != null) {
             transaction.freezeWith(client); // Signing requires transaction to be frozen
-            keyList.forEach(k -> transaction.sign((PrivateKey) k));
+            for (Key k : keyList) {
+                transaction = transaction.sign((PrivateKey) k);
+            }
         }
 
         TransactionResponse transactionResponse = (TransactionResponse) transaction.execute(client);

@@ -20,9 +20,10 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
@@ -48,12 +49,14 @@ public class AccountClient extends AbstractNetworkClient {
 
     private ExpandedAccountId tokenTreasuryAccount = null;
 
-    private List<ExpandedAccountId> receiverSigRequiredAccounts;
+    private Map<AccountNameEnum, ExpandedAccountId> receiverSigRequiredAccounts = new HashMap<>();
 
-    private List<ExpandedAccountId> receiverSigNotRequiredAccounts;
+    private Map<AccountNameEnum, ExpandedAccountId> receiverSigNotRequiredAccounts = new HashMap<>();
 
     public AccountClient(SDKClient sdkClient) {
         super(sdkClient);
+        receiverSigRequiredAccounts = new HashMap<>();
+        receiverSigNotRequiredAccounts = new HashMap<>();
         log.debug("Creating Account Client");
     }
 
@@ -67,42 +70,27 @@ public class AccountClient extends AbstractNetworkClient {
         return tokenTreasuryAccount;
     }
 
-    public ExpandedAccountId getReceiverSigRequiredAccount(int index) throws ReceiptStatusException,
+    public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
-        if (receiverSigRequiredAccounts == null) {
-            receiverSigRequiredAccounts = new ArrayList<>();
-        }
 
-        ExpandedAccountId account = getAccount(index, receiverSigRequiredAccounts, true);
-        return account;
-    }
+        Map<AccountNameEnum, ExpandedAccountId> accountMap = accountNameEnum.receiverSigRequired ?
+                receiverSigRequiredAccounts : receiverSigNotRequiredAccounts;
 
-    public ExpandedAccountId getReceiverSigNotRequiredAccount(int index) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
-        if (receiverSigNotRequiredAccounts == null) {
-            receiverSigNotRequiredAccounts = new ArrayList<>();
-        }
+        // retrieve account, setting if it doesn't exist
+        ExpandedAccountId accountId = accountMap
+                .computeIfAbsent(accountNameEnum, x -> {
+                    try {
+                        return createNewAccount(DEFAULT_INITIAL_BALANCE,
+                                accountNameEnum.receiverSigRequired);
+                    } catch (Exception e) {
+                        log.trace("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
+                    }
+                    return null;
+                });
 
-        return getAccount(index, receiverSigNotRequiredAccounts, false);
-    }
-
-    private ExpandedAccountId getAccount(int index, List<ExpandedAccountId> accounts,
-                                         boolean receiverSignatureRequired) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
-        if (index < MAX_ACCOUNTS_PER_SIG_REQUIRED) {
-            if (accounts.size() <= index) {
-                // fill in account up to index position
-                for (int i = accounts.size(); i <= index; i++) {
-                    accounts.add(createNewAccount(DEFAULT_INITIAL_BALANCE, receiverSignatureRequired));
-                }
-            }
-
-            return accounts.get(index);
-        } else {
-            throw new IndexOutOfBoundsException(String
-                    .format("A maximum of %d accounts per signature required type are supported",
-                            MAX_ACCOUNTS_PER_SIG_REQUIRED));
-        }
+        log.debug("Retrieve Account: {}, receiverSigRequired: {} for {}", accountId,
+                accountNameEnum.receiverSigRequired, accountNameEnum);
+        return accountId;
     }
 
     public static long getBalance(Client client, String accountIdString) {
@@ -184,5 +172,15 @@ public class AccountClient extends AbstractNetworkClient {
 
         log.debug("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
         return new ExpandedAccountId(newAccountId, privateKey, publicKey);
+    }
+
+    @RequiredArgsConstructor
+    public enum AccountNameEnum {
+        ALICE(false),
+        BOB(false),
+        CAROL(true),
+        DAVE(true);
+
+        private final boolean receiverSigRequired;
     }
 }

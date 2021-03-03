@@ -3,40 +3,46 @@ Feature: Schedule Base Coverage Feature
 
     @Acceptance @Sanity
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoTransfer and ScheduleSign
-        Given I successfully schedule a treasury disbursement
+        Given I successfully schedule a treasury HBAR disbursement to <accountName>
         When the network confirms schedule presence
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        When the scheduled transaction is signed by the additionalAccount
+        And the mirror node REST API should verify the non executed schedule entity
+        When the scheduled transaction is signed by <accountName>
         And the network confirms some signers have provided their signatures
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        When the scheduled transaction is signed by the tokenTreasuryAccount
+        And the mirror node REST API should verify the non executed schedule entity
+        When the scheduled transaction is signed by treasuryAccount
         And the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        And the network confirms the schedule is not present
-        Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the executed schedule entity
+        And the network confirms the executed schedule is removed from state
         Examples:
-            | httpStatusCode |
-            | 200            |
+            | accountName | httpStatusCode |
+            | "CAROL"     | 200            |
 
     @Acceptance
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoAccountCreate and ScheduleDelete
         Given I successfully schedule a crypto account create
         When the network confirms schedule presence
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the non executed schedule entity
         When I successfully delete the schedule
-        And the network confirms the schedule is not present
+        And the network confirms the executed schedule is removed from state
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the non executed schedule entity
         Examples:
             | httpStatusCode |
             | 200            |
 
-#    @Acceptance - sdk bug exists where signatures for scedulecreate are not being mapped to Schedule
+#    @Acceptance - sdk bug exists where signatures for schedulecreate are not being mapped to Schedule
     Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleDelete
         Given I successfully schedule a crypto account create with <initialSignatureCount> initial signatures
         When the network confirms schedule presence
         And the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the non executed schedule entity
         When I successfully delete the schedule
-        And the network confirms the schedule is not present
+        And the network confirms the executed schedule is removed from state
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the non executed schedule entity
         Examples:
             | initialSignatureCount | httpStatusCode |
             | 3                     | 200            |
@@ -44,29 +50,32 @@ Feature: Schedule Base Coverage Feature
 
     @Acceptance
     Scenario Outline: Validate scheduled Hbar and Token transfer - ScheduleCreate of TokenTransfer and multi ScheduleSign
-        Given I successfully schedule a token transfer
+        Given I successfully schedule a token transfer from <sender> to <receiver>
         And the network confirms schedule presence
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        When the scheduled transaction is signed by the additionalAccount
+        And the mirror node REST API should verify the non executed schedule entity
+        When the scheduled transaction is signed by <sender>
         And the network confirms some signers have provided their signatures
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        When the scheduled transaction is signed by the tokenTreasuryAccount
+        And the mirror node REST API should verify the non executed schedule entity
+        When the scheduled transaction is signed by <receiver>
         And the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        When the network confirms the schedule is not present
-        Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the executed schedule entity
+        When the network confirms the executed schedule is removed from state
         Examples:
-            | httpStatusCode |
-            | 200            |
+            | sender  | receiver | httpStatusCode |
+            | "ALICE" | "DAVE"   | 200            |
 
 #    @Acceptance - sdk bug exists where executed HCS submit message fails
     Scenario Outline: Validate scheduled HCS message - ScheduleCreate of TopicMessageSubmit and ScheduleSign
-        Given I successfully schedule a topic message submit
+        Given I successfully schedule a topic message submit with <accountName>'s submit key
         And the network confirms schedule presence
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        When the scheduled transaction is signed by the additionalAccount
+        And the mirror node REST API should verify the non executed schedule entity
+        When the scheduled transaction is signed by <accountName>
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        And the network confirms the schedule is not present
-        Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the executed schedule entity
+        And the network confirms the executed schedule is removed from state
         Examples:
-            | httpStatusCode |
-            | 200            |
+            | accountName | httpStatusCode |
+            | "ALICE"     | 200            |

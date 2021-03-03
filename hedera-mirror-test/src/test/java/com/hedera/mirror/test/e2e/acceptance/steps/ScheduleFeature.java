@@ -28,6 +28,7 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -54,6 +55,7 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
@@ -92,8 +94,6 @@ public class ScheduleFeature {
     private NetworkTransactionResponse networkTransactionResponse;
     private TransactionId scheduleCreateTransactionId;
 
-    private ExpandedAccountId additionalAccount;
-
     private ScheduleInfo scheduleInfo;
 
     private Transaction scheduledTransaction;
@@ -101,20 +101,22 @@ public class ScheduleFeature {
     private int expectedSignersCount;
     private int currentSignersCount;
 
-    @Given("I successfully schedule a treasury disbursement")
+    @Given("I successfully schedule a treasury HBAR disbursement to {string}")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewHBarTransferSchedule() throws ReceiptStatusException, PrecheckStatusException,
+    public void createNewHBarTransferSchedule(String accountName) throws ReceiptStatusException,
+            PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 2;
         currentSignersCount = 0;
-        additionalAccount = accountClient.getReceiverSigRequiredAccount(0);
+        ExpandedAccountId carol = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName)); // receiverSigRequired
         scheduledTransaction = accountClient
                 .getCryptoTransferTransaction(
                         accountClient.getTokenTreasuryAccount().getAccountId(),
-                        additionalAccount.getAccountId(),
+                        carol.getAccountId(),
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
-        createNewSchedule(scheduledTransaction, null);
+        createNewSchedule(scheduledTransaction, null, null);
     }
 
     @Given("I successfully schedule a crypto account create")
@@ -123,14 +125,15 @@ public class ScheduleFeature {
             TimeoutException {
         expectedSignersCount = 1;
         currentSignersCount = 0;
-        additionalAccount = accountClient.getReceiverSigNotRequiredAccount(0);
+
+        ExpandedAccountId alice = accountClient.getAccount(AccountClient.AccountNameEnum.ALICE);
         scheduledTransaction = accountClient
                 .getAccountCreateTransaction(
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
-                        accountClient.getTokenTreasuryAccount().getPublicKey(),
+                        alice.getPublicKey(),
                         false);
 
-        createNewSchedule(scheduledTransaction, null);
+        createNewSchedule(scheduledTransaction, null, null);
     }
 
     @Given("I successfully schedule a crypto account create with {int} initial signatures")
@@ -140,7 +143,7 @@ public class ScheduleFeature {
             TimeoutException {
         expectedSignersCount = 1 + initSignatureCount;
         currentSignersCount = initSignatureCount;
-        additionalAccount = accountClient.getReceiverSigNotRequiredAccount(0);
+        ExpandedAccountId alice = accountClient.getAccount(AccountClient.AccountNameEnum.ALICE);
 
         KeyList privateKeyList = new KeyList();
         KeyList publicKeyList = new KeyList();
@@ -150,22 +153,27 @@ public class ScheduleFeature {
             publicKeyList.add(accountKey.getPublicKey());
         }
 
+        // additional signatory not provided up front to prevent schedule from executing
+        publicKeyList.add(alice.getPublicKey());
+
         scheduledTransaction = accountClient
                 .getAccountCreateTransaction(
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
                         publicKeyList, // set required signers
                         false);
 
-        createNewSchedule(scheduledTransaction, privateKeyList);
+        createNewSchedule(scheduledTransaction, privateKeyList, null);
     }
 
-    @Given("I successfully schedule a token transfer")
+    @Given("I successfully schedule a token transfer from {string} to {string}")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewTokenTransferSchedule() throws ReceiptStatusException, PrecheckStatusException,
+    public void createNewTokenTransferSchedule(String senderName, String receiverName) throws ReceiptStatusException,
+            PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 2;
         currentSignersCount = 0;
-        additionalAccount = accountClient.getReceiverSigRequiredAccount(0);
+        ExpandedAccountId sender = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
+        ExpandedAccountId receiver = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(receiverName));
 
         // create token
         PrivateKey tokenKey = PrivateKey.generate();
@@ -177,43 +185,44 @@ public class ScheduleFeature {
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
-                accountClient.getTokenTreasuryAccount(),
+                sender,
                 DEFAULT_TINY_HBAR);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
         assertNotNull(tokenId);
 
-        // associate new account, treasury is auto associated
-        log.debug("Associate new account : {} with token {}", additionalAccount.getAccountId(), tokenId);
-        networkTransactionResponse = tokenClient.asssociate(additionalAccount, tokenId);
+        // associate new account, sender as treasury is auto associated
+        log.debug("Associate receiver: {} with token: {}", receiverName, tokenId);
+        networkTransactionResponse = tokenClient.asssociate(receiver, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
 
         Hbar hbarAmount = Hbar.fromTinybars(DEFAULT_TINY_HBAR);
         scheduledTransaction = tokenClient
                 .getTokenTransferTransaction(
                         tokenId,
-                        accountClient.getTokenTreasuryAccount().getAccountId(),
-                        additionalAccount.getAccountId(),
+                        sender.getAccountId(),
+                        receiver.getAccountId(),
                         10)
                 // add Hbar transfer logic
-                .addHbarTransfer(additionalAccount.getAccountId(), hbarAmount.negated())
-                .addHbarTransfer(accountClient.getTokenTreasuryAccount().getAccountId(), hbarAmount);
+                .addHbarTransfer(receiver.getAccountId(), hbarAmount.negated())
+                .addHbarTransfer(sender.getAccountId(), hbarAmount);
 
-        createNewSchedule(scheduledTransaction, null);
+        createNewSchedule(scheduledTransaction, null, null);
     }
 
-    @Given("I successfully schedule a topic message submit")
+    @Given("I successfully schedule a topic message submit with {string}'s submit key")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewHCSSchedule() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void createNewHCSSchedule(String accountName) throws ReceiptStatusException, PrecheckStatusException,
+            TimeoutException {
         expectedSignersCount = 1;
         currentSignersCount = 0;
-        additionalAccount = accountClient.getReceiverSigNotRequiredAccount(0);
+        ExpandedAccountId submitAdmin = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
 
         // create topic w submit key
-        log.debug("Create new topic with a submit key");
+        log.debug("Create new topic with {}'s submit key", accountName);
         networkTransactionResponse = topicClient
-                .createTopic(accountClient.getTokenTreasuryAccount(), additionalAccount.getPublicKey());
+                .createTopic(accountClient.getTokenTreasuryAccount(), null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
@@ -224,10 +233,11 @@ public class ScheduleFeature {
                         topicId,
                         "scheduled hcs message".getBytes(StandardCharsets.UTF_8));
 
-        createNewSchedule(scheduledTransaction, null);
+        createNewSchedule(scheduledTransaction, null, null);
     }
 
-    private void createNewSchedule(Transaction transaction, KeyList signatureKeyList) throws PrecheckStatusException,
+    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList,
+                                   KeyList outerSignatureKeyList) throws PrecheckStatusException,
             ReceiptStatusException, TimeoutException {
         log.debug("Schedule creation ");
 
@@ -235,8 +245,9 @@ public class ScheduleFeature {
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
                 transaction,
-                "New Mirror Acceptance Schedule",
-                signatureKeyList);
+                "New Mirror Acceptance Schedule_" + Instant.now(),
+                innerSignatureKeyList,
+                outerSignatureKeyList);
         assertNotNull(networkTransactionResponse.getTransactionId());
 
         // cache schedule create transaction id for confirmation of scheduled transaction later
@@ -258,23 +269,17 @@ public class ScheduleFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Then("the scheduled transaction is signed by the additionalAccount")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void additionalAccountSignsSignature() throws PrecheckStatusException, ReceiptStatusException,
+    @Then("the scheduled transaction is signed by {string}")
+    public void accountSignsSignature(String accountName) throws PrecheckStatusException, ReceiptStatusException,
             TimeoutException {
-        log.debug("additionalAccount signs scheduledTransaction");
-        signSignature(additionalAccount);
+        log.debug("{} signs scheduledTransaction", accountName);
+        signSignature(accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName)));
     }
 
-    @Then("the scheduled transaction is signed by the tokenTreasuryAccount")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void tokenTreasuryAccountSignsSignature() throws PrecheckStatusException, ReceiptStatusException,
+    @Then("the scheduled transaction is signed by treasuryAccount")
+    public void treasurySignsSignature() throws PrecheckStatusException, ReceiptStatusException,
             TimeoutException {
-        log.debug("tokenTreasuryAccount signs scheduledTransaction");
+        log.debug("treasuryAccount signs scheduledTransaction");
         signSignature(accountClient.getTokenTreasuryAccount());
     }
 
@@ -301,8 +306,9 @@ public class ScheduleFeature {
                 .isEqualTo(accountClient.getSdkClient().getExpandedOperatorAccountId().getAccountId());
     }
 
-    @Then("the network confirms the schedule is not present")
-    public void verifyNetworkScheduleNotPresentResponse() throws TimeoutException, PrecheckStatusException {
+    @Then("the network confirms the executed schedule is removed from state")
+    public void verifyNetworkScheduleNotPresentResponse() throws TimeoutException, PrecheckStatusException,
+            ReceiptStatusException {
         boolean invalidSchedule = false;
         try {
             scheduleInfo = new ScheduleInfoQuery()
@@ -311,14 +317,20 @@ public class ScheduleFeature {
                     .execute(scheduleClient.getClient());
 
             // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
-        } catch (RuntimeException ex) {
-            assertThat(ex).hasCauseInstanceOf(IllegalArgumentException.class);
+        } catch (PrecheckStatusException ex) {
             assertThat(ex).hasMessageContaining("INVALID_SCHEDULE_ID");
             invalidSchedule = true;
         }
 
         assertThat(invalidSchedule).isTrue();
         log.info("Schedule {} no longer returned from network state", scheduleId);
+
+        TransactionId scheduledTransactionId = scheduleCreateTransactionId.setScheduled(true);
+        assertNotNull(scheduledTransactionId);
+        log.debug("Executed transaction {}.", scheduledTransactionId);
+
+        TransactionReceipt transactionReceipt = scheduledTransactionId.getReceipt(scheduleClient.getClient());
+        assertNotNull(transactionReceipt);
     }
 
     private void verifyScheduleInfoFromNetwork(int expectedSignatoriesCount) throws TimeoutException,
@@ -344,11 +356,6 @@ public class ScheduleFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
-        verifyTransactionFromMirror(status);
-        verifyScheduleFromMirror();
-    }
-
-    private void verifyTransactionFromMirror(int status) {
         log.info("Verify schedule transaction");
         String transactionId = networkTransactionResponse.getTransactionIdString();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
@@ -358,6 +365,34 @@ public class ScheduleFeature {
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
+    }
+
+    @Then("the mirror node REST API should verify the executed schedule entity")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyExecutedScheduleFromMirror() {
+        MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror();
+        assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+        verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
+    }
+
+    @Then("the mirror node REST API should verify the non executed schedule entity")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyNonExecutedScheduleFromMirror() {
+        MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror();
+        assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+    }
+
+    public MirrorScheduleResponse verifyScheduleFromMirror() {
+        MirrorScheduleResponse mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
+        assertNotNull(mirrorSchedule);
+        assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
+        assertThat(mirrorSchedule.getSignatures().size()).isEqualTo(currentSignersCount);
+
+        return mirrorSchedule;
     }
 
     private void verifyScheduledTransaction(String timestamp) {
@@ -388,23 +423,6 @@ public class ScheduleFeature {
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
 
         return mirrorTransaction;
-    }
-
-    private MirrorScheduleResponse verifyScheduleFromMirror() {
-        MirrorScheduleResponse mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
-        assertNotNull(mirrorSchedule);
-        assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
-        assertThat(mirrorSchedule.getSignatures().size()).isEqualTo(currentSignersCount);
-
-        // if signature count is expected verify executed timestamp was updated
-        if (mirrorSchedule.getSignatures().size() == expectedSignersCount) {
-            assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
-            verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
-        } else {
-            assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
-        }
-
-        return mirrorSchedule;
     }
 
     /**

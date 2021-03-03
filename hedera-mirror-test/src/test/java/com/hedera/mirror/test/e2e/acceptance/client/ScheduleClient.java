@@ -26,6 +26,7 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.Key;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -50,7 +51,9 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
-                                                     String memo, KeyList signatureKeyList) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+                                                     String memo, KeyList innerSignatureKeyList,
+                                                     KeyList outerSignatureKeyList) throws ReceiptStatusException,
+            PrecheckStatusException, TimeoutException {
 
         log.debug("Create new schedule");
         // set nodeAccountId and freeze inner transaction
@@ -60,21 +63,21 @@ public class ScheduleClient extends AbstractNetworkClient {
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setPayerAccountId(payerAccountId.getAccountId())
-                .setTransactionMemo(memo);
+                .setMemo(memo);
 
-        if (signatureKeyList != null) {
+        if (innerSignatureKeyList != null) {
             // add initial set of required signatures to ScheduleCreate transaction
             scheduleCreateTransaction.freezeWith(client);
-            signatureKeyList.forEach(k -> {
+            for (Key k : innerSignatureKeyList) {
                 PrivateKey key = ((PrivateKey) k);
-                scheduleCreateTransaction.addSignature(
+                scheduleCreateTransaction = scheduleCreateTransaction.addScheduleSignature(
                         key.getPublicKey(),
                         key.signTransaction(transaction));
-            });
+            }
         }
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleCreateTransaction, null);
+                executeTransactionAndRetrieveReceipt(scheduleCreateTransaction, outerSignatureKeyList);
         ScheduleId scheduleId = networkTransactionResponse.getReceipt().scheduleId;
         log.debug("Created new schedule {}", scheduleId);
 
