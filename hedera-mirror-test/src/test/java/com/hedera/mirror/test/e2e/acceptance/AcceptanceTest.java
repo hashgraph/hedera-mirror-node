@@ -30,7 +30,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 @CucumberOptions(
         features = "src/test/resources",
         glue = "com.hedera.mirror.test.e2e.acceptance",
-        plugin = {"pretty", "de.monochromata.cucumber.report.PrettyReports:target/cucumber"},
+        plugin = {"pretty", "de.monochromata.cucumber.report.PrettyReports:target/cucumber",
+                "com.hedera.mirror.test.e2e.acceptance.CucumberHooks"},
         tags = "@Sanity"
 )
 @SpringBootTest
