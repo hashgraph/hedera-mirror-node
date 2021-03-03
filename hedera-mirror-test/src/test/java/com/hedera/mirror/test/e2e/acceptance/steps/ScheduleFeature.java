@@ -29,6 +29,7 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +125,7 @@ public class ScheduleFeature {
                         carol.getAccountId(),
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
-        createNewSchedule(scheduledTransaction, null, null);
+        createNewSchedule(scheduledTransaction, null);
     }
 
     @Given("I successfully schedule a crypto account create")
@@ -141,7 +142,7 @@ public class ScheduleFeature {
                         KeyList.of(alice.getPublicKey()),
                         false);
 
-        createNewSchedule(scheduledTransaction, null, null);
+        createNewSchedule(scheduledTransaction, null);
     }
 
     @Given("I schedule a crypto transfer with {int} initial signatures but require an additional signature from " +
@@ -154,7 +155,7 @@ public class ScheduleFeature {
         currentSignersCount = initSignatureCount + 1;
         ExpandedAccountId finalSignatory = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
 
-        KeyList privateKeyList = new KeyList();
+        List<PrivateKey> privateKeyList = new ArrayList<>();
         KeyList publicKeyList = new KeyList();
         for (int i = 0; i < initSignatureCount; i++) {
             PrivateKey accountKey = PrivateKey.generate();
@@ -181,7 +182,7 @@ public class ScheduleFeature {
         // add sender private key to ensure only Alice's signature is teh only signature left that is required
         privateKeyList.add(newAccountId.getPrivateKey());
 
-        createNewSchedule(scheduledTransaction, privateKeyList, null);
+        createNewSchedule(scheduledTransaction, privateKeyList);
     }
 
     @Given("I successfully schedule a token transfer from {string} to {string}")
@@ -227,7 +228,7 @@ public class ScheduleFeature {
                 .addHbarTransfer(receiver.getAccountId(), hbarAmount.negated())
                 .addHbarTransfer(sender.getAccountId(), hbarAmount);
 
-        createNewSchedule(scheduledTransaction, null, null);
+        createNewSchedule(scheduledTransaction, null);
     }
 
     @Given("I successfully schedule a topic message submit with {string}'s submit key")
@@ -252,11 +253,10 @@ public class ScheduleFeature {
                         topicId,
                         "scheduled hcs message".getBytes(StandardCharsets.UTF_8));
 
-        createNewSchedule(scheduledTransaction, null, null);
+        createNewSchedule(scheduledTransaction, null);
     }
 
-    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList,
-                                   KeyList outerSignatureKeyList) throws PrecheckStatusException,
+    private void createNewSchedule(Transaction transaction, List<PrivateKey> innerSignatureKeyList) throws PrecheckStatusException,
             ReceiptStatusException, TimeoutException {
         log.debug("Schedule creation ");
 
@@ -265,8 +265,7 @@ public class ScheduleFeature {
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
                 transaction,
                 "New Mirror Acceptance Schedule_" + Instant.now(),
-                innerSignatureKeyList,
-                outerSignatureKeyList);
+                innerSignatureKeyList);
         assertNotNull(networkTransactionResponse.getTransactionId());
 
         // cache schedule create transaction id for confirmation of scheduled transaction later
