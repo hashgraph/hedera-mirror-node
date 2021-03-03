@@ -40,7 +40,7 @@ const topicMessageColumns = {
 
 const columnMap = {
   sequencenumber: topicMessageColumns.SEQUENCE_NUMBER,
-  timestamp: topicMessageColumns.CONSENSUS_TIMESTAMP,
+  [constants.filterKeys.TIMESTAMP]: topicMessageColumns.CONSENSUS_TIMESTAMP,
 };
 
 /**
@@ -223,7 +223,7 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 
   // add filters
   let limit;
-  let order = 'asc';
+  let order = constants.orderFilterValues.ASC;
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;

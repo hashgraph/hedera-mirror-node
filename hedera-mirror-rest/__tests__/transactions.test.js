@@ -20,12 +20,14 @@
 
 'use strict';
 
+const log4js = require('log4js');
 const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils');
 const utils = require('../utils');
 const {buildWhereClause} = require('../transactions');
 
+const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
 
@@ -57,7 +59,7 @@ const validateTsRange = function (transactions, low, high) {
     }
   }
   if (!ret) {
-    console.log(`validateTsRange check failed: ${offender.consensus_timestamp} is not between ${low} and  ${high}`);
+    logger.warn(`validateTsRange check failed: ${offender.consensus_timestamp} is not between ${low} and  ${high}`);
   }
   return ret;
 };
@@ -83,7 +85,7 @@ const validateAccNumRange = function (transactions, low, high) {
     }
 
     if (!ret) {
-      console.log(
+      logger.warn(
         `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(
           tx
         )}`
@@ -155,7 +157,7 @@ const validateFields = function (transactions) {
   }
 
   if (errors.length !== 0) {
-    console.log(`validateFields check failed: ${errors.join(',\n\t')}`);
+    logger.warn(`validateFields check failed: ${errors.join(',\n\t')}`);
   }
 
   return errors.length === 0;
@@ -182,7 +184,7 @@ const validateOrder = function (transactions, order) {
     val = tx.consensus_timestamp;
   }
   if (!ret) {
-    console.log(
+    logger.warn(
       `validateOrder check failed: ${offenderTx.consensus_timestamp} - previous timestamp ${offenderVal} Order  ${order}`
     );
   }

@@ -19,9 +19,12 @@
  */
 'use strict';
 
+const log4js = require('log4js');
 const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils.js');
+
+const logger = log4js.getLogger();
 
 // Validation functions
 /**
@@ -52,11 +55,10 @@ const validateAccNumRange = function (accounts, low, high) {
     }
   }
   if (!ret) {
-    console.log(`validateAccNumRange check failed: ${offender} is not between ${low} and ${high}`);
+    logger.warn(`validateAccNumRange check failed: ${offender} is not between ${low} and ${high}`);
   }
   return ret;
 };
-
 
 /**
  * Validate that account ids in the accounts returned by the api are in the list of valid account ids
@@ -65,7 +67,7 @@ const validateAccNumRange = function (accounts, low, high) {
  * @return {Boolean}  Result of the check
  */
 const validateAccNumInArray = function (accounts, ...potentialValues) {
-  return testutils.validateAccNumInArray(accounts.accounts, potentialValues)
+  return testutils.validateAccNumInArray(accounts.accounts, potentialValues);
 };
 
 /**
@@ -85,7 +87,7 @@ const validateBalanceRange = function (accounts, low, high) {
     }
   }
   if (!ret) {
-    console.log(`validateBalanceRange check failed: ${offender} is not between ${low} and ${high}`);
+    logger.warn(`validateBalanceRange check failed: ${offender} is not between ${low} and ${high}`);
   }
   return ret;
 };
@@ -114,7 +116,7 @@ const validateFields = function (accounts) {
   }
 
   if (!ret) {
-    console.log(`validateFields check failed: A mandatory parameter is missing`);
+    logger.warn(`validateFields check failed: A mandatory parameter is missing`);
   }
   return ret;
 };
@@ -141,7 +143,7 @@ const validateOrder = function (accounts, order) {
     val = toAccNum(acc.account);
   }
   if (!ret) {
-    console.log(`validateOrder check failed: ${offenderAcc} - previous account number ${offenderVal} Order  ${order}`);
+    logger.warn(`validateOrder check failed: ${offenderAcc} - previous account number ${offenderVal} Order  ${order}`);
   }
   return ret;
 };

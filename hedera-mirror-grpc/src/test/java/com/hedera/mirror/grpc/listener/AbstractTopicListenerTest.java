@@ -53,13 +53,13 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     protected abstract ListenerProperties.ListenerType getType();
 
-    private Duration defaultFrequency;
+    private Duration defaultInterval;
 
     private ListenerProperties.ListenerType defaultType;
 
     @BeforeEach
     void setup() {
-        defaultFrequency = listenerProperties.getFrequency();
+        defaultInterval = listenerProperties.getInterval();
         defaultType = listenerProperties.getType();
         listenerProperties.setEnabled(true);
         listenerProperties.setType(getType());
@@ -69,7 +69,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     void after() {
         listenerProperties.setEnabled(false);
         listenerProperties.setType(defaultType);
-        listenerProperties.setFrequency(defaultFrequency);
+        listenerProperties.setInterval(defaultInterval);
     }
 
     private void publish(Publisher<TopicMessage> publisher) {

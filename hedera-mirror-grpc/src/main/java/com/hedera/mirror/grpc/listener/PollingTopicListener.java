@@ -50,18 +50,18 @@ public class PollingTopicListener implements TopicListener {
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         PollingContext context = new PollingContext(filter);
-        Duration frequency = listenerProperties.getFrequency();
+        Duration interval = listenerProperties.getInterval();
 
         return Flux.defer(() -> poll(context))
-                .delaySubscription(frequency, scheduler)
+                .delaySubscription(interval, scheduler)
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
-                        .fixedBackoff(frequency)
+                        .fixedBackoff(interval)
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
                 .name("poll")
                 .metrics()
                 .doOnNext(context::onNext)
-                .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
+                .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", interval.toMillis(), filter));
     }
 
     private Flux<TopicMessage> poll(PollingContext context) {

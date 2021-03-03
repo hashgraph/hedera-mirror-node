@@ -19,13 +19,16 @@
  */
 'use strict';
 
+const log4js = require('log4js');
+const logger = log4js.getLogger();
+
 const checkSql = (parsedparams, condition) => {
   for (const p of parsedparams) {
     if (p.field == condition.field && p.operator == condition.operator && p.value == condition.value) {
       return true;
     }
   }
-  console.log(
+  logger.warn(
     `ERROR: Condition: ${condition.field} ${condition.operator} ${
       condition.value
     } not present in the generated SQL: ${JSON.stringify(parsedparams)}`
@@ -188,7 +191,7 @@ const validateAccNumInArray = function (responseObjects, potentialValues) {
   for (const object of responseObjects) {
     const accNum = object.account.split('.')[2];
     if (!potentialValues.includes(Number(accNum))) {
-      console.log(`validateAccNumInArray check failed: ${accNum} is not in [${potentialValues}]`);
+      logger.warn(`validateAccNumInArray check failed: ${accNum} is not in [${potentialValues}]`);
       return false;
     }
   }

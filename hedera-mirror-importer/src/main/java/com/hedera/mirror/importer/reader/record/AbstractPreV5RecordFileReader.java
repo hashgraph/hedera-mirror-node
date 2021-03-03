@@ -87,7 +87,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         int version = vdis.readInt(readerVersion, "record file version");
         vdis.readInt(); // HAPI version, not used
         vdis.readByte(PREV_HASH_MARKER, "previous hash marker");
-        byte[] prevHash = vdis.readNBytes(DIGEST_ALGORITHM.getSize(), "previous hash size");
+        byte[] prevHash = vdis.readNBytes(DIGEST_ALGORITHM.getSize(), "previous hash");
 
         recordFile.setVersion(version);
         recordFile.setPreviousHash(Hex.encodeHexString(prevHash));
