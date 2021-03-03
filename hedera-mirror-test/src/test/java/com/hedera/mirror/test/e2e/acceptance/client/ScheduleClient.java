@@ -25,7 +25,6 @@ import java.util.concurrent.TimeoutException;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.Key;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -42,8 +41,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Log4j2
 @Value
 public class ScheduleClient extends AbstractNetworkClient {
-
-    private static Hbar MAX_TRANSACTION_FEE = Hbar.fromTinybars(1_000_000_000);
 
     public ScheduleClient(SDKClient sdkClient) {
         super(sdkClient);
@@ -62,8 +59,9 @@ public class ScheduleClient extends AbstractNetworkClient {
 
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
-                .setPayerAccountId(payerAccountId.getAccountId())
-                .setMemo(memo);
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
+                .setMemo(memo)
+                .setPayerAccountId(payerAccountId.getAccountId());
 
         if (innerSignatureKeyList != null) {
             // add initial set of required signatures to ScheduleCreate transaction
@@ -93,6 +91,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         byte[] signature = expandedAccountId.getPrivateKey().signTransaction(scheduledTransaction);
 
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId)
                 .addScheduleSignature(expandedAccountId.getPublicKey(), signature);
 
@@ -106,8 +105,9 @@ public class ScheduleClient extends AbstractNetworkClient {
     public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 
-        log.debug("Sign schedule {}", scheduleId);
+        log.debug("Delete schedule {}", scheduleId);
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId);
 
         NetworkTransactionResponse networkTransactionResponse =

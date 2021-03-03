@@ -45,7 +45,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 1_000_000_000L;
-    private final static int MAX_ACCOUNTS_PER_SIG_REQUIRED = 3;
 
     private ExpandedAccountId tokenTreasuryAccount = null;
 
@@ -70,8 +69,7 @@ public class AccountClient extends AbstractNetworkClient {
         return tokenTreasuryAccount;
     }
 
-    public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+    public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
 
         Map<AccountNameEnum, ExpandedAccountId> accountMap = accountNameEnum.receiverSigRequired ?
                 receiverSigRequiredAccounts : receiverSigNotRequiredAccounts;
@@ -117,6 +115,7 @@ public class AccountClient extends AbstractNetworkClient {
         return new TransferTransaction()
                 .addHbarTransfer(sender, hbarAmount.negated())
                 .addHbarTransfer(recipient, hbarAmount)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("transfer test");
     }
 
@@ -141,7 +140,8 @@ public class AccountClient extends AbstractNetworkClient {
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
-                .setKey(KeyList.of(publicKey))
+                .setKey(publicKey)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setReceiverSignatureRequired(receiverSigRequired);
     }
 

@@ -58,4 +58,7 @@ public class AcceptanceTestProperties {
 
     @NotNull
     private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
+
+    @NotNull
+    private Long maxTinyBarTransactionFee = 1_000_000_000L;
 }

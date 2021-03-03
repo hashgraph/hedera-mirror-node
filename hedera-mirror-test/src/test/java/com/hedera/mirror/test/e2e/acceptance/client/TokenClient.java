@@ -30,7 +30,6 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -58,8 +57,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Value
 public class TokenClient extends AbstractNetworkClient {
 
-    private static Hbar MAX_TRANSACTION_FEE = Hbar.fromTinybars(1_000_000_000);
-
     public TokenClient(SDKClient sdkClient) {
         super(sdkClient);
         log.debug("Creating Token Client");
@@ -82,7 +79,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenName(symbol + "_name")
                 .setTokenSymbol(symbol)
                 .setTreasuryAccountId(treasuryAccount.getAccountId())
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Create token_" + refInstant);
 
         if (adminKey != null) {
@@ -118,7 +115,7 @@ public class TokenClient extends AbstractNetworkClient {
         Instant refInstant = Instant.now();
         TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
                 .setAccountId(accountId.getAccountId())
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenIds((List.of(token)))
                 .setTransactionMemo("Associate w token_" + refInstant);
 
@@ -139,7 +136,7 @@ public class TokenClient extends AbstractNetworkClient {
         TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
                 .setTokenId(tokenId)
                 .setAmount(amount)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Mint token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -155,7 +152,7 @@ public class TokenClient extends AbstractNetworkClient {
         Instant refInstant = Instant.now();
         TokenFreezeTransaction tokenFreezeAccountTransaction = new TokenFreezeTransaction()
                 .setAccountId(accountId)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenId(tokenId)
                 .setTransactionMemo("Freeze account_" + refInstant);
 
@@ -173,7 +170,7 @@ public class TokenClient extends AbstractNetworkClient {
         Instant refInstant = Instant.now();
         TokenUnfreezeTransaction tokenUnfreezeTransaction = new TokenUnfreezeTransaction()
                 .setAccountId(accountId)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenId(tokenId)
                 .setTransactionMemo("Unfreeze account_" + refInstant);
 
@@ -193,7 +190,7 @@ public class TokenClient extends AbstractNetworkClient {
         TokenGrantKycTransaction tokenGrantKycTransaction = new TokenGrantKycTransaction()
                 .setAccountId(accountId)
                 .setTokenId(tokenId)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Grant kyc for token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -211,7 +208,7 @@ public class TokenClient extends AbstractNetworkClient {
         TokenRevokeKycTransaction tokenRevokeKycTransaction = new TokenRevokeKycTransaction()
                 .setAccountId(accountId)
                 .setTokenId(tokenId)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Revoke kyc for token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -228,7 +225,7 @@ public class TokenClient extends AbstractNetworkClient {
         return new TransferTransaction()
                 .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
                 .addTokenTransfer(tokenId, recipient, amount)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Transfer token_" + refInstant);
     }
 
@@ -263,7 +260,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTreasuryAccountId(client.getOperatorAccountId())
                 .setWipeKey(publicKey)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE);
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, null);
@@ -281,7 +278,7 @@ public class TokenClient extends AbstractNetworkClient {
         TokenBurnTransaction tokenBurnTransaction = new TokenBurnTransaction()
                 .setTokenId(tokenId)
                 .setAmount(amount)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Burn token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -300,7 +297,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setAccountId(expandedAccountId.getAccountId())
                 .setTokenId(tokenId)
                 .setAmount(amount)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Wipe token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -333,7 +330,7 @@ public class TokenClient extends AbstractNetworkClient {
         Instant refInstant = Instant.now();
         TokenDeleteTransaction tokenDissociateTransaction = new TokenDeleteTransaction()
                 .setTokenId(token)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Delete token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =

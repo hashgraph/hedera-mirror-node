@@ -33,7 +33,6 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
 
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -67,7 +66,7 @@ public class TopicClient extends AbstractNetworkClient {
         TopicCreateTransaction consensusTopicCreateTransaction = new TopicCreateTransaction()
                 .setAdminKey(adminAccount.getPublicKey())
                 .setAutoRenewAccountId(sdkClient.getOperatorId())
-                .setMaxTransactionFee(Hbar.fromTinybars(1_000_000_000))
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTopicMemo("HCS Topic_" + refInstant);
 //                .setAutoRenewPeriod(Duration.ofDays(7000000)) // INSUFFICIENT_TX_FEE, also unsupported
 //                .setAutoRenewAccountId()
@@ -96,7 +95,8 @@ public class TopicClient extends AbstractNetworkClient {
                 .clearAdminKey()
                 .clearSubmitKey()
                 .clearTopicMemo()
-                .clearAutoRenewAccountId(sdkClient.getOperatorId());
+                .clearAutoRenewAccountId(sdkClient.getOperatorId())
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction,
@@ -110,6 +110,7 @@ public class TopicClient extends AbstractNetworkClient {
             PrecheckStatusException,
             TimeoutException {
         TopicDeleteTransaction consensusTopicDeleteTransaction = new TopicDeleteTransaction()
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTopicId(topicId);
 
         NetworkTransactionResponse networkTransactionResponse =
