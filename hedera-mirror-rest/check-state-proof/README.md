@@ -10,36 +10,30 @@ A node based CLI tool `check-state-proof` is provided here to showcase the steps
 ## Logic
 The CLI takes the following steps to prove legitimacy of provided transaction ID
 
-1. Obtains user input of transactionId and other params
+1. Obtain user input of transactionId and other params
 
-2. Makes a REST API call to the mirror node to retrieve stateproof supporting files - addressBook(s), signature files and a record file.
+2. Make a REST API call to the mirror node to retrieve stateproof supporting files/objects - addressBook(s), signature files and a record file.
 
-3. Store files locally and verifies at least 1 addressBook, 2 signatures, 1 rcd file were retrieved.
+3. Store files locally and verify at least 1 addressBook, 2 signatures, 1 record file were retrieved.
 
-4. Parses AddressBook(s) pulling out and creating a map of nodeIds to public keys
+4. Parse AddressBook(s) to pull out and create a map of nodeIds to public keys
 
-5. Parses signature file buffer pulling out signature and hash from each file
+5. Parse signature file buffer to pull out signature and hash pairs from each file
 
-6. Parses record file pulling out file hash and a map of transactionsIds
+6. Parse record file to pull out file hash or metadata hash and a map of transactionsIds
 
-7. Verified the record file contains the requested transactionId
+7. Verify the record file contains the requested transactionId
 
-8. Verifies the public keys of each node were used to sign the hashes noted in the signature files and produced the provided signatures.
+8. For record file v5, verify that `hash(hash in the start running hash object | hashes_before | hash of the
+record stream object | hashes_after)` matches the `hash in the end running hash object`
 
-9. Verifies there is a hash from the signatures files that is matched by at least 1/3 of the nodes.
+9. Verify the signatures of file hash or metadata hash from the signature files
 
-10. Verified the record file hash matches the hash that reached 1/3 consensus from nodes.
+10. Verify there is a hash from the signatures files that is matched by at least 1/3 of the nodes.
 
-11. Returns true if all  verifications pass
+11. Verify the record file hash or metadata hash matches the hash that reached 1/3 consensus from nodes.
 
-### Record stream file and signature file version 5
-
-From hedera-services v0.11.0, the mainnet has upgraded to generate version 5 record streams. While
-the state proof check logic remains the same, the following changes have been made to support the file version upgrade:
-
-1. Parsing logic for the new format is added. Please refer to the [official documentation](https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats)
-   for the format.
-2. Metadata hash signature in signature file version 5 is verified in addition to file hash signature.
+12. Return true if all verifications pass
 
 ## Requirements
 To run the CLI you must

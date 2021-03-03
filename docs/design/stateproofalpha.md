@@ -25,7 +25,9 @@ nanoseconds of the valid start timestamp of the transaction.
 * `/transactions/:transactionId/stateproof?scheduled=true` Get stateproof for the scheduled transaction. The default is
   false.
 
-Depending on the format of the record file the transaction of interest is in, the REST API returns either the full
+The [version 5 record file and signature file](https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats)
+enable the stateproof REST API to create a more compact record file by replacing any record stream object but the one of
+interest with its hash. As a result, depending on the format of the record file, the REST API returns either the full
 format response or the compact format response.
 
 The full format response in JSON:
@@ -35,13 +37,13 @@ The full format response in JSON:
     "address_books": [
       "address book content"
     ],
-    "compact": false,
     "record_file": "record file content",
     "signature_files": {
       "0.0.3": "signature file content of node 0.0.3",
       "0.0.4": "signature file content of node 0.0.4",
       "0.0.n": "signature file content of node 0.0.n"
-    }
+    },
+    "version": 2
 }
 ```
 
@@ -52,7 +54,6 @@ The compact format response in JSON:
     "address_books": [
       "address book content"
     ],
-    "compact": true,
     "record_file": {
       "head": "content of the head",
       "start_running_hash_object": "content of the start running hash object",
@@ -73,7 +74,8 @@ The compact format response in JSON:
       "0.0.3": "signature file content of node 0.0.3",
       "0.0.4": "signature file content of node 0.0.4",
       "0.0.n": "signature file content of node 0.0.n"
-    }
+    },
+    "version": 5
 }
 ```
 
