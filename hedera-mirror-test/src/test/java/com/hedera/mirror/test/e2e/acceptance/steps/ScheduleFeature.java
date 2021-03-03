@@ -31,6 +31,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -41,21 +43,27 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleInfo;
 import com.hedera.hashgraph.sdk.ScheduleInfoQuery;
+import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.TransactionResponse;
+import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
@@ -130,37 +138,48 @@ public class ScheduleFeature {
         scheduledTransaction = accountClient
                 .getAccountCreateTransaction(
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
-                        alice.getPublicKey(),
+                        KeyList.of(alice.getPublicKey()),
                         false);
 
         createNewSchedule(scheduledTransaction, null, null);
     }
 
-    @Given("I successfully schedule a crypto account create with {int} initial signatures")
+    @Given("I schedule a crypto transfer with {int} initial signatures but require an additional signature from " +
+            "{string}")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewCryptoAccountSchedule(int initSignatureCount) throws ReceiptStatusException,
+    public void createNewCryptoAccountSchedule(int initSignatureCount, String accountName) throws ReceiptStatusException,
             PrecheckStatusException,
             TimeoutException {
-        expectedSignersCount = 1 + initSignatureCount;
-        currentSignersCount = initSignatureCount;
-        ExpandedAccountId alice = accountClient.getAccount(AccountClient.AccountNameEnum.ALICE);
+        expectedSignersCount = 2 + initSignatureCount; // new account, accountName and initSignatureCount
+        currentSignersCount = initSignatureCount + 1;
+        ExpandedAccountId finalSignatory = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
 
         KeyList privateKeyList = new KeyList();
         KeyList publicKeyList = new KeyList();
         for (int i = 0; i < initSignatureCount; i++) {
             PrivateKey accountKey = PrivateKey.generate();
             privateKeyList.add(accountKey);
+
             publicKeyList.add(accountKey.getPublicKey());
         }
 
         // additional signatory not provided up front to prevent schedule from executing
-        publicKeyList.add(alice.getPublicKey());
+        publicKeyList.add(finalSignatory.getPublicKey());
+
+        ExpandedAccountId newAccountId = accountClient
+                .createCryptoAccount(
+                        Hbar.fromTinybars(DEFAULT_TINY_HBAR),
+                        false,
+                        publicKeyList);
 
         scheduledTransaction = accountClient
-                .getAccountCreateTransaction(
-                        Hbar.fromTinybars(DEFAULT_TINY_HBAR),
-                        publicKeyList, // set required signers
-                        false);
+                .getCryptoTransferTransaction(
+                        newAccountId.getAccountId(),
+                        accountClient.getSdkClient().getOperatorId(),
+                        Hbar.fromTinybars(DEFAULT_TINY_HBAR));
+
+        // add sender private key to ensure only Alice's signature is teh only signature left that is required
+        privateKeyList.add(newAccountId.getPrivateKey());
 
         createNewSchedule(scheduledTransaction, privateKeyList, null);
     }
@@ -435,5 +454,139 @@ public class ScheduleFeature {
     public void recover(PrecheckStatusException t) throws PrecheckStatusException {
         log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
         throw t;
+    }
+
+    @When("I run the E2EMultiSigOnScheduleCreateAndScheduleSign")
+    public void E2ESigOnScheduleCreateAndScheduleSign() throws Exception {
+        Client client = scheduleClient.getClient();
+        // User A is payer i.e. sdk operator
+        AccountId operatorId = scheduleClient.getSdkClient().getExpandedOperatorAccountId().getAccountId();
+        PublicKey payerAccountPublicKey = scheduleClient.getSdkClient().getExpandedOperatorAccountId().getPublicKey();
+        List<AccountId> nodeAccountIds = Collections.singletonList(AccountId.fromString("0.0.3"));
+
+        // Generate 3 random keys
+        PrivateKey key1 = PrivateKey.generate();
+        PrivateKey key2 = PrivateKey.generate();
+        PrivateKey key3 = PrivateKey.generate();
+
+        // Create a keylist from those keys. This key will be used as the new account's key
+        // The reason we want to use a `KeyList` is to simulate a multi-party system where
+        // multiple keys are required to sign.
+        KeyList keyList = new KeyList();
+
+        keyList.add(key1.getPublicKey());
+        keyList.add(key2.getPublicKey());
+        keyList.add(key3.getPublicKey());
+
+        log.info("key1 private = " + key1);
+        log.info("key1 public = " + key1.getPublicKey());
+        log.info("key1 private = " + key2);
+        log.info("key2 public = " + key2.getPublicKey());
+        log.info("key3 private = " + key3);
+        log.info("key3 public = " + key3.getPublicKey());
+        log.info("keyList = " + keyList);
+
+        // Creat the account with the `KeyList`
+        TransactionResponse response = new AccountCreateTransaction()
+                .setNodeAccountIds(Collections.singletonList(new AccountId(3)))
+                // The only _required_ property here is `key`
+                .setKey(keyList)
+                .setInitialBalance(new Hbar(10))
+                .execute(client);
+
+        // This will wait for the receipt to become available
+        TransactionReceipt receipt = response.getReceipt(client);
+
+        AccountId accountId = Objects.requireNonNull(receipt.accountId);
+
+        log.info("accountId = " + accountId);
+
+        // Generate a `TransactionId`. This id is used to query the inner scheduled transaction
+        // after we expect it to have been executed
+        TransactionId transactionId = TransactionId.generate(operatorId);
+
+        log.info("transactionId for scheduled transaction = " + transactionId);
+
+        // Create a transfer transaction with 2/3 signatures.
+        TransferTransaction transfer = new TransferTransaction()
+                .setNodeAccountIds(Collections.singletonList(response.nodeId))
+                .setTransactionId(transactionId)
+                .addHbarTransfer(accountId, new Hbar(1).negated())
+                .addHbarTransfer(operatorId, new Hbar(1))
+                .freezeWith(client)
+                .sign(key1);
+
+        // Schedule the transaction
+        ScheduleCreateTransaction scheduled = transfer.schedule();
+
+        byte[] key2Signature = key2.signTransaction(transfer);
+
+        scheduled.addScheduleSignature(key2.getPublicKey(), key2Signature);
+
+        if (scheduled.getScheduleSignatures().size() != 2) {
+            throw new Exception("Scheduled transaction has incorrect number of signatures: " + scheduled
+                    .getScheduleSignatures().size());
+        }
+
+        receipt = scheduled.execute(client).getReceipt(client);
+
+        // Get the schedule ID from the receipt
+        ScheduleId scheduleId = Objects.requireNonNull(receipt.scheduleId);
+
+        log.info("scheduleId = " + scheduleId);
+
+        // Get the schedule info to see if `signatories` is populated with 2/3 signatures
+        ScheduleInfo info = new ScheduleInfoQuery()
+                .setNodeAccountIds(Collections.singletonList(response.nodeId))
+                .setScheduleId(scheduleId)
+                .execute(client);
+
+        log.info("Schedule Info = " + info);
+
+        transfer = (TransferTransaction) info.getTransaction();
+
+        Map<AccountId, Hbar> transfers = transfer.getHbarTransfers();
+
+        // Make sure the transfer transaction is what we expect
+        if (transfers.size() != 2) {
+            throw new Exception("more transfers than expected");
+        }
+
+        if (!transfers.get(accountId).equals(new Hbar(1).negated())) {
+            throw new Exception("transfer for " + accountId + " is not what is expected " + transfers.get(accountId));
+        }
+
+        if (!transfers.get(operatorId).equals(new Hbar(1))) {
+            throw new Exception("transfer for " + operatorId + " is not what is expected " + transfers.get(operatorId));
+        }
+
+        // Get the last signature for the inner scheduled transaction
+        byte[] key3Signature = key3.signTransaction(transfer);
+
+        log.info("sending schedule sign transaction");
+
+        // Finally send this last signature to Hedera. This last signature _should_ mean the transaction executes
+        // since all 3 signatures have been provided.
+        ScheduleSignTransaction signTransaction = new ScheduleSignTransaction()
+                .setNodeAccountIds(Collections.singletonList(response.nodeId))
+                .setScheduleId(scheduleId)
+                .addScheduleSignature(key3.getPublicKey(), key3Signature);
+
+        if (signTransaction.getScheduleSignatures().size() != 1) {
+            throw new Exception("Scheduled sign transaction has incorrect number of signatures: " + signTransaction
+                    .getScheduleSignatures().size());
+        }
+
+        signTransaction.execute(client).getReceipt(client);
+
+        // Query the schedule info again
+        try {
+            new ScheduleInfoQuery()
+                    .setNodeAccountIds(Collections.singletonList(response.nodeId))
+                    .setScheduleId(scheduleId)
+                    .execute(client);
+        } catch (PrecheckStatusException e) {
+            log.info("Received " + e.status + " status code which implies scheduled transaction was executed");
+        }
     }
 }

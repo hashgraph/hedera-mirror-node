@@ -65,10 +65,9 @@ public class ScheduleClient extends AbstractNetworkClient {
 
         if (innerSignatureKeyList != null) {
             // add initial set of required signatures to ScheduleCreate transaction
-            scheduleCreateTransaction.freezeWith(client);
             for (Key k : innerSignatureKeyList) {
                 PrivateKey key = ((PrivateKey) k);
-                scheduleCreateTransaction = scheduleCreateTransaction.addScheduleSignature(
+                scheduleCreateTransaction.addScheduleSignature(
                         key.getPublicKey(),
                         key.signTransaction(transaction));
             }

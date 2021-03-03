@@ -31,7 +31,6 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.Key;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -135,12 +134,12 @@ public class AccountClient extends AbstractNetworkClient {
         return transactionReceipt;
     }
 
-    public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, Key publicKey,
+    public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,
                                                                 boolean receiverSigRequired) {
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
-                .setKey(publicKey)
+                .setKey(publicKeys)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setReceiverSignatureRequired(receiverSigRequired);
     }
@@ -152,6 +151,13 @@ public class AccountClient extends AbstractNetworkClient {
 
     public ExpandedAccountId createNewAccount(long initialBalance, boolean receiverSigRequired) throws TimeoutException, PrecheckStatusException,
             ReceiptStatusException {
+        return createCryptoAccount(Hbar.fromTinybars(initialBalance), receiverSigRequired, null);
+    }
+
+    public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired,
+                                                 KeyList keyList) throws TimeoutException,
+            PrecheckStatusException,
+            ReceiptStatusException {
         // 1. Generate a Ed25519 private, public key pair
         PrivateKey privateKey = PrivateKey.generate();
         PublicKey publicKey = privateKey.getPublicKey();
@@ -159,9 +165,14 @@ public class AccountClient extends AbstractNetworkClient {
         log.debug("Private key = {}", privateKey);
         log.debug("Public key = {}", publicKey);
 
+        KeyList publicKeyList = KeyList.of(privateKey.getPublicKey());
+        if (keyList != null) {
+            publicKeyList.addAll(keyList);
+        }
+
         AccountCreateTransaction accountCreateTransaction = getAccountCreateTransaction(
-                Hbar.fromTinybars(initialBalance),
-                publicKey,
+                initialBalance,
+                publicKeyList,
                 receiverSigRequired);
 
         TransactionReceipt receipt = executeTransactionAndRetrieveReceipt(accountCreateTransaction,
@@ -171,7 +182,7 @@ public class AccountClient extends AbstractNetworkClient {
         AccountId newAccountId = receipt.accountId;
 
         log.debug("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
-        return new ExpandedAccountId(newAccountId, privateKey, publicKey);
+        return new ExpandedAccountId(newAccountId, privateKey, privateKey.getPublicKey());
     }
 
     @RequiredArgsConstructor

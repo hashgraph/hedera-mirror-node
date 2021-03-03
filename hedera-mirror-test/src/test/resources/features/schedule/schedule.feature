@@ -33,20 +33,20 @@ Feature: Schedule Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-#    @Acceptance - sdk bug exists where signatures for schedule create are not being mapped to Schedule
+    @Acceptance @ScheduleSanity
     Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleDelete
-        Given I successfully schedule a crypto account create with <initialSignatureCount> initial signatures
+        Given I schedule a crypto transfer with <initialSignatureCount> initial signatures but require an additional signature from <accountName>
         When the network confirms schedule presence
         And the mirror node REST API should return status <httpStatusCode> for the schedule transaction
         And the mirror node REST API should verify the non executed schedule entity
-        When I successfully delete the schedule
-        And the network confirms the executed schedule is removed from state
+        When the scheduled transaction is signed by <accountName>
         Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
-        And the mirror node REST API should verify the non executed schedule entity
+        And the mirror node REST API should verify the executed schedule entity
+        And the network confirms the executed schedule is removed from state
         Examples:
-            | initialSignatureCount | httpStatusCode |
-            | 3                     | 200            |
-            | 10                    | 200            |
+            | initialSignatureCount | accountName | httpStatusCode |
+            | 3                     | "ALICE"     | 200            |
+            | 10                    | "DAVE"      | 200            |
 
     @Acceptance
     Scenario Outline: Validate scheduled Hbar and Token transfer - ScheduleCreate of TokenTransfer and multi ScheduleSign
@@ -65,7 +65,7 @@ Feature: Schedule Base Coverage Feature
         Examples:
             | sender  | receiver | httpStatusCode |
             | "ALICE" | "DAVE"   | 200            |
-        
+
 #    @Acceptance - sdk bug exists where executed HCS submit message fails
     Scenario Outline: Validate scheduled HCS message - ScheduleCreate of TopicMessageSubmit and ScheduleSign
         Given I successfully schedule a topic message submit with <accountName>'s submit key
