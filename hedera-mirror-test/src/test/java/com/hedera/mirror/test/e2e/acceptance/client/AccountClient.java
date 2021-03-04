@@ -47,11 +47,10 @@ public class AccountClient extends AbstractNetworkClient {
 
     private ExpandedAccountId tokenTreasuryAccount = null;
 
-    private Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
+    private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
 
     public AccountClient(SDKClient sdkClient) {
         super(sdkClient);
-        accountMap = new ConcurrentHashMap<>();
         log.debug("Creating Account Client");
     }
 
@@ -78,8 +77,7 @@ public class AccountClient extends AbstractNetworkClient {
                     return null;
                 });
 
-        log.debug("Retrieve Account: {}, receiverSigRequired: {} for {}", accountId,
-                accountNameEnum.receiverSigRequired, accountNameEnum);
+        log.debug("Retrieve Account: {}, {}", accountId, accountNameEnum);
         return accountId;
     }
 
@@ -148,10 +146,9 @@ public class AccountClient extends AbstractNetworkClient {
                 accountNameEnum.toString());
     }
 
-    public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired,
-                                                 KeyList keyList, String memo) throws TimeoutException,
-            PrecheckStatusException,
-            ReceiptStatusException {
+    public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired, KeyList keyList,
+                                                 String memo)
+            throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
         // 1. Generate a Ed25519 private, public key pair
         PrivateKey privateKey = PrivateKey.generate();
         PublicKey publicKey = privateKey.getPublicKey();
