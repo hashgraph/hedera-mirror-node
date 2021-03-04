@@ -270,8 +270,8 @@ const getGeneralTransactionsInnerQuery = function (
     ${namedLimitQuery}`;
 
   if (namedAccountQuery) {
-    // account filter applies to both transaction.payer_account_id and crypto_transfer.entity_id, a full outer join is
-    // needed to get rows not in the other table.
+    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
+    //between the three tables is needed to get rows that may only exist in one.
     const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
     const ctlJoinClause =
       (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns';
@@ -284,11 +284,26 @@ const getGeneralTransactionsInnerQuery = function (
         ORDER BY ctl.consensus_timestamp ${order}
         ${namedLimitQuery}`;
 
+    const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
+    const namedTtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ttl.consensus_timestamp');
+    const ttlJoinClause =
+      (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ttl.consensus_timestamp = t.consensus_ns';
+    const ttlWhereClause = buildWhereClause(namedTtlAccountQuery, namedTtlTsQuery, resultTypeQuery, transactionTypeQuery);
+    const ttlQuery = `
+      SELECT DISTINCT ttl.consensus_timestamp AS consensus_timestamp
+        FROM token_transfer AS ttl
+        ${ttlJoinClause}
+        ${ttlWhereClause}
+        ORDER BY ttl.consensus_timestamp ${order}
+        ${namedLimitQuery}`;
+
     return `
-      SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp) AS consensus_timestamp
+      SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp,ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS t
       FULL OUTER JOIN (${ctlQuery}) AS ctl
       ON t.consensus_timestamp = ctl.consensus_timestamp
+      FULL OUTER JOIN (${ttlQuery}) AS ttl
+      ON t.consensus_timestamp = ttl.consensus_timestamp
       ORDER BY consensus_timestamp ${order}
       ${namedLimitQuery}`;
   }
