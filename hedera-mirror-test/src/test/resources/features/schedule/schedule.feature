@@ -1,4 +1,4 @@
-@ScheduleBase @FullSuite
+@schedulebase @FullSuite
 Feature: Schedule Base Coverage Feature
 
     @Acceptance @Sanity

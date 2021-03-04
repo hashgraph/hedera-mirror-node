@@ -23,6 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -132,7 +133,8 @@ public class ScheduleFeature {
                 .getAccountCreateTransaction(
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
                         KeyList.of(alice.getPublicKey()),
-                        false);
+                        false,
+                        "scheduled account create");
 
         createNewSchedule(scheduledTransaction, null);
     }
@@ -163,7 +165,8 @@ public class ScheduleFeature {
                 .createCryptoAccount(
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
                         false,
-                        publicKeyList);
+                        publicKeyList,
+                        "scheduled crypto transfer");
 
         scheduledTransaction = accountClient
                 .getCryptoTransferTransaction(
@@ -445,5 +448,14 @@ public class ScheduleFeature {
     public void recover(PrecheckStatusException t) throws PrecheckStatusException {
         log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
         throw t;
+    }
+
+    @After("@schedulebase")
+    public void closeClients() {
+        log.debug("Closing schedule feature clients");
+        accountClient.close();
+        mirrorClient.close();
+        tokenClient.close();
+        topicClient.close();
     }
 }

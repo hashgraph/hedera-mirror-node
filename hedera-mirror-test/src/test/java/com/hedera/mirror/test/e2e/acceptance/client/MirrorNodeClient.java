@@ -24,7 +24,6 @@ import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -196,11 +195,6 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
-    }
-
-    public void close() throws TimeoutException {
-        log.debug("Closing Mirror Node client, sdk waits up to 30 s for valid close");
-        client.close();
     }
 
     /**

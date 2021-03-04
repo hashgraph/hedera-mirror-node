@@ -20,8 +20,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.util.HashMap;
+import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -29,7 +30,6 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -47,14 +47,11 @@ public class AccountClient extends AbstractNetworkClient {
 
     private ExpandedAccountId tokenTreasuryAccount = null;
 
-    private Map<AccountNameEnum, ExpandedAccountId> receiverSigRequiredAccounts = new HashMap<>();
-
-    private Map<AccountNameEnum, ExpandedAccountId> receiverSigNotRequiredAccounts = new HashMap<>();
+    private Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
 
     public AccountClient(SDKClient sdkClient) {
         super(sdkClient);
-        receiverSigRequiredAccounts = new HashMap<>();
-        receiverSigNotRequiredAccounts = new HashMap<>();
+        accountMap = new ConcurrentHashMap<>();
         log.debug("Creating Account Client");
     }
 
@@ -69,16 +66,12 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
-
-        Map<AccountNameEnum, ExpandedAccountId> accountMap = accountNameEnum.receiverSigRequired ?
-                receiverSigRequiredAccounts : receiverSigNotRequiredAccounts;
-
         // retrieve account, setting if it doesn't exist
         ExpandedAccountId accountId = accountMap
                 .computeIfAbsent(accountNameEnum, x -> {
                     try {
                         return createNewAccount(DEFAULT_INITIAL_BALANCE,
-                                accountNameEnum.receiverSigRequired);
+                                accountNameEnum);
                     } catch (Exception e) {
                         log.trace("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
                     }
@@ -88,10 +81,6 @@ public class AccountClient extends AbstractNetworkClient {
         log.debug("Retrieve Account: {}, receiverSigRequired: {} for {}", accountId,
                 accountNameEnum.receiverSigRequired, accountNameEnum);
         return accountId;
-    }
-
-    public static long getBalance(Client client, String accountIdString) {
-        return getBalance(client, accountIdString);
     }
 
     @Override
@@ -135,27 +124,32 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,
-                                                                boolean receiverSigRequired) {
+                                                                boolean receiverSigRequired, String memo) {
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
                 .setKey(publicKeys)
+                .setTransactionMemo(memo)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setReceiverSignatureRequired(receiverSigRequired);
     }
 
     public ExpandedAccountId createNewAccount(long initialBalance) throws TimeoutException, PrecheckStatusException,
             ReceiptStatusException {
-        return createNewAccount(initialBalance, false);
+        return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null);
     }
 
-    public ExpandedAccountId createNewAccount(long initialBalance, boolean receiverSigRequired) throws TimeoutException, PrecheckStatusException,
+    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) throws TimeoutException, PrecheckStatusException,
             ReceiptStatusException {
-        return createCryptoAccount(Hbar.fromTinybars(initialBalance), receiverSigRequired, null);
+        return createCryptoAccount(
+                Hbar.fromTinybars(initialBalance),
+                accountNameEnum.receiverSigRequired,
+                null,
+                accountNameEnum.toString());
     }
 
     public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired,
-                                                 KeyList keyList) throws TimeoutException,
+                                                 KeyList keyList, String memo) throws TimeoutException,
             PrecheckStatusException,
             ReceiptStatusException {
         // 1. Generate a Ed25519 private, public key pair
@@ -173,7 +167,8 @@ public class AccountClient extends AbstractNetworkClient {
         AccountCreateTransaction accountCreateTransaction = getAccountCreateTransaction(
                 initialBalance,
                 publicKeyList,
-                receiverSigRequired);
+                receiverSigRequired,
+                String.format("Mirror new crypto account: %s_%s", memo == null ? "" : memo, Instant.now()));
 
         TransactionReceipt receipt = executeTransactionAndRetrieveReceipt(accountCreateTransaction,
                 receiverSigRequired ? KeyList.of(privateKey) : null)
@@ -193,5 +188,10 @@ public class AccountClient extends AbstractNetworkClient {
         DAVE(true);
 
         private final boolean receiverSigRequired;
+
+        @Override
+        public String toString() {
+            return String.format("%s, receiverSigRequired: %s", name(), receiverSigRequired);
+        }
     }
 }

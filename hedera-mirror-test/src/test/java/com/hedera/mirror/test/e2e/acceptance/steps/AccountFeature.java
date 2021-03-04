@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
@@ -86,5 +87,11 @@ public class AccountFeature {
     @Then("the new balance should reflect cryptotransfer of {long}")
     public void accountReceivedFunds(long amount) throws TimeoutException, PrecheckStatusException {
         assertTrue(accountClient.getBalance(accountId) >= startingBalance + amount);
+    }
+
+    @After("@Accounts")
+    public void closeClients() {
+        log.debug("Closing account feature clients");
+        accountClient.close();
     }
 }
