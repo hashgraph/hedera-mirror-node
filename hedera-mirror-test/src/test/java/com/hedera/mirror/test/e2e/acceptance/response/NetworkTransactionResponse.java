@@ -21,14 +21,12 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  */
 
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 
 @Data
-@Log4j2
 public class NetworkTransactionResponse {
     private final TransactionId transactionId;
     private final TransactionReceipt receipt;

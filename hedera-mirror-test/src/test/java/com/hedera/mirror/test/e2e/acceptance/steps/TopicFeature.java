@@ -333,23 +333,6 @@ public class TopicFeature {
         subscriptionResponse.validateReceivedMessages();
     }
 
-    @After
-    public void closeClients() {
-        try {
-            topicClient.getSdkClient().close();
-        } catch (Exception ex) {
-            log.warn("Error closing SDK client : {}", ex.getMessage());
-        }
-
-        if (mirrorClient != null) {
-            try {
-                mirrorClient.close();
-            } catch (Exception ex) {
-                log.warn("Error closing mirror client : {}", ex.getMessage());
-            }
-        }
-    }
-
     /**
      * Subscribe to topic and observe messages while emitting background messages to encourage service file close in
      * environments with low traffic.
@@ -422,5 +405,12 @@ public class TopicFeature {
     public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
         log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
         throw t;
+    }
+
+    @After("@TopicMessagesBase or @TopicMessagesFilter")
+    public void closeClients() {
+        log.debug("Closing topic feature clients");
+        mirrorClient.close();
+        topicClient.close();
     }
 }
