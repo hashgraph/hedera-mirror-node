@@ -23,8 +23,6 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Collection;
-import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
@@ -44,25 +42,6 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
     void save() {
         Transaction transaction = transactionRepository.save(transaction());
         assertThat(transactionRepository.findById(transaction.getConsensusNs())).get().isEqualTo(transaction);
-    }
-
-    @Test
-    void existsByEntityIdAndTypeIn() {
-        Transaction transaction = transaction();
-        Collection<Integer> types = List.of(transaction.getType());
-
-        Transaction transactionWrongType = transaction();
-        transactionWrongType.setType(-1);
-
-        Transaction transactionWrongEntityId = transaction();
-        transactionWrongEntityId.setEntityId(EntityId.of(1, 1, 1, EntityTypeEnum.ACCOUNT));
-        transactionRepository.saveAll(List.of(transactionWrongType, transactionWrongEntityId));
-
-        assertThat(transactionRepository.existsByEntityIdAndTypeIn(transaction.getEntityId(), types)).isFalse();
-
-        transactionRepository.save(transaction);
-
-        assertThat(transactionRepository.existsByEntityIdAndTypeIn(transaction.getEntityId(), types)).isTrue();
     }
 
     private Transaction transaction() {

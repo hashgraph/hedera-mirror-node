@@ -28,55 +28,45 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.MigrationVersion;
+import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class AccountInfoMigration extends MirrorBaseJavaMigration {
+public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
 
-    private static final Collection<Integer> TRANSACTION_TYPES = Set.of(
-            TransactionTypeEnum.CONTRACTCREATEINSTANCE.getProtoId(),
-            TransactionTypeEnum.CRYPTOCREATEACCOUNT.getProtoId(),
-            TransactionTypeEnum.FILECREATE.getProtoId()
-    );
-
-    @Value("classpath:accountInfo")
-    private Path accountInfoDirectory;
+    @Value("classpath:accountInfo.txt.gz")
+    private Path accountInfoPath;
 
     private final EntityRepository entityRepository;
     private final MirrorProperties mirrorProperties;
-    private final TransactionRepository transactionRepository;
 
     @Override
     public Integer getChecksum() {
-        return 1; // Change this if this migration should be re-ran
+        return 1; // Change this if this migration should be rerun
     }
 
     @Override
     public String getDescription() {
-        return "Backfill pre-OA account information";
+        return "Import historical account information from before open access";
     }
 
     @Override
@@ -85,22 +75,23 @@ public class AccountInfoMigration extends MirrorBaseJavaMigration {
     }
 
     @Override
+    protected boolean skipMigration(Configuration configuration) {
+        return false; // Migrate for v1 and v2
+    }
+
+    @Override
     protected void doMigrate() throws IOException {
-        if (!mirrorProperties.isImportAccountInfo()) {
-            log.info("Account info importing is disabled");
+        if (!mirrorProperties.isImportHistoricalAccountInfo()) {
+            log.info("Importing historical account information is disabled");
             return;
         }
 
-        String network = mirrorProperties.getNetwork().name().toLowerCase(Locale.ROOT);
-        String filename = network + ".txt.gz";
-        Path accountInfoPath = accountInfoDirectory.resolve(filename);
-
-        if (!Files.isReadable(accountInfoPath)) {
-            log.info("Skipping import due to missing account info file for {}", network);
+        if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.MAINNET) {
+            log.info("Skipping migration since it only applies to mainnet data");
             return;
         }
 
-        log.info("Importing account info for {}", network);
+        log.info("Importing historical account info file");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         try (
@@ -132,17 +123,24 @@ public class AccountInfoMigration extends MirrorBaseJavaMigration {
 
     boolean process(AccountInfo accountInfo) {
         EntityId accountEntityId = EntityId.of(accountInfo.getAccountID());
-        Optional<Entities> entityExists = entityRepository.findById(accountEntityId.getId());
-        boolean exists = entityExists.isPresent();
+        Optional<Entities> currentEntity = entityRepository.findById(accountEntityId.getId());
+        boolean exists = currentEntity.isPresent();
 
-        if (exists && hasCreateTransaction(accountEntityId)) {
-            log.trace("Skipping entity {} that was created after the stream reset",
-                    () -> accountEntityId.entityIdToString());
-            return false;
+        Entities entity = currentEntity.orElseGet(accountEntityId::toEntity);
+        boolean updated = !exists;
+
+        // This migration when ran previously created contracts as accounts so we correct that here.
+        if (StringUtils.isNotBlank(accountInfo.getContractAccountID())) {
+            updated = entity.getEntityTypeId() != EntityTypeEnum.CONTRACT.getId();
+            entity.setEntityTypeId(EntityTypeEnum.CONTRACT.getId());
         }
 
-        Entities entity = entityExists.orElseGet(accountEntityId::toEntity);
-        boolean updated = !exists;
+        // All regular accounts have a key so if it's missing we know it had to have been created before the reset.
+        // All contract accounts don't have to have a key, but luckily in our file they do.
+        if (!updated && exists && ArrayUtils.isNotEmpty(entity.getKey())) {
+            log.trace("Skipping entity {} that was created after the reset", accountEntityId::entityIdToString);
+            return false;
+        }
 
         if (entity.getAutoRenewPeriod() == null && accountInfo.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(accountInfo.getAutoRenewPeriod().getSeconds());
@@ -182,9 +180,5 @@ public class AccountInfoMigration extends MirrorBaseJavaMigration {
         }
 
         return updated;
-    }
-
-    private boolean hasCreateTransaction(EntityId entityId) {
-        return transactionRepository.existsByEntityIdAndTypeIn(entityId, TRANSACTION_TYPES);
     }
 }

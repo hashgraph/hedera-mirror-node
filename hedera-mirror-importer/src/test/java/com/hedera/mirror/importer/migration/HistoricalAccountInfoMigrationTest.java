@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import javax.annotation.Resource;
 import org.assertj.core.api.Assertions;
@@ -41,18 +42,18 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-class AccountInfoMigrationTest extends IntegrationTest {
+class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
-    private final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
+    // These are the three accounts present in the test accountInfo.txt.gz
+    private static final long ACCOUNT_ID1 = 2977L;
+    private static final long ACCOUNT_ID2 = 2978L;
+    private static final long ACCOUNT_ID3 = 2979L;
 
     @Resource
-    private AccountInfoMigration accountInfoMigration;
+    private HistoricalAccountInfoMigration historicalAccountInfoMigration;
 
     @Resource
     private EntityRepository entityRepository;
@@ -60,90 +61,81 @@ class AccountInfoMigrationTest extends IntegrationTest {
     @Resource
     private MirrorProperties mirrorProperties;
 
-    @Resource
-    private TransactionRepository transactionRepository;
-
     private MirrorProperties.HederaNetwork network;
 
     @BeforeEach
     void before() {
         network = mirrorProperties.getNetwork();
-        mirrorProperties.setImportAccountInfo(true);
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        mirrorProperties.setImportHistoricalAccountInfo(true);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
     }
 
     @AfterEach
     void after() {
-        mirrorProperties.setImportAccountInfo(false);
+        mirrorProperties.setImportHistoricalAccountInfo(false);
         mirrorProperties.setNetwork(network);
     }
 
     @Test
     void noExistingEntities() throws Exception {
-        accountInfoMigration.doMigrate();
+        historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isEqualTo(3);
     }
 
     @Test
-    void noCreateTransactions() throws Exception {
-        Entities entity1 = entity(2977);
-        Entities entity2 = entity(2978);
-        Entities entity3 = entity(2979);
-        accountInfoMigration.doMigrate();
+    void existingEntitiesFromBeforeReset() throws Exception {
+        Entities entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
+        Entities entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.ACCOUNT, false);
+        Entities entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.ACCOUNT, false);
+        historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll())
                 .hasSize(3)
-                .allMatch(e -> e.getKey().length > 0)
                 .allMatch(e -> e.getAutoRenewPeriod() > 0)
                 .allMatch(e -> e.getExpiryTimeNs() > 0)
+                .allMatch(e -> e.getKey().length > 0)
                 .map(Entities::getEntityNum)
                 .containsExactly(entity1.getEntityNum(), entity2.getEntityNum(), entity3.getEntityNum());
     }
 
     @Test
-    void hasCreateTransactions() throws Exception {
-        Entities entity1 = entity(2977);
-        Entities entity2 = entity(2978);
-        Entities entity3 = entity(2979);
-        transaction(entity1);
-        transaction(entity2);
-        transaction(entity3);
-        entityRepository.findAll().forEach(t -> System.out.println(t));
-        transactionRepository.findAll().forEach(t -> System.out.println(t));
-
-        accountInfoMigration.doMigrate();
+    void existingEntitiesAfterReset() throws Exception {
+        Entities entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
+        Entities entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.CONTRACT, true);
+        Entities entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.CONTRACT, true);
+        historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3); // No update
     }
 
     @Test
-    void noChanges() throws Exception {
-        accountInfoMigration.doMigrate();
+    void noChangesWhenRanAgain() throws Exception {
+        historicalAccountInfoMigration.doMigrate();
         Iterable<Entities> entities = entityRepository.findAll();
         assertThat(entities).hasSize(3);
 
-        accountInfoMigration.doMigrate();
+        historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll()).containsAll(entities);
     }
 
     @Test
     void disabled() throws Exception {
-        mirrorProperties.setImportAccountInfo(false);
-        accountInfoMigration.doMigrate();
+        mirrorProperties.setImportHistoricalAccountInfo(false);
+        historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }
 
     @Test
-    void missingFile() throws Exception {
+    void notMainnet() throws Exception {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
-        accountInfoMigration.doMigrate();
+        historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }
 
     @Test
     void create() throws Exception {
         AccountInfo.Builder accountInfo = accountInfo();
-        assertThat(accountInfoMigration.process(accountInfo.build())).isTrue();
+        assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
 
-        Assertions.assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
+        Assertions.assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
                 .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey()
@@ -154,9 +146,11 @@ class AccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void emptyValues() {
-        assertThat(accountInfoMigration.process(AccountInfo.newBuilder().setAccountID(accountId).build())).isTrue();
+        AccountID accountId = AccountID.newBuilder().setAccountNum(ACCOUNT_ID1).build();
+        assertThat(historicalAccountInfoMigration.process(AccountInfo.newBuilder().setAccountID(accountId).build()))
+                .isTrue();
 
-        assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
+        assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
                 .returns(null, from(Entities::getAutoRenewPeriod))
                 .returns(false, from(Entities::isDeleted))
@@ -171,9 +165,9 @@ class AccountInfoMigrationTest extends IntegrationTest {
     void deleted() throws Exception {
         AccountInfo.Builder accountInfo = accountInfo().setDeleted(true);
 
-        assertThat(accountInfoMigration.process(accountInfo.build())).isTrue();
+        assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
 
-        assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
+        assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
                 .extracting(Entities::isDeleted)
                 .isEqualTo(true);
@@ -183,7 +177,7 @@ class AccountInfoMigrationTest extends IntegrationTest {
     void longOverflow() throws Exception {
         AccountInfo.Builder accountInfo = accountInfo()
                 .setExpirationTime(Timestamp.newBuilder().setSeconds(31556889864403199L).build());
-        assertThat(accountInfoMigration.process(accountInfo.build())).isTrue();
+        assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
         assertThat(entityRepository.findAll())
                 .hasSize(1)
                 .first()
@@ -191,28 +185,66 @@ class AccountInfoMigrationTest extends IntegrationTest {
                 .isEqualTo(Long.MAX_VALUE);
     }
 
+    @Test
+    void nonExistentContract() throws Exception {
+        AccountInfo.Builder accountInfo = accountInfo().setContractAccountID("123");
+
+        assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
+
+        assertThat(entityRepository.findById(ACCOUNT_ID1))
+                .get()
+                .extracting(Entities::getEntityTypeId)
+                .isEqualTo(EntityTypeEnum.CONTRACT.getId());
+    }
+
+    @Test
+    void existingContract() throws Exception {
+        AccountInfo.Builder accountInfo = accountInfo().setContractAccountID("123");
+        Entities entity = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
+
+        assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
+
+        assertThat(entityRepository.findById(entity.getId()))
+                .get()
+                .extracting(Entities::getEntityTypeId)
+                .isEqualTo(EntityTypeEnum.CONTRACT.getId());
+    }
+
+    @Test
+    void skipExisting() throws Exception {
+        AccountInfo.Builder accountInfo = accountInfo();
+        Entities entity = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
+        assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isFalse();
+        assertThat(entityRepository.findAll()).hasSize(1).containsExactly(entity);
+    }
+
     private AccountInfo.Builder accountInfo() throws Exception {
         return AccountInfo.newBuilder()
-                .setAccountID(accountId)
+                .setAccountID(AccountID.newBuilder().setAccountNum(ACCOUNT_ID1).build())
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(5).build())
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(Key.newBuilder().setEd25519(ByteString.copyFrom("123", "UTF-8")).build())
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build());
     }
 
-    private Entities entity(long num) {
-        return entityRepository.save(EntityId.of(0L, 0L, num, EntityTypeEnum.ACCOUNT).toEntity());
-    }
+    private Entities createEntity(long num, EntityTypeEnum type, boolean afterReset) {
+        Entities entities = new Entities();
+        entities.setEntityNum(num);
+        entities.setEntityRealm(0L);
+        entities.setEntityShard(0L);
+        entities.setEntityTypeId(type.getId());
+        entities.setId(num);
 
-    private Transaction transaction(Entities entity) {
-        Transaction transaction = new Transaction();
-        transaction.setConsensusNs(entity.getId());
-        transaction.setEntityId(entity.toEntityId());
-        transaction.setNodeAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
-        transaction.setPayerAccountId(EntityId.of(0, 0, 2, EntityTypeEnum.ACCOUNT));
-        transaction.setResult(1);
-        transaction.setType(TransactionTypeEnum.CRYPTOCREATEACCOUNT.getProtoId());
-        transaction.setValidStartNs(1L);
-        return transactionRepository.save(transaction);
+        if (afterReset) {
+            Key key = Key.newBuilder().setEd25519(ByteString.copyFrom("123abc", StandardCharsets.UTF_8)).build();
+            entities.setAutoRenewPeriod(1L);
+            entities.setExpiryTimeNs(1L);
+            entities.setKey(key.toByteArray());
+            entities.setMemo("Foo");
+            entities.setProxyAccountId(EntityId.of(0, 0, 2, EntityTypeEnum.ACCOUNT));
+        }
+
+        entityRepository.save(entities);
+        return entities;
     }
 }

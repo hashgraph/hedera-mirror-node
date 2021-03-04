@@ -10,7 +10,7 @@ hedera:
         password: ${embedded.postgresql.password}
       downloader:
         bucketName: test
-      importAccountInfo: false
+      importHistoricalAccountInfo: false
       parser:
         exclude:
           - entity: 0.0.999

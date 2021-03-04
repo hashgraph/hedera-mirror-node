@@ -20,13 +20,10 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Collection;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 
-    boolean existsByEntityIdAndTypeIn(EntityId entityId, Collection<Integer> types);
 }

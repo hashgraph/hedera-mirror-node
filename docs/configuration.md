@@ -61,7 +61,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
 | `hedera.mirror.importer.endDate`                                     | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
-| `hedera.mirror.importer.importAccountInfo`                           | true                    | Import historical account information that occurred before the last stream reset               |
+| `hedera.mirror.importer.importHistoricalAccountInfo`                 | true                    | Import historical account information that occurred before the last stream reset               |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |

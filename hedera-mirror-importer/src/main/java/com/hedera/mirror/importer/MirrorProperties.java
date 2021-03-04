@@ -43,7 +43,7 @@ public class MirrorProperties {
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 
-    private boolean importAccountInfo = true;
+    private boolean importHistoricalAccountInfo = true;
 
     private Path initialAddressBook;
 
