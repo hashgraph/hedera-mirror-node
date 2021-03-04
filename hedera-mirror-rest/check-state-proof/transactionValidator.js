@@ -23,7 +23,10 @@
 // external libraries
 const _ = require('lodash');
 const crypto = require('crypto');
-const {SHA_384} = require('../stream/constants');
+const log4js = require('log4js')
+const SHA_384 = require('../stream').HashObject.SHA_384;
+
+const logger = log4js.getLogger();
 
 /**
  * Verifies given hash was signed with the provided public key
@@ -58,12 +61,12 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
 
   // create a map of hash -> nodeId to show alignment
   _.forEach(signatureFilesMap, (sigMapItem) => {
-    console.info(`Verify signatures passed for node ${sigMapItem.nodeId}`);
+    logger.info(`Verify signatures passed for node ${sigMapItem.nodeId}`);
     const {publicKey} = nodePublicKeyMap[sigMapItem.nodeId];
     const sigMapItemHashHex = sigMapItem.fileHash.toString(SHA_384.encoding);
 
     if (!verifySignature(publicKey, sigMapItem.fileHash, sigMapItem.fileHashSignature)) {
-      console.error(`Failed to verify fileHash signature for node ${sigMapItem.nodeId}!`);
+      logger.error(`Failed to verify fileHash signature for node ${sigMapItem.nodeId}!`);
       return;
     }
 
@@ -71,7 +74,7 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
       sigMapItem.metadataHash &&
       !verifySignature(publicKey, sigMapItem.metadataHash, sigMapItem.metadataHashSignature)
     ) {
-      console.error(`Failed to verify metadataHash signature for node ${sigMapItem.nodeId}!`);
+      logger.error(`Failed to verify metadataHash signature for node ${sigMapItem.nodeId}!`);
       return;
     }
 
@@ -102,12 +105,12 @@ const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
  */
 const validateRecordFileHash = (recordFileHash, consensusValidatedHash) => {
   if (recordFileHash !== consensusValidatedHash) {
-    console.error(
+    logger.error(
       `Hash mismatch between recordFileHash: ${recordFileHash} and consensus validated signature files hash: ${consensusValidatedHash}!`
     );
     return false;
   }
-  console.info(`Record file hash was successfully matched with signature files`);
+  logger.info(`Record file hash was successfully matched with signature files`);
 
   return true;
 };
@@ -122,7 +125,7 @@ const validateRecordFileHash = (recordFileHash, consensusValidatedHash) => {
 const performStateProof = (nodePublicKeyMap, signatureFilesMap, recordFileHash) => {
   const consensusValidatedHash = verifySignatures(nodePublicKeyMap, signatureFilesMap);
   if (_.isNull(consensusValidatedHash)) {
-    console.error(`Unable to validate signature files!`);
+    logger.error(`Unable to validate signature files!`);
     return false;
   }
 

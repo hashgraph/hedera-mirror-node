@@ -20,7 +20,7 @@
   "dependencies": {
     "@awaitjs/express": "^0.7.2",
     "@godaddy/terminus": "^4.6.0",
-    "@hashgraph/sdk": "^2.0.16",
+    "@hashgraph/sdk": "^2.0.17",
     "asn1js": "^2.0.26",
     "aws-sdk": "^2.853.0",
     "body-parser": "^1.19.0",
@@ -49,6 +49,7 @@
     "express",
     "express-http-context",
     "@godaddy/terminus",
+    "@hashgraph/sdk",
     "js-yaml",
     "lodash",
     "log4js",

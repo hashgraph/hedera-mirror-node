@@ -25,6 +25,7 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const s3client = require('./s3client');
+const {CompositeRecordFile} = require('./stream');
 const TransactionId = require('./transactionId');
 const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
@@ -69,7 +70,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
  */
 let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const sqlParams = [consensusNs];
-  const sqlQuery = `SELECT bytes, name, node_account_id
+  const sqlQuery = `SELECT bytes, name, node_account_id, version
        FROM record_file
        WHERE consensus_end >= $1
        ORDER BY consensus_end
@@ -86,8 +87,7 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const info = rows[0];
   logger.debug(`Found RCD file ${JSON.stringify(info)} for consensus timestamp ${consensusNs}`);
   return {
-    data: info.bytes,
-    filename: info.name,
+    ...info,
     nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
   };
 };
@@ -229,11 +229,30 @@ const getScheduledParamValue = (filters) => {
 /**
  * Format the record file in either the full format or the compact format depending on its version.
  * @param {Buffer} data
+ * @param {TransactionId} transactionId
  * @returns {string|Object}
  */
-const formatRecordFile = (data) => {
-  // if record file version is not 5, base64 encode it regardless of compact
-  return data.toString('base64');
+const formatRecordFile = (data, transactionId) => {
+  if (!CompositeRecordFile.canCompact(data)) {
+    return data.toString('base64');
+  }
+
+  const base64Encode = (obj) => {
+    for (const [k, v] of Object.entries(obj)) {
+      if (Buffer.isBuffer(v)) {
+        obj[k] = v.toString('base64');
+      } else if (Array.isArray(v)) {
+        v.forEach((value, index) => {
+          obj[k][index] = value.toString('base64');
+        });
+      }
+    }
+
+    return obj;
+  }
+
+  const compactObject = new CompositeRecordFile(data).toCompactObject(transactionId.toSdkTransactionId());
+  return _.mapKeys(base64Encode(compactObject), (v, k) => _.snakeCase(k));
 }
 
 /**
@@ -249,24 +268,29 @@ const getStateProofForTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
   const scheduled = getScheduledParamValue(filters);
   const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, scheduled);
-  const {rcdFileName, nodeAccountId} = await getRCDFileInfoByConsensusNs(consensusNs);
+  const rcdFileInfo = await getRCDFileInfoByConsensusNs(consensusNs);
   const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 
   const sigFileObjects = await downloadRecordStreamFilesFromObjectStorage(
-    ..._.map(nodeAccountIds, (accountId) => `${accountId}/${rcdFileName}_sig`)
+    ..._.map(nodeAccountIds, (accountId) => `${accountId}/${rcdFileInfo.name}_sig`)
   );
 
   if (!canReachConsensus(sigFileObjects.length, nodeAccountIds.length)) {
     throw new FileDownloadError(
       `Require at least 1/3 signature files to prove consensus, got ${sigFileObjects.length}` +
-        ` out of ${nodeAccountIds.length} for file ${rcdFileName}_sig`
+        ` out of ${nodeAccountIds.length} for file ${rcdFileInfo.name}_sig`
     );
   }
 
-  // download the record file from the stored node
-  const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(`${nodeAccountId}/${rcdFileName}`);
-  if (_.isEmpty(rcdFileObjects)) {
-    throw new FileDownloadError(`Failed to download record file ${rcdFileName} from node ${nodeAccountId}`);
+  // download the record file from the stored node if it's not in db
+  let rcdFile = rcdFileInfo.bytes;
+  if (!rcdFile) {
+    const partialPath = `${rcdFileInfo.nodeAccountId}/${rcdFileInfo.name}`;
+    const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(partialPath);
+    if (_.isEmpty(rcdFileObjects)) {
+      throw new FileDownloadError(`Failed to download record file ${rcdFileInfo.name} from node ${rcdFileInfo.nodeAccountId}`);
+    }
+    rcdFile = _.first(rcdFileObjects).data;
   }
 
   const sigFilesMap = {};
@@ -276,9 +300,10 @@ const getStateProofForTransaction = async (req, res) => {
   });
 
   res.locals[constants.responseDataLabel] = {
-    record_file: formatRecordFile(_.first(rcdFileObjects).data),
-    signature_files: sigFilesMap,
     address_books: addressBooks,
+    record_file: formatRecordFile(rcdFile, transactionId),
+    signature_files: sigFilesMap,
+    version: rcdFileInfo.version,
   };
 };
 

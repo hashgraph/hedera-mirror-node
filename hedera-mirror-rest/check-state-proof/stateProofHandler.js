@@ -22,11 +22,14 @@
 
 // external libraries
 const _ = require('lodash');
+const log4js = require('log4js');
 const {AddressBook} = require('./addressBook');
-const {RecordFile} = require('../stream/recordFile');
+const {RecordFile} = require('../stream/fullRecordFile');
 const {SignatureFile} = require('../stream/signatureFile');
 const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
 const {performStateProof} = require('./transactionValidator');
+
+const logger = log4js.getLogger();
 
 // responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
 class StateProofHandler {
@@ -49,7 +52,7 @@ class StateProofHandler {
       addressBooks.push(new AddressBook(tmpAddrBook));
     });
 
-    console.debug(`Parsed ${addressBooks.length} address books`);
+    logger.debug(`Parsed ${addressBooks.length} address books`);
     return addressBooks;
   }
 
@@ -59,7 +62,7 @@ class StateProofHandler {
 
     const rcdFile = new RecordFile(tmpRcdFile);
 
-    console.debug(`Parsed record and found ${Object.keys(rcdFile.transactionIdMap).length} transactions`);
+    logger.debug(`Parsed record and found ${Object.keys(rcdFile.transactionIdMap).length} transactions`);
     return rcdFile;
   }
 
@@ -71,7 +74,7 @@ class StateProofHandler {
       sigFiles.push(new SignatureFile(tmpSigFile, nodeId));
     });
 
-    console.debug(`Parsed ${sigFiles.length} signature files`);
+    logger.debug(`Parsed ${sigFiles.length} signature files`);
     return sigFiles;
   }
 
@@ -85,14 +88,14 @@ class StateProofHandler {
     // verify transactionId is in recordFile
     const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId);
     if (!transactionInRecordFile) {
-      console.error(
+      logger.error(
         `Transaction ID ${this.transactionId} not present in record file. Available transaction IDs: ${Object.keys(
           this.recordFile.transactionIdMap
         )}`
       );
       return false;
     }
-    console.log(`Matching transaction was found in record file`);
+    logger.info(`Matching transaction was found in record file`);
 
     const validatedTransaction = performStateProof(
       nodeIdPublicKeyPairs,
@@ -104,6 +107,4 @@ class StateProofHandler {
   }
 }
 
-module.exports = {
-  StateProofHandler,
-};
+module.exports = StateProofHandler;

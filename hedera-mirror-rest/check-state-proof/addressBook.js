@@ -24,7 +24,10 @@
 
 // external libraries
 const _ = require('lodash');
+const log4js = require('log4js');
 const {NodeAddressBook} = require('@hashgraph/sdk/lib/generated/BasicTypes_pb');
+
+const logger = log4js.getLogger();
 
 class AddressBook {
   /**
@@ -37,7 +40,7 @@ class AddressBook {
 
   parseAddressBookBuffer(addressBookBuffer) {
     const addressBookObject = NodeAddressBook.deserializeBinary(addressBookBuffer);
-    console.log(`${addressBookObject.getNodeaddressList().length} node(s) found in address book`);
+    logger.info(`${addressBookObject.getNodeaddressList().length} node(s) found in address book`);
     this.nodeList = addressBookObject.getNodeaddressList();
   }
 

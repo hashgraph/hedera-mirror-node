@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*-
  * ‌
  * Hedera Mirror Node
@@ -104,6 +103,5 @@ const startUpScreen = () => {
   console.log(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
   return {transactionId, url, storedFile};
 };
-module.exports = {
-  startUpScreen,
-};
+
+module.exports = startUpScreen;
