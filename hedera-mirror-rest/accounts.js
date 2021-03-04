@@ -110,7 +110,7 @@ const getAccounts = async (req, res) => {
   const accountQuery = balancesAccountQuery === '' ? '' : `(${balancesAccountQuery} or ${entityAccountQuery})`;
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
   const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'asc');
+  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
 
   const entitySql = getAccountQuery(
     `${[accountQuery, balanceQuery, pubKeyQuery].filter((x) => !!x).join(' and ')}`,
@@ -146,7 +146,13 @@ const getAccounts = async (req, res) => {
   }
 
   ret.links = {
-    next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
+    next: utils.getPaginationLink(
+      req,
+      ret.accounts.length !== limit,
+      constants.filterKeys.ACCOUNT_ID,
+      anchorAcc,
+      order
+    ),
   };
 
   if (utils.isTestEnv()) {
@@ -249,7 +255,13 @@ const getOneAccount = async (req, res) => {
 
       // Pagination links
       ret.links = {
-        next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order),
+        next: utils.getPaginationLink(
+          req,
+          ret.transactions.length !== limit,
+          constants.filterKeys.TIMESTAMP,
+          anchorSecNs,
+          order
+        ),
       };
 
       logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);

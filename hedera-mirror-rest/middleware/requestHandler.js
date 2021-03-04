@@ -32,7 +32,7 @@ const requestLogger = async (req, res, next) => {
 
 /**
  * Manage request query params to support case insensitive keys
- * Express default query parer uses qs, other option is querystring, both are case sensitive
+ * Express default query parser uses qs, other option is querystring, both are case sensitive
  * Parse using default qs logic and use to populate a new map in which all keys are lowercased
  * @param queryString
  * @returns Query string map object

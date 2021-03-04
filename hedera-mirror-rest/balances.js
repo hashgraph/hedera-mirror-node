@@ -51,7 +51,13 @@ const formatBalancesResult = (req, result, limit, order) => {
 
   // Pagination links
   ret.links = {
-    next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order),
+    next: utils.getPaginationLink(
+      req,
+      ret.balances.length !== limit,
+      constants.filterKeys.ACCOUNT_ID,
+      anchorAccountId,
+      order
+    ),
   };
 
   if (utils.isTestEnv()) {
@@ -77,7 +83,7 @@ const getBalances = async (req, res) => {
   });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
   const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
+  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
   const innerQuery = `

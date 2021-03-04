@@ -177,7 +177,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.entityCacheSize`                        | 50000            | The maximum size of the cache to store entities used for existence check                       |
 | `hedera.mirror.grpc.listener.enabled`                       | true             | Whether to listen for incoming massages or not                                                 |
-| `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
+| `hedera.mirror.grpc.listener.interval`                      | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.maxBufferSize`                 | 16384            | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
 | `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
 | `hedera.mirror.grpc.listener.prefetch`                      | 48               | The prefetch queue size for shared listeners                                                   |

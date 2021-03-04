@@ -38,7 +38,7 @@ const sqlQueryColumns = {
 const filterColumnMap = {
   publickey: sqlQueryColumns.PUBLIC_KEY,
   symbol: sqlQueryColumns.SYMBOL,
-  'token.id': sqlQueryColumns.TOKEN_ID,
+  [constants.filterKeys.TOKEN_ID]: sqlQueryColumns.TOKEN_ID,
 };
 
 // token discovery sql queries
@@ -222,8 +222,8 @@ const tokenBalancesSqlQueryColumns = {
 
 // token balances query to column maps
 const tokenBalancesFilterColumnMap = {
-  'account.balance': tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE,
-  'account.id': tokenBalancesSqlQueryColumns.ACCOUNT_ID,
+  [constants.filterKeys.ACCOUNT_BALANCE]: tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE,
+  [constants.filterKeys.ACCOUNT_ID]: tokenBalancesSqlQueryColumns.ACCOUNT_ID,
 };
 
 const tokenBalancesSelectFields = ['tb.consensus_timestamp', 'tb.account_id', 'tb.balance'];

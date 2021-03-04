@@ -31,7 +31,7 @@ handle_mode() {
 
 run_test() {
     handle_mode
-    ./mvnw clean integration-test -pl hedera-mirror-test -P=$testProfile $testoptions -e
+    ./mvnw clean integration-test -pl hedera-mirror-test -P="${testProfile}" "${testoptions}" -e
 }
 
 run_test

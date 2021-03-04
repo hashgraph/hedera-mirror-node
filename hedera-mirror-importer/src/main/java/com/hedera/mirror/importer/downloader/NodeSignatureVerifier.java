@@ -57,7 +57,7 @@ public class NodeSignatureVerifier {
      *  <li>At least 1/3 signature files are present</li>
      *  <li>For a signature file, we validate it by checking if it's signed by corresponding node's PublicKey. For valid
      *      signature files, we compare their hashes to see if at least 1/3 have hashes that match. If a signature is
-     *      valid, we put the hash in its content and its file to the map, to see if at lest 1/3 valid signatures have
+     *      valid, we put the hash in its content and its file to the map, to see if at least 1/3 valid signatures have
      *      the same hash</li>
      * </ol>
      *

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-cd "$(dirname $0)/.."
+cd "$(dirname "${0}")/.."
 
 # name of the service and directories
 name=hedera-mirror-grpc
@@ -18,9 +18,9 @@ mkdir -p "${usretc}" "${usrlib}"
 systemctl stop "${name}.service" || true
 
 if [[ ! -f "${usretc}/application.yml" ]]; then
-    echo "Fresh install of ${version}"
-    read -p "Database hostname: " dbHost
-    read -p "Database password: " dbPassword
+    echo "Fresh install of ${name}"
+    read -rp "Database hostname: " dbHost
+    read -rp "Database password: " dbPassword
     cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:

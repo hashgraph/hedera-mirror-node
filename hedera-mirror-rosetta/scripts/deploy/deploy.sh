@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -ex
 
-cd "$(dirname $0)/.."
+cd "$(dirname "${0}")/.."
 
 # name of the service and directories
 name=hedera-mirror-rosetta
-configfile=application.yml
+binary="/usr/bin/${name}"
 configdir="/usr/etc/${name}"
-libdir="/usr/lib/${name}"
+configfile="${configdir}/application.yml"
 execname="$(ls -1 ${name}-*)"
 
 if [[ ! -f "${execname}" ]]; then
@@ -15,31 +15,31 @@ if [[ ! -f "${execname}" ]]; then
     exit 1
 fi
 
-mkdir -p "${configdir}" "${libdir}"
+mkdir -p "${configdir}"
 systemctl stop "${name}.service" || true
 
-if [[ ! -f "${configdir}/${configfile}" ]]; then
-    if [[ ! -f "${configfile}" ]]; then
-        echo "Can't find ${configfile}. Aborting"
-        exit 1
-    fi
-
-    echo "Copying new cofig file"
-    read -p "Database hostname: " dbHost
-    read -p "Database name: " dbName
-    read -p "Rosetta user password: " dbPassword
-    read -p "Database port: " dbPort
-    read -p "Rosetta user: " dbUser
-    read -p "Rosetta api port: " apiPort
-    sed -e 's/${dbHost}/'"${dbHost}"'/g' -e 's/${dbName}/'"${dbName}"'/g' -e 's/${dbPassword}/'"${dbPassword}"'/g' \
-        -e 's/${dbPort}/'"${dbPort}"'/g' -e 's/${dbUser}/'"${dbUser}"'/g' -e 's/${apiPort}/'"${apiPort}"'/g' \
-        "./${configfile}" >"${configdir}/${configfile}"
+if [[ ! -f "${configfile}" ]]; then
+   echo "Fresh install of ${name}"
+    read -rp "Database hostname: " dbHost
+    read -rp "Database name: " dbName
+    read -rp "Rosetta user password: " dbPassword
+    read -rp "Database port: " dbPort
+    read -rp "Rosetta user: " dbUser
+    cat > "${configfile}" <<EOF
+hedera:
+  mirror:
+    rosetta:
+      db:
+        host: ${dbHost}
+        name: ${dbName}
+        password: ${dbPassword}
+        port: ${dbPort}
+        username: ${dbUser}
+EOF
 fi
 
 echo "Copying new binary"
-rm -f "${libdir}/${name}"
-cp "${execname}" "${libdir}"
-ln -s "${libdir}/${execname}" "${libdir}/${name}"
+cp "${execname}" "${binary}/"
 
 echo "Setting up ${name} systemd service"
 cp "scripts/${name}.service" /etc/systemd/system
@@ -50,3 +50,4 @@ echo "Starting ${name} service"
 systemctl start "${name}.service"
 
 echo "Installation completed successfully"
+

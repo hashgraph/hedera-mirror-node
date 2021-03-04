@@ -50,7 +50,7 @@ public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
-    private static final Long SCALAR = 1_000_000_000L;
+    private static final Long NANOS_PER_SECOND = 1_000_000_000L;
 
     /**
      * @return Timestamp from an instant
@@ -91,7 +91,7 @@ public class Utility {
      */
     public static Long convertToNanos(long second, long nanos) {
         try {
-            return Math.addExact(Math.multiplyExact(second, SCALAR), nanos);
+            return Math.addExact(Math.multiplyExact(second, NANOS_PER_SECOND), nanos);
         } catch (ArithmeticException e) {
             log.error("Long overflow when converting time to nanos timestamp : {}s {}ns", second, nanos);
             throw e;
@@ -119,7 +119,7 @@ public class Utility {
             if (timestamp == null) {
                 return null;
             }
-            return Math.addExact(Math.multiplyExact(timestamp.getSeconds(), SCALAR), timestamp.getNanos());
+            return Math.addExact(Math.multiplyExact(timestamp.getSeconds(), NANOS_PER_SECOND), timestamp.getNanos());
         } catch (ArithmeticException e) {
             throw new ArithmeticException("Long overflow when converting Timestamp to nanos timestamp: " + timestamp);
         }

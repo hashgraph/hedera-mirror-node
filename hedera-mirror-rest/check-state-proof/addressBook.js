@@ -45,7 +45,7 @@ class AddressBook {
     this.nodeIdPublicKeyPairs = {};
     _.forEach(this.nodeList, (nodeAddress) => {
       let node;
-      // For some address books node id does nt contain node id. In those cases retrieve id from memo field
+      // For some address books node id does not contain node id. In those cases retrieve id from memo field
       if (_.isUndefined(nodeAddress.getNodeid()) || nodeAddress.getNodeid().indexOf('.') < 1) {
         node = Buffer.from(nodeAddress.getMemo()).toString('utf-8');
       } else {

@@ -45,7 +45,7 @@ public class ListenerProperties {
 
     @DurationMin(millis = 50)
     @NotNull
-    private Duration frequency = Duration.ofMillis(500L);
+    private Duration interval = Duration.ofMillis(500L);
 
     @Min(4)
     @Max(256)
