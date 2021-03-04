@@ -33,7 +33,7 @@ Feature: Schedule Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @Acceptance @ScheduleSanity
+    @Acceptance
     Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleDelete
         Given I schedule a crypto transfer with <initialSignatureCount> initial signatures but require an additional signature from <accountName>
         When the network confirms schedule presence
