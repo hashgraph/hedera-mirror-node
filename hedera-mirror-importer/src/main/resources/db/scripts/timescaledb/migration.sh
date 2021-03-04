@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-set -e
-set -o pipefail
+set -eo pipefail
 
-SCRIPTS_DIR="$(realpath ${0%/*})"
+SCRIPTS_DIR="$(realpath "${0%/*}")"
 EXPORT_DIR="${SCRIPTS_DIR}/export"
 MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 source "${SCRIPTS_DIR}/migration.config"
