@@ -32,7 +32,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.HederaThrowable;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 
@@ -62,13 +62,15 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
 
     @Override
     public TopicMessageSubmitTransaction get() {
-        return new RetryConfigurableConsensusMessageSubmitTransaction().setMessage(generateMessage())
-                .setTopicId(topicId);
+        return new TopicMessageSubmitTransaction()
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setMessage(generateMessage())
+                .setTopicId(getConsensusTopicId());
     }
 
     private byte[] generateMessage() {
         byte[] timestamp = Longs.toByteArray(System.currentTimeMillis());
-        return ArrayUtils.addAll(timestamp, messageSuffix);
+        return ArrayUtils.addAll(timestamp, getMessageSuffix());
     }
 
     private byte[] randomByteArray() {
@@ -81,11 +83,11 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
         return bytes;
     }
 
-    private class RetryConfigurableConsensusMessageSubmitTransaction extends TopicMessageSubmitTransaction {
-
-        @Override
-        protected boolean shouldRetry(HederaThrowable e) {
-            return retry;
-        }
-    }
+//    private class RetryConfigurableConsensusMessageSubmitTransaction extends TopicMessageSubmitTransaction {
+//
+//        @Override
+//        protected boolean shouldRetry(HederaThrowable e) {
+//            return retry;
+//        }
+//    }
 }
