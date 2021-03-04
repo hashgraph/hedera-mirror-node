@@ -26,6 +26,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,11 +39,11 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.proto.AccountID;
-import com.hedera.hashgraph.proto.TokenID;
-import com.hedera.hashgraph.proto.TopicID;
-import com.hedera.hashgraph.proto.TransactionReceipt;
-import com.hedera.hashgraph.sdk.TransactionRecord;
+import com.hedera.hashgraph.sdk.proto.AccountID;
+import com.hedera.hashgraph.sdk.proto.TokenID;
+import com.hedera.hashgraph.sdk.proto.TopicID;
+import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
+import com.hedera.hashgraph.sdk.proto.TransactionRecord;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
@@ -110,7 +111,7 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void account() {
+    void account() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.ACCOUNT_CREATE;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
         assertThat(expressionConverter.convert("${account.foo}")).isEqualTo("0.0.100");
@@ -120,7 +121,7 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void token() {
+    void token() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.TOKEN_CREATE;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 101));
         assertThat(expressionConverter.convert("${token.foo}")).isEqualTo("0.0.101");
@@ -130,7 +131,7 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void topic() {
+    void topic() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
@@ -140,7 +141,7 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void cached() {
+    void cached() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any()))
                 .thenReturn(response(type, 100));
@@ -153,7 +154,7 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void map() {
+    void map() throws InvalidProtocolBufferException {
         Map<String, String> properties = Map.of("accountId", "0.0.100", "topicId", "${topic.fooBar_123}");
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 101));
@@ -167,7 +168,7 @@ class ExpressionConverterImplTest {
         assertThat(request.getValue().getType()).isEqualTo(type);
     }
 
-    private PublishResponse response(TransactionType type, long id) {
+    private PublishResponse response(TransactionType type, long id) throws InvalidProtocolBufferException {
         TransactionReceipt.Builder receipt = TransactionReceipt.newBuilder();
 
         switch (type) {
@@ -182,9 +183,11 @@ class ExpressionConverterImplTest {
                 break;
         }
 
-        TransactionRecord record = new TransactionRecord(com.hedera.hashgraph.proto.TransactionRecord.newBuilder()
-                .setReceipt(receipt)
-                .build());
+        com.hedera.hashgraph.sdk.TransactionRecord record = com.hedera.hashgraph.sdk.TransactionRecord
+                .fromBytes(TransactionRecord.newBuilder()
+                        .setReceipt(receipt)
+                        .build().toByteArray());
+
         return PublishResponse.builder()
                 .record(record)
                 .receipt(record.receipt)

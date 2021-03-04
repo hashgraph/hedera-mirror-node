@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -37,6 +38,7 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
+@Log4j2
 @Named
 @Primary
 @RequiredArgsConstructor
@@ -69,7 +71,15 @@ public class CompositeSubscriber implements Subscriber {
                 subscribeProperties.getGrpc()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)
-                        .map(p -> new GrpcSubscriber(expressionConverter, meterRegistry, monitorProperties, p)),
+                        .map(p -> {
+                            try {
+                                return new GrpcSubscriber(expressionConverter, meterRegistry, monitorProperties, p);
+                            } catch (InterruptedException e) {
+                                log.warn("Unable to retrieve mirror grpc subscriber to {}: ", monitorProperties
+                                        .getMirrorNode().getGrpc().getEndpoint());
+                            }
+                            return null;
+                        }),
                 subscribeProperties.getRest()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)

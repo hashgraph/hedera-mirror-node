@@ -28,20 +28,23 @@ import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessage;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
@@ -62,12 +65,12 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
         String topicId = expressionConverter.convert(subscriberProperties.getTopicId());
         subscriberProperties.setTopicId(topicId);
 
+        NodeProperties singleNodeProperty = new ArrayList<>(monitorProperties.getNodes()).get(0);
+        AccountId nodeAccount = AccountId.fromString(singleNodeProperty.getAccountId());
+        // though not used in mirror case you must set network nodes
+        client = Client.forNetwork(Map.of(singleNodeProperty.getEndpoint(), nodeAccount));
         String endpoint = monitorProperties.getMirrorNode().getGrpc().getEndpoint();
         log.info("Connecting to mirror node {}", endpoint);
-//        NodeProperties singleNodeProperty = new ArrayList<>(monitorProperties.getNodes()).get(0);
-//        AccountId nodeAccount = AccountId.fromString(singleNodeProperty.getAccountId());
-//        mirrorClient = Client.forNetwork(Map.of(singleNodeProperty.getEndpoint(), nodeAccount));
-        client = Client.forNetwork(new HashMap<>());
         client.setMirrorNetwork(List.of(endpoint));
         subscribe();
     }
