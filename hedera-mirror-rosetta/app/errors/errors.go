@@ -82,11 +82,11 @@ const (
 	InternalServerError            string = "Internal Server Error"
 )
 
-func New(message string, statusCode int32, retryable bool) *types.Error {
+func New(message string, statusCode int32, retriable bool) *types.Error {
 	return &types.Error{
 		Message:   message,
 		Code:      statusCode,
-		Retryable: retryable,
+		Retriable: retriable,
 		Details:   nil,
 	}
 }

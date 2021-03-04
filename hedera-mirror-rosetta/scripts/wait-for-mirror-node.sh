@@ -49,7 +49,7 @@ do
         echo "Mirror Node syncing has not started yet"
 
         response_body="$(tail -n2 <<< "${response}" | head -n1)"
-        retryable="$(echo "${response_body}" | jq '.retryable')"
+        retryable="$(echo "${response_body}" | jq '.retriable')"
 
         if [[ "${retryable}" = false ]]; then
             echo "Request cannot be retried, response body: ${response_body}"
