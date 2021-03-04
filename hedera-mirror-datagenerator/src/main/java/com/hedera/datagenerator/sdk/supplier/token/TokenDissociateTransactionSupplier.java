@@ -47,7 +47,8 @@ public class TokenDissociateTransactionSupplier implements TransactionSupplier<T
     @Override
     public TokenDissociateTransaction get() {
 
-        return new TokenDissociateTransaction().setTokenIds(List.of(TokenId.fromString(tokenId)))
+        return new TokenDissociateTransaction()
+                .setTokenIds(List.of(TokenId.fromString(tokenId)))
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTransactionMemo(Utility.getMemo("Mirror node dissociated test token"));

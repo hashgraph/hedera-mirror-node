@@ -258,7 +258,7 @@ class RestSubscriberTest {
                         .type(TransactionType.CONSENSUS_SUBMIT_MESSAGE)
                         .build())
                 .timestamp(Instant.now())
-                .transactionId(new TransactionId(AccountId.fromString("0.0.1000"), Instant.ofEpochSecond(1)))
+                .transactionId(TransactionId.withValidStart(AccountId.fromString("0.0.1000"), Instant.ofEpochSecond(1)))
                 .build();
     }
 

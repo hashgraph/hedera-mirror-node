@@ -49,8 +49,11 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
     @Override
     public TokenWipeTransaction get() {
 
-        return new TokenWipeTransaction().setAccountId(AccountId.fromString(accountId)).setAmount(amount)
-                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee)).setTokenId(TokenId.fromString(tokenId))
+        return new TokenWipeTransaction()
+                .setAccountId(AccountId.fromString(accountId))
+                .setAmount(amount)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node wiped test token"));
     }
 }

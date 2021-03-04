@@ -42,7 +42,8 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
     @Override
     public TopicDeleteTransaction get() {
 
-        return new TopicDeleteTransaction().setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+        return new TopicDeleteTransaction()
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTopicId(TopicId.fromString(topicId))
                 .setTransactionMemo(Utility.getMemo("Mirror node deleted test topic"));
     }

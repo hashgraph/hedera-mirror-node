@@ -45,7 +45,8 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
     @Override
     public TokenBurnTransaction get() {
 
-        return new TokenBurnTransaction().setAmount(amount).setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+        return new TokenBurnTransaction().setAmount(amount)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node burned test token"));
     }

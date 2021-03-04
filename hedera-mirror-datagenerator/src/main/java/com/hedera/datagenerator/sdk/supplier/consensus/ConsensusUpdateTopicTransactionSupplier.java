@@ -33,9 +33,9 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
-import com.hedera.hashgraph.sdk.PublicKey;
 
 @Data
 public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<TopicUpdateTransaction> {
@@ -62,7 +62,8 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     public TopicUpdateTransaction get() {
 
         TopicUpdateTransaction topicUpdateTransaction = new TopicUpdateTransaction()
-                .setTopicId(TopicId.fromString(topicId)).setTopicMemo(Utility.getMemo("Mirror node created test topic"))
+                .setTopicId(TopicId.fromString(topicId))
+                .setTopicMemo(Utility.getMemo("Mirror node created test topic"))
                 .setTransactionMemo(Utility.getMemo("Mirror node updated test topic"));
 
         if (adminKey != null) {

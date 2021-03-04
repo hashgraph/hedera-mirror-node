@@ -27,8 +27,8 @@ import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 
 @Data
 public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<TopicCreateTransaction> {
@@ -52,7 +52,8 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
             topicCreateTransaction.setAdminKey(key).setSubmitKey(key);
         }
         if (autoRenewAccountId != null) {
-            topicCreateTransaction.setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId));
+            topicCreateTransaction
+                    .setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId));
         }
         return topicCreateTransaction;
     }

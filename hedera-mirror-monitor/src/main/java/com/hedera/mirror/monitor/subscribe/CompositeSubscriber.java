@@ -25,6 +25,7 @@ import com.google.common.collect.Streams;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
@@ -79,7 +80,8 @@ public class CompositeSubscriber implements Subscriber {
                                         .getMirrorNode().getGrpc().getEndpoint());
                             }
                             return null;
-                        }),
+                        })
+                        .filter(Objects::nonNull),
                 subscribeProperties.getRest()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)

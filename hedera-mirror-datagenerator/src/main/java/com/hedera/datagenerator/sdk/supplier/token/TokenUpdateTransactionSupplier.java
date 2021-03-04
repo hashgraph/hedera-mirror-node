@@ -65,18 +65,29 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     @Override
     public TokenUpdateTransaction get() {
 
-        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction().setAutoRenewPeriod(autoRenewPeriod)
-                .setExpirationTime(expirationTime).setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenName(symbol + "_name").setTokenSymbol(symbol).setTokenId(TokenId.fromString(tokenId))
+        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
+                .setAutoRenewPeriod(autoRenewPeriod)
+                .setExpirationTime(expirationTime)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenName(symbol + "_name")
+                .setTokenSymbol(symbol)
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node updated test token"));
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);
-            tokenUpdateTransaction.setAdminKey(key).setFreezeKey(key).setKycKey(key).setSupplyKey(key).setWipeKey(key);
+            tokenUpdateTransaction
+                    .setAdminKey(key)
+                    .setFreezeKey(key)
+                    .setKycKey(key)
+                    .setSupplyKey(key)
+                    .setWipeKey(key);
         }
         if (treasuryAccountId != null) {
             AccountId treastury = AccountId.fromString(treasuryAccountId);
-            tokenUpdateTransaction.setAutoRenewAccountId(treastury).setTreasuryAccountId(treastury);
+            tokenUpdateTransaction
+                    .setAutoRenewAccountId(treastury)
+                    .setTreasuryAccountId(treastury);
         }
         return tokenUpdateTransaction;
     }

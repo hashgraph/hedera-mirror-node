@@ -42,7 +42,8 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
     @Override
     public TokenDeleteTransaction get() {
 
-        return new TokenDeleteTransaction().setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+        return new TokenDeleteTransaction()
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node deleted test token"));
     }

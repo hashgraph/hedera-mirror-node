@@ -61,9 +61,12 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     public TokenCreateTransaction get() {
         AccountId treasuryAccount = AccountId.fromString(treasuryAccountId);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
-                .setAutoRenewAccountId(treasuryAccount).setDecimals(decimals).setInitialSupply(initialSupply)
-                .setFreezeDefault(freezeDefault).setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenName(symbol + "_name").setTokenSymbol(symbol)
+                .setAutoRenewAccountId(treasuryAccount)
+                .setDecimals(decimals).setInitialSupply(initialSupply)
+                .setFreezeDefault(freezeDefault)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenName(symbol + "_name")
+                .setTokenSymbol(symbol)
                 .setTransactionMemo(Utility.getMemo("Mirror node created test token"))
                 .setTreasuryAccountId(treasuryAccount);
 

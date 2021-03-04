@@ -45,7 +45,8 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
     @Override
     public AccountDeleteTransaction get() {
 
-        return new AccountDeleteTransaction().setAccountId(AccountId.fromString(accountId))
+        return new AccountDeleteTransaction()
+                .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTransactionMemo(Utility.getMemo("Mirror node deleted test account"))
                 .setTransferAccountId(AccountId.fromString(transferAccountId));

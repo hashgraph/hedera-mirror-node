@@ -47,7 +47,8 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountCreateTransaction get() {
-        return new AccountCreateTransaction().setInitialBalance(Hbar.fromTinybars(initialBalance))
+        return new AccountCreateTransaction()
+                .setInitialBalance(Hbar.fromTinybars(initialBalance))
                 .setKey(publicKey != null ? PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTransactionMemo(Utility.getMemo("Mirror node created test account"));

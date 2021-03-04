@@ -46,8 +46,10 @@ public class TokenGrantKycTransactionSupplier implements TransactionSupplier<Tok
     @Override
     public TokenGrantKycTransaction get() {
 
-        return new TokenGrantKycTransaction().setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee)).setTokenId(TokenId.fromString(tokenId))
+        return new TokenGrantKycTransaction()
+                .setAccountId(AccountId.fromString(accountId))
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node granted kyc to test token"));
     }
 }

@@ -45,7 +45,9 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     @Override
     public TokenMintTransaction get() {
 
-        return new TokenMintTransaction().setAmount(amount).setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+        return new TokenMintTransaction()
+                .setAmount(amount)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node minted test token"));
     }

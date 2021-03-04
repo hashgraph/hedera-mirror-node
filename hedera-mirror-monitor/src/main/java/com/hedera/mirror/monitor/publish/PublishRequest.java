@@ -35,6 +35,6 @@ public class PublishRequest {
     private final boolean receipt;
     private final boolean record;
     private final Instant timestamp;
-    private final Transaction transactionBuilder;
+    private final Transaction<?> transactionBuilder;
     private final TransactionType type;
 }

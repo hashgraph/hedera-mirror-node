@@ -42,7 +42,6 @@ import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 
@@ -80,8 +79,7 @@ public class TransactionPublisher {
         int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(index);
 
-        TransactionResponse transactionResponse = (TransactionResponse) request.getTransactionBuilder().execute(client);
-        TransactionId transactionId = transactionResponse.transactionId;
+        TransactionId transactionId = request.getTransactionBuilder().execute(client).transactionId;
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
                 .request(request)
                 .timestamp(Instant.now())

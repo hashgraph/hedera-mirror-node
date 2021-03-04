@@ -46,8 +46,10 @@ public class TokenRevokeKycTransactionSupplier implements TransactionSupplier<To
     @Override
     public TokenRevokeKycTransaction get() {
 
-        return new TokenRevokeKycTransaction().setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee)).setTokenId(TokenId.fromString(tokenId))
+        return new TokenRevokeKycTransaction()
+                .setAccountId(AccountId.fromString(accountId))
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node revoked kyc for test token"));
     }
 }
