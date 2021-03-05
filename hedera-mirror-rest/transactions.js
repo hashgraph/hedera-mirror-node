@@ -272,7 +272,6 @@ const getGeneralTransactionsInnerQuery = function (
   if (namedAccountQuery) {
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
     //between the three tables is needed to get rows that may only exist in one.
-
     const ctlQuery = getTransferDistinctTimestampsQuery(
       'crypto_transfer',
       'ctl',
