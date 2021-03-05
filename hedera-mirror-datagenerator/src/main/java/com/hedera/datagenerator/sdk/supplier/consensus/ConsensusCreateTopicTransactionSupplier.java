@@ -49,7 +49,9 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);
-            topicCreateTransaction.setAdminKey(key).setSubmitKey(key);
+            topicCreateTransaction
+                    .setAdminKey(key)
+                    .setSubmitKey(key);
         }
         if (autoRenewAccountId != null) {
             topicCreateTransaction
