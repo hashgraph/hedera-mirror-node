@@ -33,9 +33,8 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
 
-import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
@@ -46,10 +45,13 @@ import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionRecord;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
 @Value
 public class TopicClient extends AbstractNetworkClient {
+    private static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
     private final Map<Long, Instant> recordPublishInstants;
 
     public TopicClient(SDKClient sdkClient) {
@@ -58,65 +60,70 @@ public class TopicClient extends AbstractNetworkClient {
         log.debug("Creating Topic Client");
     }
 
-    public TransactionReceipt createTopic(PublicKey adminKey, PublicKey submitKey) throws ReceiptStatusException,
+    public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 
         Instant refInstant = Instant.now();
         TopicCreateTransaction consensusTopicCreateTransaction = new TopicCreateTransaction()
-                .setAdminKey(adminKey)
+                .setAdminKey(adminAccount.getPublicKey())
                 .setAutoRenewAccountId(sdkClient.getOperatorId())
-                .setMaxTransactionFee(Hbar.fromTinybars(1_000_000_000))
-                .setTopicMemo("HCS Topic_" + refInstant);
-//                .setAutoRenewPeriod(Duration.ofDays(7000000)) // INSUFFICIENT_TX_FEE, also unsupported
-//                .setAutoRenewAccountId()
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
+                .setTopicMemo("HCS Topic_" + refInstant)
+                .setAutoRenewPeriod(autoRenewPeriod); // INSUFFICIENT_TX_FEE, also unsupported
 
         if (submitKey != null) {
             consensusTopicCreateTransaction.setSubmitKey(submitKey);
         }
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction,
-                null).getReceipt();
-
-        TopicId topicId = transactionReceipt.topicId;
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction, KeyList
+                        .of(adminAccount.getPrivateKey()));
+        TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         log.debug("Created new topic {}", topicId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt updateTopic(TopicId topicId) throws ReceiptStatusException, PrecheckStatusException,
+    public NetworkTransactionResponse updateTopic(TopicId topicId) throws ReceiptStatusException,
+            PrecheckStatusException,
             TimeoutException {
         String newMemo = "HCS UpdatedTopic__" + Instant.now().getNano();
         TopicUpdateTransaction consensusTopicUpdateTransaction = new TopicUpdateTransaction()
                 .setTopicId(topicId)
                 .setTopicMemo(newMemo)
-                .setAutoRenewPeriod(Duration.ofSeconds(8000000))
+                .setAutoRenewPeriod(autoRenewPeriod)
                 .clearAdminKey()
                 .clearSubmitKey()
                 .clearTopicMemo()
-                .clearAutoRenewAccountId(sdkClient.getOperatorId());
+                .clearAutoRenewAccountId(sdkClient.getOperatorId())
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction,
-                null).getReceipt();
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction,
+                        null);
 
         log.debug("Updated topic '{}'.", topicId);
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
-    public TransactionReceipt deleteTopic(TopicId topicId) throws ReceiptStatusException, PrecheckStatusException,
+    public NetworkTransactionResponse deleteTopic(TopicId topicId) throws ReceiptStatusException,
+            PrecheckStatusException,
             TimeoutException {
         TopicDeleteTransaction consensusTopicDeleteTransaction = new TopicDeleteTransaction()
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTopicId(topicId);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction,
-                null).getReceipt();
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction,
+                        null);
 
         log.debug("Deleted topic : '{}'.", topicId);
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
     public List<TransactionReceipt> publishMessagesToTopic(TopicId topicId, String baseMessage,
-                                                           PrivateKey submitKey, int numMessages,
+                                                           KeyList submitKeys, int numMessages,
                                                            boolean verify) throws PrecheckStatusException,
             ReceiptStatusException, TimeoutException {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
@@ -127,21 +134,27 @@ public class TopicClient extends AbstractNetworkClient {
             byte[] message = ArrayUtils.addAll(publishTimestampByteArray, suffixByteArray);
 
             if (verify) {
-                transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKey));
+                transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKeys));
             } else {
-                publishMessageToTopic(topicId, message, submitKey);
+                publishMessageToTopic(topicId, message, submitKeys);
             }
         }
 
         return transactionReceiptList;
     }
 
-    public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, PrivateKey submitKey) throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
+    public TopicMessageSubmitTransaction getTopicMessageSubmitTransaction(TopicId topicId, byte[] message) {
+        return new TopicMessageSubmitTransaction()
+                .setTopicId(topicId)
+                .setMessage(message);
+    }
+
+    public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
         TopicMessageSubmitTransaction consensusMessageSubmitTransaction = new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message);
 
-        TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKey);
+        TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKeys);
 
         TransactionRecord transactionRecord = transactionId.getRecord(client);
         // get only the 1st sequence number
@@ -157,8 +170,8 @@ public class TopicClient extends AbstractNetworkClient {
         return transactionId;
     }
 
-    public TransactionReceipt publishMessageToTopicAndVerify(TopicId topicId, byte[] message, PrivateKey submitKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        TransactionId transactionId = publishMessageToTopic(topicId, message, submitKey);
+    public TransactionReceipt publishMessageToTopicAndVerify(TopicId topicId, byte[] message, KeyList submitKeys) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        TransactionId transactionId = publishMessageToTopic(topicId, message, submitKeys);
         TransactionReceipt transactionReceipt = null;
         try {
             transactionReceipt = transactionId.getReceipt(client);

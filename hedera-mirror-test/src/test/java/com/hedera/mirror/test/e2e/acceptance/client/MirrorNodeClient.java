@@ -24,18 +24,17 @@ import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorBalancesResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
@@ -48,6 +47,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     // REST ENDPOINTS
     private static final String ACCOUNTS_ENDPOINT = "accounts";
     private static final String BALANCES_ENDPOINT = "balances";
+    private static final String SCHEDULES_ENDPOINT = "schedules";
     private static final String TOKENS_ENDPOINT = "tokens";
     private static final String TOPICS_ENDPOINT = "topics";
     private static final String TRANSACTIONS_ENDPOINT = "transactions";
@@ -61,7 +61,6 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
     }
 
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
     public SubscriptionResponse subscribeToTopic(TopicMessageQuery topicMessageQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
@@ -77,7 +76,6 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
-    //    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
     public SubscriptionResponse subscribeToTopicAndRetrieveMessages(TopicMessageQuery topicMessageQuery,
                                                                     int numMessages,
                                                                     long latency) throws Throwable {
@@ -140,6 +138,15 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 .block();
     }
 
+    public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
+        log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
+        // build /transactions/<timestamp>
+        ClientResponse clientResponse = callRestEndpoint("/{endpoint}?timestamp={timestamp}", TRANSACTIONS_ENDPOINT,
+                timestamp);
+        return clientResponse.bodyToMono(MirrorTransactionsResponse.class)
+                .block();
+    }
+
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
         // build /transactions/<transactionId>
@@ -165,6 +172,14 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 BALANCES_ENDPOINT, ACCOUNTS_ID_QUERY, accountId);
     }
 
+    public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
+        log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
+        // build /schedules/<scheduleId>
+        ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{scheduleId}", SCHEDULES_ENDPOINT, scheduleId);
+        return clientResponse.bodyToMono(MirrorScheduleResponse.class)
+                .block();
+    }
+
     public ClientResponse callRestEndpoint(String uri, Object... uriVariables) {
         ClientResponse response = webClient.get()
                 .uri(uri, uriVariables)
@@ -180,11 +195,6 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
-    }
-
-    public void close() throws TimeoutException {
-        log.debug("Closing Mirror Node client, waits up to 10 s for valid close");
-        client.close();
     }
 
     /**

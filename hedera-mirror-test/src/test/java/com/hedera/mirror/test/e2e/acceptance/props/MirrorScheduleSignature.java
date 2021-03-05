@@ -20,24 +20,11 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import java.util.List;
 import lombok.Data;
 
 @Data
-public class MirrorTransaction {
-    private String name;
-
-    private String result;
-
-    List<MirrorTokenTransfer> tokenTransfers;
-
-    private String transactionId;
-
-    List<MirrorTransfer> transfers;
-
+public class MirrorScheduleSignature {
     private String consensusTimestamp;
-
-    private String validStartTimestamp;
-
-    private boolean scheduled;
+    private String publicKeyPrefix;
+    private String signature;
 }

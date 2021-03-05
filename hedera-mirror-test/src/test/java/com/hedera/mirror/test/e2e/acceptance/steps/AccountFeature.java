@@ -89,12 +89,9 @@ public class AccountFeature {
         assertTrue(accountClient.getBalance(accountId) >= startingBalance + amount);
     }
 
-    @After
+    @After("@Accounts")
     public void closeClients() {
-        try {
-            accountClient.getSdkClient().close();
-        } catch (Exception ex) {
-            log.warn("Error closing SDK client : {}", ex);
-        }
+        log.debug("Closing account feature clients");
+        accountClient.close();
     }
 }

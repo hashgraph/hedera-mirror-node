@@ -51,6 +51,7 @@ import reactor.netty.tcp.TcpClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
+import com.hedera.mirror.test.e2e.acceptance.client.ScheduleClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 
@@ -90,6 +91,12 @@ public class ClientConfiguration {
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public TokenClient tokenClient() throws InterruptedException {
         return new TokenClient(sdkClient());
+    }
+
+    @Bean
+    @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public ScheduleClient scheduleClient() throws InterruptedException {
+        return new ScheduleClient(sdkClient());
     }
 
     @Bean
