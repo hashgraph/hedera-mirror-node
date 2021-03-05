@@ -79,7 +79,7 @@ public class PublishMetrics {
             log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
             throw new PublishException(pse);
         } catch (ReceiptStatusException rse) {
-            status = rse.getClass().getSimpleName();
+            status = rse.receipt.status.toString();
             log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId, rse.getMessage());
             throw new PublishException(rse);
         } catch (Exception e) {

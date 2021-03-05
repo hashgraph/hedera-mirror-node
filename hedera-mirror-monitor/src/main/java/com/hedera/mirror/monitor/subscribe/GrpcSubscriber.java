@@ -78,6 +78,7 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
         } catch (InterruptedException e) {
             log.warn("Unable to retrieve mirror grpc subscriber to {}: ", monitorProperties
                     .getMirrorNode().getGrpc().getEndpoint());
+            Thread.currentThread().interrupt();
         }
     }
 

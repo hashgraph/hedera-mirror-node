@@ -25,7 +25,6 @@ import com.google.common.collect.Streams;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
@@ -72,8 +71,7 @@ public class CompositeSubscriber implements Subscriber {
                 subscribeProperties.getGrpc()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)
-                        .map(p -> new GrpcSubscriber(expressionConverter, meterRegistry, monitorProperties, p))
-                        .filter(Objects::nonNull),
+                        .map(p -> new GrpcSubscriber(expressionConverter, meterRegistry, monitorProperties, p)),
                 subscribeProperties.getRest()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)

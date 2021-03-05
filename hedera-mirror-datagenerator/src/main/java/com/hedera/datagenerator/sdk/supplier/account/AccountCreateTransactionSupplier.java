@@ -56,7 +56,6 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
 
     private PublicKey generateKeys() {
         PrivateKey privateKey = PrivateKey.generate();
-        privateKey.getPublicKey();
 
         // Since these keys will never be seen again, if we want to reuse this account
         // provide an option to print them
