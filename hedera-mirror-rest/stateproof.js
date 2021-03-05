@@ -62,30 +62,30 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
 };
 
 /**
- * Get the RCD file name and the account ID of the node it was downloaded from, where consensusNs is in the range
- * [consensus_start, consensus_end]. Throws exception if no such RCD file found.
+ * Get the RCD file name, raw bytes if available, and the account ID of the node it was downloaded from, where
+ * consensusNs is in the range [consensus_start, consensus_end]. Throws exception if no such RCD file found.
  *
  * @param {string} consensusNs consensus timestamp within the range of the RCD file to search
- * @returns {Promise<{String, String}>} RCD file name and the account ID of the node the file was downloaded from
+ * @returns {Promise<{Buffer, String, String}>} RCD file name, raw bytes, and the account ID of the node the file was
+ *                                              downloaded from
  */
 let getRCDFileInfoByConsensusNs = async (consensusNs) => {
-  const sqlParams = [consensusNs];
   const sqlQuery = `SELECT bytes, name, node_account_id, version
        FROM record_file
        WHERE consensus_end >= $1
        ORDER BY consensus_end
        LIMIT 1`;
   if (logger.isTraceEnabled()) {
-    logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }
 
-  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
+  const {rows} = await utils.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No matching RCD file found with ${consensusNs} in the range`);
   }
 
   const info = rows[0];
-  logger.debug(`Found RCD file ${JSON.stringify(info)} for consensus timestamp ${consensusNs}`);
+  logger.debug(`Found RCD file ${info.name} for consensus timestamp ${consensusNs}`);
   return {
     ...info,
     nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
@@ -100,7 +100,6 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
 let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
   // memo and node account ids from table address_book_entry
-  const sqlParams = [consensusNs];
   let sqlQuery = `SELECT
          file_data,
          node_count,
@@ -122,10 +121,10 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   }
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }
 
-  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
+  const {rows} = await utils.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
     throw new NotFoundError('No address book found');
   }
@@ -249,11 +248,11 @@ const formatRecordFile = (data, transactionId) => {
     }
 
     return obj;
-  }
+  };
 
-  const compactObject = new CompositeRecordFile(data).toCompactObject(transactionId.toSdkTransactionId());
+  const compactObject = new CompositeRecordFile(data).toCompactObject(transactionId.toString());
   return _.mapKeys(base64Encode(compactObject), (v, k) => _.snakeCase(k));
-}
+};
 
 /**
  * Handler function for /transactions/:transaction_id/stateproof API.
@@ -288,7 +287,9 @@ const getStateProofForTransaction = async (req, res) => {
     const partialPath = `${rcdFileInfo.nodeAccountId}/${rcdFileInfo.name}`;
     const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(partialPath);
     if (_.isEmpty(rcdFileObjects)) {
-      throw new FileDownloadError(`Failed to download record file ${rcdFileInfo.name} from node ${rcdFileInfo.nodeAccountId}`);
+      throw new FileDownloadError(
+        `Failed to download record file ${rcdFileInfo.name} from node ${rcdFileInfo.nodeAccountId}`
+      );
     }
     rcdFile = _.first(rcdFileObjects).data;
   }

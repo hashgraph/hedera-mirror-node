@@ -53,6 +53,22 @@ class CompositeRecordFile extends RecordFile {
     }, false);
   }
 
+  containsTransaction(transactionId) {
+    return this.delegate.containsTransaction(transactionId);
+  }
+
+  getFileHash() {
+    return this.delegate.getFileHash();
+  }
+
+  getMetadataHash() {
+    return this.delegate.getMetadataHash();
+  }
+
+  getTransactionMap() {
+    return this.delegate.getTransactionMap();
+  }
+
   toCompactObject(transactionId) {
     return this.delegate.toCompactObject(transactionId);
   }

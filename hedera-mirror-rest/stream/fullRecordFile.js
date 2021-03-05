@@ -27,7 +27,7 @@ const {BYTE_SIZE, INT_SIZE} = require('./constants');
 const HashObject = require('./hashObject');
 const RecordFile = require('./recordFile');
 const RecordStreamObject = require('./recordStreamObject');
-const {readLengthAndBytes} = require('./utils');
+const {logger, readLengthAndBytes} = require('./utils');
 
 const {MAX_TRANSACTION_LENGTH, MAX_RECORD_LENGTH} = RecordStreamObject;
 const {SHA_384} = HashObject;
@@ -45,9 +45,9 @@ class FullRecordFile extends RecordFile {
 
     if (FullRecordFile._support(buffer)) {
       this._parsePreV5RecordFile(buffer);
+    } else {
+      throw new Error(`Unsupported record file`);
     }
-
-    throw new Error(`Unsupported record file version ${this.version}`);
   }
 
   static _support(bufferOrObj) {
@@ -90,7 +90,7 @@ class FullRecordFile extends RecordFile {
       fileDigest.update(buffer.slice(0, PRE_V5_HEADER_LENGTH)).update(contentHash);
     }
 
-    this.fileHash = fileDigest.digest(SHA_384.encoding);
+    this._fileHash = fileDigest.digest();
   }
 }
 

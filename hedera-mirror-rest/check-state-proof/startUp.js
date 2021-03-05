@@ -22,9 +22,12 @@
 
 // external libraries
 const _ = require('lodash');
-const yargs = require('yargs'); //  simplify user input
 const chalk = require('chalk'); //  pretty up request info
 const boxen = require('boxen'); //  emphasize request info
+const log4js = require('log4js');
+const yargs = require('yargs'); //  simplify user input
+
+const logger = log4js.getLogger();
 
 const boxenOptions = {
   padding: 1,
@@ -64,7 +67,7 @@ const options = yargs
 const startUpScreen = () => {
   const greeting = chalk.bold(`Hedera Transaction State Proof Checker CLI`);
   const msgBox = boxen(greeting, boxenOptions);
-  console.log(msgBox);
+  logger.info(msgBox);
 
   const {transactionId} = options;
   const storedFile = options.file;
@@ -100,7 +103,7 @@ const startUpScreen = () => {
     source = url;
   }
 
-  console.log(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
+  logger.info(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
   return {transactionId, url, storedFile};
 };
 

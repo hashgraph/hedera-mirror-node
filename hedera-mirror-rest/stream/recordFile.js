@@ -20,10 +20,13 @@
 
 'use strict';
 
-const {Status, TransactionRecord} = require('@hashgraph/sdk');
+const {proto} = require('@hashgraph/proto/lib/proto');
+const {logger, protoTransactionIdToString} = require('./utils');
 
 class RecordFile {
   constructor() {
+    this._fileHash = null;
+    this._metadataHash = null;
     // a map of successful transactions, from its transaction ID to its index in the parsed transactions array
     // if the concrete class doesn't implement a transaction array, the index can be any value
     this._transactionMap = {};
@@ -44,32 +47,55 @@ class RecordFile {
   /**
    * Checks if a transaction is in the record file's successful transaction map
    *
-   * @param {TransactionId} transactionId
+   * @param {string} transactionId
    * @returns {boolean}
    */
   containsTransaction(transactionId) {
-    return transactionId.toString() in this._transactionMap;
+    return transactionId in this._transactionMap;
+  }
+
+  /**
+   * Gets the record file's file hash, may return null if not available.
+   */
+  getFileHash() {
+    return this._fileHash;
+  }
+
+  /**
+   * Gets the record file's metadata hash, may return null if not available.
+   */
+  getMetadataHash() {
+    return this._metadataHash;
+  }
+
+  /**
+   * Gets the transaction map.
+   * @return {{}}
+   */
+  getTransactionMap() {
+    return this._transactionMap;
   }
 
   /**
    * Converts the parsed record file to the compact format object if possible. Throws error if the transactionId is not
    * in the successful transaction map or the implementation does not support the operation.
    *
-   * @param {TransactionId} transactionId the transaction ID of interest
+   * @param {string} transactionId
    */
   toCompactObject(transactionId) {
     throw new Error('Unsupported operation');
   }
 
   _addTransaction(recordBuffer, index) {
-    const {receipt, transactionId} = TransactionRecord.fromBytes(recordBuffer);
-    if (receipt.status !== Status.Success) {
-      logger.info(`Skip non-successful transaction ${transactionId.toString()}, ${receipt.status}`);
+    const {receipt, transactionID} = proto.TransactionRecord.decode(recordBuffer);
+    const transactionIdStr = protoTransactionIdToString(transactionID);
+    if (receipt.status !== proto.ResponseCodeEnum.SUCCESS) {
+      logger.info(`Skip non-successful transaction ${transactionIdStr}, ${receipt.status}`);
       return;
     }
 
-    logger.info(`Add successful transaction ${transactionId.toString()}`);
-    this._transactionMap[transactionId.toString()] = index;
+    logger.info(`Add successful transaction ${transactionIdStr}`);
+    this._transactionMap[transactionIdStr] = index;
   }
 }
 

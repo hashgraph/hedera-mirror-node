@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,22 @@
 
 'use strict';
 
+const log4js = require('log4js');
 const {INT_SIZE} = require('./constants');
+
+const logger = log4js.getLogger();
 
 // the sum of the length field and the checksum field
 const SIMPLE_SUM = 101;
+
+const protoTransactionIdToString = (transactionId) => {
+  const {accountID, transactionValidStart: validStart} = transactionId;
+  return [
+    [accountID.shardNum, accountID.realmNum, accountID.accountNum].join('.'),
+    validStart.seconds,
+    validStart.nanos,
+  ].join('-');
+};
 
 /**
  * Reads the length field, an optional checksum, and the byte array from buffer
@@ -75,6 +87,8 @@ const readNBytes = (buffer, length) => {
 };
 
 module.exports = {
+  logger,
+  protoTransactionIdToString,
   readLengthAndBytes,
   readNBytes,
 };

@@ -23,8 +23,7 @@
 // external libraries
 const _ = require('lodash');
 const crypto = require('crypto');
-const log4js = require('log4js')
-const SHA_384 = require('../stream').HashObject.SHA_384;
+const log4js = require('log4js');
 
 const logger = log4js.getLogger();
 
@@ -51,68 +50,78 @@ const verifySignature = (publicKeyHex, hash, signature) => {
  * for every signature from a file against the appropriate public key from the it's match node in the address book
  * ensure the number of validations is at least 1/3 on the number of nodes
  * @param nodePublicKeyMap
- * @param signatureFilesMap
- * @returns consensus hash
+ * @param signatureFileMap
+ * @returns consensus hashes
  */
-const verifySignatures = (nodePublicKeyMap, signatureFilesMap) => {
+const verifySignatures = (nodePublicKeyMap, signatureFileMap) => {
   const validatedSignatureFilesMap = {};
-  const consensusHashMap = {hash: null, count: 0};
+  const consensusHashMap = {hashes: {}, count: 0};
   let maxHashCount = 0;
 
   // create a map of hash -> nodeId to show alignment
-  _.forEach(signatureFilesMap, (sigMapItem) => {
-    logger.info(`Verify signatures passed for node ${sigMapItem.nodeId}`);
-    const {publicKey} = nodePublicKeyMap[sigMapItem.nodeId];
-    const sigMapItemHashHex = sigMapItem.fileHash.toString(SHA_384.encoding);
+  for (const [nodeAccountId, signatureFile] of Object.entries(signatureFileMap)) {
+    const {fileHash, fileHashSignature, metadataHash, metadataHashSignature} = signatureFile;
+    logger.info(`Verify signatures passed for node ${nodeAccountId}`);
+    const publicKey = nodePublicKeyMap[nodeAccountId];
 
-    if (!verifySignature(publicKey, sigMapItem.fileHash, sigMapItem.fileHashSignature)) {
-      logger.error(`Failed to verify fileHash signature for node ${sigMapItem.nodeId}!`);
+    if (!verifySignature(publicKey, fileHash, fileHashSignature)) {
+      logger.error(`Failed to verify fileHash signature for node ${nodeAccountId}!`);
       return;
     }
 
-    if (
-      sigMapItem.metadataHash &&
-      !verifySignature(publicKey, sigMapItem.metadataHash, sigMapItem.metadataHashSignature)
-    ) {
-      logger.error(`Failed to verify metadataHash signature for node ${sigMapItem.nodeId}!`);
+    if (metadataHash && !verifySignature(publicKey, metadataHash, metadataHashSignature)) {
+      logger.error(`Failed to verify metadataHash signature for node ${nodeAccountId}!`);
       return;
     }
 
-    if (_.isEmpty(validatedSignatureFilesMap[sigMapItemHashHex])) {
-      validatedSignatureFilesMap[sigMapItemHashHex] = [sigMapItem.nodeId];
+    if (_.isEmpty(validatedSignatureFilesMap[fileHash])) {
+      validatedSignatureFilesMap[fileHash] = [nodeAccountId];
     } else {
-      validatedSignatureFilesMap[sigMapItemHashHex].push(sigMapItem.nodeId);
-      const nodeCount = validatedSignatureFilesMap[sigMapItemHashHex].length;
+      validatedSignatureFilesMap[fileHash].push(nodeAccountId);
+      const nodeCount = validatedSignatureFilesMap[fileHash].length;
 
       // update max. Sufficient to do here as you'd never want the max to occur in the if where the count would be 1
       if (nodeCount > maxHashCount) {
         maxHashCount = nodeCount;
-        consensusHashMap.hash = sigMapItemHashHex;
+        consensusHashMap.hashes = {
+          fileHash,
+          metadataHash,
+        };
         consensusHashMap.count = maxHashCount;
       }
     }
-  });
+  }
 
   // return hash if it was observed by a super majority
-  return maxHashCount >= Math.ceil(signatureFilesMap.length / 3.0) ? consensusHashMap.hash : null;
+  return maxHashCount >= Math.ceil(Object.keys(nodePublicKeyMap).length / 3.0) ? consensusHashMap.hashes : null;
 };
 
 /**
  * compare the hash of data file with Hash which has been agreed on by valid signatures
- * @param recordFileHash
- * @param consensusValidatedHash
+ * @param recordFileHashes
+ * @param consensusValidatedHashes
  * @returns {boolean}
  */
-const validateRecordFileHash = (recordFileHash, consensusValidatedHash) => {
-  if (recordFileHash !== consensusValidatedHash) {
-    logger.error(
-      `Hash mismatch between recordFileHash: ${recordFileHash} and consensus validated signature files hash: ${consensusValidatedHash}!`
-    );
-    return false;
-  }
-  logger.info(`Record file hash was successfully matched with signature files`);
+const validateRecordFileHash = (recordFileHashes, consensusValidatedHashes) => {
+  const {fileHash: actualFileHash, metadataHash: actualMetadataHash} = recordFileHashes;
+  const {fileHash, metadataHash} = consensusValidatedHashes;
 
-  return true;
+  if (actualFileHash && actualFileHash.equals(fileHash)) {
+    logger.info('fileHash of record file was successfully matched with signature files');
+    return true;
+  }
+
+  if (actualMetadataHash && actualMetadataHash.equals(metadataHash)) {
+    logger.info('metadataHash of record file was successfully matched with signature files');
+    return true;
+  }
+
+  logger.error(
+    `Hash mismatch: record file - ${JSON.stringify(recordFileHashes)}, signature files - ${JSON.stringify(
+      consensusValidatedHashes
+    )}`
+  );
+  return false;
 };
 
 /**
@@ -122,14 +131,14 @@ const validateRecordFileHash = (recordFileHash, consensusValidatedHash) => {
  * (3) We compare the hash of data file with Hash which has been agreed on by valid signatures,
  * if match return true otherwise false for stateProof
  */
-const performStateProof = (nodePublicKeyMap, signatureFilesMap, recordFileHash) => {
-  const consensusValidatedHash = verifySignatures(nodePublicKeyMap, signatureFilesMap);
-  if (_.isNull(consensusValidatedHash)) {
+const performStateProof = (nodePublicKeyMap, signatureFileMap, recordFileHashes) => {
+  const consensusValidatedHashes = verifySignatures(nodePublicKeyMap, signatureFileMap);
+  if (_.isNull(consensusValidatedHashes)) {
     logger.error(`Unable to validate signature files!`);
     return false;
   }
 
-  return validateRecordFileHash(recordFileHash, consensusValidatedHash);
+  return validateRecordFileHash(recordFileHashes, consensusValidatedHashes);
 };
 
 module.exports = {

@@ -23,7 +23,6 @@
 const long = require('long');
 const EntityId = require('./entityId');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-const {TransactionId: SdkTransactionId} = require('@hashgraph/sdk');
 
 class TransactionId {
   constructor(entityId, validStartSeconds, validStartNanos) {
@@ -44,14 +43,6 @@ class TransactionId {
    */
   getValidStartNs() {
     return `${this.validStartSeconds}${String(this.validStartNanos).padStart(9, '0')}`;
-  }
-
-  /**
-   * Convert to hedera-sdk-js TransactionId
-   * @returns {SdkTransactionId}
-   */
-  toSdkTransactionId() {
-    return SdkTransactionId.fromString(`${this.entityId.toString()}@${this.validStartSeconds}.${this.validStartNanos}`);
   }
 
   /**

@@ -28,21 +28,20 @@ const AbortController = require('abort-controller');
 
 const logger = log4js.getLogger();
 
-const base64StringToBuffer = (base64String) => Buffer.from(base64String, 'base64');
-
-const replaceSpecialCharsWithUnderScores = (str) => str.replace(/[.@\-]/g, '_');
-
 const makeStateProofDir = (transactionId, stateProofJson) => {
-  const newDirPath = replaceSpecialCharsWithUnderScores(transactionId);
-  fs.mkdirSync(newDirPath, {recursive: true});
-  fs.writeFileSync(`${newDirPath}/apiResponse.json`, JSON.stringify(stateProofJson));
-  logger.info(`Supporting files and API response for the state proof will be stored in the directory ${newDirPath}`);
-  return newDirPath;
+  fs.mkdirSync(transactionId, {recursive: true});
+  fs.writeFileSync(`${transactionId}/apiResponse.json`, JSON.stringify(stateProofJson));
+  logger.info(`Supporting files and API response for the state proof will be stored in the directory ${transactionId}`);
 };
 
 const storeFile = (data, file, ext) => {
-  const newFilePath = `${replaceSpecialCharsWithUnderScores(file)}.${ext}`;
-  fs.writeFileSync(`${newFilePath}`, data, (err) => {
+  if (!Buffer.isBuffer(data) && typeof data !== 'string') {
+    logger.info(`Skip saving file "${file}" since the data is neither a Buffer nor a string`);
+    return;
+  }
+
+  const filename = `${file}.${ext}`;
+  fs.writeFileSync(`${filename}`, data, (err) => {
     if (err) throw err;
   });
 };
@@ -78,10 +77,8 @@ const readJSONFile = (filePath) => {
 };
 
 module.exports = {
-  base64StringToBuffer,
   getAPIResponse,
   makeStateProofDir,
   readJSONFile,
   storeFile,
-  replaceSpecialCharsWithUnderScores,
 };

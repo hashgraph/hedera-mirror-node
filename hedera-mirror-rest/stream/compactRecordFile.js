@@ -22,10 +22,11 @@
 
 const crypto = require('crypto');
 const _ = require('lodash');
-const {INT_SIZE} = require('./constants')
+const {INT_SIZE} = require('./constants');
 const HashObject = require('./hashObject');
 const RecordFile = require('./recordFile');
 const RecordStreamObject = require('./recordStreamObject');
+const {protoTransactionIdToString} = require('./utils');
 
 const COMPACT_OBJECT_FIELDS = [
   'head',
@@ -67,6 +68,10 @@ class CompactRecordFile extends RecordFile {
     return Buffer.isBuffer(buffer) && this._support(buffer);
   }
 
+  getMetadataHash() {
+    return this.metadataHash;
+  }
+
   toCompactObject(transactionId) {
     if (!this.containsTransaction(transactionId)) {
       throw new Error(`Transaction ${transactionId} not found in the successful transactions map`);
@@ -78,14 +83,13 @@ class CompactRecordFile extends RecordFile {
       this.recordStreamObject = this._recordStreamObjects[index];
 
       this._hashes.forEach((value, current) => {
-        logger.info(`hashes: index - ${current}, value - ${value}`)
         if (!value && current !== index) {
           // calculate and cache the hash if not found and this is not the transaction of interest
           this._hashes[current] = crypto.createHash(SHA_384.name).update(this._recordStreamObjects[current]).digest();
         }
       });
       this.hashesBefore = this._hashes.slice(0, index);
-      this.hashesAfter = this._hashes.slice(index+1);
+      this.hashesAfter = this._hashes.slice(index + 1);
     }
 
     return _.pick(this, COMPACT_OBJECT_FIELDS);
@@ -145,7 +149,8 @@ class CompactRecordFile extends RecordFile {
     this._addTransaction(recordStreamObject.record);
 
     // calculate metadata hash
-    this.metadataHash = crypto.createHash(SHA_384.hash)
+    this._metadataHash = crypto
+      .createHash(SHA_384.hash)
       .update(this.head)
       .update(this.startRunningHashObject)
       .update(this.endRunningHashObject)

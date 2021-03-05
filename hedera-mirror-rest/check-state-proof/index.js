@@ -28,23 +28,25 @@ const startUpScreen = require('./startUp');
 const StateProofHandler = require('./stateProofHandler');
 const {getAPIResponse, readJSONFile} = require('./utils');
 
-const logger = log4js.configure({
-  appenders: {
-    console: {
-      layout: {
-        pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %x %m',
-        type: 'pattern',
+const logger = log4js
+  .configure({
+    appenders: {
+      console: {
+        layout: {
+          pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %m',
+          type: 'pattern',
+        },
+        type: 'stdout',
       },
-      type: 'stdout',
     },
-  },
-  categories: {
-    default: {
-      appenders: ['console'],
-      level: 'debug',
+    categories: {
+      default: {
+        appenders: ['console'],
+        level: 'debug',
+      },
     },
-  },
-});
+  })
+  .getLogger();
 
 // get user input
 const {transactionId, url, storedFile} = startUpScreen();

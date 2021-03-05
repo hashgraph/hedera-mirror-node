@@ -25,7 +25,7 @@
 // external libraries
 const _ = require('lodash');
 const log4js = require('log4js');
-const {NodeAddressBook} = require('@hashgraph/sdk/lib/generated/BasicTypes_pb');
+const {proto} = require('@hashgraph/proto/lib/proto');
 
 const logger = log4js.getLogger();
 
@@ -35,31 +35,27 @@ class AddressBook {
    */
   constructor(addressBook) {
     this.parseAddressBookBuffer(addressBook);
-    this.setNodeIdPublicKeyPairs();
+    this.setNodeAccountIdPublicKeyPairs();
   }
 
   parseAddressBookBuffer(addressBookBuffer) {
-    const addressBookObject = NodeAddressBook.deserializeBinary(addressBookBuffer);
-    logger.info(`${addressBookObject.getNodeaddressList().length} node(s) found in address book`);
-    this.nodeList = addressBookObject.getNodeaddressList();
+    const addressBookObject = proto.NodeAddressBook.decode(addressBookBuffer);
+    logger.info(`${addressBookObject.nodeAddress.length} node(s) found in address book`);
+    this.nodeList = addressBookObject.nodeAddress;
   }
 
-  setNodeIdPublicKeyPairs() {
-    this.nodeIdPublicKeyPairs = {};
-    _.forEach(this.nodeList, (nodeAddress) => {
-      let node;
-      // For some address books node id does nt contain node id. In those cases retrieve id from memo field
-      if (_.isUndefined(nodeAddress.getNodeid()) || nodeAddress.getNodeid().indexOf('.') < 1) {
-        node = Buffer.from(nodeAddress.getMemo()).toString('utf-8');
-      } else {
-        node = nodeAddress.getNodeid();
-      }
-
-      this.nodeIdPublicKeyPairs[node] = {publicKey: nodeAddress.getRsaPubkey()};
-    });
+  setNodeAccountIdPublicKeyPairs() {
+    this.nodeAccountIdPublicKeyPairs = Object.fromEntries(
+      this.nodeList.map((nodeAddress) => {
+        const {memo, nodeAccountId, RSA_PubKey} = nodeAddress;
+        // For some address books nodeAccountId does not exist, in those cases retrieve id from memo field
+        const nodeAccountIdStr = nodeAccountId
+          ? [nodeAccountId.shardNum, nodeAccountId.realmNum, nodeAccountId.accountNum].join('.')
+          : memo.toString('utf-8');
+        return [nodeAccountIdStr, RSA_PubKey];
+      })
+    );
   }
 }
 
-module.exports = {
-  AddressBook,
-};
+module.exports = AddressBook;

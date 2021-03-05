@@ -20,7 +20,8 @@
 
 'use strict';
 
-const {BYTE_SIZE, INT_SIZE, SHA_384} = require('./constants');
+const {BYTE_SIZE, INT_SIZE} = require('./constants');
+const SHA_384 = require('./hashObject').SHA_384;
 const SignatureObject = require('./signatureObject');
 const {readLengthAndBytes, readNBytes} = require('./utils');
 
@@ -29,13 +30,10 @@ const V5_FILE_HASH_OFFSET = BYTE_SIZE + INT_SIZE;
 
 class SignatureFile {
   /**
-   * Parses signature file buffer, retrieve hash and node id
+   * Parses signature file buffer, retrieves hashes and the corresponding signatures.
    * @param {Buffer} buffer
-   * @param {String} nodeId
    */
-  constructor(buffer, nodeId) {
-    this.nodeId = nodeId;
-
+  constructor(buffer) {
     const version = buffer.readInt8();
     switch (version) {
       case 4:
