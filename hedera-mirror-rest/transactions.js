@@ -344,7 +344,7 @@ const getTransferDistinctTimestampsQuery = function (
   const whereClause = buildWhereClause(namedAccountQuery, namedTransferTsQuery, resultTypeQuery, transactionTypeQuery);
 
   return `
-      SELECT DISTINCT ${tableAlias}.consensus_timestamp AS consensus_timestamp
+      SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
         FROM ${tableName} AS ${tableAlias}
         ${joinClause}
         ${whereClause}
