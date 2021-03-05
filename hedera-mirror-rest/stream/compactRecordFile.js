@@ -22,11 +22,10 @@
 
 const crypto = require('crypto');
 const _ = require('lodash');
-const {INT_SIZE} = require('./constants');
+const {INT_SIZE, LONG_SIZE} = require('./constants');
 const HashObject = require('./hashObject');
 const RecordFile = require('./recordFile');
 const RecordStreamObject = require('./recordStreamObject');
-const {protoTransactionIdToString} = require('./utils');
 
 const COMPACT_OBJECT_FIELDS = [
   'head',
@@ -66,10 +65,6 @@ class CompactRecordFile extends RecordFile {
 
   static canCompact(buffer) {
     return Buffer.isBuffer(buffer) && this._support(buffer);
-  }
-
-  getMetadataHash() {
-    return this.metadataHash;
   }
 
   toCompactObject(transactionId) {
@@ -150,7 +145,7 @@ class CompactRecordFile extends RecordFile {
 
     // calculate metadata hash
     this._metadataHash = crypto
-      .createHash(SHA_384.hash)
+      .createHash(SHA_384.name)
       .update(this.head)
       .update(this.startRunningHashObject)
       .update(this.endRunningHashObject)
@@ -167,10 +162,24 @@ class CompactRecordFile extends RecordFile {
       ...this.hashesAfter,
     ];
 
-    const actualHash = hashes.reduce((digest, h) => digest.update(h), crypto.createHash(SHA_384.name)).digest();
+    // in swirlds-common, when calculating running hash, classId and classVersion are digested in little-endian
+    const classId = Buffer.alloc(LONG_SIZE);
+    classId.writeBigInt64LE(startHashObject.classId);
+    const classVersion = Buffer.alloc(INT_SIZE);
+    classVersion.writeInt32LE(startHashObject.classVersion);
+
+    const actualHash = hashes.reduce((runningHash, nextHash) =>
+      CompactRecordFile._calculateRunningHash(classId, classVersion, runningHash, nextHash)
+    );
     if (!actualHash.equals(endHashObject.hash)) {
       throw new Error('End object running hash mismatch');
     }
+  }
+
+  static _calculateRunningHash(classId, classVersion, runningHash, nextHash) {
+    return [runningHash, nextHash]
+      .reduce((d, h) => d.update(classId).update(classVersion).update(h), crypto.createHash(SHA_384.name))
+      .digest();
   }
 }
 
