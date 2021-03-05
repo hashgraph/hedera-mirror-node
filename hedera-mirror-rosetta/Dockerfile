@@ -1,4 +1,4 @@
-FROM golang:1.13 as build
+FROM golang:1.14 as build
 WORKDIR /tmp/src/hedera-mirror-rosetta
 COPY . .
 RUN go build -o main ./cmd

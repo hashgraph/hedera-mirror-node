@@ -61,6 +61,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
 | `hedera.mirror.importer.endDate`                                     | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
+| `hedera.mirror.importer.importHistoricalAccountInfo`                 | true                    | Import historical account information that occurred before the last stream reset. Skipped if `startDate` is unset or after 2019-09-14T00:00:10Z. |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
@@ -97,7 +98,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |
 | `hedera.mirror.importer.parser.record.entity.persist.files`                 | true                    | Persist all file data to the database                                                          |
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
-| `hedera.mirror.importer.parser.record.entity.persist.schedules`             | false                   | Persist schedule transactions to the database                                                  |
+| `hedera.mirror.importer.parser.record.entity.persist.schedules`             | true                    | Persist schedule transactions to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.entity.persist.tokens`                | true                    | Persist token data to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
