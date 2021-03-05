@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.zip.GZIPInputStream;
@@ -45,13 +46,14 @@ import org.springframework.context.annotation.Lazy;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
+
+    static final Instant EXPORT_DATE = Instant.parse("2019-09-14T00:00:10Z");
 
     @Value("classpath:accountInfo.txt.gz")
     private Path accountInfoPath;
@@ -82,16 +84,22 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
     @Override
     protected void doMigrate() throws IOException {
         if (!mirrorProperties.isImportHistoricalAccountInfo()) {
-            log.info("Importing historical account information is disabled");
+            log.info("Skipping migration since importing historical account information is disabled");
             return;
         }
 
         if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.MAINNET) {
-            log.info("Skipping migration since it only applies to mainnet data");
+            log.info("Skipping migration since it only applies to mainnet");
             return;
         }
 
-        log.info("Importing historical account info file");
+        Instant startDate = Objects.requireNonNullElseGet(mirrorProperties.getStartDate(), Instant::now);
+        if (startDate.isAfter(EXPORT_DATE)) {
+            log.info("Skipping migration since start date {} is after the export date {}", startDate, EXPORT_DATE);
+            return;
+        }
+
+        log.info("Importing historical account information");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         try (
@@ -129,15 +137,9 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         Entities entity = currentEntity.orElseGet(accountEntityId::toEntity);
         boolean updated = !exists;
 
-        // This migration when ran previously created contracts as accounts so we correct that here.
-        if (StringUtils.isNotBlank(accountInfo.getContractAccountID())) {
-            updated = entity.getEntityTypeId() != EntityTypeEnum.CONTRACT.getId();
-            entity.setEntityTypeId(EntityTypeEnum.CONTRACT.getId());
-        }
-
         // All regular accounts have a key so if it's missing we know it had to have been created before the reset.
         // All contract accounts don't have to have a key, but luckily in our file they do.
-        if (!updated && exists && ArrayUtils.isNotEmpty(entity.getKey())) {
+        if (exists && ArrayUtils.isNotEmpty(entity.getKey())) {
             log.trace("Skipping entity {} that was created after the reset", accountEntityId::entityIdToString);
             return false;
         }
@@ -171,7 +173,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         if (entity.getProxyAccountId() == null && accountInfo.hasProxyAccountID()) {
             EntityId proxyAccountEntityId = EntityId.of(accountInfo.getProxyAccountID());
             entity.setProxyAccountId(proxyAccountEntityId); // Proxy account should get created separately
-            updated = true;
+            updated |= proxyAccountEntityId != null;
         }
 
         if (updated) {
