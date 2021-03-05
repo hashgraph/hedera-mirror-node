@@ -48,8 +48,6 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Max(6144)
     private int messageSize = 256;
 
-    private int maxRetryCount = 3;
-
     @NotBlank
     private String topicId;
 
@@ -63,7 +61,6 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Override
     public TopicMessageSubmitTransaction get() {
         return new TopicMessageSubmitTransaction()
-                .setMaxRetry(maxRetryCount)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setMessage(generateMessage())
                 .setTopicId(getConsensusTopicId());

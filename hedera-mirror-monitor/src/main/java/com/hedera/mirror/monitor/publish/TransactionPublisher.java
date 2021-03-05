@@ -79,7 +79,7 @@ public class TransactionPublisher {
         int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(index);
 
-        TransactionId transactionId = request.getTransactionBuilder().execute(client).transactionId;
+        TransactionId transactionId = request.getTransaction().execute(client).transactionId;
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
                 .request(request)
                 .timestamp(Instant.now())

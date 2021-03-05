@@ -89,7 +89,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .receipt(true)
                     .scenarioName(expression.toString())
                     .timestamp(Instant.now())
-                    .transactionBuilder(transactionSupplier.get())
+                    .transaction(transactionSupplier.get())
                     .type(type.getTransactionType())
                     .build();
 
