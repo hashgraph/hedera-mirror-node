@@ -178,6 +178,6 @@ class ConfigurableTransactionGeneratorTest {
                 .hasFieldOrPropertyWithValue("receipt", true)
                 .hasFieldOrPropertyWithValue("record", true)
                 .hasFieldOrPropertyWithValue("type", properties.getType())
-                .hasFieldOrPropertyWithValue("transactionBuilder.topicId", TopicId.fromString(TOPIC_ID));
+                .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID));
     }
 }
