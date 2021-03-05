@@ -72,15 +72,7 @@ public class CompositeSubscriber implements Subscriber {
                 subscribeProperties.getGrpc()
                         .stream()
                         .filter(AbstractSubscriberProperties::isEnabled)
-                        .map(p -> {
-                            try {
-                                return new GrpcSubscriber(expressionConverter, meterRegistry, monitorProperties, p);
-                            } catch (InterruptedException e) {
-                                log.warn("Unable to retrieve mirror grpc subscriber to {}: ", monitorProperties
-                                        .getMirrorNode().getGrpc().getEndpoint());
-                            }
-                            return null;
-                        })
+                        .map(p -> new GrpcSubscriber(expressionConverter, meterRegistry, monitorProperties, p))
                         .filter(Objects::nonNull),
                 subscribeProperties.getRest()
                         .stream()

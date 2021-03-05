@@ -74,14 +74,14 @@ public class PublishMetrics {
             counter.incrementAndGet();
 
             return response;
-        } catch (PrecheckStatusException e) {
-            PrecheckStatusException sre = (PrecheckStatusException) e.getCause();
-            status = sre.status.name();
-            log.debug("Network error {} submitting {} transaction: {}", status, type, sre.getMessage());
-            throw new PublishException(e);
-        } catch (ReceiptStatusException e) {
-            log.debug("Hedera error for {} transaction {}: {}", type, e.transactionId, e.getMessage());
-            throw new PublishException(e);
+        } catch (PrecheckStatusException pse) {
+            status = pse.status.toString();
+            log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
+            throw new PublishException(pse);
+        } catch (ReceiptStatusException rse) {
+            status = rse.getClass().getSimpleName();
+            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId, rse.getMessage());
+            throw new PublishException(rse);
         } catch (Exception e) {
             status = e.getClass().getSimpleName();
             log.debug("{} submitting {} transaction: {}", status, type, e.getMessage());

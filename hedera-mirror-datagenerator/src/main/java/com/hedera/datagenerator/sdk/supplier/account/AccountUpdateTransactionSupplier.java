@@ -64,7 +64,8 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     public AccountUpdateTransaction get() {
 
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
-                .setAccountId(AccountId.fromString(accountId)).setExpirationTime(expirationTime)
+                .setAccountId(AccountId.fromString(accountId))
+                .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setTransactionMemo(Utility.getMemo("Mirror node updated test account"));

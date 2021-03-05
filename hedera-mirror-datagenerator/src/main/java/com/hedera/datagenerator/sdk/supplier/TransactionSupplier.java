@@ -24,5 +24,5 @@ import java.util.function.Supplier;
 
 import com.hedera.hashgraph.sdk.Transaction;
 
-public interface TransactionSupplier<T extends Transaction<?>> extends Supplier<Transaction<?>> {
+public interface TransactionSupplier<T extends Transaction<T>> extends Supplier<Transaction<T>> {
 }

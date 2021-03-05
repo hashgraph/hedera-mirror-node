@@ -58,7 +58,7 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
     private Instant endTime;
 
     GrpcSubscriber(ExpressionConverter expressionConverter, MeterRegistry meterRegistry,
-                   MonitorProperties monitorProperties, GrpcSubscriberProperties subscriberProperties) throws InterruptedException {
+                   MonitorProperties monitorProperties, GrpcSubscriberProperties subscriberProperties) {
         super(meterRegistry, subscriberProperties);
         retries = new AtomicLong(0L);
 
@@ -71,8 +71,14 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
         client = Client.forNetwork(Map.of(singleNodeProperty.getEndpoint(), nodeAccount));
         String endpoint = monitorProperties.getMirrorNode().getGrpc().getEndpoint();
         log.info("Connecting to mirror node {}", endpoint);
-        client.setMirrorNetwork(List.of(endpoint));
-        subscribe();
+
+        try {
+            client.setMirrorNetwork(List.of(endpoint));
+            subscribe();
+        } catch (InterruptedException e) {
+            log.warn("Unable to retrieve mirror grpc subscriber to {}: ", monitorProperties
+                    .getMirrorNode().getGrpc().getEndpoint());
+        }
     }
 
     private void onNext(TopicMessage topicResponse) {

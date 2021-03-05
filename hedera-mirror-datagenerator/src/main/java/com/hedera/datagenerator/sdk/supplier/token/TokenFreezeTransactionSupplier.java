@@ -48,7 +48,8 @@ public class TokenFreezeTransactionSupplier implements TransactionSupplier<Token
 
         return new TokenFreezeTransaction()
                 .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee)).setTokenId(TokenId.fromString(tokenId))
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node froze test token"));
     }
 }
