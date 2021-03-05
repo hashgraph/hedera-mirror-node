@@ -64,11 +64,13 @@ public class TopicClient extends AbstractNetworkClient {
             PrecheckStatusException, TimeoutException {
 
         Instant refInstant = Instant.now();
+        String memo = "HCS Topic_" + refInstant;
         TopicCreateTransaction consensusTopicCreateTransaction = new TopicCreateTransaction()
                 .setAdminKey(adminAccount.getPublicKey())
                 .setAutoRenewAccountId(sdkClient.getOperatorId())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTopicMemo("HCS Topic_" + refInstant)
+                .setTopicMemo(memo)
+                .setTransactionMemo(memo)
                 .setAutoRenewPeriod(autoRenewPeriod); // INSUFFICIENT_TX_FEE, also unsupported
 
         if (submitKey != null) {

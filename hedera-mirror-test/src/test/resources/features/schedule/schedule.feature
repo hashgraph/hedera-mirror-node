@@ -34,7 +34,7 @@ Feature: Schedule Base Coverage Feature
             | 200            |
 
     @acceptance @Acceptance
-    Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleDelete
+    Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleSign
         Given I schedule a crypto transfer with <initialSignatureCount> initial signatures but require an additional signature from <accountName>
         When the network confirms schedule presence
         And the mirror node REST API should return status <httpStatusCode> for the schedule transaction
@@ -66,7 +66,7 @@ Feature: Schedule Base Coverage Feature
             | sender  | receiver | httpStatusCode |
             | "ALICE" | "DAVE"   | 200            |
 
-#    @acceptance @Acceptance - sdk bug exists where executed HCS submit message fails
+    @acceptance @Acceptance
     Scenario Outline: Validate scheduled HCS message - ScheduleCreate of TopicMessageSubmit and ScheduleSign
         Given I successfully schedule a topic message submit with <accountName>'s submit key
         And the network confirms schedule presence
