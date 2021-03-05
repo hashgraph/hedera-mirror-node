@@ -32,12 +32,12 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.HederaThrowable;
-import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 
 @Data
-public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<ConsensusMessageSubmitTransaction> {
+public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<TopicMessageSubmitTransaction> {
 
     @Min(1)
     private long maxTransactionFee = 1_000_000;
@@ -48,22 +48,20 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Max(6144)
     private int messageSize = 256;
 
-    private boolean retry = false;
-
     @NotBlank
     private String topicId;
 
     // Internal variables that are cached for performance reasons
     @Getter(lazy = true)
-    private final ConsensusTopicId consensusTopicId = ConsensusTopicId.fromString(topicId);
+    private final TopicId consensusTopicId = TopicId.fromString(topicId);
 
     @Getter(lazy = true)
     private final byte[] messageSuffix = randomByteArray();
 
     @Override
-    public ConsensusMessageSubmitTransaction get() {
-        return new RetryConfigurableConsensusMessageSubmitTransaction()
-                .setMaxTransactionFee(maxTransactionFee)
+    public TopicMessageSubmitTransaction get() {
+        return new TopicMessageSubmitTransaction()
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setMessage(generateMessage())
                 .setTopicId(getConsensusTopicId());
     }
@@ -82,13 +80,4 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
         new SecureRandom().nextBytes(bytes);
         return bytes;
     }
-
-    private class RetryConfigurableConsensusMessageSubmitTransaction extends ConsensusMessageSubmitTransaction {
-
-        @Override
-        protected boolean shouldRetry(HederaThrowable e) {
-            return retry;
-        }
-    }
 }
-

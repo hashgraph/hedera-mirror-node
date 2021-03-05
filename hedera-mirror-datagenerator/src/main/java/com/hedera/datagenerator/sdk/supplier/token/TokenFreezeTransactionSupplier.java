@@ -26,9 +26,10 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenFreezeTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenFreezeTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
 
 @Data
 public class TokenFreezeTransactionSupplier implements TransactionSupplier<TokenFreezeTransaction> {
@@ -47,7 +48,7 @@ public class TokenFreezeTransactionSupplier implements TransactionSupplier<Token
 
         return new TokenFreezeTransaction()
                 .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node froze test token"));
     }

@@ -23,7 +23,6 @@ package com.hedera.mirror.monitor.publish;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
-import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
@@ -40,8 +39,8 @@ import org.apache.commons.math3.util.Precision;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.HederaStatusException;
-import com.hedera.hashgraph.sdk.LocalValidationException;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
 
 @Log4j2
 @Named
@@ -75,17 +74,14 @@ public class PublishMetrics {
             counter.incrementAndGet();
 
             return response;
-        } catch (LocalValidationException e) {
-            throw e;
-        } catch (StatusRuntimeException e) {
-            StatusRuntimeException sre = (StatusRuntimeException) e.getCause();
-            status = sre.getStatus().getCode().name();
-            log.debug("Network error {} submitting {} transaction: {}", status, type, sre.getStatus().getDescription());
-            throw new PublishException(e);
-        } catch (HederaStatusException e) {
-            status = e.status.name();
-            log.debug("Hedera {} error submitting {} transaction: {}", status, type, e.getMessage());
-            throw new PublishException(e);
+        } catch (PrecheckStatusException pse) {
+            status = pse.status.toString();
+            log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
+            throw new PublishException(pse);
+        } catch (ReceiptStatusException rse) {
+            status = rse.receipt.status.toString();
+            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId, rse.getMessage());
+            throw new PublishException(rse);
         } catch (Exception e) {
             status = e.getClass().getSimpleName();
             log.debug("{} submitting {} transaction: {}", status, type, e.getMessage());

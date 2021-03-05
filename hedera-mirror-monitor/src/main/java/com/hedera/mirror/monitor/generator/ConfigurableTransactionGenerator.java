@@ -56,8 +56,8 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter, ScenarioProperties properties) {
         this.expressionConverter = expressionConverter;
         this.properties = properties;
-        this.transactionSupplier = Suppliers.memoize(this::convert);
-        this.rateLimiter = RateLimiter.create(properties.getTps(), properties.getWarmupPeriod());
+        transactionSupplier = Suppliers.memoize(this::convert);
+        rateLimiter = RateLimiter.create(properties.getTps(), properties.getWarmupPeriod());
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
@@ -83,7 +83,8 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         return builder.receipt(shouldGenerate(properties.getReceipt()))
                 .record(shouldGenerate(properties.getRecord()))
                 .timestamp(Instant.now())
-                .transactionBuilder(transactionSupplier.get().get())
+                .transaction(transactionSupplier.get().get()
+                        .setMaxRetry(properties.getMaxRetries())) // set scenario transaction maxRetry
                 .build();
     }
 

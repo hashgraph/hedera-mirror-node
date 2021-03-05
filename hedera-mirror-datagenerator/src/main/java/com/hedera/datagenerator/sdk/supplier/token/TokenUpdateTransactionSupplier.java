@@ -32,10 +32,11 @@ import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
-import com.hedera.hashgraph.sdk.token.TokenId;
-import com.hedera.hashgraph.sdk.token.TokenUpdateTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 
 @Data
 public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
@@ -67,14 +68,14 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .setExpirationTime(expirationTime)
-                .setMaxTransactionFee(maxTransactionFee)
-                .setName(symbol + "_name")
-                .setSymbol(symbol)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenName(symbol + "_name")
+                .setTokenSymbol(symbol)
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node updated test token"));
 
         if (adminKey != null) {
-            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
+            PublicKey key = PublicKey.fromString(adminKey);
             tokenUpdateTransaction
                     .setAdminKey(key)
                     .setFreezeKey(key)
@@ -85,8 +86,8 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
         if (treasuryAccountId != null) {
             AccountId treastury = AccountId.fromString(treasuryAccountId);
             tokenUpdateTransaction
-                    .setAutoRenewAccount(treastury)
-                    .setTreasury(treastury);
+                    .setAutoRenewAccountId(treastury)
+                    .setTreasuryAccountId(treastury);
         }
         return tokenUpdateTransaction;
     }

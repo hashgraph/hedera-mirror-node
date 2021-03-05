@@ -26,8 +26,9 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountDeleteTransaction;
-import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
 
 @Data
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
@@ -45,8 +46,8 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
     public AccountDeleteTransaction get() {
 
         return new AccountDeleteTransaction()
-                .setDeleteAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(maxTransactionFee)
+                .setAccountId(AccountId.fromString(accountId))
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTransactionMemo(Utility.getMemo("Mirror node deleted test account"))
                 .setTransferAccountId(AccountId.fromString(transferAccountId));
     }

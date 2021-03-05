@@ -228,6 +228,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].limit`           | 0          | How many transactions to publish before halting. 0 for unlimited
 `hedera.mirror.monitor.publish.scenarios[].logResponse`     | false      | Whether to log the response from HAPI
 `hedera.mirror.monitor.publish.scenarios[].name`            | ""         | The publish scenario name. Used to tag logs and metrics
+`hedera.mirror.monitor.publish.scenarios[].maxRetries`      | 0          | The maximum number of times a scenario transaction attempt will be retried
 `hedera.mirror.monitor.publish.scenarios[].properties`      | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
 `hedera.mirror.monitor.publish.scenarios[].receipt`         | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].record`          | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1

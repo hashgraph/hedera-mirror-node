@@ -25,12 +25,13 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 
 @Data
-public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<ConsensusTopicCreateTransaction> {
+public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<TopicCreateTransaction> {
 
     private String adminKey;
 
@@ -40,22 +41,20 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
     private long maxTransactionFee = 1_000_000_000;
 
     @Override
-    public ConsensusTopicCreateTransaction get() {
-        ConsensusTopicCreateTransaction consensusTopicCreateTransaction = new ConsensusTopicCreateTransaction()
-                .setMaxTransactionFee(maxTransactionFee)
+    public TopicCreateTransaction get() {
+        TopicCreateTransaction topicCreateTransaction = new TopicCreateTransaction()
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTopicMemo(Utility.getMemo("Mirror node created test topic"))
                 .setTransactionMemo(Utility.getMemo("Mirror node created test topic"));
 
         if (adminKey != null) {
-            Ed25519PublicKey key = Ed25519PublicKey.fromString(adminKey);
-            consensusTopicCreateTransaction
-                    .setAdminKey(key)
-                    .setSubmitKey(key);
+            PublicKey key = PublicKey.fromString(adminKey);
+            topicCreateTransaction.setAdminKey(key).setSubmitKey(key);
         }
         if (autoRenewAccountId != null) {
-            consensusTopicCreateTransaction
+            topicCreateTransaction
                     .setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId));
         }
-        return consensusTopicCreateTransaction;
+        return topicCreateTransaction;
     }
 }

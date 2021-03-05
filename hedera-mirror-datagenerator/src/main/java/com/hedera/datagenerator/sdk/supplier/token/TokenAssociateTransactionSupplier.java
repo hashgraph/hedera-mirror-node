@@ -1,5 +1,17 @@
 package com.hedera.datagenerator.sdk.supplier.token;
 
+import java.util.List;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
+
+import com.hedera.datagenerator.common.Utility;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,16 +32,6 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import lombok.Data;
-
-import com.hedera.datagenerator.common.Utility;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenAssociateTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
-
 @Data
 public class TokenAssociateTransactionSupplier implements TransactionSupplier<TokenAssociateTransaction> {
 
@@ -46,9 +48,9 @@ public class TokenAssociateTransactionSupplier implements TransactionSupplier<To
     public TokenAssociateTransaction get() {
 
         return new TokenAssociateTransaction()
-                .addTokenId(TokenId.fromString(tokenId))
                 .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenIds(List.of(TokenId.fromString(tokenId)))
                 .setTransactionMemo(Utility.getMemo("Mirror node associated test token"));
     }
 }

@@ -32,9 +32,10 @@ import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PublicKey;
 
 @Data
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
@@ -64,9 +65,8 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(AccountId.fromString(accountId))
-                .setAutoRenewPeriod(autoRenewPeriod)
                 .setExpirationTime(expirationTime)
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setTransactionMemo(Utility.getMemo("Mirror node updated test account"));
 
@@ -74,7 +74,7 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
             transaction.setProxyAccountId(AccountId.fromString(proxyAccountId));
         }
         if (publicKey != null) {
-            transaction.setKey(Ed25519PublicKey.fromString(publicKey));
+            transaction.setKey(PublicKey.fromString(publicKey));
         }
         return transaction;
     }

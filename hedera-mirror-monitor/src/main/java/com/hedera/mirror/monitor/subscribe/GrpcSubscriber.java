@@ -28,45 +28,61 @@ import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
-import com.hedera.hashgraph.sdk.mirror.MirrorClient;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
-import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.SubscriptionHandle;
+import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicMessage;
+import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
 public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties> {
 
-    private final MirrorClient mirrorClient;
+    private final Client client;
     private final AtomicLong retries;
 
-    private MirrorSubscriptionHandle subscription;
-    private volatile MirrorConsensusTopicResponse lastReceived;
+    private SubscriptionHandle subscription;
+    private volatile TopicMessage lastReceived;
     private Instant endTime;
 
     GrpcSubscriber(ExpressionConverter expressionConverter, MeterRegistry meterRegistry,
                    MonitorProperties monitorProperties, GrpcSubscriberProperties subscriberProperties) {
         super(meterRegistry, subscriberProperties);
-        this.retries = new AtomicLong(0L);
+        retries = new AtomicLong(0L);
 
         String topicId = expressionConverter.convert(subscriberProperties.getTopicId());
         subscriberProperties.setTopicId(topicId);
 
+        NodeProperties singleNodeProperty = new ArrayList<>(monitorProperties.getNodes()).get(0);
+        AccountId nodeAccount = AccountId.fromString(singleNodeProperty.getAccountId());
+        // though not used in mirror case you must set network nodes
+        client = Client.forNetwork(Map.of(singleNodeProperty.getEndpoint(), nodeAccount));
         String endpoint = monitorProperties.getMirrorNode().getGrpc().getEndpoint();
         log.info("Connecting to mirror node {}", endpoint);
-        this.mirrorClient = new MirrorClient(endpoint);
-        subscribe();
+
+        try {
+            client.setMirrorNetwork(List.of(endpoint));
+            subscribe();
+        } catch (InterruptedException e) {
+            log.warn("Unable to retrieve mirror grpc subscriber to {}: ", monitorProperties
+                    .getMirrorNode().getGrpc().getEndpoint());
+            Thread.currentThread().interrupt();
+        }
     }
 
-    private void onNext(MirrorConsensusTopicResponse topicResponse) {
+    private void onNext(TopicMessage topicResponse) {
         long endTimestamp = System.currentTimeMillis();
         counter.incrementAndGet();
         retries.set(0L);
@@ -80,8 +96,8 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
             }
         }
 
-        this.lastReceived = topicResponse;
-        Long timestamp = Utility.getTimestamp(topicResponse.message);
+        lastReceived = topicResponse;
+        Long timestamp = Utility.getTimestamp(topicResponse.contents);
 
         if (timestamp == null || timestamp <= 0 || timestamp >= System.currentTimeMillis()) {
             log.warn("Invalid timestamp in message: {}", timestamp);
@@ -140,7 +156,7 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
             super.close();
             log.info("Closing mirror node connection");
             subscription.unsubscribe();
-            mirrorClient.close(1, TimeUnit.SECONDS);
+            client.close();
         } catch (Exception e) {
             // Ignore
         }
@@ -148,8 +164,8 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
 
     private synchronized void subscribe() {
         long limit = subscriberProperties.getLimit();
-        MirrorConsensusTopicQuery mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
-        mirrorConsensusTopicQuery.setTopicId(ConsensusTopicId.fromString(subscriberProperties.getTopicId()));
+        TopicMessageQuery mirrorConsensusTopicQuery = new TopicMessageQuery();
+        mirrorConsensusTopicQuery.setTopicId(TopicId.fromString(subscriberProperties.getTopicId()));
         mirrorConsensusTopicQuery.setLimit(limit > 0 ? limit - counter.get() : 0);
 
         Instant startTime = lastReceived != null ? lastReceived.consensusTimestamp.plusNanos(1) : subscriberProperties
@@ -168,6 +184,6 @@ public class GrpcSubscriber extends AbstractSubscriber<GrpcSubscriberProperties>
         }
 
         log.info("Starting subscriber: {}", subscriberProperties);
-        subscription = mirrorConsensusTopicQuery.subscribe(mirrorClient, this::onNext, this::onError);
+        subscription = mirrorConsensusTopicQuery.subscribe(client, this::onNext);
     }
 }
