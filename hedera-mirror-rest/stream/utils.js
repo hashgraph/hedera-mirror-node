@@ -29,11 +29,11 @@ const logger = log4js.getLogger();
 const SIMPLE_SUM = 101;
 
 const protoTransactionIdToString = (transactionId) => {
-  const {accountID, transactionValidStart: validStart} = transactionId;
+  const {accountID, transactionValidStart} = transactionId;
   return [
     [accountID.shardNum, accountID.realmNum, accountID.accountNum].join('.'),
-    validStart.seconds,
-    validStart.nanos,
+    transactionValidStart.seconds,
+    transactionValidStart.nanos,
   ].join('-');
 };
 
