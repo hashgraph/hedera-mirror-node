@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -42,6 +41,7 @@ import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.Resource;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entities;
@@ -56,7 +56,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
     static final Instant EXPORT_DATE = Instant.parse("2019-09-14T00:00:10Z");
 
     @Value("classpath:accountInfo.txt.gz")
-    private Path accountInfoPath;
+    private Resource accountInfoPath;
 
     private final EntityRepository entityRepository;
     private final MirrorProperties mirrorProperties;
@@ -103,7 +103,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         try (
-                InputStream inputStream = new GZIPInputStream(new FileInputStream(accountInfoPath.toFile()));
+                InputStream inputStream = new GZIPInputStream(new FileInputStream(accountInfoPath.getFile()));
                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
         ) {
             long count = reader.lines()

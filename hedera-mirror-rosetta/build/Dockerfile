@@ -10,7 +10,7 @@ RUN git clone https://github.com/hashgraph/hedera-mirror-node.git
 RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
 
 # ------------------------------  Rosetta  ------------------------------- #
-FROM golang:1.13 as rosetta-builder
+FROM golang:1.14 as rosetta-builder
 WORKDIR /tmp
 COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
 WORKDIR /tmp/hedera-mirror-node/hedera-mirror-rosetta
@@ -21,7 +21,7 @@ FROM openjdk:11.0 as java-builder
 
 RUN apt-get update
 COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
-RUN cd hedera-mirror-node && ./mvnw --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean package -DskipTests -pl hedera-mirror-importer
+RUN cd hedera-mirror-node && ./mvnw --batch-mode --no-transfer-progress --show-version clean package -DskipTests -pl hedera-mirror-importer
 
 # ######################################################################## #
 # --------------------------- Runner Container --------------------------- #
@@ -82,7 +82,6 @@ COPY --from=rosetta-builder /tmp/hedera-mirror-node/hedera-mirror-rosetta/config
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer
 COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-*exec.jar ./hedera-mirror-importer.jar
-COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/src/main/resources/application.yml .
 
 WORKDIR /hedera-mirror-node/hedera-mirror-rosetta/build
 
