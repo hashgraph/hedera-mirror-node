@@ -40,7 +40,6 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.util.Utility;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
@@ -55,7 +54,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     private static final int SIGNATURE_LENGTH = 48;
 
     private final SignatureFileReaderV2 fileReaderV2 = new SignatureFileReaderV2();
-    private final File signatureFile = Utility
+    private final File signatureFile = TestUtils
             .getResource(Path.of("data", "signature", "v2", "2019-08-30T18_10_00.419072Z.rcd_sig").toString());
 
     @Test

@@ -76,6 +76,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
@@ -191,7 +192,7 @@ public abstract class AbstractDownloaderTest {
         downloader = getDownloader();
         streamType = downloaderProperties.getStreamType();
 
-        fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
+        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
 
@@ -607,8 +608,8 @@ public abstract class AbstractDownloaderTest {
     /**
      * Sets the expected last stream file. If the precondition is there is no stream files in db, pass in a null index.
      *
-     * @param hash hash of the StreamFile
-     * @param index the index of the StreamFile
+     * @param hash    hash of the StreamFile
+     * @param index   the index of the StreamFile
      * @param instant the instant of the StreamFile
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
