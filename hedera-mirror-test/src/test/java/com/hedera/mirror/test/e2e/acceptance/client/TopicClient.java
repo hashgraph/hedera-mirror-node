@@ -51,6 +51,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Log4j2
 @Value
 public class TopicClient extends AbstractNetworkClient {
+    private static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
     private final Map<Long, Instant> recordPublishInstants;
 
     public TopicClient(SDKClient sdkClient) {
@@ -67,9 +68,8 @@ public class TopicClient extends AbstractNetworkClient {
                 .setAdminKey(adminAccount.getPublicKey())
                 .setAutoRenewAccountId(sdkClient.getOperatorId())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTopicMemo("HCS Topic_" + refInstant);
-//                .setAutoRenewPeriod(Duration.ofDays(7000000)) // INSUFFICIENT_TX_FEE, also unsupported
-//                .setAutoRenewAccountId()
+                .setTopicMemo("HCS Topic_" + refInstant)
+                .setAutoRenewPeriod(autoRenewPeriod); // INSUFFICIENT_TX_FEE, also unsupported
 
         if (submitKey != null) {
             consensusTopicCreateTransaction.setSubmitKey(submitKey);
@@ -91,7 +91,7 @@ public class TopicClient extends AbstractNetworkClient {
         TopicUpdateTransaction consensusTopicUpdateTransaction = new TopicUpdateTransaction()
                 .setTopicId(topicId)
                 .setTopicMemo(newMemo)
-                .setAutoRenewPeriod(Duration.ofSeconds(8000000))
+                .setAutoRenewPeriod(autoRenewPeriod)
                 .clearAdminKey()
                 .clearSubmitKey()
                 .clearTopicMemo()
