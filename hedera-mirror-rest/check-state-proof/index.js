@@ -49,7 +49,7 @@ const logger = log4js
   .getLogger();
 
 // get user input
-const {transactionId, url, storedFile} = startUpScreen();
+const {transactionId, scheduled, url, storedFile} = startUpScreen();
 
 const getStateProofJson = async (url, storedFile) => {
   return storedFile ? readJSONFile(storedFile) : getAPIResponse(url);
@@ -74,15 +74,15 @@ getStateProofJson(url, storedFile)
     }
 
     // instantiate stateProofHandler which will parse files and extract needed data
-    const stateProofHandler = new StateProofHandler(transactionId, stateProofJson);
+    const stateProofHandler = new StateProofHandler(stateProofJson, transactionId, scheduled);
 
     // kick off stateProof flow
-    const validatedTransaction = stateProofHandler.runStateProof();
-    const result = validatedTransaction ? 'valid' : 'invalid';
+    const validated = stateProofHandler.runStateProof();
+    const result = validated ? 'valid' : 'invalid';
 
     logger.info(`-----------------------------------------------`);
     logger.info(`The state proof is cryptographically ${result}`);
     logger.info(`-----------------------------------------------`);
-    return validatedTransaction;
+    return validated;
   })
   .catch((e) => logger.error(e));

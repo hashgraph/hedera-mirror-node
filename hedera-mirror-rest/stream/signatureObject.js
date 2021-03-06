@@ -36,11 +36,11 @@ class SignatureObject extends StreamObject {
    * @param {Buffer} buffer
    * @returns {Number} The size of the body in bytes
    */
-  readBody(buffer) {
+  _readBody(buffer) {
     const message = 'Error reading signature object';
-    const type = buffer.readInt32BE();
-    if (type !== SignatureObject.SHA_384_WITH_RSA.type) {
-      throw new Error(`${message}, expect type ${SignatureObject.SHA_384_WITH_RSA.type} got ${type}`);
+    this.type = buffer.readInt32BE();
+    if (this.type !== SignatureObject.SHA_384_WITH_RSA.type) {
+      throw new Error(`${message}, expect type ${SignatureObject.SHA_384_WITH_RSA.type} got ${this.type}`);
     }
 
     const {length, bytes} = readLengthAndBytes(

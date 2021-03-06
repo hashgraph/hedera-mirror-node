@@ -34,11 +34,27 @@ class StreamObject {
     this.classId = buffer.readBigInt64BE();
     this.classVersion = buffer.readInt32BE(LONG_SIZE);
 
-    this.bodyLength = this.readBody(buffer.slice(STREAM_OBJECT_HEADER_SIZE));
+    this.bodyLength = this._readBody(buffer.slice(STREAM_OBJECT_HEADER_SIZE));
   }
 
-  readBody(buffer) {
+  _readBody(buffer) {
     return 0;
+  }
+
+  /**
+   * Gets the serialized header with fields in little-endian order.
+   *
+   * @return {Buffer}
+   */
+  getHeaderLE() {
+    const header = Buffer.alloc(STREAM_OBJECT_HEADER_SIZE);
+    header.writeBigInt64LE(this.classId);
+    header.writeInt32LE(this.classVersion, LONG_SIZE);
+    return header;
+  }
+
+  getHeaderLength() {
+    return STREAM_OBJECT_HEADER_SIZE;
   }
 
   getLength() {

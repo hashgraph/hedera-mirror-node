@@ -69,6 +69,10 @@ class CompositeRecordFile extends RecordFile {
     return this.delegate.getTransactionMap();
   }
 
+  getVersion() {
+    return this.delegate.getVersion();
+  }
+
   toCompactObject(transactionId) {
     return this.delegate.toCompactObject(transactionId);
   }

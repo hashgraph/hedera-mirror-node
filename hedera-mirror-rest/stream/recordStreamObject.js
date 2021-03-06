@@ -33,7 +33,7 @@ class RecordStreamObject extends StreamObject {
    * @param {Buffer} buffer
    * @returns {Number} The size of the body in bytes
    */
-  readBody(buffer) {
+  _readBody(buffer) {
     const record = readLengthAndBytes(buffer, BYTE_SIZE, RecordStreamObject.MAX_RECORD_LENGTH, false);
     const transaction = readLengthAndBytes(
       buffer.slice(record.length),

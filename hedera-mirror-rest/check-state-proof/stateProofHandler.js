@@ -32,8 +32,9 @@ const logger = log4js.getLogger();
 
 // responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
 class StateProofHandler {
-  constructor(transactionId, stateProofJson) {
+  constructor(stateProofJson, transactionId, scheduled = false) {
     this.transactionId = transactionId;
+    this.scheduled = scheduled;
     makeStateProofDir(transactionId, stateProofJson);
     this.setStateProofComponents(stateProofJson);
   }
@@ -103,11 +104,11 @@ class StateProofHandler {
     const {nodeAccountIdPublicKeyPairs} = _.last(this.addressBooks);
 
     // verify transactionId is in recordFile
-    const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId);
+    const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId, this.scheduled);
     if (!transactionInRecordFile) {
       logger.error(
         `Transaction ID ${this.transactionId} not present in record file. Available transaction IDs: ${Object.keys(
-          this.recordFile.transactionIdMap
+          this.recordFile.getTransactionMap()
         )}`
       );
       return false;

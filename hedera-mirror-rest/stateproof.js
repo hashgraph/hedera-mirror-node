@@ -241,9 +241,7 @@ const formatRecordFile = (data, transactionId) => {
       if (Buffer.isBuffer(v)) {
         obj[k] = v.toString('base64');
       } else if (Array.isArray(v)) {
-        v.forEach((value, index) => {
-          obj[k][index] = value.toString('base64');
-        });
+        obj[k] = v.map((b) => b.toString('base64'));
       }
     }
 

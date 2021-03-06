@@ -23,7 +23,6 @@
 // addressBook object. Parse string to object, provide methods to pull info
 
 // external libraries
-const _ = require('lodash');
 const log4js = require('log4js');
 const {proto} = require('@hashgraph/proto/lib/proto');
 
@@ -31,7 +30,7 @@ const logger = log4js.getLogger();
 
 class AddressBook {
   /**
-   * Parses address book file storing map of nodeid -> rsa public key
+   * Parses address book file storing map of node account id -> rsa public key
    */
   constructor(addressBook) {
     this.parseAddressBookBuffer(addressBook);
@@ -39,9 +38,9 @@ class AddressBook {
   }
 
   parseAddressBookBuffer(addressBookBuffer) {
-    const addressBookObject = proto.NodeAddressBook.decode(addressBookBuffer);
-    logger.info(`${addressBookObject.nodeAddress.length} node(s) found in address book`);
-    this.nodeList = addressBookObject.nodeAddress;
+    const addressBook = proto.NodeAddressBook.decode(addressBookBuffer);
+    logger.info(`${addressBook.nodeAddress.length} node(s) found in address book`);
+    this.nodeList = addressBook.nodeAddress;
   }
 
   setNodeAccountIdPublicKeyPairs() {

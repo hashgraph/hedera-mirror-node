@@ -143,7 +143,5 @@ const performStateProof = (nodePublicKeyMap, signatureFileMap, recordFileHashes)
 
 module.exports = {
   performStateProof,
-  verifySignatures,
   validateRecordFileHash,
-  verifySignature,
 };

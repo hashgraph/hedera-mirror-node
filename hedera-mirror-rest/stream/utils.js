@@ -28,6 +28,12 @@ const logger = log4js.getLogger();
 // the sum of the length field and the checksum field
 const SIMPLE_SUM = 101;
 
+/**
+ * Converts a proto.TransactionID object to a string in the format of "shard.realm.num-sss-nnn"
+ *
+ * @param {proto.TransactionID} transactionId
+ * @return {string}
+ */
 const protoTransactionIdToString = (transactionId) => {
   const {accountID, transactionValidStart} = transactionId;
   return [
@@ -39,6 +45,7 @@ const protoTransactionIdToString = (transactionId) => {
 
 /**
  * Reads the length field, an optional checksum, and the byte array from buffer
+ *
  * @param {Buffer} buffer - The buffer to read data from
  * @param {Number} minLength - The minimum allowed length
  * @param {Number} maxLength - The maxinum allowed length
@@ -54,7 +61,7 @@ const readLengthAndBytes = (buffer, minLength, maxLength, hasChecksum) => {
       throw new Error(`${message}, expect length ${minLength} got ${length}`);
     }
   } else if (length < minLength || length > maxLength) {
-    throw new Error(`${message}, expect length ${minLength} within [${minLength}, ${maxLength}]`);
+    throw new Error(`${message}, expect length ${length} within [${minLength}, ${maxLength}]`);
   }
 
   if (hasChecksum) {
@@ -74,12 +81,13 @@ const readLengthAndBytes = (buffer, minLength, maxLength, hasChecksum) => {
 
 /**
  * Reads a byte array from buffer
+ *
  * @param {Buffer} buffer
  * @param {Number} length
  * @return {Buffer}
  */
 const readNBytes = (buffer, length) => {
-  if (buffer.length < length) {
+  if (length < 0 || buffer.length < length) {
     throw new Error(`Error reading byte array, expect ${length}-byte data got ${buffer.length}-byte`);
   }
 

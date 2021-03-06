@@ -37,7 +37,7 @@ class HashObject extends StreamObject {
    * @param {Buffer} buffer
    * @returns {Number} The size of the body in bytes
    */
-  readBody(buffer) {
+  _readBody(buffer) {
     // always SHA-384
     const hashLength = HashObject.SHA_384.length;
     this.digestType = buffer.readInt32BE();

@@ -22,10 +22,11 @@
 
 const crypto = require('crypto');
 const _ = require('lodash');
-const {INT_SIZE, LONG_SIZE} = require('./constants');
+const {INT_SIZE} = require('./constants');
 const HashObject = require('./hashObject');
 const RecordFile = require('./recordFile');
 const RecordStreamObject = require('./recordStreamObject');
+const {calculateRunningHash} = require('./runningHash');
 
 const COMPACT_OBJECT_FIELDS = [
   'head',
@@ -49,7 +50,7 @@ class CompactRecordFile extends RecordFile {
       throw new Error(`Unsupported record file version, expect 5`);
     }
 
-    this.version = 5;
+    this._version = 5;
 
     if (Buffer.isBuffer(bufferOrObj)) {
       this._parseFromBuffer(bufferOrObj);
@@ -60,21 +61,22 @@ class CompactRecordFile extends RecordFile {
 
   static _support(bufferOrObj) {
     const buffer = Buffer.isBuffer(bufferOrObj) ? bufferOrObj : bufferOrObj.head;
-    return this._getVersion(buffer) === 5;
+    return this._readVersion(buffer) === 5;
   }
 
   static canCompact(buffer) {
     return Buffer.isBuffer(buffer) && this._support(buffer);
   }
 
-  toCompactObject(transactionId) {
-    if (!this.containsTransaction(transactionId)) {
+  toCompactObject(transactionId, scheduled = false) {
+    if (!this.containsTransaction(transactionId, scheduled)) {
       throw new Error(`Transaction ${transactionId} not found in the successful transactions map`);
     }
 
     if (this._recordStreamObjects) {
       // parsed from a full record file v5
-      const index = this._transactionMap[transactionId];
+      const transactionKey = `${transactionId}-${scheduled}`;
+      const index = this._transactionMap[transactionKey];
       this.recordStreamObject = this._recordStreamObjects[index];
 
       this._hashes.forEach((value, current) => {
@@ -109,7 +111,7 @@ class CompactRecordFile extends RecordFile {
     // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     //
     // Note the start object running hash and the end object running hash are of the same type HashObject and
-    // they have the same classId.
+    // they have the same classId an classVersion.
     this.head = buffer.slice(0, V5_START_HASH_OFFSET);
 
     buffer = buffer.slice(V5_START_HASH_OFFSET);
@@ -162,24 +164,24 @@ class CompactRecordFile extends RecordFile {
       ...this.hashesAfter,
     ];
 
-    // in swirlds-common, when calculating running hash, classId and classVersion are digested in little-endian
-    const classId = Buffer.alloc(LONG_SIZE);
-    classId.writeBigInt64LE(startHashObject.classId);
-    const classVersion = Buffer.alloc(INT_SIZE);
-    classVersion.writeInt32LE(startHashObject.classVersion);
-
+    // when calculating running hash, classId and classVersion are digested in little-endian
+    const header = startHashObject.getHeaderLE();
     const actualHash = hashes.reduce((runningHash, nextHash) =>
-      CompactRecordFile._calculateRunningHash(classId, classVersion, runningHash, nextHash)
+      calculateRunningHash(
+        {
+          header,
+          hash: runningHash,
+        },
+        {
+          header,
+          hash: nextHash,
+        },
+        SHA_384.name
+      )
     );
     if (!actualHash.equals(endHashObject.hash)) {
       throw new Error('End object running hash mismatch');
     }
-  }
-
-  static _calculateRunningHash(classId, classVersion, runningHash, nextHash) {
-    return [runningHash, nextHash]
-      .reduce((d, h) => d.update(classId).update(classVersion).update(h), crypto.createHash(SHA_384.name))
-      .digest();
   }
 }
 

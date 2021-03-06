@@ -27,7 +27,7 @@ const {BYTE_SIZE, INT_SIZE} = require('./constants');
 const HashObject = require('./hashObject');
 const RecordFile = require('./recordFile');
 const RecordStreamObject = require('./recordStreamObject');
-const {logger, readLengthAndBytes} = require('./utils');
+const {readLengthAndBytes} = require('./utils');
 
 const {MAX_TRANSACTION_LENGTH, MAX_RECORD_LENGTH} = RecordStreamObject;
 const {SHA_384} = HashObject;
@@ -55,15 +55,16 @@ class FullRecordFile extends RecordFile {
       return false;
     }
 
-    const version = RecordFile._getVersion(bufferOrObj);
+    const version = RecordFile._readVersion(bufferOrObj);
     return version === 1 || version === 2;
   }
 
   _parsePreV5RecordFile(buffer) {
-    this.version = RecordFile._getVersion(buffer);
+    this._version = RecordFile._readVersion(buffer);
     this._calculatePreV5FileHash(buffer.readInt32BE(), buffer);
 
     buffer = buffer.slice(PRE_V5_HEADER_LENGTH);
+    let index = 0;
     while (buffer.length !== 0) {
       const marker = buffer.readInt8();
       if (marker !== 2) {
@@ -73,7 +74,8 @@ class FullRecordFile extends RecordFile {
       buffer = buffer.slice(BYTE_SIZE);
       const transaction = readLengthAndBytes(buffer, BYTE_SIZE, MAX_TRANSACTION_LENGTH, false);
       const record = readLengthAndBytes(buffer.slice(transaction.length), BYTE_SIZE, MAX_RECORD_LENGTH, false);
-      this._addTransaction(record.bytes);
+      this._addTransaction(record.bytes, index);
+      index++;
 
       buffer = buffer.slice(transaction.length + record.length);
     }

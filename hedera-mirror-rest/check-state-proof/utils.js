@@ -71,10 +71,7 @@ const getAPIResponse = async (url) => {
     });
 };
 
-const readJSONFile = (filePath) => {
-  const rawData = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(rawData);
-};
+const readJSONFile = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
 module.exports = {
   getAPIResponse,
