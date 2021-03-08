@@ -118,7 +118,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public MirrorBalancesResponse getAccountBalances(String accountId) {
         log.debug("Verify balance for account '{}' is returned by Mirror Node", accountId);
         // build /balances?account.id=<accountId>
-        return (MirrorBalancesResponse) callRestEndpoint("/{endpoint}?{key}={accountId}",
+        return callRestEndpoint("/{endpoint}?{key}={accountId}",
                 MirrorBalancesResponse.class, BALANCES_ENDPOINT,
                 ACCOUNTS_ID_QUERY, accountId);
     }
@@ -126,7 +126,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
         // build /transactions/<timestamp>
-        return (MirrorTransactionsResponse) callRestEndpoint("/{endpoint}?timestamp={timestamp}",
+        return callRestEndpoint("/{endpoint}?timestamp={timestamp}",
                 MirrorTransactionsResponse.class, TRANSACTIONS_ENDPOINT,
                 timestamp);
     }
@@ -134,7 +134,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
         // build /transactions/<transactionId>
-        return (MirrorTransactionsResponse) callRestEndpoint("/{endpoint}/{transactionId}",
+        return callRestEndpoint("/{endpoint}/{transactionId}",
                 MirrorTransactionsResponse.class, TRANSACTIONS_ENDPOINT,
                 transactionId);
     }
@@ -142,7 +142,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public MirrorTokenResponse getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
         // build /tokens/<tokenId>
-        return (MirrorTokenResponse) callRestEndpoint("/{endpoint}/{tokenId}", MirrorTokenResponse.class,
+        return callRestEndpoint("/{endpoint}/{tokenId}", MirrorTokenResponse.class,
                 TOKENS_ENDPOINT, tokenId);
     }
 
