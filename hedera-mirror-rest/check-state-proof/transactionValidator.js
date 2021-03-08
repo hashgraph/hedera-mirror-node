@@ -66,12 +66,12 @@ const verifySignatures = (nodePublicKeyMap, signatureFileMap) => {
 
     if (!verifySignature(publicKey, fileHash, fileHashSignature)) {
       logger.error(`Failed to verify fileHash signature for node ${nodeAccountId}!`);
-      return;
+      continue;
     }
 
     if (metadataHash && !verifySignature(publicKey, metadataHash, metadataHashSignature)) {
       logger.error(`Failed to verify metadataHash signature for node ${nodeAccountId}!`);
-      return;
+      continue;
     }
 
     if (_.isEmpty(validatedSignatureFilesMap[fileHash])) {

@@ -38,7 +38,7 @@ describe('SignatureObject', () => {
         [0, 0, 0, 1], // signature type, SHA384WithRSA
         [0, 0, 0x1, 0x80], // length, 384
         [0xff, 0xff, 0xfe, 0xe5], // checksum
-        signature // 48-byte hash
+        signature
       )
     );
   });

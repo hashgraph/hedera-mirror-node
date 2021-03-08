@@ -115,12 +115,10 @@ class StateProofHandler {
     }
     logger.info(`Matching transaction was found in record file`);
 
-    const validatedTransaction = performStateProof(nodeAccountIdPublicKeyPairs, this.signatureFileMap, {
+    return performStateProof(nodeAccountIdPublicKeyPairs, this.signatureFileMap, {
       fileHash: this.recordFile.getFileHash(),
       metadataHash: this.recordFile.getMetadataHash(),
     });
-
-    return validatedTransaction;
   }
 }
 

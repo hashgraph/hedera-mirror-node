@@ -4,7 +4,7 @@
   "description": "An example implementation of a state proof flow fora transaction utilizing the mirror node.",
   "main": "index.js",
   "scripts": {
-    "test": "jest --testPathPattern='tests/*'",
+    "test": "jest --testPathPattern='tests/.*\\.test\\.js'",
     "start": "node index.js"
   },
   "repository": {
@@ -36,10 +36,5 @@
     "log4js": "^6.3.0",
     "node-fetch": "^2.6.1",
     "yargs": "^15.4.1"
-  },
-  "jest": {
-    "testPathIgnorePatterns": [
-      "tests/testUtils.js"
-    ]
   }
 }

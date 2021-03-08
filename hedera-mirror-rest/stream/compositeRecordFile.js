@@ -30,9 +30,9 @@ class CompositeRecordFile extends RecordFile {
   constructor(bufferOrObj) {
     super();
 
-    const clazz = delegates.reduce((match, clazz) => {
-      return match || (clazz._support(bufferOrObj) && clazz);
-    }, undefined);
+    const clazz = delegates.reduce((match, cls) => {
+      return match || (cls._support(bufferOrObj) ? cls : null);
+    }, null);
     if (!clazz) {
       throw new Error('Unsupported record file');
     }

@@ -208,7 +208,12 @@ const testSignatureFiles = {
     expected: {
       fileHash: Buffer.from('HBbDl2r1C9Uojbe0Gkb9FYrkMt7IYLl+tFpEFmUD1gb2oosKGeHRjO+kCgWIH9sw', 'base64'),
       fileHashSignature: Buffer.from(
-        'UZyy+eKQPYVKtpdtqA4CIRm0L2QhwNhBj3k5Uw8QO82Kp4tv4B2kePRhLQ7dJ6H9epHtxKLywLjOxb+Mt2E7KI2GB1/7rGEfmMaO6uqoN4hwkaAHN7Cyu5IH5cVJklHB/RGAIPLKASF7lhrPU4g+FpQZBRJCPe9dqMQFNfiORIioZ3DlS05XS7aLnC5PtWQzg3azU5+j30qQva0tiOfqPN57d0c4iqptJGO55/WHSS3FAe4JRdcksm/WLXrxMdGb6JUqGeOKAd2z7eib+HiHrv5gmj1iC5XBZS1Nadd7G1QLe404RN2Afeger6eUIvLoaliaUegDh04syaFoXa+ufCuNfV5LeHWSjM+n+5WhKY2D675CTcnY1dwpoF5pcS7yCAOLha7qZqCfKw66JVVOFRL/IkNpWCMkdphEr7BpRypne8oeZfOYFTdYaTllsAhr2YvpgvxFSUG0L3+XeTqhYxBOApzQ+Ew9Ze4Wz87rkBv4yzux8aeZ4f2gx364KpM/',
+        'UZyy+eKQPYVKtpdtqA4CIRm0L2QhwNhBj3k5Uw8QO82Kp4tv4B2kePRhLQ7dJ6H9epHtxKLywLjOxb+Mt2E7KI2GB1/7rGEfm' +
+          'MaO6uqoN4hwkaAHN7Cyu5IH5cVJklHB/RGAIPLKASF7lhrPU4g+FpQZBRJCPe9dqMQFNfiORIioZ3DlS05XS7aLnC5PtWQzg3' +
+          'azU5+j30qQva0tiOfqPN57d0c4iqptJGO55/WHSS3FAe4JRdcksm/WLXrxMdGb6JUqGeOKAd2z7eib+HiHrv5gmj1iC5XBZS1' +
+          'Nadd7G1QLe404RN2Afeger6eUIvLoaliaUegDh04syaFoXa+ufCuNfV5LeHWSjM+n+5WhKY2D675CTcnY1dwpoF5pcS7yCAOL' +
+          'ha7qZqCfKw66JVVOFRL/IkNpWCMkdphEr7BpRypne8oeZfOYFTdYaTllsAhr2YvpgvxFSUG0L3+XeTqhYxBOApzQ+Ew9Ze4Wz' +
+          '87rkBv4yzux8aeZ4f2gx364KpM/',
         'base64'
       ),
       version: 2,
@@ -219,12 +224,22 @@ const testSignatureFiles = {
     expected: {
       fileHash: Buffer.from('67uxdUQ8Q2k/h3NEYLtIoN/Pi4Qh8G30hNOy01uOOEaNdApIF7LG2W+ph8lrnv+j', 'base64'),
       fileHashSignature: Buffer.from(
-        'N5oKZ7MiEYM7VP9v9W80jivv175reKdS1KVhkZ25H4PVaAqnZw8ZctNfu/kPP4uOott8MuWVAX+ZQ54SQnsa5fCu0mRmziVxF3p+i90IdRqykEzeMd18Mf/tvkxA8SVCGkfL35g6rKg/wnAhpz59nrhZwF1L1wD/i24GNnUcKxaRtRuPKLc0SNnTzh96kKaAu6HLk2cODmYOaSkMU9U/k/k9U0a8qwrBP7cvhsvGJL/J+m+na6bdMuYBzRrdF5G+5K3fGGFiEp1TZXOXdWEvH7NqvtHgx3JhtXrM2FhBITzaeg9xOeoSG5ZZiO5X6xJ8xg+tq7k9vOIz9CkBcqSIT+zeHKX6ep0GD5vXTbN/7gUVk1jDAZVJ3Z+SzxudTUi3M7/gALzyZ5Y3Uc/DjqaSG4tWlm+1u73GKzz8MLntp+yQratu5atHC2QW10VIGefz8yyr+A31ne8toLi35u+kImEdviqdBsyldtHCs25VcC1ZI4vT6IUQHwqEsO7EbX1n',
+        'N5oKZ7MiEYM7VP9v9W80jivv175reKdS1KVhkZ25H4PVaAqnZw8ZctNfu/kPP4uOott8MuWVAX+ZQ54SQnsa5fCu0mRmziVxF' +
+          '3p+i90IdRqykEzeMd18Mf/tvkxA8SVCGkfL35g6rKg/wnAhpz59nrhZwF1L1wD/i24GNnUcKxaRtRuPKLc0SNnTzh96kKaAu6' +
+          'HLk2cODmYOaSkMU9U/k/k9U0a8qwrBP7cvhsvGJL/J+m+na6bdMuYBzRrdF5G+5K3fGGFiEp1TZXOXdWEvH7NqvtHgx3JhtXr' +
+          'M2FhBITzaeg9xOeoSG5ZZiO5X6xJ8xg+tq7k9vOIz9CkBcqSIT+zeHKX6ep0GD5vXTbN/7gUVk1jDAZVJ3Z+SzxudTUi3M7/g' +
+          'ALzyZ5Y3Uc/DjqaSG4tWlm+1u73GKzz8MLntp+yQratu5atHC2QW10VIGefz8yyr+A31ne8toLi35u+kImEdviqdBsyldtHCs' +
+          '25VcC1ZI4vT6IUQHwqEsO7EbX1n',
         'base64'
       ),
       metadataHash: Buffer.from('c0tZ6aeUL5VcHp2h/cCbJf4K5YdSGylCfxo4l1sinKU1e5XUqUKStZL84yBFg41l', 'base64'),
       metadataHashSignature: Buffer.from(
-        'Qy4YQ+aZZB+EawoT3Ysc60+uvUQ6jjaCSAXzx3TtHJelkUK5fJW5l0MkqJlxL2M9Naw8qoRfBI210mD7UbXgs9Q3lmDk/FWDFOG/F1sTUQvlpteh4DpkaOo2i+l4JL+gOYAZgFGRxNdsK4jrnU2TcJVR6WEQ9p4f6rRWs0q4b+PN9CBqvvXdBgQ0OQB8iQ3YlD6LGWlCD98usHKExRUcWyciQTnhg7RVxp/e0qUMj2pa5jv7BbkX3zCSNbPH6F3qdlT44WIAKY/ygygC2hagrJc9yvrwREG36AjUYGcnktaN3ZsQL15XNPP0tAYddiilngRGGF9xuDqnn7gIJc1Ovv3lVwe+77PZpjDhGgQ3+OBf5Y7v2Iy9I0ZBZKuXyVZHvpwaqjaIPY2dFzhi0HHL7nyo7tR46uTnYI6sNu8d7KEcFylWmaMVlVUVTp5hceecr7VKrJ7S+wlELDOfoLcwYIzt+iY4j4Tapp9Q8dektc9/PkqtiysCM84v7Pvq3tvx',
+        'Qy4YQ+aZZB+EawoT3Ysc60+uvUQ6jjaCSAXzx3TtHJelkUK5fJW5l0MkqJlxL2M9Naw8qoRfBI210mD7UbXgs9Q3lmDk/FWDF' +
+          'OG/F1sTUQvlpteh4DpkaOo2i+l4JL+gOYAZgFGRxNdsK4jrnU2TcJVR6WEQ9p4f6rRWs0q4b+PN9CBqvvXdBgQ0OQB8iQ3YlD' +
+          '6LGWlCD98usHKExRUcWyciQTnhg7RVxp/e0qUMj2pa5jv7BbkX3zCSNbPH6F3qdlT44WIAKY/ygygC2hagrJc9yvrwREG36Aj' +
+          'UYGcnktaN3ZsQL15XNPP0tAYddiilngRGGF9xuDqnn7gIJc1Ovv3lVwe+77PZpjDhGgQ3+OBf5Y7v2Iy9I0ZBZKuXyVZHvpwa' +
+          'qjaIPY2dFzhi0HHL7nyo7tR46uTnYI6sNu8d7KEcFylWmaMVlVUVTp5hceecr7VKrJ7S+wlELDOfoLcwYIzt+iY4j4Tapp9Q8' +
+          'dektc9/PkqtiysCM84v7Pvq3tvx',
         'base64'
       ),
       version: 5,
@@ -239,8 +254,8 @@ const copyRecordFileAndSetVersion = (buffer, version) => {
 };
 
 const testRecordFileUnsupportedVersion = (versions, clazz) => {
-  const buffer = testRecordFiles.v2[0].buffer;
-  const testSpecs = versions.map((version) => [version, copyRecordFileAndSetVersion(buffer, version)]);
+  const v2Buffer = testRecordFiles.v2[0].buffer;
+  const testSpecs = versions.map((version) => [version, copyRecordFileAndSetVersion(v2Buffer, version)]);
 
   testSpecs.forEach((testSpec) => {
     const [version, buffer] = testSpec;
@@ -251,12 +266,12 @@ const testRecordFileUnsupportedVersion = (versions, clazz) => {
 };
 
 const testRecordFileCanCompact = (testSpecs, clazz) => {
-  const buffer = testRecordFiles.v2[0].buffer;
+  const v2Buffer = testRecordFiles.v2[0].buffer;
   testSpecs
     .map(([version, expected]) => {
       return {
         version,
-        buffer: copyRecordFileAndSetVersion(buffer, version),
+        buffer: copyRecordFileAndSetVersion(v2Buffer, version),
         expected,
       };
     })
@@ -269,7 +284,7 @@ const testRecordFileCanCompact = (testSpecs, clazz) => {
 };
 
 const testRecordFileFromBufferOrObj = (version, clazz, supportObj = false, hasRunningHash = false) => {
-  const getTestRecordFiles = (version) => testRecordFiles[`v${version}`];
+  const getTestRecordFiles = (ver) => testRecordFiles[`v${ver}`];
 
   describe('check individual field', () => {
     getTestRecordFiles(version).forEach((testSpec) => {

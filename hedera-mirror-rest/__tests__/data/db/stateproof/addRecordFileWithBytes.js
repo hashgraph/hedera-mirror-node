@@ -56,7 +56,7 @@ module.exports = async (sqlConnection) => {
   ];
   const query = [
     `insert into record_file (${fields.join(',')})`,
-    `values (${fields.map((_, index) => `$${index + 1}`).join(',')})`,
+    `values (${fields.map((_, index) => '$' + (index + 1)).join(',')})`,
   ].join('\n');
   const params = [
     '2021-03-06T22_31_12.056022000Z.rcd',

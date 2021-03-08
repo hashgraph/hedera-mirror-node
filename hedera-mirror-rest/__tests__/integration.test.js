@@ -435,7 +435,9 @@ describe('DB integration test - spec based', () => {
   };
 
   const runSqlFuncs = async (sqlFuncs) => {
-    if (!sqlFuncs) return;
+    if (!sqlFuncs) {
+      return;
+    }
 
     for (const sqlFunc of sqlFuncs) {
       const func = require(sqlFunc);
