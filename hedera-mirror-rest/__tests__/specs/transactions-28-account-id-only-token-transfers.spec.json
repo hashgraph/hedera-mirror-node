@@ -50,11 +50,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/transactions?account.id=0.0.9",
-    "/api/v1/transactions?account.id=0.9",
-    "/api/v1/transactions?account.id=9"
-  ],
+  "url": "/api/v1/transactions?account.id=0.0.9",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
