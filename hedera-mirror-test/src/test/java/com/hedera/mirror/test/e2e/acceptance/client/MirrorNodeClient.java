@@ -154,8 +154,8 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 scheduleId);
     }
 
-    public Object callRestEndpoint(String uri, Class<?> classType, Object... uriVariables) {
-        Object response = webClient.get()
+    public <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
+        T response = webClient.get()
                 .uri(uri, uriVariables)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
