@@ -24,14 +24,8 @@ const appRoot = require('app-root-path');
 const fs = require('fs');
 const path = require('path');
 
-const recordFilePath = path.join(
-  appRoot.toString(),
-  '__tests__',
-  'data',
-  'db',
-  'stateproof',
-  '2021-03-06T22_31_12.056022000Z.rcd'
-);
+const recordFilename = '2021-03-05T05_23_04.299486999Z.rcd';
+const recordFilePath = path.join(appRoot.toString(), '__tests__', 'data', 'db', 'stateproof', recordFilename);
 const data = fs.readFileSync(recordFilePath);
 
 module.exports = async (sqlConnection) => {
@@ -57,23 +51,23 @@ module.exports = async (sqlConnection) => {
   const placeholders = fields.map((_, index) => `$${index + 1}`).join(',');
   const query = [`insert into record_file (${fields.join(',')})`, `values (${placeholders})`].join('\n');
   const params = [
-    '2021-03-06T22_31_12.056022000Z.rcd',
-    1615069877,
-    1615069877,
-    'f2a928ff2f3b1217910d2d4469fea1a603f19e42b6e2088462f17fc6299b597cadedbd8c264049b360d34fca9fa92578',
-    '0e23db92250641deb65d2c6a18c18e693e61e3d9ba6d1336f018041a6c5a4b501a57de651743192fc2e2f8dfc657faec',
-    '1615069872056022000',
-    '1615069873560485000',
+    recordFilename,
+    1614921788,
+    1614921788,
+    'aae01bdff79eeacca460d84348d032b44c134c11f6c2d36d33f5a09e50c789957573be45c3eb81f7e90fa976c358a21b',
+    '366fee025a8b2b2678096cf7c1becdfe6e6a3ec2b904ff054a4a4f010e8136dce8bbe4b0c63e4807a2e8d0570f479f89',
+    '1614921784299486999',
+    '1614921785873901000',
     3,
-    9,
+    8,
     0,
     0,
     11,
     0,
     5,
-    'c3032392cccfebc9669f995a93a43142b933bdaaf676877c67947f3341e5ecf9b65d5560f5aada1eb67bfae0e968deea',
+    'fe77e4b14de69068612543c59c1cfaf216a52e372fb5d5b27c3074bf08e2bf95645918b7059c3bc9498e42adb2dbc3c4',
     data,
-    5397027,
+    4085,
   ];
   await sqlConnection.query(query, params);
 };

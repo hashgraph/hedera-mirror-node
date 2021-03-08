@@ -1,8 +1,8 @@
 {
   "description": "Stateproof api calls with valid transaction ID and success compact response from record file in db table",
   "extendedDescription": [
-    "When querying stateproof for transaction 0.0.145207-1615069851-636453605, expect to find it in record file",
-    "2021-03-06T22_31_12.056022000Z.rcd in db table but not s3 bucket and all 4 signature files exist. For the sake of",
+    "When querying stateproof for transaction 0.0.1744-1614921772-342959302, expect to find it in record file",
+    "2021-03-05T05_23_04.299486999Z.rcd in db table but not s3 bucket and all 4 signature files exist. For the sake of",
     "brevity, the base64 encoded file content is replaced with its sha256 sum in responseJson"
   ],
   "setup": {
@@ -14,33 +14,32 @@
       "data/db/stateproof/transaction_v5.sql"
     ]
   },
-  "url": "/api/v1/transactions/0.0.145207-1615069851-636453605/stateproof",
+  "url": "/api/v1/transactions/0.0.1744-1614921772-342959302/stateproof",
   "responseStatus": 200,
   "responseJson": {
     "address_books": ["29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"],
     "record_file": {
       "head": "e8c769dbbeb8d3f2e03952d041c8afe57ddc999fc13a233ae49cda8cbddfc4d7",
-      "start_running_hash_object": "1741bdcec14855ee940b298a83ed7e44ed7a8196841ac5297101626297bec4a6",
+      "start_running_hash_object": "ec2142ea265aa0fe95a02ea4d9d5f4e36a88e0ace35a3afdb47d7438a2a2f65d",
       "hashes_before": [
-        "009c98eac4e7de024647cba16b4684e976052c11eccd04a3185ec7d4ca591ef3",
-        "76fb09e972938a55e7eacf5db8e701294f029ba8407985ba88d0ec9e41a4be61",
-        "56739fdf194ecf12a158654b2f18e9adadcd88734be3918aa0bba84e28e1a6d9",
-        "57055112404c01d30e047a7a12ea2c50c0d1f4b45611eb3ec6fe41fd73057c5e",
-        "aad691988b54b764caecb069c020175bf6cf773ff0de9317c52ba33e034bd314",
-        "f6e95e479eb82a6f309ccdcf4041194025815036e4a3d15bbd8e161a4b0d53e0"
+        "b04c4d67f177754b00b346427fc4c879f1176b3c179acd0db0e162bb32d69a36",
+        "fab04e5379fb374d55f2661d1104cd1e064f05be2202e765a08c526038d473b8"
       ],
-      "record_stream_object": "e65205f0aa1653e91bd9bc959ed729bb9f6aec42fec192f2daf4ea84e795afc0",
+      "record_stream_object": "264d72983c084b9c634b408b555cda9c148984be44504ac55a162b4782dfce72",
       "hashes_after": [
-        "25733cf55b6680b73950313009bb22207ca2a112d5493f25b5e760bf34dba23e",
-        "5ba2ee34f775aecc1d6198855bed3e94a0a0d02fc975b1d22751aacb89f64bc0"
+        "fe41bf2e0ad4c18c993f9f8de676d7f31fea64b74d4cf92f0e75a90daece4bf5",
+        "399504d886fbeeb6ab39384df413be5a58630485acf0ae1ba4fdaf48c40dca69",
+        "b5421e277a70a63a72c46f7af24df3d00f4bd3ce128897e9638a74efaf2020ad",
+        "d0fd08fbb5c7a4671965c4670a85b0a97c784274309991416ae576a2a8811f02",
+        "458592658a8e7f003895706c7cc3d5230d96bb38248aa36c16c46d5eed666b37"
       ],
-      "end_running_hash_object": "7f8479bc2b3576fae062a24eb6d70f461e640af48fc3e329bbd51e1e3b12eb73"
+      "end_running_hash_object": "2b51b1fbc88bae03b5e4c73aba0a549be6815b67b8e880e5d443abd73269faf3"
     },
     "signature_files": {
-      "0.0.3": "d1da1542a73429fa1e7e8fdba06d1089dd06d10740c6b45f8c6b3e093ba1f811",
-      "0.0.4": "69855881fe51e121ef9c4abc951cbc06e1149db60b1ee4421cba18297edbb5c4",
-      "0.0.5": "305486dab0717b592a21cb59a74dfaedf86783bc4bb18d9650cc401d4af38a5d",
-      "0.0.6": "13de334b7716a68d83d6791b13fae1ea2537d051385ede46b8915e722437e5ba"
+      "0.0.3": "27cb86f89b5b7ec6fa5bfbd270b69e8d538caf3998d884f082868fce755cabea",
+      "0.0.4": "c9c99e9d92c7d0caaa6a416e9a4356e0e237b02d7605f68082b3f6fd8c185458",
+      "0.0.5": "c8f7b5462477ab65d6349ca1275c45ffb3e7a38d3fc45cbc0f9608bd79a25500",
+      "0.0.6": "028e7ef69ff6d50cac9522143bee018eafe887e004db8c28b4d685ffbe5c2171"
     },
     "version": 5
   }
