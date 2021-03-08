@@ -162,7 +162,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void create() {
         AccountInfo.Builder accountInfo = accountInfo();
-        String publicKey = Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey().toByteArray());
+        String publicKey = Utility.convertSimpleKeyToHex(accountInfo.getKey().toByteArray());
 
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
 
@@ -181,7 +181,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     void update() {
         createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
         AccountInfo.Builder accountInfo = accountInfo();
-        String publicKey = Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey().toByteArray());
+        String publicKey = Utility.convertSimpleKeyToHex(accountInfo.getKey().toByteArray());
 
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
 

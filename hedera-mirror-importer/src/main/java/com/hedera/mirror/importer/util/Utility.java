@@ -23,23 +23,24 @@ package com.hedera.mirror.importer.util;
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
 import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.File;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.List;
 import javax.annotation.Nullable;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.domain.StreamType;
@@ -80,10 +81,51 @@ public class Utility {
      * @return converted HexString
      */
     public static String bytesToHex(byte[] bytes) {
-        if (bytes == null || bytes.length == 0) {
+        return ArrayUtils.isNotEmpty(bytes) ? Hex.encodeHexString(bytes) : null;
+    }
+
+    /**
+     * If the protobuf encoding of a Key is a single ED25519 key or a complex key with exactly one ED25519 key within
+     * it, return the key as a String with lowercase hex encoding.
+     *
+     * @param protobufKey
+     * @return ED25519 public key as a String in hex encoding, or null
+     */
+    public static String convertSimpleKeyToHex(@Nullable byte[] protobufKey) {
+        try {
+            if (ArrayUtils.isEmpty(protobufKey)) {
+                return null;
+            }
+
+            Key key = Key.parseFrom(protobufKey);
+            byte[] ed25519 = null;
+
+            switch (key.getKeyCase()) {
+                case THRESHOLDKEY:
+                    ed25519 = getSimpleKey(key.getThresholdKey().getKeys());
+                    break;
+                case KEYLIST:
+                    ed25519 = getSimpleKey(key.getKeyList());
+                    break;
+                case ED25519:
+                    ed25519 = key.getEd25519().toByteArray();
+                    break;
+                default:
+            }
+
+            return bytesToHex(ed25519);
+        } catch (Exception e) {
+            log.error("Unable to parse protobuf Key", e);
             return null;
         }
-        return Hex.encodeHexString(bytes);
+    }
+
+    private static byte[] getSimpleKey(KeyList keyList) {
+        List<Key> keys = keyList.getKeysList();
+        if (keys.size() == 1 && keys.get(0).getKeyCase() == ED25519) {
+            return keys.get(0).getEd25519().toByteArray();
+        }
+        return null;
     }
 
     /**
@@ -146,32 +188,6 @@ public class Utility {
         }
     }
 
-    public static File getResource(String path) {
-        ClassLoader[] classLoaders = {Thread
-                .currentThread().getContextClassLoader(), Utility.class.getClassLoader(),
-                ClassLoader.getSystemClassLoader()};
-        URL url = null;
-
-        for (ClassLoader classLoader : classLoaders) {
-            if (classLoader != null) {
-                url = classLoader.getResource(path);
-                if (url != null) {
-                    break;
-                }
-            }
-        }
-
-        if (url == null) {
-            throw new RuntimeException("Cannot find resource: " + path);
-        }
-
-        try {
-            return new File(url.toURI().getSchemeSpecificPart());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static final Instant getInstantFromFilename(String filename) {
         if (StringUtils.isBlank(filename)) {
             return Instant.EPOCH;
@@ -200,37 +216,6 @@ public class Utility {
 
     public static final boolean isStreamFileAfterInstant(String filename, Instant instant) {
         return instant != null && getInstantFromFilename(filename).isAfter(instant);
-    }
-
-    /**
-     * If the protobuf encoding of a Key is a single ED25519 key, return the key as a String with lowercase hex
-     * encoding.
-     *
-     * @param protobufKey
-     * @return ED25519 public key as a String in hex encoding, or null
-     * @throws InvalidProtocolBufferException if the protobufKey is not a valid protobuf encoding of a Key
-     *                                        (BasicTypes.proto)
-     */
-    public static @Nullable
-    String protobufKeyToHexIfEd25519OrNull(@Nullable byte[] protobufKey) {
-        if ((null == protobufKey) || (0 == protobufKey.length)) {
-            return null;
-        }
-
-        try {
-            var parsedKey = Key.parseFrom(protobufKey);
-            if (ED25519 != parsedKey.getKeyCase()) {
-                return null;
-            }
-
-            return Hex.encodeHexString(parsedKey.getEd25519().toByteArray(), true);
-        } catch (InvalidProtocolBufferException protoEx) {
-            log.error("Invalid protobuf Key, could parse key", protoEx);
-            return null;
-        } catch (Exception e) {
-            log.error("Invalid ED25519 key could not be translated to hex text.", e);
-            return null;
-        }
     }
 
     /**

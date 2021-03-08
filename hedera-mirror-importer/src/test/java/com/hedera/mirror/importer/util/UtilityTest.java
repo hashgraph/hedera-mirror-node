@@ -24,14 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.sql.SQLException;
 import java.time.Instant;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +40,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.importer.domain.StreamType;
 
-public class UtilityTest {
+class UtilityTest {
+
+    private static final String ED25519 = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
 
     @DisplayName("Get Instant from filename")
     @ParameterizedTest(name = "{0}")
@@ -106,47 +106,58 @@ public class UtilityTest {
     }
 
     @Test
-    @DisplayName("Loads resource from classpath")
-    void getResource() {
-        assertThat(Utility.getResource("log4j2.xml")).exists().canRead();
-        assertThat(Utility.getResource("log4j2-test.xml")).exists().canRead();
+    void convertSimpleKeyToHexWhenNull() {
+        assertThat(Utility.convertSimpleKeyToHex(null)).isNull();
     }
 
     @Test
-    @DisplayName("protobufKeyToHexIfEd25519OrNull null key")
-    public void protobufKeyToHexIfEd25519OrNull_Null() throws InvalidProtocolBufferException, SQLException {
-        var result = Utility.protobufKeyToHexIfEd25519OrNull(null);
-
-        assertThat(result).isNull();
+    void convertSimpleKeyToHexWhenError() {
+        assertThat(Utility.convertSimpleKeyToHex(new byte[] {0, 1, 2})).isNull();
     }
 
     @Test
-    @DisplayName("protobufKeyToHexIfEd25519OrNull valid ED25519 key")
-    public void protobufKeyToHexIfEd25519OrNull_Valid() throws Exception {
-        var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-        var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
-        var result = Utility.protobufKeyToHexIfEd25519OrNull(input.toByteArray());
-
-        assertThat(result).isEqualTo(instr);
+    void convertSimpleKeyToHexWhenEd25519() throws Exception {
+        var bytes = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build().toByteArray();
+        assertThat(Utility.convertSimpleKeyToHex(bytes)).isEqualTo(ED25519);
     }
 
     @Test
-    @DisplayName("protobufKeyToHexIfEd25519OrNull threshold key")
-    public void protobufKeyToHexIfEd25519OrNull_ThresholdKey() throws Exception {
-        var ks = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ks))).build();
+    void convertSimpleKeyToHexWhenSimpleKeyList() throws Exception {
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
+        var keyList = KeyList.newBuilder().addKeys(key).build();
+        var bytes = Key.newBuilder().setKeyList(keyList).build().toByteArray();
+        assertThat(Utility.convertSimpleKeyToHex(bytes)).isEqualTo(ED25519);
+    }
+
+    @Test
+    void convertSimpleKeyToHexWhenKeyList() throws Exception {
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
+        var keyList = KeyList.newBuilder().addKeys(key).addKeys(key).build();
+        var bytes = Key.newBuilder().setKeyList(keyList).build().toByteArray();
+        assertThat(Utility.convertSimpleKeyToHex(bytes)).isNull();
+    }
+
+    @Test
+    void convertSimpleKeyToHexWhenSimpleThreshHoldKey() throws Exception {
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
         var keyList = KeyList.newBuilder().addKeys(key).build();
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
-        var input = Key.newBuilder().setThresholdKey(tk).build();
+        var bytes = Key.newBuilder().setThresholdKey(tk).build().toByteArray();
+        assertThat(Utility.convertSimpleKeyToHex(bytes)).isEqualTo(ED25519);
+    }
 
-        var result = Utility.protobufKeyToHexIfEd25519OrNull(input.toByteArray());
-
-        assertThat(result).isNull();
+    @Test
+    void convertSimpleKeyToHexWhenThreshHoldKey() throws Exception {
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
+        var keyList = KeyList.newBuilder().addKeys(key).addKeys(key).build();
+        var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
+        var bytes = Key.newBuilder().setThresholdKey(tk).build().toByteArray();
+        assertThat(Utility.convertSimpleKeyToHex(bytes)).isNull();
     }
 
     @Test
     @DisplayName("get TransactionId")
-    public void getTransactionID() {
+    void getTransactionID() {
         AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
         TransactionID transactionId = Utility.getTransactionId(payerAccountId);
         assertThat(transactionId)
@@ -168,7 +179,7 @@ public class UtilityTest {
             "1569936354, 0",
             "0,0"
     })
-    public void instantToTimestamp(long seconds, int nanos) {
+    void instantToTimestamp(long seconds, int nanos) {
         Instant instant = Instant.ofEpochSecond(seconds).plusNanos(nanos);
         Timestamp test = Utility.instantToTimestamp(instant);
         assertAll(
@@ -228,7 +239,7 @@ public class UtilityTest {
             "1569936354, 0",
             "0,0"
     })
-    public void timeStampInNanosTimeStamp(long seconds, int nanos) {
+    void timeStampInNanosTimeStamp(long seconds, int nanos) {
         Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
         long timeStampInNanos = Utility.timeStampInNanos(timestamp);

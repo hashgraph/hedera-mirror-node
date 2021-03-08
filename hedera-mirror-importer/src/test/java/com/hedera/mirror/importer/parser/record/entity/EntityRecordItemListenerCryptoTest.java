@@ -217,7 +217,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 // transaction body inputs
                 , () -> assertEquals(cryptoUpdateTransactionBody.getAutoRenewPeriod().getSeconds(),
                         dbAccountEntity.getAutoRenewPeriod())
-                , () -> assertEquals(Utility.protobufKeyToHexIfEd25519OrNull(
+                , () -> assertEquals(Utility.convertSimpleKeyToHex(
                         cryptoUpdateTransactionBody.getKey().toByteArray()), dbAccountEntity.getEd25519PublicKeyHex())
                 , () -> assertAccount(cryptoUpdateTransactionBody.getProxyAccountID(), dbProxyAccountId)
                 , () -> assertArrayEquals(cryptoUpdateTransactionBody.getKey().toByteArray(), dbAccountEntity.getKey())
@@ -602,7 +602,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         Entities actualProxyAccountId = getEntity(actualAccount.getProxyAccountId());
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualAccount.getAutoRenewPeriod()),
-                () -> assertEquals(Utility.protobufKeyToHexIfEd25519OrNull(expected.getKey().toByteArray()),
+                () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
                         actualAccount.getEd25519PublicKeyHex()),
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
