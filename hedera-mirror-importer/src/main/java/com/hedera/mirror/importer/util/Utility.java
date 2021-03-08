@@ -81,10 +81,7 @@ public class Utility {
      * @return converted HexString
      */
     public static String bytesToHex(byte[] bytes) {
-        if (bytes == null || bytes.length == 0) {
-            return null;
-        }
-        return Hex.encodeHexString(bytes);
+        return ArrayUtils.isNotEmpty(bytes) ? Hex.encodeHexString(bytes) : null;
     }
 
     /**
