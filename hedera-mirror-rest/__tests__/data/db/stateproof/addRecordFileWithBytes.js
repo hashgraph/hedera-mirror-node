@@ -30,11 +30,11 @@ const recordFilePath = path.join(
   'data',
   'db',
   'stateproof',
-  './2021-03-06T22_31_12.056022000Z.rcd'
+  '2021-03-06T22_31_12.056022000Z.rcd'
 );
+const data = fs.readFileSync(recordFilePath);
 
 module.exports = async (sqlConnection) => {
-  const data = fs.readFileSync(recordFilePath);
   const fields = [
     'name',
     'load_start',

@@ -476,21 +476,27 @@ describe('DB integration test - spec based', () => {
   const hasher = (data) => crypto.createHash('sha256').update(data).digest('hex');
 
   const transformStateProofResponse = (jsonObj) => {
-    if (jsonObj.record_file) {
-      jsonObj.record_file = hasher(jsonObj.record_file);
-    }
+    const deepBase64Encode = (obj) => {
+      if (typeof obj === 'string') {
+        return hasher(obj);
+      }
 
-    if (jsonObj.address_books) {
-      jsonObj.address_books.forEach((addressBook, index) => {
-        jsonObj.address_books[index] = hasher(addressBook);
-      });
-    }
+      const result = {};
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'string') {
+          result[k] = hasher(v);
+        } else if (Array.isArray(v)) {
+          result[k] = v.map((val) => deepBase64Encode(val));
+        } else if (_.isPlainObject(v)) {
+          result[k] = deepBase64Encode(v);
+        } else {
+          result[k] = v;
+        }
+      }
+      return result;
+    };
 
-    if (jsonObj.signature_files) {
-      Object.keys(jsonObj.signature_files).forEach((nodeAccountId) => {
-        jsonObj.signature_files[nodeAccountId] = hasher(jsonObj.signature_files[nodeAccountId]);
-      });
-    }
+    return deepBase64Encode(jsonObj);
   };
 
   afterEach(() => {
@@ -499,7 +505,6 @@ describe('DB integration test - spec based', () => {
 
   const specPath = path.join(__dirname, 'specs');
   fs.readdirSync(specPath).forEach((file) => {
-    if (!file.startsWith('stateproof-01')) return;
     const p = path.join(specPath, file);
     const specText = fs.readFileSync(p, 'utf8');
     const spec = JSON.parse(specText);
@@ -510,9 +515,9 @@ describe('DB integration test - spec based', () => {
         const response = await request(server).get(url);
 
         expect(response.status).toEqual(spec.responseStatus);
-        const jsonObj = JSON.parse(response.text);
-        if (file.startsWith('stateproof')) {
-          transformStateProofResponse(jsonObj);
+        let jsonObj = JSON.parse(response.text);
+        if (response.status === 200 && file.startsWith('stateproof')) {
+          jsonObj = transformStateProofResponse(jsonObj);
         }
         expect(jsonObj).toEqual(spec.responseJson);
       })

@@ -115,12 +115,12 @@ class RecordFile {
     const transactionIdStr = protoTransactionIdToString(transactionID);
     const scheduled = scheduleRef !== null;
     if (receipt.status !== proto.ResponseCodeEnum.SUCCESS) {
-      logger.info(`Skip non-successful transaction ${transactionIdStr}, ${receipt.status}`);
+      logger.debug(`Skip non-successful transaction ${transactionIdStr}, ${receipt.status}`);
       return;
     }
 
     const transactionKey = `${transactionIdStr}-${scheduled}`;
-    logger.info(`Add successful transaction ${transactionKey}`);
+    logger.debug(`Add successful transaction ${transactionKey}`);
     this._transactionMap[transactionKey] = index;
   }
 }
