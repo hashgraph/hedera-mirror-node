@@ -48,7 +48,7 @@ const protoTransactionIdToString = (transactionId) => {
  *
  * @param {Buffer} buffer - The buffer to read data from
  * @param {Number} minLength - The minimum allowed length
- * @param {Number} maxLength - The maxinum allowed length
+ * @param {Number} maxLength - The maximum allowed length
  * @param {boolean} hasChecksum - If there is a checksum field
  * @return {Object} The length read and the bytes
  */

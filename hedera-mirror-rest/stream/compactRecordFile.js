@@ -47,7 +47,7 @@ class CompactRecordFile extends RecordFile {
     super();
 
     if (!CompactRecordFile._support(bufferOrObj)) {
-      throw new Error(`Unsupported record file version, expect 5`);
+      throw new Error('Unsupported record file version, expect 5');
     }
 
     this._version = 5;

@@ -59,7 +59,7 @@ class RecordFile {
   /**
    * Gets the record file's file hash, may return null if not available.
    *
-   * * @returns {Buffer}
+   * @returns {Buffer}
    */
   getFileHash() {
     return this._fileHash;
@@ -96,7 +96,7 @@ class RecordFile {
    * in the successful transaction map or the implementation does not support the operation.
    *
    * @param {string} transactionId
-   * * @param {boolean} scheduled
+   * @param {boolean} scheduled
    * @returns {{}}
    */
   toCompactObject(transactionId, scheduled = false) {
