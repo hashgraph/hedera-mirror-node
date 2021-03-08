@@ -25,6 +25,9 @@
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
                 <version>1.11.2</version>
+                <configuration>
+                    <installDirectory>${project.basedir}</installDirectory>
+                </configuration>
                 <executions>
                     <execution>
                         <id>install-node-and-npm</id>
@@ -43,7 +46,6 @@
                         </goals>
                         <configuration>
                             <arguments>install</arguments>
-                            <installDirectory>${project.basedir}</installDirectory>
                             <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
                         </configuration>
                     </execution>
