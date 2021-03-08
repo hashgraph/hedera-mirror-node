@@ -87,8 +87,10 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const info = rows[0];
   logger.debug(`Found RCD file ${info.name} for consensus timestamp ${consensusNs}`);
   return {
-    ...info,
+    bytes: info.bytes,
+    name: info.name,
     nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
+    version: info.version,
   };
 };
 
@@ -226,16 +228,15 @@ const getScheduledParamValue = (filters) => {
 };
 
 /**
- * Format the record file in either the full format or the compact format depending on its version.
- * @param {Buffer} data
- * @param {TransactionId} transactionId
- * @returns {string|Object}
+ * Formats the compactable record file. The compact object's keys are in snake case, and values are base64 encoded
+ * strings.
+ *
+ * @param recordFile
+ * @param transactionId
+ * @param scheduled
+ * @return {{}}
  */
-const formatRecordFile = (data, transactionId) => {
-  if (!CompositeRecordFile.canCompact(data)) {
-    return data.toString('base64');
-  }
-
+const formatCompactableRecordFile = (recordFile, transactionId, scheduled) => {
   const base64Encode = (obj) => {
     for (const [k, v] of Object.entries(obj)) {
       if (Buffer.isBuffer(v)) {
@@ -248,8 +249,24 @@ const formatRecordFile = (data, transactionId) => {
     return obj;
   };
 
-  const compactObject = new CompositeRecordFile(data).toCompactObject(transactionId.toString());
+  const compactObject = recordFile.toCompactObject(transactionId.toString(), scheduled);
   return _.mapKeys(base64Encode(compactObject), (v, k) => _.snakeCase(k));
+};
+
+/**
+ * Formats the record file in either the full format or the compact format depending on its version.
+ *
+ * @param {Buffer} data
+ * @param {TransactionId} transactionId
+ * @param {boolean} scheduled
+ * @returns {string|Object}
+ */
+const formatRecordFile = (data, transactionId, scheduled) => {
+  if (!CompositeRecordFile.canCompact(data)) {
+    return data.toString('base64');
+  }
+
+  return formatCompactableRecordFile(new CompositeRecordFile(data), transactionId, scheduled);
 };
 
 /**
@@ -300,7 +317,7 @@ const getStateProofForTransaction = async (req, res) => {
 
   res.locals[constants.responseDataLabel] = {
     address_books: addressBooks,
-    record_file: formatRecordFile(rcdFile, transactionId),
+    record_file: formatRecordFile(rcdFile, transactionId, scheduled),
     signature_files: sigFilesMap,
     version: rcdFileInfo.version,
   };
@@ -317,5 +334,6 @@ if (utils.isTestEnv()) {
     getAddressBooksAndNodeAccountIdsByConsensusNs,
     downloadRecordStreamFilesFromObjectStorage,
     canReachConsensus,
+    formatCompactableRecordFile,
   });
 }
