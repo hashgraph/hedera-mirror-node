@@ -58,8 +58,9 @@ public class ScheduleClient extends AbstractNetworkClient {
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setMemo(memo)
-                .setPayerAccountId(payerAccountId.getAccountId());
+                .setPayerAccountId(payerAccountId.getAccountId())
+                .setScheduleMemo(memo)
+                .setTransactionMemo(memo);
 
         if (innerSignatureKeyList != null) {
             // add initial set of required signatures to ScheduleCreate transaction

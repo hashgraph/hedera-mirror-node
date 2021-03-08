@@ -1,7 +1,7 @@
-@schedulebase @FullSuite
+@schedulebase @fullsuite
 Feature: Schedule Base Coverage Feature
 
-    @Acceptance @Sanity
+    @acceptance @sanity @Acceptance
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoTransfer and ScheduleSign
         Given I successfully schedule a treasury HBAR disbursement to <accountName>
         When the network confirms schedule presence
@@ -19,7 +19,7 @@ Feature: Schedule Base Coverage Feature
             | accountName | httpStatusCode |
             | "CAROL"     | 200            |
 
-    @Acceptance
+    @acceptance @Acceptance
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoAccountCreate and ScheduleDelete
         Given I successfully schedule a crypto account create
         When the network confirms schedule presence
@@ -33,8 +33,8 @@ Feature: Schedule Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @Acceptance
-    Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleDelete
+    @acceptance @Acceptance
+    Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleSign
         Given I schedule a crypto transfer with <initialSignatureCount> initial signatures but require an additional signature from <accountName>
         When the network confirms schedule presence
         And the mirror node REST API should return status <httpStatusCode> for the schedule transaction
@@ -48,7 +48,7 @@ Feature: Schedule Base Coverage Feature
             | 3                     | "ALICE"     | 200            |
             | 10                    | "DAVE"      | 200            |
 
-    @Acceptance
+    @acceptance @Acceptance
     Scenario Outline: Validate scheduled Hbar and Token transfer - ScheduleCreate of TokenTransfer and multi ScheduleSign
         Given I successfully schedule a token transfer from <sender> to <receiver>
         And the network confirms schedule presence
@@ -66,7 +66,7 @@ Feature: Schedule Base Coverage Feature
             | sender  | receiver | httpStatusCode |
             | "ALICE" | "DAVE"   | 200            |
 
-#    @Acceptance - sdk bug exists where executed HCS submit message fails
+    @acceptance @Acceptance
     Scenario Outline: Validate scheduled HCS message - ScheduleCreate of TopicMessageSubmit and ScheduleSign
         Given I successfully schedule a topic message submit with <accountName>'s submit key
         And the network confirms schedule presence
