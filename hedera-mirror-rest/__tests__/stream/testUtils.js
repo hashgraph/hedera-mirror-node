@@ -213,6 +213,54 @@ const testSignatureFiles = {
   },
 };
 
+const commonRecordFileTests = (version, clazz, hasRunningHash = false) => {
+  const getTestRecordFiles = (version) => testRecordFiles[`v${version}`];
+
+  describe('check individual field', () => {
+    getTestRecordFiles(version).forEach((testSpec) => {
+      const {buffer, obj, checks} = testSpec;
+      const bufferOrObj = buffer || obj;
+      const name = `from v${version} ${buffer ? 'buffer' : 'compact object'}`;
+
+      checks.forEach((check) => {
+        test(`${name} - ${check.func} - ${JSON.stringify(check.args)}`, () => {
+          const recordFile = new clazz(bufferOrObj);
+          const fn = recordFile[check.func];
+          if (!check.expectErr) {
+            const actual = fn.apply(recordFile, check.args);
+            expect(actual).toEqual(check.expected);
+          } else {
+            expect(() => fn.apply(recordFile, check.args)).toThrowErrorMatchingSnapshot();
+          }
+        });
+      });
+    });
+  });
+
+  test(`v${version} buffer with extra data`, () => {
+    const buffer = Buffer.concat([getTestRecordFiles(version)[0].buffer, Buffer.from([0])]);
+    expect(() => new clazz(buffer)).toThrowErrorMatchingSnapshot();
+  });
+
+  test(`truncated v${version} buffer`, () => {
+    const buffer = getTestRecordFiles(version)[0].buffer;
+    expect(() => new clazz(buffer.slice(0, buffer.length - 1))).toThrowErrorMatchingSnapshot();
+  });
+
+  if (hasRunningHash) {
+    test('end running hash mismatch', () => {
+      // make a shallow copy, change the last byte of the end running hash object
+      const obj = {...getTestRecordFiles(version)[1].obj};
+      const badEndRunningHashObject = Buffer.from(obj.endRunningHashObject);
+      const lastIndex = badEndRunningHashObject.length - 1;
+      badEndRunningHashObject[lastIndex] = badEndRunningHashObject[lastIndex] ^ 0xff;
+      obj.endRunningHashObject = badEndRunningHashObject;
+
+      expect(() => new clazz(obj)).toThrowErrorMatchingSnapshot();
+    });
+  }
+};
+
 const copyRecordFileAndSetVersion = (buffer, version) => {
   const copy = Buffer.from(buffer);
   copy.writeInt32BE(version);
@@ -222,5 +270,6 @@ const copyRecordFileAndSetVersion = (buffer, version) => {
 module.exports = {
   testRecordFiles,
   testSignatureFiles,
+  commonRecordFileTests,
   copyRecordFileAndSetVersion,
 };

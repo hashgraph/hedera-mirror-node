@@ -21,7 +21,7 @@
 'use strict';
 
 const FullRecordFile = require('../../stream/fullRecordFile');
-const {testRecordFiles, copyRecordFileAndSetVersion} = require('./testUtils');
+const {testRecordFiles, commonRecordFileTests, copyRecordFileAndSetVersion} = require('./testUtils');
 
 describe('unsupported record file version ', () => {
   const bufferV5 = testRecordFiles.v5[0].buffer;
@@ -56,34 +56,7 @@ describe('canCompact always return false', () => {
 });
 
 describe('from v2 buffer', () => {
-  describe('check individual field', () => {
-    testRecordFiles.v2.forEach((testSpec) => {
-      const {buffer, checks} = testSpec;
-
-      checks.forEach((check) => {
-        test(`${check.func} - ${JSON.stringify(check.args)}`, () => {
-          const fullRecordFile = new FullRecordFile(buffer);
-          const fn = fullRecordFile[check.func];
-          if (!check.expectErr) {
-            const actual = fn.apply(fullRecordFile, check.args);
-            expect(actual).toEqual(check.expected);
-          } else {
-            expect(() => fn.apply(fullRecordFile, check.args)).toThrowErrorMatchingSnapshot();
-          }
-        });
-      });
-    });
-  });
-
-  test('v2 buffer with extra data', () => {
-    const buffer = Buffer.concat([testRecordFiles.v2[0].buffer, Buffer.from([0])]);
-    expect(() => new FullRecordFile(buffer)).toThrowErrorMatchingSnapshot();
-  });
-
-  test('truncated v2 buffer', () => {
-    const v2Buffer = testRecordFiles.v2[0].buffer;
-    expect(() => new FullRecordFile(v2Buffer.slice(0, v2Buffer.length - 1))).toThrowErrorMatchingSnapshot();
-  });
+  commonRecordFileTests(2, FullRecordFile);
 
   test('from non-Buffer obj', () => {
     expect(() => new FullRecordFile({})).toThrowErrorMatchingSnapshot();
