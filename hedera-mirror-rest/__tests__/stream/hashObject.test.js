@@ -23,6 +23,7 @@
 const HashObject = require('../../stream/hashObject');
 
 describe('HashObject', () => {
+  let buffer;
   const classId = BigInt.asIntN(64, BigInt('0xf422da83a251741e'));
   const classVersion = 1;
   const digestType = 0x58ff811b;

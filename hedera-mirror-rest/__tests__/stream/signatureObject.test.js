@@ -25,6 +25,7 @@ const SignatureObject = require('../../stream/signatureObject');
 const SHA_384_WITH_RSA = SignatureObject.SHA_384_WITH_RSA;
 
 describe('SignatureObject', () => {
+  let buffer;
   const classId = BigInt.asIntN(64, BigInt('0xf422da83a251741e'));
   const classVersion = 1;
   const signature = new Array(SHA_384_WITH_RSA.maxLength).fill(0xab);

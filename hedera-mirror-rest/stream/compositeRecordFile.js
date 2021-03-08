@@ -33,18 +33,11 @@ class CompositeRecordFile extends RecordFile {
     const clazz = delegates.reduce((match, clazz) => {
       return match || (clazz._support(bufferOrObj) && clazz);
     }, undefined);
-
     if (!clazz) {
       throw new Error('Unsupported record file');
     }
 
     this.delegate = new clazz(bufferOrObj);
-  }
-
-  static _support(buffer) {
-    return delegates.reduce((supported, clazz) => {
-      return supported || clazz._support(buffer);
-    }, false);
   }
 
   static canCompact(bufferOrObj) {
@@ -53,8 +46,8 @@ class CompositeRecordFile extends RecordFile {
     }, false);
   }
 
-  containsTransaction(transactionId) {
-    return this.delegate.containsTransaction(transactionId);
+  containsTransaction(transactionId, scheduled = false) {
+    return this.delegate.containsTransaction(transactionId, scheduled);
   }
 
   getFileHash() {
@@ -73,8 +66,8 @@ class CompositeRecordFile extends RecordFile {
     return this.delegate.getVersion();
   }
 
-  toCompactObject(transactionId) {
-    return this.delegate.toCompactObject(transactionId);
+  toCompactObject(transactionId, scheduled = false) {
+    return this.delegate.toCompactObject(transactionId, scheduled);
   }
 }
 

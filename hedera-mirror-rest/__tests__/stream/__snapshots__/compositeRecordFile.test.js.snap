@@ -6,6 +6,8 @@ exports[`from record file buffer or compact object check individual field from v
 
 exports[`from record file buffer or compact object end running hash mismatch 1`] = `"End object running hash mismatch"`;
 
+exports[`from record file buffer or compact object from non-Buffer obj 1`] = `"Cannot read property 'readInt32BE' of undefined"`;
+
 exports[`from record file buffer or compact object truncated v2 buffer 1`] = `"Error reading byte array, expect 221-byte data got 220-byte"`;
 
 exports[`from record file buffer or compact object truncated v5 buffer 1`] = `"Error reading byte array, expect 48-byte data got 47-byte"`;
@@ -14,8 +16,8 @@ exports[`from record file buffer or compact object v2 buffer with extra data 1`]
 
 exports[`from record file buffer or compact object v5 buffer with extra data 1`] = `"Extra data discovered in record file"`;
 
-exports[`unsupported record file version create object from version 3 1`] = `"CompactRecordFile is not defined"`;
+exports[`unsupported record file version create object from version 3 1`] = `"Unsupported record file"`;
 
-exports[`unsupported record file version create object from version 4 1`] = `"CompactRecordFile is not defined"`;
+exports[`unsupported record file version create object from version 4 1`] = `"Unsupported record file"`;
 
-exports[`unsupported record file version create object from version 6 1`] = `"CompactRecordFile is not defined"`;
+exports[`unsupported record file version create object from version 6 1`] = `"Unsupported record file"`;

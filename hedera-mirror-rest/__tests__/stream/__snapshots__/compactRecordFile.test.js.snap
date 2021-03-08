@@ -8,22 +8,12 @@ exports[`from v5 buffer or compact object truncated v5 buffer 1`] = `"Error read
 
 exports[`from v5 buffer or compact object v5 buffer with extra data 1`] = `"Extra data discovered in record file"`;
 
-exports[`unsupported record file create object from version 1 1`] = `"Unsupported record file version, expect 5"`;
+exports[`unsupported record file version create object from version 1 1`] = `"Unsupported record file version, expect 5"`;
 
-exports[`unsupported record file create object from version 2 1`] = `"Unsupported record file version, expect 5"`;
+exports[`unsupported record file version create object from version 2 1`] = `"Unsupported record file version, expect 5"`;
 
-exports[`unsupported record file create object from version 3 1`] = `"Unsupported record file version, expect 5"`;
+exports[`unsupported record file version create object from version 3 1`] = `"Unsupported record file version, expect 5"`;
 
-exports[`unsupported record file create object from version 4 1`] = `"Unsupported record file version, expect 5"`;
+exports[`unsupported record file version create object from version 4 1`] = `"Unsupported record file version, expect 5"`;
 
-exports[`unsupported record file create object from version 6 1`] = `"Unsupported record file version, expect 5"`;
-
-exports[`unsupported record file version  create object from version 1 1`] = `"Unsupported record file version, expect 5"`;
-
-exports[`unsupported record file version  create object from version 2 1`] = `"Unsupported record file version, expect 5"`;
-
-exports[`unsupported record file version  create object from version 3 1`] = `"Unsupported record file version, expect 5"`;
-
-exports[`unsupported record file version  create object from version 4 1`] = `"Unsupported record file version, expect 5"`;
-
-exports[`unsupported record file version  create object from version 6 1`] = `"Unsupported record file version, expect 5"`;
+exports[`unsupported record file version create object from version 6 1`] = `"Unsupported record file version, expect 5"`;

@@ -21,44 +21,25 @@
 'use strict';
 
 const FullRecordFile = require('../../stream/fullRecordFile');
-const {testRecordFiles, commonRecordFileTests, copyRecordFileAndSetVersion} = require('./testUtils');
+const testUtils = require('./testUtils');
 
 describe('unsupported record file version ', () => {
-  const bufferV5 = testRecordFiles.v5[0].buffer;
-  // unsupported version numbers 3, 4, and 6 (future version)
-  const testSpecs = [
-    [5, bufferV5],
-    ...[3, 4, 6].map((version) => [version, copyRecordFileAndSetVersion(bufferV5, version)]),
-  ];
-
-  testSpecs.forEach((testSpec) => {
-    const [version, buffer] = testSpec;
-    test(`create object from version ${version}`, () => {
-      expect(() => new FullRecordFile(buffer)).toThrowErrorMatchingSnapshot();
-    });
-  });
+  testUtils.testRecordFileUnsupportedVersion([3, 4, 5, 6], FullRecordFile);
 });
 
-describe('canCompact always return false', () => {
-  const bufferV2 = testRecordFiles.v2[0].buffer;
-  // unsupported version numbers, 1, 2, 3, 4, 5, and 6 (future version)
+describe('canCompact', () => {
   const testSpecs = [
-    [2, bufferV2],
-    ...[1, 3, 4, 5, 6].map((version) => [version, copyRecordFileAndSetVersion(bufferV2, version)]),
+    [1, false],
+    [2, false],
+    [3, false],
+    [4, false],
+    [5, false],
+    [6, false],
   ];
 
-  testSpecs.forEach((testSpec) => {
-    const [version, buffer] = testSpec;
-    test(`version ${version}`, () => {
-      expect(FullRecordFile.canCompact(buffer)).toBeFalsy();
-    });
-  });
+  testUtils.testRecordFileCanCompact(testSpecs, FullRecordFile);
 });
 
 describe('from v2 buffer', () => {
-  commonRecordFileTests(2, FullRecordFile);
-
-  test('from non-Buffer obj', () => {
-    expect(() => new FullRecordFile({})).toThrowErrorMatchingSnapshot();
-  });
+  testUtils.testRecordFileFromBufferOrObj(2, FullRecordFile);
 });

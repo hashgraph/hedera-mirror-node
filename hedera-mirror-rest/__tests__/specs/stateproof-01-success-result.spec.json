@@ -6,6 +6,7 @@
     "file content is replaced with its sha256 sum in responseJson"
   ],
   "setup": {
+    "sqlfuncs": ["./data/db/stateproof/addRecordFileWithBytes"],
     "sqlscripts": [
       "data/db/stateproof/address_book.sql",
       "data/db/stateproof/address_book_entry.sql",
@@ -23,6 +24,7 @@
       "0.0.4": "d28d200bba7d48f507e140fa6228aba7f29ff8b2a3f2a8eeb85742dc053cec71",
       "0.0.5": "1f4be98a75a87cd649e3e1a58259275805c5cdf63fb04b3317efb511074645c7",
       "0.0.6": "73be5f16d6f854827b7c8113faecb5c204b9f1d68b37d37358894d9abfc97e83"
-    }
+    },
+    "version": 2
   }
 }

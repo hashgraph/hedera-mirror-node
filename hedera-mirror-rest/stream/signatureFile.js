@@ -39,18 +39,18 @@ class SignatureFile {
     switch (version) {
       case 4:
         this.version = 2;
-        this.parseV2SignatureFile(buffer);
+        this._parseV2SignatureFile(buffer);
         break;
       case 5:
         this.version = 5;
-        this.parseV5SignatureFile(buffer);
+        this._parseV5SignatureFile(buffer);
         break;
       default:
         throw new Error(`Unexpected signature file version '${version}'`);
     }
   }
 
-  parseV2SignatureFile(buffer) {
+  _parseV2SignatureFile(buffer) {
     // skip type, already checked
     buffer = buffer.slice(BYTE_SIZE);
     this.fileHash = readNBytes(buffer, SHA_384.length);
@@ -71,7 +71,7 @@ class SignatureFile {
     }
   }
 
-  parseV5SignatureFile(buffer) {
+  _parseV5SignatureFile(buffer) {
     buffer = buffer.slice(V5_FILE_HASH_OFFSET);
     const fileHashObject = new HashObject(buffer);
     const fileHashSignatureObject = new SignatureObject(buffer.slice(fileHashObject.getLength()));

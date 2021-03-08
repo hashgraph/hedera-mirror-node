@@ -428,9 +428,19 @@ describe('DB integration test - spec based', () => {
 
     for (const sqlScript of sqlScripts) {
       const sqlScriptPath = path.join(__dirname, sqlScript);
-      const script = fs.readFileSync(sqlScriptPath, {encoding: 'utf8'});
+      const script = fs.readFileSync(sqlScriptPath, 'utf8');
       logger.debug(`loading sql script ${sqlScript}`);
       await integrationDbOps.runSqlQuery(script);
+    }
+  };
+
+  const runSqlFuncs = async (sqlFuncs) => {
+    if (!sqlFuncs) return;
+
+    for (const sqlFunc of sqlFuncs) {
+      const func = require(sqlFunc);
+      logger.debug(`running sql func in ${sqlFunc}`);
+      await func.apply(null, [sqlConnection]);
     }
   };
 
@@ -459,6 +469,7 @@ describe('DB integration test - spec based', () => {
     await integrationDbOps.cleanUp();
     await integrationDomainOps.setUp(spec, sqlConnection);
     await loadSqlScripts(spec.sqlscripts);
+    await runSqlFuncs(spec.sqlfuncs);
     overrideConfig(spec.config);
   };
 
@@ -488,6 +499,7 @@ describe('DB integration test - spec based', () => {
 
   const specPath = path.join(__dirname, 'specs');
   fs.readdirSync(specPath).forEach((file) => {
+    if (!file.startsWith('stateproof-01')) return;
     const p = path.join(specPath, file);
     const specText = fs.readFileSync(p, 'utf8');
     const spec = JSON.parse(specText);
