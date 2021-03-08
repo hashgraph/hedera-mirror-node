@@ -12,5 +12,5 @@ EOSQL
 
 echo "Importing Mirror Node Data"
 echo "Connecting to Postgres $DB_NAME database at localhost:$DB_PORT under user $DB_USER"
-PGPASSWORD=$DB_PASS pg_restore -c -v -U $DB_USER -d $DB_NAME -p $DB_PORT -h localhost /tmp/pgdump.gz
+PGPASSWORD=$DB_PASS pg_restore -c -v -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -h localhost /tmp/pgdump.gz
 echo "Restored Mirror Node Data from backup"

@@ -23,32 +23,38 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
+
+    @Resource
+    private TransactionRepository transactionRepository;
+
+    private long count = 0;
 
     @Test
     void save() {
         Transaction transaction = transactionRepository.save(transaction());
-        assertThat(transactionRepository.findById(transaction.getConsensusNs()))
-                .get()
-                .isEqualTo(transaction);
+        assertThat(transactionRepository.findById(transaction.getConsensusNs())).get().isEqualTo(transaction);
     }
 
     private Transaction transaction() {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
-        transaction.setConsensusNs(10L);
-        transaction.setEntityId(insertAccountEntity());
+        transaction.setConsensusNs(++count);
+        transaction.setEntityId(EntityId.of(0, 0, 1, EntityTypeEnum.ACCOUNT));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccountId(insertAccountEntity());
-        transaction.setPayerAccountId(insertAccountEntity());
+        transaction.setNodeAccountId(EntityId.of(0, 0, 2, EntityTypeEnum.ACCOUNT));
+        transaction.setPayerAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
-        transaction.setType(TransactionBody.DataCase.CRYPTOCREATEACCOUNT.getNumber());
+        transaction.setType(TransactionTypeEnum.CRYPTOCREATEACCOUNT.getProtoId());
         transaction.setValidStartNs(20L);
         transaction.setValidDurationSeconds(11L);
         transaction.setMaxFee(33L);

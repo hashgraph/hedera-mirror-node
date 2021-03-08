@@ -57,7 +57,7 @@ class PendingDownload {
     }
 
     public String getFilename() {
-        return s3key.substring(s3key.lastIndexOf("/") + 1);
+        return s3key.substring(s3key.lastIndexOf('/') + 1);
     }
 
     /**

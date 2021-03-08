@@ -49,7 +49,7 @@ function retag() {
 sed -i .bak "s/version: .*/version: ${target_tag}/" values.yaml
 
 # Build Marketplace deployer image
-docker build -f ./Dockerfile -t "${registry}/deployer:${target_tag}" --build-arg tag=${target_tag} ../..
+docker build -f ./Dockerfile -t "${registry}/deployer:${target_tag}" --build-arg tag="${target_tag}" ../..
 docker push "${registry}/deployer:${target_tag}"
 
 # Retag other images

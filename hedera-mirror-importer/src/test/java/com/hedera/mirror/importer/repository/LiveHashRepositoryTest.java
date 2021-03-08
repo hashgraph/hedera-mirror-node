@@ -22,24 +22,23 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.LiveHash;
-import com.hedera.mirror.importer.domain.Transaction;
 
 public class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
-    @Test
-    void insert() {
-        Transaction transaction = insertTransaction("CRYPTOADDLIVEHASH");
+    @Resource
+    private LiveHashRepository liveHashRepository;
 
+    @Test
+    void save() {
         LiveHash liveHash = new LiveHash();
-        liveHash.setConsensusTimestamp(transaction.getConsensusNs());
+        liveHash.setConsensusTimestamp(1L);
         liveHash.setLivehash("some live hash".getBytes());
         liveHash = liveHashRepository.save(liveHash);
 
-        assertThat(liveHashRepository.findById(transaction.getConsensusNs()).get())
-                .isNotNull()
-                .isEqualTo(liveHash);
+        assertThat(liveHashRepository.findById(liveHash.getId())).get().isEqualTo(liveHash);
     }
 }

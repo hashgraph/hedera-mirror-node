@@ -19,11 +19,13 @@
  */
 'use strict';
 
+const log4js = require('log4js');
 const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils.js');
 const config = require('../config.js');
 
+const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
 
@@ -49,7 +51,7 @@ const validateTsRange = function (balances, low, high) {
   let ret = balances.timestamp >= low && balances.timestamp <= high;
 
   if (!ret) {
-    console.log(`validateTsRange check failed: ${balances.timestamp} is not between ${low} and  ${high}`);
+    logger.warn(`validateTsRange check failed: ${balances.timestamp} is not between ${low} and  ${high}`);
   }
   return ret;
 };
@@ -72,7 +74,7 @@ const validateAccNumRange = function (balances, low, high) {
     }
   }
   if (!ret) {
-    console.log(`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
+    logger.warn(`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
   }
   return ret;
 };
@@ -84,7 +86,7 @@ const validateAccNumRange = function (balances, low, high) {
  * @return {Boolean}  Result of the check
  */
 const validateAccNumInArray = function (balances, ...potentialValues) {
-  return testutils.validateAccNumInArray(balances.balances, potentialValues)
+  return testutils.validateAccNumInArray(balances.balances, potentialValues);
 };
 
 /**
@@ -104,7 +106,7 @@ const validateBalanceRange = function (balances, low, high) {
     }
   }
   if (!ret) {
-    console.log(`validateBalanceRange check failed: ${offender} is not between ${low} and  ${high}`);
+    logger.warn(`validateBalanceRange check failed: ${offender} is not between ${low} and  ${high}`);
   }
   return ret;
 };
@@ -133,7 +135,7 @@ const validateFields = function (balances) {
   }
 
   if (!ret) {
-    console.log(`validateFields check failed: A mandatory parameter is missing`);
+    logger.warn(`validateFields check failed: A mandatory parameter is missing`);
   }
   return ret;
 };
@@ -160,7 +162,7 @@ const validateOrder = function (balances, order) {
     val = bal;
   }
   if (!ret) {
-    console.log(`validateOrder check failed: ${offenderAcc} - previous account number ${offenderVal} Order  ${order}`);
+    logger.warn(`validateOrder check failed: ${offenderAcc} - previous account number ${offenderVal} Order  ${order}`);
   }
   return ret;
 };

@@ -20,15 +20,17 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenDissociateTransaction;
-import com.hedera.hashgraph.sdk.token.TokenId;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenDissociateTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
 
 @Data
 public class TokenDissociateTransactionSupplier implements TransactionSupplier<TokenDissociateTransaction> {
@@ -46,9 +48,9 @@ public class TokenDissociateTransactionSupplier implements TransactionSupplier<T
     public TokenDissociateTransaction get() {
 
         return new TokenDissociateTransaction()
-                .addTokenId(TokenId.fromString(tokenId))
+                .setTokenIds(List.of(TokenId.fromString(tokenId)))
                 .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTransactionMemo(Utility.getMemo("Mirror node dissociated test token"));
     }
 }

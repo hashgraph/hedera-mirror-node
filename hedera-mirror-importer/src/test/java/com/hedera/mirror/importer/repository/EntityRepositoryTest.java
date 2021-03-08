@@ -22,24 +22,28 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 public class EntityRepositoryTest extends AbstractRepositoryTest {
+
+    @Resource
+    private EntityRepository entityRepository;
+
     @Test
-    void insertEntityIdDoNothingOnConflictTest() {
+    void insertEntityId() {
         // given
         EntityId entityId = EntityId.of(10L, 20L, 30L, EntityTypeEnum.ACCOUNT);
         entityRepository.insertEntityId(entityId);
+        assertThat(entityRepository.findById(entityId.getId())).get().isEqualTo(entityId.toEntity());
 
         // when
         entityRepository.insertEntityId(entityId); // insert again to test for conflict
 
         assertThat(entityRepository.count()).isEqualTo(1);
-        assertThat(entityRepository.findById(entityId.getId()))
-                .get()
-                .isEqualTo(entityId.toEntity());
+        assertThat(entityRepository.findById(entityId.getId())).get().isEqualTo(entityId.toEntity());
     }
 }

@@ -36,7 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
+import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
 class ConfigurableTransactionGeneratorTest {
@@ -178,6 +178,6 @@ class ConfigurableTransactionGeneratorTest {
                 .hasFieldOrPropertyWithValue("receipt", true)
                 .hasFieldOrPropertyWithValue("record", true)
                 .hasFieldOrPropertyWithValue("type", properties.getType())
-                .hasFieldOrPropertyWithValue("transactionBuilder.topicId", ConsensusTopicId.fromString(TOPIC_ID));
+                .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID));
     }
 }

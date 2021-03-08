@@ -26,77 +26,35 @@ import java.io.IOException;
 import java.sql.Connection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class MirrorBaseJavaMigrationTest {
-    V0_0_5__MirrorBaseJavaMigration migration = new V0_0_5__MirrorBaseJavaMigration();
 
-    @Test
-    void verifySkipMigrationVersionCurrentEmpty() {
-        assertThat(migration.skipMigrationVersion(MigrationVersion.EMPTY, getConfiguration("1", "2"))).isTrue();
-    }
-
-    @Test
-    void verifySkipMigrationVersionBaselineEmpty() {
-        assertThat(migration.skipMigrationVersion(MigrationVersion.fromVersion("1.0.0"),
-                getConfiguration(MigrationVersion.EMPTY.getVersion(), "2"))).isFalse();
-    }
-
-    @Test
-    void verifySkipMigrationVersionCurrentAndBaselineEmpty() {
-        assertThat(migration.skipMigrationVersion(MigrationVersion.EMPTY,
-                getConfiguration(MigrationVersion.EMPTY.getVersion(), "2"))).isFalse();
-    }
-
-    @Test
-    void verifySkipMigrationVersionBelowRange() {
-        assertThat(migration.skipMigrationVersion(MigrationVersion.fromVersion("1.11.6"),
-                getConfiguration("1.999.999", "2.999.999"))).isTrue();
-    }
-
-    @Test
-    void verifySkipMigrationVersionInRange() {
-        assertThat(migration.skipMigrationVersion(MigrationVersion.fromVersion("1.11.6"), getConfiguration("1", "2")))
-                .isFalse();
-    }
-
-    @Test
-    void verifySkipMigrationVersionAboveRange() {
-        assertThat(migration
-                .skipMigrationVersion(MigrationVersion.fromVersion("2.0.0"), getConfiguration("1", "1.999.999")))
-                .isTrue();
-    }
-
-    @Test
-    void verifyMigrateCalled() throws IOException {
-        V0_0_5__MirrorBaseJavaMigration newMigration = new V0_0_5__MirrorBaseJavaMigration();
-        newMigration.migrate(new FlywayContext(getConfiguration("0", "2")));
-        assertThat(newMigration.isMigrationCompleted()).isTrue();
-    }
-
-    @Test
-    void verifyMigrateSkippedWhenBelowRange() throws IOException {
-        V0_0_5__MirrorBaseJavaMigration newMigration = new V0_0_5__MirrorBaseJavaMigration();
-        newMigration.migrate(new FlywayContext(getConfiguration("1", "2")));
-        assertThat(newMigration.isMigrationCompleted()).isFalse();
-    }
-
-    @Test
-    void verifyMigrateSkippedWhenAboveRange() throws IOException {
-        V0_0_5__MirrorBaseJavaMigration newMigration = new V0_0_5__MirrorBaseJavaMigration();
-        newMigration.migrate(new FlywayContext(getConfiguration("0", "0.0.4")));
-        assertThat(newMigration.isMigrationCompleted()).isFalse();
-    }
-
-    @Test
-    void verifyMigrateWhenLatest() throws IOException {
-        V0_0_5__MirrorBaseJavaMigration newMigration = new V0_0_5__MirrorBaseJavaMigration();
-        newMigration.migrate(new FlywayContext(getConfiguration("0", "latest")));
-        assertThat(newMigration.isMigrationCompleted()).isTrue();
+    @DisplayName("Verify migration")
+    @ParameterizedTest(name = "with version {0}, baseline {1} and target {2} produces {3}")
+    @CsvSource({
+            "0.0.5, 0, 0.0.4, false",
+            "0.0.5, 1, 2, false",
+            "0.0.5, 0, 2, true",
+            "0.0.5, 0, latest, true",
+            "1.0.0, , 2, true",
+            "1.11.6, 1, 2, true",
+            "1.11.6, 1.999.999, 2.999.999, false",
+            "2.0.0, 1, 1.999.999, false",
+            ", , 2, true",
+            ", 1, 2, true"
+    })
+    void verify(String version, String baseline, String target, boolean result) throws IOException {
+        MirrorBaseJavaMigrationSpy migration = new MirrorBaseJavaMigrationSpy(version);
+        migration.migrate(new FlywayContext(getConfiguration(baseline, target)));
+        assertThat(migration.isMigrationCompleted()).isEqualTo(result);
     }
 
     private ClassicConfiguration getConfiguration(String baseLine, String target) {
@@ -106,14 +64,26 @@ class MirrorBaseJavaMigrationTest {
         return configuration;
     }
 
-    // flyway requires class name conforms with default naming convention e.g. V1_2_3__Description
     @Data
-    private class V0_0_5__MirrorBaseJavaMigration extends MirrorBaseJavaMigration {
+    @RequiredArgsConstructor
+    private class MirrorBaseJavaMigrationSpy extends MirrorBaseJavaMigration {
+
         private boolean migrationCompleted = false;
+        private final String version;
 
         @Override
         public void doMigrate() {
             migrationCompleted = true;
+        }
+
+        @Override
+        public MigrationVersion getVersion() {
+            return version != null ? MigrationVersion.fromVersion(version) : null;
+        }
+
+        @Override
+        public String getDescription() {
+            return getClass().getSimpleName();
         }
     }
 

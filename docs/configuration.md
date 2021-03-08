@@ -61,6 +61,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
 | `hedera.mirror.importer.endDate`                                     | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
+| `hedera.mirror.importer.importHistoricalAccountInfo`                 | true                    | Import historical account information that occurred before the last stream reset. Skipped if `startDate` is unset or after 2019-09-14T00:00:10Z. |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
@@ -97,7 +98,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |
 | `hedera.mirror.importer.parser.record.entity.persist.files`                 | true                    | Persist all file data to the database                                                          |
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
-| `hedera.mirror.importer.parser.record.entity.persist.schedules`             | false                   | Persist schedule transactions to the database                                                  |
+| `hedera.mirror.importer.parser.record.entity.persist.schedules`             | true                    | Persist schedule transactions to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.entity.persist.tokens`                | true                    | Persist token data to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
@@ -176,7 +177,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.entityCacheSize`                        | 50000            | The maximum size of the cache to store entities used for existence check                       |
 | `hedera.mirror.grpc.listener.enabled`                       | true             | Whether to listen for incoming massages or not                                                 |
-| `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
+| `hedera.mirror.grpc.listener.interval`                      | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
 | `hedera.mirror.grpc.listener.maxBufferSize`                 | 16384            | The maximum number of messages the notifying listener or the shared polling listener buffers before sending an error to a client |
 | `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
 | `hedera.mirror.grpc.listener.prefetch`                      | 48               | The prefetch queue size for shared listeners                                                   |
@@ -228,6 +229,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].limit`           | 0          | How many transactions to publish before halting. 0 for unlimited
 `hedera.mirror.monitor.publish.scenarios[].logResponse`     | false      | Whether to log the response from HAPI
 `hedera.mirror.monitor.publish.scenarios[].name`            | ""         | The publish scenario name. Used to tag logs and metrics
+`hedera.mirror.monitor.publish.scenarios[].maxRetries`      | 0          | The maximum number of times a scenario transaction attempt will be retried
 `hedera.mirror.monitor.publish.scenarios[].properties`      | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
 `hedera.mirror.monitor.publish.scenarios[].receipt`         | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].record`          | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1

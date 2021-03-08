@@ -20,28 +20,28 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.assertj.core.api.Assertions;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.ContractResult;
-import com.hedera.mirror.importer.domain.Transaction;
 
 public class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
-    @Test
-    void insert() {
-        Transaction transaction = insertTransaction("CONTRACTCALL");
+    @Resource
+    private ContractResultRepository contractResultRepository;
 
+    @Test
+    void save() {
         ContractResult contractResult = new ContractResult();
         contractResult.setCallResult("CallResult".getBytes());
         contractResult.setFunctionParameters("functionParameters".getBytes());
         contractResult.setGasSupplied(200L);
         contractResult.setGasUsed(100L);
-        contractResult.setConsensusTimestamp(transaction.getConsensusNs());
+        contractResult.setConsensusTimestamp(1L);
         contractResult = contractResultRepository.save(contractResult);
 
-        Assertions.assertThat(contractResultRepository.findById(transaction.getConsensusNs()).get())
-                .isNotNull()
-                .isEqualTo(contractResult);
+        assertThat(contractResultRepository.findById(contractResult.getId())).get().isEqualTo(contractResult);
     }
 }

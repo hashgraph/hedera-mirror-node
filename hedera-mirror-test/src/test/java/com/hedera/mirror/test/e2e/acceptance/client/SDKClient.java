@@ -28,6 +28,7 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
@@ -42,6 +43,8 @@ public class SDKClient {
     private final AccountId operatorId;
     private final String mirrorNodeAddress;
     private final long messageTimeoutSeconds;
+    private final AccountId nodeId;
+    private final Hbar maxTransactionFee;
 
     public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException {
 
@@ -51,6 +54,8 @@ public class SDKClient {
         payerPublicKey = operatorKey.getPublicKey();
         mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
         messageTimeoutSeconds = acceptanceTestProperties.getMessageTimeout().toSeconds();
+        nodeId = AccountId.fromString(acceptanceTestProperties.getNodeId());
+        maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
 
         Client client;
         var nodeAddress = acceptanceTestProperties.getNodeAddress();

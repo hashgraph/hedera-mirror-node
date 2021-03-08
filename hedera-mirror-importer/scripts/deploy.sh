@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-cd "$(dirname $0)/.."
+cd "$(dirname "${0}")/.."
 
 # name of the service and directories
 name=hedera-mirror-importer
@@ -18,12 +18,12 @@ mkdir -p "${usretc}" "${usrlib}"
 systemctl stop "${name}.service" || true
 
 if [[ ! -f "${usretc}/application.yml" ]]; then
-    echo "Fresh install of ${jarname}"
-    read -p "Bucket name: " bucketName
-    read -p "Hedera network: " network
-    read -p "Database hostname: " dbHost
-    read -p "Database password: " dbPassword
-    read -p "REST user database password: " restPassword
+    echo "Fresh install of ${name}"
+    read -rp "Bucket name: " bucketName
+    read -rp "Hedera network: " network
+    read -rp "Database hostname: " dbHost
+    read -rp "Database password: " dbPassword
+    read -rp "REST user database password: " restPassword
     cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:

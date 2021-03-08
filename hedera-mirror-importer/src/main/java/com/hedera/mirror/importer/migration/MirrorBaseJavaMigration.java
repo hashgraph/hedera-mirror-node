@@ -25,44 +25,65 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
-import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
+import org.flywaydb.core.api.migration.JavaMigration;
 
-public abstract class MirrorBaseJavaMigration extends BaseJavaMigration {
+public abstract class MirrorBaseJavaMigration implements JavaMigration {
+
     protected final Logger log = LogManager.getLogger(getClass());
-
-    protected abstract void doMigrate() throws IOException;
 
     @Override
     public void migrate(Context context) throws IOException {
-        MigrationVersion current = getVersion();
-        if (skipMigrationVersion(current, context.getConfiguration())) {
+        Configuration configuration = context.getConfiguration();
+
+        if (skipMigration(configuration)) {
             log.info("Migration {} will be skipped as it does not fall between the baseline: {} and target: {} range",
-                    current,
-                    context.getConfiguration().getBaselineVersion(),
-                    context.getConfiguration().getTarget().getVersion());
+                    getVersion(), configuration.getBaselineVersion(), configuration.getTarget().getVersion());
             return;
         }
 
         doMigrate();
     }
 
+    protected abstract void doMigrate() throws IOException;
+
     /**
      * Determine whether a java migration should be skipped based on version and isIgnoreMissingMigrations setting
      *
-     * @param current                The current java migration version
-     * @param migrationConfiguration flyway Configuration
-     * @return
+     * @param configuration flyway Configuration
+     * @return whether it should be skipped or not
      */
-    protected boolean skipMigrationVersion(MigrationVersion current, Configuration migrationConfiguration) {
-        // skip when current version is older than baseline
-        MigrationVersion baselineVersion = migrationConfiguration.getBaselineVersion();
+    protected boolean skipMigration(Configuration configuration) {
+        MigrationVersion current = getVersion();
+        MigrationVersion baselineVersion = configuration.getBaselineVersion();
+
+        // Don't skip repeatable migration
+        if (current == null) {
+            return false;
+        }
+
+        // Skip when current version is older than baseline
         if (baselineVersion.isNewerThan(current.getVersion())) {
             return true;
         }
 
-        // skip when current version is newer than target
-        MigrationVersion targetVersion = migrationConfiguration.getTarget();
+        // Skip when current version is newer than target
+        MigrationVersion targetVersion = configuration.getTarget();
         return targetVersion != null && current.isNewerThan(targetVersion.getVersion());
+    }
+
+    @Override
+    public boolean canExecuteInTransaction() {
+        return true;
+    }
+
+    @Override
+    public Integer getChecksum() {
+        return null;
+    }
+
+    @Override
+    public boolean isUndo() {
+        return false;
     }
 }

@@ -25,8 +25,7 @@ import lombok.Builder;
 import lombok.Value;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.TransactionBuilder;
-import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.Transaction;
 
 @Builder
 @Value
@@ -36,6 +35,6 @@ public class PublishRequest {
     private final boolean receipt;
     private final boolean record;
     private final Instant timestamp;
-    private final TransactionBuilder<TransactionId, ?, ?> transactionBuilder;
+    private final Transaction<?> transaction;
     private final TransactionType type;
 }

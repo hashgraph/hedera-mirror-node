@@ -52,8 +52,8 @@ const sqlQueryColumns = {
 
 // query to column maps
 const filterColumnMap = {
-  'account.id': sqlQueryColumns.ACCOUNT,
-  'schedule.id': sqlQueryColumns.SCHEDULE_ID,
+  [constants.filterKeys.ACCOUNT_ID]: sqlQueryColumns.ACCOUNT,
+  [constants.filterKeys.SCHEDULE_ID]: sqlQueryColumns.SCHEDULE_ID,
 };
 
 const entityIdJoinQuery = 'join t_entities e on e.id = s.schedule_id';
@@ -144,7 +144,7 @@ const extractSqlFromScheduleFilters = (filters) => {
   const filterQuery = {
     filterQuery: '',
     params: [config.maxLimit],
-    order: 'asc',
+    order: constants.orderFilterValues.ASC,
     limit: config.maxLimit,
   };
 

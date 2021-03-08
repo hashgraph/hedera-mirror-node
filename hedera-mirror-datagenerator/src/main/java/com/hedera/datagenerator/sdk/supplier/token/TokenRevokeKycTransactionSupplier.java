@@ -26,9 +26,10 @@ import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.token.TokenId;
-import com.hedera.hashgraph.sdk.token.TokenRevokeKycTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenRevokeKycTransaction;
 
 @Data
 public class TokenRevokeKycTransactionSupplier implements TransactionSupplier<TokenRevokeKycTransaction> {
@@ -47,7 +48,7 @@ public class TokenRevokeKycTransactionSupplier implements TransactionSupplier<To
 
         return new TokenRevokeKycTransaction()
                 .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node revoked kyc for test token"));
     }

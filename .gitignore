@@ -129,3 +129,4 @@ hedera-mirror-rest/.husky/_
 
 # Rosetta
 hedera-mirror-rosetta/scripts/validation/rosetta-cli
+coverage.txt

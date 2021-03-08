@@ -13,6 +13,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
     steps:
       - uses: actions/checkout@v2
       - name: Cache Maven packages
@@ -29,7 +31,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build hedera-mirror-rosetta
-        run: ./mvnw clean package -pl hedera-mirror-rosetta
+        run: ./mvnw ${MAVEN_CLI_OPTS} clean package -pl hedera-mirror-rosetta
       - name: Upload Coverage report to CodeCov
         run: bash <(curl -s https://codecov.io/bash)
         working-directory: ${{env.working-directory}}
@@ -51,7 +53,6 @@ jobs:
           NAME=${MODULE}-${VERSION_TAG}
           mkdir -p ${NAME}
           cp ${MODULE}/bin/${MODULE} ${NAME}/${NAME}
-          cp ${MODULE}/config/application-deploy.yml ${NAME}/application.yml
           cp -R ${MODULE}/scripts/deploy ${NAME}/scripts
           tar -czf ${NAME}.tgz -C . ${NAME}
       - name: Upload folder archive as artifact

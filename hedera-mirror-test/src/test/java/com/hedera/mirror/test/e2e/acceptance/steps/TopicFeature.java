@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -50,6 +51,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
@@ -79,10 +81,10 @@ public class TopicFeature {
         PublicKey submitPublicKey = submitKey.getPublicKey();
         log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-        TransactionReceipt receipt = topicClient
-                .createTopic(topicClient.getSdkClient().getPayerPublicKey(), submitPublicKey);
-        assertNotNull(receipt);
-        TopicId topicId = receipt.topicId;
+        NetworkTransactionResponse networkTransactionResponse = topicClient
+                .createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), submitPublicKey);
+        assertNotNull(networkTransactionResponse.getReceipt());
+        TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
@@ -98,10 +100,10 @@ public class TopicFeature {
     public void createNewOpenTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         testInstantReference = Instant.now();
 
-        TransactionReceipt receipt = topicClient
-                .createTopic(topicClient.getSdkClient().getPayerPublicKey(), null);
-        assertNotNull(receipt);
-        TopicId topicId = receipt.topicId;
+        NetworkTransactionResponse networkTransactionResponse = topicClient
+                .createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), null);
+        assertNotNull(networkTransactionResponse.getReceipt());
+        TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
@@ -114,14 +116,14 @@ public class TopicFeature {
 
     @When("I successfully update an existing topic")
     public void updateTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId);
+        TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
     }
 
     @When("I successfully delete the topic")
     public void deleteTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId);
+        TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
     }
@@ -240,7 +242,7 @@ public class TopicFeature {
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void publishTopicMessages(int messageCount) throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
-        topicClient.publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, false);
+        topicClient.publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, false);
     }
 
     @When("I publish and verify {int} messages sent")
@@ -249,7 +251,7 @@ public class TopicFeature {
             PrecheckStatusException, TimeoutException {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient
-                .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, true);
+                .publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, true);
         assertEquals(messageCount, publishedTransactionReceipts.size());
     }
 
@@ -333,23 +335,6 @@ public class TopicFeature {
         subscriptionResponse.validateReceivedMessages();
     }
 
-    @After
-    public void closeClients() {
-        try {
-            topicClient.getSdkClient().close();
-        } catch (Exception ex) {
-            log.warn("Error closing SDK client : {}", ex.getMessage());
-        }
-
-        if (mirrorClient != null) {
-            try {
-                mirrorClient.close();
-            } catch (Exception ex) {
-                log.warn("Error closing mirror client : {}", ex.getMessage());
-            }
-        }
-    }
-
     /**
      * Subscribe to topic and observe messages while emitting background messages to encourage service file close in
      * environments with low traffic.
@@ -367,7 +352,7 @@ public class TopicFeature {
                     topicClient.publishMessageToTopic(
                             consensusTopicId,
                             "backgroundMessage".getBytes(StandardCharsets.UTF_8),
-                            submitKey);
+                            getSubmitKeys());
                 } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
                     e.printStackTrace();
                 }
@@ -386,6 +371,10 @@ public class TopicFeature {
         }
 
         return subscriptionResponse;
+    }
+
+    private KeyList getSubmitKeys() {
+        return submitKey == null ? null : KeyList.of(submitKey);
     }
 
     /**
@@ -422,5 +411,12 @@ public class TopicFeature {
     public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
         log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
         throw t;
+    }
+
+    @After("@TopicMessagesBase or @TopicMessagesFilter")
+    public void closeClients() {
+        log.debug("Closing topic feature clients");
+        mirrorClient.close();
+        topicClient.close();
     }
 }

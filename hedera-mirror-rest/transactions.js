@@ -270,31 +270,86 @@ const getGeneralTransactionsInnerQuery = function (
     ${namedLimitQuery}`;
 
   if (namedAccountQuery) {
-    // account filter applies to both transaction.payer_account_id and crypto_transfer.entity_id, a full outer join is
-    // needed to get rows not in the other table.
-    const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
-    const ctlJoinClause =
-      (resultTypeQuery || transactionTypeQuery) && 'JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns';
-    const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, resultTypeQuery, transactionTypeQuery);
-    const ctlQuery = `
-      SELECT DISTINCT ctl.consensus_timestamp AS consensus_timestamp
-        FROM crypto_transfer AS ctl
-        ${ctlJoinClause}
-        ${ctlWhereClause}
-        ORDER BY ctl.consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
+    //between the three tables is needed to get rows that may only exist in one.
+    const ctlQuery = getTransferDistinctTimestampsQuery(
+      'crypto_transfer',
+      'ctl',
+      namedTsQuery,
+      'consensus_timestamp',
+      resultTypeQuery,
+      transactionTypeQuery,
+      namedAccountQuery,
+      order,
+      namedLimitQuery
+    );
+
+    const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
+    const ttlQuery = getTransferDistinctTimestampsQuery(
+      'token_transfer',
+      'ttl',
+      namedTsQuery,
+      'consensus_timestamp',
+      resultTypeQuery,
+      transactionTypeQuery,
+      namedTtlAccountQuery,
+      order,
+      namedLimitQuery
+    );
 
     return `
-      SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp) AS consensus_timestamp
+      SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp,ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS t
       FULL OUTER JOIN (${ctlQuery}) AS ctl
       ON t.consensus_timestamp = ctl.consensus_timestamp
+      FULL OUTER JOIN (${ttlQuery}) AS ttl
+      ON t.consensus_timestamp = ttl.consensus_timestamp
       ORDER BY consensus_timestamp ${order}
       ${namedLimitQuery}`;
   }
 
   // no account filter, only need to query transaction table
   return transactionOnlyQuery;
+};
+
+/**
+ * Get the query to find distinct timestamps for transactions matching the query filters from a transfers table when filtering by an account id
+ *
+ * @param {string} tableName - Name of the transfers table to query
+ * @param {string} tableAlias - Alias to reference the table by
+ * @param namedTsQuery - Transaction table timestamp query with named parameters
+ * @param {string} timestampColumn - Name of the timestamp column for the table
+ * @param resultTypeQuery - Transaction result query
+ * @param transactionTypeQuery - Transaction type query
+ * @param namedAccountQuery - Account query with named parameters
+ * @param order - Sorting order
+ * @param namedLimitQuery - Limit query with named parameters
+ * @return {string} - The distinct timestamp query for the given table name
+ */
+const getTransferDistinctTimestampsQuery = function (
+  tableName,
+  tableAlias,
+  namedTsQuery,
+  timestampColumn,
+  resultTypeQuery,
+  transactionTypeQuery,
+  namedAccountQuery,
+  order,
+  namedLimitQuery
+) {
+  const namedTransferTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, `${tableAlias}.${timestampColumn}`);
+  const joinClause =
+    (resultTypeQuery || transactionTypeQuery) &&
+    `JOIN transaction AS t ON ${tableAlias}.${timestampColumn} = t.consensus_ns`;
+  const whereClause = buildWhereClause(namedAccountQuery, namedTransferTsQuery, resultTypeQuery, transactionTypeQuery);
+
+  return `
+      SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
+        FROM ${tableName} AS ${tableAlias}
+        ${joinClause}
+        ${whereClause}
+        ORDER BY ${tableAlias}.consensus_timestamp ${order}
+        ${namedLimitQuery}`;
 };
 
 /**
@@ -408,7 +463,7 @@ const getTransactions = async (req, res) => {
     next: utils.getPaginationLink(
       req,
       ret.transactions.length !== query.limit,
-      'timestamp',
+      constants.filterKeys.TIMESTAMP,
       transferList.anchorSecNs,
       query.order
     ),
