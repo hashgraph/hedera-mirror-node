@@ -512,7 +512,7 @@ create table if not exists transaction
     payer_account_id       bigint   not null,
     valid_start_ns         bigint   not null,
     valid_duration_seconds bigint,
-    node_account_id        bigint   not null,
+    node_account_id        bigint,
     entity_id              bigint,
     initial_balance        bigint            default 0,
     max_fee                bigint,

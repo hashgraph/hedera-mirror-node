@@ -106,7 +106,7 @@ const createTransferLists = (rows) => {
         max_fee: utils.getNullableNumber(row.max_fee),
         memo_base64: utils.encodeBase64(row.memo),
         name: row.name,
-        node: EntityId.fromEncodedId(row.node_account_id).toString(),
+        node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
         result: row.result,
         scheduled: row.scheduled,
         token_transfers: createTokenTransferList(row.token_transfer_list),
