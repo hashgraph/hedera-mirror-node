@@ -21,11 +21,9 @@
 'use strict';
 
 const CompositeRecordFile = require('./compositeRecordFile');
-const HashObject = require('./hashObject');
 const SignatureFile = require('./signatureFile');
 
 module.exports = {
   CompositeRecordFile,
-  HashObject,
   SignatureFile,
 };

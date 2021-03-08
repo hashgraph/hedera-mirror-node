@@ -421,26 +421,27 @@ describe('DB integration test - spec based', () => {
     await s3Ops.stop();
   });
 
-  const loadSqlScripts = async (sqlScripts) => {
+  const loadSqlScripts = async (pathPrefix, sqlScripts) => {
     if (!sqlScripts) {
       return;
     }
 
     for (const sqlScript of sqlScripts) {
-      const sqlScriptPath = path.join(__dirname, sqlScript);
+      const sqlScriptPath = path.join(__dirname, pathPrefix || '', sqlScript);
       const script = fs.readFileSync(sqlScriptPath, 'utf8');
       logger.debug(`loading sql script ${sqlScript}`);
       await integrationDbOps.runSqlQuery(script);
     }
   };
 
-  const runSqlFuncs = async (sqlFuncs) => {
+  const runSqlFuncs = async (pathPrefix, sqlFuncs) => {
     if (!sqlFuncs) {
       return;
     }
 
     for (const sqlFunc of sqlFuncs) {
-      const func = require(sqlFunc);
+      // path.join returns normalized path, the sqlFunc is a local js file so add './'
+      const func = require('./' + path.join(pathPrefix || '', sqlFunc));
       logger.debug(`running sql func in ${sqlFunc}`);
       await func.apply(null, [sqlConnection]);
     }
@@ -470,8 +471,10 @@ describe('DB integration test - spec based', () => {
   const specSetupSteps = async (spec) => {
     await integrationDbOps.cleanUp();
     await integrationDomainOps.setUp(spec, sqlConnection);
-    await loadSqlScripts(spec.sqlscripts);
-    await runSqlFuncs(spec.sqlfuncs);
+    if (spec.sql) {
+      await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
+      await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
+    }
     overrideConfig(spec.config);
   };
 

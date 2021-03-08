@@ -7,13 +7,11 @@
     "brevity, the base64 encoded file content is replaced with its sha256 sum in responseJson"
   ],
   "setup": {
-    "sqlfuncs": ["./data/db/stateproof/addRecordFileWithBytes"],
-    "sqlscripts": [
-      "data/db/stateproof/address_book.sql",
-      "data/db/stateproof/address_book_entry.sql",
-      "data/db/stateproof/record_file_v5.sql",
-      "data/db/stateproof/transaction_v5.sql"
-    ]
+    "sql": {
+      "pathprefix": "data/db/stateproof",
+      "funcs": ["addRecordFileWithBytes"],
+      "scripts": ["address_book.sql", "address_book_entry.sql", "record_file_v5.sql", "transaction_v5.sql"]
+    }
   },
   "url": "/api/v1/transactions/0.0.1744-1614921773-715345860/stateproof?scheduled=true&scheduled=true&scheduled=false",
   "responseStatus": 200,
