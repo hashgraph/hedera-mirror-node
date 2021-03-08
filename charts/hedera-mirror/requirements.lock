@@ -1,13 +1,13 @@
 dependencies:
 - name: hedera-mirror-grpc
   repository: file://../hedera-mirror-grpc
-  version: 0.15.1
+  version: 0.15.2
 - name: hedera-mirror-importer
   repository: file://../hedera-mirror-importer
-  version: 0.15.1
+  version: 0.15.2
 - name: hedera-mirror-monitor
   repository: file://../hedera-mirror-monitor
-  version: 0.15.1
+  version: 0.15.2
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
   version: 6.3.7
@@ -16,9 +16,9 @@ dependencies:
   version: 12.2.4
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
-  version: 0.15.1
+  version: 0.15.2
 - name: timescaledb-multinode
   repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
   version: 0.8.0
-digest: sha256:04599793d9dbb0db51c095594d2b726299a7455af9c2f8cd9f5dbeeb21727dfc
-generated: "2021-03-02T16:30:12.137974-06:00"
+digest: sha256:3167baf35dec31c2ebdb960c7a84f9aae703e2015b88f60f0d8e02358cc99b42
+generated: "2021-03-08T11:46:40.88672-06:00"

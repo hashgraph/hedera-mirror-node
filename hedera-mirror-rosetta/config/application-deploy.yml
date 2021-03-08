@@ -15,4 +15,4 @@ hedera:
       port: ${apiPort}
       realm: 0
       shard: 0
-      version: 0.28.1
+      version: 0.28.2
