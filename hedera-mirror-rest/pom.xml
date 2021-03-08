@@ -37,6 +37,17 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>npm-install-check-state-proof</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>install</arguments>
+                            <installDirectory>${project.basedir}</installDirectory>
+                            <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>npm-install-monitor</id>
                         <goals>
                             <goal>npm</goal>
@@ -54,6 +65,17 @@
                         </goals>
                         <configuration>
                             <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-test-check-state-proof</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>test -- --maxWorkers 2</arguments>
+                            <skip>${skipTests}</skip>
+                            <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
                         </configuration>
                     </execution>
                     <execution>
