@@ -22,9 +22,10 @@
 
 const long = require('long');
 const {proto} = require('@hashgraph/proto/lib/proto');
+const TransactionId = require('../../transactionId');
 const utils = require('../../stream/utils');
 
-describe('protoTransactionIdToString', () => {
+describe('protoTransactionIdToTransactionId', () => {
   const accountID = {
     shardNum: 0,
     realmNum: 0,
@@ -40,7 +41,7 @@ describe('protoTransactionIdToString', () => {
           nanos: 0,
         },
       }),
-      expected: '0.0.1010-193823-0',
+      expected: TransactionId.fromString('0.0.1010-193823-0'),
     },
     {
       transactionId: proto.TransactionID.create({
@@ -50,7 +51,7 @@ describe('protoTransactionIdToString', () => {
           nanos: 999999999,
         },
       }),
-      expected: '0.0.1010-193823-999999999',
+      expected: TransactionId.fromString('0.0.1010-193823-999999999'),
     },
     {
       transactionId: proto.TransactionID.create({
@@ -60,13 +61,13 @@ describe('protoTransactionIdToString', () => {
           nanos: 999999999,
         },
       }),
-      expected: `0.0.1010-${long.MAX_VALUE.toString()}-999999999`,
+      expected: TransactionId.fromString(`0.0.1010-${long.MAX_VALUE.toString()}-999999999`),
     },
   ];
 
   testSpecs.forEach((testSpec) => {
     test(`expect output ${testSpec.expected}`, () => {
-      expect(utils.protoTransactionIdToString(testSpec.transactionId)).toEqual(testSpec.expected);
+      expect(utils.protoTransactionIdToTransactionId(testSpec.transactionId)).toEqual(testSpec.expected);
     });
   });
 });

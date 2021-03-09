@@ -21,16 +21,20 @@
 'use strict';
 
 const {proto} = require('@hashgraph/proto/lib/proto');
-const {logger, protoTransactionIdToString} = require('./utils');
+const {logger, protoTransactionIdToTransactionId} = require('./utils');
 
 class RecordFile {
   constructor() {
     this._fileHash = null;
     this._metadataHash = null;
     // a map of successful transactions, from its transaction ID to its index in the parsed transactions array
-    // if the concrete class doesn't implement a transaction array, the index can be any value
+    // if the concrete class doesn't implement a transaction array, the index will be null
     this._transactionMap = {};
     this._version = null;
+  }
+
+  static _getTransactionKey(transactionId, scheduled) {
+    return `${transactionId}-${scheduled}`;
   }
 
   static _readVersion(buffer) {
@@ -48,12 +52,12 @@ class RecordFile {
   /**
    * Checks if a transaction is in the record file's successful transaction map
    *
-   * @param {string} transactionId
+   * @param {TransactionId} transactionId
    * @param {boolean} scheduled
    * @returns {boolean}
    */
   containsTransaction(transactionId, scheduled = false) {
-    return `${transactionId}-${scheduled}` in this._transactionMap;
+    return RecordFile._getTransactionKey(transactionId, scheduled) in this._transactionMap;
   }
 
   /**
@@ -95,7 +99,7 @@ class RecordFile {
    * Converts the parsed record file to the compact format object if possible. Throws error if the transactionId is not
    * in the successful transaction map or the implementation does not support the operation.
    *
-   * @param {string} transactionId
+   * @param {TransactionId} transactionId
    * @param {boolean} scheduled
    * @returns {{}}
    */
@@ -110,16 +114,16 @@ class RecordFile {
    * @param {Number} index
    * @private
    */
-  _addTransaction(recordBuffer, index) {
+  _addTransaction(recordBuffer, index = null) {
     const {receipt, transactionID, scheduleRef} = proto.TransactionRecord.decode(recordBuffer);
-    const transactionIdStr = protoTransactionIdToString(transactionID);
+    const transactionId = protoTransactionIdToTransactionId(transactionID);
     const scheduled = scheduleRef !== null;
     if (receipt.status !== proto.ResponseCodeEnum.SUCCESS) {
-      logger.debug(`Skip non-successful transaction ${transactionIdStr}, ${receipt.status}`);
+      logger.debug(`Skip non-successful transaction ${transactionId}, ${receipt.status}`);
       return;
     }
 
-    const transactionKey = `${transactionIdStr}-${scheduled}`;
+    const transactionKey = RecordFile._getTransactionKey(transactionId, scheduled);
     logger.debug(`Add successful transaction ${transactionKey}`);
     this._transactionMap[transactionKey] = index;
   }

@@ -249,7 +249,7 @@ const formatCompactableRecordFile = (recordFile, transactionId, scheduled) => {
     return obj;
   };
 
-  const compactObject = recordFile.toCompactObject(transactionId.toString(), scheduled);
+  const compactObject = recordFile.toCompactObject(transactionId, scheduled);
   return _.mapKeys(base64Encode(compactObject), (v, k) => _.snakeCase(k));
 };
 

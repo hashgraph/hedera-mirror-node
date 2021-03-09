@@ -25,15 +25,16 @@ const _ = require('lodash');
 const log4js = require('log4js');
 const AddressBook = require('./addressBook');
 const {CompositeRecordFile, SignatureFile} = require('../stream');
-const {makeStateProofDir, storeFile} = require('./utils');
+const TransactionId = require('../transactionId');
 const {performStateProof} = require('./transactionValidator');
+const {makeStateProofDir, storeFile} = require('./utils');
 
 const logger = log4js.getLogger();
 
 // responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
 class StateProofHandler {
   constructor(stateProofJson, transactionId, scheduled = false) {
-    this.transactionId = transactionId;
+    this.transactionId = TransactionId.fromString(transactionId);
     this.scheduled = scheduled;
     makeStateProofDir(transactionId, stateProofJson);
     this.setStateProofComponents(stateProofJson);

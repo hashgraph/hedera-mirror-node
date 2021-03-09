@@ -185,7 +185,7 @@ const testRecordFiles = {
         {
           func: 'getTransactionMap',
           args: [],
-          expected: {'0.0.365299-1615141267-266970662': undefined},
+          expected: {'0.0.365299-1615141267-266970662-false': null},
         },
         {
           func: 'getVersion',

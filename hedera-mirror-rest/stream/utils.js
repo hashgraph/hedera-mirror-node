@@ -22,6 +22,7 @@
 
 const log4js = require('log4js');
 const {INT_SIZE} = require('./constants');
+const TransactionId = require('../transactionId');
 
 const logger = log4js.getLogger();
 
@@ -29,18 +30,19 @@ const logger = log4js.getLogger();
 const SIMPLE_SUM = 101;
 
 /**
- * Converts a proto.TransactionID object to a string in the format of "shard.realm.num-sss-nnn"
+ * Converts a proto.TransactionID object to TransactionId
  *
  * @param {proto.TransactionID} transactionId
- * @return {string}
+ * @return {TransactionId}
  */
-const protoTransactionIdToString = (transactionId) => {
+const protoTransactionIdToTransactionId = (transactionId) => {
   const {accountID, transactionValidStart} = transactionId;
-  return [
+  const transactionIdStr = [
     [accountID.shardNum, accountID.realmNum, accountID.accountNum].join('.'),
     transactionValidStart.seconds,
     transactionValidStart.nanos,
   ].join('-');
+  return TransactionId.fromString(transactionIdStr);
 };
 
 /**
@@ -96,7 +98,7 @@ const readNBytes = (buffer, length) => {
 
 module.exports = {
   logger,
-  protoTransactionIdToString,
+  protoTransactionIdToTransactionId,
   readLengthAndBytes,
   readNBytes,
 };
