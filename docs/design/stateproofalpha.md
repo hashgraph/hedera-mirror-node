@@ -26,7 +26,7 @@ nanoseconds of the valid start timestamp of the transaction.
   false.
 
 The [version 5 record file and signature file](https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats)
-enable the stateproof REST API to create a more compact record file by replacing any record stream object but the one of
+enable the stateproof REST API to create a more compact record file by replacing every record stream object except the one of
 interest with its hash. As a result, depending on the format of the record file, the REST API returns either the full
 format response or the compact format response.
 
