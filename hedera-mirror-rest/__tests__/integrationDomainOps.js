@@ -235,7 +235,7 @@ const addTransaction = async (transaction) => {
   }
 
   const payerAccount = EntityId.fromString(transaction.payerAccountId);
-  const nodeAccount = EntityId.fromString(transaction.nodeAccountId);
+  const nodeAccount = EntityId.fromString(transaction.nodeAccountId, 'nodeAccountId', true);
   await sqlConnection.query(
     `INSERT INTO transaction (
       consensus_ns, valid_start_ns, payer_account_id, node_account_id,
