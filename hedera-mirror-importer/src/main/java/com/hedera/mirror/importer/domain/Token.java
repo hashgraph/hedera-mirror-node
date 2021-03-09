@@ -100,22 +100,22 @@ public class Token {
 
     public void setFreezeKey(byte[] key) {
         freezeKey = key;
-        freezeKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+        freezeKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
     }
 
     public void setKycKey(byte[] key) {
         kycKey = key;
-        kycKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+        kycKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
     }
 
     public void setSupplyKey(byte[] key) {
         supplyKey = key;
-        supplyKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+        supplyKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
     }
 
     public void setWipeKey(byte[] key) {
         wipeKey = key;
-        wipeKeyEd25519Hex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+        wipeKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
     }
 
     /**

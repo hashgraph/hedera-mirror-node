@@ -127,9 +127,10 @@ public class AccountClient extends AbstractNetworkClient {
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
                 .setKey(publicKeys)
-                .setTransactionMemo(memo)
+                .setAccountMemo(memo)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setReceiverSignatureRequired(receiverSigRequired);
+                .setReceiverSignatureRequired(receiverSigRequired)
+                .setTransactionMemo(memo);
     }
 
     public ExpandedAccountId createNewAccount(long initialBalance) throws TimeoutException, PrecheckStatusException,

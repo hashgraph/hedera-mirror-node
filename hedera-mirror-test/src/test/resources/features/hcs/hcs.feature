@@ -1,7 +1,7 @@
-@TopicMessagesBase @FullSuite
+@topicmessagesbase @fullsuite
 Feature: HCS Base Coverage Feature
 
-    @Sanity @BasicSubscribe @Acceptance
+    @sanity @basicsubscribe @acceptance @Acceptance
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -12,7 +12,7 @@ Feature: HCS Base Coverage Feature
             | numMessages |
             | 10          |
 
-    @OpenSubscribe @Acceptance
+    @opensubscribe @acceptance @Acceptance
     Scenario Outline: Validate Topic message submission to an open submit topic
         Given I successfully create a new open topic
         And I publish and verify <numMessages> messages sent
@@ -23,7 +23,7 @@ Feature: HCS Base Coverage Feature
             | numMessages |
             | 2           |
 
-    @SubscribeOnly
+    @subscribeonly @SubscribeOnly
     Scenario Outline: Validate topic message subscription only
         Given I provide a topic id <topicId>
         And I provide a starting timestamp <startTimestamp> and a number of messages <numMessages> I want to receive
@@ -33,7 +33,7 @@ Feature: HCS Base Coverage Feature
             | topicId | startTimestamp | numMessages |
             | ""      | "-86400"       | 5           |
 
-    @PublishOnly
+    @publishonly
     Scenario Outline: Validate topic message subscription
         Given I provide a topic id <topicId>
         And I publish <numBatches> batches of <numMessages> messages every <milliSleep> milliseconds
@@ -43,7 +43,7 @@ Feature: HCS Base Coverage Feature
             | topicId | numBatches | numMessages | milliSleep |
             | ""      | 2          | 3           | 2000       |
 
-    @PublishAndVerify
+    @publishandverify
     Scenario Outline: Validate topic message subscription
         Given I provide a topic id <topicId>
         And I publish and verify <numMessages> messages sent
@@ -53,17 +53,17 @@ Feature: HCS Base Coverage Feature
             | topicId  | numMessages |
             | "171231" | 340         |
 
-    @UpdateTopic @Acceptance
+    @updatetopic @acceptance @Acceptance
     Scenario: Validate Topic Updates
         Given I successfully create a new topic id
         Then I successfully update an existing topic
 
-    @DeleteTopic @Acceptance
+    @deletetopic @acceptance @Acceptance
     Scenario: Validate topic deletion
         Given I successfully create a new topic id
         Then I successfully delete the topic
 
-    @Acceptance @Latency
+    @acceptance @latency @Acceptance
     Scenario Outline: Validate Topic message listener latency
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -75,7 +75,7 @@ Feature: HCS Base Coverage Feature
             | 2           | 30      |
             | 5           | 30      |
 
-    @Negative @Acceptance
+    @negative @acceptance @Acceptance
     Scenario Outline: Validate topic subscription with missing topic id
         Given I provide a topic id <topicId>
         Then the network should observe an error <errorCode>

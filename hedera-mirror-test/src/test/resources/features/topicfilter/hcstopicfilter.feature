@@ -1,7 +1,7 @@
-@TopicMessagesFilter @FullSuite
+@topicmessagesfilter @fullsuite
 Feature: HCS Message Filter Coverage Feature
 
-    @Sanity @Acceptance @Filter
+    @sanity @acceptance @filter @Acceptance
     Scenario Outline: Validate topic filtering with past date and get X previous
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -26,7 +26,7 @@ Feature: HCS Message Filter Coverage Feature
             | "1970-01-01T00:00:00.00Z" | 2           |
             | "2000-01-01T00:00:00.00Z" | 5           |
 
-    @Edge
+    @edge
     Scenario Outline: Validate topic filtering with start and end time in between min and max messages (e.g. if 100 messages get 25-30)
         Given I successfully create a new topic id
         And I publish and verify <publishCount> messages sent
@@ -37,7 +37,7 @@ Feature: HCS Message Filter Coverage Feature
             | publishCount | startSequence | endSequence | numMessages |
             | 50           | 25            | 30          | 5           |
 
-    @Acceptance
+    @acceptance @Acceptance
     Scenario Outline: Validate topic filtering with past date and a specified limit
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent

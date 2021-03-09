@@ -24,6 +24,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.io.File;
+import java.net.URL;
 import java.security.SecureRandom;
 import java.time.Instant;
 import lombok.experimental.UtilityClass;
@@ -32,6 +34,32 @@ import com.hedera.mirror.importer.util.Utility;
 
 @UtilityClass
 public class TestUtils {
+
+    public static File getResource(String path) {
+        ClassLoader[] classLoaders = {Thread
+                .currentThread().getContextClassLoader(), Utility.class.getClassLoader(),
+                ClassLoader.getSystemClassLoader()};
+        URL url = null;
+
+        for (ClassLoader classLoader : classLoaders) {
+            if (classLoader != null) {
+                url = classLoader.getResource(path);
+                if (url != null) {
+                    break;
+                }
+            }
+        }
+
+        if (url == null) {
+            throw new RuntimeException("Cannot find resource: " + path);
+        }
+
+        try {
+            return new File(url.toURI().getSchemeSpecificPart());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");

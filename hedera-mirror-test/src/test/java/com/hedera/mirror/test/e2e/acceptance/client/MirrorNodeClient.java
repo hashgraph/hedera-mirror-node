@@ -28,7 +28,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.retry.annotation.Recover;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
@@ -116,78 +115,54 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
-    public ClientResponse getAccount(String accountId) {
-        log.debug("Verify account '{}' is returned by Mirror Node", accountId);
-        // build /accounts?account.id=<accountId>
-        return callRestEndpoint("/{endpoint}?{key}={accountId}", ACCOUNTS_ENDPOINT, ACCOUNTS_ID_QUERY, accountId);
-    }
-
-    public ClientResponse getAccountTransactions(String accountId, int lastCount) {
-        log.debug("Verify account '{}' is returned by Mirror Node", accountId);
-        // build /accounts/<accountId>?order=desc&limit=50
-        return callRestEndpoint("/{endpoint}/{accountId}?order=desc&limit={limit}", ACCOUNTS_ENDPOINT, accountId,
-                lastCount);
-    }
-
     public MirrorBalancesResponse getAccountBalances(String accountId) {
         log.debug("Verify balance for account '{}' is returned by Mirror Node", accountId);
         // build /balances?account.id=<accountId>
-        ClientResponse clientResponse = callRestEndpoint("/{endpoint}?{key}={accountId}", BALANCES_ENDPOINT,
+        return callRestEndpoint("/{endpoint}?{key}={accountId}",
+                MirrorBalancesResponse.class, BALANCES_ENDPOINT,
                 ACCOUNTS_ID_QUERY, accountId);
-        return clientResponse.bodyToMono(MirrorBalancesResponse.class)
-                .block();
     }
 
     public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
         // build /transactions/<timestamp>
-        ClientResponse clientResponse = callRestEndpoint("/{endpoint}?timestamp={timestamp}", TRANSACTIONS_ENDPOINT,
+        return callRestEndpoint("/{endpoint}?timestamp={timestamp}",
+                MirrorTransactionsResponse.class, TRANSACTIONS_ENDPOINT,
                 timestamp);
-        return clientResponse.bodyToMono(MirrorTransactionsResponse.class)
-                .block();
     }
 
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
         // build /transactions/<transactionId>
-        ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{transactionId}", TRANSACTIONS_ENDPOINT,
+        return callRestEndpoint("/{endpoint}/{transactionId}",
+                MirrorTransactionsResponse.class, TRANSACTIONS_ENDPOINT,
                 transactionId);
-        return clientResponse.bodyToMono(MirrorTransactionsResponse.class)
-                .block();
     }
 
     public MirrorTokenResponse getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
         // build /tokens/<tokenId>
-        ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{tokenId}", TOKENS_ENDPOINT, tokenId);
-        return clientResponse.bodyToMono(MirrorTokenResponse.class)
-                .block();
-    }
-
-    public ClientResponse getTokenBalances(String tokenId, String accountId) {
-        log.debug("Verify token balance for token '{}' and account '{}' is returned by Mirror Node", tokenId,
-                accountId);
-        // build /tokens/<tokenId>/balances?account.id=<accountId>
-        return callRestEndpoint("/{endpoint}/{tokenId}/{path}?{key}={accountId}", TOKENS_ENDPOINT, tokenId,
-                BALANCES_ENDPOINT, ACCOUNTS_ID_QUERY, accountId);
+        return callRestEndpoint("/{endpoint}/{tokenId}", MirrorTokenResponse.class,
+                TOKENS_ENDPOINT, tokenId);
     }
 
     public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
         log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
         // build /schedules/<scheduleId>
-        ClientResponse clientResponse = callRestEndpoint("/{endpoint}/{scheduleId}", SCHEDULES_ENDPOINT, scheduleId);
-        return clientResponse.bodyToMono(MirrorScheduleResponse.class)
-                .block();
+        return (MirrorScheduleResponse) callRestEndpoint("/{endpoint}/{scheduleId}", MirrorScheduleResponse.class,
+                SCHEDULES_ENDPOINT,
+                scheduleId);
     }
 
-    public ClientResponse callRestEndpoint(String uri, Object... uriVariables) {
-        ClientResponse response = webClient.get()
+    public <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
+        T response = webClient.get()
                 .uri(uri, uriVariables)
                 .accept(MediaType.APPLICATION_JSON)
-                .exchange()
+                .retrieve()
+                .bodyToMono(classType)
+                .doOnNext(x -> log.debug("Endpoint call successfully returned a 200"))
+                .doOnError(x -> log.debug("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
-
-        log.debug("Endpoint {} returned {}", uri, response.statusCode());
 
         return response;
     }

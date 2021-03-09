@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestRecordFiles;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.util.Utility;
 
 class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
@@ -61,7 +61,7 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
     void downloadV1() throws Exception {
         doReturn(loadAddressBook("test-v1")).when(addressBookService).getCurrent();
 
-        fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
+        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();

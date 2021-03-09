@@ -73,14 +73,8 @@ public class Entities {
     private String memo;
 
     public void setKey(byte[] key) {
-        try {
-            this.key = key;
-            ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
-        } catch (Exception e) {
-            log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Field " +
-                    "will be nulled", entityShard, entityRealm, entityNum, e);
-            ed25519PublicKeyHex = null;
-        }
+        this.key = key;
+        ed25519PublicKeyHex = Utility.convertSimpleKeyToHex(key);
     }
 
     public EntityId toEntityId() {

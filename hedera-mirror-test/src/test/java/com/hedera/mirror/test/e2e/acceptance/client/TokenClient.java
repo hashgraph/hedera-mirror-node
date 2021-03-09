@@ -69,6 +69,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
+        String memo = String.format("Create token {}_{}", symbol, refInstant);
         PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
@@ -76,11 +77,12 @@ public class TokenClient extends AbstractNetworkClient {
                 .setDecimals(10)
                 .setFreezeDefault(false)
                 .setInitialSupply(initialSupply)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
+                .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
                 .setTokenSymbol(symbol)
                 .setTreasuryAccountId(treasuryAccount.getAccountId())
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Create token_" + refInstant);
+                .setTransactionMemo(memo);
 
         if (adminKey != null) {
             tokenCreateTransaction
