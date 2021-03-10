@@ -39,7 +39,7 @@ EOF
 fi
 
 echo "Copying new binary"
-cp "${execname}" "${binary}/"
+cp "${execname}" "${binary}"
 
 echo "Setting up ${name} systemd service"
 cp "scripts/${name}.service" /etc/systemd/system
