@@ -19,6 +19,12 @@
             <groupId>com.hedera</groupId>
             <artifactId>hedera-mirror-importer</artifactId>
             <version>${release.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

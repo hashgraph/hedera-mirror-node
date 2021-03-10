@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress>
+        <notes>Conflates postgresql client version with vertx's version</notes>
+        <packageUrl regex="true">^pkg:maven/io\.vertx/vertx\-pg\-client@.*$</packageUrl>
+        <cpe>cpe:/a:postgresql:postgresql</cpe>
+        <cpe>cpe:/a:www-sql_project:www-sql</cpe>
+    </suppress>
+    <suppress>
+        <notes>Conflates Spring Security version with separate spring-security-rsa utility version</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-rsa@.*$</packageUrl>
+        <cpe>cpe:/a:vmware:springsource_spring_security</cpe>
+    </suppress>
+    <suppress>
+        <notes>Not using Spring Framework 5.0.5</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-crypto@.*$</packageUrl>
+        <cve>CVE-2018-1258</cve>
+    </suppress>
+    <suppress>
+        <notes>Conflates spring-cloud-kubernetes-fabric8-config (client) with spring-cloud-config-server</notes>
+        <packageUrl regex="true">
+            ^pkg:maven/org\.springframework\.cloud/spring\-cloud(\-starter)?\-kubernetes\-fabric8\-.*$
+        </packageUrl>
+        <cpe>cpe:/a:kubernetes:kubernetes</cpe>
+        <cpe>cpe:/a:vmware:spring_cloud_config</cpe>
+    </suppress>
+    <suppress>
+        <notes>We limit our service accounts to not be able to modify pods, services or endpoints</notes>
+        <cve>CVE-2020-8554</cve>
+    </suppress>
+    <suppress>
+        <notes>Conflates grpc version with reactive-grpc version</notes>
+        <packageUrl regex="true">^pkg:maven/com\.salesforce\.servicelibs/react(ive|or)\-grpc\-.*$</packageUrl>
+        <cpe>cpe:/a:grpc:grpc</cpe>
+    </suppress>
+    <suppress>
+        <notes>Applicable to Kubernetes Java client libraries but we are using the Fabric8 Kubernetes client</notes>
+        <packageUrl regex="true">^pkg:maven/io\.fabric8/openshift\-model@.*$</packageUrl>
+        <cve>CVE-2020-8570</cve>
+    </suppress>
+    <suppress>
+        <notes>Scan shows it's using 4.1.52 but dependency:tree shows only unaffected 4.1.59 in use</notes>
+        <packageUrl regex="true">^pkg:maven/io\.netty/netty\-.*@4\.1\.52\.Final$</packageUrl>
+        <cpe>cpe:/a:netty:netty</cpe>
+    </suppress>
+</suppressions>

@@ -69,8 +69,7 @@ public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties>
                 .limitRequest(properties.getLimit())
                 .take(properties.getDuration())
                 .flatMap(publishResponse -> webClient.get()
-                        .uri("/transactions/{transactionId}", toString(publishResponse
-                                .getTransactionId()))
+                        .uri("/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
                         .retrieve()
                         .bodyToMono(String.class)
                         .name("rest")

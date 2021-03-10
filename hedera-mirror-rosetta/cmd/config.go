@@ -54,6 +54,8 @@ func GetConfig(config *types.Config, path string) {
 	}
 
 	filename, _ := filepath.Abs(path)
+
+	// Disable gosec since we want to support loading config via env variable like SPRING_CONFIG_ADDITIONAL_LOCATION
 	yamlFile, err := ioutil.ReadFile(filename) // #nosec
 	if err != nil {
 		log.Fatal(err)
