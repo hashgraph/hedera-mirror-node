@@ -32,6 +32,9 @@ import org.springframework.integration.leader.event.OnRevokedEvent;
  * This class uses Spring Cloud Kubernetes Leader to atomically elect a leader using Kubernetes primitives. This class
  * tracks those leader events and either allows or disallows the execution of a method annotated with @Leader based upon
  * whether this pod is currently leader or not.
+ * <p>
+ * This functionality is currently considered unsupported and hasn't been tested with more than one replica. It's not
+ * recommended for production use.
  */
 @Aspect
 @Log4j2
