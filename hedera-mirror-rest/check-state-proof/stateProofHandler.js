@@ -23,6 +23,7 @@
 // external libraries
 const _ = require('lodash');
 const log4js = require('log4js');
+const path = require('path');
 const AddressBook = require('./addressBook');
 const {CompositeRecordFile, SignatureFile} = require('../stream');
 const TransactionId = require('../transactionId');
@@ -36,7 +37,7 @@ class StateProofHandler {
   constructor(stateProofJson, transactionId, scheduled = false) {
     this.transactionId = TransactionId.fromString(transactionId);
     this.scheduled = scheduled;
-    makeStateProofDir(transactionId, stateProofJson);
+    this.outputDir = makeStateProofDir(transactionId, stateProofJson);
     this.setStateProofComponents(stateProofJson);
   }
 
@@ -73,7 +74,7 @@ class StateProofHandler {
 
   parseAddressBooks(addressBookBuffers) {
     const addressBooks = addressBookBuffers.map((addressBookBuffer, index) => {
-      storeFile(addressBookBuffer, `${this.transactionId}/addressBook-${index + 1}`, 'txt');
+      storeFile(addressBookBuffer, path.join(this.outputDir, `addressBook-${index + 1}`), 'txt');
       return new AddressBook(addressBookBuffer);
     });
 
@@ -82,7 +83,7 @@ class StateProofHandler {
   }
 
   parseRecordFile(recordFileBufferOrObj) {
-    storeFile(recordFileBufferOrObj, `${this.transactionId}/recordFile`, 'rcd');
+    storeFile(recordFileBufferOrObj, path.join(this.outputDir, 'recordFile'), 'rcd');
 
     const rcdFile = new CompositeRecordFile(recordFileBufferOrObj);
 
@@ -93,7 +94,7 @@ class StateProofHandler {
   parseSignatureFiles(signatureFiles) {
     const signatureFileMap = Object.fromEntries(
       _.map(signatureFiles, (signatureFileBuffer, nodeAccountId) => {
-        storeFile(signatureFileBuffer, `${this.transactionId}/signatureFile-${nodeAccountId}`, 'rcd_sig');
+        storeFile(signatureFileBuffer, path.join(this.outputDir, `signatureFile-${nodeAccountId}`), 'rcd_sig');
         return [nodeAccountId, new SignatureFile(signatureFileBuffer)];
       })
     );
