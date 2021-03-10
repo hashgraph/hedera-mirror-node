@@ -31,7 +31,6 @@
     </licenses>
 
     <modules>
-        <module>hedera-mirror-coverage</module>
         <module>hedera-mirror-datagenerator</module>
         <module>hedera-mirror-grpc</module>
         <module>hedera-mirror-importer</module>
@@ -79,9 +78,6 @@
         <release.chartVersion>0.15.0-beta1</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
-        <sonar.coverage.jacoco.xmlReportPaths>
-            ${maven.multiModuleProjectDirectory}/hedera-mirror-coverage/target/site/jacoco-aggregate/jacoco.xml
-        </sonar.coverage.jacoco.xmlReportPaths>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>hashgraph</sonar.organization>
         <sonar.projectKey>${project.artifactId}</sonar.projectKey>
@@ -365,7 +361,7 @@
                 <configuration>
                     <failBuildOnCVSS>8</failBuildOnCVSS>
                     <suppressionFiles>
-                        <suppressionFile>hedera-mirror-coverage/suppressions.xml</suppressionFile>
+                        <suppressionFile>suppressions.xml</suppressionFile>
                     </suppressionFiles>
                     <versionCheckEnabled>false</versionCheckEnabled>
                 </configuration>
