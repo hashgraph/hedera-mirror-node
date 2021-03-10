@@ -24,6 +24,9 @@ import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.TextFormat;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -193,7 +196,7 @@ public class Utility {
             return Instant.EPOCH;
         }
 
-        StreamType streamType = StreamType.fromFilename(filename);
+        StreamType streamType = new StreamFilename(filename).getStreamType();
         String date = FilenameUtils.removeExtension(filename);
 
         if (streamType != null) {
@@ -211,7 +214,7 @@ public class Utility {
 
     public static final String getStreamFilenameFromInstant(StreamType streamType, Instant instant) {
         String timestamp = instant.toString().replace(':', '_');
-        return timestamp + streamType.getSuffix() + "." + streamType.getExtension();
+        return timestamp + streamType.getSuffix() + "." + streamType.getLastDataExtension();
     }
 
     public static final boolean isStreamFileAfterInstant(String filename, Instant instant) {

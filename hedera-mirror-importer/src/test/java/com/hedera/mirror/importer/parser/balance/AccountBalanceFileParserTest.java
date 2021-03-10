@@ -30,6 +30,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -172,7 +175,8 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     private AccountBalanceFile accountBalanceFile(long timestamp) {
-        String filename = Utility.getStreamFilenameFromInstant(StreamType.BALANCE, Instant.ofEpochSecond(0, timestamp));
+        String filename = StreamFilename
+                .getDataFilenameWithLastExtension(StreamType.BALANCE, Instant.ofEpochSecond(0, timestamp));
         return AccountBalanceFile.builder()
                 .bytes(Longs.toByteArray(timestamp))
                 .consensusTimestamp(timestamp)

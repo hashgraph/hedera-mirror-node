@@ -26,6 +26,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
@@ -547,8 +550,8 @@ public abstract class AbstractDownloaderTest {
         baseFilename = baseFilename.replace(':', '_');
 
         // Rename the good files to have a bad timestamp
-        String signature = baseFilename + streamType.getSignatureExtension();
-        String signed = baseFilename + streamType.getExtension();
+        String signature = baseFilename + streamType.getLastSignatureExtension();
+        String signed = baseFilename + streamType.getLastDataExtension();
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
         Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
@@ -614,7 +617,7 @@ public abstract class AbstractDownloaderTest {
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
+        streamFile.setName(StreamFilename.getDataFilenameWithLastExtension(streamType, instant));
         streamFile.setHash(hash);
         streamFile.setIndex(index);
 

@@ -27,6 +27,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -226,7 +228,7 @@ class RecordFileParserTest {
     private RecordFile recordFile() {
         long id = ++count;
         Instant instant = Instant.ofEpochSecond(0L, id);
-        String filename = Utility.getStreamFilenameFromInstant(parserProperties.getStreamType(), instant);
+        String filename = StreamFilename.getDataFilenameWithLastExtension(parserProperties.getStreamType(), instant);
         RecordFile recordFile = new RecordFile();
         recordFile.setBytes(new byte[] {0, 1, 2});
         recordFile.setConsensusEnd(id);

@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -80,7 +83,7 @@ public class MirrorDateRangePropertiesProcessor {
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
         Instant lastFileInstant = findLatest(streamType).map(StreamFile::getName)
-                .map(Utility::getInstantFromFilename)
+                .map(StreamFilename::getInstantFromStreamFilename)
                 .orElse(null);
         Instant filterStartDate = lastFileInstant;
 
@@ -118,7 +121,7 @@ public class MirrorDateRangePropertiesProcessor {
         Instant startDate = mirrorProperties.getStartDate();
         Optional<T> streamFile = findLatest(streamType);
         Instant lastFileInstant = streamFile.map(StreamFile::getName)
-                .map(Utility::getInstantFromFilename)
+                .map(StreamFilename::getInstantFromStreamFilename)
                 .orElse(null);
         Duration adjustment = mirrorProperties.getStartDateAdjustment();
         Instant effectiveStartDate = STARTUP_TIME.minus(adjustment);
@@ -152,7 +155,7 @@ public class MirrorDateRangePropertiesProcessor {
                 log.debug("Set verifyHashAfter to {}", effectiveStartDate);
             }
 
-            String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
+            String filename = StreamFilename.getDataFilenameWithLastExtension(streamType, effectiveStartDate);
             T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
             effectiveStreamFile.setName(filename);
             effectiveStreamFile.setIndex(streamFile.map(StreamFile::getIndex).orElse(null));

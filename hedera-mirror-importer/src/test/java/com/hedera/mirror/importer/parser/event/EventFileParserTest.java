@@ -29,6 +29,9 @@ import static org.mockito.Mockito.verify;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -158,7 +161,7 @@ class EventFileParserTest {
     private EventFile eventFile() {
         long id = ++count;
         Instant instant = Instant.ofEpochSecond(0L, id);
-        String filename = Utility.getStreamFilenameFromInstant(parserProperties.getStreamType(), instant);
+        String filename = StreamFilename.getDataFilenameWithLastExtension(parserProperties.getStreamType(), instant);
         EventFile eventFile = new EventFile();
         eventFile.setBytes(new byte[] {0, 1, 2});
         eventFile.setConsensusEnd(id);

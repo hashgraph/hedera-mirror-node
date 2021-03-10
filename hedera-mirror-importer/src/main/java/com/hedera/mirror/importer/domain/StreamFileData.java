@@ -22,8 +22,13 @@ package com.hedera.mirror.importer.domain;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPInputStream;
+
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+
 import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.io.FileUtils;
@@ -33,8 +38,8 @@ import com.hedera.mirror.importer.exception.FileOperationException;
 @Value
 public class StreamFileData {
 
-    private final String filename;
-    private final byte[] bytes;
+    String filename;
+    byte[] bytes;
 
     public static StreamFileData from(@NonNull File file) {
         try {
@@ -51,7 +56,16 @@ public class StreamFileData {
     }
 
     public InputStream getInputStream() {
-        return new ByteArrayInputStream(bytes);
+        try {
+            InputStream is = new ByteArrayInputStream(bytes);
+            if (filename.endsWith("." + StreamType.GZ_EXTENSION)) {
+                is = new GZIPInputStream(is);
+            }
+
+            return is;
+        } catch (IOException ex) {
+            throw new InvalidStreamFileException("Unable to open gzipped file " + filename, ex);
+        }
     }
 
     @Override

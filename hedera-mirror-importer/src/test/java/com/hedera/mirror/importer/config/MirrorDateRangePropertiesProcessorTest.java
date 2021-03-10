@@ -30,6 +30,9 @@ import static org.mockito.Mockito.doReturn;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -157,7 +160,7 @@ public class MirrorDateRangePropertiesProcessorTest {
     }
 
     @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
-    @ValueSource(longs = {0, 1})
+    @ValueSource(longs = { 0, 1 })
     void startDateNotAfterDatabase(long nanos) {
         Instant past = STARTUP_TIME.minusSeconds(100);
         mirrorProperties.setStartDate(past.minusNanos(nanos));
@@ -176,7 +179,7 @@ public class MirrorDateRangePropertiesProcessorTest {
     }
 
     @ParameterizedTest(name = "startDate is {0}ns after application status")
-    @ValueSource(longs = {1, 2_000_000_000L, 200_000_000_000L})
+    @ValueSource(longs = { 1, 2_000_000_000L, 200_000_000_000L })
     void startDateAfterDatabase(long diffNanos) {
         Instant lastFileInstant = Instant.now().minusSeconds(200);
 
@@ -233,7 +236,7 @@ public class MirrorDateRangePropertiesProcessorTest {
     }
 
     @ParameterizedTest(name = "timestamp {0} does not pass empty filter")
-    @ValueSource(longs = {-10L, 0L, 1L, 10L, 8L, 100L})
+    @ValueSource(longs = { -10L, 0L, 1L, 10L, 8L, 100L })
     void emptyFilter(long timestamp) {
         DateRangeFilter filter = DateRangeFilter.empty();
         assertThat(filter.filter(timestamp)).isFalse();
@@ -259,7 +262,8 @@ public class MirrorDateRangePropertiesProcessorTest {
     }
 
     private boolean matches(Optional<StreamFile> streamFile, Instant instant) {
-        return instant.equals(streamFile.map(StreamFile::getName).map(Utility::getInstantFromFilename).orElse(null));
+        return instant.equals(streamFile.map(StreamFile::getName).map(StreamFilename::getInstantFromStreamFilename)
+                        .orElse(null));
     }
 
     private Optional<StreamFile> streamFile(StreamType streamType, Instant instant) {
