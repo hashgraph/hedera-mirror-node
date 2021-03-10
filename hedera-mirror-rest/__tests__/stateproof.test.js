@@ -30,6 +30,7 @@ const constants = require('../constants');
 const config = require('../config');
 const s3client = require('../s3client');
 const stateproof = require('../stateproof');
+const {CompositeRecordFile} = require('../stream');
 const TransactionId = require('../transactionId');
 const EntityId = require('../entityId');
 
@@ -103,11 +104,13 @@ describe('getRCDFileInfoByConsensusNs', () => {
   const consensusNs = '1578342501111222333';
   const expectedRCDFileName = '2020-02-09T18_30_25.001721Z.rcd';
   const validQueryResult = {
-    rows: [{name: expectedRCDFileName, node_account_id: '3'}],
+    rows: [{bytes: null, name: expectedRCDFileName, node_account_id: '3', version: 5}],
   };
   const expectedRCDFileInfo = {
-    rcdFileName: expectedRCDFileName,
+    bytes: null,
+    name: expectedRCDFileName,
     nodeAccountId: '0.0.3',
+    version: 5,
   };
 
   test('with record file found', async () => {
@@ -301,7 +304,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     expect(_.map(fileObjects, (file) => file.partialFilePath).sort()).toEqual(succeededPartialFilePaths.sort());
     for (const fileObject of fileObjects) {
       const data = constants.recordStreamPrefix + fileObject.partialFilePath + extraFileContent;
-      expect(fileObject.base64Data).toEqual(Buffer.from(data).toString('base64'));
+      expect(fileObject.data).toEqual(Buffer.from(data));
     }
     expect(getObjectStub.callCount).toEqual(partialFilePaths.length);
     for (const args of getObjectStub.args) {
@@ -414,7 +417,7 @@ describe('getStateProofForTransaction', () => {
   const defaultTransactionIdStr = '0.0.1-1234567891-111222333';
   const defaultTransactionConsensusNs = '1234567898111222333';
   const defaultRecordFilename = '2020-02-09T18_30_25.001721Z.rcd';
-  const defaultRCDFileInfo = {rcdFileName: defaultRecordFilename, nodeAccountId: '0.0.3'};
+  const defaultRCDFileInfo = {bytes: null, name: defaultRecordFilename, nodeAccountId: '0.0.3', version: 5};
   const defaultAddressBooksAndNodeAccountIdsResult = {
     addressBooks: [
       Buffer.from('address book 1 data').toString('base64'),
@@ -425,7 +428,7 @@ describe('getStateProofForTransaction', () => {
 
   const makeFileObjectFromPartialFilePath = (partialFilePath) => ({
     partialFilePath,
-    base64Data: Buffer.from(partialFilePath).toString('base64'),
+    data: Buffer.from(partialFilePath),
   });
 
   let defaultGetSuccessfulTransactionConsensusNsStub;
@@ -471,13 +474,13 @@ describe('getStateProofForTransaction', () => {
   const verifyResponseData = (responseData, rcdFileInfo, addressBooks, nodeAccountIds) => {
     expect(responseData).toBeTruthy();
     expect(responseData.record_file).toEqual(
-      Buffer.from(`${rcdFileInfo.nodeAccountId}/${rcdFileInfo.rcdFileName}`).toString('base64')
+      Buffer.from(`${rcdFileInfo.nodeAccountId}/${rcdFileInfo.name}`).toString('base64')
     );
 
     expect(Object.keys(responseData.signature_files).sort()).toEqual(nodeAccountIds.sort());
     for (const nodeAccountId of nodeAccountIds) {
       expect(responseData.signature_files[nodeAccountId]).toEqual(
-        Buffer.from(`${nodeAccountId}/${rcdFileInfo.rcdFileName}_sig`).toString('base64')
+        Buffer.from(`${nodeAccountId}/${rcdFileInfo.name}_sig`).toString('base64')
       );
     }
 
@@ -690,5 +693,41 @@ describe('getStateProofForTransaction', () => {
     expect(defaultGetRCDFileInfoByConsensusNsStub.callCount).toEqual(1);
     expect(defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub.callCount).toEqual(1);
     expect(failSignatureFileDownloadStub.callCount).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('formatCompactableRecordFile', () => {
+  test('format', () => {
+    const stub = sinon.createStubInstance(CompositeRecordFile, {
+      toCompactObject: {
+        head: Buffer.from([1]),
+        startRunningHashObject: Buffer.from([2]),
+        hashesBefore: [Buffer.from([3])],
+        recordStreamObject: Buffer.from([4]),
+        hashesAfter: [Buffer.from([5])],
+        endRunningHashObject: Buffer.from([6]),
+      },
+    });
+    const expected = {
+      head: Buffer.from([1]).toString('base64'),
+      start_running_hash_object: Buffer.from([2]).toString('base64'),
+      hashes_before: [Buffer.from([3]).toString('base64')],
+      record_stream_object: Buffer.from([4]).toString('base64'),
+      hashes_after: [Buffer.from([5]).toString('base64')],
+      end_running_hash_object: Buffer.from([6]).toString('base64'),
+    };
+
+    const actual = stateproof.formatCompactableRecordFile(stub, '0.0.1-123-12345678', false);
+    expect(actual).toEqual(expected);
+  });
+
+  test('error', () => {
+    const stub = sinon.createStubInstance(CompositeRecordFile, {
+      toCompactObject: sinon.stub().throws(new Error('oops')),
+    });
+
+    expect(() =>
+      stateproof.formatCompactableRecordFile(stub, '0.0.1-123-12345678', false)
+    ).toThrowErrorMatchingSnapshot();
   });
 });

@@ -22,12 +22,34 @@
 'use strict';
 
 // external libraries
-const {startUpScreen} = require('./startUp');
-const {StateProofHandler} = require('./stateProofHandler');
+const log4js = require('log4js');
+
+const startUpScreen = require('./startUp');
+const StateProofHandler = require('./stateProofHandler');
 const {getAPIResponse, readJSONFile} = require('./utils');
 
+const logger = log4js
+  .configure({
+    appenders: {
+      console: {
+        layout: {
+          pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %m',
+          type: 'pattern',
+        },
+        type: 'stdout',
+      },
+    },
+    categories: {
+      default: {
+        appenders: ['console'],
+        level: 'debug',
+      },
+    },
+  })
+  .getLogger();
+
 // get user input
-const {transactionId, url, storedFile} = startUpScreen();
+const {transactionId, scheduled, url, storedFile} = startUpScreen();
 
 const getStateProofJson = async (url, storedFile) => {
   return storedFile ? readJSONFile(storedFile) : getAPIResponse(url);
@@ -37,30 +59,30 @@ getStateProofJson(url, storedFile)
   .then((stateProofJson) => {
     const missingFilesPrefix = 'Mirror node StateProof API returned insufficient number of files.';
     if (stateProofJson.address_books.length < 1) {
-      console.error(`${missingFilesPrefix} At least 1 addressBook is expected`);
+      logger.error(`${missingFilesPrefix} At least 1 addressBook is expected`);
       return false;
     }
 
-    if (stateProofJson.record_file.length < 1) {
-      console.error(`${missingFilesPrefix} At least 1 record file is expected`);
+    if (!stateProofJson.record_file) {
+      logger.error(`${missingFilesPrefix} No record file in response`);
       return false;
     }
 
     if (stateProofJson.signature_files.length < 2) {
-      console.error(`${missingFilesPrefix} At least 2 signature files are expected`);
+      logger.error(`${missingFilesPrefix} At least 2 signature files are expected`);
       return false;
     }
 
     // instantiate stateProofHandler which will parse files and extract needed data
-    const stateProofHandler = new StateProofHandler(transactionId, stateProofJson);
+    const stateProofHandler = new StateProofHandler(stateProofJson, transactionId, scheduled);
 
     // kick off stateProof flow
-    const validatedTransaction = stateProofHandler.runStateProof();
-    const result = validatedTransaction ? 'valid' : 'invalid';
+    const validated = stateProofHandler.runStateProof();
+    const result = validated ? 'valid' : 'invalid';
 
-    console.log(`-----------------------------------------------`);
-    console.log(`The state proof is cryptographically ${result}`);
-    console.log(`-----------------------------------------------`);
-    return validatedTransaction;
+    logger.info(`-----------------------------------------------`);
+    logger.info(`The state proof is cryptographically ${result}`);
+    logger.info(`-----------------------------------------------`);
+    return validated;
   })
-  .catch((e) => console.error(e));
+  .catch((e) => logger.error(e));

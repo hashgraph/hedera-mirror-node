@@ -22,28 +22,26 @@
 
 // external libraries
 const fs = require('fs');
+const log4js = require('log4js');
 const fetch = require('node-fetch');
 const AbortController = require('abort-controller');
 
-const base64StringToBuffer = (base64String) => {
-  return Buffer.from(base64String, 'base64');
-};
-
-const replaceSpecialCharsWithUnderScores = (stringToFormat) => {
-  return stringToFormat.replace(/[.@\-]/g, '_');
-};
+const logger = log4js.getLogger();
 
 const makeStateProofDir = (transactionId, stateProofJson) => {
-  const newDirPath = replaceSpecialCharsWithUnderScores(transactionId);
-  fs.mkdirSync(newDirPath, {recursive: true});
-  fs.writeFileSync(`${newDirPath}/apiResponse.json`, JSON.stringify(stateProofJson));
-  console.log(`Supporting files and API response for the state proof will be stored in the directory ${newDirPath}`);
-  return newDirPath;
+  fs.mkdirSync(transactionId, {recursive: true});
+  fs.writeFileSync(`${transactionId}/apiResponse.json`, JSON.stringify(stateProofJson));
+  logger.info(`Supporting files and API response for the state proof will be stored in the directory ${transactionId}`);
 };
 
 const storeFile = (data, file, ext) => {
-  const newFilePath = `${replaceSpecialCharsWithUnderScores(file)}.${ext}`;
-  fs.writeFileSync(`${newFilePath}`, data, (err) => {
+  if (!Buffer.isBuffer(data) && typeof data !== 'string') {
+    logger.info(`Skip saving file "${file}" since the data is neither a Buffer nor a string`);
+    return;
+  }
+
+  const filename = `${file}.${ext}`;
+  fs.writeFileSync(`${filename}`, data, (err) => {
     if (err) throw err;
   });
 };
@@ -57,7 +55,7 @@ const getAPIResponse = async (url) => {
     60 * 1000 // in ms
   );
 
-  console.log(`Requesting state proof files from ${url}...`);
+  logger.info(`Requesting state proof files from ${url}...`);
   return fetch(url, {signal: controller.signal})
     .then(async (response) => {
       if (!response.ok) {
@@ -73,16 +71,11 @@ const getAPIResponse = async (url) => {
     });
 };
 
-const readJSONFile = (filePath) => {
-  const rawData = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(rawData);
-};
+const readJSONFile = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
 module.exports = {
-  base64StringToBuffer,
   getAPIResponse,
   makeStateProofDir,
   readJSONFile,
   storeFile,
-  replaceSpecialCharsWithUnderScores,
 };

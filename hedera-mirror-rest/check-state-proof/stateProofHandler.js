@@ -22,88 +22,105 @@
 
 // external libraries
 const _ = require('lodash');
-const {AddressBook} = require('./addressBook');
-const {RecordFile} = require('./recordFile');
-const {SignatureFile} = require('./signatureFile');
-const {base64StringToBuffer, makeStateProofDir, storeFile} = require('./utils');
+const log4js = require('log4js');
+const AddressBook = require('./addressBook');
+const {CompositeRecordFile, SignatureFile} = require('../stream');
+const TransactionId = require('../transactionId');
 const {performStateProof} = require('./transactionValidator');
+const {makeStateProofDir, storeFile} = require('./utils');
+
+const logger = log4js.getLogger();
 
 // responsible for parsing response data to valid AddressBook, recordFile and SignFiles objects
 class StateProofHandler {
-  constructor(transactionId, stateProofJson) {
-    this.transactionId = makeStateProofDir(transactionId, stateProofJson);
+  constructor(stateProofJson, transactionId, scheduled = false) {
+    this.transactionId = TransactionId.fromString(transactionId);
+    this.scheduled = scheduled;
+    makeStateProofDir(transactionId, stateProofJson);
     this.setStateProofComponents(stateProofJson);
   }
 
   setStateProofComponents(stateProofJson) {
-    this.addressBooks = this.parseAddressBooks(stateProofJson.address_books);
-    this.recordFile = this.parseRecordFile(stateProofJson.record_file);
-    this.signatureFiles = this.parseSignatureFiles(stateProofJson.signature_files);
+    const stateProof = this.responseJsonToObj(stateProofJson);
+    this.addressBooks = this.parseAddressBooks(stateProof.addressBooks);
+    this.recordFile = this.parseRecordFile(stateProof.recordFile);
+    this.signatureFileMap = this.parseSignatureFiles(stateProof.signatureFiles);
   }
 
-  parseAddressBooks(addressBooksString) {
-    const addressBooks = [];
-    _.forEach(addressBooksString, (book, index) => {
-      const tmpAddrBook = base64StringToBuffer(book);
-      storeFile(tmpAddrBook, `${this.transactionId}/addressBook-${index + 1}`, 'txt');
-      addressBooks.push(new AddressBook(tmpAddrBook));
+  responseJsonToObj(json) {
+    // change keys to camelCase
+    const camelCasify = (obj) => {
+      const ret = _.mapKeys(obj, (v, k) => _.camelCase(k));
+      if (ret.recordFile && _.isPlainObject(ret.recordFile)) {
+        ret.recordFile = _.mapKeys(ret.recordFile, (v, k) => _.camelCase(k));
+      }
+      return ret;
+    };
+
+    const base64Decode = (obj) => {
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'string') {
+          obj[k] = Buffer.from(v, 'base64');
+        } else {
+          obj[k] = base64Decode(v);
+        }
+      }
+      return obj;
+    };
+
+    return base64Decode(camelCasify(json));
+  }
+
+  parseAddressBooks(addressBookBuffers) {
+    const addressBooks = addressBookBuffers.map((addressBookBuffer, index) => {
+      storeFile(addressBookBuffer, `${this.transactionId}/addressBook-${index + 1}`, 'txt');
+      return new AddressBook(addressBookBuffer);
     });
 
-    console.debug(`Parsed ${addressBooks.length} address books`);
+    logger.debug(`Parsed ${addressBooks.length} address books`);
     return addressBooks;
   }
 
-  parseRecordFile(recordFileString) {
-    const tmpRcdFile = base64StringToBuffer(recordFileString);
-    storeFile(tmpRcdFile, `${this.transactionId}/recordFile`, 'rcd');
+  parseRecordFile(recordFileBufferOrObj) {
+    storeFile(recordFileBufferOrObj, `${this.transactionId}/recordFile`, 'rcd');
 
-    const rcdFile = new RecordFile(tmpRcdFile);
+    const rcdFile = new CompositeRecordFile(recordFileBufferOrObj);
 
-    console.debug(`Parsed record and found ${Object.keys(rcdFile.transactionIdMap).length} transactions`);
+    logger.debug(`Parsed record and found ${Object.keys(rcdFile.getTransactionMap()).length} transactions`);
     return rcdFile;
   }
 
-  parseSignatureFiles(signatureFilesString) {
-    const sigFiles = [];
-    _.forEach(signatureFilesString, (sigFilesString, nodeId) => {
-      const tmpSigFile = base64StringToBuffer(sigFilesString);
-      storeFile(tmpSigFile, `${this.transactionId}/signatureFile-${nodeId}`, 'rcd_sig');
-      sigFiles.push(new SignatureFile(tmpSigFile, nodeId));
-    });
-
-    console.debug(`Parsed ${sigFiles.length} signature files`);
-    return sigFiles;
-  }
-
-  getNodeSignatureMap() {
-    return this.signatureFiles;
+  parseSignatureFiles(signatureFiles) {
+    const signatureFileMap = Object.fromEntries(
+      _.map(signatureFiles, (signatureFileBuffer, nodeAccountId) => {
+        storeFile(signatureFileBuffer, `${this.transactionId}/signatureFile-${nodeAccountId}`, 'rcd_sig');
+        return [nodeAccountId, new SignatureFile(signatureFileBuffer)];
+      })
+    );
+    logger.debug(`Parsed ${Object.keys(signatureFileMap).length} signature files`);
+    return signatureFileMap;
   }
 
   runStateProof() {
-    const {nodeIdPublicKeyPairs} = _.last(this.addressBooks);
+    const {nodeAccountIdPublicKeyPairs} = _.last(this.addressBooks);
 
     // verify transactionId is in recordFile
-    const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId);
+    const transactionInRecordFile = this.recordFile.containsTransaction(this.transactionId, this.scheduled);
     if (!transactionInRecordFile) {
-      console.error(
+      logger.error(
         `Transaction ID ${this.transactionId} not present in record file. Available transaction IDs: ${Object.keys(
-          this.recordFile.transactionIdMap
+          this.recordFile.getTransactionMap()
         )}`
       );
       return false;
     }
-    console.log(`Matching transaction was found in record file`);
+    logger.info(`Matching transaction was found in record file`);
 
-    const validatedTransaction = performStateProof(
-      nodeIdPublicKeyPairs,
-      this.getNodeSignatureMap(),
-      this.recordFile.fileHash
-    );
-
-    return validatedTransaction;
+    return performStateProof(nodeAccountIdPublicKeyPairs, this.signatureFileMap, {
+      fileHash: this.recordFile.getFileHash(),
+      metadataHash: this.recordFile.getMetadataHash(),
+    });
   }
 }
 
-module.exports = {
-  StateProofHandler,
-};
+module.exports = StateProofHandler;

@@ -13,13 +13,14 @@
     "lint": "eslint \"**/*.js\"",
     "perftest": "__performancetests__/perfTest.js",
     "postinstall": "node ./npm_scripts/postinstall.js",
-    "test": "CONFIG_PATH=__tests__ jest --testPathPattern='__tests__/*'"
+    "test": "jest --testPathPattern='__tests__/.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.7.2",
     "@godaddy/terminus": "^4.6.0",
+    "@hashgraph/proto": "^1.0.20",
     "asn1js": "^2.0.26",
     "aws-sdk": "^2.858.0",
     "body-parser": "^1.19.0",
@@ -48,6 +49,7 @@
     "express",
     "express-http-context",
     "@godaddy/terminus",
+    "@hashgraph/proto",
     "js-yaml",
     "lodash",
     "log4js",
@@ -60,6 +62,7 @@
     "swagger-ui-express"
   ],
   "devDependencies": {
+    "app-root-path": "^3.0.0",
     "aws-sdk-mock": "^5.1.0",
     "axios": "^0.21.1",
     "codecov": "^3.8.1",
@@ -93,8 +96,10 @@
       "<rootDir>/__tests__/integrationDomainOps.js",
       "<rootDir>/__tests__/integrationS3Ops.js",
       "<rootDir>/__tests__/integrationUtils.js",
+      "<rootDir>/__tests__/jest.setup.js",
       "<rootDir>/__tests__/mockpool.js",
-      "<rootDir>/__tests__/testutils.js"
+      "<rootDir>/__tests__/testutils.js",
+      "<rootDir>/__tests__/stream/testUtils.js"
     ],
     "maxWorkers": "50%",
     "reporters": [
@@ -105,15 +110,6 @@
       "./__tests__/jest.setup.js"
     ],
     "testEnvironment": "node",
-    "testPathIgnorePatterns": [
-      "__tests__/integrationDbOps.js",
-      "__tests__/integrationDomainOps.js",
-      "__tests__/integrationS3Ops.js",
-      "__tests__/integrationUtils.js",
-      "__tests__/jest.setup.js",
-      "__tests__/mockpool.js",
-      "__tests__/testutils.js"
-    ],
     "testRunner": "jest-circus/runner",
     "verbose": true
   },
