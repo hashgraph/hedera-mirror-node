@@ -100,8 +100,9 @@ jobs:
         working-directory: ${{ env.working-directory }}
 
   publish_image:
-#    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
+    needs: build
     env:
       MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
     steps:
