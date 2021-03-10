@@ -148,7 +148,6 @@ const createTransferLists = (rows) => {
  * @return {{Promise<String>}} outerQuery Fully formed SQL query
  */
 const getTransactionsOuterQuery = async (innerQuery, order) => {
-  const cryptoTransferProtoId = await transactionTypes.get('CRYPTOTRANSFER');
   return `
     ${getSelectClauseWithTokenTransferOrder(order)}
     FROM ( ${innerQuery} ) AS tlist
