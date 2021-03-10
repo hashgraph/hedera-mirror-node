@@ -20,18 +20,21 @@ package com.hedera.datagenerator.sdk.supplier.schedule;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.Getter;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.Key;
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
@@ -42,51 +45,114 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
     private String adminKey;
 
-    private String payerAccountId;
-
-    private List<String> signatoryKeys;
-
-    private TransactionType scheduledTransactionType;
-
-    private Map<String, String> scheduledTransactionProperties = new LinkedHashMap<>();
+    @Getter(lazy = true)
+    private final Key adminPublicKey = PublicKey.fromString(adminKey);
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    @Getter(lazy = true)
+    private final String memo = Utility.getMemo("Mirror node created test schedule");
+
+    private String payerAccount;
+
+    @Getter(lazy = true)
+    private final AccountId payerAccountId = AccountId.fromString(payerAccount);
+
+    @NotNull
+    private TransactionType scheduledTransactionType = TransactionType.ACCOUNT_CREATE;
+
+    @Getter(lazy = true)
+    private final Transaction scheduledTransaction = getTransactionToSign();
+
+    private final Integer signatoryCount;
+
+//    @Getter(lazy = true)
+//    private final Map<PublicKey, byte[]> signatureMap = createSignatureMap();
+
+    @Getter(lazy = true)
+    private final List<PrivateKey> privateKeyList = getSigningKeys();
+
+    @Getter(lazy = true)
+    private final List<PrivateKey> fullSignatoryList = createSignatoryKeys();
+
+    @Min(1)
+    private Integer totalSignatoryCount = 1;
+
     @Override
     public ScheduleCreateTransaction get() {
-        // retrieve inner transaction from appropriate supplier
-        Transaction scheduledTransaction = getScheduledTransaction();
-
-        ScheduleCreateTransaction scheduleCreateTransaction = scheduledTransaction.schedule()
+        ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setMemo(Utility.getMemo("Mirror node created test schedule"))
-                .setTransaction(scheduledTransaction);
+                .setScheduleMemo(getMemo())
+                .setTransactionMemo(getMemo());
 
         if (adminKey != null) {
-            PublicKey key = PublicKey.fromString(adminKey);
-            scheduleCreateTransaction.setAdminKey(key);
+            scheduleCreateTransaction.setAdminKey(getAdminPublicKey());
         }
 
-        if (payerAccountId != null) {
-            scheduleCreateTransaction.setPayerAccountId(AccountId.fromString(payerAccountId));
+        if (payerAccount != null) {
+            scheduleCreateTransaction.setPayerAccountId(getPayerAccountId());
         }
 
-        if (signatoryKeys != null) {
-            signatoryKeys.forEach(k -> {
-                PrivateKey key = PrivateKey.fromString(k);
-                scheduleCreateTransaction.addScheduleSignature(
-                        key.getPublicKey(),
-                        key.signTransaction(scheduledTransaction));
-            });
-        }
         return scheduleCreateTransaction;
     }
 
-    private Transaction getScheduledTransaction() {
-        // retrieve appropriate supplier for inner transaction
-        return new ObjectMapper()
-                .convertValue(scheduledTransactionProperties, scheduledTransactionType.getSupplier())
-                .get();
+    @Override
+    public Transaction<?> getTransactionToSign() {
+//        return new TopicCreateTransaction()
+//                .setAdminKey(getPublicKeys())
+//                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+//                .setTopicMemo(Utility.getMemo("Mirror node created test hcs message"))
+//                .setTransactionMemo(Utility.getMemo("Mirror node created test hcs message"));
+
+        return new AccountCreateTransaction()
+                .setInitialBalance(Hbar.fromTinybars(1_000_000_000L))
+                .setKey(getPublicKeys())
+                .setAccountMemo(getMemo())
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setReceiverSignatureRequired(true)
+                .setTransactionMemo(getMemo());
     }
+
+    @Override
+    public List<PrivateKey> getSignatoryKeys() {
+        return getSigningKeys();
+    }
+
+    private int getNumberOfSignatories() {
+        return signatoryCount == null ? totalSignatoryCount : signatoryCount;
+    }
+
+    private List<PrivateKey> getSigningKeys() {
+        return getFullSignatoryList().subList(0, getNumberOfSignatories());
+    }
+
+    private KeyList getPublicKeys() {
+        KeyList keys = new KeyList();
+        getFullSignatoryList().forEach(key -> {
+            keys.add(key.getPublicKey());
+        });
+
+        return keys;
+    }
+
+    private List<PrivateKey> createSignatoryKeys() {
+        List<PrivateKey> keys = new ArrayList<>();
+        for (int i = 0; i < getTotalSignatoryCount(); i++) {
+            keys.add(PrivateKey.generate());
+        }
+
+        return keys;
+    }
+
+//    private Map<PublicKey, byte[]> createSignatureMap() {
+//        Map<PublicKey, byte[]> signatures = new ConcurrentHashMap<>();
+//        getSignatoryKeys().subList(0, getNumberOfSignatories()).forEach(key -> {
+//            signatures.putIfAbsent(
+//                    key.getPublicKey(),
+//                    key.signTransaction(getScheduledTransaction()));
+//        });
+//
+//        return signatures;
+//    }
 }

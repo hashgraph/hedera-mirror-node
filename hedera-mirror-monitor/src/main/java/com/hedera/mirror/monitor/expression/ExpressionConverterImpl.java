@@ -35,7 +35,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleCreateTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplier;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishException;
@@ -50,7 +53,8 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
     private static final String EXPRESSION_START = "${";
     private static final String EXPRESSION_END = "}";
-    private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\$\\{(account|token|topic)\\.([A-Za-z0-9_]+)}");
+    private static final Pattern EXPRESSION_PATTERN = Pattern
+            .compile("\\$\\{(account|token|topic|schedule)\\.([A-Za-z0-9_]+)}");
 
     private final Map<Expression, String> expressions = new ConcurrentHashMap<>();
     private final MonitorProperties monitorProperties;
@@ -83,6 +87,18 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                 TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
                 tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
             }
+
+            // if ScheduleCreate set the properties to the inner scheduledTransactionProperties
+            if (transactionSupplier instanceof ScheduleCreateTransactionSupplier) {
+                ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier =
+                        (ScheduleCreateTransactionSupplier) transactionSupplier;
+                PublicKey adminKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey())
+                        .getPublicKey();
+                scheduleCreateTransactionSupplier.setAdminKey(adminKey.toString());
+                scheduleCreateTransactionSupplier.setPayerAccount(monitorProperties.getOperator().getAccountId());
+            }
+
+            // if ScheduleSign set the adminKey to the operator
 
             PublishRequest request = PublishRequest.builder()
                     .logResponse(true)
@@ -124,7 +140,8 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
         ACCOUNT(TransactionType.ACCOUNT_CREATE, r -> r.accountId.toString()),
         TOKEN(TransactionType.TOKEN_CREATE, r -> r.tokenId.toString()),
-        TOPIC(TransactionType.CONSENSUS_CREATE_TOPIC, r -> r.topicId.toString());
+        TOPIC(TransactionType.CONSENSUS_CREATE_TOPIC, r -> r.topicId.toString()),
+        SCHEDULE(TransactionType.SCHEDULE_CREATE, r -> r.scheduleId.toString());
 
         private final TransactionType transactionType;
         private final Function<TransactionReceipt, String> idExtractor;

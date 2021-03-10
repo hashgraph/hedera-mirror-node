@@ -22,6 +22,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import javax.validation.constraints.Min;
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.common.Utility;
@@ -43,15 +44,19 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    @Getter(lazy = true)
+    private final String memo = Utility.getMemo("Mirror node created test account");
+
     private String publicKey;
 
     @Override
     public AccountCreateTransaction get() {
         return new AccountCreateTransaction()
+                .setAccountMemo(getMemo())
                 .setInitialBalance(Hbar.fromTinybars(initialBalance))
                 .setKey(publicKey != null ? PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTransactionMemo(Utility.getMemo("Mirror node created test account"));
+                .setTransactionMemo(getMemo());
     }
 
     private PublicKey generateKeys() {

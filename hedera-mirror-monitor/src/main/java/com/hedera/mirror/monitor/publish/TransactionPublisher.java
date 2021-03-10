@@ -41,6 +41,9 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
+import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
+import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
@@ -73,13 +76,68 @@ public class TransactionPublisher {
         return publishMetrics.record(request, this::doPublish);
     }
 
+    private Transaction handleScheduleCreate(Transaction transaction, Transaction scheduledTransaction,
+                                             List<PrivateKey> signingKeys) {
+        ScheduleCreateTransaction scheduleCreateTransaction = ((ScheduleCreateTransaction) transaction)
+                .setTransaction(scheduledTransaction);
+
+        signingKeys.forEach(key -> scheduleCreateTransaction
+                .addScheduleSignature(key.getPublicKey(), key.signTransaction(scheduledTransaction)));
+
+        // for some scenarios you may have to sign the scheduleCreateTransaction
+
+        return scheduleCreateTransaction;
+    }
+
+    private Transaction handleScheduleSign(Transaction transaction, Transaction scheduledTransaction,
+                                           List<PrivateKey> signingKeys) {
+        ScheduleSignTransaction scheduleSignTransaction = ((ScheduleSignTransaction) transaction);
+
+        signingKeys.forEach(key -> scheduleSignTransaction
+                .addScheduleSignature(key.getPublicKey(), key.signTransaction(scheduledTransaction)));
+
+        return scheduleSignTransaction;
+    }
+
+    private Transaction handledSchedules(Transaction transaction, Transaction scheduledTransaction,
+                                         List<PrivateKey> signingKeys, Client client) {
+        // freeze scheduled transaction and sign, set in ScheduleCreateTransaction body
+        if (scheduledTransaction != null) {
+            scheduledTransaction.freezeWith(client);
+
+            if (transaction instanceof ScheduleCreateTransaction) {
+                transaction = handleScheduleCreate(transaction, scheduledTransaction, signingKeys);
+            }
+
+            if (transaction instanceof ScheduleSignTransaction) {
+                transaction = handleScheduleSign(transaction, scheduledTransaction, signingKeys);
+            }
+        }
+
+        return transaction;
+    }
+
     private PublishResponse doPublish(PublishRequest request) throws TimeoutException, PrecheckStatusException,
             ReceiptStatusException {
         log.trace("Publishing: {}", request);
         int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(index);
 
-        TransactionId transactionId = request.getTransaction().execute(client).transactionId;
+        Transaction<?> transaction = request.getTransaction();
+
+        // handled schedule scenario
+        transaction = handledSchedules(
+                transaction,
+                request.getScheduledTransaction(),
+                request.getSignatoryKeys(),
+                client);
+
+        // may have to add a switch case here. If ScheduleSign and # of signatories is full create a new
+        // ScheduleCreate and start ScheduleSign count again
+        // This is the only way to allow continuous submission of scheduled transaction. Keep creating new Schedules
+        // to sign against
+
+        TransactionId transactionId = transaction.execute(client).transactionId;
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
                 .request(request)
                 .timestamp(Instant.now())

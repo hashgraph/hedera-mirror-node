@@ -173,7 +173,7 @@ class ConfigurableTransactionGeneratorTest {
 
     private void assertRequest(PublishRequest publishRequest) {
         assertThat(publishRequest).isNotNull()
-                .hasNoNullFieldsOrProperties()
+                .hasNoNullFieldsOrPropertiesExcept("scheduledTransaction", "signatoryKeys")
                 .hasFieldOrPropertyWithValue("logResponse", properties.isLogResponse())
                 .hasFieldOrPropertyWithValue("receipt", true)
                 .hasFieldOrPropertyWithValue("record", true)

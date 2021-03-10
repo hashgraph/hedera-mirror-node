@@ -28,6 +28,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.Getter;
 import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
@@ -55,6 +56,9 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    @Getter(lazy = true)
+    private final String memo = Utility.getMemo("Mirror node updated test topic");
+
     @NotBlank
     private String topicId;
 
@@ -63,8 +67,8 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
 
         TopicUpdateTransaction topicUpdateTransaction = new TopicUpdateTransaction()
                 .setTopicId(TopicId.fromString(topicId))
-                .setTopicMemo(Utility.getMemo("Mirror node created test topic"))
-                .setTransactionMemo(Utility.getMemo("Mirror node updated test topic"));
+                .setTopicMemo(getMemo())
+                .setTransactionMemo(getMemo());
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);

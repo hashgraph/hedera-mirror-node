@@ -20,9 +20,18 @@ package com.hedera.datagenerator.sdk.supplier;
  * ‍
  */
 
+import java.util.List;
 import java.util.function.Supplier;
 
+import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Transaction;
 
 public interface TransactionSupplier<T extends Transaction<T>> extends Supplier<Transaction<T>> {
+    default Transaction<?> getTransactionToSign() {
+        return null;
+    }
+
+    default List<PrivateKey> getSignatoryKeys() {
+        return null;
+    }
 }

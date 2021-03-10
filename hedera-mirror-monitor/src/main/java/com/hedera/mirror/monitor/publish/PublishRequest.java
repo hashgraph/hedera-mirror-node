@@ -21,10 +21,12 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import java.time.Instant;
+import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Transaction;
 
 @Builder
@@ -36,5 +38,7 @@ public class PublishRequest {
     private final boolean record;
     private final Instant timestamp;
     private final Transaction<?> transaction;
+    private final Transaction<?> scheduledTransaction;
+    private final List<PrivateKey> signatoryKeys;
     private final TransactionType type;
 }

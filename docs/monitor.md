@@ -99,7 +99,7 @@ expression syntax. This is useful to avoid boilerplate configuration and manual 
 environment. The syntax can currently only be used in `hedera.mirror.monitor.publish.scenarios.properties`
 and `hedera.mirror.monitor.subscribe.grpc.topicId`.
 
-The syntax takes the form of `${type.name}` where `type` is one of `account`, `token`, or `topic` and `name` is a
+The syntax takes the form of `${type.name}` where `type` is one of `account`, `schedule`, `token`, or `topic` and `name` is a
 descriptive label. Based upon the entity type, it will create the appropriate entity on the network with default values.
 The name label allows the same entity to be referenced in multiple places but only created once.
 

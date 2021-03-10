@@ -24,6 +24,7 @@ import java.security.SecureRandom;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.Getter;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -50,6 +51,9 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    @Getter(lazy = true)
+    private final String memo = Utility.getMemo("Mirror node created test token");
+
     @NotBlank
     private String symbol = RANDOM.ints(5, 'A', 'Z')
             .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
@@ -65,9 +69,10 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setDecimals(decimals).setInitialSupply(initialSupply)
                 .setFreezeDefault(freezeDefault)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setTokenMemo(getMemo())
                 .setTokenName(symbol + "_name")
                 .setTokenSymbol(symbol)
-                .setTransactionMemo(Utility.getMemo("Mirror node created test token"))
+                .setTransactionMemo(getMemo())
                 .setTreasuryAccountId(treasuryAccount);
 
         if (adminKey != null) {

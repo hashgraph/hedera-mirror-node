@@ -20,11 +20,8 @@ package com.hedera.datagenerator.sdk.supplier.schedule;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -34,11 +31,9 @@ import lombok.Getter;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
-import com.hedera.hashgraph.sdk.Transaction;
 
 @Data
 public class ScheduleSignTransactionSupplier implements TransactionSupplier<ScheduleSignTransaction> {
@@ -49,14 +44,9 @@ public class ScheduleSignTransactionSupplier implements TransactionSupplier<Sche
     private final ScheduleId scheduleEntityId = ScheduleId.fromString(scheduleId);
 
     @NotEmpty
-    private List<String> signatoryKeys;
+    private List<String> signingKeys;
 
     private TransactionType scheduledTransactionType;
-
-    private Map<String, String> scheduledTransactionProperties = new LinkedHashMap<>();
-
-    @Getter(lazy = true)
-    private final Transaction scheduledTransaction = getScheduledTransaction();
 
     @Getter(lazy = true)
     private final Map<PublicKey, byte[]> signaturesMap = getSignaturesMap();
@@ -68,30 +58,11 @@ public class ScheduleSignTransactionSupplier implements TransactionSupplier<Sche
     public ScheduleSignTransaction get() {
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setScheduleId(scheduleEntityId);
+                .setScheduleId(getScheduleEntityId());
 
         // retrieve signature map and add to ScheduleSign
         getSignaturesMap().forEach(scheduleSignTransaction::addScheduleSignature);
 
         return scheduleSignTransaction;
-    }
-
-    private Transaction getScheduledTransaction() {
-        // retrieve appropriate supplier for inner transaction
-        return new ObjectMapper()
-                .convertValue(scheduledTransactionProperties, scheduledTransactionType.getSupplier())
-                .get();
-    }
-
-    private Map<PublicKey, byte[]> getSignaturesMap() {
-        Map<PublicKey, byte[]> signatures = new ConcurrentHashMap<>();
-        signatoryKeys.forEach(k -> {
-            PrivateKey key = PrivateKey.fromString(k);
-            signatures.putIfAbsent(
-                    key.getPublicKey(),
-                    key.signTransaction(scheduledTransaction));
-        });
-
-        return signatures;
     }
 }
