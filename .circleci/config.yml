@@ -371,7 +371,7 @@ jobs:
       - restore_maven_cache
       - run:
           name: Running maven deploy
-          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests
+          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -pl '!hedera-mirror-rosetta'
 
   cleanup_images:
     <<: *machine_ubuntu
