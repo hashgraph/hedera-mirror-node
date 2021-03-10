@@ -132,11 +132,6 @@ public class TransactionPublisher {
                 request.getSignatoryKeys(),
                 client);
 
-        // may have to add a switch case here. If ScheduleSign and # of signatories is full create a new
-        // ScheduleCreate and start ScheduleSign count again
-        // This is the only way to allow continuous submission of scheduled transaction. Keep creating new Schedules
-        // to sign against
-
         TransactionId transactionId = transaction.execute(client).transactionId;
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
                 .request(request)

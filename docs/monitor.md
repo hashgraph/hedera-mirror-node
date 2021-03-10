@@ -92,6 +92,28 @@ publish:
       type: CONSENSUS_SUBMIT_MESSAGE
 ```
 
+#### Scheduled Transactions
+Scheduled transactions require unique configuration as they encompass 2 transactions during the entity creation.
+One (outer) transaction for the entity create and one (inner/scheduled) transaction to eventually be executed that must be signed by all required signatories in the signing scenarios.
+Due to this the monitor by default will initially support only `ScheduleCreate` scenarios in which the inner transaction is a `CryptoCreate`.
+
+By default all required signatures will be provided. However, this can be modified by setting `signatoryCount` to be a number greater than 0 but smaller than `totalSignatoryCount`
+
+```yaml
+publish:
+  scenarios:
+    - name: Scheduled Crypto Create
+      enabled: true
+      logResponse: true
+      maxRetries: 2
+      properties:
+        signatoryCount: 4
+        totalSignatoryCount: 5
+      record: 1.0
+      tps: 10
+      type: SCHEDULE_CREATE
+```
+
 ### Expression Syntax
 
 The monitor can automatically create account, token, and topic entities on application startup using a special

@@ -111,12 +111,12 @@ public class ScheduleFeature {
             TimeoutException {
         expectedSignersCount = 2;
         currentSignersCount = 0;
-        ExpandedAccountId carol = accountClient
+        ExpandedAccountId recipient = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(accountName)); // receiverSigRequired
         scheduledTransaction = accountClient
                 .getCryptoTransferTransaction(
                         accountClient.getTokenTreasuryAccount().getAccountId(),
-                        carol.getAccountId(),
+                        recipient.getAccountId(),
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
         createNewSchedule(scheduledTransaction, null);

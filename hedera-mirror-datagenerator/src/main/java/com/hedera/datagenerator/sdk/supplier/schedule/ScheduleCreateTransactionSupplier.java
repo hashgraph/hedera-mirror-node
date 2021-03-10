@@ -67,9 +67,6 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
     private final Integer signatoryCount;
 
-//    @Getter(lazy = true)
-//    private final Map<PublicKey, byte[]> signatureMap = createSignatureMap();
-
     @Getter(lazy = true)
     private final List<PrivateKey> privateKeyList = getSigningKeys();
 
@@ -99,12 +96,7 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
     @Override
     public Transaction<?> getTransactionToSign() {
-//        return new TopicCreateTransaction()
-//                .setAdminKey(getPublicKeys())
-//                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-//                .setTopicMemo(Utility.getMemo("Mirror node created test hcs message"))
-//                .setTransactionMemo(Utility.getMemo("Mirror node created test hcs message"));
-
+        // default to CryptoCreate as other supported transactions require prior creation and configuration of entities
         return new AccountCreateTransaction()
                 .setInitialBalance(Hbar.fromTinybars(1_000_000_000L))
                 .setKey(getPublicKeys())
@@ -144,15 +136,4 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
         return keys;
     }
-
-//    private Map<PublicKey, byte[]> createSignatureMap() {
-//        Map<PublicKey, byte[]> signatures = new ConcurrentHashMap<>();
-//        getSignatoryKeys().subList(0, getNumberOfSignatories()).forEach(key -> {
-//            signatures.putIfAbsent(
-//                    key.getPublicKey(),
-//                    key.signTransaction(getScheduledTransaction()));
-//        });
-//
-//        return signatures;
-//    }
 }
