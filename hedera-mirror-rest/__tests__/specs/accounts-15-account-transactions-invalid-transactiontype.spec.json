@@ -103,7 +103,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid transactionType value 'invalid'"
+          "message": "Invalid parameter: transactiontype"
         }
       ]
     }

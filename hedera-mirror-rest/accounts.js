@@ -170,6 +170,9 @@ const getAccounts = async (req, res) => {
  * @return {} None.
  */
 const getOneAccount = async (req, res) => {
+  // Validate query parameters first
+  await utils.validateReq(req);
+
   // Parse the filter parameters for account-numbers, balance, and pagination
   const accountId = EntityId.fromString(req.params.id, constants.filterKeys.ACCOUNT_ID).getEncodedId();
   const parsedQueryParams = req.query;
