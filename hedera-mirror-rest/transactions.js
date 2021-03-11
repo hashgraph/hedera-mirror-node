@@ -155,12 +155,7 @@ const getTransactionsOuterQuery = async (innerQuery, order) => {
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        LEFT OUTER JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
-       LEFT OUTER JOIN token_transfer ttl
-         ON t.type IN (
-           ${await transactionTypes.get('CRYPTOTRANSFER')},
-           ${await transactionTypes.get('TOKENWIPE')}
-         )
-         AND tlist.consensus_timestamp = ttl.consensus_timestamp
+       LEFT OUTER JOIN token_transfer ttl ON tlist.consensus_timestamp = ttl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo, t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
 };
@@ -519,12 +514,7 @@ const getOneTransaction = async (req, res) => {
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
     LEFT JOIN crypto_transfer ctl ON ctl.consensus_timestamp = t.consensus_ns
-    LEFT JOIN token_transfer ttl
-      ON t.type IN (
-        ${await transactionTypes.get('CRYPTOTRANSFER')},
-        ${await transactionTypes.get('TOKENWIPE')}
-      )
-      AND t.consensus_ns = ttl.consensus_timestamp
+    LEFT JOIN token_transfer ttl ON t.consensus_ns = ttl.consensus_timestamp
     ${whereClause}
     GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo,
       t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
