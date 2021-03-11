@@ -341,7 +341,7 @@ describe('DB integration test - transactionTypes.get', () => {
     expect(await transactionTypes.get('tokenWipe')).toBe(39);
   });
   test('DB integration test -  transactionTypes.get - Verify invalid transaction type throws error', async () => {
-    await expect(() => transactionTypes.get('TEST')).rejects.toThrowError(DbError);
+    await expect(() => transactionTypes.get('TEST')).rejects.toThrowError(InvalidArgumentError);
     await expect(() => transactionTypes.get(1)).rejects.toThrowError(InvalidArgumentError);
   });
 });
