@@ -25,7 +25,6 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const transactionTypes = require('./transactionTypes');
 
 /**
  * Gets the select clause with token transfers sorted by token_id and account_id in the specified order

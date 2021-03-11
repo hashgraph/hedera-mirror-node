@@ -22,7 +22,7 @@
 const _ = require('lodash');
 
 const {DbError} = require('./errors/dbError');
-const {InvalidParameterTypeError} = require('./errors/invalidParameterTypeError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const transactionTypesQuery = 'select proto_id, name from t_transaction_types';
 
@@ -33,7 +33,7 @@ let promise;
 
 const get = async (transactionTypeName) => {
   if (!_.isString(transactionTypeName)) {
-    throw new InvalidParameterTypeError(`Invalid parameter ${transactionTypeName} is not a string`);
+    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
   }
   if (!promise) {
     if (logger.isTraceEnabled()) {
@@ -47,15 +47,16 @@ const get = async (transactionTypeName) => {
     if (transactionTypesMap.size === 0) {
       result.rows.forEach((row) => transactionTypesMap.set(row.name, row.proto_id));
     }
-    const type = transactionTypesMap.get(transactionTypeName.toUpperCase());
-    if (type === undefined) {
-      throw new Error(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
-    }
-    return type;
   } catch (err) {
     promise = null;
     throw new DbError(err.message);
   }
+
+  const type = transactionTypesMap.get(transactionTypeName.toUpperCase());
+  if (type === undefined) {
+    throw new InvalidArgumentError(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
+  }
+  return type;
 };
 
 module.exports = {

@@ -99,12 +99,9 @@ const isValidEncoding = (query) => {
 };
 
 const isValidTransactionType = async (transactionType) => {
-  try {
-    await transactionTypes.get(transactionType);
-    return true;
-  } catch (err) {
-    return false;
-  }
+  //transactionTypes.get() will throw an error if the transaction type is not found.
+  await transactionTypes.get(transactionType);
+  return true;
 };
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
