@@ -78,11 +78,15 @@ public class TransactionPublisher {
 
     private Transaction handleScheduleCreate(Transaction transaction, Transaction scheduledTransaction,
                                              List<PrivateKey> signingKeys) {
+        PrivateKey operatorPrivateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
         ScheduleCreateTransaction scheduleCreateTransaction = ((ScheduleCreateTransaction) transaction)
+                .setAdminKey(operatorPrivateKey.getPublicKey()) // allow for ScheduleDelete by scheduling account
                 .setTransaction(scheduledTransaction);
 
-        signingKeys.forEach(key -> scheduleCreateTransaction
-                .addScheduleSignature(key.getPublicKey(), key.signTransaction(scheduledTransaction)));
+        if (signingKeys != null) {
+            signingKeys.forEach(key -> scheduleCreateTransaction
+                    .addScheduleSignature(key.getPublicKey(), key.signTransaction(scheduledTransaction)));
+        }
 
         // for some scenarios you may have to sign the scheduleCreateTransaction
 
@@ -93,8 +97,10 @@ public class TransactionPublisher {
                                            List<PrivateKey> signingKeys) {
         ScheduleSignTransaction scheduleSignTransaction = ((ScheduleSignTransaction) transaction);
 
-        signingKeys.forEach(key -> scheduleSignTransaction
-                .addScheduleSignature(key.getPublicKey(), key.signTransaction(scheduledTransaction)));
+        if (signingKeys != null) {
+            signingKeys.forEach(key -> scheduleSignTransaction
+                    .addScheduleSignature(key.getPublicKey(), key.signTransaction(scheduledTransaction)));
+        }
 
         return scheduleSignTransaction;
     }
@@ -123,16 +129,7 @@ public class TransactionPublisher {
         int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(index);
 
-        Transaction<?> transaction = request.getTransaction();
-
-        // handled schedule scenario
-        transaction = handledSchedules(
-                transaction,
-                request.getScheduledTransaction(),
-                request.getSignatoryKeys(),
-                client);
-
-        TransactionId transactionId = transaction.execute(client).transactionId;
+        TransactionId transactionId = request.getTransaction().execute(client).transactionId;
         PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
                 .request(request)
                 .timestamp(Instant.now())
@@ -150,7 +147,7 @@ public class TransactionPublisher {
         PublishResponse response = responseBuilder.build();
 
         if (log.isTraceEnabled() || request.isLogResponse()) {
-            log.info("Received response: {}", response);
+            log.info("Received response: {} for {}", response, transactionId);
         }
 
         return response;

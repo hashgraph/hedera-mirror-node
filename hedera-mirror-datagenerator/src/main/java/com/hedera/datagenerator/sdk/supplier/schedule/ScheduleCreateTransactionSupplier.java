@@ -20,25 +20,17 @@ package com.hedera.datagenerator.sdk.supplier.schedule;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.Key;
-import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
-import com.hedera.hashgraph.sdk.Transaction;
 
 @Data
 public class ScheduleCreateTransactionSupplier implements TransactionSupplier<ScheduleCreateTransaction> {
@@ -59,23 +51,6 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
     @Getter(lazy = true)
     private final AccountId payerAccountId = AccountId.fromString(payerAccount);
 
-    @NotNull
-    private TransactionType scheduledTransactionType = TransactionType.ACCOUNT_CREATE;
-
-    @Getter(lazy = true)
-    private final Transaction scheduledTransaction = getTransactionToSign();
-
-    private final Integer signatoryCount;
-
-    @Getter(lazy = true)
-    private final List<PrivateKey> privateKeyList = getSigningKeys();
-
-    @Getter(lazy = true)
-    private final List<PrivateKey> fullSignatoryList = createSignatoryKeys();
-
-    @Min(1)
-    private Integer totalSignatoryCount = 1;
-
     @Override
     public ScheduleCreateTransaction get() {
         ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
@@ -92,48 +67,5 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
         }
 
         return scheduleCreateTransaction;
-    }
-
-    @Override
-    public Transaction<?> getTransactionToSign() {
-        // default to CryptoCreate as other supported transactions require prior creation and configuration of entities
-        return new AccountCreateTransaction()
-                .setInitialBalance(Hbar.fromTinybars(1_000_000_000L))
-                .setKey(getPublicKeys())
-                .setAccountMemo(getMemo())
-                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setReceiverSignatureRequired(true)
-                .setTransactionMemo(getMemo());
-    }
-
-    @Override
-    public List<PrivateKey> getSignatoryKeys() {
-        return getSigningKeys();
-    }
-
-    private int getNumberOfSignatories() {
-        return signatoryCount == null ? totalSignatoryCount : signatoryCount;
-    }
-
-    private List<PrivateKey> getSigningKeys() {
-        return getFullSignatoryList().subList(0, getNumberOfSignatories());
-    }
-
-    private KeyList getPublicKeys() {
-        KeyList keys = new KeyList();
-        getFullSignatoryList().forEach(key -> {
-            keys.add(key.getPublicKey());
-        });
-
-        return keys;
-    }
-
-    private List<PrivateKey> createSignatoryKeys() {
-        List<PrivateKey> keys = new ArrayList<>();
-        for (int i = 0; i < getTotalSignatoryCount(); i++) {
-            keys.add(PrivateKey.generate());
-        }
-
-        return keys;
     }
 }

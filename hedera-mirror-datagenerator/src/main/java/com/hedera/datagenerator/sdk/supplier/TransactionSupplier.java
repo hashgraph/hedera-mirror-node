@@ -12,7 +12,7 @@ package com.hedera.datagenerator.sdk.supplier;
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * Unless reTransactionPublisherquired by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -20,18 +20,9 @@ package com.hedera.datagenerator.sdk.supplier;
  * ‍
  */
 
-import java.util.List;
 import java.util.function.Supplier;
 
-import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Transaction;
 
 public interface TransactionSupplier<T extends Transaction<T>> extends Supplier<Transaction<T>> {
-    default Transaction<?> getTransactionToSign() {
-        return null;
-    }
-
-    default List<PrivateKey> getSignatoryKeys() {
-        return null;
-    }
 }

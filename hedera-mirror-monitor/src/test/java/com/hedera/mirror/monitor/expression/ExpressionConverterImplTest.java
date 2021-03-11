@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.proto.AccountID;
 import com.hedera.hashgraph.sdk.proto.ScheduleID;
 import com.hedera.hashgraph.sdk.proto.TokenID;
@@ -68,6 +69,7 @@ class ExpressionConverterImplTest {
     @BeforeEach
     void setup() {
         monitorProperties.getOperator().setAccountId("0.0.2");
+        monitorProperties.getOperator().setPrivateKey(PrivateKey.generate().toString());
     }
 
     @Test

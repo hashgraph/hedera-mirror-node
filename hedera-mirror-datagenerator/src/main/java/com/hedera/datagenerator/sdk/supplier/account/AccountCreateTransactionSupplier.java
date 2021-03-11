@@ -26,49 +26,35 @@ import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.common.Utility;
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.AbstractSchedulableTransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.Transaction;
 
 @Data
 @Log4j2
-public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
+public class AccountCreateTransactionSupplier extends AbstractSchedulableTransactionSupplier<AccountCreateTransaction> {
 
     @Min(1)
     private long initialBalance = 10_000_000;
 
-    private boolean logKeys = false;
-
-    @Min(1)
-    private long maxTransactionFee = 1_000_000_000;
-
     @Getter(lazy = true)
     private final String memo = Utility.getMemo("Mirror node created test account");
 
-    private String publicKey;
+    private boolean receiverSignatureRequired = false;
+
+    protected boolean scheduled = false;
 
     @Override
-    public AccountCreateTransaction get() {
-        return new AccountCreateTransaction()
+    public Transaction get() {
+        AccountCreateTransaction accountCreateTransaction = new AccountCreateTransaction()
                 .setAccountMemo(getMemo())
                 .setInitialBalance(Hbar.fromTinybars(initialBalance))
-                .setKey(publicKey != null ? PublicKey.fromString(publicKey) : generateKeys())
+                .setKey(getPublicKeys())
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setTransactionMemo(getMemo());
-    }
 
-    private PublicKey generateKeys() {
-        PrivateKey privateKey = PrivateKey.generate();
-
-        // Since these keys will never be seen again, if we want to reuse this account
-        // provide an option to print them
-        if (logKeys) {
-            log.info("privateKey: {}", privateKey);
-            log.info("publicKey: {}", privateKey.getPublicKey());
-        }
-
-        return privateKey.getPublicKey();
+        return isScheduled() ? getScheduleTransaction(accountCreateTransaction) : accountCreateTransaction;
     }
 }
