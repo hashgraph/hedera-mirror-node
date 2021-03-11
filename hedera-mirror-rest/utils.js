@@ -99,9 +99,12 @@ const isValidEncoding = (query) => {
 };
 
 const isValidTransactionType = async (transactionType) => {
-  //transactionTypes.get() will throw an error if the transaction type is not found.
-  await transactionTypes.get(transactionType);
-  return true;
+  try {
+    await transactionTypes.get(transactionType);
+    return true;
+  } catch (err) {
+    return false;
+  }
 };
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
@@ -832,14 +835,8 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-
-  try {
-    const protoId = await transactionTypes.get(transactionType);
-    return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
-  } catch (err) {
-    // throw error if transactionType filter was provided but invalid
-    throw new InvalidArgumentError(`Invalid transactionType value '${transactionType}'`);
-  }
+  const protoId = await transactionTypes.get(transactionType);
+  return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 
 const isTestEnv = () => process.env.NODE_ENV === 'test';
