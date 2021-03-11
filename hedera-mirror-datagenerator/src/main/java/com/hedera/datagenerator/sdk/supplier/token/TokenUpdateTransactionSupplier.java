@@ -28,7 +28,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.Getter;
 import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
@@ -55,9 +54,6 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
-    @Getter(lazy = true)
-    private final String memo = Utility.getMemo("Mirror node created test token");
-
     @NotBlank()
     private String symbol = "HMNT";
 
@@ -68,16 +64,16 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
 
     @Override
     public TokenUpdateTransaction get() {
-
+        String memo = Utility.getMemo("Mirror node created test token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenMemo(getMemo())
+                .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
                 .setTokenSymbol(symbol)
                 .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(getMemo());
+                .setTransactionMemo(memo);
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);

@@ -28,7 +28,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.Getter;
 import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
@@ -55,9 +54,6 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
-    @Getter(lazy = true)
-    private final String memo = Utility.getMemo("Mirror node updated test account");
-
     private String proxyAccountId;
 
     private String publicKey;
@@ -66,14 +62,14 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountUpdateTransaction get() {
-
+        String memo = Utility.getMemo("Mirror node updated test account");
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(AccountId.fromString(accountId))
-                .setAccountMemo(getMemo())
+                .setAccountMemo(memo)
                 .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setReceiverSignatureRequired(receiverSignatureRequired)
-                .setTransactionMemo(getMemo());
+                .setTransactionMemo(memo);
 
         if (proxyAccountId != null) {
             transaction.setProxyAccountId(AccountId.fromString(proxyAccountId));

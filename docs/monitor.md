@@ -112,12 +112,11 @@ publish:
         nodeAccountId: 0.0.3
         operatorAccountId: 0.0.1018
         receiverSignatureRequired: true
-        scheduled: true
         signatoryCount: 4
         totalSignatoryCount: 5
       record: 1.0
       tps: 10
-      type: ACCOUNT_CREATE
+      type: SCHEDULE_CREATE
 ```
 
 ### Expression Syntax

@@ -22,7 +22,6 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
 
 import javax.validation.constraints.Min;
 import lombok.Data;
-import lombok.Getter;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -41,15 +40,13 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
-    @Getter(lazy = true)
-    private final String memo = Utility.getMemo("Mirror node created test topic");
-
     @Override
     public TopicCreateTransaction get() {
+        String memo = Utility.getMemo("Mirror node created test topic");
         TopicCreateTransaction topicCreateTransaction = new TopicCreateTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTopicMemo(getMemo())
-                .setTransactionMemo(getMemo());
+                .setTopicMemo(memo)
+                .setTransactionMemo(memo);
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);

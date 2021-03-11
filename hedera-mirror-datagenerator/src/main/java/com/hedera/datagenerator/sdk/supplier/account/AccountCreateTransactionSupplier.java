@@ -22,39 +22,54 @@ package com.hedera.datagenerator.sdk.supplier.account;
 
 import javax.validation.constraints.Min;
 import lombok.Data;
-import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.common.Utility;
-import com.hedera.datagenerator.sdk.supplier.AbstractSchedulableTransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.Transaction;
 
 @Data
 @Log4j2
-public class AccountCreateTransactionSupplier extends AbstractSchedulableTransactionSupplier<AccountCreateTransaction> {
+public class AccountCreateTransactionSupplier implements TransactionSupplier<AccountCreateTransaction> {
 
     @Min(1)
     private long initialBalance = 10_000_000;
 
-    @Getter(lazy = true)
-    private final String memo = Utility.getMemo("Mirror node created test account");
+    private boolean logKeys = false;
+
+    @Min(1)
+    private long maxTransactionFee = 1_000_000_000;
 
     private boolean receiverSignatureRequired = false;
 
-    protected boolean scheduled = false;
+    private String publicKey;
 
     @Override
     public Transaction get() {
-        AccountCreateTransaction accountCreateTransaction = new AccountCreateTransaction()
-                .setAccountMemo(getMemo())
+        String memo = Utility.getMemo("Mirror node updated test account");
+        return new AccountCreateTransaction()
+                .setAccountMemo(memo)
                 .setInitialBalance(Hbar.fromTinybars(initialBalance))
-                .setKey(getPublicKeys())
+                .setKey(publicKey != null ? PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setReceiverSignatureRequired(receiverSignatureRequired)
-                .setTransactionMemo(getMemo());
+                .setTransactionMemo(memo);
+    }
 
-        return isScheduled() ? getScheduleTransaction(accountCreateTransaction) : accountCreateTransaction;
+    private PublicKey generateKeys() {
+        PrivateKey privateKey = PrivateKey.generate();
+
+        // Since these keys will never be seen again, if we want to reuse this account
+        // provide an option to print them
+        if (logKeys) {
+            log.info("privateKey: {}", privateKey);
+            log.info("publicKey: {}", privateKey.getPublicKey());
+        }
+
+        return privateKey.getPublicKey();
     }
 }

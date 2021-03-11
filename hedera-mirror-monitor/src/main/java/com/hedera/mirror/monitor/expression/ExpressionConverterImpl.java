@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.expression;
  */
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -41,6 +42,7 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
@@ -96,9 +98,11 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                         .getPublicKey();
                 scheduleCreateTransactionSupplier.setAdminKey(adminKey.toString());
                 scheduleCreateTransactionSupplier.setPayerAccount(monitorProperties.getOperator().getAccountId());
+                NodeProperties singleNodeProperty = new ArrayList<>(monitorProperties.getNodes()).get(0);
+                scheduleCreateTransactionSupplier.setNodeAccountId(singleNodeProperty.getAccountId());
+                scheduleCreateTransactionSupplier
+                        .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
             }
-
-            // if ScheduleSign set the adminKey to the operator
 
             PublishRequest request = PublishRequest.builder()
                     .logResponse(true)
