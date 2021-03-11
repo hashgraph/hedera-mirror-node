@@ -45,7 +45,7 @@ public abstract class AbstractSchedulableTransactionSupplier<T extends Transacti
 
     private final boolean logKeys = false;
 
-    private final Integer signatoryCount = null;
+    private Integer signatoryCount;
 
     @Getter(lazy = true)
     private final List<PrivateKey> privateKeyList = getSigningKeys();
@@ -72,7 +72,7 @@ public abstract class AbstractSchedulableTransactionSupplier<T extends Transacti
     @Getter(lazy = true)
     private final AccountId nodeId = AccountId.fromString(nodeAccountId);
 
-    protected ScheduleCreateTransaction getScheduleTransaction(Transaction scheduledTransaction) {
+    protected ScheduleCreateTransaction getScheduleTransaction(Transaction<?> scheduledTransaction) {
         TransactionId transactionId = TransactionId.generate(getOperatorId()).setScheduled(true);
 
         // set nodeAccountId and freeze inner transaction
@@ -98,9 +98,7 @@ public abstract class AbstractSchedulableTransactionSupplier<T extends Transacti
 
     protected KeyList getPublicKeys() {
         KeyList keys = new KeyList();
-        getFullSignatoryList().forEach(key -> {
-            keys.add(key.getPublicKey());
-        });
+        getFullSignatoryList().forEach(key -> keys.add(key.getPublicKey()));
 
         return keys;
     }

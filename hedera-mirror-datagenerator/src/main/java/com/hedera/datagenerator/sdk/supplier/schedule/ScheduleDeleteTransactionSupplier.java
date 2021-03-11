@@ -43,10 +43,8 @@ public class ScheduleDeleteTransactionSupplier implements TransactionSupplier<Sc
 
     @Override
     public ScheduleDeleteTransaction get() {
-        ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
+        return new ScheduleDeleteTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setScheduleId(getScheduleEntityId());
-
-        return scheduleDeleteTransaction;
     }
 }

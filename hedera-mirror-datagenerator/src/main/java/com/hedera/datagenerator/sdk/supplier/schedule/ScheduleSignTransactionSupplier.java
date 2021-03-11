@@ -43,12 +43,8 @@ public class ScheduleSignTransactionSupplier implements TransactionSupplier<Sche
 
     @Override
     public ScheduleSignTransaction get() {
-        ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
+        return new ScheduleSignTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setScheduleId(getScheduleEntityId());
-
-        // retrieve signature map and add to ScheduleSign
-
-        return scheduleSignTransaction;
     }
 }
