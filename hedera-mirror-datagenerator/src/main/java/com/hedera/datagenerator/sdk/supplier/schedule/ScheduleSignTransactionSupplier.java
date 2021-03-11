@@ -20,18 +20,13 @@ package com.hedera.datagenerator.sdk.supplier.schedule;
  * ‍
  */
 
-import java.util.List;
-import java.util.Map;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import lombok.Data;
 import lombok.Getter;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 
@@ -43,14 +38,6 @@ public class ScheduleSignTransactionSupplier implements TransactionSupplier<Sche
     @Getter(lazy = true)
     private final ScheduleId scheduleEntityId = ScheduleId.fromString(scheduleId);
 
-    @NotEmpty
-    private List<String> signingKeys;
-
-    private TransactionType scheduledTransactionType;
-
-    @Getter(lazy = true)
-    private final Map<PublicKey, byte[]> signaturesMap = getSignaturesMap();
-
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
@@ -61,7 +48,6 @@ public class ScheduleSignTransactionSupplier implements TransactionSupplier<Sche
                 .setScheduleId(getScheduleEntityId());
 
         // retrieve signature map and add to ScheduleSign
-        getSignaturesMap().forEach(scheduleSignTransaction::addScheduleSignature);
 
         return scheduleSignTransaction;
     }

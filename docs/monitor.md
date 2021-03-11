@@ -94,10 +94,12 @@ publish:
 
 #### Scheduled Transactions
 Scheduled transactions require unique configuration as they encompass 2 transactions during the entity creation.
-One (outer) transaction for the entity create and one (inner/scheduled) transaction to eventually be executed that must be signed by all required signatories in the signing scenarios.
-Due to this the monitor by default will initially support only `ScheduleCreate` scenarios in which the inner transaction is a `CryptoCreate`.
+One (outer) transaction for the `Schedule` entity create and one (inner/scheduled) transaction to eventually be executed.
+The inner transaction must be signed by all required signatories as part of the `ScheduleCreate` or `ScheduleSign` scenario transactions.
+Due to this the monitor by default will initially support only `ScheduleCreate` scenarios in which the inner transaction is a `CryptoCreate` with `receiverSignatureRequired` set to true.
 
-By default all required signatures will be provided. However, this can be modified by setting `signatoryCount` to be a number greater than 0 but smaller than `totalSignatoryCount`
+By default all required signatures will be provided. However, this can be modified by setting `hedera.mirror.monitor.publish.scenarios.properties.signatoryCount` to be a number greater than 0 but smaller than `hedera.mirror.monitor.publish.scenarios.properties.totalSignatoryCount`
+To execute a scheduled scenario set the `hedera.mirror.monitor.publish.scenarios` properties similar to the following example
 
 ```yaml
 publish:
@@ -107,11 +109,15 @@ publish:
       logResponse: true
       maxRetries: 2
       properties:
+        nodeAccountId: 0.0.3
+        operatorAccountId: 0.0.1018
+        receiverSignatureRequired: true
+        scheduled: true
         signatoryCount: 4
         totalSignatoryCount: 5
       record: 1.0
       tps: 10
-      type: SCHEDULE_CREATE
+      type: ACCOUNT_CREATE
 ```
 
 ### Expression Syntax

@@ -23,6 +23,7 @@ package com.hedera.datagenerator.sdk.supplier.schedule;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.Getter;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -34,6 +35,9 @@ public class ScheduleDeleteTransactionSupplier implements TransactionSupplier<Sc
     @NotBlank
     private String scheduleId;
 
+    @Getter(lazy = true)
+    private final ScheduleId scheduleEntityId = ScheduleId.fromString(scheduleId);
+
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
@@ -41,7 +45,7 @@ public class ScheduleDeleteTransactionSupplier implements TransactionSupplier<Sc
     public ScheduleDeleteTransaction get() {
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setScheduleId(ScheduleId.fromString(scheduleId));
+                .setScheduleId(getScheduleEntityId());
 
         return scheduleDeleteTransaction;
     }
