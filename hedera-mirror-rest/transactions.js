@@ -25,7 +25,6 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const transactionTypes = require('./transactionTypes');
 
 /**
  * Gets the select clause with token transfers sorted by token_id and account_id in the specified order
@@ -148,7 +147,6 @@ const createTransferLists = (rows) => {
  * @return {{Promise<String>}} outerQuery Fully formed SQL query
  */
 const getTransactionsOuterQuery = async (innerQuery, order) => {
-  const cryptoTransferProtoId = await transactionTypes.get('CRYPTOTRANSFER');
   return `
     ${getSelectClauseWithTokenTransferOrder(order)}
     FROM ( ${innerQuery} ) AS tlist
@@ -156,9 +154,7 @@ const getTransactionsOuterQuery = async (innerQuery, order) => {
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        LEFT OUTER JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
-       LEFT OUTER JOIN token_transfer ttl
-         ON t.type = ${cryptoTransferProtoId}
-         AND tlist.consensus_timestamp = ttl.consensus_timestamp
+       LEFT OUTER JOIN token_transfer ttl ON tlist.consensus_timestamp = ttl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo, t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
 };
@@ -517,9 +513,7 @@ const getOneTransaction = async (req, res) => {
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
     LEFT JOIN crypto_transfer ctl ON ctl.consensus_timestamp = t.consensus_ns
-    LEFT JOIN token_transfer ttl
-      ON t.type = ${await transactionTypes.get('CRYPTOTRANSFER')}
-      AND t.consensus_ns = ttl.consensus_timestamp
+    LEFT JOIN token_transfer ttl ON t.consensus_ns = ttl.consensus_timestamp
     ${whereClause}
     GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo,
       t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash

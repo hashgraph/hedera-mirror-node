@@ -54,6 +54,7 @@ const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 const {cloudProviders, filterKeys} = require('../constants');
 const EntityId = require('../entityId');
+const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions.js');
@@ -330,6 +331,19 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
     '2064, 0.15.82, -21',
     '2064, 0.15.98, 1',
   ]);
+});
+
+describe('DB integration test - transactionTypes.get', () => {
+  test('DB integration test -  transactionTypes.get - Verify valid transaction type returns value', async () => {
+    expect(await transactionTypes.get('CRYPTOTRANSFER')).toBe(14);
+    expect(await transactionTypes.get('cryptotransfer')).toBe(14);
+    expect(await transactionTypes.get('TOKENWIPE')).toBe(39);
+    expect(await transactionTypes.get('tokenWipe')).toBe(39);
+  });
+  test('DB integration test -  transactionTypes.get - Verify invalid transaction type throws error', async () => {
+    await expect(() => transactionTypes.get('TEST')).rejects.toThrowError(InvalidArgumentError);
+    await expect(() => transactionTypes.get(1)).rejects.toThrowError(InvalidArgumentError);
+  });
 });
 
 describe('DB integration test - spec based', () => {
