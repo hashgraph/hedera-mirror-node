@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.TokenBalance;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
@@ -58,8 +59,9 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
         };
 
         try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest)) {
-            AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
-            accountBalanceFile.setLoadStart(Instant.now().getEpochSecond());
+            AccountBalanceFile.AccountBalanceFileBuilder builder = AccountBalanceFile.builder()
+                    .bytes(streamFileData.getBytes())
+                    .loadStart(Instant.now().getEpochSecond());
 
             AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(inputStream.readAllBytes());
             long consensusTimestamp = Utility.timeStampInNanos(allAccountBalances.getConsensusTimestamp());
@@ -67,14 +69,15 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
                     .map((balances -> this.readSingleAccountBalances(consensusTimestamp, balances)))
                     .forEachOrdered(itemConsumer);
 
-            accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
-            accountBalanceFile.setLoadEnd(Instant.now().getEpochSecond());
-            accountBalanceFile.setCount((long) allAccountBalances.getAllAccountsCount());
-            accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
-            accountBalanceFile.setLoadEnd(Instant.now().getEpochSecond());
-            return accountBalanceFile;
+            return builder.consensusTimestamp(consensusTimestamp)
+                    .count((long) allAccountBalances.getAllAccountsCount())
+                    .fileHash(Utility.bytesToHex(messageDigest.digest()))
+                    .items(new ArrayList<>())
+                    .loadEnd(Instant.now().getEpochSecond())
+                    .name(streamFileData.getFilename())
+                    .build();
         } catch (IOException ex) {
-            throw new InvalidDatasetException("Error reading account balance pb file", ex);
+            throw new InvalidStreamFileException("Error reading account balance pb file", ex);
         }
     }
 

@@ -120,6 +120,6 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
     protected long convertTimestamp(String timestamp) {
         Instant instant = Instant.parse(timestamp);
-        return Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
+        return Utility.convertToNanosMax(instant);
     }
 }

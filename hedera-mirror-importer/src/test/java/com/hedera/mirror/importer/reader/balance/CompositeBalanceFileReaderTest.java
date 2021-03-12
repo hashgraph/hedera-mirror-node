@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.reader.balance;
  * ‍
  */
 
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,7 +61,8 @@ public class CompositeBalanceFileReaderTest {
         when(readerImplV2.supports(streamFileData)).thenReturn(false);
         compositeBalanceFileReader.read(streamFileData, consumer);
         verify(readerImplV1, times(1)).read(streamFileData, consumer);
-        verify(readerImplV2, times(0)).read(streamFileData, consumer);
+        verify(readerImplV2, never()).read(streamFileData, consumer);
+        verify(protoBalanceFileReader, never()).read(streamFileData, consumer);
     }
 
     @Test
@@ -70,6 +72,17 @@ public class CompositeBalanceFileReaderTest {
         when(readerImplV2.supports(streamFileData)).thenReturn(true);
         compositeBalanceFileReader.read(streamFileData, consumer);
         verify(readerImplV2, times(1)).read(streamFileData, consumer);
-        verify(readerImplV1, times(0)).read(streamFileData, consumer);
+        verify(readerImplV1, never()).read(streamFileData, consumer);
+        verify(protoBalanceFileReader, never()).read(streamFileData, consumer);
+    }
+
+    @Test
+    void usesProtoBalanceFileReader() {
+        StreamFileData streamFileData = StreamFileData.from("foo.pb.gz", "proto-based balance file");
+        when(protoBalanceFileReader.supports(streamFileData)).thenReturn(true);
+        compositeBalanceFileReader.read(streamFileData, consumer);
+        verify(protoBalanceFileReader, times(1)).read(streamFileData, consumer);
+        verify(readerImplV1, never()).read(streamFileData, consumer);
+        verify(readerImplV2, never()).read(streamFileData, consumer);
     }
 }

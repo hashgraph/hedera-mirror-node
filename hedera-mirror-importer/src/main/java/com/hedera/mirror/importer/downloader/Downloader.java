@@ -21,19 +21,14 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.TreeMultimap;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
-import com.hedera.mirror.importer.domain.StreamType;
-
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -52,7 +47,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
@@ -73,6 +67,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
@@ -244,37 +240,35 @@ public abstract class Downloader<T extends StreamFile> {
     private List<String> getSignatureFilenames(List<S3Object> s3Objects) {
         List<String> signatureFilenames = new ArrayList<>();
 
-        // some stream types have files with different formats simultaneously, build a multimap with
-        // timestamp as the key
+        // some stream types have files with different formats, build a multimap with timestamp as the key
         ListMultimap<String, StreamFilename> filenameByTimestamp = s3Objects.stream()
                 .map(S3Object::key)
                 .map(FilenameUtils::getName)
                 .map(StreamFilename::new)
-                .filter(streamFilename -> streamFilename.getFileType() == StreamFilename.FileType.SIGNATURE)
+                .filter(streamFilename -> streamFilename.getFileType() == SIGNATURE)
                 .collect(Multimaps.toMultimap(
                         StreamFilename::getTimestamp,
                         streamFilename -> streamFilename,
                         MultimapBuilder.treeKeys().arrayListValues()::build
                 ));
         for (String timestamp : filenameByTimestamp.keySet()) {
-            boolean found = false;
+            boolean matched = false;
             List<String> extensions = streamType.getSignatureExtensions();
             List<StreamFilename> streamFilenames = filenameByTimestamp.get(timestamp);
 
             for (String extension : extensions) {
-                String match = streamFilenames.stream()
+                matched = streamFilenames.stream()
                         .filter(streamFilename -> streamFilename.getExtension().equals(extension))
                         .findFirst()
-                        .map(StreamFilename::getDataFilename)
-                        .orElse(null);
-                if (match != null) {
-                    signatureFilenames.add(match);
-                    found = true;
+                        .map(StreamFilename::getFilename)
+                        .map(signatureFilenames::add)
+                        .orElse(false);
+                if (matched) {
                     break;
                 }
             }
 
-            if (!found) {
+            if (!matched) {
                 log.error("Failed to find a valid signature file to download among files: {}",
                         streamFilenames.stream().map(StreamFilename::getFilename).collect(Collectors.joining(",")));
             }
@@ -421,7 +415,7 @@ public abstract class Downloader<T extends StreamFile> {
 
                     verify(streamFile, signature);
 
-                    if (Utility.isStreamFileAfterInstant(sigFilename, endDate)) {
+                    if (new StreamFilename(sigFilename).getInstant().isAfter(endDate)) {
                         downloaderProperties.setEnabled(false);
                         log.warn("Disabled polling after downloading all files <= endDate ({})", endDate);
                         return;
@@ -522,7 +516,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
 
         Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-        var fileInstant = Utility.getInstantFromFilename(streamFile.getName());
+        var fileInstant = new StreamFilename(streamFile.getName()).getInstant();
 
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;

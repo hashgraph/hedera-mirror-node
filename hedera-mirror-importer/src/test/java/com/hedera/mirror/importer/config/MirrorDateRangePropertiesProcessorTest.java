@@ -268,7 +268,7 @@ public class MirrorDateRangePropertiesProcessorTest {
 
     private Optional<StreamFile> streamFile(StreamType streamType, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
+        streamFile.setName(StreamFilename.getDataFilenameWithLastExtension(streamType, instant));
         return Optional.of(streamFile);
     }
 }

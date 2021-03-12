@@ -61,7 +61,7 @@ public enum StreamType {
         this.nodePrefix = nodePrefix;
         this.suffix = suffix;
 
-        // build extensions and the map. extensions are passed in higher priority first order. For signature extensions,
+        // build extensions and the map. extensions are passed in priority order. For signature extensions,
         // the gzipped one comes first. The last*Extension is the alphabetically last
         List<String> dataExtensions = new ArrayList<>();
         List<String> signatureExtensions = new ArrayList<>();

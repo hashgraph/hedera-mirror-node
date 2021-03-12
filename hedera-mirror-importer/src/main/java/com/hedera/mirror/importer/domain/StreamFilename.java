@@ -21,6 +21,10 @@ package com.hedera.mirror.importer.domain;
  */
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.List;
 import lombok.Getter;
 import lombok.Value;
@@ -31,8 +35,13 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 @Getter
 public class StreamFilename {
 
-    private final static char COMPATIBLE_TIME_SEPARATOR = '_';
-    private final static char STANDARD_TIME_SEPARATOR = ':';
+    private static final char COMPATIBLE_TIME_SEPARATOR = '_';
+    private static final char STANDARD_TIME_SEPARATOR = ':';
+    private static final DateTimeFormatter ISO_INSTANT_FULL_NANOS = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .appendInstant(9)
+            .toFormatter()
+            .withResolverStyle(ResolverStyle.STRICT);
 
     private final String extension;
     private final String filename;
@@ -44,25 +53,41 @@ public class StreamFilename {
     public StreamFilename(String filename) {
         this.filename = filename;
 
-        TypeInfo typeInfo = getTypeInfo(filename);
+        TypeInfo typeInfo = extractTypeInfo(filename);
         this.extension = typeInfo.extension;
         this.fileType = typeInfo.fileType;
         this.streamType = typeInfo.streamType;
 
-        String date = StringUtils.removeEnd(filename, "." + this.extension);
-        date = StringUtils.removeEnd(date, this.streamType.getSuffix());
-        this.timestamp = date;
-        date = date.replace(COMPATIBLE_TIME_SEPARATOR, STANDARD_TIME_SEPARATOR);
-        this.instant = Instant.parse(date);
+        this.instant = extractInstant(filename, this.extension, this.streamType);
+        this.timestamp = ISO_INSTANT_FULL_NANOS.format(this.instant);
     }
 
     /**
-     * Gets the signature file name with the alphabetically last extension
+     * Gets the data filename with the last extension of the specified streamType with instant.
      *
-     * @return signature file name with the alphabetically last extension
+     * @param streamType
+     * @param instant
+     * @return the data filename
      */
-    public String getSignatureFilenameWithLastExtension() {
-        return getFilename(instant, streamType, streamType.getLastSignatureExtension());
+    public static String getDataFilenameWithLastExtension(StreamType streamType, Instant instant) {
+        String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
+        String suffix = streamType.getSuffix();
+        String extension = streamType.getLastDataExtension();
+        return StringUtils.joinWith(".", StringUtils.join(timestamp, suffix), extension);
+    }
+
+    /**
+     * Gets the instant from the stream filename.
+     *
+     * @param filename
+     * @return instant from the stream filename
+     */
+    public static Instant getInstantFromStreamFilename(String filename) {
+        if (StringUtils.isBlank(filename)) {
+            return Instant.EPOCH;
+        }
+
+        return new StreamFilename(filename).getInstant();
     }
 
     /**
@@ -83,13 +108,23 @@ public class StreamFilename {
         return StringUtils.join(StringUtils.removeEnd(filename, extension), dataExtension);
     }
 
-    private TypeInfo getTypeInfo(String filename) {
+    /**
+     * Gets the signature file name with the alphabetically last extension
+     *
+     * @return signature file name with the alphabetically last extension
+     */
+    public String getSignatureFilenameWithLastExtension() {
+        return StringUtils.join(StringUtils.removeEnd(filename, extension), streamType.getLastSignatureExtension());
+    }
+
+    private TypeInfo extractTypeInfo(String filename) {
         for (StreamType type : StreamType.values()) {
+            String suffix = type.getSuffix();
             for (FileType fileType : FileType.values()) {
                 List<String> extensions = fileType == FileType.DATA ? type.getDataExtensions() : type
                         .getSignatureExtensions();
                 for (String extension : extensions) {
-                    if (filename.endsWith(extension)) {
+                    if (filename.endsWith(extension) && (suffix != null && filename.contains(suffix))) {
                         return new TypeInfo(extension, fileType, type);
                     }
                 }
@@ -99,17 +134,15 @@ public class StreamFilename {
         throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
     }
 
-    public static String getDataFilenameWithLastExtension(StreamType streamType, Instant instant) {
-        return getFilename(instant, streamType, streamType.getLastDataExtension());
-    }
-
-    public static Instant getInstantFromStreamFilename(String filename) {
-        return new StreamFilename(filename).getInstant();
-    }
-
-    private static String getFilename(Instant instant, StreamType streamType, String extension) {
-        String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
-        return StringUtils.joinWith(".", StringUtils.join(timestamp, streamType.getSuffix()), extension);
+    private Instant extractInstant(String filename, String extension, StreamType streamType) {
+        try {
+            String suffix = StringUtils.join(streamType.getSuffix(), "." + extension);
+            String dateTime = StringUtils.removeEnd(filename, suffix);
+            dateTime = dateTime.replace(COMPATIBLE_TIME_SEPARATOR, STANDARD_TIME_SEPARATOR);
+            return Instant.parse(dateTime);
+        } catch (DateTimeParseException ex) {
+            throw new InvalidStreamFileException("Invalid datetime string in filename " + filename, ex);
+        }
     }
 
     public enum FileType {

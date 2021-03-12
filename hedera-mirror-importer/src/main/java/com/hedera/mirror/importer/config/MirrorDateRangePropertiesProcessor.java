@@ -200,12 +200,12 @@ public class MirrorDateRangePropertiesProcessor {
             if (startDate == null) {
                 startDate = Instant.EPOCH;
             }
-            start = Utility.convertToNanosMax(startDate.getEpochSecond(), startDate.getNano());
+            start = Utility.convertToNanosMax(startDate);
 
             if (endDate == null) {
                 end = Long.MAX_VALUE;
             } else {
-                end = Utility.convertToNanosMax(endDate.getEpochSecond(), endDate.getNano());
+                end = Utility.convertToNanosMax(endDate);
             }
         }
 

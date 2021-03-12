@@ -44,7 +44,7 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     private final CommonDownloaderProperties common;
 
     @Min(1)
-    private int batchSize = 15;
+    private int batchSize = 30;
 
     private boolean enabled = true;
 

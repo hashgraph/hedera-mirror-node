@@ -43,11 +43,15 @@ package com.hedera.mirror.importer.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -85,5 +89,18 @@ class StreamFileDataTest {
 
             assertThrows(RuntimeException.class, () -> StreamFileData.from(file), testName);
         }
+    }
+
+    @Test
+    void fromGzippedData() throws IOException {
+        String filename = "foobar.gz";
+        byte[] uncompressedBytes = "foobar".getBytes();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        OutputStream os = new GZIPOutputStream(baos);
+        os.write(uncompressedBytes);
+        os.close();
+
+        StreamFileData streamFileData = new StreamFileData(filename, baos.toByteArray());
+        assertThat(streamFileData.getInputStream().readAllBytes()).isEqualTo(uncompressedBytes);
     }
 }

@@ -33,11 +33,15 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,7 +83,8 @@ abstract class CsvBalanceFileReaderTest extends IntegrationTest {
 
     @BeforeEach
     void setup() throws IOException {
-        consensusTimestamp = Utility.getTimestampFromFilename(balanceFile.getName());
+        Instant instant = StreamFilename.getInstantFromStreamFilename(balanceFile.getName());
+        consensusTimestamp = Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
         testFile = tempDir.resolve(balanceFile.getName()).toFile();
         assertThat(testFile.createNewFile()).isTrue();
     }

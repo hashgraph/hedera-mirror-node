@@ -26,9 +26,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
@@ -64,7 +61,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -84,19 +80,18 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
-import com.hedera.mirror.importer.converter.InstantConverter;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
-import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 @Log4j2
@@ -442,7 +437,7 @@ public abstract class AbstractDownloaderTest {
         expectLastStreamFile(null, 100L, startDate);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
-                .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
+                .filter(name -> StreamFilename.getInstantFromStreamFilename(name).isAfter(startDate))
                 .collect(Collectors.toList());
 
         fileCopier.copy();
@@ -463,7 +458,7 @@ public abstract class AbstractDownloaderTest {
         downloaderProperties.setBatchSize(1);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
-                .filter(name -> !Utility.getInstantFromFilename(name).isAfter(mirrorProperties.getEndDate()))
+                .filter(name -> !StreamFilename.getInstantFromStreamFilename(name).isAfter(mirrorProperties.getEndDate()))
                 .collect(Collectors.toList());
         expectLastStreamFile(Instant.EPOCH);
 
@@ -513,31 +508,6 @@ public abstract class AbstractDownloaderTest {
         verifyStreamFiles(List.of(file1));
     }
 
-    @ParameterizedTest(name = "verifyHashChain {5}")
-    @CsvSource({
-            // @formatter:off
-            "'', '', 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, true,  passes if both hashes are empty",
-            "xx, '', 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, true,  passes if hash mismatch and expected hash is empty", // starting stream in middle
-            "'', xx, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, false, fails if hash mismatch and actual hash is empty", // bad db state
-            "xx, yy, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, false, fails if hash mismatch and hashes are non-empty",
-            "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10_00_00.000000Z.stream, true,  passes if hash mismatch but verifyHashAfter is after filename",
-            "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10_00_00.000000Z.stream, true,  passes if hash mismatch but verifyHashAfter is same as filename",
-            "xx, yy, 2000-01-01T09:59:59.999999Z, 2000-01-01T10_00_00.000000Z.stream, false, fails if hash mismatch and verifyHashAfter is before filename",
-            "xx, xx, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, true,  passes if hashes are equal"
-            // @formatter:on
-    })
-    void testVerifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
-                             @ConvertWith(InstantConverter.class) Instant verifyHashAfter, String fileName,
-                             Boolean expectedResult, String testName) {
-        downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
-        RecordFile streamFile = new RecordFile();
-        streamFile.setName(fileName);
-        streamFile.setPreviousHash(actualPrevFileHash);
-        assertThat(downloader.verifyHashChain(streamFile, expectedPrevFileHash))
-                .as(testName)
-                .isEqualTo(expectedResult);
-    }
-
     private void differentFilenames(Duration offset) throws Exception {
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
         fileCopier.filterFiles(file2 + "*").copy();
@@ -545,8 +515,8 @@ public abstract class AbstractDownloaderTest {
 
         // Construct a new filename with the offset added to the last valid file
         long nanoOffset = getCloseInterval().plus(offset).toNanos();
-        long timestamp = Utility.getTimestampFromFilename(file1) + nanoOffset;
-        String baseFilename = Instant.ofEpochSecond(0, timestamp) + streamType.getSuffix() + ".";
+        Instant instant = StreamFilename.getInstantFromStreamFilename(file1).plusNanos(nanoOffset);
+        String baseFilename = instant + streamType.getSuffix() + ".";
         baseFilename = baseFilename.replace(':', '_');
 
         // Rename the good files to have a bad timestamp
@@ -568,7 +538,7 @@ public abstract class AbstractDownloaderTest {
         verifyStreamFiles(Collections.emptyList());
     }
 
-    private void verifyForSuccess() throws Exception {
+    protected void verifyForSuccess() throws Exception {
         verifyForSuccess(List.of(file1, file2));
     }
 
@@ -604,8 +574,8 @@ public abstract class AbstractDownloaderTest {
         this.file1 = files.get(0);
         this.file2 = files.get(1);
 
-        file1Instant = Utility.getInstantFromFilename(file1);
-        file2Instant = Utility.getInstantFromFilename(file2);
+        file1Instant = StreamFilename.getInstantFromStreamFilename(file1);
+        file2Instant = StreamFilename.getInstantFromStreamFilename(file2);
     }
 
     /**

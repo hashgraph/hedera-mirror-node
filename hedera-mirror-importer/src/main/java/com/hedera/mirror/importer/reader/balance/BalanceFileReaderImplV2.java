@@ -24,14 +24,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.time.format.DateTimeParseException;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV2;
 
-@Log4j2
 @Named
 public class BalanceFileReaderImplV2 extends CsvBalanceFileReader {
 

@@ -35,7 +35,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.username`                                 | mirror_node             | The Importer username the processor uses to connect to the database                            |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |
-| `hedera.mirror.importer.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
+| `hedera.mirror.importer.downloader.balance.batchSize`                | 30                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.balance.enabled`                  | true                    | Whether to enable balance file downloads                                                       |
 | `hedera.mirror.importer.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.          |
 | `hedera.mirror.importer.downloader.balance.keepSignatures`           | false                   | Whether to keep balance signature files after successful verification. If false, files are deleted. |
