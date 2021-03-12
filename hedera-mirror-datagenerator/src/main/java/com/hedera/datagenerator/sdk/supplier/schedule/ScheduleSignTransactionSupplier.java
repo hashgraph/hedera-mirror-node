@@ -24,6 +24,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.ScheduleId;
@@ -41,6 +42,7 @@ public class ScheduleSignTransactionSupplier implements TransactionSupplier<Sche
     public ScheduleSignTransaction get() {
         return new ScheduleSignTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setScheduleId(ScheduleId.fromString(scheduleId));
+                .setScheduleId(ScheduleId.fromString(scheduleId))
+                .setTransactionMemo(Utility.getMemo("Mirror node signed test schedule"));
     }
 }

@@ -97,7 +97,7 @@ public class TransactionPublisher {
         PublishResponse response = responseBuilder.build();
 
         if (log.isTraceEnabled() || request.isLogResponse()) {
-            log.info("Received response: {} for {}", response, transactionId);
+            log.info("Received response: {}", response);
         }
 
         return response;

@@ -64,7 +64,7 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
 
     @Override
     public TokenUpdateTransaction get() {
-        String memo = Utility.getMemo("Mirror node created test token");
+        String memo = Utility.getMemo("Mirror node updated test token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .setExpirationTime(expirationTime)

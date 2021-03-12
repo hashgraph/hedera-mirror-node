@@ -38,8 +38,6 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleCreateTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplier;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
@@ -94,10 +92,6 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             if (transactionSupplier instanceof ScheduleCreateTransactionSupplier) {
                 ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier =
                         (ScheduleCreateTransactionSupplier) transactionSupplier;
-                PublicKey adminKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey())
-                        .getPublicKey();
-                scheduleCreateTransactionSupplier.setAdminKey(adminKey.toString());
-                scheduleCreateTransactionSupplier.setPayerAccount(monitorProperties.getOperator().getAccountId());
                 NodeProperties singleNodeProperty = new ArrayList<>(monitorProperties.getNodes()).get(0);
                 scheduleCreateTransactionSupplier.setNodeAccountId(singleNodeProperty.getAccountId());
                 scheduleCreateTransactionSupplier

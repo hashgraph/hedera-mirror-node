@@ -50,49 +50,50 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
     @Getter(lazy = true)
     private final Key adminPublicKey = PublicKey.fromString(adminKey);
 
+    @Getter(lazy = true)
+    private final List<PrivateKey> fullSignatoryList = createSignatoryKeys();
+
+    @Min(1)
+    private long initialBalance = 10_000_000;
+
+    private boolean logKeys = false;
+
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    @NotBlank
+    private String nodeAccountId;
+
+    @Getter(lazy = true)
+    private final AccountId nodeId = AccountId.fromString(nodeAccountId);
+
+    @NotBlank
+    private String operatorAccountId;
+
+    @Getter(lazy = true)
+    private final AccountId operatorId = AccountId.fromString(operatorAccountId);
 
     private String payerAccount;
 
     @Getter(lazy = true)
     private final AccountId payerAccountId = AccountId.fromString(payerAccount);
 
-    private boolean logKeys = false;
-
-    private Integer signatoryCount;
-
     @Getter(lazy = true)
-    private final List<PrivateKey> privateKeyList = getSigningKeys();
-
-    @Getter(lazy = true)
-    private final List<PrivateKey> fullSignatoryList = createSignatoryKeys();
-
-    @Min(1)
-    private final Integer totalSignatoryCount = 1;
-
-    @NotBlank
-    private String operatorAccountId;
-
-    @NotBlank
-    private String nodeAccountId;
-
-    @Getter(lazy = true)
-    private final AccountId operatorId = AccountId.fromString(operatorAccountId);
-
-    @Getter(lazy = true)
-    private final AccountId nodeId = AccountId.fromString(nodeAccountId);
-
-    @Min(1)
-    private long initialBalance = 10_000_000;
+    private final List<PrivateKey> signingKeys = createSigningKeys();
 
     private boolean receiverSignatureRequired = false;
+
+    @Min(0)
+    private int signatoryCount = 1;
+
+    @Min(0)
+    private int totalSignatoryCount = 1;
 
     @Override
     public ScheduleCreateTransaction get() {
         Hbar maxTransactionFeeInHbar = Hbar.fromTinybars(getMaxTransactionFee());
         String accountMemo = Utility.getMemo("Mirror node created test account");
-        AccountCreateTransaction scheduledTransaction = new AccountCreateTransaction()
+        AccountCreateTransaction innerTransaction = new AccountCreateTransaction()
                 .setInitialBalance(Hbar.fromTinybars(getInitialBalance()))
                 .setKey(getPublicKeys())
                 .setAccountMemo(accountMemo)
@@ -102,12 +103,12 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
         // set nodeAccountId and freeze inner transaction
         TransactionId transactionId = TransactionId.generate(getOperatorId());
-        scheduledTransaction.setNodeAccountIds(Collections.singletonList(getNodeId()));
-        scheduledTransaction.setTransactionId(transactionId.setScheduled(true));
-        scheduledTransaction.freeze();
+        innerTransaction.setNodeAccountIds(Collections.singletonList(getNodeId()));
+        innerTransaction.setTransactionId(transactionId.setScheduled(true));
+        innerTransaction.freeze();
 
         String scheduleMemo = Utility.getMemo("Mirror node created test schedule");
-        ScheduleCreateTransaction scheduleCreateTransaction = scheduledTransaction
+        ScheduleCreateTransaction scheduleCreateTransaction = innerTransaction
                 .schedule()
                 .setMaxTransactionFee(maxTransactionFeeInHbar)
                 .setScheduleMemo(scheduleMemo)
@@ -124,49 +125,29 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
         // add initial set of required signatures to ScheduleCreate transaction
         if (totalSignatoryCount > 0) {
-            getPrivateKeyList().forEach(k -> scheduleCreateTransaction.addScheduleSignature(
+            getSigningKeys().forEach(k -> scheduleCreateTransaction.addScheduleSignature(
                     k.getPublicKey(),
-                    k.signTransaction(scheduledTransaction)));
+                    k.signTransaction(innerTransaction)));
         }
 
         return scheduleCreateTransaction;
     }
 
-    /**
-     * Get public KeyList for all signatories
-     *
-     * @return
-     */
-    protected KeyList getPublicKeys() {
+    private KeyList getPublicKeys() {
         KeyList keys = new KeyList();
         getFullSignatoryList().forEach(key -> keys.add(key.getPublicKey()));
 
         return keys;
     }
 
-    /**
-     * Get number of signatories for initial ScheduleCreate
-     *
-     * @return
-     */
     private int getNumberOfSignatories() {
-        return signatoryCount == null ? totalSignatoryCount : signatoryCount;
+        return Math.min(signatoryCount, totalSignatoryCount);
     }
 
-    /**
-     * Get number of signatories for ScheduleCreate
-     *
-     * @return
-     */
-    private List<PrivateKey> getSigningKeys() {
+    private List<PrivateKey> createSigningKeys() {
         return getFullSignatoryList().subList(0, getNumberOfSignatories());
     }
 
-    /**
-     * Create full list of signatory keys
-     *
-     * @return
-     */
     private List<PrivateKey> createSignatoryKeys() {
         List<PrivateKey> keys = new ArrayList<>();
         for (int i = 0; i < totalSignatoryCount; i++) {
