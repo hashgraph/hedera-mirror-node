@@ -22,9 +22,8 @@ package com.hedera.mirror.monitor.publish;
 
 import java.time.Instant;
 import lombok.Builder;
+import lombok.ToString;
 import lombok.Value;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
@@ -34,44 +33,10 @@ import com.hedera.hashgraph.sdk.TransactionRecord;
 @Value
 public class PublishResponse {
 
+    @ToString.Exclude
     private final PublishRequest request;
     private final TransactionRecord record;
     private final TransactionReceipt receipt;
     private final Instant timestamp;
     private final TransactionId transactionId;
-
-    // Needed since the SDK doesn't implement toString() or have actual fields to use with reflection
-    @Override
-    public String toString() {
-        ToStringBuilder toStringBuilder = new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE);
-        toStringBuilder.append("timestamp", timestamp);
-        toStringBuilder.append("transactionId", transactionId);
-        toStringBuilder.append("type", request.getType());
-
-        if (record != null) {
-            toStringBuilder.append("consensusTimestamp", record.consensusTimestamp);
-        }
-
-        if (receipt != null) {
-            toStringBuilder.append("status", receipt.status);
-
-            if (receipt.accountId != null) {
-                toStringBuilder.append("accountId", receipt.accountId.num);
-            } else if (receipt.contractId != null) {
-                toStringBuilder.append("contractId", receipt.contractId.num);
-            } else if (receipt.fileId != null) {
-                toStringBuilder.append("fileId", receipt.fileId.num);
-            } else if (receipt.tokenId != null) {
-                toStringBuilder.append("tokenId", receipt.tokenId.num);
-            } else if (receipt.topicId != null) {
-                toStringBuilder.append("topicId", receipt.topicId.num);
-            }
-
-            if (receipt.topicSequenceNumber > 0) {
-                toStringBuilder.append("topicSequenceNumber", receipt.topicSequenceNumber);
-            }
-        }
-
-        return toStringBuilder.toString();
-    }
 }

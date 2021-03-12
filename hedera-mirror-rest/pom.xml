@@ -25,6 +25,9 @@
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
                 <version>1.11.2</version>
+                <configuration>
+                    <installDirectory>${project.basedir}</installDirectory>
+                </configuration>
                 <executions>
                     <execution>
                         <id>install-node-and-npm</id>
@@ -34,6 +37,16 @@
                         <configuration>
                             <nodeVersion>v14.15.4</nodeVersion>
                             <npmVersion>6.14.11</npmVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-install-check-state-proof</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>install</arguments>
+                            <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
                         </configuration>
                     </execution>
                     <execution>
@@ -54,6 +67,17 @@
                         </goals>
                         <configuration>
                             <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-test-check-state-proof</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>test -- --maxWorkers 2</arguments>
+                            <skip>${skipTests}</skip>
+                            <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
                         </configuration>
                     </execution>
                     <execution>

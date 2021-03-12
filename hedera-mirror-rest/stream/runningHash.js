@@ -20,20 +20,26 @@
 
 'use strict';
 
-// properties of SHA-384 hash algorithm
-const SHA_384 = {
-  encoding: 'hex',
-  length: 48,
-  name: 'sha384',
+const crypto = require('crypto');
+
+/**
+ * Calculates the next running hash from running hash object and next hash object using the specified digest algorithm.
+ *
+ * @param {object} runningHashObject
+ * @param {object} nextHashObject
+ * @param {string} algorithm
+ * @returns {Buffer} the running hash
+ */
+const calculateRunningHash = (runningHashObject, nextHashObject, algorithm) => {
+  return crypto
+    .createHash(algorithm)
+    .update(runningHashObject.header)
+    .update(runningHashObject.hash)
+    .update(nextHashObject.header)
+    .update(nextHashObject.hash)
+    .digest();
 };
 
-const BYTE_SIZE = 1;
-const INT_SIZE = 4;
-const LONG_SIZE = 8;
-
 module.exports = {
-  BYTE_SIZE,
-  INT_SIZE,
-  LONG_SIZE,
-  SHA_384,
+  calculateRunningHash,
 };

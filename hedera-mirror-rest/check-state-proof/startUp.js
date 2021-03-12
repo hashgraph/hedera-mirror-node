@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*-
  * ‌
  * Hedera Mirror Node
@@ -23,9 +22,12 @@
 
 // external libraries
 const _ = require('lodash');
-const yargs = require('yargs'); //  simplify user input
 const chalk = require('chalk'); //  pretty up request info
 const boxen = require('boxen'); //  emphasize request info
+const log4js = require('log4js');
+const yargs = require('yargs'); //  simplify user input
+
+const logger = log4js.getLogger();
 
 const boxenOptions = {
   padding: 1,
@@ -37,37 +39,43 @@ const boxenOptions = {
 
 const options = yargs
   .usage('Usage: -t <transactionId> -e <env>')
-  .option('t', {
-    alias: 'transactionId',
+  .option('transactionId', {
+    alias: 't',
     describe: 'Your Hedera Network Transaction Id e.g. 0.0.94139-1570800748-313194300',
     type: 'string',
     demandOption: true,
   })
-  .option('f', {
-    alias: 'file',
+  .option('file', {
+    alias: 'f',
     describe: 'Absolute file path containing State Proof REST API response json',
     type: 'string',
     demandOption: false,
   })
-  .option('h', {
-    alias: 'host',
+  .option('host', {
+    alias: 'h',
     describe: 'REST API host. Default is testnet. This overrides the value of the env if also provided.',
     type: 'string',
     demandOption: false,
   })
-  .option('e', {
-    alias: 'env',
+  .option('env', {
+    alias: 'e',
     describe: 'Your environment e.g. local|mainnet|previewnet|testnet',
     type: 'string',
+    demandOption: false,
+  })
+  .option('scheduled', {
+    alias: 's',
+    describe: 'Whether the transaction is scheduled or not',
+    type: 'boolean',
     demandOption: false,
   }).argv;
 
 const startUpScreen = () => {
   const greeting = chalk.bold(`Hedera Transaction State Proof Checker CLI`);
   const msgBox = boxen(greeting, boxenOptions);
-  console.log(msgBox);
+  logger.info(msgBox);
 
-  const {transactionId} = options;
+  const {transactionId, scheduled} = options;
   const storedFile = options.file;
   let source = storedFile; // default source to filePath
   let url;
@@ -97,13 +105,12 @@ const startUpScreen = () => {
       host = options.host;
     }
 
-    url = `${host}/api/v1/transactions/${transactionId}/stateproof`;
+    url = `${host}/api/v1/transactions/${transactionId}/stateproof${scheduled ? '?scheduled=true' : ''}`;
     source = url;
   }
 
-  console.log(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
-  return {transactionId, url, storedFile};
+  logger.info(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
+  return {transactionId, scheduled, url, storedFile};
 };
-module.exports = {
-  startUpScreen,
-};
+
+module.exports = startUpScreen;

@@ -421,16 +421,29 @@ describe('DB integration test - spec based', () => {
     await s3Ops.stop();
   });
 
-  const loadSqlScripts = async (sqlScripts) => {
+  const loadSqlScripts = async (pathPrefix, sqlScripts) => {
     if (!sqlScripts) {
       return;
     }
 
     for (const sqlScript of sqlScripts) {
-      const sqlScriptPath = path.join(__dirname, sqlScript);
-      const script = fs.readFileSync(sqlScriptPath, {encoding: 'utf8'});
+      const sqlScriptPath = path.join(__dirname, pathPrefix || '', sqlScript);
+      const script = fs.readFileSync(sqlScriptPath, 'utf8');
       logger.debug(`loading sql script ${sqlScript}`);
       await integrationDbOps.runSqlQuery(script);
+    }
+  };
+
+  const runSqlFuncs = async (pathPrefix, sqlFuncs) => {
+    if (!sqlFuncs) {
+      return;
+    }
+
+    for (const sqlFunc of sqlFuncs) {
+      // path.join returns normalized path, the sqlFunc is a local js file so add './'
+      const func = require('./' + path.join(pathPrefix || '', sqlFunc));
+      logger.debug(`running sql func in ${sqlFunc}`);
+      await func.apply(null, [sqlConnection]);
     }
   };
 
@@ -458,28 +471,37 @@ describe('DB integration test - spec based', () => {
   const specSetupSteps = async (spec) => {
     await integrationDbOps.cleanUp();
     await integrationDomainOps.setUp(spec, sqlConnection);
-    await loadSqlScripts(spec.sqlscripts);
+    if (spec.sql) {
+      await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
+      await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
+    }
     overrideConfig(spec.config);
   };
 
   const hasher = (data) => crypto.createHash('sha256').update(data).digest('hex');
 
   const transformStateProofResponse = (jsonObj) => {
-    if (jsonObj.record_file) {
-      jsonObj.record_file = hasher(jsonObj.record_file);
-    }
+    const deepBase64Encode = (obj) => {
+      if (typeof obj === 'string') {
+        return hasher(obj);
+      }
 
-    if (jsonObj.address_books) {
-      jsonObj.address_books.forEach((addressBook, index) => {
-        jsonObj.address_books[index] = hasher(addressBook);
-      });
-    }
+      const result = {};
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'string') {
+          result[k] = hasher(v);
+        } else if (Array.isArray(v)) {
+          result[k] = v.map((val) => deepBase64Encode(val));
+        } else if (_.isPlainObject(v)) {
+          result[k] = deepBase64Encode(v);
+        } else {
+          result[k] = v;
+        }
+      }
+      return result;
+    };
 
-    if (jsonObj.signature_files) {
-      Object.keys(jsonObj.signature_files).forEach((nodeAccountId) => {
-        jsonObj.signature_files[nodeAccountId] = hasher(jsonObj.signature_files[nodeAccountId]);
-      });
-    }
+    return deepBase64Encode(jsonObj);
   };
 
   afterEach(() => {
@@ -498,9 +520,9 @@ describe('DB integration test - spec based', () => {
         const response = await request(server).get(url);
 
         expect(response.status).toEqual(spec.responseStatus);
-        const jsonObj = JSON.parse(response.text);
-        if (file.startsWith('stateproof')) {
-          transformStateProofResponse(jsonObj);
+        let jsonObj = JSON.parse(response.text);
+        if (response.status === 200 && file.startsWith('stateproof')) {
+          jsonObj = transformStateProofResponse(jsonObj);
         }
         expect(jsonObj).toEqual(spec.responseJson);
       })

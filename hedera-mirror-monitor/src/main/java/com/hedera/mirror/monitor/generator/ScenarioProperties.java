@@ -76,8 +76,8 @@ public class ScenarioProperties {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
 
-    @Min(0)
-    private int maxRetries = 0;
+    @Min(1)
+    private int maxAttempts = 1;
 }
 
 

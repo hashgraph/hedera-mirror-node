@@ -84,7 +84,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
                 .record(shouldGenerate(properties.getRecord()))
                 .timestamp(Instant.now())
                 .transaction(transactionSupplier.get().get()
-                        .setMaxRetry(properties.getMaxRetries())) // set scenario transaction maxRetry
+                        .setMaxRetry(properties.getMaxAttempts())) // set scenario transaction maxAttempts
                 .build();
     }
 

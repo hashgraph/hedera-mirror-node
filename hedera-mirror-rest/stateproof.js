@@ -25,6 +25,7 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const s3client = require('./s3client');
+const {CompositeRecordFile} = require('./stream');
 const TransactionId = require('./transactionId');
 const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
@@ -61,33 +62,35 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
 };
 
 /**
- * Get the RCD file name and the account ID of the node it was downloaded from, where consensusNs is in the range
- * [consensus_start, consensus_end]. Throws exception if no such RCD file found.
+ * Get the RCD file name, raw bytes if available, and the account ID of the node it was downloaded from, where
+ * consensusNs is in the range [consensus_start, consensus_end]. Throws exception if no such RCD file found.
  *
  * @param {string} consensusNs consensus timestamp within the range of the RCD file to search
- * @returns {Promise<{String, String}>} RCD file name and the account ID of the node the file was downloaded from
+ * @returns {Promise<{Buffer, String, String}>} RCD file name, raw bytes, and the account ID of the node the file was
+ *                                              downloaded from
  */
 let getRCDFileInfoByConsensusNs = async (consensusNs) => {
-  const sqlParams = [consensusNs];
-  const sqlQuery = `SELECT name, node_account_id
+  const sqlQuery = `SELECT bytes, name, node_account_id, version
        FROM record_file
        WHERE consensus_end >= $1
        ORDER BY consensus_end
        LIMIT 1`;
   if (logger.isTraceEnabled()) {
-    logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }
 
-  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
+  const {rows} = await utils.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No matching RCD file found with ${consensusNs} in the range`);
   }
 
   const info = rows[0];
-  logger.debug(`Found RCD file ${JSON.stringify(info)} for consensus timestamp ${consensusNs}`);
+  logger.debug(`Found RCD file ${info.name} for consensus timestamp ${consensusNs}`);
   return {
-    rcdFileName: info.name,
+    bytes: info.bytes,
+    name: info.name,
     nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
+    version: info.version,
   };
 };
 
@@ -99,7 +102,6 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
 let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
   // memo and node account ids from table address_book_entry
-  const sqlParams = [consensusNs];
   let sqlQuery = `SELECT
          file_data,
          node_count,
@@ -121,10 +123,10 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   }
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }
 
-  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
+  const {rows} = await utils.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
     throw new NotFoundError('No address book found');
   }
@@ -178,7 +180,7 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
           .on('end', () => {
             resolve({
               partialFilePath,
-              base64Data: Buffer.concat(buffers).toString('base64'),
+              data: Buffer.concat(buffers),
             });
           })
           // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient
@@ -226,6 +228,48 @@ const getScheduledParamValue = (filters) => {
 };
 
 /**
+ * Formats the compactable record file. The compact object's keys are in snake case, and values are base64 encoded
+ * strings.
+ *
+ * @param recordFile
+ * @param transactionId
+ * @param scheduled
+ * @return {{}}
+ */
+const formatCompactableRecordFile = (recordFile, transactionId, scheduled) => {
+  const base64Encode = (obj) => {
+    for (const [k, v] of Object.entries(obj)) {
+      if (Buffer.isBuffer(v)) {
+        obj[k] = v.toString('base64');
+      } else if (Array.isArray(v)) {
+        obj[k] = v.map((b) => b.toString('base64'));
+      }
+    }
+
+    return obj;
+  };
+
+  const compactObject = recordFile.toCompactObject(transactionId, scheduled);
+  return _.mapKeys(base64Encode(compactObject), (v, k) => _.snakeCase(k));
+};
+
+/**
+ * Formats the record file in either the full format or the compact format depending on its version.
+ *
+ * @param {Buffer} data
+ * @param {TransactionId} transactionId
+ * @param {boolean} scheduled
+ * @returns {string|Object}
+ */
+const formatRecordFile = (data, transactionId, scheduled) => {
+  if (!CompositeRecordFile.canCompact(data)) {
+    return data.toString('base64');
+  }
+
+  return formatCompactableRecordFile(new CompositeRecordFile(data), transactionId, scheduled);
+};
+
+/**
  * Handler function for /transactions/:transaction_id/stateproof API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
@@ -238,36 +282,44 @@ const getStateProofForTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
   const scheduled = getScheduledParamValue(filters);
   const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, scheduled);
-  const {rcdFileName, nodeAccountId} = await getRCDFileInfoByConsensusNs(consensusNs);
+  const rcdFileInfo = await getRCDFileInfoByConsensusNs(consensusNs);
   const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 
   const sigFileObjects = await downloadRecordStreamFilesFromObjectStorage(
-    ..._.map(nodeAccountIds, (accountId) => `${accountId}/${rcdFileName}_sig`)
+    ..._.map(nodeAccountIds, (accountId) => `${accountId}/${rcdFileInfo.name}_sig`)
   );
 
   if (!canReachConsensus(sigFileObjects.length, nodeAccountIds.length)) {
     throw new FileDownloadError(
       `Require at least 1/3 signature files to prove consensus, got ${sigFileObjects.length}` +
-        ` out of ${nodeAccountIds.length} for file ${rcdFileName}_sig`
+        ` out of ${nodeAccountIds.length} for file ${rcdFileInfo.name}_sig`
     );
   }
 
-  // download the record file from the stored node
-  const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(`${nodeAccountId}/${rcdFileName}`);
-  if (_.isEmpty(rcdFileObjects)) {
-    throw new FileDownloadError(`Failed to download record file ${rcdFileName} from node ${nodeAccountId}`);
+  // download the record file from the stored node if it's not in db
+  let rcdFile = rcdFileInfo.bytes;
+  if (!rcdFile) {
+    const partialPath = `${rcdFileInfo.nodeAccountId}/${rcdFileInfo.name}`;
+    const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(partialPath);
+    if (_.isEmpty(rcdFileObjects)) {
+      throw new FileDownloadError(
+        `Failed to download record file ${rcdFileInfo.name} from node ${rcdFileInfo.nodeAccountId}`
+      );
+    }
+    rcdFile = _.first(rcdFileObjects).data;
   }
 
   const sigFilesMap = {};
   _.forEach(sigFileObjects, (sigFileObject) => {
     const nodeAccountIdStr = _.first(sigFileObject.partialFilePath.split('/'));
-    sigFilesMap[nodeAccountIdStr] = sigFileObject.base64Data;
+    sigFilesMap[nodeAccountIdStr] = sigFileObject.data.toString('base64');
   });
 
   res.locals[constants.responseDataLabel] = {
-    record_file: _.first(rcdFileObjects).base64Data,
-    signature_files: sigFilesMap,
     address_books: addressBooks,
+    record_file: formatRecordFile(rcdFile, transactionId, scheduled),
+    signature_files: sigFilesMap,
+    version: rcdFileInfo.version,
   };
 };
 
@@ -282,5 +334,6 @@ if (utils.isTestEnv()) {
     getAddressBooksAndNodeAccountIdsByConsensusNs,
     downloadRecordStreamFilesFromObjectStorage,
     canReachConsensus,
+    formatCompactableRecordFile,
   });
 }
