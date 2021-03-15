@@ -20,21 +20,16 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Instant;
 import java.util.List;
-
-import com.hedera.mirror.importer.converter.InstantConverter;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.importer.domain.RecordFile;
-
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hedera.mirror.importer.domain.RecordFile;
 
 // Common tests for streams (record and events) which are linked by previous file's hash.
 public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloaderTest {

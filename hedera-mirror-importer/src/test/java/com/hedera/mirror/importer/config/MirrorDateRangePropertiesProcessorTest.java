@@ -30,9 +30,6 @@ import static org.mockito.Mockito.doReturn;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +42,7 @@ import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;

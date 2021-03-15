@@ -142,7 +142,6 @@ class UtilityTest {
         );
     }
 
-
     @ParameterizedTest(name = "with seconds {0} and nanos {1}")
     @CsvSource({
             "1568376750538, 0",
