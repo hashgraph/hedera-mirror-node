@@ -50,8 +50,9 @@ import com.hedera.mirror.importer.domain.StreamType;
 public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
-
-    private static final Long NANOS_PER_SECOND = 1_000_000_000L;
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+    private static final char NULL_CHARACTER = (char) 0;
+    private static final char NULL_REPLACEMENT = '�'; // Standard replacement character 0xFFFD
 
     /**
      * @return Timestamp from an instant
@@ -226,5 +227,16 @@ public class Utility {
     public static TransactionID getTransactionId(AccountID payerAccountId) {
         Timestamp validStart = Utility.instantToTimestamp(Instant.now());
         return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+    }
+
+    /**
+     * Cleans a string of invalid characters that would cause it to fail when inserted into the database. In particular,
+     * PostgreSQL does not allow the null character (0x0000) to be inserted.
+     *
+     * @param input string containing potentially invalid characters
+     * @return the cleaned string
+     */
+    public static String sanitize(String input) {
+        return input != null ? input.replace(NULL_CHARACTER, NULL_REPLACEMENT) : null;
     }
 }

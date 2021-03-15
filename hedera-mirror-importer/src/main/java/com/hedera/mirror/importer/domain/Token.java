@@ -41,6 +41,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Entity
 @NoArgsConstructor
 public class Token {
+
     @EmbeddedId
     private Token.Id tokenId;
 
@@ -146,6 +147,14 @@ public class Token {
         }
 
         return TokenKycStatusEnum.REVOKED;
+    }
+
+    public void setName(String name) {
+        this.name = Utility.sanitize(name);
+    }
+
+    public void setSymbol(String symbol) {
+        this.symbol = Utility.sanitize(symbol);
     }
 
     @Data
