@@ -207,44 +207,50 @@ const getCreditDebitTransferTransactionsInnerQuery = function (
   transactionTypeQuery,
   order
 ) {
+  const ctlJoinClause =
+    (resultTypeQuery || transactionTypeQuery) && `JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns`;
+
+  const ttlJoinClause =
+    (resultTypeQuery || transactionTypeQuery) && `JOIN transaction AS t ON ttl.consensus_timestamp = t.consensus_ns`;
+
   const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
-  const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, namedCreditDebitQuery);
+  const ctlWhereClause = buildWhereClause(
+    namedAccountQuery,
+    namedCtlTsQuery,
+    namedCreditDebitQuery,
+    resultTypeQuery,
+    transactionTypeQuery
+  );
   const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
   const namedTtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ttl.consensus_timestamp');
   const namedTtlCreditDebitQuery = namedCreditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount');
 
-  const ttlWhereClause = buildWhereClause(namedTtlAccountQuery, namedTtlTsQuery, namedTtlCreditDebitQuery);
-  const ctlSubQuery = `
+  const ttlWhereClause = buildWhereClause(
+    namedTtlAccountQuery,
+    namedTtlTsQuery,
+    namedTtlCreditDebitQuery,
+    resultTypeQuery,
+    transactionTypeQuery
+  );
+
+  return `
     SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
     FROM
     (SELECT DISTINCT consensus_timestamp
         FROM crypto_transfer ctl
+        ${ctlJoinClause}
         ${ctlWhereClause}
         ORDER BY consensus_timestamp ${order}
         ${limitQuery}) as ctl
     FULL OUTER JOIN
         (SELECT DISTINCT consensus_timestamp
             FROM token_transfer ttl
+            ${ttlJoinClause}
             ${ttlWhereClause}
             ORDER BY consensus_timestamp ${order}
             ${limitQuery}) as ttl
     ON ctl.consensus_timestamp = ttl.consensus_timestamp
-    ORDER BY consensus_timestamp DESC`;
-
-  if (resultTypeQuery || transactionTypeQuery) {
-    const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
-    return `
-      SELECT t.consensus_ns AS consensus_timestamp
-      FROM transaction t
-      JOIN (${ctlSubQuery}) AS ctl
-      ON t.consensus_ns = ctl.consensus_timestamp
-      ${whereClause}
-      ORDER BY t.consensus_ns ${order}
-      ${limitQuery}`;
-  }
-
-  // get consensus timestamps from crypto_transfer table directly when there are no transaction related filters
-  return `${ctlSubQuery}
+    ORDER BY consensus_timestamp ${order}
     ${limitQuery}`;
 };
 
