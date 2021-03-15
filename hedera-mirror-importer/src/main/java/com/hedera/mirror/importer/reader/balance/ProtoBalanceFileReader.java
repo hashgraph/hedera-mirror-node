@@ -73,7 +73,6 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
                     .count((long) allAccountBalances.getAllAccountsCount())
                     .fileHash(Utility.bytesToHex(messageDigest.digest()))
                     .items(new ArrayList<>())
-                    .loadEnd(Instant.now().getEpochSecond())
                     .name(streamFileData.getFilename())
                     .build();
         } catch (IOException ex) {

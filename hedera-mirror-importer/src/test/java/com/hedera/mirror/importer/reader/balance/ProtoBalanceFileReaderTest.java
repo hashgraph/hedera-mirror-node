@@ -61,9 +61,11 @@ class ProtoBalanceFileReaderTest {
 
     @Test
     void readGzippedProtoBalanceFile() {
-        assertThat(protoBalanceFileReader.read(streamFileData)).usingRecursiveComparison()
-                .ignoringFields("loadStart", "loadEnd", "nodeAccountId")
+        AccountBalanceFile actual = protoBalanceFileReader.read(streamFileData);
+        assertThat(actual).usingRecursiveComparison()
+                .ignoringFields("loadStart", "nodeAccountId")
                 .isEqualTo(expected);
+        assertThat(actual.getLoadStart()).isNotNull().isPositive();
     }
 
     @Test

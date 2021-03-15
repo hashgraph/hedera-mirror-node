@@ -248,8 +248,6 @@ abstract class CsvBalanceFileReaderTest extends IntegrationTest {
         assertThat(accountBalanceFile.getCount()).isEqualTo(expectedCount);
         assertThat(accountBalanceFile.getConsensusTimestamp()).isEqualTo(consensusTimestamp);
         assertThat(accountBalanceFile.getLoadStart()).isNotNull().isPositive();
-        assertThat(accountBalanceFile.getLoadEnd()).isNotNull()
-                .isGreaterThanOrEqualTo(accountBalanceFile.getLoadStart());
         assertThat(accountBalanceFile.getName()).isEqualTo(balanceFile.getName());
     }
 

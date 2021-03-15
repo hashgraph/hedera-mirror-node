@@ -109,7 +109,6 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
             accountBalanceFile.setCount(count.get());
             accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
-            accountBalanceFile.setLoadEnd(Instant.now().getEpochSecond());
             return accountBalanceFile;
         } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
