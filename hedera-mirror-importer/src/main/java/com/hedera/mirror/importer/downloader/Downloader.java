@@ -270,7 +270,8 @@ public abstract class Downloader<T extends StreamFile> {
 
             if (!matched) {
                 log.error("Failed to find a valid signature file to download among files: {}",
-                        streamFilenames.stream().map(StreamFilename::getFilename).collect(Collectors.joining(",")));
+                        () -> streamFilenames.stream().map(StreamFilename::getFilename)
+                                .collect(Collectors.joining(",")));
             }
         }
 
