@@ -63,8 +63,8 @@ public enum StreamType {
 
         // build extensions and the map. extensions are passed in priority order. For signature extensions,
         // the gzipped one comes first. The last*Extension is the alphabetically last
-        List<String> dataExtensions = new ArrayList<>();
-        List<String> signatureExtensions = new ArrayList<>();
+        List<String> dataExtensionList = new ArrayList<>();
+        List<String> signatureExtensionList = new ArrayList<>();
         Map<String, String> extensionMap = new HashMap<>();
 
         for (Extension ext : extensions) {
@@ -76,19 +76,19 @@ public enum StreamType {
                 dataExtension = StringUtils.joinWith(".", dataExtension, GZ_EXTENSION);
                 String gzippedSignatureExtension = StringUtils.joinWith(".", signatureExtension, GZ_EXTENSION);
 
-                signatureExtensions.add(gzippedSignatureExtension);
+                signatureExtensionList.add(gzippedSignatureExtension);
                 extensionMap.put(gzippedSignatureExtension, dataExtension);
             }
 
-            dataExtensions.add(dataExtension);
-            signatureExtensions.add(signatureExtension);
+            dataExtensionList.add(dataExtension);
+            signatureExtensionList.add(signatureExtension);
             extensionMap.put(signatureExtension, dataExtension);
         }
 
-        this.lastDataExtension = dataExtensions.stream().max(Comparator.naturalOrder()).get();
-        this.lastSignatureExtension = signatureExtensions.stream().max(Comparator.naturalOrder()).get();
-        this.dataExtensions = List.copyOf(dataExtensions);
-        this.signatureExtensions = List.copyOf(signatureExtensions);
+        this.lastDataExtension = dataExtensionList.stream().max(Comparator.naturalOrder()).orElseThrow();
+        this.lastSignatureExtension = signatureExtensionList.stream().max(Comparator.naturalOrder()).orElseThrow();
+        this.dataExtensions = List.copyOf(dataExtensionList);
+        this.signatureExtensions = List.copyOf(signatureExtensionList);
         this.signatureToDataExtensionMap = ImmutableMap.copyOf(extensionMap);
     }
 

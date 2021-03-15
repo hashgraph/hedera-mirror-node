@@ -117,7 +117,7 @@ public class StreamFilename {
         return StringUtils.join(StringUtils.removeEnd(filename, extension), streamType.getLastSignatureExtension());
     }
 
-    private TypeInfo extractTypeInfo(String filename) {
+    private static TypeInfo extractTypeInfo(String filename) {
         for (StreamType type : StreamType.values()) {
             String suffix = type.getSuffix();
             for (FileType fileType : FileType.values()) {
@@ -134,7 +134,7 @@ public class StreamFilename {
         throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
     }
 
-    private Instant extractInstant(String filename, String extension, StreamType streamType) {
+    private static Instant extractInstant(String filename, String extension, StreamType streamType) {
         try {
             String suffix = StringUtils.join(streamType.getSuffix(), "." + extension);
             String dateTime = StringUtils.removeEnd(filename, suffix);

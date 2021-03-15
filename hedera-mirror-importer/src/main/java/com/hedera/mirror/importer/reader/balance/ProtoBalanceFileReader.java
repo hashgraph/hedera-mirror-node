@@ -45,7 +45,7 @@ import com.hedera.services.stream.proto.SingleAccountBalances;
 @Named
 public class ProtoBalanceFileReader implements BalanceFileReader {
 
-    public final static String FILE_SUFFIX = "pb.gz";
+    public static final String FILE_SUFFIX = "pb.gz";
 
     @Override
     public boolean supports(StreamFileData streamFileData) {
