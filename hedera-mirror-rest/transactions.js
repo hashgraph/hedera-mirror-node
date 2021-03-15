@@ -209,11 +209,27 @@ const getCryptoTransferTransactionsInnerQuery = function (
 ) {
   const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
   const ctlWhereClause = buildWhereClause(namedAccountQuery, namedCtlTsQuery, namedCreditDebitQuery);
+  const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
+  const namedTtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ttl.consensus_timestamp');
+  const namedTtlCreditDebitQuery = namedCreditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount');
+
+  const ttlWhereClause = buildWhereClause(namedTtlAccountQuery, namedTtlTsQuery, namedTtlCreditDebitQuery);
   const ctlSubQuery = `
-    SELECT DISTINCT consensus_timestamp
-    FROM crypto_transfer ctl
-    ${ctlWhereClause}
-    ORDER BY consensus_timestamp ${order}`;
+    SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
+    FROM
+    (SELECT DISTINCT consensus_timestamp
+        FROM crypto_transfer ctl
+        ${ctlWhereClause}
+        ORDER BY consensus_timestamp ${order}
+        ${limitQuery}) as ctl
+    FULL OUTER JOIN
+        (SELECT DISTINCT consensus_timestamp
+            FROM token_transfer ttl
+            ${ttlWhereClause}
+            ORDER BY consensus_timestamp ${order}
+            ${limitQuery}) as ttl
+    ON ctl.consensus_timestamp = ttl.consensus_timestamp
+    ORDER BY consensus_timestamp DESC`;
 
   if (resultTypeQuery || transactionTypeQuery) {
     const whereClause = buildWhereClause(namedTsQuery, resultTypeQuery, transactionTypeQuery);
