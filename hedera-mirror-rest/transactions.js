@@ -187,18 +187,18 @@ const convertToNamedQuery = function (query, prefix) {
 };
 
 /**
- * Get the transactions inner query for transactions with a crypto transfer list matching the query filters.
+ * Get the transactions inner query for transactions with a crypto or token transfer list matching the query filters.
  *
  * @param namedAccountQuery - Account query with named parameters
  * @param namedTsQuery - Transaction table timestamp query with named parameters
  * @param resultTypeQuery - Transaction result query
  * @param limitQuery - Limit query
- * @param creditDebitQuery - Credit or debit query
+ * @param namedCreditDebitQuery - Credit or debit query
  * @param transactionTypeQuery - Transaction type query
  * @param order - Sorting order
  * @return {string} - The inner query string
  */
-const getCryptoTransferTransactionsInnerQuery = function (
+const getCreditDebitTransferTransactionsInnerQuery = function (
   namedAccountQuery,
   namedTsQuery,
   resultTypeQuery,
@@ -398,8 +398,8 @@ const getTransactionsInnerQuery = function (
   const namedCreditDebitQuery = convertToNamedQuery(creditDebitQuery, 'cd');
 
   if (creditDebitQuery) {
-    // limit the query to transactions with cryptotransfer list
-    return getCryptoTransferTransactionsInnerQuery(
+    // limit the query to transactions with crypto or token transfer list
+    return getCreditDebitTransferTransactionsInnerQuery(
       namedAccountQuery,
       namedTsQuery,
       resultTypeQuery,
