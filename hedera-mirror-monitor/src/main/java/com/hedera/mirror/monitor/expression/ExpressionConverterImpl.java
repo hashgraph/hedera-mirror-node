@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.expression;
  */
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -35,9 +36,11 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleCreateTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplier;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
@@ -50,7 +53,8 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
     private static final String EXPRESSION_START = "${";
     private static final String EXPRESSION_END = "}";
-    private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\$\\{(account|token|topic)\\.([A-Za-z0-9_]+)}");
+    private static final Pattern EXPRESSION_PATTERN = Pattern
+            .compile("\\$\\{(account|token|topic|schedule)\\.([A-Za-z0-9_]+)}");
 
     private final Map<Expression, String> expressions = new ConcurrentHashMap<>();
     private final MonitorProperties monitorProperties;
@@ -82,6 +86,16 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             if (transactionSupplier instanceof TokenCreateTransactionSupplier) {
                 TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
                 tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
+            }
+
+            // if ScheduleCreate set the properties to the inner scheduledTransactionProperties
+            if (transactionSupplier instanceof ScheduleCreateTransactionSupplier) {
+                ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier =
+                        (ScheduleCreateTransactionSupplier) transactionSupplier;
+                NodeProperties singleNodeProperty = new ArrayList<>(monitorProperties.getNodes()).get(0);
+                scheduleCreateTransactionSupplier.setNodeAccountId(singleNodeProperty.getAccountId());
+                scheduleCreateTransactionSupplier
+                        .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
             }
 
             PublishRequest request = PublishRequest.builder()
@@ -124,7 +138,8 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
         ACCOUNT(TransactionType.ACCOUNT_CREATE, r -> r.accountId.toString()),
         TOKEN(TransactionType.TOKEN_CREATE, r -> r.tokenId.toString()),
-        TOPIC(TransactionType.CONSENSUS_CREATE_TOPIC, r -> r.topicId.toString());
+        TOPIC(TransactionType.CONSENSUS_CREATE_TOPIC, r -> r.topicId.toString()),
+        SCHEDULE(TransactionType.SCHEDULE_CREATE, r -> r.scheduleId.toString());
 
         private final TransactionType transactionType;
         private final Function<TransactionReceipt, String> idExtractor;

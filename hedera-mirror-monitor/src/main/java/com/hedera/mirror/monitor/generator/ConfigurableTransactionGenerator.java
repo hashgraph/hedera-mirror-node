@@ -93,6 +93,12 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         TransactionSupplier<?> supplier = new ObjectMapper()
                 .convertValue(convertedProperties, properties.getType().getSupplier());
 
+        validateSupplier(supplier);
+
+        return supplier;
+    }
+
+    private void validateSupplier(TransactionSupplier<?> supplier) {
         Validator validator = Validation.byDefaultProvider()
                 .configure()
                 .messageInterpolator(new ParameterMessageInterpolator())
@@ -103,8 +109,6 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         if (!validations.isEmpty()) {
             throw new ConstraintViolationException(validations);
         }
-
-        return supplier;
     }
 
     private boolean shouldGenerate(double expectedPercent) {

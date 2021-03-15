@@ -62,13 +62,14 @@ public class AccountUpdateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountUpdateTransaction get() {
-
+        String memo = Utility.getMemo("Mirror node updated test account");
         AccountUpdateTransaction transaction = new AccountUpdateTransaction()
                 .setAccountId(AccountId.fromString(accountId))
+                .setAccountMemo(memo)
                 .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setReceiverSignatureRequired(receiverSignatureRequired)
-                .setTransactionMemo(Utility.getMemo("Mirror node updated test account"));
+                .setTransactionMemo(memo);
 
         if (proxyAccountId != null) {
             transaction.setProxyAccountId(AccountId.fromString(proxyAccountId));

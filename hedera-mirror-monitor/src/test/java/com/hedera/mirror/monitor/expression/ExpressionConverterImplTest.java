@@ -39,7 +39,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.proto.AccountID;
+import com.hedera.hashgraph.sdk.proto.ScheduleID;
 import com.hedera.hashgraph.sdk.proto.TokenID;
 import com.hedera.hashgraph.sdk.proto.TopicID;
 import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
@@ -67,6 +69,7 @@ class ExpressionConverterImplTest {
     @BeforeEach
     void setup() {
         monitorProperties.getOperator().setAccountId("0.0.2");
+        monitorProperties.getOperator().setPrivateKey(PrivateKey.generate().toString());
     }
 
     @Test
@@ -141,6 +144,17 @@ class ExpressionConverterImplTest {
     }
 
     @Test
+    void schedule() throws InvalidProtocolBufferException {
+        TransactionType type = TransactionType.SCHEDULE_CREATE;
+        when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
+
+        assertThat(expressionConverter.convert("${schedule.foo}")).isEqualTo("0.0.100");
+
+        verify(transactionPublisher).publish(request.capture());
+        assertThat(request.getValue().getType()).isEqualTo(type);
+    }
+
+    @Test
     void cached() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any()))
@@ -180,6 +194,9 @@ class ExpressionConverterImplTest {
                 break;
             case TOKEN_CREATE:
                 receipt.setTokenID(TokenID.newBuilder().setTokenNum(id).build());
+                break;
+            case SCHEDULE_CREATE:
+                receipt.setScheduleID(ScheduleID.newBuilder().setScheduleNum(id).build());
                 break;
         }
 

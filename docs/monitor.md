@@ -92,6 +92,28 @@ publish:
       type: CONSENSUS_SUBMIT_MESSAGE
 ```
 
+#### Scheduled Transactions
+Scheduled transactions require unique configuration as they encompass two transactions during the entity creation.
+One (outer) transaction for the `Schedule` entity create and one (inner/scheduled) transaction to eventually be executed.
+The inner transaction must be signed by all required signatories as part of the `ScheduleCreate` or `ScheduleSign` scenario transactions.
+Due to this the monitor by default will initially support only `ScheduleCreate` scenarios in which the inner transaction is a `CryptoCreate` with `receiverSignatureRequired` set to true.
+
+By default all required signatures will be provided. However, this can be modified by setting `hedera.mirror.monitor.publish.scenarios.properties.signatoryCount` to be a number greater than 0 but smaller than `hedera.mirror.monitor.publish.scenarios.properties.totalSignatoryCount`
+To execute a scheduled scenario set the `hedera.mirror.monitor.publish.scenarios` properties similar to the following example
+
+```yaml
+publish:
+  scenarios:
+    - name: Scheduled Crypto Create
+      properties:
+        nodeAccountId: 0.0.3
+        operatorAccountId: 0.0.1018
+        receiverSignatureRequired: true
+        signatoryCount: 4
+        totalSignatoryCount: 5
+      type: SCHEDULE_CREATE
+```
+
 ### Expression Syntax
 
 The monitor can automatically create account, token, and topic entities on application startup using a special
@@ -99,7 +121,7 @@ expression syntax. This is useful to avoid boilerplate configuration and manual 
 environment. The syntax can currently only be used in `hedera.mirror.monitor.publish.scenarios.properties`
 and `hedera.mirror.monitor.subscribe.grpc.topicId`.
 
-The syntax takes the form of `${type.name}` where `type` is one of `account`, `token`, or `topic` and `name` is a
+The syntax takes the form of `${type.name}` where `type` is one of `account`, `schedule`, `token`, or `topic`, and `name` is a
 descriptive label. Based upon the entity type, it will create the appropriate entity on the network with default values.
 The name label allows the same entity to be referenced in multiple places but only created once.
 

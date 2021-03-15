@@ -34,6 +34,7 @@ import com.hedera.hashgraph.sdk.ScheduleDeleteTransaction;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -51,15 +52,19 @@ public class ScheduleClient extends AbstractNetworkClient {
             PrecheckStatusException, TimeoutException {
 
         log.debug("Create new schedule");
+        TransactionId transactionId = TransactionId.generate(sdkClient.getOperatorId()).setScheduled(true);
+
         // set nodeAccountId and freeze inner transaction
         transaction.setNodeAccountIds(Collections.singletonList(sdkClient.getNodeId()));
-        transaction.freezeWith(client);
+        transaction.setTransactionId(transactionId);
+        transaction.freeze();
 
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setPayerAccountId(payerAccountId.getAccountId())
                 .setScheduleMemo(memo)
+                .setTransactionId(transactionId.setScheduled(false))
                 .setTransactionMemo(memo);
 
         if (innerSignatureKeyList != null) {
