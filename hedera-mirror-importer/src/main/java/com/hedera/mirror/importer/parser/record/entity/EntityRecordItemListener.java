@@ -164,9 +164,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         boolean isSuccessful = isSuccessful(txRecord);
         Transaction tx = buildTransaction(consensusNs, recordItem);
         transactionHandler.updateTransaction(tx, recordItem);
-        if (entityId != null) {
-            tx.setEntityId(entityId);
-        }
+        tx.setEntityId(entityId);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
             if (body.hasCryptoCreateAccount() && isSuccessful) {
@@ -190,7 +188,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         if (isSuccessful) {
-            if (entityId != null) {
+            if (!EntityId.isEmpty(entityId)) {
                 // Only insert entityId on successful transaction, as non null entityIds can be retrieved from
                 // transactionBody which may not yet exist on network. entityIds from successful transactions are
                 // guaranteed to be valid entities on network (validated to exist in pre-consensus checks).
@@ -451,14 +449,14 @@ public class EntityRecordItemListener implements RecordItemListener {
                 .orElseGet(entityId::toEntity);
         transactionHandler.updateEntity(entity, recordItem);
         EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
-        if (autoRenewAccount != null) {
+        if (!EntityId.isEmpty(autoRenewAccount)) {
             entityListener.onEntityId(autoRenewAccount);
             entity.setAutoRenewAccountId(autoRenewAccount);
         }
         // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
         // so no need to persist it to repo.
         EntityId proxyAccount = transactionHandler.getProxyAccount(recordItem);
-        if (proxyAccount != null) {
+        if (!EntityId.isEmpty(proxyAccount)) {
             entityListener.onEntityId(proxyAccount);
             entity.setProxyAccountId(proxyAccount);
         }

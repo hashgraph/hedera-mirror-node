@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Convert;
@@ -57,7 +58,7 @@ public class AccountBalance implements Persistable<AccountBalance.Id>, StreamIte
             @JoinColumn(name = "accountId"),
             @JoinColumn(name = "consensusTimestamp")
     })
-    private List<TokenBalance> tokenBalances;
+    private List<TokenBalance> tokenBalances = new ArrayList<>();
 
     @EmbeddedId
     @JsonUnwrapped

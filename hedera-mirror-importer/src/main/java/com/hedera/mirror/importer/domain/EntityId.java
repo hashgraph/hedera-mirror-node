@@ -51,6 +51,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
 
     private static final Comparator<EntityId> COMPARATOR = Comparator
             .nullsFirst(Comparator.comparingLong(EntityId::getId));
+    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT.getId());
 
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
     private static final long serialVersionUID = 1427649605832330197L;
@@ -58,11 +59,11 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     // Ignored so not included in json serialization of PubSubMessage
     @JsonIgnore
     @EqualsAndHashCode.Include
-    private Long id;
-    private Long shardNum;
-    private Long realmNum;
-    private Long entityNum;
-    private Integer type;
+    private final Long id;
+    private final Long shardNum;
+    private final Long realmNum;
+    private final Long entityNum;
+    private final Integer type;
 
     public EntityId(Long shardNum, Long realmNum, Long entityNum, Integer type) {
         id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
@@ -113,9 +114,13 @@ public class EntityId implements Serializable, Comparable<EntityId> {
 
     public static EntityId of(long entityShard, long entityRealm, long entityNum, EntityTypeEnum type) {
         if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
-            return null;
+            return EMPTY;
         }
         return new EntityId(entityShard, entityRealm, entityNum, type.getId());
+    }
+
+    public static boolean isEmpty(EntityId entityId) {
+        return entityId == null || EMPTY.equals(entityId);
     }
 
     public String entityIdToString() {

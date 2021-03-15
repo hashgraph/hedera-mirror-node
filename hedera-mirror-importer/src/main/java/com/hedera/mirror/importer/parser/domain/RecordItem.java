@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Value;
@@ -87,6 +88,8 @@ public class RecordItem implements StreamItem {
     // There are many brittle RecordItemParser*Tests which rely on bytes being null. Those tests need to be fixed,
     // then this function can be removed.
     public RecordItem(Transaction transaction, TransactionRecord record) {
+        Objects.requireNonNull(transaction, "transaction is required");
+        Objects.requireNonNull(record, "record is required");
         this.transaction = transaction;
         transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
         transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());

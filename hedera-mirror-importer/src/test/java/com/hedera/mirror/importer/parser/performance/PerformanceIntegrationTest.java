@@ -22,13 +22,8 @@ package com.hedera.mirror.importer.parser.performance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.function.Consumer;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.data.repository.CrudRepository;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
 
 import com.hedera.mirror.importer.db.DBProperties;
@@ -66,8 +62,6 @@ public abstract class PerformanceIntegrationTest {
     @Autowired
     DataSource dataSource;
 
-    Connection connection;
-
     @Autowired
     private DBProperties dbProperties;
 
@@ -91,11 +85,13 @@ public abstract class PerformanceIntegrationTest {
 
     protected GenericContainer createRestoreContainer(String dockerImageTag) {
         log.debug("Creating restore container to connect to {}", dbProperties);
+        Consumer<OutputFrame> logConsumer = o -> log.info("Restore container: {}", o::getUtf8String);
         return new GenericContainer(restoreClientImagePrefix + dockerImageTag)
                 .withEnv("DB_NAME", dbProperties.getName())
                 .withEnv("DB_USER", dbProperties.getUsername())
                 .withEnv("DB_PASS", dbProperties.getPassword())
                 .withEnv("DB_PORT", Integer.toString(dbProperties.getPort()))
+                .withLogConsumer(logConsumer)
                 .withNetworkMode("host")
                 .withStartupCheckStrategy(
                         new IndefiniteWaitOneShotStartupCheckStrategy()
@@ -110,39 +106,14 @@ public abstract class PerformanceIntegrationTest {
     }
 
     void checkSeededTablesArePresent() throws SQLException {
-        String[] tables = new String[] {"account_balance_sets", "account_balance", "flyway_schema_history",
-                "non_fee_transfer", "contract_result", "crypto_transfer",
-                "t_entities", "t_entity_types", "file_data", "live_hash", "record_file",
-                "t_transaction_results",
-                "t_transaction_types", "transaction", "topic_message"
-        };
-        List<String> discoveredTables = new ArrayList<>();
-
-        try (Connection connection = dataSource.getConnection();
-             ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
-
-            while (rs.next()) {
-                discoveredTables.add(rs.getString("TABLE_NAME"));
-            }
-        } catch (Exception e) {
-            log.error("Unable to retrieve details from database", e);
-        }
-
-        // verify all expected tables are present
-        Collections.sort(discoveredTables);
-        log.info("Encountered tables: {}", discoveredTables);
-        assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));
-
-        // verify select tables were populated
         verifyTableSize(entityRepository, "t_entities");
         verifyTableSize(accountBalanceRepository, "account_balance");
         verifyTableSize(topicMessageRepository, "topicmessages");
         verifyTableSize(transactionRepository, "transaction");
     }
 
-    void verifyTableSize(CrudRepository<?, ?> repository, String label) throws SQLException {
+    void verifyTableSize(CrudRepository<?, ?> repository, String label) {
         long count = repository.count();
-
         log.info("Table {} was populated with {} rows", label, count);
         assertThat(count).isGreaterThan(0);
     }

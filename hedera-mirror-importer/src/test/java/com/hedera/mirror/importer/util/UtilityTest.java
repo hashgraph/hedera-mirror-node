@@ -242,7 +242,8 @@ class UtilityTest {
     void timeStampInNanosTimeStamp(long seconds, int nanos) {
         Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
-        long timeStampInNanos = Utility.timeStampInNanos(timestamp);
+        Long timeStampInNanos = Utility.timeStampInNanos(timestamp);
+        assertThat(timeStampInNanos).isNotNull();
         Instant fromTimeStamp = Instant.ofEpochSecond(0, timeStampInNanos);
 
         assertAll(
