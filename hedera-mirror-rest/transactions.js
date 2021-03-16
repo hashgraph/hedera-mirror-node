@@ -196,7 +196,7 @@ const convertToNamedQuery = function (query, prefix) {
  * @param resultTypeQuery - Transaction result query
  * @param transactionTypeQuery - Transaction type query
  * @param namedAccountQuery - Account query with named parameters
- * @param namedCreditDebitQuery -
+ * @param namedCreditDebitQuery - Credit/debit query
  * @param order - Sorting order
  * @param namedLimitQuery - Limit query with named parameters
  * @return {string} - The distinct timestamp query for the given table name
