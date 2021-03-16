@@ -51,6 +51,15 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
+    void nullCharacter() throws DecoderException {
+        Token token = token(1);
+        token.setName("abc" + (char) 0);
+        token.setSymbol("abc" + (char) 0);
+        tokenRepository.save(token);
+        assertThat(tokenRepository.findById(token.getTokenId())).get().isEqualTo(token);
+    }
+
+    @Test
     void updateSupply() throws DecoderException {
         Token token = tokenRepository.save(token(1));
         long newTotalSupply = INITIAL_SUPPLY - 1000;

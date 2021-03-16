@@ -259,5 +259,13 @@ class UtilityTest {
             Utility.timeStampInNanos(timestamp);
         });
     }
+
+    @Test
+    void sanitize() {
+        assertThat(Utility.sanitize(null)).isNull();
+        assertThat(Utility.sanitize("")).isEmpty();
+        assertThat(Utility.sanitize("abc")).isEqualTo("abc");
+        assertThat(Utility.sanitize("abc" + (char) 0 + "123" + (char) 0)).isEqualTo("abc�123�");
+    }
 }
 
