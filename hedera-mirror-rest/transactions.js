@@ -187,65 +187,6 @@ const convertToNamedQuery = function (query, prefix) {
 };
 
 /**
- * Get the transactions inner query for transactions with a crypto or token transfer list matching the query filters.
- *
- * @param namedAccountQuery - Account query with named parameters
- * @param namedTsQuery - Transaction table timestamp query with named parameters
- * @param resultTypeQuery - Transaction result query
- * @param limitQuery - Limit query
- * @param namedCreditDebitQuery - Credit or debit query
- * @param transactionTypeQuery - Transaction type query
- * @param order - Sorting order
- * @return {string} - The inner query string
- */
-const getCreditDebitTransferTransactionsInnerQuery = function (
-  namedAccountQuery,
-  namedTsQuery,
-  resultTypeQuery,
-  limitQuery,
-  namedCreditDebitQuery,
-  transactionTypeQuery,
-  order
-) {
-  const ctlQuery = getTransferDistinctTimestampsQuery(
-    'crypto_transfer',
-    'ctl',
-    namedTsQuery,
-    'consensus_timestamp',
-    resultTypeQuery,
-    transactionTypeQuery,
-    namedAccountQuery,
-    namedCreditDebitQuery,
-    order,
-    limitQuery
-  );
-
-  const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
-  const namedTtlCreditDebitQuery = namedCreditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount');
-
-  const ttlQuery = getTransferDistinctTimestampsQuery(
-    'token_transfer',
-    'ttl',
-    namedTsQuery,
-    'consensus_timestamp',
-    resultTypeQuery,
-    transactionTypeQuery,
-    namedTtlAccountQuery,
-    namedTtlCreditDebitQuery,
-    order,
-    limitQuery
-  );
-
-  return `
-  SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
-    FROM (${ctlQuery}) AS ctl
-    FULL OUTER JOIN (${ttlQuery}) as ttl
-    ON ctl.consensus_timestamp = ttl.consensus_timestamp
-    ORDER BY consensus_timestamp ${order}
-    ${limitQuery}`;
-};
-
-/**
  * Get the query to find distinct timestamps for transactions matching the query filters from a transfers table when filtering by an account id
  *
  * @param {string} tableName - Name of the transfers table to query
@@ -341,8 +282,6 @@ const getTransactionsInnerQuery = function (
     ${namedLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
-    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
-    //between the three tables is needed to get rows that may only exist in one.
     const ctlQuery = getTransferDistinctTimestampsQuery(
       'crypto_transfer',
       'ctl',
@@ -381,6 +320,8 @@ const getTransactionsInnerQuery = function (
         ORDER BY consensus_timestamp ${order}
         ${namedLimitQuery}`;
     } else {
+      // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
+      //between the three tables is needed to get rows that may only exist in one.
       return `
       SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp,ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS t
