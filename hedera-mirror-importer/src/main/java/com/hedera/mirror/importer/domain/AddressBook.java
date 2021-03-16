@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,7 +74,7 @@ public class AddressBook {
 
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "consensusTimestamp")
-    private List<AddressBookEntry> entries;
+    private List<AddressBookEntry> entries = new ArrayList<>();
 
     public Set<EntityId> getNodeSet() {
         return entries.stream()

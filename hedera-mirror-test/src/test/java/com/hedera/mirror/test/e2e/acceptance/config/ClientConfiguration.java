@@ -29,8 +29,6 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,51 +54,50 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 
 @Configuration
-@Log4j2
 @RequiredArgsConstructor
 @EnableRetry
-public class ClientConfiguration {
-    @Autowired
+class ClientConfiguration {
+
     private final AcceptanceTestProperties acceptanceTestProperties;
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public SDKClient sdkClient() throws InterruptedException {
+    SDKClient sdkClient() throws InterruptedException {
         return new SDKClient(acceptanceTestProperties);
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public MirrorNodeClient mirrorNodeClient() throws InterruptedException {
+    MirrorNodeClient mirrorNodeClient() throws InterruptedException {
         return new MirrorNodeClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public TopicClient topicClient() throws InterruptedException {
+    TopicClient topicClient() throws InterruptedException {
         return new TopicClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public AccountClient accountClient() throws InterruptedException {
+    AccountClient accountClient() throws InterruptedException {
         return new AccountClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public TokenClient tokenClient() throws InterruptedException {
+    TokenClient tokenClient() throws InterruptedException {
         return new TokenClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public ScheduleClient scheduleClient() throws InterruptedException {
+    ScheduleClient scheduleClient() throws InterruptedException {
         return new ScheduleClient(sdkClient());
     }
 
     @Bean
-    public RetryTemplate retryTemplate() {
+    RetryTemplate retryTemplate() {
         RetryTemplate retryTemplate = new RetryTemplate();
 
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();

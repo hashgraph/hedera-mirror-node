@@ -141,11 +141,13 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
                 }
             }
 
-            result.setResponseMessage("Successfully performed subscriptions");
-            result.setResponseCodeOK();
-            result.sampleEnd();
-            result.setResponseData(response.toString().getBytes());
-            result.setSuccessful(response.isSuccess());
+            if (response != null) {
+                result.setResponseMessage("Successfully performed subscriptions");
+                result.setResponseCodeOK();
+                result.sampleEnd();
+                result.setResponseData(response.toString().getBytes());
+                result.setSuccessful(response.isSuccess());
+            }
         } catch (Exception ex) {
             log.error("Error subscribing to topic", ex);
 
@@ -162,12 +164,6 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
         }
 
         log.info("{} out of {} samples passed", successSamplesCount, clientCount);
-
-        return result;
-    }
-
-    private SampleResult concurrentRun() {
-        SampleResult result = new SampleResult();
 
         return result;
     }

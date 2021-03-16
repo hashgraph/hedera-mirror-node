@@ -43,6 +43,6 @@ public class EntityIdTest {
     void ofStringPositive() {
         EntityTypeEnum type = EntityTypeEnum.ACCOUNT;
         assertThat(EntityId.of("0.0.1", type)).isEqualTo(EntityId.of(0, 0, 1, type));
-        assertThat(EntityId.of("0.0.0", type)).isNull();
+        assertThat(EntityId.of("0.0.0", type)).isEqualTo(EntityId.EMPTY);
     }
 }

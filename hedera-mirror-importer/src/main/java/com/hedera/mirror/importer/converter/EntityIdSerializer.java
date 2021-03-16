@@ -32,8 +32,10 @@ import com.hedera.mirror.importer.domain.EntityId;
 public class EntityIdSerializer extends JsonSerializer<EntityId> {
     @Override
     public void serialize(EntityId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        if (value != null) {
+        if (!EntityId.isEmpty(value)) {
             gen.writeNumber(value.getId());
+        } else {
+            gen.writeNull();
         }
     }
 }

@@ -218,7 +218,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
         // only insert entities not found in cache
-        if (entityId == null || entityCache.get(entityId.getId()) != null) {
+        if (EntityId.isEmpty(entityId) || entityCache.get(entityId.getId()) != null) {
             return;
         }
 

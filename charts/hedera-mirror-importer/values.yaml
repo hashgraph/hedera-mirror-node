@@ -106,9 +106,9 @@ prometheusRules:
   ImporterBalanceParseLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Took longer than 5s to parse balance stream files
+      summary: Took longer than 6.5s to parse balance stream files
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 5
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 6.5
     for: 1m
     labels:
       severity: critical
@@ -125,7 +125,7 @@ prometheusRules:
 
   ImporterCloudStorageErrors:
     annotations:
-      description: '{{ $value | humanizePercentage }} Error rate trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}'
+      description: 'Averaging {{ $value | humanizePercentage }} error rate trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}'
       summary: "Cloud storage error rate exceeds 5%"
     enabled: true
     expr: (sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status!~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer"}[2m])) by (namespace, pod, type, action)) > 0.05
@@ -135,7 +135,7 @@ prometheusRules:
 
   ImporterCloudStorageLatency:
     annotations:
-      description: Cloud storage latency exceeded {{ $value | humanizeDuration }} trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
+      description: Averaging {{ $value | humanizeDuration }} cloud storage latency trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
       summary: Cloud storage latency exceeds 1s
     enabled: true
     expr: sum(rate(hedera_mirror_download_request_seconds_sum{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) > 1

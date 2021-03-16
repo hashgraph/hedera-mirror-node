@@ -82,7 +82,7 @@ prometheusRules:
 
   MonitorPublishErrors:
     annotations:
-      description: "{{ $value | humanizePercentage }} Error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Averaging {{ $value | humanizePercentage }} error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Publish error rate exceeds 5%"
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 0.05
@@ -92,7 +92,7 @@ prometheusRules:
 
   MonitorPublishLatency:
     annotations:
-      description: "Publish latency exceeded {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Averaging {{ $value | humanizeDuration }} publish latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Publish latency exceeds 2s"
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 2
@@ -112,7 +112,7 @@ prometheusRules:
 
   MonitorPublishToHandleLatency:
     annotations:
-      description: "Transaction latency exceeded {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Averaging {{ $value | humanizeDuration }} transaction latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Submit to transaction being handled latency exceeds 8s"
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 8
@@ -122,7 +122,7 @@ prometheusRules:
 
   MonitorSubscribeLatency:
     annotations:
-      description: "{{ $labels.subscriber }} latency exceeded {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "{{ $labels.subscriber }} latency averaging {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "End to end latency exceeds 10s"
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) > 10

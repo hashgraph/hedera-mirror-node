@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.converter;
  */
 
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,16 @@ class EntityIdSerializerTest {
         new EntityIdSerializer().serialize(null, jsonGenerator, null);
 
         // then
-        verifyNoInteractions(jsonGenerator);
+        verify(jsonGenerator).writeNull();
+    }
+
+    @Test
+    void testEmpty() throws Exception {
+        // when
+        new EntityIdSerializer().serialize(EntityId.EMPTY, jsonGenerator, null);
+
+        // then
+        verify(jsonGenerator).writeNull();
     }
 
     @Test
