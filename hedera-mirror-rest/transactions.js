@@ -207,51 +207,61 @@ const getCreditDebitTransferTransactionsInnerQuery = function (
   transactionTypeQuery,
   order
 ) {
-  const ctlJoinClause =
-    (resultTypeQuery || transactionTypeQuery) && `JOIN transaction AS t ON ctl.consensus_timestamp = t.consensus_ns`;
-
-  const ttlJoinClause =
-    (resultTypeQuery || transactionTypeQuery) && `JOIN transaction AS t ON ttl.consensus_timestamp = t.consensus_ns`;
-
-  const namedCtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ctl.consensus_timestamp');
-  const ctlWhereClause = buildWhereClause(
-    namedAccountQuery,
-    namedCtlTsQuery,
-    namedCreditDebitQuery,
+  const ctlQuery = getTransferDistinctTimestampsQuery(
+    'crypto_transfer',
+    'ctl',
+    namedTsQuery,
+    'consensus_timestamp',
     resultTypeQuery,
-    transactionTypeQuery
+    transactionTypeQuery,
+    namedAccountQuery,
+    namedCreditDebitQuery,
+    order,
+    limitQuery
   );
+
   const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
-  const namedTtlTsQuery = namedTsQuery.replace(/t\.consensus_ns/g, 'ttl.consensus_timestamp');
   const namedTtlCreditDebitQuery = namedCreditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount');
 
-  const ttlWhereClause = buildWhereClause(
-    namedTtlAccountQuery,
-    namedTtlTsQuery,
-    namedTtlCreditDebitQuery,
+  const ttlQuery = getTransferDistinctTimestampsQuery(
+    'token_transfer',
+    'ttl',
+    namedTsQuery,
+    'consensus_timestamp',
     resultTypeQuery,
-    transactionTypeQuery
+    transactionTypeQuery,
+    namedTtlAccountQuery,
+    namedTtlCreditDebitQuery,
+    order,
+    limitQuery
   );
 
   return `
-    SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
-    FROM
-    (SELECT DISTINCT consensus_timestamp
-        FROM crypto_transfer ctl
-        ${ctlJoinClause}
-        ${ctlWhereClause}
-        ORDER BY consensus_timestamp ${order}
-        ${limitQuery}) as ctl
-    FULL OUTER JOIN
-        (SELECT DISTINCT consensus_timestamp
-            FROM token_transfer ttl
-            ${ttlJoinClause}
-            ${ttlWhereClause}
-            ORDER BY consensus_timestamp ${order}
-            ${limitQuery}) as ttl
+  SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
+    FROM (${ctlQuery}) AS ctl
+    FULL OUTER JOIN (${ttlQuery}) as ttl
     ON ctl.consensus_timestamp = ttl.consensus_timestamp
     ORDER BY consensus_timestamp ${order}
     ${limitQuery}`;
+  // return `
+  //   SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
+  //   FROM
+  //   (SELECT DISTINCT consensus_timestamp
+  //       FROM crypto_transfer ctl
+  //       ${ctlJoinClause}
+  //       ${ctlWhereClause}
+  //       ORDER BY consensus_timestamp ${order}
+  //       ${limitQuery}) as ctl
+  //   FULL OUTER JOIN
+  //       (SELECT DISTINCT consensus_timestamp
+  //           FROM token_transfer ttl
+  //           ${ttlJoinClause}
+  //           ${ttlWhereClause}
+  //           ORDER BY consensus_timestamp ${order}
+  //           ${limitQuery}) as ttl
+  //   ON ctl.consensus_timestamp = ttl.consensus_timestamp
+  //   ORDER BY consensus_timestamp ${order}
+  //   ${limitQuery}`;
 };
 
 /**
@@ -298,6 +308,7 @@ const getGeneralTransactionsInnerQuery = function (
       resultTypeQuery,
       transactionTypeQuery,
       namedAccountQuery,
+      '',
       order,
       namedLimitQuery
     );
@@ -311,6 +322,7 @@ const getGeneralTransactionsInnerQuery = function (
       resultTypeQuery,
       transactionTypeQuery,
       namedTtlAccountQuery,
+      '',
       order,
       namedLimitQuery
     );
@@ -340,6 +352,7 @@ const getGeneralTransactionsInnerQuery = function (
  * @param resultTypeQuery - Transaction result query
  * @param transactionTypeQuery - Transaction type query
  * @param namedAccountQuery - Account query with named parameters
+ * @param namedCreditDebitQuery -
  * @param order - Sorting order
  * @param namedLimitQuery - Limit query with named parameters
  * @return {string} - The distinct timestamp query for the given table name
@@ -352,6 +365,7 @@ const getTransferDistinctTimestampsQuery = function (
   resultTypeQuery,
   transactionTypeQuery,
   namedAccountQuery,
+  namedCreditDebitQuery,
   order,
   namedLimitQuery
 ) {
@@ -359,7 +373,13 @@ const getTransferDistinctTimestampsQuery = function (
   const joinClause =
     (resultTypeQuery || transactionTypeQuery) &&
     `JOIN transaction AS t ON ${tableAlias}.${timestampColumn} = t.consensus_ns`;
-  const whereClause = buildWhereClause(namedAccountQuery, namedTransferTsQuery, resultTypeQuery, transactionTypeQuery);
+  const whereClause = buildWhereClause(
+    namedAccountQuery,
+    namedTransferTsQuery,
+    resultTypeQuery,
+    transactionTypeQuery,
+    namedCreditDebitQuery
+  );
 
   return `
       SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
@@ -466,9 +486,9 @@ const getTransactions = async (req, res) => {
   await utils.validateReq(req);
 
   const query = await reqToSql(req);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
-  }
+  // if (logger.isTraceEnabled()) {
+  logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
+  // }
 
   // Execute query
   const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
