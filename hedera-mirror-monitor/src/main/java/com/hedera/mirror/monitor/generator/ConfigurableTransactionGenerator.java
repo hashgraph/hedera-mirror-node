@@ -22,7 +22,6 @@ package com.hedera.mirror.monitor.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
-import com.google.common.util.concurrent.RateLimiter;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Map;
@@ -48,7 +47,6 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private final ExpressionConverter expressionConverter;
     private final ScenarioProperties properties;
     private final Supplier<TransactionSupplier<?>> transactionSupplier;
-    private final RateLimiter rateLimiter;
     private final AtomicLong remaining;
     private final long stopTime;
     private final PublishRequest.PublishRequestBuilder builder;
@@ -57,19 +55,16 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         this.expressionConverter = expressionConverter;
         this.properties = properties;
         transactionSupplier = Suppliers.memoize(this::convert);
-        rateLimiter = RateLimiter.create(properties.getTps(), properties.getWarmupPeriod());
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
                 .logResponse(properties.isLogResponse())
                 .scenarioName(properties.getName())
                 .type(properties.getType());
-        rateLimiter.acquire(); // The first acquire always succeeds, so do this so tps=Double.MIN_NORMAL won't acquire
     }
 
     @Override
     public PublishRequest next() {
-        rateLimiter.acquire();
         long count = remaining.getAndDecrement();
 
         if (count <= 0) {

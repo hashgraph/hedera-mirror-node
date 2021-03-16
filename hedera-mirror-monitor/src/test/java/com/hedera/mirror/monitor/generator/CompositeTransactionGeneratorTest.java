@@ -119,9 +119,6 @@ class CompositeTransactionGeneratorTest {
     }
 
     private void assertInactive() {
-        assertThat(supplier.get().distribution.getPmf())
-                .hasSize(1)
-                .first()
-                .isEqualTo(CompositeTransactionGenerator.INACTIVE);
+        assertThat(supplier.get().rateLimiter).isEqualTo(CompositeTransactionGenerator.INACTIVE_RATE_LIMITER);
     }
 }

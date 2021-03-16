@@ -235,8 +235,8 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].record`          | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].tps`             | 1.0        | The rate at which transactions will publish
 `hedera.mirror.monitor.publish.scenarios[].type`            |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
-`hedera.mirror.monitor.publish.scenarios[].warmupPeriod`    | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
 `hedera.mirror.monitor.publish.statusFrequency`             | 10s        | How often to log publishing statistics
+`hedera.mirror.monitor.publish.warmupPeriod`                | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
 `hedera.mirror.monitor.subscribe.grpc[].duration`           |            | How long to stay subscribed to the gRPC API
 `hedera.mirror.monitor.subscribe.grpc[].enabled`            | true       | Whether this subscribe scenario is enabled
 `hedera.mirror.monitor.subscribe.grpc[].limit`              | 0          | How many transactions to receive before halting. 0 for unlimited

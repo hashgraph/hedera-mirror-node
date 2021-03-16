@@ -20,15 +20,14 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
+import com.google.common.util.concurrent.RateLimiter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
@@ -37,21 +36,18 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 @Named
 public class CompositeTransactionGenerator implements TransactionGenerator {
 
-    static final Pair<TransactionGenerator, Double> INACTIVE;
+    static final RateLimiter INACTIVE_RATE_LIMITER;
 
     static {
-        ScenarioProperties scenarioProperties = new ScenarioProperties();
-        scenarioProperties.setName("Inactive");
-        scenarioProperties.setProperties(Map.of("topicId", "invalid"));
-        scenarioProperties.setTps(Double.MIN_NORMAL); // Never retry
-        scenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        TransactionGenerator generator = new ConfigurableTransactionGenerator(p -> p, scenarioProperties);
-        INACTIVE = Pair.create(generator, 1.0);
+        INACTIVE_RATE_LIMITER = RateLimiter.create(Double.MIN_NORMAL);
+        // the first acquire always succeeds, so do this so tps=Double.MIN_NORMAL won't acquire
+        INACTIVE_RATE_LIMITER.acquire();
     }
 
     private final ExpressionConverter expressionConverter;
     private final PublishProperties properties;
     volatile EnumeratedDistribution<TransactionGenerator> distribution;
+    volatile RateLimiter rateLimiter;
 
     public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
         this.expressionConverter = expressionConverter;
@@ -61,9 +57,10 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
 
     @Override
     public PublishRequest next() {
-        TransactionGenerator transactionGenerator = distribution.sample();
+        rateLimiter.acquire();
 
         try {
+            TransactionGenerator transactionGenerator = distribution.sample();
             return transactionGenerator.next();
         } catch (ScenarioException e) {
             log.warn(e.getMessage());
@@ -78,13 +75,14 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
 
     private synchronized void rebuild() {
         List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
+        double total = 0.0;
 
         if (properties.isEnabled()) {
-            double total = properties.getScenarios()
+            total = properties.getScenarios()
                     .stream()
                     .filter(ScenarioProperties::isEnabled)
                     .map(ScenarioProperties::getTps)
-                    .reduce(0.0, (x, y) -> x + y);
+                    .reduce(0.0, Double::sum);
 
             for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
                 if (scenarioProperties.isEnabled()) {
@@ -97,10 +95,18 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         }
 
         if (pairs.isEmpty()) {
-            pairs.add(INACTIVE);
+            rateLimiter = INACTIVE_RATE_LIMITER;
+            distribution = null;
             log.info("Publishing is disabled");
+            return;
         }
 
-        this.distribution = new EnumeratedDistribution<>(pairs);
+        if (rateLimiter != null) {
+            rateLimiter.setRate(total);
+        } else {
+            rateLimiter = RateLimiter.create(total, properties.getWarmupPeriod());
+        }
+
+        distribution = new EnumeratedDistribution<>(pairs);
     }
 }

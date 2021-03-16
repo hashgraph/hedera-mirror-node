@@ -49,4 +49,8 @@ public class PublishProperties {
     @DurationMin(seconds = 1L)
     @NotNull
     private Duration statusFrequency = Duration.ofSeconds(10L);
+
+    @DurationMin(seconds = 0)
+    @NotNull
+    private Duration warmupPeriod = Duration.ofSeconds(30L);
 }
