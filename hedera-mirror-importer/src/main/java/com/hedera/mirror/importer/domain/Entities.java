@@ -77,6 +77,10 @@ public class Entities {
         ed25519PublicKeyHex = Utility.convertSimpleKeyToHex(key);
     }
 
+    public void setMemo(String memo) {
+        this.memo = Utility.sanitize(memo);
+    }
+
     public EntityId toEntityId() {
         return new EntityId(entityShard, entityRealm, entityNum, entityTypeId);
     }
