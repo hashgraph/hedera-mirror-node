@@ -311,7 +311,8 @@ const getTransactionsInnerQuery = function (
     );
 
     if (creditDebitQuery) {
-      // limit the query to transactions with crypto or token transfer list
+      // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
+      // transactions that only have a crypto_transfer or a token_transfer
       return `
         SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
         FROM (${ctlQuery}) AS ctl
@@ -323,14 +324,14 @@ const getTransactionsInnerQuery = function (
       // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
       //between the three tables is needed to get rows that may only exist in one.
       return `
-      SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp,ttl.consensus_timestamp) AS consensus_timestamp
-      FROM (${transactionOnlyQuery}) AS t
-      FULL OUTER JOIN (${ctlQuery}) AS ctl
-      ON t.consensus_timestamp = ctl.consensus_timestamp
-      FULL OUTER JOIN (${ttlQuery}) AS ttl
-      ON t.consensus_timestamp = ttl.consensus_timestamp
-      ORDER BY consensus_timestamp ${order}
-      ${namedLimitQuery}`;
+        SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp,ttl.consensus_timestamp) AS consensus_timestamp
+        FROM (${transactionOnlyQuery}) AS t
+        FULL OUTER JOIN (${ctlQuery}) AS ctl
+        ON t.consensus_timestamp = ctl.consensus_timestamp
+        FULL OUTER JOIN (${ttlQuery}) AS ttl
+        ON t.consensus_timestamp = ttl.consensus_timestamp
+        ORDER BY consensus_timestamp ${order}
+        ${namedLimitQuery}`;
     }
   }
 
