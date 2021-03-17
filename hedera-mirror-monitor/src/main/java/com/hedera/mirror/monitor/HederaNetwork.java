@@ -62,7 +62,9 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.15", "35.228.11.53"),
                 new NodeProperties("0.0.16", "34.91.181.183"),
                 new NodeProperties("0.0.17", "34.86.212.247"),
-                new NodeProperties("0.0.18", "172.105.247.67")
+                new NodeProperties("0.0.18", "172.105.247.67"),
+                new NodeProperties("0.0.19", "34.89.87.138"),
+                new NodeProperties("0.0.20", "34.82.78.255")
         );
     }
 
