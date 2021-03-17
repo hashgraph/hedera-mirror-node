@@ -1,5 +1,5 @@
 {
-  "name": "hedera-mirror-entity-info-update",
+  "name": "hedera-mirror-entity-info-updater",
   "version": "1.0.0",
   "description": "An example implementation of using the js-sdk to query the Hedera network and update a desired set of entity rows in the mirror node database",
   "main": "index.js",
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/hashgraph/hedera-mirror-node#readme",
   "bin": {
-    "entity-update": "./index.js"
+    "entity-info-updater": "./index.js"
   },
   "devDependencies": {
     "@hashgraph/sdk": "^2.0.17",

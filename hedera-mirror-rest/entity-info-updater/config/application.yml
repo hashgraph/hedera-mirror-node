@@ -14,8 +14,8 @@ hedera:
       log:
         level: debug
       sdkClient:
-        network: OTHER
+        network: TESTNET
         nodeAddress:
         nodeId:
         operatorId:
-        operatorKey: 
+        operatorKey:
