@@ -46,7 +46,7 @@ const getConfiguredLogger = (loglevel) => {
     .getLogger();
 };
 
-// configure prior to local loads such as config to ensure we at least get debug logging initially
+// configure logger with base settings to ensure we at least get debug logging for files that run logic on load
 let logger = getConfiguredLogger('debug');
 
 // local
@@ -54,16 +54,14 @@ const config = require('./config');
 const entityUpdateHandler = require('./entityUpdateHandler');
 const utils = require('./utils');
 
+// re-configure logger based on values from config file
 logger = getConfiguredLogger(config.log.level);
-
-// get entity objects from CSV
-const entitiesToValidate = utils.readEntityCSVFileSync();
 
 const getUpdateList = async (entities) => {
   return entityUpdateHandler.getUpdateList(entities);
 };
 
-getUpdateList(entitiesToValidate).then(async (entitiesToUpdate) => {
+const handleUpdateEntities = async (entitiesToUpdate) => {
   if (config.dryRun === false) {
     logger.info(`Updating stale db entries with updated information ...`);
     await entityUpdateHandler.updateStaleDBEntities(entitiesToUpdate);
@@ -72,5 +70,13 @@ getUpdateList(entitiesToValidate).then(async (entitiesToUpdate) => {
       `Db update of entities will be skipped as 'hedera.mirror.entityUpdate.dryRun' is set to ${config.dryRun}`
     );
   }
+};
+
+// get entity objects from CSV
+const entitiesToValidate = utils.readEntityCSVFileSync();
+
+// get updated list of entities based on csv ids and update existing db entities with correct values
+getUpdateList(entitiesToValidate).then(async (entitiesToUpdate) => {
+  await handleUpdateEntities(entitiesToUpdate);
   logger.info(`End of entity-info-update`);
 });
