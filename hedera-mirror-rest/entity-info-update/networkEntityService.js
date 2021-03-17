@@ -29,11 +29,15 @@ const config = require('./config');
 
 const logger = log4js.getLogger();
 
-// support, getting entityInfo, check for key diff
 let operatorId;
 let client;
 let clientConfigured = false;
 
+/**
+ * Get account info from network
+ * @param accountId
+ * @returns {Promise<AccountInfo>}
+ */
 const getAccountInfo = async (accountId) => {
   logger.trace(`Retrieve account info for ${accountId}`);
   const accountInfo = await new AccountInfoQuery().setAccountId(accountId).execute(client);
@@ -42,6 +46,10 @@ const getAccountInfo = async (accountId) => {
   return accountInfo;
 };
 
+/**
+ * Get account balance from network
+ * @returns {Promise<AccountBalance>}
+ */
 const getAccountBalance = async () => {
   logger.trace(`Retrieve account balance for ${operatorId}`);
   const accountBalance = await new AccountBalanceQuery().setAccountId(operatorId).execute(client);
@@ -50,13 +58,7 @@ const getAccountBalance = async () => {
   return accountBalance;
 };
 
-const isAccountInfoCurrent = async (accountId, key) => {
-  const accountInfo = await getAccountInfo(accountId);
-
-  logger.info(`Verify db key: ${key} matches network key ${accountInfo.key.toString('utf-8')}`);
-  return key === accountInfo.key.toString('utf-8');
-};
-
+// configure sdk client on file load based off of config values
 if (!clientConfigured) {
   logger.info(`Configure SDK client for ${config.sdkClient.network}`);
   if (config.sdkClient.network !== 'OTHER') {
@@ -97,5 +99,4 @@ if (!clientConfigured) {
 module.exports = {
   getAccountBalance,
   getAccountInfo,
-  isAccountInfoCurrent,
 };
