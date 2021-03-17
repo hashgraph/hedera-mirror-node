@@ -21,9 +21,10 @@
 'use strict';
 
 // external libraries
-const fs = require('fs');
 const _ = require('lodash');
+const fs = require('fs');
 const log4js = require('log4js');
+const math = require('mathjs');
 
 // local
 const config = require('./config');
@@ -33,37 +34,12 @@ const logger = log4js.getLogger();
 const constructEntity = (index, headerRow, entityRow) => {
   const entityObj = {};
   const splitEntityRow = Array.from(entityRow.split(',')).filter((x) => x != null);
+
   for (let i = 0; i < headerRow.length; i++) {
     entityObj[headerRow[i].trim()] = splitEntityRow[i].trim();
   }
 
   return entityObj;
-};
-
-const readEntityCSVFile = async () => {
-  const entities = [];
-
-  await fs.readFile(config.filePath, 'utf-8', (error, data) => {
-    if (error) {
-      return logger.info(error);
-    }
-
-    const fileContent = data.split('\n');
-    const headers = Array.from(fileContent[0].split(',')).filter((x) => x != null);
-
-    // ensure 1st column is entity num of expected format
-    if (!_.eq(headers[0], 'entity')) {
-      throw Error("CSV must have a header column with 1st column being 'entity'");
-    }
-
-    for (let i = 1; i < fileContent.length; i++) {
-      entities.push(constructEntity(i, headers, fileContent[i]));
-    }
-
-    logger.info(`${fileContent.length - 1} entities were extracted from ${config.filePath}`);
-  });
-
-  return entities;
 };
 
 const readEntityCSVFileSync = () => {
@@ -81,6 +57,11 @@ const readEntityCSVFileSync = () => {
   }
 
   for (let i = 1; i < fileContent.length; i++) {
+    if (!fileContent[i]) {
+      // End of file
+      break;
+    }
+
     entities.push(constructEntity(i, headers, fileContent[i]));
   }
 
@@ -89,7 +70,18 @@ const readEntityCSVFileSync = () => {
   return entities;
 };
 
+/**
+ * Converts seconds since epoch (seconds nnnnnnnnn format) to  nanoseconds
+ * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
+ * @return {String} ns Nanoseconds since epoch
+ */
+const secNsToNs = (secNs, ns) => {
+  return math
+    .add(math.multiply(math.bignumber(secNs.toString()), math.bignumber(1e9)), math.bignumber(ns.toString()))
+    .toString();
+};
+
 module.exports = {
-  readEntityCSVFile,
   readEntityCSVFileSync,
+  secNsToNs,
 };

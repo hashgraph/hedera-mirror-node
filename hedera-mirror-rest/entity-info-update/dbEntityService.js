@@ -66,7 +66,7 @@ const getEntity = async (id) => {
 
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
   const entityFromDb = await pool.query(
-    'select * from t_entities where entity_shard = $1 and entity_realm = $2 and entity_num = $3',
+    'select * from t_entities_bkup where entity_shard = $1 and entity_realm = $2 and entity_num = $3',
     paramValues
   );
 
@@ -74,41 +74,30 @@ const getEntity = async (id) => {
   return entityFromDb.rows[0];
 };
 
-const updateEntity = (entity) => {
-  // determine what to update
-  let updateResult = null;
-  // logger.info(`*** Perform db update of entity ${entity.id}: entities ${JSON.stringify(entity)}. config.dryRun: ${config.dryRun}`);
+const updateEntity = async (entity) => {
   const paramValues = [
     entity.auto_renew_period,
     entity.deleted,
+    entity.ed25519_public_key_hex,
     entity.exp_time_ns,
     entity.key,
     entity.proxy_account_id,
     entity.id,
   ];
 
-  if (config.dryRun === false) {
-    pool.query(
-      `update t_entities_bkup
-         set auto_renew_period = $1,
-             deleted           = $2,
-             exp_time_ns       = $3,
-             key               = $4,
-             proxy_account_id  = $5
-         where id = $6`,
-      paramValues,
-      (error, results) => {
-        if (error) {
-          throw error;
-        }
-
-        updateResult = results.rows;
-      }
-    );
-  }
+  await pool.query(
+    `update t_entities_bkup
+       set auto_renew_period      = $1,
+           deleted                = $2,
+           ed25519_public_key_hex = $3,
+           exp_time_ns            = $4,
+           key                    = $5,
+           proxy_account_id       = $6
+       where id = $7`,
+    paramValues
+  );
 
   logger.debug(`Updated entity ${entity.id}`);
-  // logger.info(`Updated entity ${entity.id} entities for range ${JSON.stringify(updateResult)}`);
 };
 
 module.exports = {

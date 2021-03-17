@@ -21,23 +21,70 @@
 'use strict';
 
 // external libraries
-const math = require('mathjs');
+const proto = require('@hashgraph/proto');
+const {PublicKey, KeyList} = require('@hashgraph/sdk');
 const log4js = require('log4js');
 
 // local
 const networkEntityService = require('./networkEntityService');
 const dbEntityService = require('./dbEntityService');
+const utils = require('./utils');
 
 const logger = log4js.getLogger();
-/**
- * Converts seconds since epoch (seconds nnnnnnnnn format) to  nanoseconds
- * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
- * @return {String} ns Nanoseconds since epoch
- */
-const secNsToNs = (secNs, ns) => {
-  return math
-    .add(math.multiply(math.bignumber(secNs.toString()), math.bignumber(1e9)), math.bignumber(ns.toString()))
-    .toString();
+
+const keyListToProto = (keyList) => {
+  const keys = [];
+
+  for (const key of keyList) {
+    keys.push(keyToProto(key));
+  }
+
+  return {
+    keys,
+  };
+};
+
+const keyToProto = (key) => {
+  if (key instanceof PublicKey) {
+    return {
+      ed25519: key.toBytes(),
+    };
+  }
+
+  if (key instanceof KeyList) {
+    return {
+      keyList: keyListToProto(key),
+    };
+  }
+
+  throw Error('Unsupported key type');
+};
+
+const getProtoAndEd25519HexFromPublicKey = (key) => {
+  const protoKey = {
+    ed25519: key.toBytes(),
+  };
+  const ed25519Hex = key.toString();
+
+  return {protoKey, ed25519Hex};
+};
+
+const getProtoAndEd25519HexFromKeyList = (key) => {
+  const protoKey = {
+    keyList: keyListToProto(key),
+  };
+  const ed25519Hex = key._keys.toString().split(',')[0];
+
+  return {protoKey, ed25519Hex};
+};
+
+const getBufferAndEd25519HexFromKey = (key) => {
+  const {protoKey, ed25519Hex} =
+    key instanceof PublicKey ? getProtoAndEd25519HexFromPublicKey(key) : getProtoAndEd25519HexFromKeyList(key);
+
+  let protoBuffer = null;
+  protoBuffer = proto.Key.encode(protoKey, protoBuffer).finish();
+  return {protoBuffer, ed25519Hex};
 };
 
 const getUpdatedEntity = (dbEntity, networkEntity) => {
@@ -48,7 +95,7 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
   let updateNeeded = false;
 
   // create updated entity to insert to db
-  if (dbEntity.auto_renew_period !== networkEntity.autoRenewPeriod.seconds) {
+  if (dbEntity.auto_renew_period !== networkEntity.autoRenewPeriod.seconds.toString()) {
     updateEntity.auto_renew_period = networkEntity.autoRenewPeriod.seconds.toString();
     updateNeeded = true;
     logger.trace(
@@ -57,13 +104,13 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
   }
 
   // Accounts can't be undeleted
-  if (dbEntity.deleted !== networkEntity.isDeleted) {
+  if (dbEntity.deleted !== networkEntity.isDeleted && networkEntity.isDeleted === true) {
     updateEntity.deleted = networkEntity.isDeleted;
     updateNeeded = true;
     logger.trace(`deleted mismatch, db: ${dbEntity.deleted}, network: ${networkEntity.isDeleted}`);
   }
 
-  const ns = secNsToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
+  const ns = utils.secNsToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
   if (dbEntity.exp_time_ns !== ns) {
     updateEntity.exp_time_ns = ns;
     updateNeeded = true;
@@ -72,23 +119,17 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     );
   }
 
-  // if (dbEntity.key.toString('hex') !== networkEntity.key._keys.toString()) {
-  //   updateEntity.key = Buffer.from(networkEntity.key._keys.toString(), 'hex');
-  //   updateNeeded = true;
-  //   logger.trace(`key mismatch, db: ${dbEntity.key.toString('hex')}, network: ${networkEntity.key._keys.toString()}`);
-  //   logger.trace(`key mismatch, db: ${dbEntity.key.toString('hex')}, network: ${networkEntity.key._keys.toString()}`);
-  // }
-
-  // mirror t_entities.ed25519_public_key_hex is created based on key so we can do an easy comparison here
-  if (dbEntity.ed25519_public_key_hex !== networkEntity.key._keys.toString()) {
-    updateEntity.ed25519_public_key_hex = networkEntity.key._keys.toString();
-    updateEntity.key = Buffer.from(networkEntity.key._keys.toString(), 'hex');
+  // mirror t_entities.ed25519_public_key_hex is created based on key so we can use this for both key and hex comparison
+  const {protoBuffer, ed25519Hex} = getBufferAndEd25519HexFromKey(networkEntity.key);
+  if (dbEntity.ed25519_public_key_hex !== ed25519Hex) {
+    updateEntity.ed25519_public_key_hex = ed25519Hex;
+    updateEntity.key = protoBuffer;
     updateNeeded = true;
+    logger.trace(`ed25519 public key mismatch, db: ${dbEntity.ed25519_public_key_hex}, network: ${ed25519Hex}`);
     logger.trace(
-      `key mismatch, db: ${JSON.stringify(dbEntity.key)}, network: ${JSON.stringify(networkEntity.key._keys)}`
-    );
-    logger.trace(
-      `public key mismatch, db: ${dbEntity.ed25519_public_key_hex}, network: ${networkEntity.key._keys.toString()}`
+      `key mismatch, db: ${JSON.stringify(dbEntity.key)}, network: ${JSON.stringify(
+        networkEntity.key._keys[0]._keyData
+      )}`
     );
   }
 
@@ -101,7 +142,7 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
   }
 
   if (updateNeeded) {
-    logger.debug(`entity ${dbEntity.id} contained mismatched information`);
+    // logger.debug(`entity ${dbEntity.id} contained mismatched information`);
     logger.trace(
       `created update entity: ${JSON.stringify(updateEntity)} to replace current db entity ${JSON.stringify(dbEntity)}`
     );
@@ -147,26 +188,23 @@ const getUpdateList = async (csvEntities) => {
   logger.info(`Update list of length ${updateList.length} retrieved`);
 
   const endBalance = await networkEntityService.getAccountBalance();
-  logger.info(
-    `*** Network accountInfo calls cost ${endBalance.hbars.toTinybars() - startBalance.hbars.toTinybars()} tℏ.
-    start: ${startBalance.hbars.toTinybars()} tℏ, end: ${endBalance.hbars.toTinybars()} tℏ`
-  );
+  // logger.info(
+  //   `*** Network accountInfo calls cost ${endBalance.hbars.toTinybars() - startBalance.hbars.toTinybars()} tℏ.
+  //   start: ${startBalance.hbars.toTinybars()} tℏ, end: ${endBalance.hbars.toTinybars()} tℏ`
+  // );
 
   return updateList;
 };
 
-const updateStaleDBEntities = (entitiesToUpdate) => {
+const updateStaleDBEntities = async (entitiesToUpdate) => {
   if (!entitiesToUpdate || entitiesToUpdate.length === 0) {
     logger.info(`No entities to update, skipping update`);
     return;
   }
-  logger.info(`Updating stale db entries with updated information ...`);
 
-  entitiesToUpdate.forEach((entity) => {
-    dbEntityService.updateEntity(entity);
-  });
+  const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
 
-  logger.info(`Updated ${entitiesToUpdate.length} entities`);
+  logger.info(`Updated ${updatedList.length} entities`);
 };
 
 module.exports = {
