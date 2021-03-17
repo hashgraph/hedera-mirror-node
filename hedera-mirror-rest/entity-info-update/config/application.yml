@@ -1,0 +1,20 @@
+# This file contains application defaults for the entity-info-update package
+hedera:
+  mirror:
+    entityUpdate:
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_node_pass
+        port: 5432
+        username: mirror_node
+      filePath:
+      dryRun: true
+      log:
+        level: debug
+      sdkClient:
+        network: TESTNET
+        nodeAddress:
+        nodeId:
+        operatorId:
+        operatorKey:
