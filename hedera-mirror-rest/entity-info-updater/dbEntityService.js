@@ -29,7 +29,6 @@ const config = require('./config');
 
 const logger = log4js.getLogger();
 
-// support pull from db to verify diff, then bulk update. Note dryRun phase
 const pool = new Pool({
   user: config.db.username,
   host: config.db.host,
@@ -38,6 +37,11 @@ const pool = new Pool({
   port: config.db.port,
 });
 
+/**
+ * Extract entity object with shard, relam and num from entity id string
+ * @param {String} id
+ * @returns {{num: number, realm: number, shard: number}} entity
+ */
 const getEntityObFromString = (id) => {
   let entityIdObj = {
     shard: 0,
@@ -59,6 +63,11 @@ const getEntityObFromString = (id) => {
   return entityIdObj;
 };
 
+/**
+ * Retrieve entity json object from db
+ * @param id
+ * @returns {Promise<*>}
+ */
 const getEntity = async (id) => {
   const entityIdObj = getEntityObFromString(id);
 
@@ -66,7 +75,7 @@ const getEntity = async (id) => {
 
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
   const entityFromDb = await pool.query(
-    'select * from t_entities_bkup where entity_shard = $1 and entity_realm = $2 and entity_num = $3',
+    `select * from ${config.db.entitiesTableName} where entity_shard = $1 and entity_realm = $2 and entity_num = $3`,
     paramValues
   );
 
@@ -74,6 +83,11 @@ const getEntity = async (id) => {
   return entityFromDb.rows[0];
 };
 
+/**
+ * Update matching entity in db
+ * @param entity
+ * @returns {Promise<void>}
+ */
 const updateEntity = async (entity) => {
   const paramValues = [
     entity.auto_renew_period,
@@ -86,7 +100,7 @@ const updateEntity = async (entity) => {
   ];
 
   await pool.query(
-    `update t_entities_bkup
+    `update ${config.db.entitiesTableName}
        set auto_renew_period      = $1,
            deleted                = $2,
            ed25519_public_key_hex = $3,
