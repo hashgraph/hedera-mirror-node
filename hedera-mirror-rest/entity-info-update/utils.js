@@ -21,6 +21,8 @@
 'use strict';
 
 // external libraries
+const proto = require('@hashgraph/proto');
+const {PublicKey, KeyList} = require('@hashgraph/sdk');
 const _ = require('lodash');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -81,7 +83,63 @@ const secNsToNs = (secNs, ns) => {
     .toString();
 };
 
+const keyListToProto = (keyList) => {
+  const keys = [];
+
+  for (const key of keyList) {
+    keys.push(keyToProto(key));
+  }
+
+  return {
+    keys,
+  };
+};
+
+const keyToProto = (key) => {
+  if (key instanceof PublicKey) {
+    return {
+      ed25519: key.toBytes(),
+    };
+  }
+
+  if (key instanceof KeyList) {
+    return {
+      keyList: keyListToProto(key),
+    };
+  }
+
+  throw Error('Unsupported key type');
+};
+
+const getProtoAndEd25519HexFromPublicKey = (key) => {
+  const protoKey = {
+    ed25519: key.toBytes(),
+  };
+  const ed25519Hex = key.toString();
+
+  return {protoKey, ed25519Hex};
+};
+
+const getProtoAndEd25519HexFromKeyList = (key) => {
+  const protoKey = {
+    keyList: keyListToProto(key),
+  };
+  const ed25519Hex = key._keys.toString().split(',')[0];
+
+  return {protoKey, ed25519Hex};
+};
+
+const getBufferAndEd25519HexFromKey = (key) => {
+  const {protoKey, ed25519Hex} =
+    key instanceof PublicKey ? getProtoAndEd25519HexFromPublicKey(key) : getProtoAndEd25519HexFromKeyList(key);
+
+  let protoBuffer = null;
+  protoBuffer = proto.Key.encode(protoKey, protoBuffer).finish();
+  return {protoBuffer, ed25519Hex};
+};
+
 module.exports = {
+  getBufferAndEd25519HexFromKey,
   readEntityCSVFileSync,
   secNsToNs,
 };

@@ -3,6 +3,7 @@ hedera:
   mirror:
     entityUpdate:
       db:
+        entitiesTableName: t_entities_bkup
         host: 127.0.0.1
         name: mirror_node
         password: mirror_node_pass
@@ -13,8 +14,8 @@ hedera:
       log:
         level: debug
       sdkClient:
-        network: TESTNET
+        network: OTHER
         nodeAddress:
         nodeId:
         operatorId:
-        operatorKey:
+        operatorKey: 
