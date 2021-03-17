@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions via credit type query filter where account only receives token transfer",
+  "description": "Transaction api calls for transactions via credit type query filter where account receives crypto and token transfers",
   "setup": {
     "accounts": [
       {
