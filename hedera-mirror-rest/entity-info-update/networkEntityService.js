@@ -46,7 +46,7 @@ const getAccountBalance = async () => {
   logger.trace(`Retrieve account balance for ${operatorId}`);
   const accountBalance = await new AccountBalanceQuery().setAccountId(operatorId).execute(client);
 
-  logger.info(`Retrieved account balance of ${accountBalance.hbars.toTinybars()} for ${operatorId} from network`);
+  logger.trace(`Retrieved account balance of ${accountBalance.hbars.toTinybars()} for ${operatorId} from network`);
   return accountBalance;
 };
 
