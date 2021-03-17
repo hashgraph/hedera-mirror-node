@@ -314,7 +314,7 @@ const getTransactionsInnerQuery = function (
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
       return `
-        SELECT DISTINCT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
+        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
         FROM (${ctlQuery}) AS ctl
         FULL OUTER JOIN (${ttlQuery}) as ttl
         ON ctl.consensus_timestamp = ttl.consensus_timestamp
