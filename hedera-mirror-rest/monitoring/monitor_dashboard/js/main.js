@@ -63,14 +63,14 @@ const makeTable = (data, server) => {
     return 'No result yet to display';
   }
 
-  let h = '';
-  h += `
+  let h = `
         <table border="1px">
             <tr>
                 <th>Result</th>
                 <th>At</th>
                 <th>Message & Url</th>
         </tr>`;
+
   data.results.testResults.forEach((result) => {
     // Skip the 'Skipped tests' that are marked as pending in jest json output
     if (result.result === 'pending') {
@@ -78,16 +78,14 @@ const makeTable = (data, server) => {
     }
     const failureMsg =
       result.failureMessages == undefined ? '' : result.failureMessages.join('<br>,').replaceAll('\n', '<br>');
+    const color = result.result === 'passed' ? 'green' : 'red';
 
-    h +=
-      `${'<tr>' + '<tr>' + '<tr>' + '<td>' + '<span class="dot" style="background-color:'}${
-        result.result === 'passed' ? 'green' : 'red'
-      }"></span>` +
-      `</td>` +
-      `<td>${new Date(Number(result.at)).toLocaleString()}</td>` +
-      `<td>` +
-      `<a = href="${result.url}">${result.message}${failureMsg}<a/></td>` +
-      `</tr>\n`;
+    h += `
+      <tr>
+        <td><span class="dot" style="background-color:${color}"></span></td>
+        <td>${new Date(Number(result.at)).toLocaleString()}</td>
+        <td><a = href="${result.url}">${result.message}${failureMsg}<a/></td>
+      </tr>`;
   });
   h += '</table>\n';
   return h;
@@ -108,9 +106,7 @@ const makeCard = (data, server) => {
   const startTime = data.results.startTime ? data.results.startTime : 0;
   const endTime = data.results.endTime ? data.results.endTime : 0;
 
-  let h = '';
-  // Create a summary card
-  h += `
+  return `
         <div class="card my-card">
           <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
             <div class="card-title">${server}</div>
@@ -124,10 +120,7 @@ const makeCard = (data, server) => {
                <div class="card-arrow">&#x25B6</div>
             </div>
           </div>
-        </div>`;
-
-  // Create a modal for showing test details
-  h += `
+        </div>
         <div class="modal fade" id="modal-${server}">
           <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -143,8 +136,6 @@ const makeCard = (data, server) => {
             </div>
           </div>
         </div>`;
-
-  return h;
 };
 
 /**
@@ -178,13 +169,6 @@ const fetchAndDisplay = async () => {
       } else {
         html = `
                 <h2 style="text-align:center">Hedera Mirror Node Status</h2>
-                ${Object.keys(data)
-                  .map((server) => `<div class="card-deck">${makeCard(data, server)}</div>`)
-                  .join('')}
-            `;
-
-        html = `
-                <h2 style="text-align:center">Hedera mirror node status</h2>
                 ${data.map((result) => `<div class="card-deck">${makeCard(result, result.name)}</div>`).join('')}
             `;
       }
