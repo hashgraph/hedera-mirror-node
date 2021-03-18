@@ -192,13 +192,9 @@ class Pool {
       row.name = 'CRYPTOTRANSFER';
       row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
 
-      const accountNumValue = this.getAccountId(accountNum, i)
+      const accountNumValue = this.getAccountId(accountNum, i);
 
-      row.ctl_entity_id = EntityId.of(
-        0,
-        0,
-        accountNumValue
-      ).getEncodedId();
+      row.ctl_entity_id = EntityId.of(0, 0, accountNumValue).getEncodedId();
       row.amount = i * 1000;
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';
@@ -245,7 +241,7 @@ class Pool {
           break;
         case 'consensus_timestamp':
           // Convert the nanoseconds into seconds
-          let paramSeconds = JSON.parse(JSON.stringify(param)); // deep copy
+          const paramSeconds = JSON.parse(JSON.stringify(param)); // deep copy
           paramSeconds.value = math.number(math.divide(math.bignumber(paramSeconds.value), math.bignumber(1e9)));
 
           timestamp = this.adjustRangeBasedOnConstraints(paramSeconds, timestamp);
@@ -332,7 +328,7 @@ class Pool {
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      let row = {};
+      const row = {};
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
       row.consensus_timestamp = this.toNs(this.timeNow);
@@ -354,13 +350,14 @@ class Pool {
     return rows;
   }
 
-  //account.id can be a range or a list of acceptable values
+  // account.id can be a range or a list of acceptable values
   getAccountId(accountNum, i) {
     if (accountNum.equals) {
       return `${accountNum.equals[i % accountNum.equals.length]}`;
-    } else {
-      return `${Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))}`;
     }
+    return `${
+      Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
+    }`;
   }
 
   /**
@@ -384,7 +381,7 @@ class Pool {
         pVar.low = param.value;
         pVar.high = param.value;
         break;
-      //Only account.id supports in currently
+      // Only account.id supports in currently
       case 'in':
         if (pVar.equals) {
           pVar.equals.push(param.value);

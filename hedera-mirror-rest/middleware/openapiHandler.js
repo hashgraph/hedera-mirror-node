@@ -28,8 +28,9 @@ const _ = require('lodash');
 const yaml = require('js-yaml');
 
 // files
-const config = require('./../config');
-let v1OpenApiDocument = undefined;
+const config = require('../config');
+
+let v1OpenApiDocument;
 
 /**
  * Check if apiVersion is currently supported
@@ -78,7 +79,7 @@ const getV1OpenApiObject = () => {
  * @param {ExpressWithAsync} app
  */
 const serveSwaggerDocs = (app) => {
-  var options = {
+  const options = {
     explorer: true,
     customCss: '.topbar-wrapper img { content:url(https://s3.amazonaws.com/hedera-com/hedera_hashgraph.png); }',
   };

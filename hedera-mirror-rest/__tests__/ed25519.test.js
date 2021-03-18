@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const ed25519 = require('../ed25519.js');
@@ -48,7 +49,7 @@ describe('Ed25519 tests', () => {
       '302a300506aa2b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc',
       // Valid decoded key
       '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc',
-      //Other invalid values
+      // Other invalid values
       '',
       0,
       {},
@@ -56,7 +57,7 @@ describe('Ed25519 tests', () => {
     ];
 
     for (const invalidDer of invalidDers) {
-      let response = ed25519.derToEd25519(invalidDer);
+      const response = ed25519.derToEd25519(invalidDer);
       expect(response).toBe(null);
     }
   });

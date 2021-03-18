@@ -320,10 +320,10 @@ const getTransactionsInnerQuery = function (
         ON ctl.consensus_timestamp = ttl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
         ${namedLimitQuery}`;
-    } else {
-      // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
-      //between the three tables is needed to get rows that may only exist in one.
-      return `
+    }
+    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
+    // between the three tables is needed to get rows that may only exist in one.
+    return `
         SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp,ttl.consensus_timestamp) AS consensus_timestamp
         FROM (${transactionOnlyQuery}) AS t
         FULL OUTER JOIN (${ctlQuery}) AS ctl
@@ -332,7 +332,6 @@ const getTransactionsInnerQuery = function (
         ON t.consensus_timestamp = ttl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
         ${namedLimitQuery}`;
-    }
   }
 
   return transactionOnlyQuery;

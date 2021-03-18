@@ -20,9 +20,9 @@
 
 'use strict';
 
-const constants = require('../constants');
 const httpContext = require('express-http-context');
 const qs = require('qs');
+const constants = require('../constants');
 const {randomString} = require('../utils');
 
 const requestLogger = async (req, res, next) => {

@@ -204,7 +204,7 @@ const validateOrder = function (transactions, order) {
 const singleTests = {
   timestamp_lowerlimit: {
     urlparam: `timestamp=gte:${timeOneHourAgo}`,
-    checks: [{field: 'consensus_ns', operator: '>=', value: timeOneHourAgo + '000000000'}],
+    checks: [{field: 'consensus_ns', operator: '>=', value: `${timeOneHourAgo}000000000`}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -212,7 +212,7 @@ const singleTests = {
   },
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
-    checks: [{field: 'consensus_ns', operator: '<', value: timeNow + '000000000'}],
+    checks: [{field: 'consensus_ns', operator: '<', value: `${timeNow}000000000`}],
     checkFunctions: [
       {func: validateTsRange, args: [0, timeNow]},
       {func: validateFields, args: []},
@@ -267,11 +267,11 @@ const singleTests = {
   },
   result_fail: {
     urlparam: 'result=fail',
-    checks: [{field: 'result', operator: '!=', value: '' + utils.TRANSACTION_RESULT_SUCCESS}],
+    checks: [{field: 'result', operator: '!=', value: `${utils.TRANSACTION_RESULT_SUCCESS}`}],
   },
   result_success: {
     urlparam: 'result=success',
-    checks: [{field: 'result', operator: '=', value: '' + utils.TRANSACTION_RESULT_SUCCESS}],
+    checks: [{field: 'result', operator: '=', value: `${utils.TRANSACTION_RESULT_SUCCESS}`}],
   },
 };
 

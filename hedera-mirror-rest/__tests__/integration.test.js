@@ -376,7 +376,8 @@ describe('DB integration test - spec based', () => {
         const stats = await fs.promises.stat(filePath);
         if (stats.isDirectory()) {
           return walk(filePath);
-        } else if (stats.isFile()) {
+        }
+        if (stats.isFile()) {
           return filePath;
         }
       })
@@ -455,7 +456,7 @@ describe('DB integration test - spec based', () => {
 
     for (const sqlFunc of sqlFuncs) {
       // path.join returns normalized path, the sqlFunc is a local js file so add './'
-      const func = require('./' + path.join(pathPrefix || '', sqlFunc));
+      const func = require(`./${path.join(pathPrefix || '', sqlFunc)}`);
       logger.debug(`running sql func in ${sqlFunc}`);
       await func.apply(null, [sqlConnection]);
     }

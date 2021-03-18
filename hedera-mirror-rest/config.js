@@ -41,7 +41,7 @@ function load(configPath, configName) {
     loadYaml(configFile);
   }
 
-  configFile = path.join(configPath, configName + '.yaml');
+  configFile = path.join(configPath, `${configName}.yaml`);
   if (fs.existsSync(configFile)) {
     loadYaml(configFile);
   }

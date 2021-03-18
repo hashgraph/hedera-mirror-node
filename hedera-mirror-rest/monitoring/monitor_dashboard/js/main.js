@@ -28,11 +28,11 @@ let monitorAddress = 'localhost:3000';
  * @return {} None
  */
 const init = () => {
-  let app = document.getElementById('root');
+  const app = document.getElementById('root');
 
   app.innerHTML = '';
 
-  let container = document.createElement('div');
+  const container = document.createElement('div');
   container.setAttribute('class', 'container');
   container.id = 'rootcontainer';
   app.appendChild(container);
@@ -44,7 +44,7 @@ const loadConfig = async () => {
   return fetch('/config.json', {mode: 'no-cors'})
     .then((response) => response.json())
     .then((config) => {
-      if (!!config.monitorAddress) {
+      if (config.monitorAddress) {
         console.log('Loaded config.json');
         monitorAddress = config.monitorAddress;
       }
@@ -80,25 +80,14 @@ const makeTable = (data, server) => {
       result.failureMessages == undefined ? '' : result.failureMessages.join('<br>,').replaceAll('\n', '<br>');
 
     h +=
-      '<tr>' +
-      '<tr>' +
-      '<tr>' +
-      '<td>' +
-      '<span class="dot" style="background-color:' +
-      (result.result === 'passed' ? 'green' : 'red') +
-      '"></span>' +
-      '</td>' +
-      '<td>' +
-      new Date(Number(result.at)).toLocaleString() +
-      '</td>' +
-      '<td>' +
-      '<a = href="' +
-      result.url +
-      '">' +
-      result.message +
-      failureMsg +
-      '<a/></td>' +
-      '</tr>\n';
+      `${'<tr>' + '<tr>' + '<tr>' + '<td>' + '<span class="dot" style="background-color:'}${
+        result.result === 'passed' ? 'green' : 'red'
+      }"></span>` +
+      `</td>` +
+      `<td>${new Date(Number(result.at)).toLocaleString()}</td>` +
+      `<td>` +
+      `<a = href="${result.url}">${result.message}${failureMsg}<a/></td>` +
+      `</tr>\n`;
   });
   h += '</table>\n';
   return h;

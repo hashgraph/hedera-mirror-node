@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const EntityId = require('../entityId');
@@ -83,7 +84,7 @@ describe('utils buildComparatorFilter tests', () => {
 });
 
 const verifyBuildComparatorFilter = (key, val, expectedFilter) => {
-  let filter = utils.buildComparatorFilter(key, val);
+  const filter = utils.buildComparatorFilter(key, val);
 
   verifyFilter(filter, expectedFilter.key, expectedFilter.operator, expectedFilter.value);
 };
@@ -232,7 +233,6 @@ describe('utils formatComparator tests', () => {
     utils.formatComparator(filter);
     verifyFilter(filter, constants.filterKeys.SCHEDULED, ' = ', false);
   });
-
 });
 
 const verifyInvalidFilters = async (filters) => {

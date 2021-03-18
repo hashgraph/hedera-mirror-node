@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const _ = require('lodash');
