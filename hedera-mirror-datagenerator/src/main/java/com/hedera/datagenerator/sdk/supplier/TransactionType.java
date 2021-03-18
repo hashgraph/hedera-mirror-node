@@ -31,6 +31,9 @@ import com.hedera.datagenerator.sdk.supplier.consensus.ConsensusCreateTopicTrans
 import com.hedera.datagenerator.sdk.supplier.consensus.ConsensusDeleteTopicTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.consensus.ConsensusSubmitMessageTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.consensus.ConsensusUpdateTopicTransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleCreateTransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleDeleteTransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleSignTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenAssociateTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenBurnTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplier;
@@ -56,6 +59,9 @@ public enum TransactionType {
     CONSENSUS_SUBMIT_MESSAGE(ConsensusSubmitMessageTransactionSupplier.class),
     CONSENSUS_UPDATE_TOPIC(ConsensusUpdateTopicTransactionSupplier.class),
     CRYPTO_TRANSFER(CryptoTransferTransactionSupplier.class),
+    SCHEDULE_CREATE(ScheduleCreateTransactionSupplier.class),
+    SCHEDULE_DELETE(ScheduleDeleteTransactionSupplier.class),
+    SCHEDULE_SIGN(ScheduleSignTransactionSupplier.class),
     TOKEN_ASSOCIATE(TokenAssociateTransactionSupplier.class),
     TOKEN_BURN(TokenBurnTransactionSupplier.class),
     TOKEN_CREATE(TokenCreateTransactionSupplier.class),

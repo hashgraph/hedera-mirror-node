@@ -21,17 +21,20 @@
 'use strict';
 
 // external libraries
+const AbortController = require('abort-controller');
 const fs = require('fs');
 const log4js = require('log4js');
 const fetch = require('node-fetch');
-const AbortController = require('abort-controller');
+const path = require('path');
 
 const logger = log4js.getLogger();
 
 const makeStateProofDir = (transactionId, stateProofJson) => {
-  fs.mkdirSync(transactionId, {recursive: true});
-  fs.writeFileSync(`${transactionId}/apiResponse.json`, JSON.stringify(stateProofJson));
-  logger.info(`Supporting files and API response for the state proof will be stored in the directory ${transactionId}`);
+  const outputDir = path.join('output', transactionId);
+  fs.mkdirSync(outputDir, {recursive: true});
+  fs.writeFileSync(path.join(outputDir, 'apiResponse.json'), JSON.stringify(stateProofJson));
+  logger.info(`Supporting files and API response for the state proof will be stored in the directory ${outputDir}`);
+  return outputDir;
 };
 
 const storeFile = (data, file, ext) => {

@@ -79,7 +79,7 @@ public class AddressBookEntry {
     }
 
     public EntityId getNodeAccountId() {
-        if (nodeAccountId == null) {
+        if (EntityId.isEmpty(nodeAccountId)) {
             return memo == null ? null : EntityId.of(memo, EntityTypeEnum.ACCOUNT);
         }
 
@@ -88,6 +88,6 @@ public class AddressBookEntry {
 
     @Transient
     public String getNodeAccountIdString() {
-        return nodeAccountId == null ? memo : nodeAccountId.entityIdToString();
+        return EntityId.isEmpty(nodeAccountId) ? memo : nodeAccountId.entityIdToString();
     }
 }

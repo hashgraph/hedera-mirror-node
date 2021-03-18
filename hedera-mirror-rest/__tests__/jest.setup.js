@@ -25,7 +25,7 @@ const logger = require('log4js').getLogger();
 jest.setTimeout(2000);
 
 // set test configuration file path
-process.env['CONFIG_PATH'] = '__tests__';
+process.env.CONFIG_PATH = '__tests__';
 
 beforeEach(() => {
   logger.info(expect.getState().currentTestName);

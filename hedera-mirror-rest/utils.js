@@ -99,7 +99,12 @@ const isValidEncoding = (query) => {
 };
 
 const isValidTransactionType = async (transactionType) => {
-  return _.isString(transactionType) && (await transactionTypes.get(transactionType)) !== undefined;
+  try {
+    await transactionTypes.get(transactionType);
+    return true;
+  } catch (err) {
+    return false;
+  }
 };
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
@@ -224,19 +229,19 @@ const validateReq = async (req) => {
       if (!isRepeatedQueryParameterValidLength(req.query[key])) {
         badParams.push({
           code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
-          key: key,
+          key,
           count: req.query[key].length,
-          max: config.maxRepeatedQueryParameters
+          max: config.maxRepeatedQueryParameters,
         });
         continue;
       }
       for (const val of req.query[key]) {
         if (!(await paramValidityChecks(key, val))) {
-          badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
+          badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
         }
       }
     } else if (!(await paramValidityChecks(key, req.query[key]))) {
-      badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
+      badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
     }
   }
 
@@ -331,7 +336,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
       continue;
     }
     const processedValue = processValue(opAndValue.value);
-    //Equal ops have to be processed in bulk at the end to format the IN() correctly.
+    // Equal ops have to be processed in bulk at the end to format the IN() correctly.
     if (opAndValue.op === opsMap.eq && allowMultiple) {
       equalValues.add(processedValue);
     } else {
@@ -348,7 +353,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     values = values.concat(queryAndValues[1]);
   }
   const fullClause = partialQueries.join(' and ');
-  validateClauseAndValues(fullClause, values)
+  validateClauseAndValues(fullClause, values);
   return [partialQueries.join(' and '), values];
 };
 
@@ -357,7 +362,7 @@ const validateClauseAndValues = (clause, values) => {
     throw new InvalidClauseError(`Invalid clause produced after parsing query parameters: number of replacement
     parameters does not equal number of values: clause: \"${clause}\", values: ${values}`);
   }
-}
+};
 
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
@@ -372,7 +377,6 @@ const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   );
 };
 
-
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.TIMESTAMP],
@@ -386,7 +390,7 @@ const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE],
     (value) => value,
-    (op, value) => isNumeric(value) ? [`${columnName}${op}?`, [value]] : null,
+    (op, value) => (isNumeric(value) ? [`${columnName}${op}?`, [value]] : null),
     false
   );
 };
@@ -418,11 +422,11 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
     (op, value) => {
       if (value === 'credit') {
         return [`${columnName} > ?`, [0]];
-      } else if (value === 'debit') {
-        return [`${columnName} < ?`, [0]];
-      } else {
-        return null;
       }
+      if (value === 'debit') {
+        return [`${columnName} < ?`, [0]];
+      }
+      return null;
     },
     false
   );
@@ -808,12 +812,12 @@ const formatComparator = (comparator) => {
 const parseTokenBalances = (tokenBalances) => {
   return tokenBalances
     ? tokenBalances.map((tokenBalance) => {
-      const {token_id: tokenId, balance} = tokenBalance;
-      return {
-        token_id: EntityId.fromString(tokenId).toString(),
-        balance,
-      };
-    })
+        const {token_id: tokenId, balance} = tokenBalance;
+        return {
+          token_id: EntityId.fromString(tokenId).toString(),
+          balance,
+        };
+      })
     : [];
 };
 
@@ -831,14 +835,8 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-
   const protoId = await transactionTypes.get(transactionType);
-  if (protoId !== undefined) {
-    return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
-  }
-
-  // throw error if transactionType filter was provided but invalid
-  throw new InvalidArgumentError(`Invalid transactionType value '${transactionType}'`);
+  return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 
 const isTestEnv = () => process.env.NODE_ENV === 'test';

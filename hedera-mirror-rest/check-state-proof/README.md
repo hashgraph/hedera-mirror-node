@@ -57,15 +57,17 @@ From command line run
 
 Usage options include
 ```.env
-  --help               Show help                                       [boolean]
-  --version            Show version number                             [boolean]
+      --help           Show help                                       [boolean]
+      --version        Show version number                             [boolean]
   -t, --transactionId  Your Hedera Network Transaction Id e.g.
                        0.0.94139-1570800748-313194300        [string] [required]
   -f, --file           Absolute file path containing State Proof REST API
                        response json                                    [string]
-  -h, --host           REST API host. Default is testnet                [string]
+  -h, --host           REST API host. Default is testnet. This overrides the
+                       value of the env if also provided.               [string]
   -e, --env            Your environment e.g. local|mainnet|previewnet|testnet
                                                                         [string]
+  -s, --scheduled      Whether the transaction is scheduled or not     [boolean]
 ```
 
 > **_Note 1:_** The host value overrides the value of the environment.

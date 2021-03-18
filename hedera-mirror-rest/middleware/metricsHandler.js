@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 // ext libraries
@@ -28,7 +29,7 @@ const config = require('../config');
 const oasHandler = require('./openapiHandler');
 
 const metricsHandler = () => {
-  let defaultMetricsConfig = {
+  const defaultMetricsConfig = {
     name: process.env.npm_package_name,
     onAuthenticate: onMetricsAuthenticate,
     swaggerSpec: oasHandler.getV1OpenApiObject(),

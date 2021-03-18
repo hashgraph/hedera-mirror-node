@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -95,6 +96,15 @@ public class TokenTest {
         Token token = new Token();
         token.setKycKey("kyckey".getBytes());
         assertEquals(token.getNewAccountKycStatus(), TokenKycStatusEnum.REVOKED);
+    }
+
+    @Test
+    void nullCharacters() {
+        Token token = new Token();
+        token.setName("abc" + (char) 0);
+        token.setSymbol("abc" + (char) 0);
+        assertThat(token.getName()).isEqualTo("abc�");
+        assertThat(token.getSymbol()).isEqualTo("abc�");
     }
 
     private Token token(long consensusTimestamp) throws DecoderException {

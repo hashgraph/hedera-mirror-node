@@ -148,13 +148,15 @@ public abstract class AbstractDownloaderTest {
         try {
             File file = p.toFile();
             if (file.isFile()) {
-                FileChannel outChan = new FileOutputStream(file, true).getChannel();
-                if (outChan.size() <= 48) {
-                    outChan.truncate(outChan.size() / 2);
-                } else {
-                    outChan.truncate(48);
+                try (FileOutputStream fileOutputStream = new FileOutputStream(file, true);
+                     FileChannel channel = fileOutputStream.getChannel()
+                ) {
+                    if (channel.size() <= 48) {
+                        channel.truncate(channel.size() / 2);
+                    } else {
+                        channel.truncate(48);
+                    }
                 }
-                outChan.close();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

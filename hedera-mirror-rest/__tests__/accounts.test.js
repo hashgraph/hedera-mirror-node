@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const log4js = require('log4js');
@@ -131,7 +132,7 @@ const validateOrder = function (accounts, order) {
   let ret = true;
   let offenderAcc = null;
   let offenderVal = null;
-  let direction = order === 'desc' ? -1 : 1;
+  const direction = order === 'desc' ? -1 : 1;
   const toAccNum = (acc) => acc.split('.')[2];
   let val = toAccNum(accounts.accounts[0].account) - direction;
   for (const acc of accounts.accounts) {
@@ -258,16 +259,16 @@ const combinedtests = [
 ];
 
 describe('Accounts tests', () => {
-  let api = '/api/v1/accounts';
+  const api = '/api/v1/accounts';
 
   // First, execute the single tests
   for (const [name, item] of Object.entries(singletests)) {
     test(`Accounts single test: ${name} - URL: ${item.urlparam}`, async () => {
-      let response = await request(server).get([api, item.urlparam].join('?'));
+      const response = await request(server).get([api, item.urlparam].join('?'));
 
       expect(response.status).toEqual(200);
       const accounts = JSON.parse(response.text);
-      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      const {parsedparams} = JSON.parse(response.text).sqlQuery;
 
       // Verify the sql query against each of the specified checks
       let check = true;
@@ -290,20 +291,20 @@ describe('Accounts tests', () => {
   // And now, execute the combined tests
   for (const combination of combinedtests) {
     // Combine the individual (single) checks as specified in the combinedtests array
-    let combtest = {urls: [], checks: [], names: ''};
+    const combtest = {urls: [], checks: [], names: ''};
     for (const testname of combination) {
       if (testname in singletests) {
-        combtest.names += testname + ' ';
+        combtest.names += `${testname} `;
         combtest.urls.push(singletests[testname].urlparam);
         combtest.checks = combtest.checks.concat(singletests[testname].checks);
       }
     }
     const comburl = combtest.urls.join('&');
     test(`Accounts combinationn test: ${combtest.names} - URL: ${comburl}`, async () => {
-      let response = await request(server).get([api, comburl].join('?'));
+      const response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
       const accounts = JSON.parse(response.text);
-      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      const {parsedparams} = JSON.parse(response.text).sqlQuery;
 
       // Verify the sql query against each of the specified checks
       let check = true;

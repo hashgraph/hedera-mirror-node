@@ -20,9 +20,7 @@ package com.hedera.mirror.importer.parser.performance;
  * ‍
  */
 
-import java.sql.SQLException;
 import lombok.extern.log4j.Log4j2;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,27 +36,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
 
     @Container
-    GenericContainer customContainer;
+    private GenericContainer customContainer;
 
     @BeforeAll
-    void warmUp() throws SQLException {
+    void warmUp() {
         customContainer = createRestoreContainer("100k");
-
-        log.info("Start container {}", customContainer);
-        customContainer.start();
-
-        connection = dataSource.getConnection();
-        checkSeededTablesArePresent();
-    }
-
-    @AfterAll
-    void coolOff() {
-        log.info("Stop container {}", customContainer);
-        customContainer.stop();
     }
 
     @Test
     public void parseAndIngestTransactions() throws Exception {
+        checkSeededTablesArePresent();
         clearLastProcessedRecordHash();
         parse();
     }

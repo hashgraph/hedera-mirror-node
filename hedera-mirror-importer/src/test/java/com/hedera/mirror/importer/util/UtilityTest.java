@@ -191,7 +191,8 @@ class UtilityTest {
     void timeStampInNanosTimeStamp(long seconds, int nanos) {
         Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
-        long timeStampInNanos = Utility.timeStampInNanos(timestamp);
+        Long timeStampInNanos = Utility.timeStampInNanos(timestamp);
+        assertThat(timeStampInNanos).isNotNull();
         Instant fromTimeStamp = Instant.ofEpochSecond(0, timeStampInNanos);
 
         assertAll(
@@ -207,6 +208,14 @@ class UtilityTest {
         assertThrows(ArithmeticException.class, () -> {
             Utility.timeStampInNanos(timestamp);
         });
+    }
+
+    @Test
+    void sanitize() {
+        assertThat(Utility.sanitize(null)).isNull();
+        assertThat(Utility.sanitize("")).isEmpty();
+        assertThat(Utility.sanitize("abc")).isEqualTo("abc");
+        assertThat(Utility.sanitize("abc" + (char) 0 + "123" + (char) 0)).isEqualTo("abc�123�");
     }
 }
 

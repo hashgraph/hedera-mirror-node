@@ -122,9 +122,9 @@ describe('topicmessage formatTopicMessageRow tests', () => {
     sequence_number: '3',
   };
 
-  let formattedInput = topicmessage.formatTopicMessageRow(rowInput);
+  const formattedInput = topicmessage.formatTopicMessageRow(rowInput);
 
-  let expectedFormat = {
+  const expectedFormat = {
     consensus_timestamp: '1234567890.000000003',
     topic_id: `${config.shard}.1.7`,
     message: 'aGVkZXJhIGhhc2hncmFwaA==',

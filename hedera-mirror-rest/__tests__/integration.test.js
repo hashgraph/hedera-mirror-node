@@ -54,6 +54,7 @@ const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 const {cloudProviders, filterKeys} = require('../constants');
 const EntityId = require('../entityId');
+const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions.js');
@@ -332,6 +333,19 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   ]);
 });
 
+describe('DB integration test - transactionTypes.get', () => {
+  test('DB integration test -  transactionTypes.get - Verify valid transaction type returns value', async () => {
+    expect(await transactionTypes.get('CRYPTOTRANSFER')).toBe(14);
+    expect(await transactionTypes.get('cryptotransfer')).toBe(14);
+    expect(await transactionTypes.get('TOKENWIPE')).toBe(39);
+    expect(await transactionTypes.get('tokenWipe')).toBe(39);
+  });
+  test('DB integration test -  transactionTypes.get - Verify invalid transaction type throws error', async () => {
+    await expect(() => transactionTypes.get('TEST')).rejects.toThrowError(InvalidArgumentError);
+    await expect(() => transactionTypes.get(1)).rejects.toThrowError(InvalidArgumentError);
+  });
+});
+
 describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
   const s3TestDataRoot = path.join(__dirname, 'data', 's3');
@@ -362,7 +376,8 @@ describe('DB integration test - spec based', () => {
         const stats = await fs.promises.stat(filePath);
         if (stats.isDirectory()) {
           return walk(filePath);
-        } else if (stats.isFile()) {
+        }
+        if (stats.isFile()) {
           return filePath;
         }
       })
@@ -441,7 +456,7 @@ describe('DB integration test - spec based', () => {
 
     for (const sqlFunc of sqlFuncs) {
       // path.join returns normalized path, the sqlFunc is a local js file so add './'
-      const func = require('./' + path.join(pathPrefix || '', sqlFunc));
+      const func = require(`./${path.join(pathPrefix || '', sqlFunc)}`);
       logger.debug(`running sql func in ${sqlFunc}`);
       await func.apply(null, [sqlConnection]);
     }

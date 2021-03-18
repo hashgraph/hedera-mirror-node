@@ -25,6 +25,7 @@ const fs = require('fs');
 const _ = require('lodash');
 const log4js = require('log4js');
 const path = require('path');
+
 const logger = log4js.getLogger();
 
 const REQUIRED_FIELDS = [

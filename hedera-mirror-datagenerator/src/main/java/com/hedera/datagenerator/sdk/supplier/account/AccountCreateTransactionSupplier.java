@@ -30,6 +30,7 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.Transaction;
 
 @Data
 @Log4j2
@@ -43,15 +44,20 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    private boolean receiverSignatureRequired = false;
+
     private String publicKey;
 
     @Override
-    public AccountCreateTransaction get() {
+    public Transaction get() {
+        String memo = Utility.getMemo("Mirror node created test account");
         return new AccountCreateTransaction()
+                .setAccountMemo(memo)
                 .setInitialBalance(Hbar.fromTinybars(initialBalance))
                 .setKey(publicKey != null ? PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTransactionMemo(Utility.getMemo("Mirror node created test account"));
+                .setReceiverSignatureRequired(receiverSignatureRequired)
+                .setTransactionMemo(memo);
     }
 
     private PublicKey generateKeys() {

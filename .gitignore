@@ -127,6 +127,9 @@ local.properties
 hedera-mirror-rest/.husky/.gitignore
 hedera-mirror-rest/.husky/_
 
+# check-state-proof output dir
+hedera-mirror-rest/check-state-proof/output
+
 # Rosetta
 hedera-mirror-rosetta/scripts/validation/rosetta-cli
 coverage.txt

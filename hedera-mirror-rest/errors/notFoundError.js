@@ -17,7 +17,9 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
+
 const NotFoundErrorMessage = 'Not found';
 
 class NotFoundError extends Error {

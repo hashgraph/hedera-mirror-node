@@ -17,9 +17,11 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const log4js = require('log4js');
+
 const logger = log4js.getLogger();
 
 const checkSql = (parsedparams, condition) => {
@@ -51,10 +53,10 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
     // Extract the parameters (p1, p2, ..., pn) and the limit values
 
     // First clean up the newline/tab characters from multiline string
-    let sql = sqlquery.replace(/[\r\n\t]/gm, ' ');
+    const sql = sqlquery.replace(/[\r\n\t]/gm, ' ');
 
     // Extract everything before the first "from" clause (case insensitive)
-    let retparams = sql.match(/select(.*?)\bfrom\b(.*)/is);
+    const retparams = sql.match(/select(.*?)\bfrom\b(.*)/is);
     if (retparams.length === 0) {
       return [];
     }
@@ -76,12 +78,12 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
 
     // Now find the limit parameter. This doesn't have an operator
     // because the sql syntax is like: "limit 1000"
-    let limitparam = sql.match(/limit\s*?(\$.d*)\b/i);
+    const limitparam = sql.match(/limit\s*?(\$.d*)\b/i);
     if (limitparam !== null) {
-      positionalparams.push('limit = ' + limitparam[1]);
+      positionalparams.push(`limit = ${limitparam[1]}`);
     }
 
-    let parsedparams = [];
+    const parsedparams = [];
     // Now, parse each of them and separate out the field, operator and the value
     positionalparams.forEach((p) => {
       const matches = p.match(/(\w+?)\s*([<|=|>]=*)\s*\$(\d+?)/);
@@ -115,8 +117,8 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
     // And lastly, deal with the textual parameters like order and result
     // Find the order parameter by searching for 'desc' or 'asc'
 
-    const orderRegex = new RegExp(orderprefix + '\\s*\\b(desc|asc)\\b', 'i');
-    let orderparam = sql.match(orderRegex);
+    const orderRegex = new RegExp(`${orderprefix}\\s*\\b(desc|asc)\\b`, 'i');
+    const orderparam = sql.match(orderRegex);
     if (orderparam !== null) {
       parsedparams.push({
         field: 'order',
@@ -125,7 +127,7 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
       });
     }
     // Result parameter
-    let resultparam = sql.match(/result\s*(!*=)\s*(\d+)/);
+    const resultparam = sql.match(/result\s*(!*=)\s*(\d+)/);
     if (resultparam !== null && resultparam.length == 3) {
       parsedparams.push({
         field: 'result',
@@ -148,12 +150,12 @@ const testBadParams = (request, server, url, param, badValues) => {
     opListIndex = (opListIndex + 1) % opList.length;
 
     const queryparam = `${param}=${op}${opt}`;
-    const fullUrl = url + '?' + queryparam;
+    const fullUrl = `${url}?${queryparam}`;
     test(`Test: ${fullUrl}`, async () => {
-      let response = await request(server).get(fullUrl);
+      const response = await request(server).get(fullUrl);
       expect(response.status).toBeGreaterThanOrEqual(400);
       let check = false;
-      let err = JSON.parse(response.text);
+      const err = JSON.parse(response.text);
       if ('_status' in err && 'messages' in err._status && err._status.messages.length > 0) {
         if (err._status.messages[0].message === `Invalid parameter: ${param}`) {
           check = true;

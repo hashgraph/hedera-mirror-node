@@ -22,7 +22,7 @@
     "http-errors": "^1.8.0",
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
-    "mathjs": "^9.2.0",
+    "mathjs": "^9.3.0",
     "node-fetch": "^2.6.1",
     "pretty-ms": "^7.0.1"
   },

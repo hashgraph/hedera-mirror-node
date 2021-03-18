@@ -8,10 +8,10 @@ exports[`from v2 buffer truncated v2 buffer 1`] = `"Error reading byte array, ex
 
 exports[`from v2 buffer v2 buffer with extra data 1`] = `"Unsupported marker 0, expect 2"`;
 
-exports[`unsupported record file version  create object from version 3 1`] = `"Unsupported record file"`;
+exports[`unsupported record file version create object from version 3 1`] = `"Unsupported record file"`;
 
-exports[`unsupported record file version  create object from version 4 1`] = `"Unsupported record file"`;
+exports[`unsupported record file version create object from version 4 1`] = `"Unsupported record file"`;
 
-exports[`unsupported record file version  create object from version 5 1`] = `"Unsupported record file"`;
+exports[`unsupported record file version create object from version 5 1`] = `"Unsupported record file"`;
 
-exports[`unsupported record file version  create object from version 6 1`] = `"Unsupported record file"`;
+exports[`unsupported record file version create object from version 6 1`] = `"Unsupported record file"`;

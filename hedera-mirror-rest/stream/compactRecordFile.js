@@ -37,7 +37,7 @@ const COMPACT_OBJECT_FIELDS = [
   'endRunningHashObject',
 ];
 
-const SHA_384 = HashObject.SHA_384;
+const {SHA_384} = HashObject;
 
 // version, hapi version major/minor/patch, object stream version
 const V5_START_HASH_OFFSET = INT_SIZE + (INT_SIZE + INT_SIZE + INT_SIZE) + INT_SIZE;

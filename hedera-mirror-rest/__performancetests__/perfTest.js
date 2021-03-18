@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*-
  * ‌
  * Hedera Mirror Node
@@ -23,13 +22,13 @@
 
 const fetch = require('node-fetch');
 const fs = require('fs');
-const generateQuerySets = require('./generateQuerySets');
 const path = require('path');
-const utils = require('./utils.js');
-const vsprintf = require('sprintf-js').vsprintf;
+const {vsprintf} = require('sprintf-js');
 const yaml = require('js-yaml');
+const utils = require('./utils.js');
+const generateQuerySets = require('./generateQuerySets');
 
-let config = utils.config;
+const {config} = utils;
 
 /**
  * Returns average and standard deviation of numerical values in the given array.
@@ -49,17 +48,17 @@ const getAvgAndStdDev = (arr) => {
  */
 const executeQuerySet = async (querySet) => {
   console.log(`Running query set: ${querySet.name}`);
-  let url = config.apiServer + '/api/v1' + querySet.query;
+  let url = `${config.apiServer}/api/v1${querySet.query}`;
   if (!url.startsWith('http://')) {
-    url = 'http://' + url;
+    url = `http://${url}`;
   }
-  let querySetResult = {elapsedTimesMs: [], responseSizes: []};
+  const querySetResult = {elapsedTimesMs: [], responseSizes: []};
   for (let i = 0; i < querySet.paramValues.length; i++) {
     // TODO: support concurrent requests. That will make it possible to test throughput vs latency for system.
-    let query = vsprintf(url, querySet.paramValues[i]);
+    const query = vsprintf(url, querySet.paramValues[i]);
     console.log(`Querying REST API: ${query}`);
-    let hrstart = process.hrtime();
-    let response = await fetch(query)
+    const hrstart = process.hrtime();
+    const response = await fetch(query)
       .then((response) => {
         if (!response.ok) {
           return Promise.reject(`Returned ${response.status} - ${response.statusText}`);
@@ -69,7 +68,7 @@ const executeQuerySet = async (querySet) => {
       .catch((error) => {
         console.log(`Error when querying ${query} : ${error}`);
       });
-    let hrend = process.hrtime(hrstart);
+    const hrend = process.hrtime(hrstart);
     querySetResult.elapsedTimesMs.push(hrend[0] * 1000 + hrend[1] / 1000000);
     querySetResult.responseSizes.push(response.length);
   }
@@ -88,16 +87,16 @@ const executeQuerySet = async (querySet) => {
  * In the end, dumps the results into a file.
  */
 const executeQueries = async () => {
-  let hrstart = process.hrtime();
+  const hrstart = process.hrtime();
   console.log('Executing queries');
   console.log(`Loading query sets from ${config.querySetsFile}`);
-  let querySets = utils.mustLoadYaml(config.querySetsFile);
-  let results = [];
+  const querySets = utils.mustLoadYaml(config.querySetsFile);
+  const results = [];
   for (let i = 0; i < querySets.querySets.length; i++) {
     results.push(await executeQuerySet(querySets.querySets[i]));
   }
   console.log(results);
-  let hrend = process.hrtime(hrstart);
+  const hrend = process.hrtime(hrstart);
   console.log(`Finished executing queries. Time : ${hrend[0]}s ${parseInt(hrend[1] / 1000000)}ms `);
   writeResultToFile(results);
 };
@@ -106,13 +105,13 @@ const executeQueries = async () => {
  * If hedera.mirror.rest.resultsDir is set to a valid path, then output results to a file.
  */
 const writeResultToFile = (results) => {
-  let resultsDir = config.resultsDir;
+  const {resultsDir} = config;
   if (resultsDir === undefined || resultsDir === '') {
     console.log(`hedera.mirror.rest.resultsDir not set or empty. Skipping writing results to file.`);
     return;
   }
-  let dateTime = new Date().toJSON().substring(0, 19);
-  let resultFileName = path.join(resultsDir, 'apiResults-' + dateTime + '.yml');
+  const dateTime = new Date().toJSON().substring(0, 19);
+  const resultFileName = path.join(resultsDir, `apiResults-${dateTime}.yml`);
   try {
     if (!fs.existsSync(resultsDir)) {
       fs.mkdirSync(resultsDir);

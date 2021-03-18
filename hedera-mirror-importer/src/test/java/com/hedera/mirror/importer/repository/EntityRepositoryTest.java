@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -32,6 +33,19 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private EntityRepository entityRepository;
+
+    @Test
+    void nullCharacter() {
+        Entities entities = new Entities();
+        entities.setId(1L);
+        entities.setEntityNum(1L);
+        entities.setEntityRealm(0L);
+        entities.setEntityShard(0L);
+        entities.setEntityTypeId(1);
+        entities.setMemo("abc" + (char) 0);
+        entityRepository.save(entities);
+        assertThat(entityRepository.findById(entities.getId())).get().isEqualTo(entities);
+    }
 
     @Test
     void insertEntityId() {

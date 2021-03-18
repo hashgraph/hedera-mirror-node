@@ -17,9 +17,13 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
+const _ = require('lodash');
+
 const {DbError} = require('./errors/dbError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const transactionTypesQuery = 'select proto_id, name from t_transaction_types';
 
@@ -29,6 +33,9 @@ const transactionTypesMap = new Map();
 let promise;
 
 const get = async (transactionTypeName) => {
+  if (!_.isString(transactionTypeName)) {
+    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
+  }
   if (!promise) {
     if (logger.isTraceEnabled()) {
       logger.trace(`getTransactionTypes query: ${transactionTypesQuery}`);
@@ -41,11 +48,16 @@ const get = async (transactionTypeName) => {
     if (transactionTypesMap.size === 0) {
       result.rows.forEach((row) => transactionTypesMap.set(row.name, row.proto_id));
     }
-    return transactionTypesMap.get(transactionTypeName.toUpperCase());
   } catch (err) {
     promise = null;
     throw new DbError(err.message);
   }
+
+  const type = transactionTypesMap.get(transactionTypeName.toUpperCase());
+  if (type === undefined) {
+    throw new InvalidArgumentError(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
+  }
+  return type;
 };
 
 module.exports = {

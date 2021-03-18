@@ -97,6 +97,7 @@ class AccountBalanceLineParserV2Test {
             var id = accountBalance.getId();
 
             assertThat(accountBalance.getBalance()).isEqualTo(expectedBalance);
+            assertThat(id).isNotNull();
             assertThat(id.getAccountId().getRealmNum()).isEqualTo(expectedRealm);
             assertThat(id.getAccountId().getEntityNum()).isEqualTo(expectedAccount);
             assertThat(id.getConsensusTimestamp()).isEqualTo(timestamp);
@@ -115,6 +116,7 @@ class AccountBalanceLineParserV2Test {
                     assertThat(expectedTokenBalances.containsKey(actualId.getTokenId().getEntityNum()));
                     assertThat(actualTokenBalance.getBalance())
                             .isEqualTo(expectedTokenBalances.get(actualId.getTokenId().getEntityNum()));
+                    assertThat(actualId).isNotNull();
                     assertThat(actualId.getConsensusTimestamp()).isEqualTo(timestamp);
                     assertThat(actualId.getAccountId().getShardNum()).isEqualTo(mirrorProperties.getShard());
                     assertThat(actualId.getAccountId().getRealmNum()).isEqualTo(expectedRealm);

@@ -22,7 +22,8 @@
 
 const {INT_SIZE, LONG_SIZE} = require('../../stream/constants');
 const SignatureObject = require('../../stream/signatureObject');
-const SHA_384_WITH_RSA = SignatureObject.SHA_384_WITH_RSA;
+
+const {SHA_384_WITH_RSA} = SignatureObject;
 
 describe('SignatureObject', () => {
   let buffer;
