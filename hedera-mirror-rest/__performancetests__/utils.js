@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*-
  * ‌
  * Hedera Mirror Node
@@ -38,6 +37,6 @@ const mustLoadYaml = (fileName) => {
 };
 
 module.exports = {
-  config: config,
-  mustLoadYaml: mustLoadYaml,
+  config,
+  mustLoadYaml,
 };

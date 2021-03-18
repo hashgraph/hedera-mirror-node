@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*-
  * ‌
  * Hedera Mirror Node
@@ -22,10 +21,10 @@
 const fs = require('fs');
 const path = require('path');
 const pg = require('pg');
-const utils = require('./utils.js');
 const yaml = require('js-yaml');
+const utils = require('./utils.js');
 
-let config = utils.config;
+const {config} = utils;
 
 // Postgres pool
 const pool = new pg.Pool({
@@ -37,7 +36,7 @@ const pool = new pg.Pool({
 });
 
 const loadTests = () => {
-  let fileName = path.join(__dirname, 'tests.yml');
+  const fileName = path.join(__dirname, 'tests.yml');
   console.log(`Loading tests from ${fileName}`);
   return utils.mustLoadYaml(fileName);
 };
@@ -86,8 +85,8 @@ const sampleTokenIds = (n) => {
  * Converts integer timestamp format accepted by query param. For eg. 1577904152141445600 -> '1577904152.141445600'
  */
 const timestampToParamValue = (timestamp) => {
-  let timestampStr = '' + timestamp;
-  return timestampStr.substr(0, 10) + '.' + timestampStr.substr(10);
+  const timestampStr = `${timestamp}`;
+  return `${timestampStr.substr(0, 10)}.${timestampStr.substr(10)}`;
 };
 
 const populateParamValues = async (test, paramName, rangeFieldName, getSamples, convertToParam) => {
@@ -114,8 +113,8 @@ const populateParamValues = async (test, paramName, rangeFieldName, getSamples, 
 };
 
 const populateIdValues = async (test, getSamples, convertToParam) => {
-  let idValues = [];
-  let samples = await getSamples(test.count);
+  const idValues = [];
+  const samples = await getSamples(test.count);
   samples.forEach((sample) => {
     idValues.push([convertToParam(sample)]);
   });
@@ -126,12 +125,12 @@ const makeQueryParamsQuerySet = async (test) => {
   let paramValues = [];
   let paramName;
   let querySuffix;
-  let isRangeQuery = false;
-  let query = test.query;
+  const isRangeQuery = false;
+  let {query} = test;
   if (test.filterAxis === 'BALANCE') {
     paramName = 'account.balance';
     paramValues = await populateParamValues(test, paramName, 'rangeTinyHbars', sampleBalanceValues, (sample) => {
-      return '' + sample;
+      return `${sample}`;
     });
   } else if (test.filterAxis === 'CONSENSUS_TIMESTAMP') {
     paramName = 'timestamp';
@@ -147,35 +146,35 @@ const makeQueryParamsQuerySet = async (test) => {
   } else if (test.filterAxis === 'ACCOUNTID') {
     paramName = 'account.id';
     paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, (sample) => {
-      return '' + sample;
+      return `${sample}`;
     });
   } else if (test.filterAxis === 'TOKENID') {
     paramName = 'token.id';
     paramValues = await populateParamValues(test, 'token.id', 'rangeNumTokens', sampleTokenIds, (sample) => {
-      return '' + sample;
+      return `${sample}`;
     });
   } else if (test.filterAxis === 'NA') {
   } else {
     throw `Unexpected filterAxis '${test.filterAxis}'`;
   }
   if (isRangeQuery) {
-    querySuffix = paramName + '=gt:%s&' + paramName + '=lt:%s';
+    querySuffix = `${paramName}=gt:%s&${paramName}=lt:%s`;
   } else {
-    querySuffix = paramName + '=%d';
+    querySuffix = `${paramName}=%d`;
   }
   if (query.lastIndexOf('?') === -1) {
-    query += '?' + querySuffix;
+    query += `?${querySuffix}`;
   } else {
-    query += '&' + querySuffix;
+    query += `&${querySuffix}`;
   }
 
   if (test.multipleFilters) {
-    query += ('&' + querySuffix).repeat(test.count - 1);
+    query += `&${querySuffix}`.repeat(test.count - 1);
   }
   return {
     name: test.name,
-    query: query,
-    paramValues: paramValues,
+    query,
+    paramValues,
   };
 };
 
@@ -183,11 +182,11 @@ const makeIdsQuerySet = async (test) => {
   let idValues;
   if (test.idAxis === 'TOKENID') {
     idValues = await populateIdValues(test, sampleTokenIds, (sample) => {
-      return '' + sample;
+      return `${sample}`;
     });
   } else if (test.idAxis === 'ACCOUNTID') {
     idValues = await populateIdValues(test, sampleEntityIds, (sample) => {
-      return '' + sample;
+      return `${sample}`;
     });
   }
   return {
@@ -203,31 +202,31 @@ const makeIdsQuerySet = async (test) => {
 const makeQuerySet = async (test) => {
   if (test.filterAxis) {
     return await makeQueryParamsQuerySet(test);
-  } else if (test.idAxis) {
-    return await makeIdsQuerySet(test);
-  } else {
-    throw `Neither filterAxis nor idAxis specified, test requires one of these.'`;
   }
+  if (test.idAxis) {
+    return await makeIdsQuerySet(test);
+  }
+  throw `Neither filterAxis nor idAxis specified, test requires one of these.'`;
 };
 
 const generateQuerySets = () => {
-  let promises = [];
-  let tests = loadTests();
-  let querySets = {
+  const promises = [];
+  const tests = loadTests();
+  const querySets = {
     timeoutInSec: tests.timeoutInSec,
     querySets: [],
   };
   tests.tests.forEach((test) => {
-    let promise = makeQuerySet(test).then((t) => {
+    const promise = makeQuerySet(test).then((t) => {
       querySets.querySets.push(t);
     });
     promises.push(promise);
   });
   return Promise.all(promises).then(() => {
-    let querySetsFile = config.querySetsFile;
+    const {querySetsFile} = config;
     try {
       console.log(`Writing query sets to ${querySetsFile}`);
-      let parentDir = path.dirname(querySetsFile);
+      const parentDir = path.dirname(querySetsFile);
       if (!fs.existsSync(parentDir)) {
         fs.mkdirSync(parentDir);
       }

@@ -191,7 +191,7 @@ const addAccount = async (account) => {
 };
 
 const setAccountBalance = async (balance) => {
-  balance = Object.assign({timestamp: 0, id: null, balance: 0, realm_num: 0}, balance);
+  balance = {timestamp: 0, id: null, balance: 0, realm_num: 0, ...balance};
   const accountId = EntityId.of(config.shard, balance.realm_num, balance.id).getEncodedId();
   await sqlConnection.query(
     `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
@@ -311,15 +311,13 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 };
 
 const addTopicMessage = async (message) => {
-  message = Object.assign(
-    {
-      realm_num: 0,
-      message: 'message', // Base64 encoding: bWVzc2FnZQ==
-      running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
-      running_hash_version: 2,
-    },
-    message
-  );
+  message = {
+    realm_num: 0,
+    message: 'message', // Base64 encoding: bWVzc2FnZQ==
+    running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
+    running_hash_version: 2,
+    ...message,
+  };
 
   await sqlConnection.query(
     `INSERT INTO topic_message (

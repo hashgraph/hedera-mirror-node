@@ -20,7 +20,7 @@
 
 'use strict';
 
-const SHA_384 = require('../../stream/hashObject').SHA_384;
+const {SHA_384} = require('../../stream/hashObject');
 const {calculateRunningHash} = require('../../stream/runningHash');
 
 test('calculateRunningHash', () => {

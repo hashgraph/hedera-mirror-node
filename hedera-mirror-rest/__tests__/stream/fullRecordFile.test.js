@@ -23,7 +23,7 @@
 const FullRecordFile = require('../../stream/fullRecordFile');
 const testUtils = require('./testUtils');
 
-describe('unsupported record file version ', () => {
+describe('unsupported record file version', () => {
   testUtils.testRecordFileUnsupportedVersion([3, 4, 5, 6], FullRecordFile);
 });
 

@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const log4js = require('log4js');
@@ -48,7 +49,7 @@ const validateLen = function (balances, len) {
  * @return {Boolean}  Result of the check
  */
 const validateTsRange = function (balances, low, high) {
-  let ret = balances.timestamp >= low && balances.timestamp <= high;
+  const ret = balances.timestamp >= low && balances.timestamp <= high;
 
   if (!ret) {
     logger.warn(`validateTsRange check failed: ${balances.timestamp} is not between ${low} and  ${high}`);
@@ -150,7 +151,7 @@ const validateOrder = function (balances, order) {
   let ret = true;
   let offenderAcc = null;
   let offenderVal = null;
-  let direction = order === 'desc' ? -1 : 1;
+  const direction = order === 'desc' ? -1 : 1;
   const toAccNum = (acc) => acc.split('.')[2];
   let val = toAccNum(balances.balances[0].account) - direction;
   for (const bal of balances.balances) {
@@ -180,7 +181,7 @@ const validateOrder = function (balances, order) {
 const singletests = {
   timestamp_lowerlimit: {
     urlparam: `timestamp=gte:${timeOneHourAgo}`,
-    checks: [{field: 'consensus_timestamp', operator: '>=', value: timeOneHourAgo + '000000000'}],
+    checks: [{field: 'consensus_timestamp', operator: '>=', value: `${timeOneHourAgo}000000000`}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -188,7 +189,7 @@ const singletests = {
   },
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
-    checks: [{field: 'consensus_timestamp', operator: '<', value: timeNow + '000000000'}],
+    checks: [{field: 'consensus_timestamp', operator: '<', value: `${timeNow}000000000`}],
     checkFunctions: [
       {func: validateTsRange, args: [0, timeNow]},
       {func: validateFields, args: []},
@@ -196,7 +197,7 @@ const singletests = {
   },
   timestamp_equal: {
     urlparam: `timestamp=${timeOneHourAgo}`,
-    checks: [{field: 'consensus_timestamp', operator: '<=', value: timeOneHourAgo + '000000000'}],
+    checks: [{field: 'consensus_timestamp', operator: '<=', value: `${timeOneHourAgo}000000000`}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo - config.maxLimit, timeOneHourAgo]},
       {func: validateFields, args: []},
@@ -299,16 +300,16 @@ const combinedtests = [
 
 // Start of tests
 describe('Balances tests', () => {
-  let api = '/api/v1/balances';
+  const api = '/api/v1/balances';
 
   // First, execute the single tests
   for (const [name, item] of Object.entries(singletests)) {
     test(`Balances single test: ${name} - URL: ${item.urlparam}`, async () => {
-      let response = await request(server).get([api, item.urlparam].join('?'));
+      const response = await request(server).get([api, item.urlparam].join('?'));
 
       expect(response.status).toEqual(200);
       const balances = JSON.parse(response.text);
-      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      const {parsedparams} = JSON.parse(response.text).sqlQuery;
 
       // Verify the sql query against each of the specified checks
       let check = true;
@@ -331,20 +332,20 @@ describe('Balances tests', () => {
   // And now, execute the combined tests
   for (const combination of combinedtests) {
     // Combine the individual (single) checks as specified in the combinedtests array
-    let combtest = {urls: [], checks: [], names: ''};
+    const combtest = {urls: [], checks: [], names: ''};
     for (const testname of combination) {
       if (testname in singletests) {
-        combtest.names += testname + ' ';
+        combtest.names += `${testname} `;
         combtest.urls.push(singletests[testname].urlparam);
         combtest.checks = combtest.checks.concat(singletests[testname].checks);
       }
     }
     const comburl = combtest.urls.join('&');
     test(`Balances combination test: ${combtest.names} - URL: ${comburl}`, async () => {
-      let response = await request(server).get([api, comburl].join('?'));
+      const response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
       const balances = JSON.parse(response.text);
-      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      const {parsedparams} = JSON.parse(response.text).sqlQuery;
 
       // Verify the sql query against each of the specified checks
       let check = true;

@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const {DbError} = require('./errors/dbError');
@@ -39,7 +40,6 @@ const readinessCheck = async () => {
       if (results.rowCount !== 1) {
         throw new NotFoundError('Application readiness check failed');
       }
-      return;
     });
 };
 
@@ -47,9 +47,7 @@ const readinessCheck = async () => {
  * Function to determine liveness of application.
  * @return {} None.
  */
-const livenessCheck = async () => {
-  return;
-};
+const livenessCheck = async () => {};
 
 /**
  * Allows for a graceful shutdown.
@@ -63,7 +61,7 @@ function beforeDown() {
 }
 
 module.exports = {
-  readinessCheck: readinessCheck,
-  livenessCheck: livenessCheck,
-  beforeDown: beforeDown,
+  readinessCheck,
+  livenessCheck,
+  beforeDown,
 };

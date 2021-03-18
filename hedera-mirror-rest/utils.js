@@ -229,7 +229,7 @@ const validateReq = async (req) => {
       if (!isRepeatedQueryParameterValidLength(req.query[key])) {
         badParams.push({
           code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
-          key: key,
+          key,
           count: req.query[key].length,
           max: config.maxRepeatedQueryParameters,
         });
@@ -237,11 +237,11 @@ const validateReq = async (req) => {
       }
       for (const val of req.query[key]) {
         if (!(await paramValidityChecks(key, val))) {
-          badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
+          badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
         }
       }
     } else if (!(await paramValidityChecks(key, req.query[key]))) {
-      badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key: key});
+      badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
     }
   }
 
@@ -336,7 +336,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
       continue;
     }
     const processedValue = processValue(opAndValue.value);
-    //Equal ops have to be processed in bulk at the end to format the IN() correctly.
+    // Equal ops have to be processed in bulk at the end to format the IN() correctly.
     if (opAndValue.op === opsMap.eq && allowMultiple) {
       equalValues.add(processedValue);
     } else {
@@ -422,11 +422,11 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
     (op, value) => {
       if (value === 'credit') {
         return [`${columnName} > ?`, [0]];
-      } else if (value === 'debit') {
-        return [`${columnName} < ?`, [0]];
-      } else {
-        return null;
       }
+      if (value === 'debit') {
+        return [`${columnName} < ?`, [0]];
+      }
+      return null;
     },
     false
   );

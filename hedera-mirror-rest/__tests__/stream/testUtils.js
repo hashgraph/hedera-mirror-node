@@ -313,7 +313,7 @@ const testRecordFileFromBufferOrObj = (version, clazz, supportObj = false, hasRu
   });
 
   test(`truncated v${version} buffer`, () => {
-    const buffer = getTestRecordFiles(version)[0].buffer;
+    const {buffer} = getTestRecordFiles(version)[0];
     expect(() => new clazz(buffer.slice(0, buffer.length - 1))).toThrowErrorMatchingSnapshot();
   });
 

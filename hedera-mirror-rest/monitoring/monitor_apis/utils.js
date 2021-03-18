@@ -275,12 +275,10 @@ const checkElementsOrder = (elements, option) => {
     } else {
       comparator = (cur, prev) => cur > prev;
     }
+  } else if (compare) {
+    comparator = (cur, prev) => compare(cur, prev) === -1;
   } else {
-    if (compare) {
-      comparator = (cur, prev) => compare(cur, prev) === -1;
-    } else {
-      comparator = (cur, prev) => cur < prev;
-    }
+    comparator = (cur, prev) => cur < prev;
   }
 
   let previous = getValue(elements[0]);

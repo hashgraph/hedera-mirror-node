@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const utils = require('../utils.js');
@@ -25,59 +26,58 @@ const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
 
-
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
-    var val = utils.getNullableNumber(0);
+    const val = utils.getNullableNumber(0);
     expect(val).toBe('0');
   });
 
   test('Verify getNullableNumber returns correct result for null', () => {
-    var val = utils.getNullableNumber(null);
+    const val = utils.getNullableNumber(null);
     expect(val).toBe(null);
   });
 
   test('Verify getNullableNumber returns correct result for undefined', () => {
-    var val = utils.getNullableNumber(undefined);
+    const val = utils.getNullableNumber(undefined);
     expect(val).toBe(null);
   });
 
   test('Verify getNullableNumber returns correct result for valid number', () => {
-    var validNumber = 10;
-    var val = utils.getNullableNumber(validNumber);
+    const validNumber = 10;
+    const val = utils.getNullableNumber(validNumber);
     expect(val).toBe(validNumber.toString());
   });
 });
 
 describe('Utils nsToSecNs tests', () => {
-  var validStartNs = '9223372036854775837';
+  const validStartNs = '9223372036854775837';
   test('Verify nsToSecNs returns correct result for valid validStartNs', () => {
-    var val = utils.nsToSecNs(validStartNs);
+    const val = utils.nsToSecNs(validStartNs);
     expect(val).toBe('9223372036.854775837');
   });
 
   test('Verify nsToSecNs returns correct result for 0 validStartNs', () => {
-    var val = utils.nsToSecNs(0);
+    const val = utils.nsToSecNs(0);
     expect(val).toBe('0.000000000');
   });
 
   test('Verify nsToSecNs returns correct result for null validStartNs', () => {
-    var val = utils.nsToSecNs(null);
+    const val = utils.nsToSecNs(null);
     expect(val).toBe('0.000000000');
   });
 
   test('Verify nsToSecNsWithHyphen returns correct result for valid validStartNs', () => {
-    var val = utils.nsToSecNsWithHyphen(validStartNs);
+    const val = utils.nsToSecNsWithHyphen(validStartNs);
     expect(val).toBe('9223372036-854775837');
   });
 
   test('Verify nsToSecNsWithHyphen returns correct result for 0 validStartNs', () => {
-    var val = utils.nsToSecNsWithHyphen(0);
+    const val = utils.nsToSecNsWithHyphen(0);
     expect(val).toBe('0-000000000');
   });
 
   test('Verify nsToSecNsWithHyphen returns correct result for null validStartNs', () => {
-    var val = utils.nsToSecNsWithHyphen(null);
+    const val = utils.nsToSecNsWithHyphen(null);
     expect(val).toBe('0-000000000');
   });
 });
@@ -302,336 +302,390 @@ const parseQueryParamTest = (testPrefix, testSpecs, parseParam) => {
   });
 };
 
-//Common test names for parse*QueryParam tests
-const singleParamTestName = "Single parameter";
-const noParamTestName = "No parameters";
-const multipleParamsTestName = "Multiple parameters different ops";
-const extraParamTestName = "Extra useless parameter";
-const multipleEqualsTestName = "Multiple =";
-const duplicateParamsTestName = "Duplicate parameters"
+// Common test names for parse*QueryParam tests
+const singleParamTestName = 'Single parameter';
+const noParamTestName = 'No parameters';
+const multipleParamsTestName = 'Multiple parameters different ops';
+const extraParamTestName = 'Extra useless parameter';
+const multipleEqualsTestName = 'Multiple =';
+const duplicateParamsTestName = 'Duplicate parameters';
 
 describe('Utils parseParams tests', () => {
   const testSpecs = [
     {
-      name: "Undefined parameters array",
+      name: 'Undefined parameters array',
       parsedQueryParams: undefined,
-      expectedClause: "",
-      expectedValues: []
+      expectedClause: '',
+      expectedValues: [],
     },
     {
       name: noParamTestName,
       parsedQueryParams: [],
-      expectedClause: "",
-      expectedValues: []
+      expectedClause: '',
+      expectedValues: [],
     },
     {
       name: singleParamTestName,
-      parsedQueryParams: "gte:1",
-      expectedClause: "column >= ?",
-      expectedValues: ["1"]
+      parsedQueryParams: 'gte:1',
+      expectedClause: 'column >= ?',
+      expectedValues: ['1'],
     },
-  ]
-  parseQueryParamTest('Utils parseParams - ', testSpecs,
-    (spec) => utils.parseParams(spec.parsedQueryParams, (value) => value, (op, paramValue) => [`column${op}?`, paramValue], false));
+  ];
+  parseQueryParamTest('Utils parseParams - ', testSpecs, (spec) =>
+    utils.parseParams(
+      spec.parsedQueryParams,
+      (value) => value,
+      (op, paramValue) => [`column${op}?`, paramValue],
+      false
+    )
+  );
 
-  test('Utils parseParams - Invalid clause ', () => {
-    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}`, paramValue], false)).toThrow(InvalidClauseError);
-    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}??`], false)).toThrow(InvalidClauseError);
-    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}?`, []], false)).toThrow(InvalidClauseError);
-    expect(() => utils.parseParams("gte:1", (value) => value, (op, paramValue) => [`column${op}?`, [paramValue, paramValue]], true)).toThrow(InvalidClauseError);
-
-  })
-
+  test('Utils parseParams - Invalid clause', () => {
+    expect(() =>
+      utils.parseParams(
+        'gte:1',
+        (value) => value,
+        (op, paramValue) => [`column${op}`, paramValue],
+        false
+      )
+    ).toThrow(InvalidClauseError);
+    expect(() =>
+      utils.parseParams(
+        'gte:1',
+        (value) => value,
+        (op, paramValue) => [`column${op}??`],
+        false
+      )
+    ).toThrow(InvalidClauseError);
+    expect(() =>
+      utils.parseParams(
+        'gte:1',
+        (value) => value,
+        (op, paramValue) => [`column${op}?`, []],
+        false
+      )
+    ).toThrow(InvalidClauseError);
+    expect(() =>
+      utils.parseParams(
+        'gte:1',
+        (value) => value,
+        (op, paramValue) => [`column${op}?`, [paramValue, paramValue]],
+        true
+      )
+    ).toThrow(InvalidClauseError);
+  });
 });
 
 describe('Utils parseAccountIdQueryParam tests', () => {
   const testSpecs = [
     {
       name: singleParamTestName,
-      parsedQueryParams: {"account.id": "gte:0.0.3"},
-      expectedClause: "account.id >= ?",
-      expectedValues: ["3"]
+      parsedQueryParams: {'account.id': 'gte:0.0.3'},
+      expectedClause: 'account.id >= ?',
+      expectedValues: ['3'],
     },
     {
       name: noParamTestName,
       parsedQueryParams: {},
-      expectedClause: "",
-      expectedValues: []
+      expectedClause: '',
+      expectedValues: [],
     },
     {
       name: multipleParamsTestName,
-      parsedQueryParams: {"account.id": ["gte:0.0.3", "lt:0.0.5", "2"]},
-      expectedClause: "account.id >= ? and account.id < ? and account.id IN (?)",
-      expectedValues: ["3", "5", "2"]
+      parsedQueryParams: {'account.id': ['gte:0.0.3', 'lt:0.0.5', '2']},
+      expectedClause: 'account.id >= ? and account.id < ? and account.id IN (?)',
+      expectedValues: ['3', '5', '2'],
     },
     {
       name: extraParamTestName,
       parsedQueryParams: {
-        "account.id": "0.0.3",
-        "timestamp": "2000"
+        'account.id': '0.0.3',
+        timestamp: '2000',
       },
-      expectedClause: "account.id IN (?)",
-      expectedValues: ["3"]
+      expectedClause: 'account.id IN (?)',
+      expectedValues: ['3'],
     },
     {
       name: multipleEqualsTestName,
-      parsedQueryParams: {"account.id": ["0.0.3", "4"]},
-      expectedClause: "account.id IN (?, ?)",
-      expectedValues: ["3", "4"]
+      parsedQueryParams: {'account.id': ['0.0.3', '4']},
+      expectedClause: 'account.id IN (?, ?)',
+      expectedValues: ['3', '4'],
     },
-
   ];
-  parseQueryParamTest('Utils parseAccountIdQueryParam - ', testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, "account.id"));
+  parseQueryParamTest('Utils parseAccountIdQueryParam - ', testSpecs, (spec) =>
+    utils.parseAccountIdQueryParam(spec.parsedQueryParams, 'account.id')
+  );
 });
 
 describe('Utils parseTimestampQueryParam tests', () => {
   const testSpecs = [
     {
       name: singleParamTestName,
-      parsedQueryParams: {"timestamp": "1000"},
-      expectedClause: "timestamp = ?",
-      expectedValues: ["1000000000000"]
+      parsedQueryParams: {timestamp: '1000'},
+      expectedClause: 'timestamp = ?',
+      expectedValues: ['1000000000000'],
     },
     {
       name: noParamTestName,
       parsedQueryParams: {},
-      expectedClause: "",
-      expectedValues: []
+      expectedClause: '',
+      expectedValues: [],
     },
     {
       name: multipleParamsTestName,
-      parsedQueryParams: {"timestamp": ["gte:1000", "lt:2000.222", "3000.333333333"]},
-      expectedClause: "timestamp >= ? and timestamp < ? and timestamp = ?",
-      expectedValues: ["1000000000000", "2000222000000", "3000333333333"]
+      parsedQueryParams: {timestamp: ['gte:1000', 'lt:2000.222', '3000.333333333']},
+      expectedClause: 'timestamp >= ? and timestamp < ? and timestamp = ?',
+      expectedValues: ['1000000000000', '2000222000000', '3000333333333'],
     },
     {
       name: extraParamTestName,
       parsedQueryParams: {
-        "timestamp": "1000",
-        "fake.id": "2000"
+        timestamp: '1000',
+        'fake.id': '2000',
       },
-      expectedClause: "timestamp = ?",
-      expectedValues: ["1000000000000"]
+      expectedClause: 'timestamp = ?',
+      expectedValues: ['1000000000000'],
     },
     {
       name: multipleEqualsTestName,
-      parsedQueryParams: {"timestamp": ["1000", "4000"]},
-      expectedClause: "timestamp = ? and timestamp = ?",
-      expectedValues: ["1000000000000", "4000000000000"]
+      parsedQueryParams: {timestamp: ['1000', '4000']},
+      expectedClause: 'timestamp = ? and timestamp = ?',
+      expectedValues: ['1000000000000', '4000000000000'],
     },
     {
       name: duplicateParamsTestName,
-      parsedQueryParams: {"timestamp": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
-      expectedClause: "timestamp = ? and timestamp <= ? and timestamp >= ? and timestamp >= ?",
-      expectedValues: ["5000000000000", "1000000000000", "1000000000000", "2000000000000"]
+      parsedQueryParams: {timestamp: ['5000', '5000', 'lte:1000', 'lte:1000', 'gte:1000', 'gte:2000']},
+      expectedClause: 'timestamp = ? and timestamp <= ? and timestamp >= ? and timestamp >= ?',
+      expectedValues: ['5000000000000', '1000000000000', '1000000000000', '2000000000000'],
     },
     {
-      name: "Single parameter with OpOverride",
-      parsedQueryParams: {"timestamp": "1000"},
-      expectedClause: "timestamp <= ?",
-      expectedValues: ["1000000000000"],
+      name: 'Single parameter with OpOverride',
+      parsedQueryParams: {timestamp: '1000'},
+      expectedClause: 'timestamp <= ?',
+      expectedValues: ['1000000000000'],
       opOverride: {
-        [utils.opsMap.eq]: utils.opsMap.lte
-      }
+        [utils.opsMap.eq]: utils.opsMap.lte,
+      },
     },
   ];
-  parseQueryParamTest('Utils parseTimestampQueryParam - ', testSpecs, (spec) => utils.parseTimestampQueryParam(spec.parsedQueryParams, "timestamp", spec.opOverride));
+  parseQueryParamTest('Utils parseTimestampQueryParam - ', testSpecs, (spec) =>
+    utils.parseTimestampQueryParam(spec.parsedQueryParams, 'timestamp', spec.opOverride)
+  );
 });
 
 describe('Utils parseBalanceQueryParam tests', () => {
   const testSpecs = [
     {
       name: singleParamTestName,
-      parsedQueryParams: {"account.balance": "gte:1000"},
-      expectedClause: "account.balance >= ?",
-      expectedValues: ["1000"]
+      parsedQueryParams: {'account.balance': 'gte:1000'},
+      expectedClause: 'account.balance >= ?',
+      expectedValues: ['1000'],
     },
     {
       name: noParamTestName,
       parsedQueryParams: {},
-      expectedClause: "",
-      expectedValues: []
+      expectedClause: '',
+      expectedValues: [],
     },
     {
       name: multipleParamsTestName,
-      parsedQueryParams: {"account.balance": ["gte:1000", "lt:2000.222", "4000.4444"]},
-      expectedClause: "account.balance >= ? and account.balance < ? and account.balance = ?",
-      expectedValues: ["1000", "2000.222", "4000.4444"]
+      parsedQueryParams: {'account.balance': ['gte:1000', 'lt:2000.222', '4000.4444']},
+      expectedClause: 'account.balance >= ? and account.balance < ? and account.balance = ?',
+      expectedValues: ['1000', '2000.222', '4000.4444'],
     },
     {
       name: extraParamTestName,
       parsedQueryParams: {
-        "account.balance": "1000",
-        "fake.id": "2000"
+        'account.balance': '1000',
+        'fake.id': '2000',
       },
-      expectedClause: "account.balance = ?",
-      expectedValues: ["1000"]
+      expectedClause: 'account.balance = ?',
+      expectedValues: ['1000'],
     },
     {
       name: multipleEqualsTestName,
-      parsedQueryParams: {"account.balance": ["1000", "4000"]},
-      expectedClause: "account.balance = ? and account.balance = ?",
-      expectedValues: ["1000", "4000"]
+      parsedQueryParams: {'account.balance': ['1000', '4000']},
+      expectedClause: 'account.balance = ? and account.balance = ?',
+      expectedValues: ['1000', '4000'],
     },
     {
       name: duplicateParamsTestName,
-      parsedQueryParams: {"account.balance": ["5000", "5000", "lte:1000", "lte:1000", "gte:1000", "gte:2000"]},
-      expectedClause: "account.balance = ? and account.balance <= ? and account.balance >= ? and account.balance >= ?",
-      expectedValues: ["5000", "1000", "1000", "2000"]
+      parsedQueryParams: {'account.balance': ['5000', '5000', 'lte:1000', 'lte:1000', 'gte:1000', 'gte:2000']},
+      expectedClause: 'account.balance = ? and account.balance <= ? and account.balance >= ? and account.balance >= ?',
+      expectedValues: ['5000', '1000', '1000', '2000'],
     },
     {
-      name: "Single parameter not numeric",
-      parsedQueryParams: {"account.balance": "gte:QQQ"},
-      expectedClause: "",
-      expectedValues: []
+      name: 'Single parameter not numeric',
+      parsedQueryParams: {'account.balance': 'gte:QQQ'},
+      expectedClause: '',
+      expectedValues: [],
     },
   ];
-  parseQueryParamTest('Utils parseBalanceQueryParam - ', testSpecs, (spec) => utils.parseBalanceQueryParam(spec.parsedQueryParams, "account.balance"));
+  parseQueryParamTest('Utils parseBalanceQueryParam - ', testSpecs, (spec) =>
+    utils.parseBalanceQueryParam(spec.parsedQueryParams, 'account.balance')
+  );
 });
 
 describe('Utils parsePublicKeyQueryParam tests', () => {
   const testSpecs = [
     {
       name: singleParamTestName,
-      //DER borrowed from ed25519.test.js
-      parsedQueryParams: {"account.publickey": "gte:key"},
-      expectedClause: "account.publickey >= ?",
-      expectedValues: ["key"]
+      // DER borrowed from ed25519.test.js
+      parsedQueryParams: {'account.publickey': 'gte:key'},
+      expectedClause: 'account.publickey >= ?',
+      expectedValues: ['key'],
     },
     {
       name: noParamTestName,
       parsedQueryParams: {},
-      expectedClause: "",
-      expectedValues: []
+      expectedClause: '',
+      expectedValues: [],
     },
     {
       name: multipleParamsTestName,
-      parsedQueryParams: {"account.publickey": ["gte:key1", "lt:key2", "key3"]},
-      expectedClause: "account.publickey >= ? and account.publickey < ? and account.publickey = ?",
-      expectedValues: ["key1", "key2", "key3"]
+      parsedQueryParams: {'account.publickey': ['gte:key1', 'lt:key2', 'key3']},
+      expectedClause: 'account.publickey >= ? and account.publickey < ? and account.publickey = ?',
+      expectedValues: ['key1', 'key2', 'key3'],
     },
     {
       name: extraParamTestName,
       parsedQueryParams: {
-        "account.publickey": "key",
-        "fake.id": "2000"
+        'account.publickey': 'key',
+        'fake.id': '2000',
       },
-      expectedClause: "account.publickey = ?",
-      expectedValues: ["key"]
+      expectedClause: 'account.publickey = ?',
+      expectedValues: ['key'],
     },
     {
       name: multipleEqualsTestName,
-      parsedQueryParams: {"account.publickey": ["key1", "key2"]},
-      expectedClause: "account.publickey = ? and account.publickey = ?",
-      expectedValues: ["key1", "key2"]
+      parsedQueryParams: {'account.publickey': ['key1', 'key2']},
+      expectedClause: 'account.publickey = ? and account.publickey = ?',
+      expectedValues: ['key1', 'key2'],
     },
     {
       name: duplicateParamsTestName,
-      parsedQueryParams: {"account.publickey": ["key1", "key1", "lte:key2", "lte:key2", "gte:key2", "gte:key3"]},
-      expectedClause: "account.publickey = ? and account.publickey <= ? and account.publickey >= ? and account.publickey >= ?",
-      expectedValues: ["key1", "key2", "key2", "key3"]
+      parsedQueryParams: {'account.publickey': ['key1', 'key1', 'lte:key2', 'lte:key2', 'gte:key2', 'gte:key3']},
+      expectedClause:
+        'account.publickey = ? and account.publickey <= ? and account.publickey >= ? and account.publickey >= ?',
+      expectedValues: ['key1', 'key2', 'key2', 'key3'],
     },
     {
-      name: "Single parameter DER encoded",
-      parsedQueryParams: {"account.publickey": "gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc"},
-      expectedClause: "account.publickey >= ?",
-      expectedValues: ["7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC"]
+      name: 'Single parameter DER encoded',
+      parsedQueryParams: {
+        'account.publickey':
+          'gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc',
+      },
+      expectedClause: 'account.publickey >= ?',
+      expectedValues: ['7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC'],
     },
   ];
-  parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, "account.publickey"));
+  parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) =>
+    utils.parsePublicKeyQueryParam(spec.parsedQueryParams, 'account.publickey')
+  );
 });
 
 describe('Utils parseCreditDebitParams tests', () => {
   const testSpecs = [
     {
-      name: "Single parameter credit",
-      //DER borrowed from ed25519.test.js
-      parsedQueryParams: {"type": "credit"},
-      expectedClause: "type > ?",
+      name: 'Single parameter credit',
+      // DER borrowed from ed25519.test.js
+      parsedQueryParams: {type: 'credit'},
+      expectedClause: 'type > ?',
       expectedValues: [0],
     },
     {
-      name: "Single parameter debit",
-      //DER borrowed from ed25519.type.js
-      parsedQueryParams: {"type": "debit"},
-      expectedClause: "type < ?",
+      name: 'Single parameter debit',
+      // DER borrowed from ed25519.type.js
+      parsedQueryParams: {type: 'debit'},
+      expectedClause: 'type < ?',
       expectedValues: [0],
     },
     {
       name: noParamTestName,
       parsedQueryParams: {},
-      expectedClause: "",
+      expectedClause: '',
       expectedValues: [],
     },
     {
-      name: "Multiple parameters both values",
-      parsedQueryParams: {"type": ["credit", "debit"]},
-      expectedClause: "type > ? and type < ?",
+      name: 'Multiple parameters both values',
+      parsedQueryParams: {type: ['credit', 'debit']},
+      expectedClause: 'type > ? and type < ?',
       expectedValues: [0, 0],
     },
     {
-      name: "Single parameter op ignored",
-      parsedQueryParams: {"type": ["gte:credit"]},
-      expectedClause: "type > ?",
+      name: 'Single parameter op ignored',
+      parsedQueryParams: {type: ['gte:credit']},
+      expectedClause: 'type > ?',
       expectedValues: [0],
     },
     {
-      name: "Single parameter invalid value",
-      parsedQueryParams: {"type": ["cash"]},
-      expectedClause: "",
+      name: 'Single parameter invalid value',
+      parsedQueryParams: {type: ['cash']},
+      expectedClause: '',
       expectedValues: [],
     },
   ];
-  parseQueryParamTest('Utils parseCreditDebitParams - ', testSpecs, (spec) => utils.parseCreditDebitParams(spec.parsedQueryParams, "type"));
+  parseQueryParamTest('Utils parseCreditDebitParams - ', testSpecs, (spec) =>
+    utils.parseCreditDebitParams(spec.parsedQueryParams, 'type')
+  );
 });
 
 describe('utils isRepeatedQueryParameterValidLength', () => {
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${config.maxRepeatedQueryParameters - 1} `, () => {
-    expect(utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters - 1).fill("0.0.3"))).toBeTruthy();
+  test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${
+    config.maxRepeatedQueryParameters - 1
+  } `, () => {
+    expect(
+      utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters - 1).fill('0.0.3'))
+    ).toBeTruthy();
   });
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with invalid amount ${config.maxRepeatedQueryParameters + 1}`, () => {
-    expect(utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters + 1).fill("0.0.3"))).toBeFalsy();
+  test(`utils isRepeatedQueryParameterValidLength verify account.id with invalid amount ${
+    config.maxRepeatedQueryParameters + 1
+  }`, () => {
+    expect(
+      utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters + 1).fill('0.0.3'))
+    ).toBeFalsy();
   });
   test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${config.maxRepeatedQueryParameters} `, () => {
-    expect(utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters).fill("0.0.3"))).toBeTruthy();
+    expect(
+      utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters).fill('0.0.3'))
+    ).toBeTruthy();
   });
 });
 
 describe('utils validateReq', () => {
-
   const specs = [
     {
-      name: "Too many parameters",
+      name: 'Too many parameters',
       req: {
         query: {
-          "timestamp": Array(config.maxRepeatedQueryParameters + 1).fill("123")
-        }
-      }
+          timestamp: Array(config.maxRepeatedQueryParameters + 1).fill('123'),
+        },
+      },
     },
     {
-      name: "Invalid account.id",
+      name: 'Invalid account.id',
       req: {
         query: {
-          "account.id": "x"
-        }
-      }
+          'account.id': 'x',
+        },
+      },
     },
     {
-      name: "Invalid account.id and timestamp",
+      name: 'Invalid account.id and timestamp',
       req: {
         query: {
-          "account.id": "x",
-          "timestamp": "x"
-        }
-      }
+          'account.id': 'x',
+          timestamp: 'x',
+        },
+      },
     },
     {
-      name: "Invalid account.id array",
+      name: 'Invalid account.id array',
       req: {
         query: {
-          "account.id": ["0.0.3", "x"],
-        }
-      }
+          'account.id': ['0.0.3', 'x'],
+        },
+      },
     },
   ];
 

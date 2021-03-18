@@ -17,7 +17,9 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
+
 const DbErrorMessage = 'Unable to connect to database. Please retry later';
 
 class DbError extends Error {

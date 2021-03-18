@@ -21,7 +21,7 @@
 'use strict';
 
 const {BYTE_SIZE} = require('../../stream/constants');
-const SHA_384 = require('../../stream/hashObject').SHA_384;
+const {SHA_384} = require('../../stream/hashObject');
 const SignatureFile = require('../../stream/signatureFile');
 const {testSignatureFiles} = require('./testUtils');
 
