@@ -31,11 +31,6 @@ class BalanceFileReaderImplV2Test extends CsvBalanceFileReaderTest {
 
     static final String FILE_PATH = getTestFilename("v2", "2020-09-22T04_25_00.083212003Z_Balances.csv");
 
-//    BalanceFileReaderImplV2Test(BalanceFileReaderImplV2 balanceFileReader, AccountBalanceLineParserV2 parser,
-//                                @Value(FILENAME) File balanceFile) {
-//        super(balanceFileReader, parser, balanceFile, 106L);
-//    }
-
     BalanceFileReaderImplV2Test() {
         super(BalanceFileReaderImplV2.class, AccountBalanceLineParserV2.class, FILE_PATH, 106L);
     }

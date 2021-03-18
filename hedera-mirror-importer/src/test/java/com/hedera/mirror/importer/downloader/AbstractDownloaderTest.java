@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
@@ -119,6 +120,7 @@ public abstract class AbstractDownloaderTest {
     protected String file2;
     protected Instant file1Instant;
     protected Instant file2Instant;
+    protected List<Pair<Instant, String>> instantFilenamePairs;
     protected EntityId corruptedNodeAccountId;
     protected NodeSignatureVerifier nodeSignatureVerifier;
     protected SignatureFileReader signatureFileReader;
@@ -436,9 +438,10 @@ public abstract class AbstractDownloaderTest {
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
         expectLastStreamFile(null, 100L, startDate);
-        List<String> expectedFiles = List.of(file1, file2)
+        List<String> expectedFiles = instantFilenamePairs
                 .stream()
-                .filter(name -> new StreamFilename(name).getInstant().isAfter(startDate))
+                .filter(pair -> pair.getLeft().isAfter(startDate))
+                .map(Pair::getRight)
                 .collect(Collectors.toList());
 
         fileCopier.copy();
@@ -457,9 +460,10 @@ public abstract class AbstractDownloaderTest {
     void endDate(long seconds, String fileChoice) {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
         downloaderProperties.setBatchSize(1);
-        List<String> expectedFiles = List.of(file1, file2)
+        List<String> expectedFiles = instantFilenamePairs
                 .stream()
-                .filter(name -> !new StreamFilename(name).getInstant().isAfter(mirrorProperties.getEndDate()))
+                .filter(pair -> !pair.getLeft().isAfter(mirrorProperties.getEndDate()))
+                .map(Pair::getRight)
                 .collect(Collectors.toList());
         expectLastStreamFile(Instant.EPOCH);
 
@@ -577,6 +581,10 @@ public abstract class AbstractDownloaderTest {
 
         file1Instant = new StreamFilename(file1).getInstant();
         file2Instant = new StreamFilename(file2).getInstant();
+        instantFilenamePairs = List.of(
+                Pair.of(file1Instant, file1),
+                Pair.of(file2Instant, file2)
+        );
     }
 
     /**
