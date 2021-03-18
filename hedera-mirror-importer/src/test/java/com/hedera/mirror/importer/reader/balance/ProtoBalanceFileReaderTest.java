@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,7 +45,8 @@ import com.hedera.mirror.importer.util.Utility;
 class ProtoBalanceFileReaderTest {
 
     private static final String TIMESTAMP = "2021-03-08T20_15_00Z";
-    private static final String FILEPATH = "data/accountBalances/proto/" + TIMESTAMP + "_Balances.pb.gz";
+    private static final String FILEPATH = Paths.get("data", "accountBalances", "proto",
+            TIMESTAMP + "_Balances.pb.gz").toString();
 
     private AccountBalanceFile expected;
     private ProtoBalanceFileReader protoBalanceFileReader;
@@ -53,7 +55,7 @@ class ProtoBalanceFileReaderTest {
     @BeforeEach
     void setUp() {
         File file = TestUtils.getResource(FILEPATH).toPath().toFile();
-        streamFileData = StreamFileData.from(file);
+        streamFileData = StreamFileData.from("gz", file);
         expected = getExpectedAccountBalanceFile(streamFileData);
 
         protoBalanceFileReader = new ProtoBalanceFileReader();

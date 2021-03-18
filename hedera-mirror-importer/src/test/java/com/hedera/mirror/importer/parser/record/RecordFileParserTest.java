@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -60,7 +61,6 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 class RecordFileParserTest {
@@ -228,7 +228,7 @@ class RecordFileParserTest {
     private RecordFile recordFile() {
         long id = ++count;
         Instant instant = Instant.ofEpochSecond(0L, id);
-        String filename = StreamFilename.getDataFilenameWithLastExtension(parserProperties.getStreamType(), instant);
+        String filename = StreamFilename.getFilename(parserProperties.getStreamType(), DATA, instant);
         RecordFile recordFile = new RecordFile();
         recordFile.setBytes(new byte[] {0, 1, 2});
         recordFile.setConsensusEnd(id);

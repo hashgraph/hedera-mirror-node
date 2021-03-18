@@ -22,54 +22,69 @@ package com.hedera.mirror.importer.domain;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
 
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 
 import lombok.NonNull;
 import lombok.Value;
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.exception.FileOperationException;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
 @Value
 public class StreamFileData {
 
-    String filename;
-    byte[] bytes;
+    private static final CompressorStreamFactory compressorStreamFactory = new CompressorStreamFactory(true);
 
-    public static StreamFileData from(@NonNull File file) {
+    private final String compressor;
+    private final String filename;
+    private final byte[] bytes;
+
+    public static StreamFileData from(String compressor, @NonNull File file) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
-            return new StreamFileData(file.getName(), bytes);
+            return new StreamFileData(compressor, file.getName(), bytes);
+        } catch (InvalidStreamFileException e) {
+            throw e;
         } catch (Exception e) {
             throw new FileOperationException("Unable to read file to byte array", e);
         }
     }
 
+    public static StreamFileData from(@NonNull File file) {
+        return from(null, file);
+    }
+
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
-        return new StreamFileData(filename, contents.getBytes(StandardCharsets.UTF_8));
+        return new StreamFileData(null, filename, contents.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static StreamFileData from(@NonNull String filename, @NonNull byte[] bytes) {
+        return new StreamFileData(null, filename, bytes);
     }
 
     public InputStream getInputStream() {
         try {
             InputStream is = new ByteArrayInputStream(bytes);
-            if (filename.endsWith("." + StreamType.GZ_EXTENSION)) {
-                is = new GZIPInputStream(is);
+            if (!StringUtils.isBlank(compressor)) {
+                is = compressorStreamFactory.createCompressorInputStream(compressor, is);
             }
 
             return is;
-        } catch (IOException ex) {
-            throw new InvalidStreamFileException("Unable to open gzipped file " + filename, ex);
+        } catch (CompressorException ex) {
+            throw new InvalidStreamFileException("Unable to open compressed file " + filename, ex);
         }
     }
 
     @Override
     public String toString() {
-        return filename;
+        return getFilename();
     }
 }

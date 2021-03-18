@@ -131,7 +131,7 @@ abstract class RecordFileReaderTest {
                     Path testFile = getTestFile(recordFile);
                     byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
                     byte[] bytesCorrupted = ArrayUtils.addAll(bytes, new byte[] { 0, 1, 2, 3 });
-                    StreamFileData streamFileData = new StreamFileData(recordFile.getName(), bytesCorrupted);
+                    StreamFileData streamFileData = StreamFileData.from(recordFile.getName(), bytesCorrupted);
 
                     // when
                     assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));
@@ -150,7 +150,7 @@ abstract class RecordFileReaderTest {
                     Path testFile = getTestFile(recordFile);
                     byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
                     byte[] bytesTruncated = ArrayUtils.subarray(bytes, 0, bytes.length - 48);
-                    StreamFileData streamFileData = new StreamFileData(recordFile.getName(), bytesTruncated);
+                    StreamFileData streamFileData = StreamFileData.from(recordFile.getName(), bytesTruncated);
 
                     // when
                     assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));

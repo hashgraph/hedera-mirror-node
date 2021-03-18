@@ -20,25 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
 
 @Getter
 public enum StreamType {
 
-    BALANCE(AccountBalanceFile.class, "accountBalances", "balance", "_Balances",
-            List.of(Extension.of("pb", true), Extension.of("csv", false))),
-    EVENT(EventFile.class, "eventsStreams", "events_", "", List.of(Extension.of("evts", false))),
-    RECORD(RecordFile.class, "recordstreams", "record", "", List.of(Extension.of("rcd", false)));
+    BALANCE(AccountBalanceFile.class, "accountBalances", "balance", "_Balances", List.of("pb", "csv")),
+    EVENT(EventFile.class, "eventsStreams", "events_", "", List.of("evts")),
+    RECORD(RecordFile.class, "recordstreams", "record", "", List.of("rcd"));
 
-    public static final String GZ_EXTENSION = "gz";
     public static final String SIGNATURE_SUFFIX = "_sig";
 
     private static final String PARSED = "parsed";
@@ -50,46 +44,21 @@ public enum StreamType {
     private final String nodePrefix;
     private final String path;
     private final List<String> signatureExtensions;
-    private final Map<String, String> signatureToDataExtensionMap;
     private final Class<? extends StreamFile> streamFileClass;
     private final String suffix;
 
     StreamType(Class<? extends StreamFile> streamFileClass, String path, String nodePrefix, String suffix,
-            List<Extension> extensions) {
+            List<String> extensions) {
         this.streamFileClass = streamFileClass;
         this.path = path;
         this.nodePrefix = nodePrefix;
         this.suffix = suffix;
 
-        // build extensions and the map. extensions are passed in priority order. For signature extensions,
-        // the gzipped one comes first. The last*Extension is the alphabetically last
-        List<String> dataExtensionList = new ArrayList<>();
-        List<String> signatureExtensionList = new ArrayList<>();
-        Map<String, String> extensionMap = new HashMap<>();
-
-        for (Extension ext : extensions) {
-            // signature file can be not gzipped when the data file is gzipped
-            String dataExtension = ext.getName();
-            String signatureExtension = StringUtils.join(ext.getName(), SIGNATURE_SUFFIX);
-
-            if (ext.isGzipped()) {
-                dataExtension = StringUtils.joinWith(".", dataExtension, GZ_EXTENSION);
-                String gzippedSignatureExtension = StringUtils.joinWith(".", signatureExtension, GZ_EXTENSION);
-
-                signatureExtensionList.add(gzippedSignatureExtension);
-                extensionMap.put(gzippedSignatureExtension, dataExtension);
-            }
-
-            dataExtensionList.add(dataExtension);
-            signatureExtensionList.add(signatureExtension);
-            extensionMap.put(signatureExtension, dataExtension);
-        }
-
-        this.lastDataExtension = dataExtensionList.stream().max(Comparator.naturalOrder()).orElseThrow();
-        this.lastSignatureExtension = signatureExtensionList.stream().max(Comparator.naturalOrder()).orElseThrow();
-        this.dataExtensions = List.copyOf(dataExtensionList);
-        this.signatureExtensions = List.copyOf(signatureExtensionList);
-        this.signatureToDataExtensionMap = ImmutableMap.copyOf(extensionMap);
+        this.dataExtensions = Collections.unmodifiableList(extensions);
+        this.signatureExtensions = extensions.stream().map(ext -> ext + SIGNATURE_SUFFIX)
+                .collect(Collectors.toUnmodifiableList());
+        this.lastDataExtension = this.dataExtensions.stream().max(Comparator.naturalOrder()).orElseThrow();
+        this.lastSignatureExtension = this.signatureExtensions.stream().max(Comparator.naturalOrder()).orElseThrow();
     }
 
     public String getParsed() {
@@ -102,11 +71,5 @@ public enum StreamType {
 
     public boolean isChained() {
         return this != BALANCE;
-    }
-
-    @Value(staticConstructor = "of")
-    private static class Extension {
-        String name;
-        boolean gzipped;
     }
 }

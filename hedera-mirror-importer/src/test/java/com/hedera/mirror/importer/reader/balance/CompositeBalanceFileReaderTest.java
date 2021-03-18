@@ -39,6 +39,8 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 @ExtendWith(MockitoExtension.class)
 public class CompositeBalanceFileReaderTest {
 
+    private static final String BALANCE_FILENAME_PREFIX = "2021-03-15T14_30_00Z_Balances";
+
     @Mock
     private BalanceFileReaderImplV1 readerImplV1;
 
@@ -56,7 +58,7 @@ public class CompositeBalanceFileReaderTest {
 
     @Test
     void defaultsToVersion1Reader() {
-        StreamFileData streamFileData = StreamFileData.from("foo.csv", "timestamp:1");
+        StreamFileData streamFileData = StreamFileData.from(BALANCE_FILENAME_PREFIX + ".csv", "timestamp:1");
         when(protoBalanceFileReader.supports(streamFileData)).thenReturn(false);
         when(readerImplV2.supports(streamFileData)).thenReturn(false);
         compositeBalanceFileReader.read(streamFileData, consumer);
@@ -67,7 +69,7 @@ public class CompositeBalanceFileReaderTest {
 
     @Test
     void usesVersion2Reader() {
-        StreamFileData streamFileData = StreamFileData.from("foo.csv", "# version:2");
+        StreamFileData streamFileData = StreamFileData.from(BALANCE_FILENAME_PREFIX + ".csv", "# version:2");
         when(protoBalanceFileReader.supports(streamFileData)).thenReturn(false);
         when(readerImplV2.supports(streamFileData)).thenReturn(true);
         compositeBalanceFileReader.read(streamFileData, consumer);
@@ -78,7 +80,7 @@ public class CompositeBalanceFileReaderTest {
 
     @Test
     void usesProtoBalanceFileReader() {
-        StreamFileData streamFileData = StreamFileData.from("foo.pb.gz", "proto-based balance file");
+        StreamFileData streamFileData = StreamFileData.from(BALANCE_FILENAME_PREFIX + ".pb.gz", "proto-based balance file");
         when(protoBalanceFileReader.supports(streamFileData)).thenReturn(true);
         compositeBalanceFileReader.read(streamFileData, consumer);
         verify(protoBalanceFileReader, times(1)).read(streamFileData, consumer);

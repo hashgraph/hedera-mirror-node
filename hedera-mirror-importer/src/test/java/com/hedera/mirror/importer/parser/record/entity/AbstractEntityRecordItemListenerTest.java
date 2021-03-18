@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
@@ -173,7 +174,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
         Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        String filename = StreamFilename.getDataFilenameWithLastExtension(StreamType.RECORD, instant);
+        String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
         long consensusStart = recordItem.getConsensusTimestamp();
         RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
 
@@ -185,7 +186,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
         Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
-        String filename = StreamFilename.getDataFilenameWithLastExtension(StreamType.RECORD, instant);
+        String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
         long consensusStart = recordItems[0].getConsensusTimestamp();
         long consensusEnd = recordItems[recordItems.length - 1].getConsensusTimestamp();
         RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);

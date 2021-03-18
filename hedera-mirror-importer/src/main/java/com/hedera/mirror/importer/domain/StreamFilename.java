@@ -20,112 +20,145 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.google.common.base.Splitter;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
-import java.time.format.ResolverStyle;
+import java.util.Comparator;
 import java.util.List;
-import lombok.Getter;
+import lombok.NonNull;
 import lombok.Value;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-@Getter
-public class StreamFilename {
+@Value
+public class StreamFilename implements Comparable<StreamFilename> {
 
+    private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
     private static final char STANDARD_TIME_SEPARATOR = ':';
-    private static final DateTimeFormatter ISO_INSTANT_FULL_NANOS = new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .appendInstant(9)
-            .toFormatter()
-            .withResolverStyle(ResolverStyle.STRICT);
+    private static final Splitter FILENAME_SPLITTER = Splitter.on(FilenameUtils.EXTENSION_SEPARATOR).omitEmptyStrings();
 
+    private final String compressor;
     private final String extension;
     private final String filename;
     private final FileType fileType;
+    private final String fullExtension;
     private final Instant instant;
     private final StreamType streamType;
-    private final String timestamp;
 
     public StreamFilename(String filename) {
         this.filename = filename;
 
         TypeInfo typeInfo = extractTypeInfo(filename);
+        this.compressor = typeInfo.compressorName;
         this.extension = typeInfo.extension;
         this.fileType = typeInfo.fileType;
         this.streamType = typeInfo.streamType;
+        this.fullExtension = this.compressor == null ? this.extension : StringUtils
+                .joinWith(".", this.extension, this.compressor);
 
-        this.instant = extractInstant(filename, this.extension, this.streamType);
-        this.timestamp = ISO_INSTANT_FULL_NANOS.format(this.instant);
+        this.instant = extractInstant(filename, this.fullExtension, this.streamType.getSuffix());
     }
 
     /**
-     * Gets the data filename with the last extension of the specified streamType with instant.
+     * Gets the filename with the last extension of the specified streamType and fileType with instant.
      *
      * @param streamType
+     * @param fileType
      * @param instant
      * @return the data filename
      */
-    public static String getDataFilenameWithLastExtension(StreamType streamType, Instant instant) {
+    public static String getFilename(StreamType streamType, FileType fileType, Instant instant) {
         String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
         String suffix = streamType.getSuffix();
-        String extension = streamType.getLastDataExtension();
+        String extension;
+        if (fileType == FileType.DATA) {
+            extension = streamType.getLastDataExtension();
+        } else {
+            extension = streamType.getLastSignatureExtension();
+        }
+
         return StringUtils.joinWith(".", StringUtils.join(timestamp, suffix), extension);
     }
 
-    /**
-     * Gets the instant from the stream filename.
-     *
-     * @param filename
-     * @return instant from the stream filename
-     */
-    public static Instant getInstantFromStreamFilename(String filename) {
-        if (StringUtils.isBlank(filename)) {
-            return Instant.EPOCH;
-        }
-
-        return new StreamFilename(filename).getInstant();
+    @Override
+    public int compareTo(StreamFilename other) {
+        return COMPARATOR.compare(this, other);
     }
 
     /**
      * Gets the corresponding data filename
      *
+     * @param removeCompressor remove the compressor name or not
      * @return data filename
      */
-    public String getDataFilename() {
+    public String getDataFilename(boolean removeCompressor) {
+        String dataFilename;
         if (fileType == FileType.DATA) {
-            return filename;
+            dataFilename = filename;
+        } else {
+            String dataExtension = StringUtils.remove(fullExtension, StreamType.SIGNATURE_SUFFIX);
+            dataFilename = StringUtils.join(StringUtils.removeEnd(filename, fullExtension), dataExtension);
         }
 
-        String dataExtension = streamType.getSignatureToDataExtensionMap().get(extension);
-        if (dataExtension == null) {
-            throw new InvalidStreamFileException("No matching data extension for signature extension " + extension);
+        if (removeCompressor && compressor != null) {
+            dataFilename = StringUtils.removeEnd(dataFilename, "." + compressor);
         }
 
-        return StringUtils.join(StringUtils.removeEnd(filename, extension), dataExtension);
+        return dataFilename;
     }
 
     /**
-     * Gets the signature file name with the alphabetically last extension
+     * Returns the filename after this file, in the order of timestamp. This is done by removing the separator '.' and
+     * extension from the filename, then appending '_', so that regardless of the extension being used, files after
+     * the generated filename will always be newer than this file.
      *
-     * @return signature file name with the alphabetically last extension
+     * @return the filename to mark files after this stream filename
      */
-    public String getSignatureFilenameWithLastExtension() {
-        return StringUtils.join(StringUtils.removeEnd(filename, extension), streamType.getLastSignatureExtension());
+    public String getFilenameAfter() {
+        return StringUtils.remove(filename, "." + fullExtension) + COMPATIBLE_TIME_SEPARATOR;
+    }
+
+    public boolean match(@NonNull StreamFilename other) {
+        if (fileType == other.getFileType()) {
+            return false;
+        }
+
+        return other.getFilename().startsWith(getDataFilename(true));
+    }
+
+    @Override
+    public String toString() {
+        return filename;
     }
 
     private static TypeInfo extractTypeInfo(String filename) {
+        List<String> parts = FILENAME_SPLITTER.splitToList(filename);
+        if (parts.size() < 2) {
+            throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
+        }
+
+        String last = parts.get(parts.size() - 1);
+        String secondLast = parts.get(parts.size() - 2);
+
         for (StreamType type : StreamType.values()) {
             String suffix = type.getSuffix();
+            if (!StringUtils.isEmpty(suffix) && !filename.contains(suffix)) {
+                continue;
+            }
+
             for (FileType fileType : FileType.values()) {
-                List<String> extensions = fileType == FileType.DATA ? type.getDataExtensions() : type
-                        .getSignatureExtensions();
+                List<String> extensions = fileType == FileType.DATA ? type.getDataExtensions() :
+                        type.getSignatureExtensions();
                 for (String extension : extensions) {
-                    if (filename.endsWith(extension) && (suffix != null && filename.contains(suffix))) {
-                        return new TypeInfo(extension, fileType, type);
+                    if (extension.equals(last)) {
+                        return new TypeInfo(null, extension, fileType, type);
+                    }
+
+                    if (extension.equals(secondLast)) {
+                        return new TypeInfo(last, extension, fileType, type);
                     }
                 }
             }
@@ -134,10 +167,10 @@ public class StreamFilename {
         throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
     }
 
-    private static Instant extractInstant(String filename, String extension, StreamType streamType) {
+    private static Instant extractInstant(String filename, String fullExtension, String suffix) {
         try {
-            String suffix = StringUtils.join(streamType.getSuffix(), "." + extension);
-            String dateTime = StringUtils.removeEnd(filename, suffix);
+            String fullSuffix = StringUtils.join(suffix, "." + fullExtension);
+            String dateTime = StringUtils.removeEnd(filename, fullSuffix);
             dateTime = dateTime.replace(COMPATIBLE_TIME_SEPARATOR, STANDARD_TIME_SEPARATOR);
             return Instant.parse(dateTime);
         } catch (DateTimeParseException ex) {
@@ -152,6 +185,7 @@ public class StreamFilename {
 
     @Value
     private static class TypeInfo {
+        String compressorName;
         String extension;
         FileType fileType;
         StreamType streamType;

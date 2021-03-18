@@ -38,31 +38,31 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.StringUtils;
 
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParser;
 import com.hedera.mirror.importer.util.Utility;
 
-abstract class CsvBalanceFileReaderTest extends IntegrationTest {
-
-    @Resource
-    private MirrorProperties mirrorProperties;
+abstract class CsvBalanceFileReaderTest {
 
     @TempDir
     Path tempDir;
 
+    protected final MirrorProperties mirrorProperties;
+    protected final BalanceParserProperties balanceParserProperties;
     protected final File balanceFile;
     protected final CsvBalanceFileReader balanceFileReader;
     protected final AccountBalanceLineParser parser;
@@ -71,17 +71,25 @@ abstract class CsvBalanceFileReaderTest extends IntegrationTest {
     protected File testFile;
     protected long consensusTimestamp;
 
-    CsvBalanceFileReaderTest(CsvBalanceFileReader balanceFileReader, AccountBalanceLineParser parser,
-                             File balanceFile, long expectedCount) {
-        this.balanceFile = balanceFile;
-        this.balanceFileReader = balanceFileReader;
-        this.parser = parser;
+    CsvBalanceFileReaderTest(Class<? extends CsvBalanceFileReader> balanceFileReaderClass,
+            Class<? extends AccountBalanceLineParser> accountBalanceLineParserClass,
+            String balanceFilePath,
+            long expectedCount) {
+        mirrorProperties = new MirrorProperties();
+        balanceParserProperties = new BalanceParserProperties(mirrorProperties);
+        balanceFile = TestUtils.getResource(balanceFilePath);
+        parser = (AccountBalanceLineParser) ReflectUtils.newInstance(accountBalanceLineParserClass,
+                new Class[]{MirrorProperties.class},
+                new Object[]{ mirrorProperties});
+        balanceFileReader = (CsvBalanceFileReader) ReflectUtils.newInstance(balanceFileReaderClass,
+                new Class[]{BalanceParserProperties.class, accountBalanceLineParserClass},
+                new Object[]{balanceParserProperties, parser});
         this.expectedCount = expectedCount;
     }
 
     @BeforeEach
     void setup() throws IOException {
-        Instant instant = StreamFilename.getInstantFromStreamFilename(balanceFile.getName());
+        Instant instant = new StreamFilename(balanceFile.getName()).getInstant();
         consensusTimestamp = Utility.convertToNanosMax(instant);
         testFile = tempDir.resolve(balanceFile.getName()).toFile();
         assertThat(testFile.createNewFile()).isTrue();
@@ -285,5 +293,9 @@ abstract class CsvBalanceFileReaderTest extends IntegrationTest {
 
             assertThat(accountBalanceIter.hasNext()).isFalse();
         }
+    }
+
+    protected static String getTestFilename(String version, String filename) {
+        return Path.of("data", "accountBalances", version, "balance0.0.3", filename).toString();
     }
 }

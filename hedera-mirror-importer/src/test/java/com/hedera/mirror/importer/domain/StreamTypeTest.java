@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -35,13 +34,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 class StreamTypeTest {
 
     private static final Map<StreamType, List<String>> dataExtensions = ImmutableMap.<StreamType, List<String>>builder()
-            .put(StreamType.BALANCE, List.of("pb.gz", "csv"))
+            .put(StreamType.BALANCE, List.of("pb", "csv"))
             .put(StreamType.EVENT, List.of("evts"))
             .put(StreamType.RECORD, List.of("rcd"))
             .build();
     private static final Map<StreamType, List<String>> signatureExtensions =
             ImmutableMap.<StreamType, List<String>>builder()
-            .put(StreamType.BALANCE, List.of("pb_sig.gz", "pb_sig", "csv_sig"))
+            .put(StreamType.BALANCE, List.of("pb_sig", "csv_sig"))
             .put(StreamType.EVENT, List.of("evts_sig"))
             .put(StreamType.RECORD, List.of("rcd_sig"))
             .build();
@@ -68,12 +67,6 @@ class StreamTypeTest {
     @MethodSource("provideTypeAndSignatureExtensions")
     void getSignatureExtensions(StreamType streamType, List<String> signatureExtensions) {
         assertThat(streamType.getSignatureExtensions()).containsExactlyElementsOf(signatureExtensions);
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideTypeAndSignatureToDataExtensionMap")
-    void getSignatureToDataExtensionMap(StreamType streamType, Map<String, String> expected) {
-        assertThat(streamType.getSignatureToDataExtensionMap()).isEqualTo(expected);
     }
 
     private static Stream<Arguments> provideTypeAndExtensions(boolean isDataExtension, boolean onlyLast) {
@@ -109,32 +102,5 @@ class StreamTypeTest {
 
     private static Stream<Arguments> provideTypeAndLastSignatureExtension() {
         return provideTypeAndExtensions(false, true);
-    }
-
-    private static Stream<Arguments> provideTypeAndSignatureToDataExtensionMap() {
-        List<Arguments> argumentsList = new ArrayList<>();
-
-        for (StreamType streamType : StreamType.values()) {
-            Map<String, String> extensionMap = new HashMap<>();
-            switch (streamType) {
-                case BALANCE:
-                    extensionMap.put("pb_sig", "pb.gz");
-                    extensionMap.put("pb_sig.gz", "pb.gz");
-                    extensionMap.put("csv_sig", "csv");
-                    break;
-                case EVENT:
-                    extensionMap.put("evts_sig", "evts");
-                    break;
-                case RECORD:
-                    extensionMap.put("rcd_sig", "rcd");
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown StreamType " + streamType);
-            }
-
-            argumentsList.add(Arguments.of(streamType, extensionMap));
-        }
-
-        return argumentsList.stream();
     }
 }

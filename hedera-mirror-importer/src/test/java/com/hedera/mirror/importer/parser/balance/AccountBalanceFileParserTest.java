@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.primitives.Longs;
@@ -49,7 +50,6 @@ import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 class AccountBalanceFileParserTest extends IntegrationTest {
 
@@ -176,7 +176,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     private AccountBalanceFile accountBalanceFile(long timestamp) {
         String filename = StreamFilename
-                .getDataFilenameWithLastExtension(StreamType.BALANCE, Instant.ofEpochSecond(0, timestamp));
+                .getFilename(StreamType.BALANCE, DATA, Instant.ofEpochSecond(0, timestamp));
         return AccountBalanceFile.builder()
                 .bytes(Longs.toByteArray(timestamp))
                 .consensusTimestamp(timestamp)

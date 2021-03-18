@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.config;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.STARTUP_TIME;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.apache.commons.lang3.ObjectUtils.max;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -260,13 +261,16 @@ public class MirrorDateRangePropertiesProcessorTest {
     }
 
     private boolean matches(Optional<StreamFile> streamFile, Instant instant) {
-        return instant.equals(streamFile.map(StreamFile::getName).map(StreamFilename::getInstantFromStreamFilename)
-                        .orElse(null));
+        return instant.equals(streamFile
+                .map(StreamFile::getConsensusStart)
+                .map(nanos -> Instant.ofEpochSecond(0, nanos))
+                .orElse(null));
     }
 
     private Optional<StreamFile> streamFile(StreamType streamType, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        streamFile.setName(StreamFilename.getDataFilenameWithLastExtension(streamType, instant));
+        streamFile.setConsensusStart(Utility.convertToNanosMax(instant));
+        streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         return Optional.of(streamFile);
     }
 }

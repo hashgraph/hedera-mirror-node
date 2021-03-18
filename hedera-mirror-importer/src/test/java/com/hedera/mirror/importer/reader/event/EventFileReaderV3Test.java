@@ -36,6 +36,7 @@ import com.hedera.mirror.importer.exception.InvalidEventFileException;
 
 class EventFileReaderV3Test {
 
+    private static final String EVENT_FILENAME = "2021-03-10T16_30_00Z.evts";
     private static final byte[] PREVIOUS_HASH = new byte[EventFileReaderV3.EVENT_PREV_HASH_LENGTH];
     private static final byte[] CONTENT = new byte[64];
 
@@ -96,7 +97,6 @@ class EventFileReaderV3Test {
     }
 
     private StreamFileData createEventFile(int fileVersion, byte prevHashMarker, byte[] prevHash, byte[] content) {
-        String fileName = UUID.randomUUID().toString();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         try (DataOutputStream dos = new DataOutputStream(byteArrayOutputStream)) {
@@ -109,7 +109,7 @@ class EventFileReaderV3Test {
                 dos.write(content);
             }
 
-            return new StreamFileData(fileName, byteArrayOutputStream.toByteArray());
+            return StreamFileData.from(EVENT_FILENAME, byteArrayOutputStream.toByteArray());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

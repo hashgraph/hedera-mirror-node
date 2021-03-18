@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -437,7 +438,7 @@ public abstract class AbstractDownloaderTest {
         expectLastStreamFile(null, 100L, startDate);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
-                .filter(name -> StreamFilename.getInstantFromStreamFilename(name).isAfter(startDate))
+                .filter(name -> new StreamFilename(name).getInstant().isAfter(startDate))
                 .collect(Collectors.toList());
 
         fileCopier.copy();
@@ -458,7 +459,7 @@ public abstract class AbstractDownloaderTest {
         downloaderProperties.setBatchSize(1);
         List<String> expectedFiles = List.of(file1, file2)
                 .stream()
-                .filter(name -> !StreamFilename.getInstantFromStreamFilename(name).isAfter(mirrorProperties.getEndDate()))
+                .filter(name -> !new StreamFilename(name).getInstant().isAfter(mirrorProperties.getEndDate()))
                 .collect(Collectors.toList());
         expectLastStreamFile(Instant.EPOCH);
 
@@ -515,7 +516,7 @@ public abstract class AbstractDownloaderTest {
 
         // Construct a new filename with the offset added to the last valid file
         long nanoOffset = getCloseInterval().plus(offset).toNanos();
-        Instant instant = StreamFilename.getInstantFromStreamFilename(file1).plusNanos(nanoOffset);
+        Instant instant = file1Instant.plusNanos(nanoOffset);
         String baseFilename = instant + streamType.getSuffix() + ".";
         baseFilename = baseFilename.replace(':', '_');
 
@@ -574,8 +575,8 @@ public abstract class AbstractDownloaderTest {
         this.file1 = files.get(0);
         this.file2 = files.get(1);
 
-        file1Instant = StreamFilename.getInstantFromStreamFilename(file1);
-        file2Instant = StreamFilename.getInstantFromStreamFilename(file2);
+        file1Instant = new StreamFilename(file1).getInstant();
+        file2Instant = new StreamFilename(file2).getInstant();
     }
 
     /**
@@ -587,7 +588,7 @@ public abstract class AbstractDownloaderTest {
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        streamFile.setName(StreamFilename.getDataFilenameWithLastExtension(streamType, instant));
+        streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setHash(hash);
         streamFile.setIndex(index);
 

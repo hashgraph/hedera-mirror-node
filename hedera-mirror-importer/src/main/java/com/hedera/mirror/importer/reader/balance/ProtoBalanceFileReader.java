@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -59,22 +58,21 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
         };
 
         try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest)) {
-            AccountBalanceFile.AccountBalanceFileBuilder builder = AccountBalanceFile.builder()
-                    .bytes(streamFileData.getBytes())
-                    .loadStart(Instant.now().getEpochSecond());
+            AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
+            accountBalanceFile.setBytes(streamFileData.getBytes());
+            accountBalanceFile.setLoadStart(Instant.now().getEpochSecond());
 
             AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(inputStream.readAllBytes());
-            long consensusTimestamp = Utility.timeStampInNanos(allAccountBalances.getConsensusTimestamp());
+            long consensusTimestamp = Utility.timestampInNanosMax(allAccountBalances.getConsensusTimestamp());
             allAccountBalances.getAllAccountsList().stream()
                     .map((balances -> this.readSingleAccountBalances(consensusTimestamp, balances)))
                     .forEachOrdered(itemConsumer);
 
-            return builder.consensusTimestamp(consensusTimestamp)
-                    .count((long) allAccountBalances.getAllAccountsCount())
-                    .fileHash(Utility.bytesToHex(messageDigest.digest()))
-                    .items(new ArrayList<>())
-                    .name(streamFileData.getFilename())
-                    .build();
+            accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
+            accountBalanceFile.setCount((long) allAccountBalances.getAllAccountsCount());
+            accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
+            accountBalanceFile.setName(streamFileData.getFilename());
+            return accountBalanceFile;
         } catch (IOException ex) {
             throw new InvalidStreamFileException("Error reading account balance pb file", ex);
         }

@@ -60,6 +60,8 @@ public interface StreamFile {
 
     EntityId getNodeAccountId();
 
+    void setConsensusStart(Long timestamp);
+
     default void setHash(String hash) {
     }
 

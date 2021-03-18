@@ -37,6 +37,8 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 abstract class AbstractSignatureFileReaderTest {
 
+    private static final String SIGNATURE_FILENAME = "2021-03-10T16_30_00Z.rcd_sig";
+
     //Dynamically generate tests for corrupt/invalid signature file tests
     protected Iterable<DynamicTest> generateCorruptedFileTests(SignatureFileReader fileReader,
                                                                List<SignatureFileSection> signatureFileSections) {
@@ -46,7 +48,7 @@ abstract class AbstractSignatureFileReaderTest {
         testCases.add(DynamicTest.dynamicTest(
                 "blankFile",
                 () -> {
-                    StreamFileData blankFileData = new StreamFileData("blankFile", new byte[0]);
+                    StreamFileData blankFileData = StreamFileData.from(SIGNATURE_FILENAME, new byte[0]);
                     SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                             () -> fileReader.read(blankFileData));
                     assertTrue(e.getMessage().contains("EOFException"));
@@ -72,7 +74,7 @@ abstract class AbstractSignatureFileReaderTest {
             testCases.add(DynamicTest.dynamicTest(
                     signatureFileSections.get(i).getCorruptTestName(),
                     () -> {
-                        StreamFileData corruptedFileData = new StreamFileData("corruptedFile", fullSignatureBytes);
+                        StreamFileData corruptedFileData = StreamFileData.from(SIGNATURE_FILENAME, fullSignatureBytes);
                         SignatureFileParsingException e = assertThrows(SignatureFileParsingException.class,
                                 () -> fileReader.read(corruptedFileData));
                         sectionToCorrupt.validateError(e.getMessage());

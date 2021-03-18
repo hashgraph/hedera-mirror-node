@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.apache.commons.lang3.ObjectUtils.max;
 
 import java.time.Duration;
@@ -82,8 +83,8 @@ public class MirrorDateRangePropertiesProcessor {
 
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
-        Instant lastFileInstant = findLatest(streamType).map(StreamFile::getName)
-                .map(StreamFilename::getInstantFromStreamFilename)
+        Instant lastFileInstant = findLatest(streamType).map(StreamFile::getConsensusStart)
+                .map(nanos -> Instant.ofEpochSecond(0, nanos))
                 .orElse(null);
         Instant filterStartDate = lastFileInstant;
 
@@ -120,8 +121,8 @@ public class MirrorDateRangePropertiesProcessor {
     public <T extends StreamFile> Optional<T> getLastStreamFile(StreamType streamType) {
         Instant startDate = mirrorProperties.getStartDate();
         Optional<T> streamFile = findLatest(streamType);
-        Instant lastFileInstant = streamFile.map(StreamFile::getName)
-                .map(StreamFilename::getInstantFromStreamFilename)
+        Instant lastFileInstant = streamFile.map(StreamFile::getConsensusStart)
+                .map(nanos -> Instant.ofEpochSecond(0, nanos))
                 .orElse(null);
         Duration adjustment = mirrorProperties.getStartDateAdjustment();
         Instant effectiveStartDate = STARTUP_TIME.minus(adjustment);
@@ -155,8 +156,9 @@ public class MirrorDateRangePropertiesProcessor {
                 log.debug("Set verifyHashAfter to {}", effectiveStartDate);
             }
 
-            String filename = StreamFilename.getDataFilenameWithLastExtension(streamType, effectiveStartDate);
+            String filename = StreamFilename.getFilename(streamType, DATA, effectiveStartDate);
             T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
+            effectiveStreamFile.setConsensusStart(Utility.convertToNanosMax(effectiveStartDate));
             effectiveStreamFile.setName(filename);
             effectiveStreamFile.setIndex(streamFile.map(StreamFile::getIndex).orElse(null));
             streamFile = Optional.of(effectiveStreamFile);
