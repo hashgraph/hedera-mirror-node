@@ -71,15 +71,17 @@ const getEntityObFromString = (id) => {
 const getEntity = async (id) => {
   const entityIdObj = getEntityObFromString(id);
 
-  logger.trace(`getEntity for ${id}`);
-
+  logger.trace(`getEntity for ${id} from ${config.db.entitiesTableName}`);
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
   const entityFromDb = await pool.query(
-    `select * from ${config.db.entitiesTableName} where entity_shard = $1 and entity_realm = $2 and entity_num = $3`,
+    `select *
+       from t_entities_bkup
+       where entity_shard = $1
+         and entity_realm = $2
+         and entity_num = $3`,
     paramValues
   );
 
-  // logger.info(`Retrieve entity info ${JSON.stringify(entityFromDb.rows[0])} for ${id}`);
   return entityFromDb.rows[0];
 };
 
@@ -99,17 +101,19 @@ const updateEntity = async (entity) => {
     entity.id,
   ];
 
-  await pool.query(
-    `update ${config.db.entitiesTableName}
-       set auto_renew_period      = $1,
-           deleted                = $2,
-           ed25519_public_key_hex = $3,
-           exp_time_ns            = $4,
-           key                    = $5,
-           proxy_account_id       = $6
-       where id = $7`,
-    paramValues
-  );
+  if (config.dryRun === false) {
+    await pool.query(
+      `update t_entities_bkup
+         set auto_renew_period      = $1,
+             deleted                = $2,
+             ed25519_public_key_hex = $3,
+             exp_time_ns            = $4,
+             key                    = $5,
+             proxy_account_id       = $6
+         where id = $7`,
+      paramValues
+    );
+  }
 
   logger.debug(`Updated entity ${entity.id}`);
 };
