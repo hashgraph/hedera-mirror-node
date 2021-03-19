@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader;
 
 import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.LinkedHashMultimap;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -275,21 +277,18 @@ public abstract class Downloader<T extends StreamFile> {
                 .collect(Multimaps.toMultimap(
                         StreamFilename::getInstant,
                         streamFilename -> streamFilename,
-                        MultimapBuilder.linkedHashKeys().arrayListValues()::build
+                            MultimapBuilder.linkedHashKeys().arrayListValues()::build
                 ));
 
         List<StreamFilenamePair> streamFilenamePairs = new ArrayList<>();
         for (Instant instant : streamFilenamesByInstant.keySet()) {
             // separate the stream filenames of the same consensus timestamp into data files / signature files
-            List<StreamFilename> dataFilenames = new ArrayList<>();
-            List<StreamFilename> signatureFilenames = new ArrayList<>();
-            for (StreamFilename streamFilename : streamFilenamesByInstant.get(instant)) {
-                if (streamFilename.getFileType() == DATA) {
-                    dataFilenames.add(streamFilename);
-                } else {
-                    signatureFilenames.add(streamFilename);
-                }
-            }
+            Map<StreamFilename.FileType, List<StreamFilename>> streamFilenamesByType = streamFilenamesByInstant
+                    .get(instant)
+                    .stream()
+                    .collect(Collectors.groupingBy(StreamFilename::getFileType));
+            List<StreamFilename> dataFilenames = streamFilenamesByType.get(DATA);
+            List<StreamFilename> signatureFilenames = streamFilenamesByType.get(SIGNATURE);
 
             boolean found = false;
             for (String extension : streamType.getSignatureExtensions()) {
