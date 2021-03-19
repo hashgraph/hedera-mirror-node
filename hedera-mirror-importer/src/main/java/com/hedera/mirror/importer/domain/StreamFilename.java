@@ -25,15 +25,12 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
-import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.Assert;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-
-import org.springframework.util.Assert;
-import org.springframework.web.multipart.support.StringMultipartFileEditor;
 
 @Value
 public class StreamFilename implements Comparable<StreamFilename> {
@@ -135,22 +132,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
         return filename;
     }
 
-    private String getDataFilename() {
-        String dataFilename;
-        if (fileType == FileType.DATA) {
-            dataFilename = filename;
-        } else {
-            String dataExtension = StringUtils.remove(fullExtension, StreamType.SIGNATURE_SUFFIX);
-            dataFilename = StringUtils.join(StringUtils.removeEnd(filename, fullExtension), dataExtension);
-        }
-
-        if (compressor != null) {
-            dataFilename = StringUtils.removeEnd(dataFilename, "." + compressor);
-        }
-
-        return dataFilename;
-    }
-
     private static TypeInfo extractTypeInfo(String filename) {
         List<String> parts = FILENAME_SPLITTER.splitToList(filename);
         if (parts.size() < 2) {
@@ -170,6 +151,8 @@ public class StreamFilename implements Comparable<StreamFilename> {
                 List<String> extensions = fileType == FileType.DATA ? type.getDataExtensions() :
                         type.getSignatureExtensions();
                 for (String extension : extensions) {
+                    // if last matches extension, the file is not compressed; otherwise if secondLast matches extension,
+                    // last is the compression extension
                     if (extension.equals(last)) {
                         return new TypeInfo(null, extension, fileType, type);
                     }
