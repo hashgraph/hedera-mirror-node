@@ -90,11 +90,7 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     updateEntity.exp_time_ns = ns;
     updateNeeded = true;
     updateCriteriaCount.exp_time_ns += 1;
-    logger.trace(
-      `expirationTime mismatch on ${dbEntity.id}, db: ${dbEntity.exp_time_ns}, network: ${JSON.stringify(
-        networkEntity.expirationTime
-      )}`
-    );
+    logger.trace(`expirationTime mismatch on ${dbEntity.id}, db: ${dbEntity.exp_time_ns}, network: ${ns}`);
   }
 
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
@@ -114,7 +110,7 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
   }
 
-  if (networkEntity.proxy_account_id !== null && dbEntity.proxy_account_id !== networkEntity.proxyAccountId) {
+  if (networkEntity.proxyAccountId !== null && dbEntity.proxy_account_id !== networkEntity.proxyAccountId) {
     updateEntity.proxy_account_id = networkEntity.proxyAccountId;
     updateNeeded = true;
     updateCriteriaCount.proxy_account_id += 1;
@@ -127,7 +123,7 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(
       `created update entity for ${dbEntity.id}: ${JSON.stringify(
         updateEntity
-      )} to replace current db entity: ${JSON.stringify(dbEntity)}, updateCriteriaCount: ${JSON.stringify(
+      )} based on network entity: ${JSON.stringify(networkEntity)}, updateCriteriaCount: ${JSON.stringify(
         updateCriteriaCount
       )}.`
     );
@@ -142,17 +138,22 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
  * @returns {Promise<null>}
  */
 const getVerifiedEntity = async (csvEntity) => {
+  const dbEntity = await dbEntityService.getEntity(csvEntity.entity);
+  if (!dbEntity) {
+    logger.debug(`Entity ${csvEntity.entity.id} was missing from db, skipping`);
+    return null;
+  }
+
+  if (dbEntity.fk_entity_type_id !== 1) {
+    logger.debug(`Currently only account entities are supported, skipping`);
+    return null;
+  }
+
   let networkEntity;
   try {
     networkEntity = await networkEntityService.getAccountInfo(csvEntity.entity);
   } catch (e) {
-    logger.trace(`Error retrieving account ${csvEntity.entity} from network: ${e}`);
-    return null;
-  }
-
-  const dbEntity = await dbEntityService.getEntity(csvEntity.entity);
-  if (!dbEntity) {
-    logger.trace(`Null db entity, skipping`);
+    logger.debug(`Error retrieving account ${csvEntity.entity} from network, skipping, error: ${e}`);
     return null;
   }
 
@@ -178,10 +179,11 @@ const getUpdateList = async (csvEntities) => {
   const elapsedTime = process.hrtime(mergeStart);
 
   logger.info(
-    `${csvEntities.length} entities were retrieved and compared in ${utils.getElapsedTimeString(elapsedTime)}`
+    `${csvEntities.length} entities were retrieved and compared in ${utils.getElapsedTimeString(elapsedTime)},
+    ${updateList.length} were found to be out-of-date`
   );
   logger.debug(
-    `${updateList.length} were found to be out-of-date, updateCriteriaCount ${JSON.stringify(
+    `updateCriteriaCount ${JSON.stringify(
       getCombinedUpdateCriteriaCount(updateList.map((x) => x.updateCriteriaCount))
     )}`
   );

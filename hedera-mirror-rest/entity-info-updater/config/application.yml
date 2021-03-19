@@ -11,7 +11,7 @@ hedera:
       filePath:
       dryRun: true
       log:
-        level: debug
+        level: info
       sdkClient:
         network: TESTNET
         nodeAddress:
