@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import com.google.common.util.concurrent.RateLimiter;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Named;
@@ -104,7 +105,12 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         if (rateLimiter != null) {
             rateLimiter.setRate(total);
         } else {
-            rateLimiter = RateLimiter.create(total, properties.getWarmupPeriod());
+            Duration warmUpPeriod = properties.getWarmupPeriod();
+            if (warmUpPeriod.equals(Duration.ZERO)) {
+                rateLimiter = RateLimiter.create(total);
+            } else {
+                rateLimiter = RateLimiter.create(total, properties.getWarmupPeriod());
+            }
         }
 
         distribution = new EnumeratedDistribution<>(pairs);

@@ -24,11 +24,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.Supplier;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,23 +40,29 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
+@Log4j2
 class CompositeTransactionGeneratorTest {
 
     private PublishProperties properties;
     private Supplier<CompositeTransactionGenerator> supplier;
+    private double totalTps;
 
     @BeforeEach
     void init() {
+        double tps = 750;
         ScenarioProperties scenarioProperties1 = new ScenarioProperties();
         scenarioProperties1.setName("test1");
         scenarioProperties1.setProperties(Map.of("topicId", "0.0.1000"));
-        scenarioProperties1.setTps(7500.0);
+        scenarioProperties1.setTps(tps);
         scenarioProperties1.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
+        totalTps = tps;
 
+        tps = 250;
         ScenarioProperties scenarioProperties2 = new ScenarioProperties();
         scenarioProperties2.setName("test2");
-        scenarioProperties2.setTps(2500.0);
+        scenarioProperties2.setTps(tps);
         scenarioProperties2.setType(TransactionType.ACCOUNT_CREATE);
+        totalTps += tps;
 
         properties = new PublishProperties();
         properties.getScenarios().add(scenarioProperties1);
@@ -63,6 +72,7 @@ class CompositeTransactionGeneratorTest {
 
     @Test
     void distribution() {
+        properties.setWarmupPeriod(Duration.ZERO);
         CompositeTransactionGenerator generator = supplier.get();
         assertThat(generator.distribution.getPmf())
                 .hasSize(properties.getScenarios().size())
@@ -70,7 +80,8 @@ class CompositeTransactionGeneratorTest {
                 .containsExactly(0.75, 0.25);
 
         Multiset<TransactionType> types = HashMultiset.create();
-        for (int i = 0; i < 10000; ++i) {
+        double seconds = 5;
+        for (int i = 0; i < totalTps * seconds; ++i) {
             PublishRequest request = generator.next();
             types.add(request.getType());
         }
@@ -79,7 +90,7 @@ class CompositeTransactionGeneratorTest {
             assertThat(types.count(scenarioProperties.getType()))
                     .isNotNegative()
                     .isNotZero()
-                    .isCloseTo((int) scenarioProperties.getTps(), withinPercentage(20));
+                    .isCloseTo((int) (scenarioProperties.getTps() * seconds), withinPercentage(10));
         }
     }
 
@@ -97,6 +108,20 @@ class CompositeTransactionGeneratorTest {
     void noScenario() {
         properties.getScenarios().clear();
         assertInactive();
+    }
+
+    @Test
+    void noWarmup() {
+        properties.setWarmupPeriod(Duration.ZERO);
+        CompositeTransactionGenerator generator = supplier.get();
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        double seconds = 4.0;
+        int total = (int) (totalTps * seconds);
+        for (int i = 0; i < total; i++) {
+            generator.next();
+        }
+
+        assertThat(stopwatch.elapsed().toMillis() * 1.0 / 1000).isCloseTo(seconds, withinPercentage(5));
     }
 
     @Test
@@ -120,5 +145,9 @@ class CompositeTransactionGeneratorTest {
 
     private void assertInactive() {
         assertThat(supplier.get().rateLimiter).isEqualTo(CompositeTransactionGenerator.INACTIVE_RATE_LIMITER);
+    }
+
+    private double getTps(int count, Duration elapsed) {
+        return count * 1.0 / (elapsed.toNanos() * 1.0 / 1_000_000_000L);
     }
 }
