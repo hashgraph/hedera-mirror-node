@@ -2,131 +2,89 @@ name: Rosetta API
 
 on:
   pull_request:
+    branches: [ master, release/** ]
   push:
-    tags:
-      - v*
+    tags: [ v* ]
+
+defaults:
+  run:
+    working-directory: ./hedera-mirror-rosetta
 
 env:
-  working-directory: ./hedera-mirror-rosetta
-  image-tag: mirror-node
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
+  MODULE: hedera-mirror-rosetta
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v2
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('hedera-mirror-rosetta/pom.xml') }}
-          path: ~/.m2/repository
-          restore-keys: ${{ runner.os }}-m2-
-      - name: Cache Go modules
+
+      - name: Cache dependencies
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Build hedera-mirror-rosetta
-        run: ./mvnw ${MAVEN_CLI_OPTS} clean package -pl hedera-mirror-rosetta
-      - name: Upload Coverage report to CodeCov
-        run: bash <(curl -s https://codecov.io/bash)
-        working-directory: ${{env.working-directory}}
-      - name: Get current version
-        id: get_version
-        run: |
-          REF_TAG=${GITHUB_REF/refs\/tags\//}
-          if [[ $REF_TAG != v* ]];
-          then
-            REF_TAG=${GITHUB_RUN_ID}
-          fi
+          restore-keys: ${{ runner.os }}-go-
 
-          echo ::set-output name=VERSION::${REF_TAG}
-      - name: Package hedera-mirror-rosetta
-        run: |
-          set -ex
-          MODULE=hedera-mirror-rosetta
-          VERSION_TAG=${{ steps.get_version.outputs.VERSION }}
-          NAME=${MODULE}-${VERSION_TAG}
-          mkdir -p ${NAME}
-          cp ${MODULE}/bin/${MODULE} ${NAME}/${NAME}
-          cp -R ${MODULE}/scripts/deploy ${NAME}/scripts
-          tar -czf ${NAME}.tgz -C . ${NAME}
-      - name: Upload folder archive as artifact
-        uses: actions/upload-artifact@master
+      - name: Maven verify
+        run: ./mvnw ${MAVEN_CLI_OPTS} verify sonar:sonar -pl "${MODULE}" --also-make -Dsonar.login=$SONAR_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        working-directory: .
+
+      - name: Upload coverage report
+        run: bash <(curl -s https://codecov.io/bash)
+
+      - name: Upload artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v2
         with:
-          name: hedera-mirror-rosetta
-          path: hedera-mirror-rosetta-${{ steps.get_version.outputs.VERSION }}.tgz
+          name: ${{ env.MODULE }}
+          path: ./**/*.tgz
           if-no-files-found: error
-  cli-validation:
+
+  validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v2
+
       - name: Build Mirror Node All-in-One
-        run: docker build --tag=${{env.image-tag}} --build-arg GIT_BRANCH=${{ github.head_ref }} .
-        working-directory: ${{env.working-directory}}/build
+        run: docker build --tag="${MODULE}" --build-arg GIT_BRANCH=${{ github.head_ref }} build/
+
       - name: Run Mirror Node
-        run: docker run -d -p 5700:5700 ${{env.image-tag}}
+        run: docker run -d -p 5700:5700 "${MODULE}"
+
       - name: Wait for Mirror Node to start syncing
-        run: bash ./wait-for-mirror-node.sh
-        working-directory: ${{env.working-directory}}/scripts
+        run: ./scripts/wait-for-mirror-node.sh
+
       - name: Run CLI Validation
-        run: bash ./validation/run-validation.sh
-        working-directory: ${{env.working-directory}}/scripts
-  go-security-check:
+        run: ./scripts/validation/run-validation.sh
+
+  gosec:
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/setup-go@v2
         name: Setup GO Env
         with:
           go-version: '1.14'
-      - name: Cache Go modules
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-gosec-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-gosec-
-      - name: Install Gosec
-        run: go get github.com/securego/gosec/v2/cmd/gosec
-      - name: Run Gosec Security Scanner
-        run: gosec ./...
-        working-directory: ${{ env.working-directory }}
 
-  publish_image:
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    needs: build
-    env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('hedera-mirror-rosetta/pom.xml') }}
-          path: ~/.m2/repository
-          restore-keys: ${{ runner.os }}-m2-
-      - name: Cache Go modules
+      - name: Cache dependencies
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Login to Google Container Registry
-        uses: google-github-actions/setup-gcloud@master
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCR_KEY }}
-      - name: Configure Docker
-        run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
-      - name: Build and push images
-        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -pl hedera-mirror-rosetta
+          restore-keys: ${{ runner.os }}-go-
 
+      - name: Install Gosec
+        run: go get github.com/securego/gosec/v2/cmd/gosec
+
+      - name: Run Gosec Security Scanner
+        run: gosec ./...

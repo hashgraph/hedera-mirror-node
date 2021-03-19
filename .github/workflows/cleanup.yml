@@ -1,0 +1,47 @@
+name: Cleanup
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Daily at midnight
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: [ grpc, importer, monitor, rest, rosetta, test ]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to Google Container Registry
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCR_KEY }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
+
+      - name: Untag old master images
+        run: |
+          set -ex
+          UNTAG_BEFORE=$(date -d "-7 days" '+%FT%T')
+          IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
+          TAGS=$(gcloud container images list-tags "${IMAGE_PATH}" --limit=1000 --sort-by=TIMESTAMP \
+            --filter="tags:master-* AND timestamp.datetime < '${UNTAG_BEFORE}'" --format="csv[no-heading](tags)")
+
+          for tag in ${TAGS[*]}; do
+            gcloud container images untag -q "${IMAGE_PATH}:${tag}"
+          done
+
+      - name: Delete old untagged images
+        run: |
+          set -ex
+          DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
+          IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
+          DIGESTS=$(gcloud container images list-tags "${IMAGE_PATH}" --limit=1000 --sort-by=TIMESTAMP \
+            --filter="-tags:* AND timestamp.datetime < '${DELETE_BEFORE}'" --format="get(digest)")
+
+          for digest in ${DIGESTS[*]}; do
+            gcloud container images delete -q "${IMAGE_PATH}@${digest}"
+          done

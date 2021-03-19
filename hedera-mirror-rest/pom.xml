@@ -17,6 +17,7 @@
     <properties>
         <sonar.exclusions>pom.xml</sonar.exclusions>
         <sonar.sources>${project.basedir}</sonar.sources>
+        <sonar.javascript.lcov.reportPaths>${project.basedir}/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
     </properties>
 
     <build>
@@ -35,9 +36,10 @@
                             <goal>install-node-and-npm</goal>
                         </goals>
                         <configuration>
-                            <nodeVersion>v14.15.4</nodeVersion>
+                            <nodeVersion>v14.16.0</nodeVersion>
                             <npmVersion>6.14.11</npmVersion>
                         </configuration>
+                        <phase>compile</phase>
                     </execution>
                     <execution>
                         <id>npm-install-check-state-proof</id>
@@ -48,6 +50,7 @@
                             <arguments>install</arguments>
                             <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
                         </configuration>
+                        <phase>compile</phase>
                     </execution>
                     <execution>
                         <id>npm-install-monitor</id>
@@ -59,6 +62,7 @@
                             <installDirectory>${project.basedir}</installDirectory>
                             <workingDirectory>${project.basedir}/monitoring/monitor_apis</workingDirectory>
                         </configuration>
+                        <phase>compile</phase>
                     </execution>
                     <execution>
                         <id>npm-install-rest</id>
@@ -68,6 +72,7 @@
                         <configuration>
                             <arguments>install</arguments>
                         </configuration>
+                        <phase>compile</phase>
                     </execution>
                     <execution>
                         <id>npm-test-check-state-proof</id>
@@ -79,6 +84,7 @@
                             <skip>${skipTests}</skip>
                             <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
                         </configuration>
+                        <phase>test</phase>
                     </execution>
                     <execution>
                         <id>npm-test-rest</id>
@@ -89,6 +95,17 @@
                             <arguments>test -- --maxWorkers 2</arguments>
                             <skip>${skipTests}</skip>
                         </configuration>
+                        <phase>test</phase>
+                    </execution>
+                    <execution>
+                        <id>npm-pack</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>pack</arguments>
+                        </configuration>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>

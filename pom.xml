@@ -13,8 +13,8 @@
     <url>https://github.com/hashgraph/hedera-mirror-node</url>
 
     <ciManagement>
-        <system>CircleCI</system>
-        <url>https://circleci.com/gh/hashgraph/hedera-mirror-node</url>
+        <system>GitHub</system>
+        <url>https://github.com/hashgraph/hedera-mirror-node/actions</url>
     </ciManagement>
 
     <issueManagement>
@@ -166,6 +166,18 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${dependency-check.version}</version>
+                    <configuration>
+                        <failBuildOnCVSS>8</failBuildOnCVSS>
+                        <suppressionFiles>
+                            <suppressionFile>${maven.multiModuleProjectDirectory}/suppressions.xml</suppressionFile>
+                        </suppressionFiles>
+                        <versionCheckEnabled>false</versionCheckEnabled>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.0.0-M5</version>
@@ -192,6 +204,26 @@
                             <phase>test</phase>
                             <goals>
                                 <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <configuration>
+                        <appendAssemblyId>false</appendAssemblyId>
+                        <finalName>${project.artifactId}-${release.version}</finalName>
+                        <formats>tgz</formats>
+                        <descriptors>
+                            <descriptor>assembly.xml</descriptor>
+                        </descriptors>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>single</goal>
                             </goals>
                         </execution>
                     </executions>
@@ -353,27 +385,6 @@
                     <runOnlyOnce>true</runOnlyOnce>
                     <skipPoms>false</skipPoms>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>${dependency-check.version}</version>
-                <configuration>
-                    <failBuildOnCVSS>8</failBuildOnCVSS>
-                    <suppressionFiles>
-                        <suppressionFile>suppressions.xml</suppressionFile>
-                    </suppressionFiles>
-                    <versionCheckEnabled>false</versionCheckEnabled>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>aggregate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <inherited>false</inherited>
             </plugin>
         </plugins>
     </build>

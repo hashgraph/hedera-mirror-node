@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
+[![Build](https://github.com/hashgraph/hedera-mirror-node/actions/workflows/importer.yml/badge.svg)](https://github.com/hashgraph/hedera-mirror-node/actions)
 [![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/master)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
 [![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)](LICENSE)
 [![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
