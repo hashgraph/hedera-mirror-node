@@ -21,8 +21,9 @@
 'use strict';
 
 // external libraries
+
 const proto = require('@hashgraph/proto');
-const {PublicKey, KeyList} = require('@hashgraph/sdk');
+const {KeyList, PublicKey} = require('@hashgraph/sdk');
 const _ = require('lodash');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -46,6 +47,7 @@ const constructEntity = (index, headerRow, entityRow) => {
 
 const readEntityCSVFileSync = () => {
   logger.info(`Parsing csv entity file ...`);
+  const csvStart = process.hrtime();
   const entities = [];
 
   const data = fs.readFileSync(config.filePath, 'utf-8');
@@ -67,7 +69,10 @@ const readEntityCSVFileSync = () => {
     entities.push(constructEntity(i, headers, fileContent[i]));
   }
 
-  logger.info(`${entities.length} entities were extracted from ${config.filePath}`);
+  const elapsedTime = process.hrtime(csvStart);
+  logger.info(
+    `${entities.length} entities were extracted from ${config.filePath} in ${getElapsedTimeString(elapsedTime)}`
+  );
 
   return entities;
 };
@@ -124,7 +129,8 @@ const getProtoAndEd25519HexFromKeyList = (key) => {
   const protoKey = {
     keyList: keyListToProto(key),
   };
-  const ed25519Hex = key._keys.toString().split(',')[0];
+  const ed25519HexParts = key._keys.toString().split(',');
+  const ed25519Hex = ed25519HexParts.length === 1 ? ed25519HexParts[0] : null;
 
   return {protoKey, ed25519Hex};
 };
@@ -132,14 +138,19 @@ const getProtoAndEd25519HexFromKeyList = (key) => {
 const getBufferAndEd25519HexFromKey = (key) => {
   const {protoKey, ed25519Hex} =
     key instanceof PublicKey ? getProtoAndEd25519HexFromPublicKey(key) : getProtoAndEd25519HexFromKeyList(key);
-
   let protoBuffer = null;
   protoBuffer = proto.Key.encode(protoKey, protoBuffer).finish();
+
   return {protoBuffer, ed25519Hex};
+};
+
+const getElapsedTimeString = (elapsedTime) => {
+  return `${elapsedTime[0]} s ${elapsedTime[1] / 1000000} ms`;
 };
 
 module.exports = {
   getBufferAndEd25519HexFromKey,
+  getElapsedTimeString,
   readEntityCSVFileSync,
   secNsToNs,
 };
