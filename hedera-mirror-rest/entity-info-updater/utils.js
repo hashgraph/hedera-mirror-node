@@ -55,9 +55,9 @@ const readEntityCSVFileSync = () => {
   const fileContent = data.split('\n');
   const headers = Array.from(fileContent[0].split(',')).filter((x) => x != null);
 
-  // ensure 1st column is entity num of expected format
+  // ensure first column is entity num of expected format
   if (!_.eq(headers[0], 'entity')) {
-    throw Error("CSV must have a header column with 1st column being 'entity'");
+    throw Error("CSV must have a header column with first column being 'entity'");
   }
 
   for (let i = 1; i < fileContent.length; i++) {
@@ -148,9 +148,22 @@ const getElapsedTimeString = (elapsedTime) => {
   return `${elapsedTime[0]} s ${elapsedTime[1] / 1000000} ms`;
 };
 
+const isEd25519PublicHexMatch = (dbHex, networkHex) => {
+  let match;
+  match = dbHex === networkHex;
+
+  if (!match && dbHex !== null) {
+    // check for derPrefix (302a300506032b6570032100) case
+    match = PublicKey.fromString(dbHex).toString() === networkHex;
+  }
+
+  return match;
+};
+
 module.exports = {
   getBufferAndEd25519HexFromKey,
   getElapsedTimeString,
+  isEd25519PublicHexMatch,
   readEntityCSVFileSync,
   secNsToNs,
 };
