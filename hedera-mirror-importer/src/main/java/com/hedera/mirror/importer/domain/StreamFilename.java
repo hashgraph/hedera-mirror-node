@@ -53,7 +53,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.filename = filename;
 
         TypeInfo typeInfo = extractTypeInfo(filename);
-        this.compressor = typeInfo.compressorName;
+        this.compressor = typeInfo.compressor;
         this.extension = typeInfo.extension;
         this.fileType = typeInfo.fileType;
         this.streamType = typeInfo.streamType;
@@ -185,7 +185,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
 
     @Value
     private static class TypeInfo {
-        String compressorName;
+        String compressor;
         String extension;
         FileType fileType;
         StreamType streamType;

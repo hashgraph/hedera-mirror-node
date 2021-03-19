@@ -105,11 +105,11 @@ public abstract class Downloader<T extends StreamFile> {
     private final Timer.Builder streamVerificationMetric;
 
     protected Downloader(S3AsyncClient s3Client,
-            AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
-            SignatureFileReader signatureFileReader, StreamFileReader<T, ?> streamFileReader,
-            StreamFileNotifier streamFileNotifier,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+                         AddressBookService addressBookService, DownloaderProperties downloaderProperties,
+                         MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
+                         SignatureFileReader signatureFileReader, StreamFileReader<T, ?> streamFileReader,
+                         StreamFileNotifier streamFileNotifier,
+                         MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         this.s3Client = s3Client;
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;

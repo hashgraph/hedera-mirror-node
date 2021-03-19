@@ -23,14 +23,13 @@ package com.hedera.mirror.importer.downloader;
 import com.google.common.base.Stopwatch;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
 
 /**
  * The results of a pending download from the AWS TransferManager. Call waitForCompletion() to wait for the transfer to

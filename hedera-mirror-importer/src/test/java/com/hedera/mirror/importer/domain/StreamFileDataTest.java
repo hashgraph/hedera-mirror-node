@@ -2,7 +2,7 @@ package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
- * Hedera Mirror Node Importer
+ * Hedera Mirror Node
  * ​
  * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
