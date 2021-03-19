@@ -23,15 +23,21 @@ package com.hedera.mirror.importer.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
 class StreamFileDataTest {
 
@@ -71,25 +77,44 @@ class StreamFileDataTest {
     }
 
     @Test
-    void fromWithInvalidFilename() {
-//        assertThrows()
+    void createWithGzippedData() throws IOException {
+        String filename = "foobar.gz";
+        byte[] uncompressedBytes = { 1, 2, 3 };
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            try (OutputStream os = new GZIPOutputStream(baos)) {
+                os.write(uncompressedBytes);
+            }
+
+            StreamFileData streamFileData = new StreamFileData("gz", filename, baos.toByteArray());
+
+            try (InputStream is = streamFileData.getInputStream()) {
+                assertThat(is.readAllBytes()).isEqualTo(uncompressedBytes);
+            }
+        }
     }
 
-//    @Test
-//    void fromGzippedData() throws IOException {
-//        String filename = "foobar.gz";
-//        byte[] uncompressedBytes = { 1, 2, 3 };
-//
-//        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-//            try (OutputStream os = new GZIPOutputStream(baos)) {
-//                os.write(uncompressedBytes);
-//            }
-//
-//            StreamFileData streamFileData = StreamFileData.from(filename, baos.toByteArray());
-//
-//            try (InputStream is = streamFileData.getInputStream()) {
-//                assertThat(is.readAllBytes()).isEqualTo(uncompressedBytes);
-//            }
-//        }
-//    }
+    @Test
+    void createWithMismatchCompressor() throws IOException {
+        String filename = "foobar.gz";
+        byte[] uncompressedBytes = { 1, 2, 3 };
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            try (OutputStream os = new GZIPOutputStream(baos)) {
+                os.write(uncompressedBytes);
+            }
+
+            StreamFileData streamFileData = new StreamFileData("lzma", filename, baos.toByteArray());
+            assertThrows(InvalidStreamFileException.class, streamFileData::getInputStream);
+        }
+    }
+
+    @Test
+    void createWithCompressorAndUncompressedData() {
+        String filename = "foobar.gz";
+        byte[] uncompressedBytes = { 1, 2, 3 };
+
+        StreamFileData streamFileData = new StreamFileData("gz", filename, uncompressedBytes);
+        assertThrows(InvalidStreamFileException.class, streamFileData::getInputStream);
+    }
 }

@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 @Value
 public class StreamFilename implements Comparable<StreamFilename> {
 
-    private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
+    private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getInstant);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
     private static final char STANDARD_TIME_SEPARATOR = ':';
     private static final Splitter FILENAME_SPLITTER = Splitter.on(FilenameUtils.EXTENSION_SEPARATOR).omitEmptyStrings();

@@ -24,9 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
-import com.hedera.mirror.importer.downloader.StreamFileNotifier;
-
 import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -66,6 +63,7 @@ public class StreamFileData {
         return new StreamFileData(null, filename, contents.getBytes(StandardCharsets.UTF_8));
     }
 
+    // Used for testing with raw bytes
     public static StreamFileData from(@NonNull String filename, @NonNull byte[] bytes) {
         return new StreamFileData(null, filename, bytes);
     }
