@@ -66,14 +66,14 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     }
 
     @Override
-    public List<PublishRequest> next(long count) {
+    public List<PublishRequest> next(int count) {
         if (count <= 0) {
             count = 1;
         }
 
         long left = remaining.getAndAdd(-count);
-        count = Math.min(count, left);
-        if (count <= 0) {
+        long actual = Math.min(left, count);
+        if (actual <= 0) {
             throw new ScenarioException(properties, "Reached publish limit of " + properties.getLimit());
         }
 
@@ -82,7 +82,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         }
 
         List<PublishRequest> publishRequests = new ArrayList<>();
-        for (long i = 0; i < count; i++) {
+        for (long i = 0; i < actual; i++) {
             PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceipt()))
                     .record(shouldGenerate(properties.getRecord()))
                     .timestamp(Instant.now())

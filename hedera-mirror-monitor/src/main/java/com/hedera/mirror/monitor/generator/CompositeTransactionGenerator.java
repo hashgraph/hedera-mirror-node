@@ -49,7 +49,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     private final PublishProperties properties;
     volatile EnumeratedDistribution<TransactionGenerator> distribution;
     volatile RateLimiter rateLimiter;
-    volatile int requestSize;
+    volatile int batchSize;
 
     public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
         this.expressionConverter = expressionConverter;
@@ -58,11 +58,8 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     }
 
     @Override
-    public List<PublishRequest> next(long count) {
-        int permits = requestSize;
-        if (count < requestSize && count > 0) {
-            permits = (int) count;
-        }
+    public List<PublishRequest> next(int count) {
+        int permits = count > 0 ? count : batchSize;
         rateLimiter.acquire(permits);
 
         List<PublishRequest> publishRequests = new ArrayList<>();
@@ -109,7 +106,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
             }
         }
 
-        requestSize = Math.max(1, (int) Math.ceil(total / 200));
+        batchSize = Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor()));
 
         if (pairs.isEmpty()) {
             rateLimiter = INACTIVE_RATE_LIMITER;

@@ -20,9 +20,9 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
-import com.hedera.mirror.monitor.publish.PublishRequest;
-
 import java.util.List;
+
+import com.hedera.mirror.monitor.publish.PublishRequest;
 
 public interface TransactionGenerator {
 
@@ -33,7 +33,7 @@ public interface TransactionGenerator {
      * @param count
      * @return
      */
-    List<PublishRequest> next(long count);
+    List<PublishRequest> next(int count);
 
     default List<PublishRequest> next() {
         return next(1);

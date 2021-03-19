@@ -63,7 +63,7 @@ class MonitorConfiguration {
      */
     @Bean
     Disposable publishSubscribe() {
-        return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next()))
+        return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
                 .flatMapIterable(publishRequests -> publishRequests)
                 .retry()
                 .name("generate")

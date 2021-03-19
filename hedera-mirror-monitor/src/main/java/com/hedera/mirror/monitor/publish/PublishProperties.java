@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -37,6 +38,9 @@ import com.hedera.mirror.monitor.generator.ScenarioProperties;
 @Validated
 @ConfigurationProperties("hedera.mirror.monitor.publish")
 public class PublishProperties {
+
+    @Min(100)
+    private int batchDivisor = 100;
 
     @Min(1)
     private int connections = 5;
