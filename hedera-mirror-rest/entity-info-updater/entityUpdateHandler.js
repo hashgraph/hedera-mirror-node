@@ -30,25 +30,50 @@ const utils = require('./utils');
 
 const logger = log4js.getLogger();
 
+const getUpdateCriteriaCount = () => {
+  return {
+    auto_renew_period: 0,
+    deleted: 0,
+    exp_time_ns: 0,
+    ed25519_public_key_hex: 0,
+    key: 0,
+    memo: 0,
+    proxy_account_id: 0,
+  };
+};
+
+const getCombinedUpdateCriteriaCount = (updateList) => {
+  const updateCriteriaCount = getUpdateCriteriaCount();
+  for (const counts of updateList) {
+    Object.keys(counts).forEach((x) => {
+      updateCriteriaCount[x] += counts[x];
+    });
+  }
+
+  return updateCriteriaCount;
+};
+
 /**
- * Create merge entity object that takes the based db entity and updates it with more recent network retrieved values
+ * Create merge entity object that takes the base db entity and updates it with more recent network retrieved values
  * @param dbEntity
  * @param networkEntity
  * @returns {Object} Updated db entity to insert
  */
 const getUpdatedEntity = (dbEntity, networkEntity) => {
   // create duplicate of db entity to update with network values to eventually insert into db
-  const updateEntity = {
+  let updateEntity = {
     ...dbEntity,
   };
 
   let updateNeeded = false;
+  const updateCriteriaCount = getUpdateCriteriaCount();
 
   if (dbEntity.auto_renew_period !== networkEntity.autoRenewPeriod.seconds.toString()) {
     updateEntity.auto_renew_period = networkEntity.autoRenewPeriod.seconds.toString();
     updateNeeded = true;
+    updateCriteriaCount.auto_renew_period += 1;
     logger.trace(
-      `auto_renew_period mismatch, db: ${dbEntity.auto_renew_period}, network: ${networkEntity.autoRenewPeriod.seconds}`
+      `auto_renew_period mismatch on ${dbEntity.id}, db: ${dbEntity.auto_renew_period}, network: ${networkEntity.autoRenewPeriod.seconds}`
     );
   }
 
@@ -56,46 +81,59 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
   if (dbEntity.deleted !== networkEntity.isDeleted && networkEntity.isDeleted === true) {
     updateEntity.deleted = networkEntity.isDeleted;
     updateNeeded = true;
-    logger.trace(`deleted mismatch, db: ${dbEntity.deleted}, network: ${networkEntity.isDeleted}`);
+    updateCriteriaCount.deleted += 1;
+    logger.trace(`deleted mismatch on ${dbEntity.id}, db: ${dbEntity.deleted}, network: ${networkEntity.isDeleted}`);
   }
 
   const ns = utils.secNsToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
   if (dbEntity.exp_time_ns !== ns) {
     updateEntity.exp_time_ns = ns;
     updateNeeded = true;
+    updateCriteriaCount.exp_time_ns += 1;
     logger.trace(
-      `expirationTime mismatch, db: ${dbEntity.exp_time_ns}, network: ${JSON.stringify(networkEntity.expirationTime)}`
+      `expirationTime mismatch on ${dbEntity.id}, db: ${dbEntity.exp_time_ns}, network: ${JSON.stringify(
+        networkEntity.expirationTime
+      )}`
     );
   }
 
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
-  if (dbEntity.ed25519_public_key_hex !== ed25519Hex) {
+  if (!utils.isEd25519PublicHexMatch(dbEntity.ed25519_public_key_hex, ed25519Hex)) {
     updateEntity.ed25519_public_key_hex = ed25519Hex;
     updateNeeded = true;
-    logger.trace(`ed25519 public key mismatch, db: ${dbEntity.ed25519_public_key_hex}, network: ${ed25519Hex}`);
+    updateCriteriaCount.ed25519_public_key_hex += 1;
+    logger.trace(
+      `ed25519 public key mismatch on ${dbEntity.id}, db: ${dbEntity.ed25519_public_key_hex}, network: ${ed25519Hex}`
+    );
   }
 
   if (Buffer.compare(updateEntity.key, protoBuffer) !== 0) {
     updateEntity.key = protoBuffer;
     updateNeeded = true;
-    logger.trace(`key mismatch, db: ${dbEntity.key}, network: ${protoBuffer}`);
+    updateCriteriaCount.key += 1;
+    logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
   }
 
-  if (dbEntity.proxy_account_id !== networkEntity.proxyAccountId) {
+  if (networkEntity.proxy_account_id !== null && dbEntity.proxy_account_id !== networkEntity.proxyAccountId) {
     updateEntity.proxy_account_id = networkEntity.proxyAccountId;
     updateNeeded = true;
+    updateCriteriaCount.proxy_account_id += 1;
     logger.trace(
-      `proxy_account_id mismatch, db: ${dbEntity.proxy_account_id}, network: ${networkEntity.proxyAccountId}`
+      `proxy_account_id mismatch on ${dbEntity.id}, db: ${dbEntity.proxy_account_id}, network: ${networkEntity.proxyAccountId}`
     );
   }
 
   if (updateNeeded) {
     logger.trace(
-      `created update entity: ${JSON.stringify(updateEntity)} to replace current db entity ${JSON.stringify(dbEntity)}`
+      `created update entity for ${dbEntity.id}: ${JSON.stringify(
+        updateEntity
+      )} to replace current db entity: ${JSON.stringify(dbEntity)}, updateCriteriaCount: ${JSON.stringify(
+        updateCriteriaCount
+      )}.`
     );
   }
 
-  return updateNeeded ? updateEntity : null;
+  return updateNeeded ? {updateEntity, updateCriteriaCount} : null;
 };
 
 /**
@@ -122,7 +160,7 @@ const getVerifiedEntity = async (csvEntity) => {
 };
 
 /**
- * Retrieve list of objects to update mirror db with. List represent correct information for out of date entities
+ * Retrieve list of objects to update mirror db with. List represents correct information for out-of-date entities
  * @param csvEntities
  * @returns {Promise<unknown[]|[]>}
  */
@@ -138,12 +176,20 @@ const getUpdateList = async (csvEntities) => {
 
   updateList = (await Promise.all(csvEntities.map(getVerifiedEntity))).filter((x) => !!x);
   const elapsedTime = process.hrtime(mergeStart);
-  logger.info(`Update list of length ${updateList.length} retrieved in ${utils.getElapsedTimeString(elapsedTime)}`);
+
+  logger.info(
+    `${csvEntities.length} entities were retrieved and compared in ${utils.getElapsedTimeString(elapsedTime)}`
+  );
+  logger.debug(
+    `${updateList.length} were found to be out-of-date, updateCriteriaCount ${JSON.stringify(
+      getCombinedUpdateCriteriaCount(updateList.map((x) => x.updateCriteriaCount))
+    )}`
+  );
 
   const endBalance = await networkEntityService.getAccountBalance();
-  logger.info(`Network accountInfo calls cost ${startBalance.hbars.toTinybars() - endBalance.hbars.toTinybars()} tℏ`);
+  logger.debug(`Network accountInfo calls cost ${startBalance.hbars.toTinybars() - endBalance.hbars.toTinybars()} tℏ`);
 
-  return updateList;
+  return updateList.map((x) => x.updateEntity);
 };
 
 /**
@@ -157,6 +203,7 @@ const updateStaleDBEntities = async (entitiesToUpdate) => {
     return;
   }
 
+  logger.info(`Updating ${entitiesToUpdate.length} stale db entries with updated information ...`);
   const updateStart = process.hrtime();
   const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
   const elapsedTime = process.hrtime(updateStart);
