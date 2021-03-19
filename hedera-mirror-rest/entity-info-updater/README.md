@@ -28,7 +28,9 @@ The node based CLI tool `entity-info-updater` can be installed as follows
 To verify correct installation simply run `entity-info-updater --help` or `npm start -- --help` to show usage instructions.
 
 ## Run Check-State-Proof CLI
-From command line run
+First ensure the importer has been stopped from parsing record stream files. This ensures data won't be updated inaccurately.
+
+Then, from command line run
 
 `npm start`
 
@@ -60,7 +62,6 @@ hedera:
   mirror:
     entityUpdate:
       db:
-        entitiesTableName: t_entities_bkup
         host: 127.0.0.1
         name: mirror_node
         password: mirror_node_pass
