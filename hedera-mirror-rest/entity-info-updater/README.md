@@ -1,6 +1,6 @@
 # Hedera Mirror Entity Info Updater
 
-The Mirror Node Entity Info Updater provides the ability to verify if a list of entities present in the mirror db are correct and update them if they don't match the up to date network vlaues.
+The Mirror Node Entity Info Updater provides the ability to verify if a list of entities present in the mirror db are correct and update them if they don't match the up to date network values.
 
 A node based CLI tool `entity-info-updater` is provided here to showcase the steps necessary to independently update stale entities.
 
@@ -8,11 +8,11 @@ A node based CLI tool `entity-info-updater` is provided here to showcase the ste
 The CLI takes the following steps
 
 1. Attempts to read a csv of entity ids at the `hedera.mirror.entityUpdate.filePath` value provided in the `application.yml`
-2. For each entity it pulls entity info from the mirror db (using a pg connection) and the network (using the js-sdk)
-3. For each entity it compares multiple value from the db entity to verify if they match the network values.
-    If there's a mismatch a new entity object based on teh db copy but with values updated from network is returned.
-    If no mismatch the entity is skipped.
-4. For each entity in the list of entities to update the tool update the db with the new values.
+2. Pulls entity info for each entity from the mirror db (using a pg connection) and the network (using the js-sdk)
+3. Compares each entity's db values to its network values to verify if they are equal.
+    If there's a mismatch, a new entity object based on the db copy but with values updated from the network is returned.
+    If there is no mismatch, the entity is skipped.
+4. Updates each entity returned in step 3 in the db.
 
 ## Requirements
 To run the CLI you must
@@ -27,7 +27,7 @@ The node based CLI tool `entity-info-updater` can be installed as follows
 
 To verify correct installation simply run `entity-info-updater --help` or `npm start -- --help` to show usage instructions.
 
-## Run Check-State-Proof CLI
+## Run Entity-Info-Updater CLI
 First ensure the importer has been stopped from parsing record stream files. This ensures data won't be updated inaccurately.
 
 Then, from command line run
@@ -55,7 +55,7 @@ hedera:
 ```
 
 ### Custom DB Endpoint Case
-The tool can be run against any DB host and database as long as it's reachable. To achieve this configure the
+The tool can be run against any DB host and database as long as it's reachable. To achieve this configure the following
 
 ```yaml
 hedera:
