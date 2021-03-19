@@ -256,9 +256,9 @@ public abstract class Downloader<T extends StreamFile> {
     }
 
     private List<StreamFilenamePair> getStreamFilenamePairs(List<S3Object> s3Objects) {
-        // a stream type may have different extensions supporting different formats in cloud bucket at the same time,
-        // in addition, whether its data file / signature file are compressed is independent of each other. So,
-        // deriving the corresponding data filename from the signature filename by removing '_sig' no longer works.
+        // a stream type may have different extensions for different formats in cloud bucket at the same time,
+        // in addition, whether its data file / signature file are compressed is independent of each other.
+        // So deriving the corresponding data filename from the signature filename by removing '_sig' no longer works.
         // Instead, when a signature file is selected for later processing, its matching data filename is also saved
         Multimap<Instant, StreamFilename> streamFilenamesByInstant = s3Objects.stream()
                 .map(S3Object::key)
@@ -280,7 +280,7 @@ public abstract class Downloader<T extends StreamFile> {
 
         List<StreamFilenamePair> streamFilenamePairs = new ArrayList<>();
         for (Instant instant : streamFilenamesByInstant.keySet()) {
-            // separate the stream filenames of the same consensus timestamp into data file / signature file lists
+            // separate the stream filenames of the same consensus timestamp into data files / signature files
             List<StreamFilename> dataFilenames = new ArrayList<>();
             List<StreamFilename> signatureFilenames = new ArrayList<>();
             for (StreamFilename streamFilename : streamFilenamesByInstant.get(instant)) {
@@ -373,11 +373,12 @@ public abstract class Downloader<T extends StreamFile> {
     }
 
     /**
-     * Returns the file name after the last signature file name that was successfully verified. On startup, the last
-     * signature file name will be the last file successfully imported into the database since all files are downloaded
-     * into memory will have been discarded. If startDate or demo network is set, those take precedence.
+     * Returns the file name in between the last signature file name that was successfully verified and the next stream
+     * file to process in the cloud bucket. On startup, the last signature file name will be the last file successfully
+     * imported into the database since all files are downloaded into memory will have been discarded. If startDate or
+     * demo network is set, those take precedence.
      *
-     * @return filename lexically after the last signature file
+     * @return filename lexically after the last signature file and before the next stream file
      */
     private String getStartAfterFilename() {
         return lastStreamFile.get()

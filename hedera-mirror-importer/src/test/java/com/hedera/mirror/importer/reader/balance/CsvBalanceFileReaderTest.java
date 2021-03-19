@@ -73,8 +73,7 @@ abstract class CsvBalanceFileReaderTest {
 
     CsvBalanceFileReaderTest(Class<? extends CsvBalanceFileReader> balanceFileReaderClass,
             Class<? extends AccountBalanceLineParser> accountBalanceLineParserClass,
-            String balanceFilePath,
-            long expectedCount) {
+            String balanceFilePath, long expectedCount) {
         mirrorProperties = new MirrorProperties();
         balanceParserProperties = new BalanceParserProperties(mirrorProperties);
         balanceFile = TestUtils.getResource(balanceFilePath);

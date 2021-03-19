@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -35,16 +36,16 @@ class StreamFilenameTest {
     @ParameterizedTest(name = "Create StreamFilename from {0}")
     @CsvSource({
             // @formatter:off
-            "2020-06-03T16_45_00.1Z_Balances.csv_sig,, csv_sig, SIGNATURE, csv_sig, 2020-06-03T16:45:00.1Z, BALANCE, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig,, pb_sig, SIGNATURE, pb_sig, 2020-06-03T16:45:00.1Z, BALANCE, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, gz, pb_sig, SIGNATURE, pb_sig.gz, 2020-06-03T16:45:00.1Z, BALANCE, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig.xz, xz, pb_sig, SIGNATURE, pb_sig.xz, 2020-06-03T16:45:00.1Z, BALANCE, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z_Balances.csv,, csv, DATA, csv, 2020-06-03T16:45:00.1Z, BALANCE, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z_Balances.pb.gz, gz, pb, DATA, pb.gz, 2020-06-03T16:45:00.1Z, BALANCE, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z.evts_sig,, evts_sig, SIGNATURE, evts_sig, 2020-06-03T16:45:00.1Z, EVENT, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z.evts,, evts, DATA, evts, 2020-06-03T16:45:00.1Z, EVENT, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z.rcd_sig,,  rcd_sig, SIGNATURE, rcd_sig, 2020-06-03T16:45:00.1Z, RECORD, 2020-06-03T16:45:00.100000000Z",
-            "2020-06-03T16_45_00.1Z.rcd,, rcd, DATA, rcd, 2020-06-03T16:45:00.1Z, RECORD, 2020-06-03T16:45:00.100000000Z",
+            "2020-06-03T16_45_00.1Z_Balances.csv_sig,, csv_sig, SIGNATURE, csv_sig, 2020-06-03T16:45:00.1Z, BALANCE",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig,, pb_sig, SIGNATURE, pb_sig, 2020-06-03T16:45:00.1Z, BALANCE",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, gz, pb_sig, SIGNATURE, pb_sig.gz, 2020-06-03T16:45:00.1Z, BALANCE",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig.xz, xz, pb_sig, SIGNATURE, pb_sig.xz, 2020-06-03T16:45:00.1Z, BALANCE",
+            "2020-06-03T16_45_00.1Z_Balances.csv,, csv, DATA, csv, 2020-06-03T16:45:00.1Z, BALANCE",
+            "2020-06-03T16_45_00.1Z_Balances.pb.gz, gz, pb, DATA, pb.gz, 2020-06-03T16:45:00.1Z, BALANCE",
+            "2020-06-03T16_45_00.1Z.evts_sig,, evts_sig, SIGNATURE, evts_sig, 2020-06-03T16:45:00.1Z, EVENT",
+            "2020-06-03T16_45_00.1Z.evts,, evts, DATA, evts, 2020-06-03T16:45:00.1Z, EVENT",
+            "2020-06-03T16_45_00.1Z.rcd_sig,,  rcd_sig, SIGNATURE, rcd_sig, 2020-06-03T16:45:00.1Z, RECORD",
+            "2020-06-03T16_45_00.1Z.rcd,, rcd, DATA, rcd, 2020-06-03T16:45:00.1Z, RECORD",
             // @formatter:on
     })
     void newStreamFile(String filename, String compressor, String extension, StreamFilename.FileType fileType,
@@ -59,7 +60,7 @@ class StreamFilenameTest {
 
     @ParameterizedTest(name = "Exception creating StreamFilename from \"{0}\"")
     @ValueSource(strings = { "2020-06-03_Balances.csv_sig", "2020-06-03T16_45_00.1Z", "2020-06-03T16_45_00.1Z.stream",
-            "2020-06-03T16_45_00.1Z.csv_sig", "" })
+            "2020-06-03T16_45_00.1Z.csv_sig"})
     void newStreamFileFromInvalidFilename(String filename) {
         assertThrows(InvalidStreamFileException.class, () -> new StreamFilename(filename));
     }
@@ -75,23 +76,6 @@ class StreamFilenameTest {
     })
     void getFilename(StreamType streamType, StreamFilename.FileType fileType, Instant instant, String expected) {
         assertThat(StreamFilename.getFilename(streamType, fileType, instant)).isEqualTo(expected);
-    }
-
-    @ParameterizedTest(name = "Get data filename from {0} when removeCompressor {1}")
-    @CsvSource({
-            "2020-06-03T16_45_00.1Z_Balances.csv_sig, true, 2020-06-03T16_45_00.1Z_Balances.csv",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig, false, 2020-06-03T16_45_00.1Z_Balances.pb",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, true, 2020-06-03T16_45_00.1Z_Balances.pb",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, false, 2020-06-03T16_45_00.1Z_Balances.pb.gz",
-            "2020-06-03T16_45_00.1Z_Balances.csv, false, 2020-06-03T16_45_00.1Z_Balances.csv",
-            "2020-06-03T16_45_00.1Z_Balances.pb.gz, false, 2020-06-03T16_45_00.1Z_Balances.pb.gz",
-            "2020-06-03T16_45_00.1Z.evts_sig, false, 2020-06-03T16_45_00.1Z.evts",
-            "2020-06-03T16_45_00.1Z.evts, false, 2020-06-03T16_45_00.1Z.evts",
-            "2020-06-03T16_45_00.1Z.rcd_sig, false, 2020-06-03T16_45_00.1Z.rcd",
-            "2020-06-03T16_45_00.1Z.rcd, false, 2020-06-03T16_45_00.1Z.rcd",
-    })
-    void getDataFilename(String filename, boolean removeCompressor, String expected) {
-        assertThat(new StreamFilename(filename).getDataFilename(removeCompressor)).isEqualTo(expected);
     }
 
     @ParameterizedTest(name = "Get the filename after \"{0}\"")
@@ -111,7 +95,7 @@ class StreamFilenameTest {
         assertThat(streamFilename.getFilenameAfter()).isEqualTo(expected);
     }
 
-    @ParameterizedTest(name = "match \"{0}\" and \"{1}\"")
+    @ParameterizedTest(name = "match \"{0}\" and \"{1}\"? {2}")
     @CsvSource({
             "2020-06-03T16_45_00.1Z_Balances.csv_sig, 2020-06-03T16_45_00.1Z_Balances.csv_sig, false",
             "2020-06-03T16_45_00.1Z_Balances.csv_sig, 2020-06-03T16_45_00.1Z_Balances.csv, true",
@@ -120,6 +104,9 @@ class StreamFilenameTest {
             "2020-06-03T16_45_00.1Z_Balances.csv, 2020-06-03T16_45_00.1Z_Balances.csv_sig, true",
             "2020-06-03T16_45_00.1Z_Balances.pb, 2020-06-03T16_45_00.1Z_Balances.csv, false",
             "2020-06-03T16_45_00.1Z_Balances.pb_sig, 2020-06-03T16_45_00.1Z_Balances.csv_sig, false",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, 2020-06-03T16_45_00.1Z_Balances.pb.gz, true",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, 2020-06-03T16_45_00.1Z_Balances.pb, true",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig, 2020-06-03T16_45_00.1Z_Balances.pb.gz, true",
             "2020-06-03T16_45_00.1Z.evts_sig, 2020-06-03T16_45_00.1Z.evts, true",
             "2020-06-03T16_45_00.1Z.evts, 2020-06-03T16_45_00.1Z.evts_sig, true",
             "2020-06-03T16_45_00.1Z.rcd_sig, 2020-06-03T16_45_00.1Z.rcd, true",
@@ -131,5 +118,11 @@ class StreamFilenameTest {
         StreamFilename second = new StreamFilename(secondFilename);
 
         assertThat(first.match(second)).isEqualTo(expected);
+    }
+
+    @Test
+    void matchNull() {
+        StreamFilename first = new StreamFilename("2020-06-03T16_45_00.1Z.rcd");
+        assertThat(first.match(null)).isFalse();
     }
 }

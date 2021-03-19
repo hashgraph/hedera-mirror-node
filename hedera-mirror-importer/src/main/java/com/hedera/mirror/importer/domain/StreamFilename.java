@@ -32,6 +32,9 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
+import org.springframework.util.Assert;
+import org.springframework.web.multipart.support.StringMultipartFileEditor;
+
 @Value
 public class StreamFilename implements Comparable<StreamFilename> {
 
@@ -49,6 +52,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final StreamType streamType;
 
     public StreamFilename(String filename) {
+        Assert.hasText(filename, "'filename' must not be empty");
         this.filename = filename;
 
         TypeInfo typeInfo = extractTypeInfo(filename);
@@ -83,33 +87,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
         return StringUtils.joinWith(".", StringUtils.join(timestamp, suffix), extension);
     }
 
-    @Override
-    public int compareTo(StreamFilename other) {
-        return COMPARATOR.compare(this, other);
-    }
-
-    /**
-     * Gets the corresponding data filename
-     *
-     * @param removeCompressor remove the compressor name or not
-     * @return data filename
-     */
-    public String getDataFilename(boolean removeCompressor) {
-        String dataFilename;
-        if (fileType == FileType.DATA) {
-            dataFilename = filename;
-        } else {
-            String dataExtension = StringUtils.remove(fullExtension, StreamType.SIGNATURE_SUFFIX);
-            dataFilename = StringUtils.join(StringUtils.removeEnd(filename, fullExtension), dataExtension);
-        }
-
-        if (removeCompressor && compressor != null) {
-            dataFilename = StringUtils.removeEnd(dataFilename, "." + compressor);
-        }
-
-        return dataFilename;
-    }
-
     /**
      * Returns the filename after this file, in the order of timestamp. This is done by removing the separator '.' and
      * extension from the filename, then appending '_', so that regardless of the extension being used, files after
@@ -121,17 +98,57 @@ public class StreamFilename implements Comparable<StreamFilename> {
         return StringUtils.remove(filename, "." + fullExtension) + COMPATIBLE_TIME_SEPARATOR;
     }
 
-    public boolean match(@NonNull StreamFilename other) {
+    /**
+     * Check if this StreamFilename matches the other. Two StreamFilename objects match iff 1. one is signature and the
+     * other is data; and 2. their file names match up to the signature suffix '_sig'
+     *
+     * @param other
+     * @return
+     */
+    public boolean match(StreamFilename other) {
+        if (other == null) {
+            return false;
+        }
+
         if (fileType == other.getFileType()) {
             return false;
         }
 
-        return other.getFilename().startsWith(getDataFilename(true));
+        StreamFilename signatureFilename = this;
+        StreamFilename dataFilename = other;
+        if (fileType == FileType.DATA) {
+            signatureFilename = other;
+            dataFilename = this;
+        }
+
+        String commonPrefix = signatureFilename.getFilename().split(StreamType.SIGNATURE_SUFFIX)[0];
+        return dataFilename.getFilename().startsWith(commonPrefix);
+    }
+
+    @Override
+    public int compareTo(StreamFilename other) {
+        return COMPARATOR.compare(this, other);
     }
 
     @Override
     public String toString() {
         return filename;
+    }
+
+    private String getDataFilename() {
+        String dataFilename;
+        if (fileType == FileType.DATA) {
+            dataFilename = filename;
+        } else {
+            String dataExtension = StringUtils.remove(fullExtension, StreamType.SIGNATURE_SUFFIX);
+            dataFilename = StringUtils.join(StringUtils.removeEnd(filename, fullExtension), dataExtension);
+        }
+
+        if (compressor != null) {
+            dataFilename = StringUtils.removeEnd(dataFilename, "." + compressor);
+        }
+
+        return dataFilename;
     }
 
     private static TypeInfo extractTypeInfo(String filename) {
