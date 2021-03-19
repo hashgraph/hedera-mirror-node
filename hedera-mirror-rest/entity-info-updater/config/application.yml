@@ -3,7 +3,6 @@ hedera:
   mirror:
     entityUpdate:
       db:
-        entitiesTableName: t_entities_bkup
         host: 127.0.0.1
         name: mirror_node
         password: mirror_node_pass

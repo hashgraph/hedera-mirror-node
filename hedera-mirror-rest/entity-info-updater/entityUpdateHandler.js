@@ -68,18 +68,17 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     );
   }
 
-  // mirror t_entities.ed25519_public_key_hex is created based on key so we can use this for both key and hex comparison
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
   if (dbEntity.ed25519_public_key_hex !== ed25519Hex) {
     updateEntity.ed25519_public_key_hex = ed25519Hex;
-    updateEntity.key = protoBuffer;
     updateNeeded = true;
     logger.trace(`ed25519 public key mismatch, db: ${dbEntity.ed25519_public_key_hex}, network: ${ed25519Hex}`);
-    logger.trace(
-      `key mismatch, db: ${JSON.stringify(dbEntity.key)}, network: ${JSON.stringify(
-        networkEntity.key._keys[0]._keyData
-      )}`
-    );
+  }
+
+  if (Buffer.compare(updateEntity.key, protoBuffer) !== 0) {
+    updateEntity.key = protoBuffer;
+    updateNeeded = true;
+    logger.trace(`key mismatch, db: ${dbEntity.key}, network: ${protoBuffer}`);
   }
 
   if (dbEntity.proxy_account_id !== networkEntity.proxyAccountId) {
@@ -112,14 +111,8 @@ const getVerifiedEntity = async (csvEntity) => {
     logger.trace(`Error retrieving account ${csvEntity.entity} from network: ${e}`);
     return null;
   }
-  // const networkEntity = await networkEntityService.getAccountInfo(csvEntity.entity);
+
   const dbEntity = await dbEntityService.getEntity(csvEntity.entity);
-
-  if (!networkEntity.key || networkEntity.key._keys === undefined) {
-    logger.trace(`Null network entity key, skipping`);
-    return null;
-  }
-
   if (!dbEntity) {
     logger.trace(`Null db entity, skipping`);
     return null;
@@ -134,7 +127,8 @@ const getVerifiedEntity = async (csvEntity) => {
  * @returns {Promise<unknown[]|[]>}
  */
 const getUpdateList = async (csvEntities) => {
-  logger.info(`Validating entities entities against db entries ...`);
+  logger.info(`Validating entities against db and network entries ...`);
+  const mergeStart = process.hrtime();
   let updateList = [];
   if (!csvEntities || csvEntities.length === 0) {
     return updateList;
@@ -143,13 +137,11 @@ const getUpdateList = async (csvEntities) => {
   const startBalance = await networkEntityService.getAccountBalance();
 
   updateList = (await Promise.all(csvEntities.map(getVerifiedEntity))).filter((x) => !!x);
-  logger.info(`Update list of length ${updateList.length} retrieved`);
+  const elapsedTime = process.hrtime(mergeStart);
+  logger.info(`Update list of length ${updateList.length} retrieved in ${utils.getElapsedTimeString(elapsedTime)}`);
 
   const endBalance = await networkEntityService.getAccountBalance();
-  logger.info(
-    `*** Network accountInfo calls cost ${endBalance.hbars.toTinybars() - startBalance.hbars.toTinybars()} tℏ.
-    start: ${startBalance.hbars.toTinybars()} tℏ, end: ${endBalance.hbars.toTinybars()} tℏ`
-  );
+  logger.info(`Network accountInfo calls cost ${startBalance.hbars.toTinybars() - endBalance.hbars.toTinybars()} tℏ`);
 
   return updateList;
 };
@@ -165,9 +157,11 @@ const updateStaleDBEntities = async (entitiesToUpdate) => {
     return;
   }
 
+  const updateStart = process.hrtime();
   const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
+  const elapsedTime = process.hrtime(updateStart);
 
-  logger.info(`Updated ${updatedList.length} entities`);
+  logger.info(`Updated ${updatedList.length} entities in ${utils.getElapsedTimeString(elapsedTime)}`);
 };
 
 module.exports = {
