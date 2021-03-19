@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,6 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
-@Log4j2
 class CompositeTransactionGeneratorTest {
 
     private PublishProperties properties;
@@ -72,7 +70,7 @@ class CompositeTransactionGeneratorTest {
         properties.getScenarios().add(scenarioProperties2);
         supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(p -> p, properties));
 
-        warmup();
+        prepare();
     }
 
     @ParameterizedTest(name = "batch request count {0}")
@@ -168,7 +166,7 @@ class CompositeTransactionGeneratorTest {
         properties.getScenarios().get(0).setLimit(1L);
         CompositeTransactionGenerator generator = supplier.get();
         assertThat(generator.next()).hasSize(1);
-        assertThat(generator.next()).hasSize(0);
+        assertThat(generator.next()).isEmpty();
         assertInactive();
         assertThat(properties.getScenarios())
                 .extracting(ScenarioProperties::isEnabled)
@@ -201,17 +199,18 @@ class CompositeTransactionGeneratorTest {
         List<Integer> warmupCounts = counts.subList(0, warmUpSeconds);
         List<Integer> stableCounts = counts.subList(warmUpSeconds, counts.size());
         assertThat(warmupCounts).isSorted().allSatisfy(n -> assertThat(n * 1.0).isLessThan(totalTps));
-        assertThat(stableCounts).allSatisfy(n -> assertThat(n * 1.0).isCloseTo(totalTps, withinPercentage(5)));
+        assertThat(stableCounts).isNotEmpty()
+                .allSatisfy(n -> assertThat(n * 1.0).isCloseTo(totalTps, withinPercentage(5)));
     }
 
     private void assertInactive() {
-        assertThat(supplier.get().rateLimiter).isEqualTo(CompositeTransactionGenerator.INACTIVE_RATE_LIMITER);
+        assertThat(supplier.get().rateLimiter.get()).isEqualTo(CompositeTransactionGenerator.INACTIVE_RATE_LIMITER);
     }
 
-    private void warmup() {
+    private void prepare() {
+        // warmup so in tests the timing will be accurate
         TransactionGenerator generator = Suppliers
                 .synchronizedSupplier(() -> new CompositeTransactionGenerator(p -> p, properties)).get();
-        // warmup so in tests the timing will be accurate
         generator.next(0);
     }
 }

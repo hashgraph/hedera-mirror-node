@@ -104,8 +104,9 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void reachedLimit() {
         properties.setLimit(1);
-        assertRequests(generator.get().next());
-        assertThatThrownBy(() -> generator.get().next())
+        TransactionGenerator transactionGenerator = generator.get();
+        assertRequests(transactionGenerator.next());
+        assertThatThrownBy(() -> transactionGenerator.next())
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish limit");
     }

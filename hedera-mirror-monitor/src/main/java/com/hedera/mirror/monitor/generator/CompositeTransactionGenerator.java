@@ -24,6 +24,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
@@ -48,7 +50,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     private final ExpressionConverter expressionConverter;
     private final PublishProperties properties;
     volatile EnumeratedDistribution<TransactionGenerator> distribution;
-    volatile RateLimiter rateLimiter;
+    AtomicReference<RateLimiter> rateLimiter = new AtomicReference<>();
     volatile int batchSize;
 
     public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
@@ -60,7 +62,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     @Override
     public List<PublishRequest> next(int count) {
         int permits = count > 0 ? count : batchSize;
-        rateLimiter.acquire(permits);
+        rateLimiter.get().acquire(permits);
 
         List<PublishRequest> publishRequests = new ArrayList<>();
         int i = 0;
@@ -73,7 +75,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
                 log.warn(e.getMessage());
                 e.getProperties().setEnabled(false);
                 rebuild();
-                if (rateLimiter.equals(INACTIVE_RATE_LIMITER)) {
+                if (rateLimiter.get().equals(INACTIVE_RATE_LIMITER)) {
                     break;
                 }
             } catch (Exception e) {
@@ -86,46 +88,46 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     }
 
     private synchronized void rebuild() {
-        List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
-        double total = 0.0;
-
-        if (properties.isEnabled()) {
-            total = properties.getScenarios()
-                    .stream()
-                    .filter(ScenarioProperties::isEnabled)
-                    .map(ScenarioProperties::getTps)
-                    .reduce(0.0, Double::sum);
-
-            for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
-                if (scenarioProperties.isEnabled()) {
-                    double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
-                    pairs.add(Pair.create(
-                            new ConfigurableTransactionGenerator(expressionConverter, scenarioProperties), weight));
-                    log.info("Activated scenario: {}", scenarioProperties);
-                }
-            }
-        }
-
-        batchSize = Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor()));
-
-        if (pairs.isEmpty()) {
-            rateLimiter = INACTIVE_RATE_LIMITER;
+        List<ScenarioProperties> enabledScenarios = properties.getScenarios()
+                .stream()
+                .filter(ScenarioProperties::isEnabled)
+                .collect(Collectors.toList());
+        if (!properties.isEnabled() || enabledScenarios.isEmpty()) {
+            batchSize = 1;
             distribution = null;
+            rateLimiter.set(INACTIVE_RATE_LIMITER);
             log.info("Publishing is disabled");
             return;
         }
 
-        if (rateLimiter != null) {
-            rateLimiter.setRate(total);
+        List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
+        final double total = enabledScenarios
+                .stream()
+                .map(ScenarioProperties::getTps)
+                .reduce(0.0, Double::sum);
+        enabledScenarios.forEach(scenarioProperties -> {
+            double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
+            pairs.add(Pair.create(new ConfigurableTransactionGenerator(expressionConverter, scenarioProperties), weight));
+            log.info("Activated scenario: {}", scenarioProperties);
+        });
+
+        batchSize = Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor()));
+
+        RateLimiter current = rateLimiter.get();
+        if (current != null) {
+            current.setRate(total);
         } else {
-            Duration warmUpPeriod = properties.getWarmupPeriod();
-            if (warmUpPeriod.equals(Duration.ZERO)) {
-                rateLimiter = RateLimiter.create(total);
-            } else {
-                rateLimiter = RateLimiter.create(total, properties.getWarmupPeriod());
-            }
+            rateLimiter.set(getRateLimiter(total, properties.getWarmupPeriod()));
         }
 
         distribution = new EnumeratedDistribution<>(pairs);
+    }
+
+    private RateLimiter getRateLimiter(double tps, Duration warmupPeriod) {
+        if (warmupPeriod.equals(Duration.ZERO)) {
+            return RateLimiter.create(tps);
+        }
+
+        return RateLimiter.create(tps, properties.getWarmupPeriod());
     }
 }
