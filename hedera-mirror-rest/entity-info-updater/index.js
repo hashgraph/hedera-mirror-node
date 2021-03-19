@@ -62,14 +62,13 @@ const getUpdateList = async (entities) => {
 };
 
 const handleUpdateEntities = async (entitiesToUpdate) => {
-  logger.info(`Updating stale db entries with updated information ...`);
   await entityUpdateHandler.updateStaleDBEntities(entitiesToUpdate);
 };
 
 const migrationStart = process.hrtime();
 
 // get entity objects from CSV
-const entitiesToValidate = utils.readEntityCSVFileSync().slice(0, 10);
+const entitiesToValidate = utils.readEntityCSVFileSync();
 
 // get updated list of entities based on csv ids and update existing db entities with correct values
 getUpdateList(entitiesToValidate).then(async (entitiesToUpdate) => {
