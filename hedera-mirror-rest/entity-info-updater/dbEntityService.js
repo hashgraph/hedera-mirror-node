@@ -65,7 +65,7 @@ const getEntityObFromString = (id) => {
 
 /**
  * Retrieve entity json object from db
- * @param id
+ * @param {String} id
  * @returns {Promise<*>}
  */
 const getEntity = async (id) => {
@@ -75,7 +75,7 @@ const getEntity = async (id) => {
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
   const entityFromDb = await pool.query(
     `select *
-       from t_entities_bkup
+       from t_entities
        where entity_shard = $1
          and entity_realm = $2
          and entity_num = $3`,
@@ -103,7 +103,7 @@ const updateEntity = async (entity) => {
 
   if (config.dryRun === false) {
     await pool.query(
-      `update t_entities_bkup
+      `update t_entities
          set auto_renew_period      = $1,
              deleted                = $2,
              ed25519_public_key_hex = $3,
@@ -115,7 +115,7 @@ const updateEntity = async (entity) => {
     );
   }
 
-  logger.debug(`Updated entity ${entity.id}`);
+  logger.trace(`Updated entity ${entity.id}`);
 };
 
 module.exports = {
