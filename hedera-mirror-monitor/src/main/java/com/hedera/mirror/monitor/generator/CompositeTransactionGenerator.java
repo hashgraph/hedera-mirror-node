@@ -49,6 +49,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     private final PublishProperties properties;
     volatile EnumeratedDistribution<TransactionGenerator> distribution;
     volatile RateLimiter rateLimiter;
+    volatile int requestSize;
 
     public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
         this.expressionConverter = expressionConverter;
@@ -57,21 +58,34 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     }
 
     @Override
-    public PublishRequest next() {
-        rateLimiter.acquire();
-
-        try {
-            TransactionGenerator transactionGenerator = distribution.sample();
-            return transactionGenerator.next();
-        } catch (ScenarioException e) {
-            log.warn(e.getMessage());
-            e.getProperties().setEnabled(false);
-            rebuild();
-            throw e;
-        } catch (Exception e) {
-            log.error("Unable to generate a transaction", e);
-            throw e;
+    public List<PublishRequest> next(long count) {
+        int permits = requestSize;
+        if (count < requestSize && count > 0) {
+            permits = (int) count;
         }
+        rateLimiter.acquire(permits);
+
+        List<PublishRequest> publishRequests = new ArrayList<>();
+        int i = 0;
+        while (i < permits) {
+            try {
+                TransactionGenerator transactionGenerator = distribution.sample();
+                publishRequests.addAll(transactionGenerator.next());
+                i++;
+            } catch (ScenarioException e) {
+                log.warn(e.getMessage());
+                e.getProperties().setEnabled(false);
+                rebuild();
+                if (rateLimiter.equals(INACTIVE_RATE_LIMITER)) {
+                    break;
+                }
+            } catch (Exception e) {
+                log.error("Unable to generate a transaction", e);
+                throw e;
+            }
+        }
+
+        return publishRequests;
     }
 
     private synchronized void rebuild() {
@@ -94,6 +108,8 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
                 }
             }
         }
+
+        requestSize = Math.max(1, (int) Math.ceil(total / 200));
 
         if (pairs.isEmpty()) {
             rateLimiter = INACTIVE_RATE_LIMITER;

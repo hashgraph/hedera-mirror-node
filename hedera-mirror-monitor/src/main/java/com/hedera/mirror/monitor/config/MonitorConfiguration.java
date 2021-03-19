@@ -35,6 +35,8 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
 import com.hedera.mirror.monitor.subscribe.Subscriber;
 
+import java.util.List;
+
 @Log4j2
 @Configuration
 class MonitorConfiguration {
@@ -61,7 +63,8 @@ class MonitorConfiguration {
      */
     @Bean
     Disposable publishSubscribe() {
-        return Flux.<PublishRequest>generate(sink -> sink.next(transactionGenerator.next()))
+        return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next()))
+                .flatMapIterable(publishRequests -> publishRequests)
                 .retry()
                 .name("generate")
                 .metrics()

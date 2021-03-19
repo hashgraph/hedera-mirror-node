@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,9 +66,13 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     }
 
     @Override
-    public PublishRequest next() {
-        long count = remaining.getAndDecrement();
+    public List<PublishRequest> next(long count) {
+        if (count <= 0) {
+            count = 1;
+        }
 
+        long left = remaining.getAndAdd(-count);
+        count = Math.min(count, left);
         if (count <= 0) {
             throw new ScenarioException(properties, "Reached publish limit of " + properties.getLimit());
         }
@@ -75,12 +81,18 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
             throw new ScenarioException(properties, "Reached publish duration of " + properties.getDuration());
         }
 
-        return builder.receipt(shouldGenerate(properties.getReceipt()))
-                .record(shouldGenerate(properties.getRecord()))
-                .timestamp(Instant.now())
-                .transaction(transactionSupplier.get().get()
-                        .setMaxRetry(properties.getMaxAttempts())) // set scenario transaction maxAttempts
-                .build();
+        List<PublishRequest> publishRequests = new ArrayList<>();
+        for (long i = 0; i < count; i++) {
+            PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceipt()))
+                    .record(shouldGenerate(properties.getRecord()))
+                    .timestamp(Instant.now())
+                    .transaction(transactionSupplier.get().get()
+                            .setMaxRetry(properties.getMaxAttempts())) // set scenario transaction maxAttempts
+                    .build();
+            publishRequests.add(publishRequest);
+        }
+
+        return publishRequests;
     }
 
     private TransactionSupplier<?> convert() {
