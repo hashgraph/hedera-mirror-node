@@ -33,6 +33,8 @@ const math = require('mathjs');
 const config = require('./config');
 
 const logger = log4js.getLogger();
+const longMinValue = -9223372036854775808;
+const longMaxValue = 9223372036854775807;
 
 const constructEntity = (index, headerRow, entityRow) => {
   const entityObj = {};
@@ -83,9 +85,19 @@ const readEntityCSVFileSync = () => {
  * @return {String} ns Nanoseconds since epoch
  */
 const secNsToNs = (secNs, ns) => {
-  return math
+  const finalNs = math
     .add(math.multiply(math.bignumber(secNs.toString()), math.bignumber(1e9)), math.bignumber(ns.toString()))
     .toString();
+
+  if (finalNs < longMinValue) {
+    return longMinValue;
+  }
+
+  if (finalNs > longMaxValue) {
+    return longMaxValue;
+  }
+
+  return finalNs;
 };
 
 const keyListToProto = (keyList) => {

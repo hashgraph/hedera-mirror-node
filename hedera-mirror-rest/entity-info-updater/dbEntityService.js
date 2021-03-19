@@ -71,7 +71,7 @@ const getEntityObFromString = (id) => {
 const getEntity = async (id) => {
   const entityIdObj = getEntityObFromString(id);
 
-  logger.trace(`getEntity for ${id} from ${config.db.entitiesTableName}`);
+  logger.trace(`getEntity for ${id} from db`);
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
   const entityFromDb = await pool.query(
     `select *
