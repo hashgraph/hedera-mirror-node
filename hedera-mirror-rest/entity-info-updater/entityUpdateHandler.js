@@ -85,28 +85,24 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(`deleted mismatch on ${dbEntity.id}, db: ${dbEntity.deleted}, network: ${networkEntity.isDeleted}`);
   }
 
-  const ns = utils.secNsToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
-  if (dbEntity.exp_time_ns !== ns) {
-    updateEntity.exp_time_ns = ns;
+  const ns = utils.timestampToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
+  if (BigInt(dbEntity.exp_time_ns) !== ns) {
+    updateEntity.exp_time_ns = ns.toString();
     updateNeeded = true;
     updateCriteriaCount.exp_time_ns += 1;
-    logger.trace(`expirationTime mismatch on ${dbEntity.id}, db: ${dbEntity.exp_time_ns}, network: ${ns}`);
+    logger.trace(`expirationTime mismatch on ${dbEntity.id}, db: ${dbEntity.exp_time_ns}, network: ${ns.toString()}`);
   }
 
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
-  if (!utils.isEd25519PublicHexMatch(dbEntity.ed25519_public_key_hex, ed25519Hex)) {
+  if (Buffer.compare(updateEntity.key, protoBuffer) !== 0) {
     updateEntity.ed25519_public_key_hex = ed25519Hex;
+    updateEntity.key = protoBuffer;
     updateNeeded = true;
     updateCriteriaCount.ed25519_public_key_hex += 1;
+    updateCriteriaCount.key += 1;
     logger.trace(
       `ed25519 public key mismatch on ${dbEntity.id}, db: ${dbEntity.ed25519_public_key_hex}, network: ${ed25519Hex}`
     );
-  }
-
-  if (Buffer.compare(updateEntity.key, protoBuffer) !== 0) {
-    updateEntity.key = protoBuffer;
-    updateNeeded = true;
-    updateCriteriaCount.key += 1;
     logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
   }
 
@@ -144,14 +140,18 @@ const getVerifiedEntity = async (csvEntity) => {
     return null;
   }
 
-  if (dbEntity.fk_entity_type_id !== 1) {
-    logger.debug(`Currently only account entities are supported, skipping`);
-    return null;
-  }
-
   let networkEntity;
   try {
-    networkEntity = await networkEntityService.getAccountInfo(csvEntity.entity);
+    switch (dbEntity.fk_entity_type_id) {
+      case 1:
+        networkEntity = await networkEntityService.getAccountInfo(csvEntity.entity);
+        break;
+      case 2:
+        networkEntity = await networkEntityService.getContractInfo(csvEntity.entity);
+        break;
+      default:
+        logger.debug(`Currently only account and contract entities are supported, skipping`);
+    }
   } catch (e) {
     logger.debug(`Error retrieving account ${csvEntity.entity} from network, skipping, error: ${e}`);
     return null;
