@@ -21,7 +21,14 @@
 'use strict';
 
 // external libraries
-const {AccountBalanceQuery, AccountId, AccountInfoQuery, Client, PrivateKey} = require('@hashgraph/sdk');
+const {
+  AccountBalanceQuery,
+  AccountId,
+  AccountInfoQuery,
+  Client,
+  ContractInfoQuery,
+  PrivateKey,
+} = require('@hashgraph/sdk');
 const log4js = require('log4js');
 
 // local
@@ -44,6 +51,19 @@ const getAccountInfo = async (accountId) => {
 
   logger.trace(`Retrieved account info from network: ${JSON.stringify(accountInfo)}`);
   return accountInfo;
+};
+
+/**
+ * Get contract info from network
+ * @param contractId
+ * @returns {Promise<ContractInfo>}
+ */
+const getContractInfo = async (contractId) => {
+  logger.debug(`Retrieve contract info for ${contractId}`);
+  const contractInfo = await new ContractInfoQuery().setContractId(contractId).execute(client);
+
+  logger.trace(`Retrieved contract info from network: ${JSON.stringify(contractInfo)}`);
+  return contractInfo;
 };
 
 /**
@@ -99,4 +119,5 @@ if (!clientConfigured) {
 module.exports = {
   getAccountBalance,
   getAccountInfo,
+  getContractInfo,
 };

@@ -33,8 +33,8 @@ const math = require('mathjs');
 const config = require('./config');
 
 const logger = log4js.getLogger();
-const longMinValue = -9223372036854775808;
-const longMaxValue = 9223372036854775807;
+const longMinValue = -9223372036854775808n;
+const longMaxValue = 9223372036854775807n;
 
 const constructEntity = (index, headerRow, entityRow) => {
   const entityObj = {};
@@ -80,15 +80,14 @@ const readEntityCSVFileSync = () => {
 };
 
 /**
- * Converts seconds since epoch (seconds nnnnnnnnn format) to  nanoseconds
+ * Converts timestamp of seconds since epoch (seconds nnnnnnnnn format) to  nanoseconds
  * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
- * @return {String} ns Nanoseconds since epoch
+ * @return {BigInt} ns Nanoseconds since epoch
  */
-const secNsToNs = (secNs, ns) => {
-  const finalNs = math
-    .add(math.multiply(math.bignumber(secNs.toString()), math.bignumber(1e9)), math.bignumber(ns.toString()))
-    .toString();
+const timestampToNs = (sec, ns) => {
+  const finalNs = BigInt(sec.toString()) * BigInt(1e9) + BigInt(ns.toString());
 
+  // handle the equivalent long overflow case that the java importer accommodates
   if (finalNs < longMinValue) {
     return longMinValue;
   }
@@ -141,8 +140,12 @@ const getProtoAndEd25519HexFromKeyList = (key) => {
   const protoKey = {
     keyList: keyListToProto(key),
   };
-  const ed25519HexParts = key._keys.toString().split(',');
-  const ed25519Hex = ed25519HexParts.length === 1 ? ed25519HexParts[0] : null;
+
+  // only keyLists of length one have an applicable ed25519Hex
+  let ed25519Hex = null;
+  if (key._keys.length === 1) {
+    ed25519Hex = key._keys[0].toString();
+  }
 
   return {protoKey, ed25519Hex};
 };
@@ -177,5 +180,5 @@ module.exports = {
   getElapsedTimeString,
   isEd25519PublicHexMatch,
   readEntityCSVFileSync,
-  secNsToNs,
+  timestampToNs,
 };
