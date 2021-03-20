@@ -42,7 +42,7 @@ const pool = new Pool({
  * @param {String} id
  * @returns {{num: number, realm: number, shard: number}} entity
  */
-const getEntityObFromString = (id) => {
+const getEntityObjFromString = (id) => {
   let entityIdObj = {
     shard: 0,
     realm: 0,
@@ -69,7 +69,7 @@ const getEntityObFromString = (id) => {
  * @returns {Promise<*>}
  */
 const getEntity = async (id) => {
-  const entityIdObj = getEntityObFromString(id);
+  const entityIdObj = getEntityObjFromString(id);
 
   logger.trace(`getEntity for ${id} from db`);
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
