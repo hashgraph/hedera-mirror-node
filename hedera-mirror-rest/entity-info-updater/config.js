@@ -35,12 +35,11 @@ const loadYaml = () => {
     config = yaml.load(fs.readFileSync(configFile, 'utf-8'));
     logger.info(`Loaded configurations from source: ${configFile}`);
     if (config.hedera.mirror.entityUpdate.dryRun === true) {
-      logger.info(
-        `Db update of entities will be skipped as 'hedera.mirror.entityUpdate.dryRun' is set to ${config.hedera.mirror.entityUpdate.dryRun}`
-      );
+      logger.info("Db update of entities will be skipped as 'hedera.mirror.entityUpdate.dryRun' is set to true");
     }
   } catch (err) {
-    logger.info(err);
+    const message = `Error loading config/application.yml: ${err}`;
+    throw Error(message);
   }
 };
 
