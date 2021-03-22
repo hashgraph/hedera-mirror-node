@@ -65,26 +65,6 @@ const getAccountInfo = async (accountId) => {
 };
 
 /**
- * Get contract info from network
- * @param contractId
- * @returns {Promise<ContractInfo>}
- */
-const getContractInfo = async (contractId) => {
-  logger.debug(`Retrieve contract info for ${contractId}`);
-  let contractInfo;
-
-  try {
-    contractInfo = await new ContractInfoQuery().setContractId(contractId).execute(client);
-  } catch (e) {
-    logger.trace(`${contractId} is not present on the network, error: ${e}`);
-    return null;
-  }
-
-  logger.trace(`Retrieved contract info from network: ${JSON.stringify(contractInfo)}`);
-  return contractInfo;
-};
-
-/**
  * Get account balance from network
  * @returns {Promise<Long>}
  */
@@ -143,5 +123,4 @@ if (!clientConfigured) {
 module.exports = {
   getAccountBalance,
   getAccountInfo,
-  getContractInfo,
 };
