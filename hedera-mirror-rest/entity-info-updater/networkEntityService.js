@@ -27,6 +27,7 @@ const {
   AccountInfoQuery,
   Client,
   ContractInfoQuery,
+  Hbar,
   PrivateKey,
 } = require('@hashgraph/sdk');
 const log4js = require('log4js');
@@ -85,14 +86,20 @@ const getContractInfo = async (contractId) => {
 
 /**
  * Get account balance from network
- * @returns {Promise<AccountBalance>}
+ * @returns {Promise<Long>}
  */
 const getAccountBalance = async () => {
   logger.trace(`Retrieve account balance for ${operatorId}`);
-  const accountBalance = await new AccountBalanceQuery().setAccountId(operatorId).execute(client);
+  let accountBalance;
+  try {
+    accountBalance = await new AccountBalanceQuery().setAccountId(operatorId).execute(client);
+  } catch (e) {
+    logger.trace(`Error retrieving ${operatorId} account balance, error: ${e}`);
+    return -1;
+  }
 
   logger.trace(`Retrieved account balance of ${accountBalance.hbars.toTinybars()} for ${operatorId} from network`);
-  return accountBalance;
+  return accountBalance.hbars.toTinybars();
 };
 
 // configure sdk client on file load based off of config values
