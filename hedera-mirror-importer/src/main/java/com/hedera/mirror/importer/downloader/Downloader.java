@@ -161,6 +161,9 @@ public abstract class Downloader<T extends StreamFile> {
             verifySigsAndDownloadDataFiles(sigFilesMap);
         } catch (SignatureVerificationException e) {
             log.warn(e.getMessage());
+        } catch (InterruptedException e) {
+            log.error("Error downloading files", e);
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Error downloading files", e);
         }
@@ -205,6 +208,9 @@ public abstract class Downloader<T extends StreamFile> {
                     if (count > 0) {
                         log.info("Downloaded {} signatures for node {} in {}", count, nodeAccountIdStr, stopwatch);
                     }
+                } catch (InterruptedException e) {
+                    log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
+                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
                 }
@@ -499,8 +505,12 @@ public abstract class Downloader<T extends StreamFile> {
                     valid = true;
                     break;
                 } catch (HashMismatchException e) {
-                    log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
-                            signature.getNodeAccountIdString(), signature.getFilename(), e);
+                    log.warn("Failed to verify data file {} from node {}. Will retry another node",
+                            dataFilename.getFilename(), signature.getNodeAccountIdString(), e);
+                } catch (InterruptedException e) {
+                    log.warn("Failed to download data file {} from node {}", dataFilename.getFilename(),
+                            signature.getNodeAccountIdString(), e);
+                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
                             signature.getNodeAccountIdString(), signature.getFilename(), e);
