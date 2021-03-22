@@ -104,7 +104,8 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
   }
 
-  if (dbEntity.memo !== networkEntity.accountMemo) {
+  // only update memo if there's a mismatch with valid memo entries locally and on network
+  if (dbEntity.memo !== networkEntity.accountMemo && dbEntity.memo !== null && networkEntity.accountMemo === '') {
     updateEntity.memo = networkEntity.accountMemo;
     updateNeeded = true;
     updateCriteriaCount.memo += 1;
@@ -175,7 +176,7 @@ const getVerifiedEntity = async (csvEntity) => {
 const batchGetVerifiedEntities = async (csvEntities) => {
   const batchedEntities = Array.from(
     {length: Math.ceil(csvEntities.length / config.accountInfoBatchSize)},
-    (_, index) => csvEntities.slice(index * batchSize, (index + 1) * config.accountInfoBatchSize)
+    (_, index) => csvEntities.slice(index * config.accountInfoBatchSize, (index + 1) * config.accountInfoBatchSize)
   );
 
   logger.trace(
@@ -191,6 +192,20 @@ const batchGetVerifiedEntities = async (csvEntities) => {
   }
 
   return updateList;
+};
+
+const printBalanceSpent = (startBalance, endBalance) => {
+  if (startBalance > 0 && endBalance > 0) {
+    logger.debug(
+      `Network accountInfo calls cost ${
+        startBalance - endBalance
+      } tℏ. startBalance: ${startBalance}, endBalance: ${endBalance}`
+    );
+  } else {
+    logger.debug(
+      `Network error encountered retrieving balances. startBalance: ${startBalance}, endBalance: ${endBalance}`
+    );
+  }
 };
 
 /**
@@ -222,7 +237,7 @@ const getUpdateList = async (csvEntities) => {
   );
 
   const endBalance = await networkEntityService.getAccountBalance();
-  logger.debug(`Network accountInfo calls cost ${startBalance.hbars.toTinybars() - endBalance.hbars.toTinybars()} tℏ`);
+  printBalanceSpent(startBalance, endBalance);
 
   return updateList.map((x) => x.updateEntity);
 };
