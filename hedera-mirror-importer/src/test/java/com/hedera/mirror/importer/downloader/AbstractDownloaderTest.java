@@ -173,7 +173,7 @@ public abstract class AbstractDownloaderTest {
     protected abstract Duration getCloseInterval();
 
     boolean isSigFile(Path path) {
-        return path.toString().endsWith("_sig");
+        return path.toString().contains(StreamType.SIGNATURE_SUFFIX);
     }
 
     @BeforeAll
@@ -513,6 +513,32 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
 
         verifyStreamFiles(List.of(file1));
+    }
+
+    @Test
+    void noDataFiles() throws IOException {
+        fileCopier.copy();
+        Files.walk(s3Path).filter(Files::isRegularFile)
+                .filter(Predicate.not(this::isSigFile))
+                .map(Path::toFile)
+                .forEach(FileUtils::deleteQuietly);
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        verifyForSuccess(Collections.emptyList(), true);
+    }
+
+    @Test
+    void noSigFiles() throws IOException {
+        fileCopier.copy();
+        Files.walk(s3Path).filter(Files::isRegularFile)
+                .filter(this::isSigFile)
+                .map(Path::toFile)
+                .forEach(FileUtils::deleteQuietly);
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        verifyForSuccess(Collections.emptyList(), true);
     }
 
     private void differentFilenames(Duration offset) throws Exception {

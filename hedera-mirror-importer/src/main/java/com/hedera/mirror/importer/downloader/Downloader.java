@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -293,8 +294,9 @@ public abstract class Downloader<T extends StreamFile> {
                     .get(instant)
                     .stream()
                     .collect(Collectors.groupingBy(StreamFilename::getFileType));
-            List<StreamFilename> dataFilenames = streamFilenamesByType.get(DATA);
-            List<StreamFilename> signatureFilenames = streamFilenamesByType.get(SIGNATURE);
+            List<StreamFilename> dataFilenames = streamFilenamesByType.getOrDefault(DATA, Collections.EMPTY_LIST);
+            List<StreamFilename> signatureFilenames = streamFilenamesByType
+                    .getOrDefault(SIGNATURE, Collections.EMPTY_LIST);
 
             boolean found = false;
             for (String extension : streamType.getSignatureExtensions()) {
