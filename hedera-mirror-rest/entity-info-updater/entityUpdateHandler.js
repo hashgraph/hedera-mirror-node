@@ -44,9 +44,11 @@ const getUpdateCriteriaCount = () => {
 const getCombinedUpdateCriteriaCount = (updateList) => {
   const updateCriteriaCount = getUpdateCriteriaCount();
   for (const counts of updateList) {
-    Object.keys(counts).forEach((x) => {
-      updateCriteriaCount[x] += counts[x];
-    });
+    if (counts !== undefined) {
+      Object.keys(counts).forEach((x) => {
+        updateCriteriaCount[x] += counts[x];
+      });
+    }
   }
 
   return updateCriteriaCount;
@@ -153,18 +155,39 @@ const getVerifiedEntity = async (csvEntity) => {
         break;
       default:
         logger.debug(`Currently only account and contract entities are supported, skipping`);
+        return null;
     }
   } catch (e) {
-    if (e.toString().indexOf('INVALID_ACCOUNT_ID') < 0 && e.toString().indexOf('ACCOUNT_DELETED') < 0) {
-      logger.debug(`Error retrieving account ${csvEntity.entity} from network, script should be rerun, error: ${e}`);
-    } else {
-      logger.trace(`${csvEntity.entity} is not present on the network, skipping, error: ${e}`);
-    }
+    logger.debug(`Error retrieving account ${csvEntity.entity} from network, script should be rerun, error: ${e}`);
 
     return null;
   }
 
   return getUpdatedEntity(dbEntity, networkEntity);
+};
+
+/**
+ * Batch retrieve the entities from the network to avoid potential throttle related errors
+ * @param csvEntities
+ * @returns {Promise<[]>}
+ */
+const batchGetVerifiedEntities = async (csvEntities) => {
+  const batchSize = 100;
+  const batchedEntities = Array.from({length: Math.ceil(csvEntities.length / batchSize)}, (_, index) =>
+    csvEntities.slice(index * batchSize, (index + 1) * batchSize)
+  );
+
+  logger.trace(`batched update list retrieval into: ${batchedEntities.length} buckets of ${batchSize}`);
+  let updateList = [];
+  for (let i = 0; i < batchedEntities.length; i++) {
+    try {
+      updateList = updateList.concat((await Promise.all(batchedEntities[i].map(getVerifiedEntity))).filter((x) => !!x));
+    } catch (e) {
+      logger.debug(`Error batch retrieving accounts from network, error: ${e}`);
+    }
+  }
+
+  return updateList;
 };
 
 /**
@@ -182,7 +205,7 @@ const getUpdateList = async (csvEntities) => {
 
   const startBalance = await networkEntityService.getAccountBalance();
 
-  updateList = (await Promise.all(csvEntities.map(getVerifiedEntity))).filter((x) => !!x);
+  updateList = await batchGetVerifiedEntities(csvEntities);
   const elapsedTime = process.hrtime(mergeStart);
 
   logger.info(

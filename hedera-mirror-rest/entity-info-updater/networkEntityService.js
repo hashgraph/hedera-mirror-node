@@ -47,7 +47,17 @@ let clientConfigured = false;
  */
 const getAccountInfo = async (accountId) => {
   logger.trace(`Retrieve account info for ${accountId}`);
-  const accountInfo = await new AccountInfoQuery().setAccountId(accountId).execute(client);
+  let accountInfo;
+  try {
+    accountInfo = await new AccountInfoQuery().setAccountId(accountId).execute(client);
+  } catch (e) {
+    if (e.toString().indexOf('INVALID_ACCOUNT_ID') < 0 && e.toString().indexOf('ACCOUNT_DELETED') < 0) {
+      throw e;
+    }
+
+    logger.trace(`${accountId} is not present on the network, error: ${e}`);
+    return null;
+  }
 
   logger.trace(`Retrieved account info from network: ${JSON.stringify(accountInfo)}`);
   return accountInfo;
@@ -60,7 +70,14 @@ const getAccountInfo = async (accountId) => {
  */
 const getContractInfo = async (contractId) => {
   logger.debug(`Retrieve contract info for ${contractId}`);
-  const contractInfo = await new ContractInfoQuery().setContractId(contractId).execute(client);
+  let contractInfo;
+
+  try {
+    contractInfo = await new ContractInfoQuery().setContractId(contractId).execute(client);
+  } catch (e) {
+    logger.trace(`${contractId} is not present on the network, error: ${e}`);
+    return null;
+  }
 
   logger.trace(`Retrieved contract info from network: ${JSON.stringify(contractInfo)}`);
   return contractInfo;
