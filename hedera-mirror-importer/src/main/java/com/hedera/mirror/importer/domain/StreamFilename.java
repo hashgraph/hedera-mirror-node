@@ -24,7 +24,9 @@ import com.google.common.base.Splitter;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Value;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +41,16 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
     private static final char STANDARD_TIME_SEPARATOR = ':';
     private static final Splitter FILENAME_SPLITTER = Splitter.on(FilenameUtils.EXTENSION_SEPARATOR).omitEmptyStrings();
+    private static final Map<StreamType, Map<String, FileType>> STREAM_TYPE_EXTENSION_MAP = new HashMap<>();
+
+    static {
+        for (StreamType type : StreamType.values()) {
+            Map<String, FileType> extensions = new HashMap<>();
+            type.getDataExtensions().forEach(extension -> extensions.put(extension, FileType.DATA));
+            type.getSignatureExtensions().forEach(extension -> extensions.put(extension, FileType.SIGNATURE));
+            STREAM_TYPE_EXTENSION_MAP.put(type, extensions);
+        }
+    }
 
     private final String compressor;
     private final String extension;
@@ -147,20 +159,16 @@ public class StreamFilename implements Comparable<StreamFilename> {
                 continue;
             }
 
-            for (FileType fileType : FileType.values()) {
-                List<String> extensions = fileType == FileType.DATA ? type.getDataExtensions() :
-                        type.getSignatureExtensions();
-                for (String extension : extensions) {
-                    // if last matches extension, the file is not compressed; otherwise if secondLast matches extension,
-                    // last is the compression extension
-                    if (extension.equals(last)) {
-                        return new TypeInfo(null, extension, fileType, type);
-                    }
+            Map<String, FileType> extensions = STREAM_TYPE_EXTENSION_MAP.get(type);
 
-                    if (extension.equals(secondLast)) {
-                        return new TypeInfo(last, extension, fileType, type);
-                    }
-                }
+            // if last matches extension, the file is not compressed
+            if (extensions.containsKey(last)) {
+                return new TypeInfo(null, last, extensions.get(last), type);
+            }
+
+            // otherwise if secondLast matches extension, last is the compression extension
+            if (extensions.containsKey(secondLast)) {
+                return new TypeInfo(last, secondLast, extensions.get(secondLast), type);
             }
         }
 
