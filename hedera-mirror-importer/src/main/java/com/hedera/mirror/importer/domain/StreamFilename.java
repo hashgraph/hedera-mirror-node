@@ -24,6 +24,7 @@ import com.google.common.base.Splitter;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,9 +42,10 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
     private static final char STANDARD_TIME_SEPARATOR = ':';
     private static final Splitter FILENAME_SPLITTER = Splitter.on(FilenameUtils.EXTENSION_SEPARATOR).omitEmptyStrings();
-    private static final Map<StreamType, Map<String, FileType>> STREAM_TYPE_EXTENSION_MAP = new HashMap<>();
+    private static final Map<StreamType, Map<String, FileType>> STREAM_TYPE_EXTENSION_MAP;
 
     static {
+        STREAM_TYPE_EXTENSION_MAP = new EnumMap<>(StreamType.class);
         for (StreamType type : StreamType.values()) {
             Map<String, FileType> extensions = new HashMap<>();
             type.getDataExtensions().forEach(extension -> extensions.put(extension, FileType.DATA));
