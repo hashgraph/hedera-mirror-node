@@ -97,6 +97,7 @@ const updateEntity = async (entity) => {
     entity.ed25519_public_key_hex,
     entity.exp_time_ns,
     entity.key,
+    entity.memo,
     entity.proxy_account_id,
     entity.id,
   ];
@@ -109,8 +110,9 @@ const updateEntity = async (entity) => {
              ed25519_public_key_hex = $3,
              exp_time_ns            = $4,
              key                    = $5,
-             proxy_account_id       = $6
-         where id = $7`,
+             memo                   = $6,
+             proxy_account_id       = $7
+         where id = $8`,
       paramValues
     );
   }
