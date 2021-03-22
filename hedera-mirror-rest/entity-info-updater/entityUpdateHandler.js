@@ -27,6 +27,7 @@ const log4js = require('log4js');
 const networkEntityService = require('./networkEntityService');
 const dbEntityService = require('./dbEntityService');
 const utils = require('./utils');
+const config = require('./config');
 
 const logger = log4js.getLogger();
 
@@ -172,12 +173,14 @@ const getVerifiedEntity = async (csvEntity) => {
  * @returns {Promise<[]>}
  */
 const batchGetVerifiedEntities = async (csvEntities) => {
-  const batchSize = 100;
-  const batchedEntities = Array.from({length: Math.ceil(csvEntities.length / batchSize)}, (_, index) =>
-    csvEntities.slice(index * batchSize, (index + 1) * batchSize)
+  const batchedEntities = Array.from(
+    {length: Math.ceil(csvEntities.length / config.accountInfoBatchSize)},
+    (_, index) => csvEntities.slice(index * batchSize, (index + 1) * config.accountInfoBatchSize)
   );
 
-  logger.trace(`batched update list retrieval into: ${batchedEntities.length} buckets of ${batchSize}`);
+  logger.trace(
+    `batched update list retrieval into: ${batchedEntities.length} buckets of ${config.accountInfoBatchSize}`
+  );
   let updateList = [];
   for (let i = 0; i < batchedEntities.length; i++) {
     try {
