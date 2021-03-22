@@ -35,7 +35,6 @@ const getUpdateCriteriaCount = () => {
     auto_renew_period: 0,
     deleted: 0,
     exp_time_ns: 0,
-    ed25519_public_key_hex: 0,
     key: 0,
     memo: 0,
     proxy_account_id: 0,
@@ -86,7 +85,7 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
   }
 
   const ns = utils.timestampToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
-  if (BigInt(dbEntity.exp_time_ns) !== ns) {
+  if (dbEntity.exp_time_ns !== null && BigInt(dbEntity.exp_time_ns) !== ns) {
     updateEntity.exp_time_ns = ns.toString();
     updateNeeded = true;
     updateCriteriaCount.exp_time_ns += 1;
@@ -94,16 +93,19 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
   }
 
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
-  if (Buffer.compare(updateEntity.key, protoBuffer) !== 0) {
+  if (Buffer.compare(dbEntity.key, protoBuffer) !== 0) {
     updateEntity.ed25519_public_key_hex = ed25519Hex;
     updateEntity.key = protoBuffer;
     updateNeeded = true;
-    updateCriteriaCount.ed25519_public_key_hex += 1;
     updateCriteriaCount.key += 1;
-    logger.trace(
-      `ed25519 public key mismatch on ${dbEntity.id}, db: ${dbEntity.ed25519_public_key_hex}, network: ${ed25519Hex}`
-    );
     logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
+  }
+
+  if (dbEntity.memo !== networkEntity.accountMemo) {
+    updateEntity.memo = networkEntity.accountMemo;
+    updateNeeded = true;
+    updateCriteriaCount.memo += 1;
+    logger.trace(`memo mismatch on ${dbEntity.id}, db: ${dbEntity.memo}, network: ${networkEntity.accountMemo}`);
   }
 
   if (networkEntity.proxyAccountId !== null && dbEntity.proxy_account_id !== networkEntity.proxyAccountId) {
@@ -153,7 +155,12 @@ const getVerifiedEntity = async (csvEntity) => {
         logger.debug(`Currently only account and contract entities are supported, skipping`);
     }
   } catch (e) {
-    logger.debug(`Error retrieving account ${csvEntity.entity} from network, skipping, error: ${e}`);
+    if (e.toString().indexOf('INVALID_ACCOUNT_ID') < 0 && e.toString().indexOf('ACCOUNT_DELETED') < 0) {
+      logger.debug(`Error retrieving account ${csvEntity.entity} from network, script should be rerun, error: ${e}`);
+    } else {
+      logger.trace(`${csvEntity.entity} is not present on the network, skipping, error: ${e}`);
+    }
+
     return null;
   }
 
