@@ -296,13 +296,12 @@ public abstract class Downloader<T extends StreamFile> {
                 Optional<StreamFilenamePair> pair = signatureFilenames.stream()
                         .filter(streamFilename -> streamFilename.getExtension().equals(extension))
                         .findFirst()
-                        .map(signatureFilename -> {
-                            StreamFilename dataFilename = dataFilenames.stream()
-                                    .filter(signatureFilename::match)
-                                    .findFirst()
-                                    .orElse(null);
-                            return StreamFilenamePair.of(dataFilename, signatureFilename);
-                        });
+                        .flatMap(signatureFilename -> dataFilenames
+                                .stream()
+                                .filter(signatureFilename::match)
+                                .findFirst()
+                                .map(dataFilename -> StreamFilenamePair.of(dataFilename, signatureFilename))
+                        );
                 if (pair.isPresent()) {
                     streamFilenamePairs.add(pair.get());
                     found = true;
