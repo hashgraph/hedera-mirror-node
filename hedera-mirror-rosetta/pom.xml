@@ -17,6 +17,7 @@
     <properties>
         <sonar.exclusions>pom.xml</sonar.exclusions>
         <sonar.sources>${project.basedir}</sonar.sources>
+        <sonar.go.coverage.reportPaths>${project.basedir}/coverage.txt</sonar.go.coverage.reportPaths>
     </properties>
 
     <build>
@@ -45,6 +46,7 @@
                                 <flag>-race</flag>
                                 <flag>-v</flag>
                             </buildFlags>
+                            <skip>${skipTests}</skip>
                             <sources>${project.basedir}${file.separator}</sources>
                             <useEnvVars>true</useEnvVars>
                         </configuration>
@@ -61,6 +63,10 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

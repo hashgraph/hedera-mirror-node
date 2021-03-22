@@ -1,0 +1,26 @@
+name: Security
+
+on:
+  pull_request:
+    branches: [ master, release/** ]
+
+env:
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
+
+jobs:
+  dependencies:
+    name: Dependency check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/pom.xml') }}
+          path: ~/.m2
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Vulnerability check
+        run: ./mvnw ${MAVEN_CLI_OPTS} dependency-check:aggregate

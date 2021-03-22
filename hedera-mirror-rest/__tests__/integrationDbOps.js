@@ -62,30 +62,28 @@ const v2SchemaConfigs = {
 };
 
 // if v2 schema is set in env use it, else default to v1
-const schemaConfigs = process.env.MIRROR_NODE_INT_DB === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
+const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
 /**
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
  * testContainers/dockerized postgresql instance.
  */
 const instantiateDatabase = async () => {
-  if (!process.env.CIRCLECI) {
-    if (!(await isDockerInstalled())) {
-      throw new Error('Docker not found');
-    }
-
-    const image = `${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`;
-    logger.info(`Starting PostgreSQL docker container with image ${image}`);
-    dockerDb = await new GenericContainer(image)
-      .withEnv('POSTGRES_DB', dbConfig.name)
-      .withEnv('POSTGRES_USER', dbAdminUser)
-      .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
-      .withExposedPorts(dbConfig.port)
-      .start();
-    dbConfig.port = dockerDb.getMappedPort(dbConfig.port);
-    dbConfig.host = dockerDb.getHost();
-    logger.info('Started dockerized PostgreSQL');
+  if (!(await isDockerInstalled())) {
+    throw new Error('Docker not found');
   }
+
+  const image = `${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`;
+  logger.info(`Starting PostgreSQL docker container with image ${image}`);
+  dockerDb = await new GenericContainer(image)
+    .withEnv('POSTGRES_DB', dbConfig.name)
+    .withEnv('POSTGRES_USER', dbAdminUser)
+    .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
+    .withExposedPorts(dbConfig.port)
+    .start();
+  dbConfig.port = dockerDb.getMappedPort(dbConfig.port);
+  dbConfig.host = dockerDb.getHost();
+  logger.info('Started dockerized PostgreSQL');
 
   logger.info(`sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`);
   sqlConnection = new SqlConnectionPool({

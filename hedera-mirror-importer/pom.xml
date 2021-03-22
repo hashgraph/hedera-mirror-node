@@ -265,7 +265,7 @@
                             <execution>
                                 <id>default-test</id>
                                 <configuration>
-                                    <excludedGroups>performance, largedbperf</excludedGroups>
+                                    <excludedGroups>largedbperf</excludedGroups>
                                 </configuration>
                             </execution>
                         </executions>
@@ -338,6 +338,10 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

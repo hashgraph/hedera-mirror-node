@@ -1,50 +1,50 @@
-name: Deploy Development
+name: Release Development
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Dskip.npm
+      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK
-        uses: actions/setup-java@v1
-        with:
-          java-version: 11
+
       - name: Cache Maven packages
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/pom.xml') }}
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
+
       - name: Login to Google Container Registry
         uses: google-github-actions/setup-gcloud@master
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.GCR_KEY }}
+
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
+
       - name: Build and push images
-        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -Ddocker.tag.version=master-${GITHUB_SHA} -Djib.to.tags=master-${GITHUB_SHA}
+        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Ddocker.tag.version=master-${GITHUB_SHA} -Djib.to.tags=master-${GITHUB_SHA}
 
   deploy:
-    needs: build
+    needs: publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           ref: deploy
+
       - name: Update dev tag
         run: |-
           sed -i "s/ref: .*/ref: ${GITHUB_SHA}/" ./common/helmrelease.yaml
           sed -i "s/ref: .*/ref: ${GITHUB_SHA}/" ./dev/helmrelease.yaml
           sed -i "s/tag: .*/tag: master-${GITHUB_SHA}/" ./dev/helmrelease.yaml
-        shell: bash
-      - uses: stefanzweifel/git-auto-commit-action@v4.5.1
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Upgrade dev to master-${{ github.sha }}
