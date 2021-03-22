@@ -104,8 +104,8 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
   }
 
-  // only update memo if there's a mismatch with valid memo entries locally and on network
-  if (dbEntity.memo !== networkEntity.accountMemo && dbEntity.memo !== null && networkEntity.accountMemo === '') {
+  // only update memo if there's a mismatch with valid memo entries locally or on network
+  if (dbEntity.memo !== networkEntity.accountMemo && (dbEntity.memo !== null || networkEntity.accountMemo !== '')) {
     updateEntity.memo = networkEntity.accountMemo;
     updateNeeded = true;
     updateCriteriaCount.memo += 1;
@@ -148,16 +148,13 @@ const getVerifiedEntity = async (csvEntity) => {
 
   let networkEntity;
   try {
-    switch (dbEntity.fk_entity_type_id) {
-      case 1:
-        networkEntity = await networkEntityService.getAccountInfo(csvEntity.entity);
-        break;
-      case 2:
-        networkEntity = await networkEntityService.getContractInfo(csvEntity.entity);
-        break;
-      default:
-        logger.debug(`Currently only account and contract entities are supported, skipping`);
-        return null;
+    if (dbEntity.fk_entity_type_id === 1) {
+      networkEntity = await networkEntityService.getAccountInfo(csvEntity.entity);
+    } else {
+      logger.debug(
+        `Entity type '${dbEntity.fk_entity_type_id}' is not supported, only accounts (1) are supported, skipping`
+      );
+      return null;
     }
   } catch (e) {
     logger.debug(`Error retrieving account ${csvEntity.entity} from network, script should be rerun, error: ${e}`);
@@ -230,11 +227,14 @@ const getUpdateList = async (csvEntities) => {
     `${csvEntities.length} entities were retrieved and compared in ${utils.getElapsedTimeString(elapsedTime)},
     ${updateList.length} were found to be out-of-date`
   );
-  logger.debug(
-    `updateCriteriaCount ${JSON.stringify(
-      getCombinedUpdateCriteriaCount(updateList.map((x) => x.updateCriteriaCount))
-    )}`
-  );
+
+  if (updateList.length > 0) {
+    logger.debug(
+      `updateCriteriaCount ${JSON.stringify(
+        getCombinedUpdateCriteriaCount(updateList.map((x) => x.updateCriteriaCount))
+      )}`
+    );
+  }
 
   const endBalance = await networkEntityService.getAccountBalance();
   printBalanceSpent(startBalance, endBalance);
