@@ -71,7 +71,20 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
+      - uses: actions/setup-go@v2
+        name: Setup GO Env
         with:
-          args: gosec ./...
+          go-version: '1.14'
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+
+      - name: Install Gosec
+        run: go get github.com/securego/gosec/v2/cmd/gosec
+
+      - name: Run Gosec Security Scanner
+        run: gosec ./...
