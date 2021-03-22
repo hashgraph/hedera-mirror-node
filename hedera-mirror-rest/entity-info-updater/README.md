@@ -1,6 +1,6 @@
 # Hedera Mirror Entity Info Updater
 
-The Mirror Node Entity Info Updater provides the ability to verify if a list of entities present in the mirror db are correct and update them if they don't match the up to date network values.
+The Mirror Node Entity Info Updater provides the ability to verify if a list of entities present in the mirror db are correct and update them if they don't match the up-to-date network values.
 
 A node based CLI tool `entity-info-updater` is provided here to showcase the steps necessary to independently update stale entities.
 
