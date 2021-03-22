@@ -2,6 +2,7 @@
 hedera:
   mirror:
     entityUpdate:
+      accountInfoBatchSize: 100
       db:
         host: 127.0.0.1
         name: mirror_node
