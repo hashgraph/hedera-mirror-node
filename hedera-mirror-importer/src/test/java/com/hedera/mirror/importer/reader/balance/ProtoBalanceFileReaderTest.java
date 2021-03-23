@@ -55,7 +55,7 @@ class ProtoBalanceFileReaderTest {
     @BeforeEach
     void setUp() {
         File file = TestUtils.getResource(FILEPATH).toPath().toFile();
-        streamFileData = StreamFileData.from("gz", file);
+        streamFileData = StreamFileData.from(file);
         expected = getExpectedAccountBalanceFile(streamFileData);
 
         protoBalanceFileReader = new ProtoBalanceFileReader();

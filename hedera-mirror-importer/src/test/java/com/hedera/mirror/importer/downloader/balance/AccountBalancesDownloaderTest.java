@@ -76,9 +76,11 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         ));
     }
 
-    void setUpMixedScenario() {
-        // for the mixed scenario, all .csv and .csv_sig files are empty files. Also for the second file
-        // 2021-03-10T22_27_56.236886Z_Balances.pb.gz, both the gzipped and plain signature files exists
+    @Test
+    void downloadWithMixedStreamFileExtensions() throws Exception {
+        // for the mixed scenario, both .csv and .pb.gz files exist for the same timestamp; however, all .csv and
+        // .csv_sig files are intentionally made empty so if two account balance files are processed, they must be
+        // the .pb.gz files
         ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
         downloader = new AccountBalancesDownloader(s3AsyncClient, addressBookService,
                 (BalanceDownloaderProperties) downloaderProperties, meterRegistry, nodeSignatureVerifier,
@@ -90,24 +92,9 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
                 "2021-03-10T22_12_56.075092Z_Balances.pb.gz",
                 "2021-03-10T22_27_56.236886Z_Balances.pb.gz"
         ));
-    }
-
-    @Test
-    void downloadWithAllGzippedSignatureFiles() throws Exception {
-        setUpMixedScenario();
-        fileCopier.filterFiles(file -> !file.getName().endsWith("2021-03-10T22_27_56.236886Z_Balances.pb_sig")).copy();
+        fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
-        downloader.download();
 
-        verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
-    }
-
-    @Test
-    void downloadWithSecondSignatureFilePlain() throws Exception {
-        setUpMixedScenario();
-        fileCopier.filterFiles(file -> !file.getName().endsWith("2021-03-10T22_27_56.236886Z_Balances.pb_sig.gz")).copy();
-        expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();

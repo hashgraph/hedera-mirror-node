@@ -90,9 +90,9 @@ public class StreamFilename implements Comparable<StreamFilename> {
         String suffix = streamType.getSuffix();
         String extension;
         if (fileType == FileType.DATA) {
-            extension = streamType.getLastDataExtension();
+            extension = streamType.getDataExtensions().get(0);
         } else {
-            extension = streamType.getLastSignatureExtension();
+            extension = streamType.getSignatureExtensions().get(0);
         }
 
         return StringUtils.joinWith(".", StringUtils.join(timestamp, suffix), extension);
@@ -107,33 +107,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
      */
     public String getFilenameAfter() {
         return StringUtils.remove(filename, "." + fullExtension) + COMPATIBLE_TIME_SEPARATOR;
-    }
-
-    /**
-     * Check if this StreamFilename matches the other. Two StreamFilename objects match if 1. one is signature and the
-     * other is data; and 2. their file names match up to the signature suffix '_sig'
-     *
-     * @param other
-     * @return true if the two SteamFilename objects match otherwise false
-     */
-    public boolean match(StreamFilename other) {
-        if (other == null) {
-            return false;
-        }
-
-        if (fileType == other.getFileType()) {
-            return false;
-        }
-
-        StreamFilename signatureFilename = this;
-        StreamFilename dataFilename = other;
-        if (fileType == FileType.DATA) {
-            signatureFilename = other;
-            dataFilename = this;
-        }
-
-        String commonPrefix = signatureFilename.getFilename().split(StreamType.SIGNATURE_SUFFIX)[0];
-        return dataFilename.getFilename().startsWith(commonPrefix);
     }
 
     @Override

@@ -24,6 +24,10 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+
+import com.hedera.mirror.importer.downloader.StreamFileNotifier;
+
 import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -39,14 +43,13 @@ public class StreamFileData {
 
     private static final CompressorStreamFactory compressorStreamFactory = new CompressorStreamFactory(true);
 
-    private final String compressor;
-    private final String filename;
+    private final StreamFilename streamFilename;
     private final byte[] bytes;
 
-    public static StreamFileData from(String compressor, @NonNull File file) {
+    public static StreamFileData from(@NonNull File file) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
-            return new StreamFileData(compressor, file.getName(), bytes);
+            return new StreamFileData(new StreamFilename(file.getName()), bytes);
         } catch (InvalidStreamFileException e) {
             throw e;
         } catch (Exception e) {
@@ -54,35 +57,40 @@ public class StreamFileData {
         }
     }
 
-    public static StreamFileData from(@NonNull File file) {
-        return from(null, file);
-    }
-
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
-        return new StreamFileData(null, filename, contents.getBytes(StandardCharsets.UTF_8));
+        return new StreamFileData(new StreamFilename(filename), contents.getBytes(StandardCharsets.UTF_8));
     }
 
     // Used for testing with raw bytes
     public static StreamFileData from(@NonNull String filename, @NonNull byte[] bytes) {
-        return new StreamFileData(null, filename, bytes);
+        return new StreamFileData(new StreamFilename(filename), bytes);
     }
 
     public InputStream getInputStream() {
         try {
             InputStream is = new ByteArrayInputStream(bytes);
+            String compressor = streamFilename.getCompressor();
             if (!StringUtils.isBlank(compressor)) {
                 is = compressorStreamFactory.createCompressorInputStream(compressor, is);
             }
 
             return is;
         } catch (CompressorException ex) {
-            throw new InvalidStreamFileException("Unable to open compressed file " + filename, ex);
+            throw new InvalidStreamFileException("Unable to open compressed file " + streamFilename, ex);
         }
+    }
+
+    public Instant getInstant() {
+        return streamFilename.getInstant();
+    }
+
+    public String getFilename() {
+        return streamFilename.getFilename();
     }
 
     @Override
     public String toString() {
-        return getFilename();
+        return streamFilename.toString();
     }
 }

@@ -21,11 +21,9 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
-import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
@@ -38,10 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -53,8 +48,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import lombok.Value;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -172,15 +165,15 @@ public abstract class Downloader<T extends StreamFile> {
 
     /**
      * Download and parse all signature files with a timestamp later than the last valid file. Put signature files into
-     * a multi-map sorted and grouped by the corresponding data filename.
+     * a multi-map sorted and grouped by the timestamp.
      *
      * @param addressBook the current address book
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<StreamFilename, FileStreamSignature> downloadAndParseSigFiles(AddressBook addressBook)
+    private Multimap<String, FileStreamSignature> downloadAndParseSigFiles(AddressBook addressBook)
             throws InterruptedException {
         String startAfterFilename = getStartAfterFilename();
-        Multimap<String, ParsedStreamFilenamePair> parsedStreamFilenamePairMap = Multimaps
+        Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
 
         Set<EntityId> nodeAccountIds = addressBook.getNodeSet();
@@ -196,16 +189,12 @@ public abstract class Downloader<T extends StreamFile> {
             tasks.add(Executors.callable(() -> {
                 String nodeAccountIdStr = nodeAccountId.entityIdToString();
                 Stopwatch stopwatch = Stopwatch.createStarted();
-                String s3Prefix = downloaderProperties.getPrefix() + nodeAccountIdStr + "/";
 
                 try {
-                    List<S3Object> s3Objects = listFiles(s3Prefix, startAfterFilename);
-                    List<PendingDownloadPair> pendingDownloadPairs = getStreamFilenamePairs(s3Objects)
-                            .stream()
-                            .map(pair -> getPendingDownloadPair(pair, s3Prefix))
-                            .collect(Collectors.toList());
-                    totalDownloads.addAndGet(pendingDownloadPairs.size());
-                    int count = parseSignatureFiles(parsedStreamFilenamePairMap, pendingDownloadPairs, nodeAccountId);
+                    List<S3Object> s3Objects = listFiles(startAfterFilename, nodeAccountIdStr);
+                    List<PendingDownload> pendingDownloads = downloadSignatureFiles(nodeAccountIdStr, s3Objects);
+                    totalDownloads.addAndGet(pendingDownloads.size());
+                    int count = parseSignatureFiles(sigFilesMap, pendingDownloads, nodeAccountId);
                     if (count > 0) {
                         log.info("Downloaded {} signatures for node {} in {}", count, nodeAccountIdStr, stopwatch);
                     }
@@ -227,31 +216,14 @@ public abstract class Downloader<T extends StreamFile> {
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         }
 
-        Multimap<StreamFilename, FileStreamSignature> sigFilesMap = LinkedHashMultimap.create();
-        for (String filename : parsedStreamFilenamePairMap.keySet()) {
-            Collection<ParsedStreamFilenamePair> parsedStreamFilenamePairs = parsedStreamFilenamePairMap.get(filename);
-            Optional<StreamFilename> dataFilename = parsedStreamFilenamePairs.stream()
-                    .map(ParsedStreamFilenamePair::getDataFilename)
-                    .filter(Objects::nonNull)
-                    .findFirst();
-            if (dataFilename.isEmpty()) {
-                log.warn("Matching data filename for signature file {} does not exist", filename);
-                continue;
-            }
-
-            List<FileStreamSignature> fileStreamSignatures = parsedStreamFilenamePairs.stream()
-                    .map(ParsedStreamFilenamePair::getFileStreamSignature)
-                    .collect(Collectors.toList());
-            sigFilesMap.putAll(dataFilename.get(), fileStreamSignatures);
-        }
-
         return sigFilesMap;
     }
 
-    private List<S3Object> listFiles(String s3Prefix, String lastFilename) throws ExecutionException,
+    private List<S3Object> listFiles(String lastFilename, String nodeAccountId) throws ExecutionException,
             InterruptedException {
         // batchSize (number of items we plan do download in a single batch) times 2 for file + sig.
         int listSize = (downloaderProperties.getBatchSize() * 2);
+        String s3Prefix = getS3Prefix(nodeAccountId);
         // Not using ListObjectsV2Request because it does not work with GCP.
         ListObjectsRequest listRequest = ListObjectsRequest.builder()
                 .bucket(commonDownloaderProperties.getBucketName())
@@ -264,14 +236,11 @@ public abstract class Downloader<T extends StreamFile> {
         return s3Client.listObjects(listRequest).get().contents();
     }
 
-    private List<StreamFilenamePair> getStreamFilenamePairs(List<S3Object> s3Objects) {
-        // a stream type may have different extensions for different formats in cloud bucket at the same time,
-        // in addition, whether its data file / signature file are compressed is independent of each other.
-        // So deriving the corresponding data filename from the signature filename by removing '_sig' no longer works.
-        // Instead, when a signature file is selected for later processing, its matching data filename is also saved
-        Multimap<Instant, StreamFilename> streamFilenamesByInstant = s3Objects.stream()
+    private List<PendingDownload> downloadSignatureFiles(String nodeAccountId, List<S3Object> s3Objects) {
+        // group the signature filenames by its instant
+        Multimap<Instant, StreamFilename> signatureFilenamesByInstant = s3Objects.stream()
                 .map(S3Object::key)
-                .map(FilenameUtils::getName)
+                .map(key -> key.substring(key.lastIndexOf('/') + 1))
                 .map(filename -> {
                     try {
                         return new StreamFilename(filename);
@@ -280,38 +249,26 @@ public abstract class Downloader<T extends StreamFile> {
                         return null;
                     }
                 })
-                .filter(Objects::nonNull)
+                .filter(s -> s != null && s.getFileType() == SIGNATURE)
                 .collect(Multimaps.toMultimap(
                         StreamFilename::getInstant,
                         streamFilename -> streamFilename,
-                            MultimapBuilder.linkedHashKeys().arrayListValues()::build
+                        MultimapBuilder.linkedHashKeys().arrayListValues()::build
                 ));
 
-        List<StreamFilenamePair> streamFilenamePairs = new ArrayList<>();
-        for (Instant instant : streamFilenamesByInstant.keySet()) {
-            // separate the stream filenames of the same consensus timestamp into data files / signature files
-            Map<StreamFilename.FileType, List<StreamFilename>> streamFilenamesByType = streamFilenamesByInstant
-                    .get(instant)
-                    .stream()
-                    .collect(Collectors.groupingBy(StreamFilename::getFileType));
-            List<StreamFilename> dataFilenames = streamFilenamesByType.getOrDefault(DATA, Collections.emptyList());
-            List<StreamFilename> signatureFilenames = streamFilenamesByType
-                    .getOrDefault(SIGNATURE, Collections.emptyList());
-
+        List<PendingDownload> pendingDownloads = new ArrayList<>();
+        String s3Prefix = getS3Prefix(nodeAccountId);
+        for (Instant instant : signatureFilenamesByInstant.keySet()) {
             boolean found = false;
+            Collection<StreamFilename> signatureFilenames = signatureFilenamesByInstant.get(instant);
             for (String extension : streamType.getSignatureExtensions()) {
-                // find the signature filename with the highest priority extension and then find its matching data file
-                Optional<StreamFilenamePair> pair = signatureFilenames.stream()
-                        .filter(streamFilename -> streamFilename.getExtension().equals(extension))
-                        .findFirst()
-                        .flatMap(signatureFilename -> dataFilenames
-                                .stream()
-                                .filter(signatureFilename::match)
-                                .findFirst()
-                                .map(dataFilename -> StreamFilenamePair.of(dataFilename, signatureFilename))
-                        );
-                if (pair.isPresent()) {
-                    streamFilenamePairs.add(pair.get());
+                // find the signature filename with the highest priority extension
+                Optional<StreamFilename> match = signatureFilenames
+                        .stream()
+                        .filter(s -> s.getExtension().equals(extension))
+                        .findFirst();
+                if (match.isPresent()) {
+                    pendingDownloads.add(pendingDownload(match.get(), s3Prefix));
                     found = true;
                     break;
                 }
@@ -324,28 +281,20 @@ public abstract class Downloader<T extends StreamFile> {
             }
         }
 
-        return streamFilenamePairs;
+        return pendingDownloads;
     }
 
-    private PendingDownloadPair getPendingDownloadPair(StreamFilenamePair streamFilenamePair, String s3Prefix) {
-        StreamFilename signatureFilename = streamFilenamePair.getSignatureFilename();
-        StreamFilename dataFilename = streamFilenamePair.getDataFilename();
-        return PendingDownloadPair.of(pendingDownload(signatureFilename, s3Prefix), dataFilename);
-    }
-
-    private int parseSignatureFiles(Multimap<String, ParsedStreamFilenamePair> parsedStreamFilenamePairMap,
-            List<PendingDownloadPair> pendingDownloadPairs, EntityId nodeAccountId) {
+    private int parseSignatureFiles(Multimap<String, FileStreamSignature> sigFilesMap,
+                                    List<PendingDownload> pendingDownloads, EntityId nodeAccountId) {
         int count = 0;
-        for (PendingDownloadPair pair : pendingDownloadPairs) {
-            PendingDownload pendingDownload = pair.getPendingDownload();
+        for (PendingDownload pendingDownload : pendingDownloads) {
             Optional<FileStreamSignature> optional = parseSignatureFile(pendingDownload, nodeAccountId);
             if (optional.isEmpty()) {
                 continue;
             }
 
             FileStreamSignature fileStreamSignature = optional.get();
-            parsedStreamFilenamePairMap.put(fileStreamSignature.getFilename(),
-                    ParsedStreamFilenamePair.of(pair.getDataFilename(), fileStreamSignature));
+            sigFilesMap.put(fileStreamSignature.getFilename(), fileStreamSignature);
             count++;
         }
 
@@ -363,8 +312,7 @@ public abstract class Downloader<T extends StreamFile> {
             }
 
             StreamFilename streamFilename = pendingDownload.getStreamFilename();
-            StreamFileData streamFileData = new StreamFileData(streamFilename.getCompressor(),
-                    streamFilename.getFilename(), pendingDownload.getBytes());
+            StreamFileData streamFileData = new StreamFileData(streamFilename, pendingDownload.getBytes());
             FileStreamSignature fileStreamSignature = signatureFileReader.read(streamFileData);
             fileStreamSignature.setNodeAccountId(nodeAccountId);
             return Optional.of(fileStreamSignature);
@@ -434,9 +382,9 @@ public abstract class Downloader<T extends StreamFile> {
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
      *
-     * @param sigFilesMap signature files grouped by data filename
+     * @param sigFilesMap signature files grouped by filename
      */
-    private void verifySigsAndDownloadDataFiles(Multimap<StreamFilename, FileStreamSignature> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         Instant endDate = mirrorProperties.getEndDate();
 
         for (var sigFilenameIter = sigFilesMap.keySet().iterator(); sigFilenameIter.hasNext(); ) {
@@ -445,8 +393,8 @@ public abstract class Downloader<T extends StreamFile> {
             }
 
             Instant startTime = Instant.now();
-            StreamFilename dataFilename = sigFilenameIter.next();
-            Collection<FileStreamSignature> signatures = sigFilesMap.get(dataFilename);
+            String sigFilename = sigFilenameIter.next();
+            Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFilename);
             boolean valid = false;
 
             try {
@@ -481,13 +429,13 @@ public abstract class Downloader<T extends StreamFile> {
                 }
 
                 try {
-                    PendingDownload pendingDownload = downloadSignedDataFile(dataFilename, signature);
+                    PendingDownload pendingDownload = downloadSignedDataFile(signature);
                     if (!pendingDownload.waitForCompletion()) {
                         continue;
                     }
 
-                    StreamFileData streamFileData = new StreamFileData(dataFilename.getCompressor(),
-                            dataFilename.getFilename(), pendingDownload.getBytes());
+                    StreamFilename dataFilename = pendingDownload.getStreamFilename();
+                    StreamFileData streamFileData = new StreamFileData(dataFilename, pendingDownload.getBytes());
                     T streamFile = streamFileReader.read(streamFileData);
                     streamFile.setNodeAccountId(signature.getNodeAccountId());
 
@@ -507,15 +455,15 @@ public abstract class Downloader<T extends StreamFile> {
                     valid = true;
                     break;
                 } catch (HashMismatchException e) {
-                    log.warn("Failed to verify data file {} from node {}. Will retry another node",
-                            dataFilename.getFilename(), signature.getNodeAccountIdString(), e);
+                    log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
+                            signature.getNodeAccountIdString(), sigFilename, e);
                 } catch (InterruptedException e) {
-                    log.warn("Failed to download data file {} from node {}", dataFilename.getFilename(),
-                            signature.getNodeAccountIdString(), e);
+                    log.warn("Failed to download data file from node {} corresponding to {}",
+                            signature.getNodeAccountIdString(), sigFilename, e);
                     Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
-                            signature.getNodeAccountIdString(), signature.getFilename(), e);
+                            signature.getNodeAccountIdString(), sigFilename, e);
                 }
             }
 
@@ -529,11 +477,14 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
-    private PendingDownload downloadSignedDataFile(StreamFilename dataFilename,
-            FileStreamSignature fileStreamSignature) {
-        String s3Prefix = downloaderProperties.getPrefix();
+    private PendingDownload downloadSignedDataFile(FileStreamSignature fileStreamSignature) {
+        String filename = fileStreamSignature.getFilename().replace(StreamType.SIGNATURE_SUFFIX, "");
         String nodeAccountId = fileStreamSignature.getNodeAccountIdString();
-        return pendingDownload(dataFilename, s3Prefix + nodeAccountId + "/");
+        return pendingDownload(new StreamFilename(filename), getS3Prefix(nodeAccountId));
+    }
+
+    private String getS3Prefix(String nodeAccountId) {
+        return downloaderProperties.getPrefix() + nodeAccountId + "/";
     }
 
     protected void onVerified(T streamFile) {
@@ -590,7 +541,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
 
         Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-        var fileInstant = new StreamFilename(streamFile.getName()).getInstant();
+        Instant fileInstant = Instant.ofEpochSecond(0, streamFile.getConsensusStart());
 
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
@@ -602,31 +553,5 @@ public abstract class Downloader<T extends StreamFile> {
         }
 
         return streamFile.getPreviousHash().contentEquals(expectedPreviousHash);
-    }
-
-    @Value(staticConstructor = "of")
-    private static class StreamFilenamePair {
-        StreamFilename dataFilename;
-        StreamFilename signatureFilename;
-    }
-
-    @Value(staticConstructor = "of")
-    private static class PendingDownloadPair {
-        PendingDownload pendingDownload;
-        StreamFilename dataFilename;
-    }
-
-    @Value(staticConstructor = "of")
-    private static class ParsedStreamFilenamePair implements Comparable<ParsedStreamFilenamePair> {
-        private static final Comparator<ParsedStreamFilenamePair> COMPARATOR = Comparator
-                .comparing(ParsedStreamFilenamePair::getFileStreamSignature);
-
-        StreamFilename dataFilename;
-        FileStreamSignature fileStreamSignature;
-
-        @Override
-        public int compareTo(ParsedStreamFilenamePair other) {
-            return COMPARATOR.compare(this, other);
-        }
     }
 }

@@ -44,11 +44,11 @@ import com.hedera.services.stream.proto.SingleAccountBalances;
 @Named
 public class ProtoBalanceFileReader implements BalanceFileReader {
 
-    public static final String FILE_SUFFIX = "pb.gz";
+    public static final String FILE_EXTENSION = "pb";
 
     @Override
     public boolean supports(StreamFileData streamFileData) {
-        return streamFileData.getFilename().endsWith(FILE_SUFFIX);
+        return streamFileData.getFilename().contains(FILE_EXTENSION);
     }
 
     @Override

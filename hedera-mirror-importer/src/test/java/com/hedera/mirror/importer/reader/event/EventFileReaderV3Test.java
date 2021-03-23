@@ -21,12 +21,16 @@ package com.hedera.mirror.importer.reader.event;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Ints;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.util.UUID;
+
+import com.hedera.mirror.importer.util.Utility;
+
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -119,6 +123,7 @@ class EventFileReaderV3Test {
                                   byte[] expectedPrevHash) {
         assertThat(eventFile).isNotNull();
         assertThat(eventFile.getBytes()).isNotEmpty().isEqualTo(inputFile.getBytes());
+        assertThat(eventFile.getConsensusStart()).isEqualTo(Utility.convertToNanosMax(inputFile.getInstant()));
         assertThat(eventFile.getLoadStart()).isNotNull().isPositive();
         assertThat(eventFile.getName()).isEqualTo(inputFile.getFilename());
         assertThat(eventFile.getVersion()).isEqualTo(expectedFileVersion);

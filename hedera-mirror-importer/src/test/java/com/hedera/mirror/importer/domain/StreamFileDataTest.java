@@ -78,7 +78,7 @@ class StreamFileDataTest {
 
     @Test
     void createWithGzippedData() throws IOException {
-        String filename = "foobar.gz";
+        String filename = "2021-03-10T16_00_00Z.rcd.gz";
         byte[] uncompressedBytes = { 1, 2, 3 };
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -86,7 +86,7 @@ class StreamFileDataTest {
                 os.write(uncompressedBytes);
             }
 
-            StreamFileData streamFileData = new StreamFileData("gz", filename, baos.toByteArray());
+            StreamFileData streamFileData = StreamFileData.from(filename, baos.toByteArray());
 
             try (InputStream is = streamFileData.getInputStream()) {
                 assertThat(is.readAllBytes()).isEqualTo(uncompressedBytes);
@@ -95,26 +95,11 @@ class StreamFileDataTest {
     }
 
     @Test
-    void createWithMismatchCompressor() throws IOException {
-        String filename = "foobar.gz";
-        byte[] uncompressedBytes = { 1, 2, 3 };
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            try (OutputStream os = new GZIPOutputStream(baos)) {
-                os.write(uncompressedBytes);
-            }
-
-            StreamFileData streamFileData = new StreamFileData("lzma", filename, baos.toByteArray());
-            assertThrows(InvalidStreamFileException.class, streamFileData::getInputStream);
-        }
-    }
-
-    @Test
     void createWithCompressorAndUncompressedData() {
-        String filename = "foobar.gz";
+        String filename = "2021-03-10T16_00_00Z.rcd.gz";
         byte[] uncompressedBytes = { 1, 2, 3 };
 
-        StreamFileData streamFileData = new StreamFileData("gz", filename, uncompressedBytes);
+        StreamFileData streamFileData = StreamFileData.from(filename, uncompressedBytes);
         assertThrows(InvalidStreamFileException.class, streamFileData::getInputStream);
     }
 }

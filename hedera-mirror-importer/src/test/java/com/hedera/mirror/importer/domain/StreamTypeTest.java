@@ -52,24 +52,12 @@ class StreamTypeTest {
     }
 
     @ParameterizedTest
-    @MethodSource("provideTypeAndLastDataExtension")
-    void getLastDataExtension(StreamType streamType, String dataExtension) {
-        assertThat(streamType.getLastDataExtension()).isEqualTo(dataExtension);
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideTypeAndLastSignatureExtension")
-    void getLastSignatureExtension(StreamType streamType, String signatureExtension) {
-        assertThat(streamType.getLastSignatureExtension()).isEqualTo(signatureExtension);
-    }
-
-    @ParameterizedTest
     @MethodSource("provideTypeAndSignatureExtensions")
     void getSignatureExtensions(StreamType streamType, List<String> signatureExtensions) {
         assertThat(streamType.getSignatureExtensions()).containsExactlyElementsOf(signatureExtensions);
     }
 
-    private static Stream<Arguments> provideTypeAndExtensions(boolean isDataExtension, boolean onlyLast) {
+    private static Stream<Arguments> provideTypeAndExtensions(boolean isDataExtension) {
         Map<StreamType, List<String>> extensionsMap = isDataExtension ? dataExtensions : signatureExtensions;
         List<Arguments> argumentsList = new ArrayList<>();
         for (StreamType streamType : StreamType.values()) {
@@ -78,29 +66,17 @@ class StreamTypeTest {
                 throw new IllegalArgumentException("Unknown StreamType " + streamType);
             }
 
-            if (onlyLast) {
-                argumentsList.add(Arguments.of(streamType, extensions.get(0)));
-            } else {
-                argumentsList.add(Arguments.of(streamType, extensions));
-            }
+            argumentsList.add(Arguments.of(streamType, extensions));
         }
 
         return argumentsList.stream();
     }
 
     private static Stream<Arguments> provideTypeAndDataExtensions() {
-        return provideTypeAndExtensions(true, false);
+        return provideTypeAndExtensions(true);
     }
 
     private static Stream<Arguments> provideTypeAndSignatureExtensions() {
-        return provideTypeAndExtensions(false, false);
-    }
-
-    private static Stream<Arguments> provideTypeAndLastDataExtension() {
-        return provideTypeAndExtensions(true, true);
-    }
-
-    private static Stream<Arguments> provideTypeAndLastSignatureExtension() {
-        return provideTypeAndExtensions(false, true);
+        return provideTypeAndExtensions(false);
     }
 }

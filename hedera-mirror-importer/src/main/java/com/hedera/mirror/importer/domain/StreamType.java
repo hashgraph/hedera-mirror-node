@@ -39,8 +39,6 @@ public enum StreamType {
     private static final String SIGNATURES = "signatures";
 
     private final List<String> dataExtensions;
-    private final String lastDataExtension;
-    private final String lastSignatureExtension;
     private final String nodePrefix;
     private final String path;
     private final List<String> signatureExtensions;
@@ -57,8 +55,6 @@ public enum StreamType {
         this.dataExtensions = Collections.unmodifiableList(extensions);
         this.signatureExtensions = extensions.stream().map(ext -> ext + SIGNATURE_SUFFIX)
                 .collect(Collectors.toUnmodifiableList());
-        this.lastDataExtension = this.dataExtensions.stream().max(Comparator.naturalOrder()).orElseThrow();
-        this.lastSignatureExtension = this.signatureExtensions.stream().max(Comparator.naturalOrder()).orElseThrow();
     }
 
     public String getParsed() {

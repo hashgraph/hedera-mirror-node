@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -549,14 +550,12 @@ public abstract class AbstractDownloaderTest {
         // Construct a new filename with the offset added to the last valid file
         long nanoOffset = getCloseInterval().plus(offset).toNanos();
         Instant instant = file1Instant.plusNanos(nanoOffset);
-        String baseFilename = instant + streamType.getSuffix() + ".";
-        baseFilename = baseFilename.replace(':', '_');
 
         // Rename the good files to have a bad timestamp
-        String signature = baseFilename + streamType.getLastSignatureExtension();
-        String signed = baseFilename + streamType.getLastDataExtension();
+        String data = StreamFilename.getFilename(streamType, DATA, instant);
+        String signature = StreamFilename.getFilename(streamType, SIGNATURE, instant);
+        Files.move(basePath.resolve(file2), basePath.resolve(data));
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
-        Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
         RecordFile recordFile = new RecordFile();
         recordFile.setName(file1);
