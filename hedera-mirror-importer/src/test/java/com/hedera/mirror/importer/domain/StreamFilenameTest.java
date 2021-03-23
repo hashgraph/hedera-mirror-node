@@ -101,35 +101,4 @@ class StreamFilenameTest {
         StreamFilename streamFilename = new StreamFilename(filename);
         assertThat(streamFilename.getFilenameAfter()).isEqualTo(expected);
     }
-
-//    @ParameterizedTest(name = "match \"{0}\" and \"{1}\"? {2}")
-//    @CsvSource({
-//            "2020-06-03T16_45_00.1Z_Balances.csv_sig, 2020-06-03T16_45_00.1Z_Balances.csv_sig, false",
-//            "2020-06-03T16_45_00.1Z_Balances.csv_sig, 2020-06-03T16_45_00.1Z_Balances.csv, true",
-//            "2020-06-03T16_45_00.1Z_Balances.csv_sig, 2020-06-03T16_45_00.1Z_Balances.pb, false",
-//            "2020-06-03T16_45_00.1Z_Balances.csv, 2020-06-03T16_45_00.1Z_Balances.csv, false",
-//            "2020-06-03T16_45_00.1Z_Balances.csv, 2020-06-03T16_45_00.1Z_Balances.csv_sig, true",
-//            "2020-06-03T16_45_00.1Z_Balances.pb, 2020-06-03T16_45_00.1Z_Balances.csv, false",
-//            "2020-06-03T16_45_00.1Z_Balances.pb_sig, 2020-06-03T16_45_00.1Z_Balances.csv_sig, false",
-//            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, 2020-06-03T16_45_00.1Z_Balances.pb.gz, true",
-//            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, 2020-06-03T16_45_00.1Z_Balances.pb, true",
-//            "2020-06-03T16_45_00.1Z_Balances.pb_sig, 2020-06-03T16_45_00.1Z_Balances.pb.gz, true",
-//            "2020-06-03T16_45_00.1Z.evts_sig, 2020-06-03T16_45_00.1Z.evts, true",
-//            "2020-06-03T16_45_00.1Z.evts, 2020-06-03T16_45_00.1Z.evts_sig, true",
-//            "2020-06-03T16_45_00.1Z.rcd_sig, 2020-06-03T16_45_00.1Z.rcd, true",
-//            "2020-06-03T16_45_00.1Z.rcd, 2020-06-03T16_45_00.1Z.rcd_sig, true",
-//            "2020-06-03T16_45_00.1Z.rcd, 2020-06-03T00_45_00.1Z.rcd_sig, false",
-//    })
-//    void match(String firstFilename, String secondFilename, boolean expected) {
-//        StreamFilename first = new StreamFilename(firstFilename);
-//        StreamFilename second = new StreamFilename(secondFilename);
-//
-//        assertThat(first.match(second)).isEqualTo(expected);
-//    }
-//
-//    @Test
-//    void matchNull() {
-//        StreamFilename first = new StreamFilename("2020-06-03T16_45_00.1Z.rcd");
-//        assertThat(first.match(null)).isFalse();
-//    }
 }
