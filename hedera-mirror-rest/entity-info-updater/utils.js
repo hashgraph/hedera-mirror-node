@@ -163,22 +163,9 @@ const getElapsedTimeString = (elapsedTime) => {
   return `${elapsedTime[0]} s ${elapsedTime[1] / 1000000} ms`;
 };
 
-const isEd25519PublicHexMatch = (dbHex, networkHex) => {
-  let match;
-  match = dbHex === networkHex;
-
-  if (!match && dbHex !== null) {
-    // check for derPrefix (302a300506032b6570032100) case
-    match = PublicKey.fromString(dbHex).toString() === networkHex;
-  }
-
-  return match;
-};
-
 module.exports = {
   getBufferAndEd25519HexFromKey,
   getElapsedTimeString,
-  isEd25519PublicHexMatch,
   readEntityCSVFileSync,
   timestampToNs,
 };
