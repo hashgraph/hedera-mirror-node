@@ -27,14 +27,19 @@ const {KeyList, PublicKey} = require('@hashgraph/sdk');
 const _ = require('lodash');
 const fs = require('fs');
 const log4js = require('log4js');
-const math = require('mathjs');
 
 // local
 const config = require('./config');
 
 const logger = log4js.getLogger();
+
+// used for timestamp range
 const longMinValue = -9223372036854775808n;
 const longMaxValue = 9223372036854775807n;
+
+// used for entityId conversion
+const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
+const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
 
 const constructEntity = (index, headerRow, entityRow) => {
   const entityObj = {};
@@ -163,9 +168,27 @@ const getElapsedTimeString = (elapsedTime) => {
   return `${elapsedTime[0]} s ${elapsedTime[1] / 1000000} ms`;
 };
 
+/**
+ * Converts sdk AccountId string to an encoded id corresponding to the Entity. Supports 'shard.realm.num' only
+ *
+ * @param {AccountId|null} entityIdStr
+ * @return {string|null}
+ */
+const getEntityId = (entityIdStr) => {
+  if (_.isNull(entityIdStr)) {
+    return null;
+  }
+
+  // [shard,realm,num] - entityIdStr comes from network and will always conforming to the expected format
+  const parts = entityIdStr.toString().split('.');
+
+  return (BigInt(parts[2]) + BigInt(parts[1]) * realmOffset + BigInt(parts[0]) * shardOffset).toString();
+};
+
 module.exports = {
   getBufferAndEd25519HexFromKey,
   getElapsedTimeString,
+  getEntityId,
   readEntityCSVFileSync,
   timestampToNs,
 };
