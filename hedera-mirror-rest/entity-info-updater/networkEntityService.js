@@ -21,15 +21,7 @@
 'use strict';
 
 // external libraries
-const {
-  AccountBalanceQuery,
-  AccountId,
-  AccountInfoQuery,
-  Client,
-  ContractInfoQuery,
-  Hbar,
-  PrivateKey,
-} = require('@hashgraph/sdk');
+const {AccountBalanceQuery, AccountId, AccountInfoQuery, Client, PrivateKey} = require('@hashgraph/sdk');
 const log4js = require('log4js');
 
 // local
