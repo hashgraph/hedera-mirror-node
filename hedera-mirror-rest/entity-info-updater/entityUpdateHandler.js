@@ -116,15 +116,14 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(`memo mismatch on ${dbEntity.id}, db: ${dbMemo}, network: ${networkEntity.accountMemo}`);
   }
 
-  // Support proxy_account_id 0 or null value.
+  // compares proxy ids as strings and supports proxy_account_id 0 or null value from db and null value from network.
   const dbProxy = dbEntity.proxy_account_id === '0' ? null : dbEntity.proxy_account_id;
-  if (dbProxy !== networkEntity.proxyAccountId) {
+  const networkProxy = utils.getEntityId(networkEntity.proxyAccountId);
+  if (dbProxy !== networkProxy) {
     updateEntity.proxy_account_id = networkEntity.proxyAccountId;
     updateNeeded = true;
     updateCriteriaCount.proxy_account_id += 1;
-    logger.trace(
-      `proxy_account_id mismatch on ${dbEntity.id}, db: ${dbProxy}, network: ${networkEntity.proxyAccountId}}`
-    );
+    logger.trace(`proxy_account_id mismatch on ${dbEntity.id}, db: ${dbProxy}, network: ${networkProxy}}`);
   }
 
   if (updateNeeded) {
