@@ -93,7 +93,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
             if (extensions.containsKey(last)) {
                 // if last matches extension, the file is not compressed
                 extension = last;
-            } else if(extensions.containsKey(secondLast)) {
+            } else if (extensions.containsKey(secondLast)) {
                 // otherwise if secondLast matches extension, last is the compression extension
                 compressor = last;
                 extension = secondLast;
