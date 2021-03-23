@@ -28,6 +28,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +36,7 @@ import org.springframework.util.Assert;
 
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Value
 public class StreamFilename implements Comparable<StreamFilename> {
 
@@ -56,6 +58,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
 
     private final String compressor;
     private final String extension;
+    @EqualsAndHashCode.Include
     private final String filename;
     private final FileType fileType;
     private final String fullExtension;
@@ -66,15 +69,61 @@ public class StreamFilename implements Comparable<StreamFilename> {
         Assert.hasText(filename, "'filename' must not be empty");
         this.filename = filename;
 
-        TypeInfo typeInfo = extractTypeInfo(filename);
-        this.compressor = typeInfo.compressor;
-        this.extension = typeInfo.extension;
-        this.fileType = typeInfo.fileType;
-        this.streamType = typeInfo.streamType;
-        this.fullExtension = this.compressor == null ? this.extension : StringUtils
-                .joinWith(".", this.extension, this.compressor);
+        // determine compressor, extension, fileType, and streamType
+        List<String> parts = FILENAME_SPLITTER.splitToList(filename);
+        if (parts.size() < 2) {
+            throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
+        }
 
-        this.instant = extractInstant(filename, this.fullExtension, this.streamType.getSuffix());
+        String last = parts.get(parts.size() - 1);
+        String secondLast = parts.get(parts.size() - 2);
+
+        String compressor = null;
+        String extension = null;
+        FileType fileType = null;
+        StreamType streamType = null;
+        for (StreamType type : StreamType.values()) {
+            String suffix = type.getSuffix();
+            if (!StringUtils.isEmpty(suffix) && !filename.contains(suffix)) {
+                continue;
+            }
+
+            Map<String, FileType> extensions = STREAM_TYPE_EXTENSION_MAP.get(type);
+
+            if (extensions.containsKey(last)) {
+                // if last matches extension, the file is not compressed
+                extension = last;
+            } else if(extensions.containsKey(secondLast)) {
+                // otherwise if secondLast matches extension, last is the compression extension
+                compressor = last;
+                extension = secondLast;
+            }
+
+            if (extension != null) {
+                fileType = extensions.get(extension);
+                streamType = type;
+                break;
+            }
+        }
+
+        if (extension == null) {
+            throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
+        }
+
+        this.compressor = compressor;
+        this.extension = extension;
+        this.fileType = fileType;
+        this.streamType = streamType;
+        this.fullExtension = compressor == null ? extension : StringUtils.joinWith(".", extension, compressor);
+
+        try {
+            String fullSuffix = StringUtils.join(streamType.getSuffix(), "." + fullExtension);
+            String dateTime = StringUtils.removeEnd(filename, fullSuffix);
+            dateTime = dateTime.replace(COMPATIBLE_TIME_SEPARATOR, STANDARD_TIME_SEPARATOR);
+            this.instant = Instant.parse(dateTime);
+        } catch (DateTimeParseException ex) {
+            throw new InvalidStreamFileException("Invalid datetime string in filename " + filename, ex);
+        }
     }
 
     /**
@@ -119,58 +168,8 @@ public class StreamFilename implements Comparable<StreamFilename> {
         return filename;
     }
 
-    private static TypeInfo extractTypeInfo(String filename) {
-        List<String> parts = FILENAME_SPLITTER.splitToList(filename);
-        if (parts.size() < 2) {
-            throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
-        }
-
-        String last = parts.get(parts.size() - 1);
-        String secondLast = parts.get(parts.size() - 2);
-
-        for (StreamType type : StreamType.values()) {
-            String suffix = type.getSuffix();
-            if (!StringUtils.isEmpty(suffix) && !filename.contains(suffix)) {
-                continue;
-            }
-
-            Map<String, FileType> extensions = STREAM_TYPE_EXTENSION_MAP.get(type);
-
-            // if last matches extension, the file is not compressed
-            if (extensions.containsKey(last)) {
-                return new TypeInfo(null, last, extensions.get(last), type);
-            }
-
-            // otherwise if secondLast matches extension, last is the compression extension
-            if (extensions.containsKey(secondLast)) {
-                return new TypeInfo(last, secondLast, extensions.get(secondLast), type);
-            }
-        }
-
-        throw new InvalidStreamFileException("Failed to determine StreamType for filename: " + filename);
-    }
-
-    private static Instant extractInstant(String filename, String fullExtension, String suffix) {
-        try {
-            String fullSuffix = StringUtils.join(suffix, "." + fullExtension);
-            String dateTime = StringUtils.removeEnd(filename, fullSuffix);
-            dateTime = dateTime.replace(COMPATIBLE_TIME_SEPARATOR, STANDARD_TIME_SEPARATOR);
-            return Instant.parse(dateTime);
-        } catch (DateTimeParseException ex) {
-            throw new InvalidStreamFileException("Invalid datetime string in filename " + filename, ex);
-        }
-    }
-
     public enum FileType {
         DATA,
         SIGNATURE
-    }
-
-    @Value
-    private static class TypeInfo {
-        String compressor;
-        String extension;
-        FileType fileType;
-        StreamType streamType;
     }
 }
