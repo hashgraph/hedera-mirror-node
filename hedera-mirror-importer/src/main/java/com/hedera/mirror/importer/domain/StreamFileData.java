@@ -25,9 +25,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-
-import com.hedera.mirror.importer.downloader.StreamFileNotifier;
-
 import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.compress.compressors.CompressorException;

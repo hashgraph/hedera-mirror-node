@@ -194,9 +194,18 @@ public abstract class Downloader<T extends StreamFile> {
                     List<S3Object> s3Objects = listFiles(startAfterFilename, nodeAccountIdStr);
                     List<PendingDownload> pendingDownloads = downloadSignatureFiles(nodeAccountIdStr, s3Objects);
                     totalDownloads.addAndGet(pendingDownloads.size());
-                    int count = parseSignatureFiles(sigFilesMap, pendingDownloads, nodeAccountId);
-                    if (count > 0) {
-                        log.info("Downloaded {} signatures for node {} in {}", count, nodeAccountIdStr, stopwatch);
+                    AtomicInteger count = new AtomicInteger();
+                    pendingDownloads
+                            .stream()
+                            .map(pendingDownload -> parseSignatureFile(pendingDownload, nodeAccountId))
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .forEach(fileStreamSignature -> {
+                                sigFilesMap.put(fileStreamSignature.getFilename(), fileStreamSignature);
+                                count.getAndIncrement();
+                            });
+                    if (count.get() > 0) {
+                        log.info("Downloaded {} signatures for node {} in {}", count.get(), nodeAccountIdStr, stopwatch);
                     }
                 } catch (InterruptedException e) {
                     log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
@@ -282,23 +291,6 @@ public abstract class Downloader<T extends StreamFile> {
         }
 
         return pendingDownloads;
-    }
-
-    private int parseSignatureFiles(Multimap<String, FileStreamSignature> sigFilesMap,
-                                    List<PendingDownload> pendingDownloads, EntityId nodeAccountId) {
-        int count = 0;
-        for (PendingDownload pendingDownload : pendingDownloads) {
-            Optional<FileStreamSignature> optional = parseSignatureFile(pendingDownload, nodeAccountId);
-            if (optional.isEmpty()) {
-                continue;
-            }
-
-            FileStreamSignature fileStreamSignature = optional.get();
-            sigFilesMap.put(fileStreamSignature.getFilename(), fileStreamSignature);
-            count++;
-        }
-
-        return count;
     }
 
     private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId) {
