@@ -294,9 +294,9 @@ public abstract class Downloader<T extends StreamFile> {
                     .get(instant)
                     .stream()
                     .collect(Collectors.groupingBy(StreamFilename::getFileType));
-            List<StreamFilename> dataFilenames = streamFilenamesByType.getOrDefault(DATA, Collections.EMPTY_LIST);
+            List<StreamFilename> dataFilenames = streamFilenamesByType.getOrDefault(DATA, Collections.emptyList());
             List<StreamFilename> signatureFilenames = streamFilenamesByType
-                    .getOrDefault(SIGNATURE, Collections.EMPTY_LIST);
+                    .getOrDefault(SIGNATURE, Collections.emptyList());
 
             boolean found = false;
             for (String extension : streamType.getSignatureExtensions()) {

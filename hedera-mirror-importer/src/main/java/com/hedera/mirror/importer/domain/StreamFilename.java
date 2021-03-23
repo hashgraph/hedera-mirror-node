@@ -110,11 +110,11 @@ public class StreamFilename implements Comparable<StreamFilename> {
     }
 
     /**
-     * Check if this StreamFilename matches the other. Two StreamFilename objects match iff 1. one is signature and the
+     * Check if this StreamFilename matches the other. Two StreamFilename objects match if 1. one is signature and the
      * other is data; and 2. their file names match up to the signature suffix '_sig'
      *
      * @param other
-     * @return
+     * @return true if the two SteamFilename objects match otherwise false
      */
     public boolean match(StreamFilename other) {
         if (other == null) {
