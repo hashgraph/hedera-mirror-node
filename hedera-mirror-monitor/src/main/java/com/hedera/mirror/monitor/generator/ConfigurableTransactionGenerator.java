@@ -22,9 +22,10 @@ package com.hedera.mirror.monitor.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
-import com.google.common.util.concurrent.RateLimiter;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,7 +49,6 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private final ExpressionConverter expressionConverter;
     private final ScenarioProperties properties;
     private final Supplier<TransactionSupplier<?>> transactionSupplier;
-    private final RateLimiter rateLimiter;
     private final AtomicLong remaining;
     private final long stopTime;
     private final PublishRequest.PublishRequestBuilder builder;
@@ -56,23 +56,24 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter, ScenarioProperties properties) {
         this.expressionConverter = expressionConverter;
         this.properties = properties;
-        this.transactionSupplier = Suppliers.memoize(this::convert);
-        this.rateLimiter = RateLimiter.create(properties.getTps(), properties.getWarmupPeriod());
+        transactionSupplier = Suppliers.memoize(this::convert);
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         builder = PublishRequest.builder()
                 .logResponse(properties.isLogResponse())
                 .scenarioName(properties.getName())
                 .type(properties.getType());
-        rateLimiter.acquire(); // The first acquire always succeeds, so do this so tps=Double.MIN_NORMAL won't acquire
     }
 
     @Override
-    public PublishRequest next() {
-        rateLimiter.acquire();
-        long count = remaining.getAndDecrement();
-
+    public List<PublishRequest> next(int count) {
         if (count <= 0) {
+            count = 1;
+        }
+
+        long left = remaining.getAndAdd(-count);
+        long actual = Math.min(left, count);
+        if (actual <= 0) {
             throw new ScenarioException(properties, "Reached publish limit of " + properties.getLimit());
         }
 
@@ -80,11 +81,17 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
             throw new ScenarioException(properties, "Reached publish duration of " + properties.getDuration());
         }
 
-        return builder.receipt(shouldGenerate(properties.getReceipt()))
-                .record(shouldGenerate(properties.getRecord()))
-                .timestamp(Instant.now())
-                .transactionBuilder(transactionSupplier.get().get())
-                .build();
+        List<PublishRequest> publishRequests = new ArrayList<>();
+        for (long i = 0; i < actual; i++) {
+            PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceipt()))
+                    .record(shouldGenerate(properties.getRecord()))
+                    .timestamp(Instant.now())
+                    .transactionBuilder(transactionSupplier.get().get())
+                    .build();
+            publishRequests.add(publishRequest);
+        }
+
+        return publishRequests;
     }
 
     private TransactionSupplier<?> convert() {
@@ -92,6 +99,12 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         TransactionSupplier<?> supplier = new ObjectMapper()
                 .convertValue(convertedProperties, properties.getType().getSupplier());
 
+        validateSupplier(supplier);
+
+        return supplier;
+    }
+
+    private void validateSupplier(TransactionSupplier<?> supplier) {
         Validator validator = Validation.byDefaultProvider()
                 .configure()
                 .messageInterpolator(new ParameterMessageInterpolator())
@@ -102,8 +115,6 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         if (!validations.isEmpty()) {
             throw new ConstraintViolationException(validations);
         }
-
-        return supplier;
     }
 
     private boolean shouldGenerate(double expectedPercent) {

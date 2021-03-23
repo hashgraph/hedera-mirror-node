@@ -38,6 +38,9 @@ import com.hedera.mirror.monitor.generator.ScenarioProperties;
 @ConfigurationProperties("hedera.mirror.monitor.publish")
 public class PublishProperties {
 
+    @Min(100)
+    private int batchDivisor = 100;
+
     @Min(1)
     private int connections = 5;
 
@@ -49,4 +52,8 @@ public class PublishProperties {
     @DurationMin(seconds = 1L)
     @NotNull
     private Duration statusFrequency = Duration.ofSeconds(10L);
+
+    @DurationMin(seconds = 0)
+    @NotNull
+    private Duration warmupPeriod = Duration.ofSeconds(30L);
 }

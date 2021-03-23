@@ -57,6 +57,8 @@ public class PublishMetrics {
     private final Map<Tags, Timer> submitTimers = new ConcurrentHashMap<>();
     private final Map<Tags, TimeGauge> durationGauges = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
+    private long lastCount = 0;
+    private long lastElapsed = 0;
 
     @FunctionalInterface
     interface CheckedFunction<T, R> {
@@ -141,10 +143,25 @@ public class PublishMetrics {
     public void status() {
         long count = counter.get();
         long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        double rate = Precision.round(elapsed > 0 ? (1000000.0 * count) / elapsed : 0.0, 1);
+        double averageRate = getRate(count, elapsed);
+        long instantCount = count - lastCount;
+        long instantElapsed = elapsed - lastElapsed;
+        double instantRate = getRate(instantCount, instantElapsed);
         Map<String, Integer> errorCounts = new HashMap<>();
         errors.forEachEntry((k, v) -> errorCounts.put(k, v));
-        log.info("Published {} transactions in {} at {}/s. Errors: {}", count, stopwatch, rate, errorCounts);
+        log.info("Published {} transactions in {} at {}/s, {} transactions in last {} s at {}/s. Errors: {}",
+                count, stopwatch, averageRate, instantCount, toSeconds(instantElapsed), instantRate, errorCounts);
+
+        lastCount = count;
+        lastElapsed = elapsed;
+    }
+
+    private double getRate(long count, long elapsedMicros) {
+        return Precision.round(elapsedMicros > 0 ? (count * 1000000.0) / elapsedMicros : 0.0, 1);
+    }
+
+    private double toSeconds(long micros) {
+        return Precision.round(micros * 1.0 / 1_000_000, 2);
     }
 
     @Value
