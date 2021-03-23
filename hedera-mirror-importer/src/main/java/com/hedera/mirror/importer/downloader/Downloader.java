@@ -198,8 +198,7 @@ public abstract class Downloader<T extends StreamFile> {
                     pendingDownloads
                             .stream()
                             .map(pendingDownload -> parseSignatureFile(pendingDownload, nodeAccountId))
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
+                            .filter(Objects::nonNull)
                             .forEach(fileStreamSignature -> {
                                 sigFilesMap.put(fileStreamSignature.getFilename(), fileStreamSignature);
                                 count.getAndIncrement();
@@ -293,21 +292,21 @@ public abstract class Downloader<T extends StreamFile> {
         return pendingDownloads;
     }
 
-    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId) {
+    private FileStreamSignature parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId) {
         String s3Key = pendingDownload.getS3key();
         Stopwatch stopwatch = pendingDownload.getStopwatch();
 
         try {
             if (!pendingDownload.waitForCompletion()) {
                 log.warn("Failed downloading {} in {}", s3Key, stopwatch);
-                return Optional.empty();
+                return null;
             }
 
             StreamFilename streamFilename = pendingDownload.getStreamFilename();
             StreamFileData streamFileData = new StreamFileData(streamFilename, pendingDownload.getBytes());
             FileStreamSignature fileStreamSignature = signatureFileReader.read(streamFileData);
             fileStreamSignature.setNodeAccountId(nodeAccountId);
-            return Optional.of(fileStreamSignature);
+            return fileStreamSignature;
         } catch (InterruptedException ex) {
             log.warn("Failed downloading {} in {}", s3Key, stopwatch, ex);
             Thread.currentThread().interrupt();
@@ -315,7 +314,7 @@ public abstract class Downloader<T extends StreamFile> {
             log.warn("Failed to parse signature file {}: {}", s3Key, ex);
         }
 
-        return Optional.empty();
+        return null;
     }
 
     /**
