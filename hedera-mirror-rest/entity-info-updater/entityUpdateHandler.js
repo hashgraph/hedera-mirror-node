@@ -87,14 +87,17 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(`deleted mismatch on ${dbEntity.id}, db: ${dbEntity.deleted}, network: ${networkEntity.isDeleted}`);
   }
 
+  // compare expiration times as BigInts
   const ns = utils.timestampToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
-  if (dbEntity.exp_time_ns !== null && BigInt(dbEntity.exp_time_ns) !== ns) {
+  const dbExpTimeNs = dbEntity.exp_time_ns == null ? null : BigInt(dbEntity.exp_time_ns);
+  if (dbExpTimeNs !== ns) {
     updateEntity.exp_time_ns = ns.toString();
     updateNeeded = true;
     updateCriteriaCount.exp_time_ns += 1;
-    logger.trace(`expirationTime mismatch on ${dbEntity.id}, db: ${dbEntity.exp_time_ns}, network: ${ns.toString()}`);
+    logger.trace(`expirationTime mismatch on ${dbEntity.id}, db: ${dbExpTimeNs}, network: ${ns.toString()}`);
   }
 
+  // compare keys as buffers
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
   if (Buffer.compare(dbEntity.key, protoBuffer) !== 0) {
     updateEntity.ed25519_public_key_hex = ed25519Hex;
@@ -104,20 +107,23 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
     logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
   }
 
-  // only update memo if there's a mismatch with valid memo entries locally or on network
-  if (dbEntity.memo !== networkEntity.accountMemo && (dbEntity.memo !== null || networkEntity.accountMemo !== '')) {
+  // compare memos as strings
+  const dbMemo = dbEntity.memo === null ? '' : dbEntity.memo;
+  if (dbMemo !== networkEntity.accountMemo) {
     updateEntity.memo = networkEntity.accountMemo;
     updateNeeded = true;
     updateCriteriaCount.memo += 1;
-    logger.trace(`memo mismatch on ${dbEntity.id}, db: ${dbEntity.memo}, network: ${networkEntity.accountMemo}`);
+    logger.trace(`memo mismatch on ${dbEntity.id}, db: ${dbMemo}, network: ${networkEntity.accountMemo}`);
   }
 
-  if (networkEntity.proxyAccountId !== null && dbEntity.proxy_account_id !== networkEntity.proxyAccountId) {
+  // Support proxy_account_id 0 or null value.
+  const dbProxy = dbEntity.proxy_account_id === '0' ? null : dbEntity.proxy_account_id;
+  if (dbProxy !== networkEntity.proxyAccountId) {
     updateEntity.proxy_account_id = networkEntity.proxyAccountId;
     updateNeeded = true;
     updateCriteriaCount.proxy_account_id += 1;
     logger.trace(
-      `proxy_account_id mismatch on ${dbEntity.id}, db: ${dbEntity.proxy_account_id}, network: ${networkEntity.proxyAccountId}`
+      `proxy_account_id mismatch on ${dbEntity.id}, db: ${dbProxy}, network: ${networkEntity.proxyAccountId}}`
     );
   }
 
