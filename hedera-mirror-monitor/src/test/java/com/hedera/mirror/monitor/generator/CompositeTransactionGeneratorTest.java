@@ -50,20 +50,18 @@ class CompositeTransactionGeneratorTest {
 
     @BeforeEach
     void init() {
-        double tps = 750;
         ScenarioProperties scenarioProperties1 = new ScenarioProperties();
         scenarioProperties1.setName("test1");
         scenarioProperties1.setProperties(Map.of("topicId", "0.0.1000"));
-        scenarioProperties1.setTps(tps);
+        scenarioProperties1.setTps(750);
         scenarioProperties1.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        totalTps = tps;
+        totalTps = scenarioProperties1.getTps();
 
-        tps = 250;
         ScenarioProperties scenarioProperties2 = new ScenarioProperties();
         scenarioProperties2.setName("test2");
-        scenarioProperties2.setTps(tps);
+        scenarioProperties2.setTps(250);
         scenarioProperties2.setType(TransactionType.ACCOUNT_CREATE);
-        totalTps += tps;
+        totalTps += scenarioProperties2.getTps();
 
         properties = new PublishProperties();
         properties.getScenarios().add(scenarioProperties1);
