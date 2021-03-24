@@ -1,5 +1,6 @@
-apiVersion: helm.fluxcd.io/v1
-kind: HelmRelease
+# Disable so flux doesn't rollout
+#apiVersion: helm.fluxcd.io/v1
+#kind: HelmRelease
 metadata:
   name: mirror
   namespace: integration
