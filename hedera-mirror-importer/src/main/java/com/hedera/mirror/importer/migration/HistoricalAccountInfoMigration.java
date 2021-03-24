@@ -23,9 +23,7 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.base.Stopwatch;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -102,10 +100,8 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         log.info("Importing historical account information");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        try (
-                InputStream inputStream = new GZIPInputStream(new FileInputStream(accountInfoPath.getFile()));
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
-        ) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(accountInfoPath
+                .getInputStream()), StandardCharsets.UTF_8))) {
             long count = reader.lines()
                     .map(this::parse)
                     .filter(Objects::nonNull)
