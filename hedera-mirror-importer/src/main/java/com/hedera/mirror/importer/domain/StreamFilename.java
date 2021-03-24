@@ -131,22 +131,22 @@ public class StreamFilename implements Comparable<StreamFilename> {
         String last = parts.get(parts.size() - 1);
         String secondLast = parts.get(parts.size() - 2);
 
-        for (StreamType streamType : StreamType.values()) {
-            String suffix = streamType.getSuffix();
+        for (StreamType type : StreamType.values()) {
+            String suffix = type.getSuffix();
             if (!StringUtils.isEmpty(suffix) && !filename.contains(suffix)) {
                 continue;
             }
 
-            Map<String, FileType> extensions = STREAM_TYPE_EXTENSION_MAP.get(streamType);
+            Map<String, FileType> extensions = STREAM_TYPE_EXTENSION_MAP.get(type);
 
             if (extensions.containsKey(last)) {
                 // if last matches extension, the file is not compressed
-                return TypeInfo.of(null, last, extensions.get(last), streamType);
+                return TypeInfo.of(null, last, extensions.get(last), type);
             }
 
             if (extensions.containsKey(secondLast)) {
                 // otherwise if secondLast matches extension, last is the compression extension
-                return TypeInfo.of(last, secondLast, extensions.get(secondLast), streamType);
+                return TypeInfo.of(last, secondLast, extensions.get(secondLast), type);
             }
         }
 

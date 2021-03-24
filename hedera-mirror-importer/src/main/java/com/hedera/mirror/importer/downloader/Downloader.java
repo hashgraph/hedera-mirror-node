@@ -41,7 +41,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -214,6 +213,9 @@ public abstract class Downloader<T extends StreamFile> {
                         log.info("Downloaded {} signatures for node {} in {}", count.get(), nodeAccountIdStr,
                                 stopwatch);
                     }
+                } catch (InterruptedException e) {
+                    log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
+                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
                 }
@@ -232,8 +234,7 @@ public abstract class Downloader<T extends StreamFile> {
         return sigFilesMap;
     }
 
-    private List<S3Object> listFiles(String lastFilename, String nodeAccountId) throws ExecutionException,
-            InterruptedException {
+    private List<S3Object> listFiles(String lastFilename, String nodeAccountId) throws Exception {
         // batchSize (number of items we plan do download in a single batch) times 2 for file + sig.
         int listSize = (downloaderProperties.getBatchSize() * 2);
         String s3Prefix = getS3Prefix(nodeAccountId);
