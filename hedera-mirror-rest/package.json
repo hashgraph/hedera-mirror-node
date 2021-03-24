@@ -35,7 +35,7 @@
     "mathjs": "^9.3.0",
     "node-fetch": "^2.6.1",
     "pg": "~8.5.1",
-    "qs": "^6.9.6",
+    "qs": "^6.10.1",
     "swagger-stats": "^0.95.18",
     "swagger-ui-express": "^4.1.6"
   },
