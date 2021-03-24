@@ -478,7 +478,7 @@
                                     <value>${release.version}</value>
                                 </replacement>
                                 <replacement>
-                                    <token><![CDATA[(?<=appVersion: )[0-9a-zA-Z.-]+]]></token>
+                                    <token><![CDATA[(?<=appVersion: ")[0-9a-zA-Z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                                 <replacement>
