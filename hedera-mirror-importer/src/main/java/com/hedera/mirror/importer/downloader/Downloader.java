@@ -195,20 +195,25 @@ public abstract class Downloader<T extends StreamFile> {
                     List<PendingDownload> pendingDownloads = downloadSignatureFiles(nodeAccountIdStr, s3Objects);
                     totalDownloads.addAndGet(pendingDownloads.size());
                     AtomicInteger count = new AtomicInteger();
-                    pendingDownloads
-                            .stream()
-                            .map(pendingDownload -> parseSignatureFile(pendingDownload, nodeAccountId))
-                            .filter(Objects::nonNull)
-                            .forEach(fileStreamSignature -> {
-                                sigFilesMap.put(fileStreamSignature.getFilename(), fileStreamSignature);
-                                count.getAndIncrement();
-                            });
+                    pendingDownloads.forEach(pendingDownload -> {
+                        try {
+                            parseSignatureFile(pendingDownload, nodeAccountId)
+                                    .ifPresent(fileStreamSignature -> {
+                                        sigFilesMap.put(fileStreamSignature.getFilename(), fileStreamSignature);
+                                        count.incrementAndGet();
+                                    });
+                        } catch (InterruptedException ex) {
+                            log.warn("Failed downloading {} in {}", pendingDownload.getS3key(),
+                                    pendingDownload.getStopwatch(), ex);
+                            Thread.currentThread().interrupt();
+                        } catch (Exception ex) {
+                            log.warn("Failed to parse signature file {}: {}", pendingDownload.getS3key(), ex);
+                        }
+                    });
                     if (count.get() > 0) {
-                        log.info("Downloaded {} signatures for node {} in {}", count.get(), nodeAccountIdStr, stopwatch);
+                        log.info("Downloaded {} signatures for node {} in {}", count.get(), nodeAccountIdStr,
+                                stopwatch);
                     }
-                } catch (InterruptedException e) {
-                    log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
-                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     log.error("Error downloading signature files for node {} after {}", nodeAccountIdStr, stopwatch, e);
                 }
@@ -292,29 +297,21 @@ public abstract class Downloader<T extends StreamFile> {
         return pendingDownloads;
     }
 
-    private FileStreamSignature parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId) {
+    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId)
+            throws Exception {
         String s3Key = pendingDownload.getS3key();
         Stopwatch stopwatch = pendingDownload.getStopwatch();
 
-        try {
-            if (!pendingDownload.waitForCompletion()) {
-                log.warn("Failed downloading {} in {}", s3Key, stopwatch);
-                return null;
-            }
-
-            StreamFilename streamFilename = pendingDownload.getStreamFilename();
-            StreamFileData streamFileData = new StreamFileData(streamFilename, pendingDownload.getBytes());
-            FileStreamSignature fileStreamSignature = signatureFileReader.read(streamFileData);
-            fileStreamSignature.setNodeAccountId(nodeAccountId);
-            return fileStreamSignature;
-        } catch (InterruptedException ex) {
-            log.warn("Failed downloading {} in {}", s3Key, stopwatch, ex);
-            Thread.currentThread().interrupt();
-        } catch (Exception ex) {
-            log.warn("Failed to parse signature file {}: {}", s3Key, ex);
+        if (!pendingDownload.waitForCompletion()) {
+            log.warn("Failed downloading {} in {}", s3Key, stopwatch);
+            return Optional.empty();
         }
 
-        return null;
+        StreamFilename streamFilename = pendingDownload.getStreamFilename();
+        StreamFileData streamFileData = new StreamFileData(streamFilename, pendingDownload.getBytes());
+        FileStreamSignature fileStreamSignature = signatureFileReader.read(streamFileData);
+        fileStreamSignature.setNodeAccountId(nodeAccountId);
+        return Optional.of(fileStreamSignature);
     }
 
     /**
