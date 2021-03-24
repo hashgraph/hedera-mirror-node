@@ -30,9 +30,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -40,6 +37,7 @@ import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
