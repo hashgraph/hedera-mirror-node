@@ -179,24 +179,26 @@ rest:
   enabled: true
 
 timescaledb:
-  credentials:
-    accessNode:
-      superuser: mirror_node_pass
-    dataNode:
-      superuser: mirror_node_pass
   enabled: false
   image:
     repository: timescaledev/timescaledb-ha
     tag: pg12.5-ts2.0.0-p0
+  patroni:
+    bootstrap:
+      dcs:
+        postgresql:
+          parameters:
+            ssl: 'off'
+    postgresql:
+      pg_hba:
+      - local     all             postgres                              peer
+      - local     all             all                                   md5
+      - hostnossl all,replication all                all                md5
   persistentVolume:
     size: 500Gi
-  resources:
-    limits:
-      cpu: 2
-      memory: 4Gi
-    requests:
-      cpu: 250m
-      memory: 500Mi
+  postInit:
+    - secret:
+        name: timescaledb-init-job
   postgresql:
     databases:
       - postgres
@@ -205,3 +207,10 @@ timescaledb:
       min_wal_size: 2GB  # 80% of the WAL Volume Size
       shared_buffers: 1GB  # recommended to be 25% of available instance memory
       work_mem: 50MB
+  resources:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 250m
+      memory: 500Mi
