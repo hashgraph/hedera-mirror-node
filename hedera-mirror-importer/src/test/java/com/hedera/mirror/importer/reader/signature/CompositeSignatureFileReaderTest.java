@@ -42,6 +42,8 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 @ExtendWith(MockitoExtension.class)
 class CompositeSignatureFileReaderTest {
 
+    private static final String SIGNATURE_FILENAME = "2021-03-10T16_30_00Z.rcd_sig";
+
     @Mock
     SignatureFileReaderV2 signatureFileReaderV2;
 
@@ -61,7 +63,7 @@ class CompositeSignatureFileReaderTest {
         byte[] randomExtraBytes = new byte[3];
         SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
         byte[] bytes = Bytes.concat(versionNumber, randomExtraBytes);
-        StreamFileData streamFileData = new StreamFileData("fileV2", bytes);
+        StreamFileData streamFileData = StreamFileData.from(SIGNATURE_FILENAME, bytes);
         compositeBalanceFileReader.read(streamFileData);
         verify(signatureFileReaderV2, times(1)).read(any(StreamFileData.class));
         verify(signatureFileReaderV5, times(0)).read(any(StreamFileData.class));
@@ -73,7 +75,7 @@ class CompositeSignatureFileReaderTest {
         byte[] randomExtraBytes = new byte[3];
         SecureRandom.getInstanceStrong().nextBytes(randomExtraBytes);
         byte[] bytes = Bytes.concat(versionNumber, randomExtraBytes);
-        StreamFileData streamFileData = new StreamFileData("fileV5", bytes);
+        StreamFileData streamFileData = StreamFileData.from(SIGNATURE_FILENAME, bytes);
         compositeBalanceFileReader.read(streamFileData);
         verify(signatureFileReaderV5, times(1)).read(any(StreamFileData.class));
         verify(signatureFileReaderV2, times(0)).read(any(StreamFileData.class));
@@ -81,7 +83,7 @@ class CompositeSignatureFileReaderTest {
 
     @Test
     void testBlankFile() {
-        StreamFileData blankFileData = new StreamFileData("blankFile", new byte[0]);
+        StreamFileData blankFileData = StreamFileData.from(SIGNATURE_FILENAME, new byte[0]);
         SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
             compositeBalanceFileReader.read(blankFileData);
         });
@@ -94,7 +96,7 @@ class CompositeSignatureFileReaderTest {
     @Test
     void testInvalidFileVersion() {
         byte[] invalidVersionNumber = {12};
-        StreamFileData invalidFileData = new StreamFileData("invalidVersionFile", invalidVersionNumber);
+        StreamFileData invalidFileData = StreamFileData.from(SIGNATURE_FILENAME, invalidVersionNumber);
         SignatureFileParsingException exception = assertThrows(SignatureFileParsingException.class, () -> {
             compositeBalanceFileReader.read(invalidFileData);
         });

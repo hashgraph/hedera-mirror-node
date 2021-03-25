@@ -36,74 +36,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
-
-import com.hedera.mirror.importer.domain.StreamType;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class UtilityTest {
 
     private static final String ED25519 = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-
-    @DisplayName("Get Instant from filename")
-    @ParameterizedTest(name = "{0}")
-    @CsvSource({
-            ", 1970-01-01T00:00:00.0Z",
-            "1970-01-01T00_00_00.0Z.rcd, 1970-01-01T00:00:00.0Z",
-            "2020-06-03T16_45_00.000000001Z_Balances.csv_sig, 2020-06-03T16:45:00.000000001Z",
-            "2020-06-03T16_45_00.1Z_Balances.csv, 2020-06-03T16:45:00.1Z",
-            "2020-06-03T16:45:00.000000003Z_Balances.csv, 2020-06-03T16:45:00.000000003Z",
-            "2262-04-11T23:47:16.854775808Z.evts_sig, 2262-04-11T23:47:16.854775808Z",
-    })
-    void getInstantFromFilename(String filename, Instant instant) {
-        assertThat(Utility.getInstantFromFilename(filename)).isEqualTo(instant);
-    }
-
-    @DisplayName("Get timestamp from filename")
-    @ParameterizedTest(name = "{0}")
-    @CsvSource({
-            ", 0",
-            "1970-01-01T00_00_00.0Z.rcd, 0",
-            "2020-06-03T16_45_00.000000001Z_Balances.csv_sig, 1591202700000000001",
-            "2020-06-03T16_45_00.1Z_Balances.csv, 1591202700100000000",
-            "2020-06-03T16:45:00.000000003Z_Balances.csv, 1591202700000000003",
-            "2262-04-11T23:47:16.854775808Z.evts_sig, 9223372036854775807",
-    })
-    void getTimestampFromFilename(String filename, long timestamp) {
-        assertThat(Utility.getTimestampFromFilename(filename)).isEqualTo(timestamp);
-    }
-
-    @ParameterizedTest(name = "Get stream filename from instant, stream type {0}")
-    @EnumSource(StreamType.class)
-    void getStreamFilenameFromInstant(StreamType streamType) {
-        final String timestamp = "2020-08-08T09:00:05.123456789Z";
-        final String timestampTransformed = "2020-08-08T09_00_05.123456789Z";
-        Instant instant = Instant.parse(timestamp);
-        String expectedFilename = null;
-        switch (streamType) {
-            case BALANCE:
-                expectedFilename = timestampTransformed + "_Balances.csv";
-                break;
-            case RECORD:
-                expectedFilename = timestampTransformed + ".rcd";
-                break;
-            case EVENT:
-                expectedFilename = timestampTransformed + ".evts";
-                break;
-        }
-        assertThat(Utility.getStreamFilenameFromInstant(streamType, instant)).isEqualTo(expectedFilename);
-    }
-
-    @ParameterizedTest(name = "StreamFile instant {0} > instant {1} ? {2}")
-    @CsvSource(value = {
-            "2020-08-08T09:00:05.123456780Z, 2020-08-08T09:00:05.123456790Z, false",
-            "2020-08-08T09:00:05.123456790Z, 2020-08-08T09:00:05.123456790Z, false",
-            "2020-08-08T09:00:05.123456790Z, 2020-08-08T09:00:05.123456789Z, true",
-            "2020-08-08T09:00:05.123456790Z, , false",
-    })
-    void isStreamFileAfterInstant(Instant fileInstant, Instant instant, boolean expected) {
-        String filename = Utility.getStreamFilenameFromInstant(StreamType.RECORD, fileInstant);
-        assertThat(Utility.isStreamFileAfterInstant(filename, instant)).isEqualTo(expected);
-    }
 
     @Test
     void convertSimpleKeyToHexWhenNull() {
@@ -230,6 +167,18 @@ class UtilityTest {
     })
     void convertInstantToNanosMax(long seconds, int nanos, long expected) {
         assertThat(Utility.convertToNanosMax(seconds, nanos)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest(name = "with instant {0}")
+    @CsvSource({
+            ", 0",
+            "2019-11-27T18:46:27Z, 1574880387000000000",
+            "2019-11-27T18:46:27.999999999Z, 1574880387999999999",
+            "2262-04-11T23:47:16.854775807Z, 9223372036854775807",
+            "2262-04-11T23:47:16.854775808Z, 9223372036854775807",
+    })
+    void convertInstantToNanosMax(Instant instant, long expected) {
+        assertThat(Utility.convertToNanosMax(instant)).isEqualTo(expected);
     }
 
     @ParameterizedTest(name = "with seconds {0} and nanos {1}")

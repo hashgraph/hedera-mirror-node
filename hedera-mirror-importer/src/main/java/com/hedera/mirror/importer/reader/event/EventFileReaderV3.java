@@ -33,6 +33,7 @@ import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
 import com.hedera.mirror.importer.parser.domain.EventItem;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 public class EventFileReaderV3 implements EventFileReader {
@@ -48,6 +49,7 @@ public class EventFileReaderV3 implements EventFileReader {
         String fileName = streamFileData.getFilename();
         EventFile eventFile = new EventFile();
         eventFile.setBytes(streamFileData.getBytes());
+        eventFile.setConsensusStart(Utility.convertToNanosMax(streamFileData.getInstant()));
         eventFile.setCount(0L);
         eventFile.setDigestAlgorithm(DIGEST_ALGORITHM);
         eventFile.setLoadStart(Instant.now().getEpochSecond());

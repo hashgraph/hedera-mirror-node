@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.primitives.Longs;
@@ -30,6 +31,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +50,6 @@ import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 class AccountBalanceFileParserTest extends IntegrationTest {
 
@@ -172,7 +175,8 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     private AccountBalanceFile accountBalanceFile(long timestamp) {
-        String filename = Utility.getStreamFilenameFromInstant(StreamType.BALANCE, Instant.ofEpochSecond(0, timestamp));
+        String filename = StreamFilename
+                .getFilename(StreamType.BALANCE, DATA, Instant.ofEpochSecond(0, timestamp));
         return AccountBalanceFile.builder()
                 .bytes(Longs.toByteArray(timestamp))
                 .consensusTimestamp(timestamp)

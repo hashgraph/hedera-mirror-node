@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.apache.commons.lang3.ObjectUtils.max;
 
 import java.time.Duration;
@@ -36,6 +37,7 @@ import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
@@ -79,8 +81,8 @@ public class MirrorDateRangePropertiesProcessor {
 
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
-        Instant lastFileInstant = findLatest(streamType).map(StreamFile::getName)
-                .map(Utility::getInstantFromFilename)
+        Instant lastFileInstant = findLatest(streamType).map(StreamFile::getConsensusStart)
+                .map(nanos -> Instant.ofEpochSecond(0, nanos))
                 .orElse(null);
         Instant filterStartDate = lastFileInstant;
 
@@ -117,8 +119,8 @@ public class MirrorDateRangePropertiesProcessor {
     public <T extends StreamFile> Optional<T> getLastStreamFile(StreamType streamType) {
         Instant startDate = mirrorProperties.getStartDate();
         Optional<T> streamFile = findLatest(streamType);
-        Instant lastFileInstant = streamFile.map(StreamFile::getName)
-                .map(Utility::getInstantFromFilename)
+        Instant lastFileInstant = streamFile.map(StreamFile::getConsensusStart)
+                .map(nanos -> Instant.ofEpochSecond(0, nanos))
                 .orElse(null);
         Duration adjustment = mirrorProperties.getStartDateAdjustment();
         Instant effectiveStartDate = STARTUP_TIME.minus(adjustment);
@@ -152,8 +154,9 @@ public class MirrorDateRangePropertiesProcessor {
                 log.debug("Set verifyHashAfter to {}", effectiveStartDate);
             }
 
-            String filename = Utility.getStreamFilenameFromInstant(streamType, effectiveStartDate);
+            String filename = StreamFilename.getFilename(streamType, DATA, effectiveStartDate);
             T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
+            effectiveStreamFile.setConsensusStart(Utility.convertToNanosMax(effectiveStartDate));
             effectiveStreamFile.setName(filename);
             effectiveStreamFile.setIndex(streamFile.map(StreamFile::getIndex).orElse(null));
             streamFile = Optional.of(effectiveStreamFile);
@@ -197,12 +200,12 @@ public class MirrorDateRangePropertiesProcessor {
             if (startDate == null) {
                 startDate = Instant.EPOCH;
             }
-            start = Utility.convertToNanosMax(startDate.getEpochSecond(), startDate.getNano());
+            start = Utility.convertToNanosMax(startDate);
 
             if (endDate == null) {
                 end = Long.MAX_VALUE;
             } else {
-                end = Utility.convertToNanosMax(endDate.getEpochSecond(), endDate.getNano());
+                end = Utility.convertToNanosMax(endDate);
             }
         }
 

@@ -79,12 +79,11 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
     @Override
     public AccountBalanceFile read(StreamFileData streamFileData, Consumer<AccountBalance> itemConsumer) {
         MessageDigest messageDigest = DigestUtils.getSha384Digest();
-        InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest);
         int bufferSize = balanceParserProperties.getFileBufferSize();
-        itemConsumer = itemConsumer != null ? itemConsumer : accountBalance -> {
-        };
+        itemConsumer = itemConsumer != null ? itemConsumer : accountBalance -> {};
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), bufferSize)) {
+        try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), bufferSize)) {
             long consensusTimestamp = parseConsensusTimestamp(reader);
             AtomicLong count = new AtomicLong(0L);
 
@@ -110,7 +109,6 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
             accountBalanceFile.setCount(count.get());
             accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
-            accountBalanceFile.setLoadEnd(Instant.now().getEpochSecond());
             return accountBalanceFile;
         } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
@@ -121,6 +119,6 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
     protected long convertTimestamp(String timestamp) {
         Instant instant = Instant.parse(timestamp);
-        return Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
+        return Utility.convertToNanosMax(instant);
     }
 }
