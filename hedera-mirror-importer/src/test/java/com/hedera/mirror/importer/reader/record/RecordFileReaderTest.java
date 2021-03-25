@@ -81,7 +81,8 @@ abstract class RecordFileReaderTest {
                     RecordFile actual = recordFileReader.read(streamFileData, itemConsumer);
 
                     // then
-                    assertThat(actual).isEqualToIgnoringGivenFields(recordFile, "bytes", "items", "loadStart");
+                    assertThat(actual).usingRecursiveComparison().ignoringFields("bytes", "items", "loadStart")
+                            .isEqualTo(recordFile);
                     assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
                     assertThat(actual.getLoadStart()).isNotNull().isPositive();
                     ArgumentCaptor<RecordItem> captor = ArgumentCaptor.forClass(RecordItem.class);
@@ -111,7 +112,8 @@ abstract class RecordFileReaderTest {
                     RecordFile actual = recordFileReader.read(streamFileData);
 
                     // then
-                    assertThat(actual).isEqualToIgnoringGivenFields(recordFile, "bytes", "items", "loadStart");
+                    assertThat(actual).usingRecursiveComparison().ignoringFields("bytes", "items", "loadStart")
+                            .isEqualTo(recordFile);
                     assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
                     assertThat(actual.getLoadStart()).isNotNull().isPositive();
                 });
@@ -128,8 +130,8 @@ abstract class RecordFileReaderTest {
                     // given
                     Path testFile = getTestFile(recordFile);
                     byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
-                    byte[] bytesCorrupted = ArrayUtils.addAll(bytes, new byte[] {0, 1, 2, 3});
-                    StreamFileData streamFileData = new StreamFileData(recordFile.getName(), bytesCorrupted);
+                    byte[] bytesCorrupted = ArrayUtils.addAll(bytes, new byte[] { 0, 1, 2, 3 });
+                    StreamFileData streamFileData = StreamFileData.from(recordFile.getName(), bytesCorrupted);
 
                     // when
                     assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));
@@ -148,7 +150,7 @@ abstract class RecordFileReaderTest {
                     Path testFile = getTestFile(recordFile);
                     byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
                     byte[] bytesTruncated = ArrayUtils.subarray(bytes, 0, bytes.length - 48);
-                    StreamFileData streamFileData = new StreamFileData(recordFile.getName(), bytesTruncated);
+                    StreamFileData streamFileData = StreamFileData.from(recordFile.getName(), bytesTruncated);
 
                     // when
                     assertThrows(InvalidStreamFileException.class, () -> recordFileReader.read(streamFileData));

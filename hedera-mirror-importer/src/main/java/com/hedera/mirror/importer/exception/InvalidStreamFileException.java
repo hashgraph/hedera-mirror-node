@@ -31,4 +31,8 @@ public class InvalidStreamFileException extends ImporterException {
     public InvalidStreamFileException(Throwable throwable) {
         super(throwable);
     }
+
+    public InvalidStreamFileException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

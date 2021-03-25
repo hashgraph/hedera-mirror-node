@@ -112,8 +112,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     @Override
     @Cacheable
     public AddressBook getCurrent() {
-        Instant now = Instant.now();
-        long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
+        long consensusTimestamp = Utility.convertToNanosMax(Instant.now());
 
         // retrieve latest address book. If address_book is empty parse initial and historic address book files
         return addressBookRepository
@@ -139,8 +138,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @return Latest AddressBook from historical files
      */
     private synchronized AddressBook migrate() {
-        Instant now = Instant.now();
-        long consensusTimestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
+        long consensusTimestamp = Utility.convertToNanosMax(Instant.now());
         AddressBook currentAddressBook = addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
                 .orElse(null);

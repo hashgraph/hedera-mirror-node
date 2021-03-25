@@ -29,6 +29,8 @@ import lombok.extern.log4j.Log4j2;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 /**
  * The results of a pending download from the AWS TransferManager. Call waitForCompletion() to wait for the transfer to
  * complete and get the status of whether it was successful or not.
@@ -37,8 +39,9 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 @Value
 class PendingDownload {
     private final CompletableFuture<ResponseBytes<GetObjectResponse>> future;
+    private final StreamFilename streamFilename;
     private final Stopwatch stopwatch;
-    private final String s3key; // Source S3 key
+    private final String s3key;
 
     @NonFinal
     private boolean alreadyWaited = false; // has waitForCompletion been called
@@ -46,9 +49,11 @@ class PendingDownload {
     @NonFinal
     private boolean downloadSuccessful = false;
 
-    PendingDownload(CompletableFuture<ResponseBytes<GetObjectResponse>> future, String s3key) {
+    PendingDownload(CompletableFuture<ResponseBytes<GetObjectResponse>> future, StreamFilename streamFilename,
+            String s3key) {
         this.future = future;
         stopwatch = Stopwatch.createStarted();
+        this.streamFilename = streamFilename;
         this.s3key = s3key;
     }
 
@@ -57,7 +62,7 @@ class PendingDownload {
     }
 
     public String getFilename() {
-        return s3key.substring(s3key.lastIndexOf('/') + 1);
+        return streamFilename.getFilename();
     }
 
     /**

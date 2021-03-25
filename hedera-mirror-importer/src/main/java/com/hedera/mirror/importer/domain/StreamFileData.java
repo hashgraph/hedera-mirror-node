@@ -24,22 +24,31 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import lombok.NonNull;
 import lombok.Value;
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.exception.FileOperationException;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
 @Value
 public class StreamFileData {
 
-    private final String filename;
+    private static final CompressorStreamFactory compressorStreamFactory = new CompressorStreamFactory(true);
+
+    private final StreamFilename streamFilename;
     private final byte[] bytes;
 
     public static StreamFileData from(@NonNull File file) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
-            return new StreamFileData(file.getName(), bytes);
+            return new StreamFileData(new StreamFilename(file.getName()), bytes);
+        } catch (InvalidStreamFileException e) {
+            throw e;
         } catch (Exception e) {
             throw new FileOperationException("Unable to read file to byte array", e);
         }
@@ -47,15 +56,38 @@ public class StreamFileData {
 
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
-        return new StreamFileData(filename, contents.getBytes(StandardCharsets.UTF_8));
+        return new StreamFileData(new StreamFilename(filename), contents.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Used for testing with raw bytes
+    public static StreamFileData from(@NonNull String filename, @NonNull byte[] bytes) {
+        return new StreamFileData(new StreamFilename(filename), bytes);
     }
 
     public InputStream getInputStream() {
-        return new ByteArrayInputStream(bytes);
+        try {
+            InputStream is = new ByteArrayInputStream(bytes);
+            String compressor = streamFilename.getCompressor();
+            if (!StringUtils.isBlank(compressor)) {
+                is = compressorStreamFactory.createCompressorInputStream(compressor, is);
+            }
+
+            return is;
+        } catch (CompressorException ex) {
+            throw new InvalidStreamFileException("Unable to open compressed file " + streamFilename, ex);
+        }
+    }
+
+    public Instant getInstant() {
+        return streamFilename.getInstant();
+    }
+
+    public String getFilename() {
+        return streamFilename.getFilename();
     }
 
     @Override
     public String toString() {
-        return filename;
+        return streamFilename.toString();
     }
 }

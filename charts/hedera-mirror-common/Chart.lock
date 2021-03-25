@@ -7,9 +7,9 @@ dependencies:
   version: 2.10.1
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 12.8.0
+  version: 12.8.1
 - name: traefik
   repository: https://helm.traefik.io/traefik
   version: 9.11.0
-digest: sha256:540a7ec55477d78d25d3e75be2386a8d15e8e8b1f22aedd86c2a51cf61e065bc
-generated: "2020-12-21T12:43:29.852955-06:00"
+digest: sha256:c8b04d485409d8ef9556cbd6c9bb37a3c48c4351831d84b50d8187caf9579485
+generated: "2021-03-24T15:30:32.170116-05:00"

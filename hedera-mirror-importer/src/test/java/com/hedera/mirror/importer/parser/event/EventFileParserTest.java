@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.event;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -29,6 +30,9 @@ import static org.mockito.Mockito.verify;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+
+import com.hedera.mirror.importer.domain.StreamFilename;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +49,6 @@ import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.EventItem;
 import com.hedera.mirror.importer.repository.EventFileRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 class EventFileParserTest {
@@ -158,7 +161,7 @@ class EventFileParserTest {
     private EventFile eventFile() {
         long id = ++count;
         Instant instant = Instant.ofEpochSecond(0L, id);
-        String filename = Utility.getStreamFilenameFromInstant(parserProperties.getStreamType(), instant);
+        String filename = StreamFilename.getFilename(parserProperties.getStreamType(), DATA, instant);
         EventFile eventFile = new EventFile();
         eventFile.setBytes(new byte[] {0, 1, 2});
         eventFile.setConsensusEnd(id);

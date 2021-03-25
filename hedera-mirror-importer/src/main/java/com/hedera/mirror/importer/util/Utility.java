@@ -39,11 +39,7 @@ import javax.annotation.Nullable;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import com.hedera.mirror.importer.domain.StreamType;
 
 @Log4j2
 @UtilityClass
@@ -132,7 +128,7 @@ public class Utility {
     /**
      * Converts time in (second, nanos) to time in only nanos.
      */
-    public static Long convertToNanos(long second, long nanos) {
+    public static long convertToNanos(long second, long nanos) {
         try {
             return Math.addExact(Math.multiplyExact(second, NANOS_PER_SECOND), nanos);
         } catch (ArithmeticException e) {
@@ -146,12 +142,25 @@ public class Utility {
      * the max time in the future (Long.MAX_VALUE). If negative overflow, return the max time in the past
      * (Long.MIN_VALUE).
      */
-    public static Long convertToNanosMax(long second, long nanos) {
+    public static long convertToNanosMax(long second, long nanos) {
         try {
             return convertToNanos(second, nanos);
         } catch (ArithmeticException ex) {
             return second >= 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
         }
+    }
+
+    /**
+     * Converts instant to time in only nanos, with a fallback if overflow: If positive overflow, return
+     * the max time in the future (Long.MAX_VALUE). If negative overflow, return the max time in the past
+     * (Long.MIN_VALUE).
+     */
+    public static long convertToNanosMax(Instant instant) {
+        if (instant == null) {
+            instant = Instant.EPOCH;
+        }
+
+        return convertToNanosMax(instant.getEpochSecond(), instant.getNano());
     }
 
     /**
@@ -187,36 +196,6 @@ public class Utility {
         } catch (Exception e) {
             log.error("Error archiving file to {}", destination, e);
         }
-    }
-
-    public static final Instant getInstantFromFilename(String filename) {
-        if (StringUtils.isBlank(filename)) {
-            return Instant.EPOCH;
-        }
-
-        StreamType streamType = StreamType.fromFilename(filename);
-        String date = FilenameUtils.removeExtension(filename);
-
-        if (streamType != null) {
-            date = StringUtils.removeEnd(date, streamType.getSuffix());
-        }
-
-        date = date.replace('_', ':');
-        return Instant.parse(date);
-    }
-
-    public static final long getTimestampFromFilename(String filename) {
-        Instant instant = getInstantFromFilename(filename);
-        return Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
-    }
-
-    public static final String getStreamFilenameFromInstant(StreamType streamType, Instant instant) {
-        String timestamp = instant.toString().replace(':', '_');
-        return timestamp + streamType.getSuffix() + "." + streamType.getExtension();
-    }
-
-    public static final boolean isStreamFileAfterInstant(String filename, Instant instant) {
-        return instant != null && getInstantFromFilename(filename).isAfter(instant);
     }
 
     /**
