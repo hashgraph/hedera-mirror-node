@@ -135,7 +135,8 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         assertThat(blockingService.subscribeTopic(query))
                 .toIterable()
                 .hasSize(3)
-                .containsSequence(topicMessage1.getResponse(), topicMessage2.getResponse(), topicMessage3.getResponse());
+                .containsSequence(topicMessage1.getResponse(), topicMessage2.getResponse(), topicMessage3
+                        .getResponse());
     }
 
     @Test
@@ -255,7 +256,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .then(generator::blockLast)
                 .expectNext(2, 3, 0) // incoming messages
                 .thenCancel()
-                .verify(Duration.ofMillis(800));
+                .verify(Duration.ofMillis(2000));
     }
 
     void assertException(Throwable t, Status.Code status, String message) {

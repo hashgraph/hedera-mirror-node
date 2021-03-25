@@ -1,0 +1,47 @@
+name: Release Production
+
+on:
+  push:
+    tags: [ v* ]
+
+jobs:
+  image:
+    name: Publish images
+    runs-on: ubuntu-latest
+    env:
+      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/pom.xml') }}
+          path: ~/.m2
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Login to Google Container Registry
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCR_KEY }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
+
+      - name: Build and push images
+        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests
+
+  chart:
+    name: Publish charts
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Publish helm chart
+        uses: stefanprodan/helm-gh-pages@master
+        with:
+          target_dir: charts
+          token: ${{ secrets.REPO_RW_TOKEN }}

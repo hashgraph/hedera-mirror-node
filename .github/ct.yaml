@@ -1,6 +1,5 @@
 chart-repos:
   - bitnami=https://charts.bitnami.com/bitnami
-  - fluxcd=https://charts.fluxcd.io
   - loki=https://grafana.github.io/helm-charts
   - prometheus=https://prometheus-community.github.io/helm-charts
   - timescaledb=https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/

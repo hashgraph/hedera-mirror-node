@@ -1,0 +1,52 @@
+name: "Monitor"
+
+on:
+  pull_request:
+    branches: [ master, release/** ]
+  push:
+    tags: [ v* ]
+
+defaults:
+  run:
+    working-directory: ./hedera-mirror-monitor
+
+env:
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
+  MODULE: hedera-mirror-monitor
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('./pom.xml') }}
+          path: ~/.m2
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Cache SonarCloud dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar-${{ secrets.CACHE_VERSION }}
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Maven verify
+        run: ./mvnw ${MAVEN_CLI_OPTS} verify sonar:sonar -pl "${MODULE}" --also-make -Dtest='!com.hedera.mirror.importer.**' -DfailIfNoTests=false -Dsonar.login=$SONAR_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        working-directory: .
+
+      - name: Upload coverage report
+        run: bash <(curl -s https://codecov.io/bash)

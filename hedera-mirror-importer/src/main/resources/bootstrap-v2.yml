@@ -1,0 +1,5 @@
+spring:
+  flyway:
+    baselineVersion: 1.999.999
+    locations: "classpath:db/migration/v2"
+

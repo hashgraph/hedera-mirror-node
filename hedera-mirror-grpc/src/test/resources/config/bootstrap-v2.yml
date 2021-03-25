@@ -1,0 +1,7 @@
+embedded:
+  postgresql:
+    docker-image: timescaledev/timescaledb-ha:pg12.5-ts2.0.0-p0
+spring:
+  flyway:
+    baselineVersion: 1.999.999
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2"

@@ -8,7 +8,7 @@ name=hedera-mirror-rosetta
 binary="/usr/bin/${name}"
 configdir="/usr/etc/${name}"
 configfile="${configdir}/application.yml"
-execname="$(ls -1 ${name}-*)"
+execname="$(ls -1 ${name}*)"
 
 if [[ ! -f "${execname}" ]]; then
     echo "Can't find ${execname}. Aborting"

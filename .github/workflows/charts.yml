@@ -1,0 +1,51 @@
+name: Charts
+
+on:
+  pull_request:
+    branches: [ master, release/** ]
+  push:
+    tags: [ v* ]
+
+env:
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install ct
+        uses: helm/chart-testing-action@v2.0.1
+
+      - name: Run lint
+        run: ct lint --config .github/ct.yaml --all
+
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build images
+        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests
+
+      - name: Install k3s
+        id: k3s
+        uses: debianmaster/actions-k3s@master
+        with:
+          version: v1.17.4-k3s1
+
+      - name: Install ct
+        uses: helm/chart-testing-action@v2.0.1
+
+      - name: Copy kube config
+        run: |
+          mkdir -p "${HOME}/.kube"
+          cp ${{ steps.k3s.outputs.kubeconfig }} "${HOME}/.kube/config"
+
+      - name: Install chart
+        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror
