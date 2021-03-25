@@ -188,12 +188,12 @@ timescaledb:
       dcs:
         postgresql:
           parameters:
-            ssl: 'off'
+            ssl: 'off' # disable all ssl connections to not require Patroni certificate
     postgresql:
       pg_hba:
-      - local     all             postgres                              peer
+      - local     all             postgres                              peer # allow local connections
       - local     all             all                                   md5
-      - hostnossl all,replication all                all                md5
+      - hostnossl all,replication all                all                md5  # allow TCP/IP connections (no ssl)
   persistentVolume:
     size: 500Gi
   postInit:
