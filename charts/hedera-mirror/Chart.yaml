@@ -1,8 +1,54 @@
-apiVersion: v1
-appVersion: 0.30.0-rc1
+apiVersion: v2
+appVersion: "0.30.0-rc1"
+dependencies:
+  - alias: grpc
+    condition: grpc.enabled
+    name: hedera-mirror-grpc
+    repository: file://../hedera-mirror-grpc
+    tags:
+      - api
+    version: ">=0.12.0-0"
+  - alias: importer
+    condition: importer.enabled
+    name: hedera-mirror-importer
+    repository: file://../hedera-mirror-importer
+    version: ">=0.12.0-0"
+  - alias: monitor
+    condition: monitor.enabled
+    name: hedera-mirror-monitor
+    repository: file://../hedera-mirror-monitor
+    version: ">=0.12.0-0"
+  - alias: postgresql
+    condition: postgresql.enabled
+    name: postgresql-ha
+    repository: https://charts.bitnami.com/bitnami
+    version: ~6.3.2
+  - alias: redis
+    condition: redis.enabled
+    name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: ~12.2.3
+  - alias: rest
+    condition: rest.enabled
+    name: hedera-mirror-rest
+    repository: file://../hedera-mirror-rest
+    tags:
+      - api
+    version: ">=0.12.0-0"
+  - alias: timescaledb
+    condition: timescaledb.enabled
+    name: timescaledb-multinode
+    repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
+    version: ^0.8.0
 description: Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API
 home: https://github.com/hashgraph/hedera-mirror-node
 icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+keywords:
+  - blockchain
+  - dlt
+  - hedera
+  - hashgraph
+  - mirror
 maintainers:
   - name: ijungmann
   - name: Nana-EC
