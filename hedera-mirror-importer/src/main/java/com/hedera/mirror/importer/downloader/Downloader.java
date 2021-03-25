@@ -37,8 +37,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -256,8 +256,8 @@ public abstract class Downloader<T extends StreamFile> {
     }
 
     private List<PendingDownload> downloadSignatureFiles(String nodeAccountId, List<S3Object> s3Objects) {
-        // group the signature filenames by its instant, maintain the insert order, i.e., increasing order by instant
-        LinkedHashMap<Instant, Optional<StreamFilename>> signatureFilenamesByInstant = s3Objects.stream()
+        // group the signature filenames by its instant
+        Map<Instant, Optional<StreamFilename>> signatureFilenamesByInstant = s3Objects.stream()
                 .map(S3Object::key)
                 .map(key -> key.substring(key.lastIndexOf('/') + 1))
                 .map(filename -> {
@@ -269,11 +269,7 @@ public abstract class Downloader<T extends StreamFile> {
                     }
                 })
                 .filter(s -> s != null && s.getFileType() == SIGNATURE)
-                .collect(groupingBy(
-                        StreamFilename::getInstant,
-                        LinkedHashMap::new,
-                        maxBy(StreamFilename.EXTENSION_COMPARATOR)
-                ));
+                .collect(groupingBy(StreamFilename::getInstant, maxBy(StreamFilename.EXTENSION_COMPARATOR)));
 
         String s3Prefix = getS3Prefix(nodeAccountId);
         return signatureFilenamesByInstant.values()
