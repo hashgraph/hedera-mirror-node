@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
+
 import com.google.common.base.Splitter;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -40,24 +43,27 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 @Value
 public class StreamFilename implements Comparable<StreamFilename> {
 
+    public static final Comparator<StreamFilename> EXTENSION_COMPARATOR = Comparator
+            .comparing(StreamFilename::getExtension);
+
     private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
     private static final char STANDARD_TIME_SEPARATOR = ':';
     private static final Splitter FILENAME_SPLITTER = Splitter.on(FilenameUtils.EXTENSION_SEPARATOR).omitEmptyStrings();
-    private static final Map<StreamType, Map<String, FileType>> STREAM_TYPE_EXTENSION_MAP;
+    private static final Map<StreamType, Map<String, StreamType.Extension>> STREAM_TYPE_EXTENSION_MAP;
 
     static {
         STREAM_TYPE_EXTENSION_MAP = new EnumMap<>(StreamType.class);
         for (StreamType type : StreamType.values()) {
-            Map<String, FileType> extensions = new HashMap<>();
-            type.getDataExtensions().forEach(extension -> extensions.put(extension, FileType.DATA));
-            type.getSignatureExtensions().forEach(extension -> extensions.put(extension, FileType.SIGNATURE));
+            Map<String, StreamType.Extension> extensions = new HashMap<>();
+            type.getDataExtensions().forEach(ext -> extensions.put(ext.getName(), ext));
+            type.getSignatureExtensions().forEach(ext -> extensions.put(ext.getName(), ext));
             STREAM_TYPE_EXTENSION_MAP.put(type, extensions);
         }
     }
 
     private final String compressor;
-    private final String extension;
+    private final StreamType.Extension extension;
     @EqualsAndHashCode.Include
     private final String filename;
     private final FileType fileType;
@@ -74,8 +80,8 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.extension = typeInfo.extension;
         this.fileType = typeInfo.fileType;
         this.streamType = typeInfo.streamType;
-        this.fullExtension = this.compressor == null ? this.extension : StringUtils
-                .joinWith(".", this.extension, this.compressor);
+        this.fullExtension = this.compressor == null ? this.extension.getName() : StringUtils
+                .joinWith(".", this.extension.getName(), this.compressor);
 
         this.instant = extractInstant(filename, this.fullExtension, this.streamType.getSuffix());
     }
@@ -92,10 +98,10 @@ public class StreamFilename implements Comparable<StreamFilename> {
         String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
         String suffix = streamType.getSuffix();
         String extension;
-        if (fileType == FileType.DATA) {
-            extension = streamType.getDataExtensions().get(0);
+        if (fileType == DATA) {
+            extension = streamType.getDataExtensions().first().getName();
         } else {
-            extension = streamType.getSignatureExtensions().get(0);
+            extension = streamType.getSignatureExtensions().first().getName();
         }
 
         return StringUtils.joinWith(".", StringUtils.join(timestamp, suffix), extension);
@@ -137,16 +143,18 @@ public class StreamFilename implements Comparable<StreamFilename> {
                 continue;
             }
 
-            Map<String, FileType> extensions = STREAM_TYPE_EXTENSION_MAP.get(type);
+            Map<String, StreamType.Extension> extensions = STREAM_TYPE_EXTENSION_MAP.get(type);
 
             if (extensions.containsKey(last)) {
                 // if last matches extension, the file is not compressed
-                return TypeInfo.of(null, last, extensions.get(last), type);
+                FileType fileType = last.endsWith(StreamType.SIGNATURE_SUFFIX) ? SIGNATURE : DATA;
+                return TypeInfo.of(null, extensions.get(last), fileType, type);
             }
 
             if (extensions.containsKey(secondLast)) {
                 // otherwise if secondLast matches extension, last is the compression extension
-                return TypeInfo.of(last, secondLast, extensions.get(secondLast), type);
+                FileType fileType = secondLast.endsWith(StreamType.SIGNATURE_SUFFIX) ? SIGNATURE : DATA;
+                return TypeInfo.of(last, extensions.get(secondLast), fileType, type);
             }
         }
 
@@ -172,7 +180,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     @Value(staticConstructor = "of")
     private static class TypeInfo {
         String compressor;
-        String extension;
+        StreamType.Extension extension;
         FileType fileType;
         StreamType streamType;
     }

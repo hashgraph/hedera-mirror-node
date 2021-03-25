@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -75,6 +77,20 @@ class ProtoBalanceFileReaderTest {
         corrupt(streamFileData.getBytes());
 
         assertThrows(InvalidStreamFileException.class, () -> protoBalanceFileReader.read(streamFileData));
+    }
+
+    @ParameterizedTest(name = "supports {0}")
+    @ValueSource(strings = {"2021-03-10T16:00:00Z_Balances.pb.gz", "2021-03-10T16:00:00Z_Balances.pb"})
+    void supports(String filename) {
+        StreamFileData streamFileData = StreamFileData.from(filename, new byte[]{1, 2, 3});
+        assertThat(protoBalanceFileReader.supports(streamFileData)).isTrue();
+    }
+
+    @ParameterizedTest(name = "does not support {0}")
+    @ValueSource(strings = {"2021-03-10T16:00:00Z_Balances.csv", "2021-03-10T16:00:00Z_Balances.csv.gz"})
+    void unsupported(String filename) {
+        StreamFileData streamFileData = StreamFileData.from(filename, new byte[]{1, 2, 3});
+        assertThat(protoBalanceFileReader.supports(streamFileData)).isFalse();
     }
 
     private void corrupt(byte[] bytes) {

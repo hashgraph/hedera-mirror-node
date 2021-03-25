@@ -24,8 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,13 +36,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 class StreamTypeTest {
 
     private static final Map<StreamType, List<String>> dataExtensions = ImmutableMap.<StreamType, List<String>>builder()
-            .put(StreamType.BALANCE, List.of("pb", "csv"))
+            .put(StreamType.BALANCE, List.of("csv", "pb"))
             .put(StreamType.EVENT, List.of("evts"))
             .put(StreamType.RECORD, List.of("rcd"))
             .build();
     private static final Map<StreamType, List<String>> signatureExtensions =
             ImmutableMap.<StreamType, List<String>>builder()
-            .put(StreamType.BALANCE, List.of("pb_sig", "csv_sig"))
+            .put(StreamType.BALANCE, List.of("csv_sig", "pb_sig"))
             .put(StreamType.EVENT, List.of("evts_sig"))
             .put(StreamType.RECORD, List.of("rcd_sig"))
             .build();
@@ -48,13 +50,21 @@ class StreamTypeTest {
     @ParameterizedTest
     @MethodSource("provideTypeAndDataExtensions")
     void getDataExtensions(StreamType streamType, List<String> dataExtensions) {
-        assertThat(streamType.getDataExtensions()).containsExactlyElementsOf(dataExtensions);
+        assertPriorities(streamType.getDataExtensions(), dataExtensions);
     }
 
     @ParameterizedTest
     @MethodSource("provideTypeAndSignatureExtensions")
     void getSignatureExtensions(StreamType streamType, List<String> signatureExtensions) {
-        assertThat(streamType.getSignatureExtensions()).containsExactlyElementsOf(signatureExtensions);
+        assertPriorities(streamType.getSignatureExtensions(), signatureExtensions);
+    }
+
+    void assertPriorities(SortedSet<StreamType.Extension> actual, List<String> expected) {
+        // ensures extensions are ordered by priority
+        assertThat(actual.stream().map(StreamType.Extension::getName)).containsExactlyElementsOf(expected);
+
+        Stream<Integer> priorities = actual.stream().map(StreamType.Extension::getPriority);
+        assertThat(priorities).doesNotHaveDuplicates().isSortedAccordingTo(Comparator.naturalOrder()).contains(0);
     }
 
     private static Stream<Arguments> provideTypeAndExtensions(boolean isDataExtension) {

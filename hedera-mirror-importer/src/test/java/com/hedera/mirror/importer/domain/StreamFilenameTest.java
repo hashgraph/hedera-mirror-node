@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -52,7 +54,7 @@ class StreamFilenameTest {
     void newStreamFile(String filename, String compressor, String extension, StreamFilename.FileType fileType,
             String fullExtension, Instant instant, StreamType streamType) {
         StreamFilename streamFilename = new StreamFilename(filename);
-        String[] fields = {"filename", "compressor", "extension", "fileType", "fullExtension", "instant",
+        String[] fields = {"filename", "compressor", "extension.name", "fileType", "fullExtension", "instant",
                 "streamType"};
         Object[] expected = {filename, compressor, extension, fileType, fullExtension, instant, streamType};
 
@@ -79,10 +81,11 @@ class StreamFilenameTest {
         String filename = StreamFilename.getFilename(streamType, fileType, instant);
         String extension = filename.substring(filename.lastIndexOf('.') + 1);
 
-        List<String> extensions = fileType == DATA ? streamType.getDataExtensions() : streamType
+        Set<StreamType.Extension> extensions = fileType == DATA ? streamType.getDataExtensions() : streamType
                 .getSignatureExtensions();
+        List<String> names = extensions.stream().map(StreamType.Extension::getName).collect(Collectors.toList());
         assertThat(filename).startsWith(expectedPrefix);
-        assertThat(extension).isIn(extensions);
+        assertThat(extension).isIn(names);
     }
 
     @ParameterizedTest(name = "Get the filename after \"{0}\"")
