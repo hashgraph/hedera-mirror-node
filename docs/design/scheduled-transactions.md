@@ -157,8 +157,8 @@ Add a `scheduled` boolean to every transaction APIs JSON response:
       ]
     },
     {
-      "consensus_timestamp": "1234567890.000000002",
-      "valid_start_timestamp": "1234567890.000000000",
+      "consensus_timestamp": "1234567899.000000002",
+      "valid_start_timestamp": "1234567899.000000000",
       "charged_tx_fee": 7,
       "memo_base64": null,
       "result": "SUCCESS",
@@ -166,7 +166,7 @@ Add a `scheduled` boolean to every transaction APIs JSON response:
       "name": "CRYPTOTRANSFER",
       "node": "0.0.3",
       "scheduled": true,
-      "transaction_id": "0.0.10-1234567890-000000000",
+      "transaction_id": "0.0.10-1234567899-000000000",
       "valid_duration_seconds": "11",
       "max_fee": "33",
       "transfers": [
@@ -254,12 +254,12 @@ GET `/api/v1/schedules/{scheduleId}`
   "schedule_id": "0.0.102",
   "signatures": [
     {
-      "consensus_timestamp": "1234567890.000000001",
+      "consensus_timestamp": "1234567890.000000002",
       "public_key_prefix": "H0vpig==",
       "signature": "0o0gC7p9SPUH4UD6Yiirp/Kf+LKj8qjuuFdC3AU87HE="
     },
     {
-      "consensus_timestamp": "1234567890.000000002",
+      "consensus_timestamp": "1234567890.000000003",
       "public_key_prefix": "GvxuXg==",
       "signature": "w9mHyHQpTrlbLfn9NrBlZiMxV2mvLvNEw1hoeAECtcA="
     }
