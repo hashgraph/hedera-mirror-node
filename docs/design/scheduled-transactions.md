@@ -119,7 +119,7 @@ Add a `ScheduleIdConverter`.
 
 #### Scheduled Transaction
 
-A transaction triggered by the last schedule sign will have a `scheduleRef` populated in the record.
+A transaction triggered by the last schedule sign or create will have a `scheduleRef` populated in the record.
 
 - Insert a `Transaction` with `scheduled` set to true.
 - Update the `Schedule` to set `executed_timestamp`.
