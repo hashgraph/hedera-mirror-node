@@ -780,37 +780,17 @@ public class EntityRecordItemListener implements RecordItemListener {
                     .getScheduleCreate();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
+            var creatorAccount = EntityId.of(recordItem.getTransactionBody().getTransactionID().getAccountID());
+            var payerAccount = scheduleCreateTransactionBody.hasPayerAccountID() ?
+                    EntityId.of(scheduleCreateTransactionBody.getPayerAccountID()) : creatorAccount;
 
-            // insert schedule only if it doesn't already exist in db
-            scheduleRepository
-                    .findByScheduleId(scheduleId)
-                    .ifPresentOrElse(s ->
-                                    log.warn("Schedule entity {} already exists, only signatures will be persisted",
-                                            s.getScheduleId())
-                            ,
-                            () -> {
-                                TransactionBody body = recordItem.getTransactionBody();
-                                var creatorAccount = EntityId.of(body.getTransactionID().getAccountID());
-                                var payerAccount = scheduleCreateTransactionBody.hasPayerAccountID() ?
-                                        EntityId.of(scheduleCreateTransactionBody.getPayerAccountID()) : creatorAccount;
-
-                                Schedule schedule = new Schedule();
-                                schedule.setConsensusTimestamp(consensusTimestamp);
-                                schedule.setCreatorAccountId(creatorAccount);
-                                schedule.setPayerAccountId(payerAccount);
-                                schedule.setScheduleId(scheduleId);
-                                schedule.setTransactionBody(scheduleCreateTransactionBody.getTransactionBody()
-                                        .toByteArray());
-                                entityListener.onSchedule(schedule);
-                            });
-
-            // insert signature for every item in sigMap
-            if (scheduleCreateTransactionBody.hasSigMap()) {
-                insertScheduleSignatures(
-                        scheduleId,
-                        consensusTimestamp,
-                        scheduleCreateTransactionBody.getSigMap().getSigPairList());
-            }
+            Schedule schedule = new Schedule();
+            schedule.setConsensusTimestamp(consensusTimestamp);
+            schedule.setCreatorAccountId(creatorAccount);
+            schedule.setPayerAccountId(payerAccount);
+            schedule.setScheduleId(scheduleId);
+            schedule.setTransactionBody(scheduleCreateTransactionBody.getScheduledTransactionBody().toByteArray());
+            entityListener.onSchedule(schedule);
         }
     }
 
@@ -821,12 +801,10 @@ public class EntityRecordItemListener implements RecordItemListener {
             var scheduleId = EntityId.of(scheduleSignTransactionBody.getScheduleID());
 
             // insert signature for every item in map
-            if (scheduleSignTransactionBody.hasSigMap()) {
-                insertScheduleSignatures(
-                        scheduleId,
-                        consensusTimestamp,
-                        scheduleSignTransactionBody.getSigMap().getSigPairList());
-            }
+            insertScheduleSignatures(
+                    scheduleId,
+                    consensusTimestamp,
+                    recordItem.getSignatureMap().getSigPairList());
         }
     }
 

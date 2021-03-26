@@ -20,12 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -41,24 +40,16 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
+        SchedulableTransactionBody.Builder scheduledTransactionBodyBuilder = SchedulableTransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());
         return TransactionBody.newBuilder()
                 .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
                         .setAdminKey(DEFAULT_KEY)
                         .setPayerAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1)
                                 .build())
-                        .setSigMap(SignatureMap.newBuilder()
-                                .addSigPair(SignaturePair.newBuilder()
-                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-1"))
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-1")).build())
-                                .addSigPair(SignaturePair.newBuilder()
-                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-2"))
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-2")).build())
-                                .addSigPair(SignaturePair.newBuilder()
-                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-3"))
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-3")).build())
-                                .build())
-                        .setTransactionBody(ByteString.copyFromUtf8("transaction body"))
-                        .setMemo("schedule memo"));
+                        .setMemo("schedule memo")
+                        .setScheduledTransactionBody(scheduledTransactionBodyBuilder)
+                        .build());
     }
 
     @Override

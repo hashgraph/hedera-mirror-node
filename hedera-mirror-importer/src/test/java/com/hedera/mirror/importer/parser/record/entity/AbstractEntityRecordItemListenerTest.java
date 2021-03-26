@@ -70,6 +70,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
+    protected static final SignatureMap DEFAULT_SIG_MAP = getDefaultSigMap();
     protected static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     protected static final AccountID PAYER =
@@ -115,7 +116,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     private long nextIndex = 0L;
 
-    protected static SignatureMap getSigMap() {
+    private static SignatureMap getDefaultSigMap() {
         String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
         String signature1 = "Signature 1 here";
         String key2 = "22222222222222222222c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
@@ -261,16 +262,21 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         return body;
     }
 
-    protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder) {
+    protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder,
+                                                                              SignatureMap sigMap) {
         TransactionBody.Builder bodyBuilder = defaultTransactionBodyBuilder();
         customBuilder.accept(bodyBuilder);
 
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
                 .setSignedTransactionBytes(SignedTransaction.newBuilder()
                         .setBodyBytes(bodyBuilder.build().toByteString())
-                        .setSigMap(getSigMap())
+                        .setSigMap(sigMap)
                         .build().toByteString())
                 .build();
+    }
+
+    protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder) {
+        return buildTransaction(customBuilder, DEFAULT_SIG_MAP);
     }
 
     protected TransactionRecord buildTransactionRecord(

@@ -44,8 +44,8 @@
             <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.hedera.hashgraph</groupId>
-            <artifactId>hedera-protobuf-java-api</artifactId>
+            <groupId>com.github.hashgraph</groupId>
+            <artifactId>hedera-protobufs-java</artifactId>
             <version>${hedera-protobuf.version}</version>
             <exclusions>
                 <exclusion>

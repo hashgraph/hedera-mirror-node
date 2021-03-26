@@ -32,6 +32,7 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -81,6 +82,10 @@ public abstract class AbstractTransactionHandlerTest {
 
     // All sub-classes need to implement this function and return a TransactionBody.Builder with valid 'oneof data' set.
     protected abstract TransactionBody.Builder getDefaultTransactionBody();
+
+    protected SignatureMap.Builder getDefaultSigMap() {
+        return SignatureMap.newBuilder();
+    }
 
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
         return TransactionRecord.newBuilder();
@@ -157,6 +162,7 @@ public abstract class AbstractTransactionHandlerTest {
                 Transaction.newBuilder().
                         setSignedTransactionBytes(SignedTransaction.newBuilder()
                                 .setBodyBytes(transactionBody.toByteString())
+                                .setSigMap(getDefaultSigMap())
                                 .build().toByteString())
                         .build(),
                 transactionRecord);
@@ -371,9 +377,10 @@ public abstract class AbstractTransactionHandlerTest {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(
                         SignedTransaction.newBuilder()
-                        .setBodyBytes(body.toByteString())
-                        .build()
-                        .toByteString()
+                                .setBodyBytes(body.toByteString())
+                                .setSigMap(getDefaultSigMap())
+                                .build()
+                                .toByteString()
                 )
                 .build();
         return new RecordItem(transaction, TransactionRecord.newBuilder().build());

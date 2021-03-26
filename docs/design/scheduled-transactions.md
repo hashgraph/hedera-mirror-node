@@ -22,6 +22,17 @@ acquired. This document explains how the mirror node can be updated to support s
 - Update `t_transaction_types` to add new schedule transaction types.
 - Update `t_transaction_results` with the new response codes.
   - `INVALID_SCHEDULE_ID = 201`
+  - `SCHEDULE_IS_IMMUTABLE = 202`
+  - `INVALID_SCHEDULE_PAYER_ID = 203`
+  - `INVALID_SCHEDULE_ACCOUNT_ID = 204`
+  - `NO_NEW_VALID_SIGNATURES = 205`
+  - `UNRESOLVABLE_REQUIRED_SIGNERS = 206`
+  - `SCHEDULED_TRANSACTION_NOT_IN_WHITELIST = 207`
+  - `SOME_SIGNATURES_WERE_INVALID = 208`
+  - `TRANSACTION_ID_FIELD_NOT_ALLOWED = 209`
+  - `IDENTICAL_SCHEDULE_ALREADY_CREATED = 210`
+  - `SCHEDULE_ALREADY_DELETED = 212`
+  - `SCHEDULE_ALREADY_EXECUTED = 213`
 - Add a `scheduled` boolean to `transaction` table with a default of false.
 - Add a new `schedule` table:
 
@@ -83,20 +94,12 @@ Add a `ScheduleIdConverter`.
 
 - Insert a `Transaction` with `scheduled` set to false.
 - Upsert an `Entities` for the `scheduleID` and the `payerAccountID`.
-- If the `scheduleID` does not exist, insert a `Schedule`:
+- Insert a `Schedule`:
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `creatorAccountId` to the payer account from the transaction ID.
   - Set `payerAccountId` to the one in the transaction body else use the payer account from the transaction ID.
   - Set `scheduleId` to the `scheduleID` in the transaction receipt.
   - Set `transactionBody` to the `transactionBody` field within the `ScheduleCreateTransactionBody`.
-- Insert a `ScheduleSignature` for every entry in the `sigMap`:
-  - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
-  - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
-  - Set `scheduleId` to the `scheduleID` in the transaction receipt.
-  - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
-
-> **_Note:_** Currently a `ScheduleCreate` can potentially cause an update or a create, so don't create a schedule and
-> only update signatures for an update.
 
 #### Schedule Sign
 
@@ -110,7 +113,7 @@ Add a `ScheduleIdConverter`.
 
 #### Scheduled Transaction
 
-A transaction triggered by the last schedule sign or create will have a `scheduleRef` populated in the record.
+A transaction triggered by the last schedule sign will have a `scheduleRef` populated in the record.
 
 - Insert a `Transaction` with `scheduled` set to true.
 - Update the `Schedule` to set `executed_timestamp`.
@@ -123,13 +126,7 @@ A transaction triggered by the last schedule sign or create will have a `schedul
 
 ### Get Transaction
 
-Add an optional boolean `scheduled` parameter to `/api/v1/transactions/:id`. Also add a `scheduled` boolean to every
-transaction APIs JSON response:
-
-- If true, return only the inner scheduled transaction
-- If false, return all non-scheduled transactions matching `id` including the `ScheduleCreate` transaction
-  if exists
-- If not present, return all transactions matching `id`
+Add a `scheduled` boolean to every transaction APIs JSON response:
 
 ```json
 {
@@ -189,10 +186,6 @@ transaction APIs JSON response:
   ]
 }
 ```
-
-### State Proof
-
-Add an optional boolean `scheduled` parameter to `/api/v1/transactions/:id/stateproof` with a default of false.
 
 ### List Schedules
 
