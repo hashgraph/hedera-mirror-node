@@ -27,6 +27,8 @@ image:
 
 imagePullSecrets: []
 
+jvmFlags: ""
+
 labels: {}
 
 livenessProbe:

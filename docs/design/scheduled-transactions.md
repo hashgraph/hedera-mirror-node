@@ -93,13 +93,14 @@ Add a `ScheduleIdConverter`.
 #### Schedule Create
 
 - Insert a `Transaction` with `scheduled` set to false.
-- Upsert an `Entities` for the `scheduleID` and the `payerAccountID`.
+- Upsert an `Entities` for the `scheduleID` and the `payerAccountID` if different than the `creatorAccountId`.
 - Insert a `Schedule`:
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `creatorAccountId` to the payer account from the transaction ID.
   - Set `payerAccountId` to the one in the transaction body else use the payer account from the transaction ID.
   - Set `scheduleId` to the `scheduleID` in the transaction receipt.
-  - Set `transactionBody` to the `transactionBody` field within the `ScheduleCreateTransactionBody`.
+  - Set `transactionBody` to the serialized byte array of the `scheduledTransactionBody` field within the
+    `ScheduleCreateTransactionBody`.
 
 #### Schedule Sign
 

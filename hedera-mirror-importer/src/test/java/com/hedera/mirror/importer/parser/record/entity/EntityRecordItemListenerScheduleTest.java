@@ -96,7 +96,11 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
                 null, false, null, SCHEDULE_CREATE_MEMO, null);
-        assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
+        int expectedEntityCount = 4; // node, payer, schedule and autorenew
+        if (!expectedPayer.equals(PAYER)) {
+            expectedEntityCount += 1;
+        }
+        assertEquals(expectedEntityCount, entityRepository.count());
         assertEntity(expected);
 
         // verify schedule and signatures

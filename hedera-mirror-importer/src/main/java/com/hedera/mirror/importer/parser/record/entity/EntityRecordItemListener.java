@@ -781,8 +781,11 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
             var creatorAccount = EntityId.of(recordItem.getTransactionBody().getTransactionID().getAccountID());
-            var payerAccount = scheduleCreateTransactionBody.hasPayerAccountID() ?
-                    EntityId.of(scheduleCreateTransactionBody.getPayerAccountID()) : creatorAccount;
+            var payerAccount = creatorAccount;
+            if (scheduleCreateTransactionBody.hasPayerAccountID()) {
+                payerAccount = EntityId.of(scheduleCreateTransactionBody.getPayerAccountID());
+                entityListener.onEntityId(payerAccount);
+            }
 
             Schedule schedule = new Schedule();
             schedule.setConsensusTimestamp(consensusTimestamp);
