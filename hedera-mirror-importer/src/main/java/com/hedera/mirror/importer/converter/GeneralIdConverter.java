@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,9 +20,17 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
+import javax.inject.Named;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-import com.hedera.mirror.importer.domain.ScheduleSignature;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public interface ScheduleSignatureRepository extends CrudRepository<ScheduleSignature, ScheduleSignature.Id> {
+@Named
+@javax.persistence.Converter
+@ConfigurationPropertiesBinding
+public class GeneralIdConverter extends AbstractEntityIdConverter {
+
+    public GeneralIdConverter() {
+        super(EntityTypeEnum.GENERAL);
+    }
 }

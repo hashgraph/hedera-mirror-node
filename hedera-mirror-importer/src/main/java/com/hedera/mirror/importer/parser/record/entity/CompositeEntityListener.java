@@ -34,12 +34,12 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 
 @Log4j2
@@ -93,11 +93,6 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onScheduleSignature(ScheduleSignature scheduleSignature) throws ImporterException {
-        onEach(EntityListener::onScheduleSignature, scheduleSignature);
-    }
-
-    @Override
     public void onToken(Token token) throws ImporterException {
         onEach(EntityListener::onToken, token);
     }
@@ -120,5 +115,10 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
         onEach(EntityListener::onTransaction, transaction);
+    }
+
+    @Override
+    public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
+        onEach(EntityListener::onTransactionSignature, transactionSignature);
     }
 }

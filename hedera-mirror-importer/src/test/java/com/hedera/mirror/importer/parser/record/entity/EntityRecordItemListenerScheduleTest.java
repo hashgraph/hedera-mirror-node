@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,12 +54,12 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
-import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListenerTest {
 
@@ -78,14 +77,17 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     protected ScheduleRepository scheduleRepository;
 
     @Resource
-    protected ScheduleSignatureRepository scheduleSignatureRepository;
+    protected TransactionSignatureRepository transactionSignatureRepository;
 
     @Resource
     protected TransactionRepository transactionRepository;
 
+    private List<TransactionSignature> defaultSignatureList;
+
     @BeforeEach
     void before() {
         entityProperties.getPersist().setSchedules(true);
+        defaultSignatureList = toTransactionSignatureList(CREATE_TIMESTAMP, SCHEDULE_ID, DEFAULT_SIG_MAP);
     }
 
     @ParameterizedTest(name = "{2}")
@@ -106,7 +108,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         // verify schedule and signatures
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, expectedPayer, null);
 
-        assertScheduleSignatureInRepository(Collections.emptyList());
+        assertTransactionSignatureInRepository(defaultSignatureList);
 
         // verify transaction
         assertTransactionInRepository(CREATE_TIMESTAMP, false, ResponseCodeEnum.SUCCESS);
@@ -131,7 +133,9 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, PAYER, null);
 
         // verify schedule signatures
-        assertScheduleSignatureInRepository(toScheduleSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, signatureMap));
+        List<TransactionSignature> expectedTransactionSignatureList = new ArrayList<>(defaultSignatureList);
+        expectedTransactionSignatureList.addAll(toTransactionSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, signatureMap));
+        assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // verify transaction
         assertTransactionInRepository(SIGN_TIMESTAMP, false, ResponseCodeEnum.SUCCESS);
@@ -146,18 +150,18 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleSign(SIGN_TIMESTAMP, firstSignatureMap, SCHEDULE_ID);
 
         // verify schedule signatures
-        List<ScheduleSignature> firstScheduleSignatures = toScheduleSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID,
-                firstSignatureMap);
-        assertScheduleSignatureInRepository(toScheduleSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, firstSignatureMap));
+        List<TransactionSignature> expectedTransactionSignatureList = new ArrayList<>(defaultSignatureList);
+        expectedTransactionSignatureList.addAll(toTransactionSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID,
+                firstSignatureMap));
+        assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // second sign
         long timestamp = SIGN_TIMESTAMP + 10;
         SignatureMap secondSignatureMap = getSigMap(3, true);
         insertScheduleSign(timestamp, secondSignatureMap, SCHEDULE_ID);
 
-        List<ScheduleSignature> combinedScheduleSignatures = new ArrayList<>(firstScheduleSignatures);
-        combinedScheduleSignatures.addAll(toScheduleSignatureList(timestamp, SCHEDULE_ID, secondSignatureMap));
-        assertScheduleSignatureInRepository(combinedScheduleSignatures);
+        expectedTransactionSignatureList.addAll(toTransactionSignatureList(timestamp, SCHEDULE_ID, secondSignatureMap));
+        assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // verify entity count
         Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
@@ -180,7 +184,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 () -> insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID));
 
         // verify lack of schedule data and transaction
-        assertThat(scheduleSignatureRepository.count()).isZero();
+        assertThat(transactionSignatureRepository.count()).isZero();
         assertThat(transactionRepository.count()).isZero();
     }
 
@@ -197,7 +201,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleSign(SIGN_TIMESTAMP, signatureMapWithDuplicate, SCHEDULE_ID);
 
         // verify lack of schedule data and transaction
-        assertScheduleSignatureInRepository(toScheduleSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, signatureMap));
+        assertTransactionSignatureInRepository(toTransactionSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, signatureMap));
         assertThat(transactionRepository.count()).isEqualTo(1);
     }
 
@@ -231,7 +235,9 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, PAYER, EXECUTE_TIMESTAMP);
 
         // verify schedule signatures
-        assertScheduleSignatureInRepository(toScheduleSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, signatureMap));
+        List<TransactionSignature> expectedTransactionList = new ArrayList<>(defaultSignatureList);
+        expectedTransactionList.addAll(toTransactionSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, signatureMap));
+        assertTransactionSignatureInRepository(expectedTransactionList);
 
         // verify transaction
         assertTransactionInRepository(EXECUTE_TIMESTAMP, true, responseCodeEnum);
@@ -354,8 +360,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 .returns(SCHEDULED_TRANSACTION_BODY.toByteArray(), from(Schedule::getTransactionBody));
     }
 
-    private void assertScheduleSignatureInRepository(List<ScheduleSignature> expected) {
-        Iterable<ScheduleSignature> scheduleSignatures = scheduleSignatureRepository.findAll();
+    private void assertTransactionSignatureInRepository(List<TransactionSignature> expected) {
+        Iterable<TransactionSignature> scheduleSignatures = transactionSignatureRepository.findAll();
         assertThat(scheduleSignatures).isNotNull();
         assertThat(scheduleSignatures).hasSameElementsAs(expected);
     }
@@ -367,19 +373,19 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 .returns(responseCode.getNumber(), from(com.hedera.mirror.importer.domain.Transaction::getResult));
     }
 
-    private List<ScheduleSignature> toScheduleSignatureList(long timestamp, ScheduleID scheduleId,
-                                                            SignatureMap signatureMap) {
+    private List<TransactionSignature> toTransactionSignatureList(long timestamp, ScheduleID scheduleId,
+                                                               SignatureMap signatureMap) {
         return signatureMap.getSigPairList()
                 .stream()
                 .map(pair -> {
-                    ScheduleSignature scheduleSignature = new ScheduleSignature();
-                    scheduleSignature.setId(new ScheduleSignature.Id(
+                    TransactionSignature transactionSignature = new TransactionSignature();
+                    transactionSignature.setId(new TransactionSignature.Id(
                             timestamp,
                             pair.getPubKeyPrefix().toByteArray())
                     );
-                    scheduleSignature.setScheduleId(EntityId.of(scheduleId));
-                    scheduleSignature.setSignature(pair.getEd25519().toByteArray());
-                    return scheduleSignature;
+                    transactionSignature.setEntityId(EntityId.of(scheduleId));
+                    transactionSignature.setSignature(pair.getEd25519().toByteArray());
+                    return transactionSignature;
                 })
                 .collect(Collectors.toUnmodifiableList());
     }

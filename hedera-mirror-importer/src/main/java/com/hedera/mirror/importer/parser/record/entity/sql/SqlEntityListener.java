@@ -45,12 +45,12 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -88,7 +88,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
     private final PgCopy<TokenTransfer> tokenTransferPgCopy;
-    private final PgCopy<ScheduleSignature> scheduleSignaturePgCopy;
+    private final PgCopy<TransactionSignature> scheduleSignaturePgCopy;
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
@@ -102,7 +102,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TopicMessage> topicMessages;
     private final Collection<EntityId> entityIds;
     private final Collection<TokenTransfer> tokenTransfers;
-    private final Collection<ScheduleSignature> scheduleSignatures;
+    private final Collection<TransactionSignature> transactionSignatures;
 
     public SqlEntityListener(SqlProperties sqlProperties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
@@ -128,7 +128,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, sqlProperties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
         tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, sqlProperties);
-        scheduleSignaturePgCopy = new PgCopy<>(ScheduleSignature.class, meterRegistry, sqlProperties);
+        scheduleSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, sqlProperties);
 
         transactions = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -139,7 +139,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         entityIds = new HashSet<>();
         topicMessages = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
-        scheduleSignatures = new ArrayList<>();
+        transactionSignatures = new ArrayList<>();
     }
 
     @Override
@@ -173,7 +173,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         topicMessages.clear();
         transactions.clear();
         tokenTransfers.clear();
-        scheduleSignatures.clear();
+        transactionSignatures.clear();
         eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
     }
 
@@ -194,7 +194,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
-            scheduleSignaturePgCopy.copy(scheduleSignatures, connection);
+            scheduleSignaturePgCopy.copy(transactionSignatures, connection);
             persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
@@ -276,8 +276,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onScheduleSignature(ScheduleSignature scheduleSignature) throws ImporterException {
-        scheduleSignatures.add(scheduleSignature);
+    public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
+        transactionSignatures.add(transactionSignature);
     }
 
     private void persistEntities() {

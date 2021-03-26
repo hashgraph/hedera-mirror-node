@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,20 +20,9 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.CrudRepository;
 
-@Getter
-@RequiredArgsConstructor
-public enum EntityTypeEnum {
+import com.hedera.mirror.importer.domain.TransactionSignature;
 
-    GENERAL(0),
-    ACCOUNT(1),
-    CONTRACT(2),
-    FILE(3),
-    TOPIC(4),
-    TOKEN(5),
-    SCHEDULE(6);
-
-    private final int id;
+public interface TransactionSignatureRepository extends CrudRepository<TransactionSignature, TransactionSignature.Id> {
 }

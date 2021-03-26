@@ -66,7 +66,6 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -75,6 +74,7 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -794,6 +794,12 @@ public class EntityRecordItemListener implements RecordItemListener {
             schedule.setScheduleId(scheduleId);
             schedule.setTransactionBody(scheduleCreateTransactionBody.getScheduledTransactionBody().toByteArray());
             entityListener.onSchedule(schedule);
+
+            // insert signature for every item in map
+            insertTransactionSignatures(
+                    scheduleId,
+                    consensusTimestamp,
+                    recordItem.getSignatureMap().getSigPairList());
         }
     }
 
@@ -804,14 +810,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             var scheduleId = EntityId.of(scheduleSignTransactionBody.getScheduleID());
 
             // insert signature for every item in map
-            insertScheduleSignatures(
+            insertTransactionSignatures(
                     scheduleId,
                     consensusTimestamp,
                     recordItem.getSignatureMap().getSigPairList());
         }
     }
 
-    private void insertScheduleSignatures(EntityId scheduleId, long consensusTimestamp,
+    private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
                                           List<SignaturePair> signaturePairList) {
         HashSet<ByteString> publicKeyPrefixes = new HashSet<>();
         signaturePairList.forEach(signaturePair -> {
@@ -824,14 +830,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             // handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
             ByteString prefix = signaturePair.getPubKeyPrefix();
             if (publicKeyPrefixes.add(prefix)) {
-                ScheduleSignature scheduleSignature = new ScheduleSignature();
-                scheduleSignature.setId(new ScheduleSignature.Id(
+                TransactionSignature transactionSignature = new TransactionSignature();
+                transactionSignature.setId(new TransactionSignature.Id(
                         consensusTimestamp,
                         prefix.toByteArray()));
-                scheduleSignature.setScheduleId(scheduleId);
-                scheduleSignature.setSignature(signaturePair.getEd25519().toByteArray());
+                transactionSignature.setEntityId(entityId);
+                transactionSignature.setSignature(signaturePair.getEd25519().toByteArray());
 
-                entityListener.onScheduleSignature(scheduleSignature);
+                entityListener.onTransactionSignature(transactionSignature);
             }
         });
     }

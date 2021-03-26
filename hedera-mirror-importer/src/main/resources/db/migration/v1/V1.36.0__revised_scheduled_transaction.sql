@@ -1,7 +1,8 @@
 -------------------
--- New transaction result codes from revised scheduled transaction design. Also add missing result codes
+-- Support revised scheduled transactions design
 -------------------
 
+-- New / missing transaction result codes
 delete from t_transaction_results where proto_id >= 207;
 insert into t_transaction_results (proto_id, result) values
   (197, 'TOKEN_ID_REPEATED_IN_TOKEN_LIST'),
@@ -16,3 +17,8 @@ insert into t_transaction_results (proto_id, result) values
   (212, 'SCHEDULE_ALREADY_DELETED'),
   (213, 'SCHEDULE_ALREADY_EXECUTED'),
   (214, 'MESSAGE_SIZE_TOO_LARGE');
+
+-- Make schedule_signature generic
+alter table if exists schedule_signature alter column schedule_id drop not null;
+alter table if exists schedule_signature rename column schedule_id to entity_id;
+alter table if exists schedule_signature rename to transaction_signature;

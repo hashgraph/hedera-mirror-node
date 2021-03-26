@@ -37,10 +37,10 @@ const scheduleSelectFields = [
   'transaction_body',
   `json_agg(
     json_build_object(
-      'consensus_timestamp', ss.consensus_timestamp::text,
-      'public_key_prefix', encode(ss.public_key_prefix, 'base64'),
-      'signature', encode(ss.signature, 'base64')
-    ) order by ss.consensus_timestamp
+      'consensus_timestamp', ts.consensus_timestamp::text,
+      'public_key_prefix', encode(ts.public_key_prefix, 'base64'),
+      'signature', encode(ts.signature, 'base64')
+    ) order by ts.consensus_timestamp
   ) as signatures`,
 ];
 
@@ -62,7 +62,7 @@ const scheduleIdMatchQuery = 'where s.schedule_id = $1';
 const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
 const scheduleOrderQuery = (order) => `order by s.consensus_timestamp ${order}`;
 const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
-const signatureJoinQuery = 'left join schedule_signature ss on ss.schedule_id = s.schedule_id';
+const signatureJoinQuery = 'left join transaction_signature ts on ts.entity_id = s.schedule_id';
 
 const getScheduleByIdQuery = [
   scheduleSelectQuery,

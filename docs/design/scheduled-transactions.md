@@ -49,22 +49,22 @@ create table if not exists schedule
 ```
 
 - Add a unique constraint to `schedule` for `schedule_id`.
-- Add a new `schedule_signature` table that represents the signatories that have signed and are present in the `sigMap`
-  field of `ScheduleCreate` or `ScheduleSign`:
+- Add a new `transaction_signature` table that represents the signatories that have signed a transaction. Currently,
+  only those in the `sigMap` of `ScheduleCreate` or `ScheduleSign` are saved:
 
 ```sql
-create table if not exists schedule_signature
+create table if not exists transaction_signature
 (
   consensus_timestamp bigint not null,
   public_key_prefix   bytea  not null,
-  schedule_id         bigint not null,
+  entity_id           bigint null,
   signature           bytea  not null
 );
 ```
 
 > **_Note:_** There's no unique constraint/primary key since the client can potentially sign multiple times with the same key
 
-- Add an index to `schedule_signature` for `schedule_id`.
+- Add an index to `transaction_signature` for `entity_id`.
 
 ## Importer
 
@@ -101,15 +101,20 @@ Add a `ScheduleIdConverter`.
   - Set `scheduleId` to the `scheduleID` in the transaction receipt.
   - Set `transactionBody` to the serialized byte array of the `scheduledTransactionBody` field within the
     `ScheduleCreateTransactionBody`.
+- Insert a `TransactionSignature` for every entry in the `sigMap`:
+  - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
+  - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
+  - Set `entityId` to the `scheduleID` in the transaction receipt.
+  - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
 
 #### Schedule Sign
 
 - Insert a `Transaction` with `scheduled` set to false.
 - Upsert an `Entities` for the `scheduleID`.
-- Insert a `ScheduleSignature` for every entry in the `sigMap`:
+- Insert a `TransactionSignature` for every entry in the `sigMap`:
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
-  - Set `scheduleId` to the `scheduleID` in the transaction receipt.
+  - Set `entityId` to the `scheduleID` in the transaction receipt.
   - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
 
 #### Scheduled Transaction
@@ -127,7 +132,13 @@ A transaction triggered by the last schedule sign will have a `scheduleRef` popu
 
 ### Get Transaction
 
-Add a `scheduled` boolean to every transaction APIs JSON response:
+Add an optional boolean `scheduled` parameter to `/api/v1/transactions/:id`. Also add a `scheduled` boolean to every
+transaction APIs JSON response:
+
+- If true, return only the inner scheduled transaction
+- If false, return all non-scheduled transactions matching `id` including the `ScheduleCreate` transaction
+  if exists
+- If not present, return all transactions matching `id`
 
 ```json
 {
@@ -157,8 +168,8 @@ Add a `scheduled` boolean to every transaction APIs JSON response:
       ]
     },
     {
-      "consensus_timestamp": "1234567899.000000002",
-      "valid_start_timestamp": "1234567899.000000000",
+      "consensus_timestamp": "1234567890.000000002",
+      "valid_start_timestamp": "1234567890.000000000",
       "charged_tx_fee": 7,
       "memo_base64": null,
       "result": "SUCCESS",
@@ -166,7 +177,7 @@ Add a `scheduled` boolean to every transaction APIs JSON response:
       "name": "CRYPTOTRANSFER",
       "node": "0.0.3",
       "scheduled": true,
-      "transaction_id": "0.0.10-1234567899-000000000",
+      "transaction_id": "0.0.10-1234567890-000000000",
       "valid_duration_seconds": "11",
       "max_fee": "33",
       "transfers": [
@@ -187,6 +198,10 @@ Add a `scheduled` boolean to every transaction APIs JSON response:
   ]
 }
 ```
+
+### State Proof
+
+Add an optional boolean `scheduled` parameter to `/api/v1/transactions/:id/stateproof` with a default of false.
 
 ### List Schedules
 
@@ -254,12 +269,12 @@ GET `/api/v1/schedules/{scheduleId}`
   "schedule_id": "0.0.102",
   "signatures": [
     {
-      "consensus_timestamp": "1234567890.000000002",
+      "consensus_timestamp": "1234567890.000000001",
       "public_key_prefix": "H0vpig==",
       "signature": "0o0gC7p9SPUH4UD6Yiirp/Kf+LKj8qjuuFdC3AU87HE="
     },
     {
-      "consensus_timestamp": "1234567890.000000003",
+      "consensus_timestamp": "1234567890.000000002",
       "public_key_prefix": "GvxuXg==",
       "signature": "w9mHyHQpTrlbLfn9NrBlZiMxV2mvLvNEw1hoeAECtcA="
     }

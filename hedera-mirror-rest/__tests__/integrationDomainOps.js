@@ -38,11 +38,11 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadEntities(testDataJson.entities);
   await loadSchedules(testDataJson.schedules);
-  await loadScheduleSignatures(testDataJson.schedulesignatures);
-  await loadTransactions(testDataJson.transactions);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
+  await loadTransactions(testDataJson.transactions);
+  await loadTransactionSignatures(testDataJson.transactionsignatures);
 };
 
 const loadAccounts = async (accounts) => {
@@ -95,13 +95,13 @@ const loadSchedules = async (schedules) => {
   }
 };
 
-const loadScheduleSignatures = async (scheduleSignatures) => {
-  if (scheduleSignatures == null) {
+const loadTransactionSignatures = async (transactionSignatures) => {
+  if (transactionSignatures == null) {
     return;
   }
 
-  for (const scheduleSignature of scheduleSignatures) {
-    await addScheduleSignature(scheduleSignature);
+  for (const transactionSignature of transactionSignatures) {
+    await addTransactionSignature(transactionSignature);
   }
 };
 
@@ -363,19 +363,19 @@ const addSchedule = async (schedule) => {
   );
 };
 
-const addScheduleSignature = async (scheduleSignature) => {
+const addTransactionSignature = async (transactionSignature) => {
   await sqlConnection.query(
-    `INSERT INTO schedule_signature (
+    `INSERT INTO transaction_signature (
       consensus_timestamp,
       public_key_prefix,
-      schedule_id,
+      entity_id,
       signature)
      VALUES($1, $2, $3, $4)`,
     [
-      scheduleSignature.consensus_timestamp,
-      Buffer.from(scheduleSignature.public_key_prefix),
-      EntityId.fromString(scheduleSignature.schedule_id).getEncodedId().toString(),
-      Buffer.from(scheduleSignature.signature),
+      transactionSignature.consensus_timestamp,
+      Buffer.from(transactionSignature.public_key_prefix),
+      EntityId.fromString(transactionSignature.entity_id, '', true).getEncodedId().toString(),
+      Buffer.from(transactionSignature.signature),
     ]
   );
 };

@@ -33,22 +33,22 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.converter.ScheduleIdConverter;
+import com.hedera.mirror.importer.converter.GeneralIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
-public class ScheduleSignature {
+public class TransactionSignature {
     @EmbeddedId
     @JsonUnwrapped
-    private ScheduleSignature.Id id;
+    private TransactionSignature.Id id;
 
     @ToString.Exclude
     private byte[] signature;
 
-    @Convert(converter = ScheduleIdConverter.class)
+    @Convert(converter = GeneralIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
-    private EntityId scheduleId;
+    private EntityId entityId;
 
     @Data
     @Embeddable
