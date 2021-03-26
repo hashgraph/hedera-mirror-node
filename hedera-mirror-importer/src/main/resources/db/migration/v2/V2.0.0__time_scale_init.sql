@@ -168,7 +168,7 @@ create table if not exists transaction_signature
     entity_id           bigint null,
     signature           bytea  not null
 );
-comment on table schedule is 'Transaction signatories';
+comment on table transaction_signature is 'Transaction signatories';
 
 -- t_entities
 create table if not exists t_entities

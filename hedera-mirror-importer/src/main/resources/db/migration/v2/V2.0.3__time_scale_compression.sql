@@ -115,7 +115,7 @@ select add_compression_policy('file_data', bigint '${compressionAge}');
 select add_compression_policy('live_hash', bigint '${compressionAge}');
 select add_compression_policy('non_fee_transfer', bigint '${compressionAge}');
 select add_compression_policy('record_file', bigint '${compressionAge}');
-select add_compression_policy('schedule_signature', bigint '${compressionAge}');
+select add_compression_policy('transaction_signature', bigint '${compressionAge}');
 select add_compression_policy('token_balance', bigint '${compressionAge}');
 select add_compression_policy('token_transfer', bigint '${compressionAge}');
 select add_compression_policy('topic_message', bigint '${compressionAge}');
