@@ -160,15 +160,15 @@ create table if not exists schedule
 );
 comment on table schedule is 'Schedule entity entries';
 
--- schedule_signature
-create table if not exists schedule_signature
+-- transaction_signature
+create table if not exists transaction_signature
 (
     consensus_timestamp bigint not null,
     public_key_prefix   bytea  not null,
-    schedule_id         bigint not null,
+    entity_id           bigint null,
     signature           bytea  not null
 );
-comment on table schedule is 'Schedule transaction signatories';
+comment on table schedule is 'Transaction signatories';
 
 -- t_entities
 create table if not exists t_entities

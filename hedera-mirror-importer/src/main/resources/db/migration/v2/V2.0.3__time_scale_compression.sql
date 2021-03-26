@@ -32,7 +32,7 @@ select set_integer_now_func('file_data', 'latest_consensus_timestamp');
 select set_integer_now_func('live_hash', 'latest_consensus_timestamp');
 select set_integer_now_func('non_fee_transfer', 'latest_consensus_timestamp');
 select set_integer_now_func('record_file', 'latest_consensus_timestamp');
-select set_integer_now_func('schedule_signature', 'latest_consensus_timestamp');
+select set_integer_now_func('transaction_signature', 'latest_consensus_timestamp');
 select set_integer_now_func('token_balance', 'latest_consensus_timestamp');
 select set_integer_now_func('token_transfer', 'latest_consensus_timestamp');
 select set_integer_now_func('topic_message', 'latest_consensus_timestamp');
@@ -76,8 +76,8 @@ alter table record_file
 
 -- schedule skipped as update (executed_timestamp) on compressed chunk is not allowed
 
-alter table schedule_signature
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'schedule_id');
+alter table transaction_signature
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
 
 -- t_entities skipped as update on compressed chunk is not allowed
 

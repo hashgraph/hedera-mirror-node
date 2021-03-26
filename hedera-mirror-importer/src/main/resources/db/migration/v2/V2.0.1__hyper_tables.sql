@@ -57,8 +57,8 @@ select create_hypertable('record_file', 'consensus_end', chunk_time_interval => 
 select create_hypertable('schedule', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
--- schedule_signature
-select create_hypertable('schedule_signature', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
+-- transaction_signature
+select create_hypertable('transaction_signature', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
 -- t_entities
