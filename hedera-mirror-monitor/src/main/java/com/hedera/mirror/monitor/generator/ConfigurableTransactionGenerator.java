@@ -34,6 +34,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import javax.validation.Validator;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
@@ -42,6 +43,7 @@ import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
+@Getter
 public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     private static final SecureRandom RANDOM = new SecureRandom();
