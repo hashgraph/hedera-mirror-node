@@ -25,27 +25,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Cache npm dependencies
+      - name: Cache dependencies
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-node-${{ secrets.CACHE_VERSION }}-${{ hashFiles('./package-lock.json', './check-state-proof/package-lock.json', 'monitoring/monitor_apis/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('./package-lock.json', './check-state-proof/package-lock.json', 'monitoring/monitor_apis/package-lock.json') }}
           path: |
             ~/.npm
             .node-flywaydb
           restore-keys: ${{ runner.os }}-node-
 
-      - name: Cache SonarCloud dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar-${{ secrets.CACHE_VERSION }}
-          restore-keys: ${{ runner.os }}-sonar
-
       - name: Test
-        run: MIRROR_NODE_SCHEMA=${{ matrix.schema}} ./mvnw ${MAVEN_CLI_OPTS} verify sonar:sonar -pl "${MODULE}" --also-make -Dsonar.login=$SONAR_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: MIRROR_NODE_SCHEMA=${{ matrix.schema}} ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
         working-directory: .
 
       - name: Upload coverage report

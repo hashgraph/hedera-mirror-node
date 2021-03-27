@@ -25,14 +25,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
 
       - name: Maven verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify sonar:sonar -pl "${MODULE}" --also-make -Dsonar.login=$SONAR_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
         working-directory: .
 
       - name: Upload coverage report
@@ -74,13 +71,13 @@ jobs:
       - uses: actions/setup-go@v2
         name: Setup GO Env
         with:
-          go-version: '1.14'
+          go-version: '1.16'
 
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
 
       - name: Install Gosec
