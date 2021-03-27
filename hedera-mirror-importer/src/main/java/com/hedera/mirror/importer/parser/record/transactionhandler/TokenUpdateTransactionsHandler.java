@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -44,7 +44,7 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem) {
+    public void updateEntity(Entity entity, RecordItem recordItem) {
         TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
         if (tokenUpdateTransactionBody.hasAdminKey()) {
             entity.setKey(tokenUpdateTransactionBody.getAdminKey().toByteArray());
@@ -55,7 +55,7 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
         }
 
         if (tokenUpdateTransactionBody.hasExpiry()) {
-            entity.setExpiryTimeNs(Utility.timestampInNanosMax(tokenUpdateTransactionBody.getExpiry()));
+            entity.setExpirationTimestamp(Utility.timestampInNanosMax(tokenUpdateTransactionBody.getExpiry()));
         }
 
         if (tokenUpdateTransactionBody.hasMemo()) {

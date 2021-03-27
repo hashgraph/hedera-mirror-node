@@ -160,25 +160,27 @@ create table if not exists transaction_signature
 );
 comment on table transaction_signature is 'Transaction signatories';
 
--- t_entities
-create table if not exists t_entities
+-- entity
+create table if not exists entity
 (
-    entity_num             bigint  not null,
-    entity_realm           bigint  not null,
-    entity_shard           bigint  not null,
-    fk_entity_type_id      integer not null,
-    auto_renew_period      bigint,
-    key                    bytea,
-    deleted                boolean default false,
-    exp_time_ns            bigint,
-    ed25519_public_key_hex character varying,
-    submit_key             bytea,
-    memo                   text,
-    auto_renew_account_id  bigint,
-    id                     bigint  not null,
-    proxy_account_id       bigint
+    auto_renew_account_id bigint,
+    auto_renew_period     bigint,
+    created_timestamp     bigint,
+    deleted               boolean default false not null,
+    expiration_timestamp  bigint,
+    id                    bigint                not null,
+    key                   bytea,
+    memo                  text    default ''    not null,
+    modified_timestamp    bigint,
+    num                   bigint                not null,
+    public_key            character varying,
+    proxy_account_id      bigint,
+    realm                 bigint                not null,
+    shard                 bigint                not null,
+    submit_key            bytea,
+    type                  integer               not null
 );
-comment on table t_entities is 'Network entities with state';
+comment on table entity is 'Network entity with state';
 
 -- t_entity_types
 create table if not exists t_entity_types
@@ -445,7 +447,7 @@ create table if not exists token
     wipe_key               bytea,
     wipe_key_ed25519_hex   varchar                null
 );
-comment on table token is 'Token entities';
+comment on table token is 'Token entity';
 
 --- token_account
 create table if not exists token_account
@@ -458,7 +460,7 @@ create table if not exists token_account
     modified_timestamp bigint   not null,
     token_id           bigint   not null
 );
-comment on table token is 'Token account entities';
+comment on table token is 'Token account entity';
 
 --- token_balance
 create table if not exists token_balance

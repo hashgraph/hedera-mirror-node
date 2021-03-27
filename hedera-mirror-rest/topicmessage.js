@@ -89,10 +89,10 @@ const validateGetTopicMessagesParams = (topicId) => {
 const validateTopicId = async (topicId, origTopicIdStr) => {
   const encodedId = topicId.getEncodedId();
   const pgSqlQuery = `SELECT tet.name
-            FROM t_entities te
-            JOIN t_entity_types tet
-                ON te.fk_entity_type_id = tet.id
-            WHERE te.id = $1`;
+                      FROM entity te
+                             JOIN t_entity_types tet
+                                  ON te.type = tet.id
+                      WHERE te.id = $1`;
 
   const {rows} = await utils.queryQuietly(pgSqlQuery, encodedId);
   if (_.isEmpty(rows)) {
@@ -136,7 +136,9 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 
   const consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
-  const pgSqlQuery = `SELECT * FROM topic_message WHERE consensus_timestamp = $1`;
+  const pgSqlQuery = `SELECT *
+                      FROM topic_message
+                      WHERE consensus_timestamp = $1`;
   const pgSqlParams = [consensusTimestamp];
 
   res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
@@ -158,11 +160,11 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
   const pgSqlQuery = `select *
-    from topic_message
-    where realm_num = $1
-      and topic_num = $2
-      and sequence_number = $3
-    limit 1`;
+                      from topic_message
+                      where realm_num = $1
+                        and topic_num = $2
+                        and sequence_number = $3
+                      limit 1`;
   const pgSqlParams = [topicId.realm, topicId.num, seqNum];
 
   res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
@@ -217,7 +219,10 @@ const getTopicMessages = async (req, res) => {
 };
 
 const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
-  let pgSqlQuery = `select * from topic_message where realm_num = $1 and topic_num = $2`;
+  let pgSqlQuery = `select *
+                    from topic_message
+                    where realm_num = $1
+                      and topic_num = $2`;
   let nextParamCount = 3;
   const pgSqlParams = [topicId.realm, topicId.num];
 

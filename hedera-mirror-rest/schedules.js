@@ -56,7 +56,7 @@ const filterColumnMap = {
   [constants.filterKeys.SCHEDULE_ID]: sqlQueryColumns.SCHEDULE_ID,
 };
 
-const entityIdJoinQuery = 'join t_entities e on e.id = s.schedule_id';
+const entityIdJoinQuery = 'join entity e on e.id = s.schedule_id';
 const groupByQuery = 'group by e.key, e.memo, s.consensus_timestamp, s.schedule_id';
 const scheduleIdMatchQuery = 'where s.schedule_id = $1';
 const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;

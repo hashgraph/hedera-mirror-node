@@ -46,7 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
@@ -91,7 +91,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     void tokenCreate() throws InvalidProtocolBufferException {
         createTokenEntity(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, false, false);
 
-        Entities expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
@@ -153,7 +153,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
         insertAndParseTransaction(deleteTransaction, 10L, INITIAL_SUPPLY);
 
-        Entities expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 true, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
@@ -175,7 +175,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         long updateTimeStamp = 10L;
         insertAndParseTransaction(transaction, updateTimeStamp, INITIAL_SUPPLY);
 
-        Entities expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
+        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
                 TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null);
         assertEquals(5, entityRepository.count()); // Node, payer, token, old autorenew, and new autorenew
         assertEntity(expected);
@@ -456,7 +456,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         });
     }
 
-    private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey, AccountID accountID) {
+    private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey,
+                                               AccountID accountID) {
         return buildTransaction(builder -> builder.getTokenUpdateBuilder()
                 .setAdminKey(newKey)
                 .setAutoRenewAccount(accountID)

@@ -43,10 +43,10 @@ const filterKeys = {
 
 // sql table columns
 const entityColumns = {
-  ENTITY_NUM: 'entity_num',
-  ENTITY_REALM: 'entity_realm',
-  ENTITY_SHARD: 'entity_shard',
-  PUBLIC_KEY: 'ed25519_public_key_hex',
+  ENTITY_NUM: 'num',
+  ENTITY_REALM: 'realm',
+  ENTITY_SHARD: 'shard',
+  PUBLIC_KEY: 'public_key',
 };
 
 const transactionColumns = {

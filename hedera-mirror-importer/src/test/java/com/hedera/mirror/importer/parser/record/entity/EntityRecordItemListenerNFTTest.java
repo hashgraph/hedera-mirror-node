@@ -187,7 +187,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
     private void assertEntities() {
         var expected = expectedEntityNum.toArray();
         var actual = StreamSupport.stream(entityRepository.findAll().spliterator(), false)
-                .map(e -> e.getEntityNum())
+                .map(e -> e.getNum())
                 .toArray();
         Arrays.sort(expected);
         Arrays.sort(actual);
@@ -206,7 +206,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         var expectedTransfersCount = expectedTransactions.stream()
                 .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size()).sum();
         assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "transaction rows")
-                , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "t_entities rows")
+                , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "entity rows")
                 , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(),
                         "crypto_transfer rows")
                 , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(),

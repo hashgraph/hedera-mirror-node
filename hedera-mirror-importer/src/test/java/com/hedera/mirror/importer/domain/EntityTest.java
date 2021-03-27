@@ -24,12 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-public class EntitiesTest {
+public class EntityTest {
 
     @Test
     void nullCharacters() {
-        Entities entities = new Entities();
-        entities.setMemo("abc" + (char) 0);
-        assertThat(entities.getMemo()).isEqualTo("abc�");
+        Entity entity = new Entity();
+        entity.setMemo("abc" + (char) 0);
+        assertThat(entity.getMemo()).isEqualTo("abc�");
     }
 }

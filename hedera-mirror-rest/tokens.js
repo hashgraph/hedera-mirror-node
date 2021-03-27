@@ -44,7 +44,7 @@ const filterColumnMap = {
 // token discovery sql queries
 const tokensSelectQuery = 'select t.token_id, symbol, e.key from token t';
 const accountIdJoinQuery = 'join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id';
-const entityIdJoinQuery = 'join t_entities e on e.id = t.token_id';
+const entityIdJoinQuery = 'join e e on e.id = t.token_id';
 
 // token info sql queries
 const tokenInfoSelectFields = [
@@ -250,8 +250,8 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
-        joinEntityClause = `join t_entities e
-          on e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
+        joinEntityClause = `join entity e
+          on e.type = ${utils.ENTITY_TYPE_ACCOUNT}
           and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
           and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
         break;

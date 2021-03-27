@@ -20,11 +20,8 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Column;
 import javax.persistence.Convert;
-import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
@@ -33,48 +30,48 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
-@Entity
+@javax.persistence.Entity
 @Log4j2
-@Table(name = "t_entities")
 @ToString(exclude = {"key", "submitKey"})
-public class Entities {
+public class Entity {
     @Id
     private Long id;
-
-    private Long entityNum;
-
-    private Long entityRealm;
-
-    private Long entityShard;
-
-    @Column(name = "fk_entity_type_id")
-    private Integer entityTypeId;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId autoRenewAccountId;
 
     private Long autoRenewPeriod;
 
+    private Long createdTimestamp;
+
+    private boolean deleted;
+
+    private Long expirationTimestamp;
+
     private byte[] key;
+
+    private String memo = "";
+
+    private Long modifiedTimestamp;
+
+    private Long num;
+
+    private String publicKey;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
 
-    private boolean deleted;
+    private Long realm;
 
-    @Column(name = "exp_time_ns")
-    private Long expiryTimeNs;
-
-    @Column(name = "ed25519_public_key_hex")
-    private String ed25519PublicKeyHex;
+    private Long shard;
 
     private byte[] submitKey;
 
-    private String memo;
+    private Integer type;
 
     public void setKey(byte[] key) {
         this.key = key;
-        ed25519PublicKeyHex = Utility.convertSimpleKeyToHex(key);
+        publicKey = Utility.convertSimpleKeyToHex(key);
     }
 
     public void setMemo(String memo) {
@@ -82,6 +79,6 @@ public class Entities {
     }
 
     public EntityId toEntityId() {
-        return new EntityId(entityShard, entityRealm, entityNum, entityTypeId);
+        return new EntityId(shard, realm, num, type);
     }
 }

@@ -59,7 +59,7 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
@@ -449,7 +449,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void updateEntity(
             RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId) {
         // TODO: remove lookup and batch this update with rest of the db operations. Options: upsert.
-        Entities entity = entityRepository.findById(entityId.getId())
+        Entity entity = entityRepository.findById(entityId.getId())
                 .orElseGet(entityId::toEntity);
         transactionHandler.updateEntity(entity, recordItem);
         EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
