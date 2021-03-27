@@ -34,6 +34,9 @@ import com.hedera.mirror.importer.MirrorProperties;
 @Validated
 public abstract class AbstractParserProperties implements ParserProperties {
 
+    @Min(1)
+    private int bufferSize = 11441; // tested max byte size of buffer used by postgres CopyManger.copyIn()
+
     protected boolean enabled = true;
 
     @DurationMin(millis = 10L)

@@ -53,6 +53,8 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.PgCopy;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
@@ -79,14 +81,14 @@ class PgCopyTest extends IntegrationTest {
     private PgCopy<TokenTransfer> tokenTransferPgCopy;
 
     @Resource
-    private SqlProperties sqlProperties;
+    private RecordParserProperties properties;
 
     @BeforeEach
     void beforeEach() throws Exception {
-        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
-        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
-        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
-        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, sqlProperties);
+        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, properties);
+        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, properties);
+        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, properties);
+        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, properties);
     }
 
     @Test
@@ -132,7 +134,7 @@ class PgCopyTest extends IntegrationTest {
         Connection conn = mock(Connection.class);
         doReturn(conn).when(dataSource).getConnection();
         doReturn(pgConnection).when(conn).unwrap(any());
-        var cryptoTransferPgCopy2 = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
+        var cryptoTransferPgCopy2 = new PgCopy<>(CryptoTransfer.class, meterRegistry, properties);
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
 

@@ -6,8 +6,6 @@
 
 \copy account_balance_file from account_balance_file.csv csv;
 
-\copy account_balance_sets from account_balance_sets.csv csv;
-
 \copy address_book from address_book.csv csv;
 
 \copy address_book_entry from address_book_entry.csv csv;
@@ -23,6 +21,8 @@
 \copy non_fee_transfer from non_fee_transfer.csv csv;
 
 \copy record_file from record_file.csv csv;
+
+\copy schedule from schedule.csv csv;
 
 \copy t_entities from t_entities.csv csv;
 
@@ -43,3 +43,5 @@
 \copy topic_message from topic_message.csv csv;
 
 \copy transaction from transaction.csv csv;
+
+\copy transaction_signature from transaction_signature.csv csv;

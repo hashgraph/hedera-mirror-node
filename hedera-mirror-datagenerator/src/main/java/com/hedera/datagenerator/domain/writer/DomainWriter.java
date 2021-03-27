@@ -19,7 +19,7 @@ package com.hedera.datagenerator.domain.writer;
  * ‍
  */
 
-import com.hedera.datagenerator.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.Entities;
 
 public interface DomainWriter {

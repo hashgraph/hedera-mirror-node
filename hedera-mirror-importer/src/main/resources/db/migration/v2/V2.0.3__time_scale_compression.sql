@@ -23,7 +23,6 @@ $$ language plpgsql;
 -- set integer now functions for tables
 select set_integer_now_func('account_balance', 'latest_consensus_timestamp');
 select set_integer_now_func('account_balance_file', 'latest_consensus_timestamp');
-select set_integer_now_func('account_balance_sets', 'latest_consensus_timestamp');
 select set_integer_now_func('address_book_entry', 'latest_consensus_timestamp');
 select set_integer_now_func('contract_result', 'latest_consensus_timestamp');
 select set_integer_now_func('crypto_transfer', 'latest_consensus_timestamp');
@@ -44,9 +43,6 @@ alter table account_balance
 
 alter table account_balance_file
     set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
-
-alter table account_balance_sets
-    set (timescaledb.compress);
 
 -- address_book skipped as update (end_consensus_timestamp) on compressed chunk is not allowed
 
@@ -106,7 +102,6 @@ alter table transaction
 -- add compression policy
 select add_compression_policy('account_balance', bigint '${compressionAge}');
 select add_compression_policy('account_balance_file', bigint '${compressionAge}');
-select add_compression_policy('account_balance_sets', bigint '${compressionAge}');
 select add_compression_policy('address_book_entry', bigint '${compressionAge}');
 select add_compression_policy('contract_result', bigint '${compressionAge}');
 select add_compression_policy('crypto_transfer', bigint '${compressionAge}');

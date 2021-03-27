@@ -19,19 +19,14 @@ package com.hedera.datagenerator.domain.writer;
  * ‍
  */
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashSet;
 import javax.inject.Named;
-import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.datagenerator.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.parser.record.entity.sql.PgCopy;
-import com.hedera.mirror.importer.parser.record.entity.sql.SqlProperties;
+import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
 /**
@@ -40,33 +35,25 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 @Named
 @Log4j2
 public class DomainWriterImpl implements DomainWriter {
-    private final DataSource dataSource;
 
+    private final AccountBalanceRepository accountBalanceRepository;
     private final EntityRepository entityRepository;
-    private final PgCopy<AccountBalance> accountBalancePgCopy;
-    private final SqlProperties sqlProperties;
 
-    private final HashSet<AccountBalance> accountBalances;
-    private final HashSet<Entities> entities;
+    private final Collection<AccountBalance> accountBalances;
+    private final Collection<Entities> entities;
 
-    public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository, SqlProperties sqlProperties) throws SQLException {
-        this.dataSource = dataSource;
+    public DomainWriterImpl(AccountBalanceRepository accountBalanceRepository, EntityRepository entityRepository) {
+        this.accountBalanceRepository = accountBalanceRepository;
         this.entityRepository = entityRepository;
-        accountBalancePgCopy = new PgCopy<>(AccountBalance.class, new SimpleMeterRegistry(), sqlProperties);
         accountBalances = new HashSet<>();
         entities = new HashSet<>();
-        this.sqlProperties = sqlProperties;
     }
 
     @Override
     public void flush() {
-        try {
-            accountBalancePgCopy.copy(accountBalances, dataSource.getConnection());
-            log.info("Saving {} entities", entities.size());
-            entityRepository.saveAll(entities);
-        } catch (SQLException sqlex) {
-            log.error(sqlex);
-        }
+        log.info("Saving {} entities", entities.size());
+        accountBalanceRepository.saveAll(accountBalances);
+        entityRepository.saveAll(entities);
     }
 
     @Override
@@ -77,14 +64,5 @@ public class DomainWriterImpl implements DomainWriter {
     @Override
     public void onAccountBalance(AccountBalance accountBalance) {
         accountBalances.add(accountBalance);
-    }
-
-    private Connection getConnection() {
-        try {
-            return dataSource.getConnection();
-        } catch (SQLException e) {
-            log.error("Error getting connection ", e);
-            throw new ParserSQLException(e);
-        }
     }
 }

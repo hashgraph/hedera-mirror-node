@@ -27,13 +27,10 @@ import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.integration.annotation.MessageEndpoint;
@@ -47,8 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
-import com.hedera.mirror.importer.exception.ParserSQLException;
+import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -60,38 +58,6 @@ import com.hedera.mirror.importer.util.Utility;
 @MessageEndpoint
 public class AccountBalanceFileParser implements StreamFileParser<AccountBalanceFile> {
 
-    private static final String INSERT_SET_STATEMENT = "insert into account_balance_sets (consensus_timestamp) " +
-            "values (?) on conflict do nothing;";
-    private static final String INSERT_BALANCE_STATEMENT = "insert into account_balance " +
-            "(consensus_timestamp, account_id, balance) values (?, ?, ?) on conflict do " +
-            "nothing;";
-    private static final String INSERT_TOKEN_BALANCE_STATEMENT = "insert into token_balance " +
-            "(consensus_timestamp, account_id, balance, token_id) values (?, ?, ?, ?) on conflict do " +
-            "nothing;";
-    private static final String UPDATE_SET_STATEMENT = "update account_balance_sets set is_complete = ?, " +
-            "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = " +
-            "false;";
-
-    enum F_INSERT_SET {
-        ZERO,
-        CONSENSUS_TIMESTAMP
-    }
-
-    enum F_INSERT_BALANCE {
-        ZERO,
-        CONSENSUS_TIMESTAMP, ACCOUNT_ID, BALANCE
-    }
-
-    enum F_INSERT_TOKEN_BALANCE {
-        ZERO,
-        CONSENSUS_TIMESTAMP, ACCOUNT_ID, BALANCE, TOKEN_ID
-    }
-
-    enum F_UPDATE_SET {
-        ZERO,
-        IS_COMPLETE, CONSENSUS_TIMESTAMP
-    }
-
     private final BalanceParserProperties parserProperties;
     private final DataSource dataSource;
     private final Timer parseDurationMetricFailure;
@@ -99,6 +65,8 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
     private final Timer parseLatencyMetric;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final PgCopy<AccountBalance> pgCopyAccountBalance;
+    private final PgCopy<TokenBalance> pgCopyTokenBalance;
 
     public AccountBalanceFileParser(BalanceParserProperties parserProperties, DataSource dataSource,
                                     MeterRegistry meterRegistry,
@@ -108,6 +76,8 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
         this.dataSource = dataSource;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
+        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
+        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
 
         Timer.Builder parseDurationTimerBuilder = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in seconds it took to parse the file and store it in the database")
@@ -140,62 +110,27 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
             return;
         }
 
-        log.info("Starting processing account balances file {}", accountBalanceFile.getName());
+        long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
+        long count = 0L;
+        String name = accountBalanceFile.getName();
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = false;
-        int insertBatchSize = parserProperties.getBatchSize();
-        DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
-                .getDateRangeFilter(parserProperties.getStreamType());
 
+        log.info("Starting processing account balances file {}", name);
+        DateRangeFilter filter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(StreamType.BALANCE);
         Connection connection = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
-             PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
-             PreparedStatement insertTokenBalanceStatement = connection
-                     .prepareStatement(INSERT_TOKEN_BALANCE_STATEMENT);
-             PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT)) {
 
-            long consensusTimestamp = -1;
-            List<AccountBalance> accountBalanceList = new ArrayList<>();
-            List<TokenBalance> tokenBalanceList = new ArrayList<>();
-            boolean skip = false;
-            long validCount = 0;
+        try {
+            if (filter.filter(consensusTimestamp)) {
+                List<AccountBalance> accountBalances = accountBalanceFile.getItems();
+                List<TokenBalance> tokenBalances = accountBalanceFile.getItems()
+                        .stream()
+                        .flatMap(a -> a.getTokenBalances().stream())
+                        .collect(Collectors.toList());
 
-            for (AccountBalance accountBalance : accountBalanceFile.getItems()) {
-                if (consensusTimestamp == -1) {
-                    consensusTimestamp = accountBalance.getId().getConsensusTimestamp();
-                    if (accountBalanceFile.getConsensusTimestamp() != consensusTimestamp) {
-                        // The assumption is that the dataset has been validated via signatures and running hashes,
-                        // so it is the "next" dataset, and the consensus timestamp in it is correct. The fact that
-                        // the filename timestamp and timestamp in the file differ should still be investigated.
-                        log.error("Account balance dataset timestamp mismatch! Processing can continue, but this " +
-                                        "must be investigated! Dataset {} internal timestamp {} filename timestamp {}.",
-                                accountBalanceFile.getName(), consensusTimestamp, accountBalanceFile
-                                        .getConsensusTimestamp());
-                    }
-
-                    if (dateRangeFilter != null && !dateRangeFilter.filter(consensusTimestamp)) {
-                        log.warn("Account balances file {} not in configured date range {}, skip it",
-                                accountBalanceFile.getName(), dateRangeFilter);
-                        skip = true;
-                    } else {
-                        insertAccountBalanceSet(insertSetStatement, consensusTimestamp);
-                    }
-                }
-
-                validCount++;
-
-                if (!skip) {
-                    accountBalanceList.add(accountBalance);
-                    tokenBalanceList.addAll(accountBalance.getTokenBalances());
-                    tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
-                    tryInsertBatchTokenBalance(insertTokenBalanceStatement, tokenBalanceList, insertBatchSize);
-                }
-            }
-
-            if (!skip) {
-                tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
-                tryInsertBatchTokenBalance(insertTokenBalanceStatement, tokenBalanceList, 1);
-                updateAccountBalanceSet(updateSetStatement, consensusTimestamp);
+                pgCopyAccountBalance.copy(accountBalances, connection);
+                pgCopyTokenBalance.copy(tokenBalances, connection);
+                count = accountBalances.size();
             }
 
             byte[] bytes = accountBalanceFile.getBytes();
@@ -204,98 +139,25 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
             }
 
             Instant loadEnd = Instant.now();
-            accountBalanceFile.setCount(validCount);
+            accountBalanceFile.setCount(count);
             accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
             accountBalanceFileRepository.save(accountBalanceFile);
 
             if (parserProperties.isKeepFiles()) {
-                Utility.archiveFile(accountBalanceFile.getName(), bytes, parserProperties.getParsedPath());
+                Utility.archiveFile(name, bytes, parserProperties.getParsedPath());
             }
 
-            if (!skip) {
-                log.info("Successfully processed account balances file {}, {} records inserted in {}",
-                        accountBalanceFile.getName(), validCount, stopwatch);
-            }
-
+            log.info("Successfully processed {} account balances from {} in {}", count, name, stopwatch);
             Instant consensusInstant = Instant.ofEpochSecond(0L, consensusTimestamp);
             parseLatencyMetric.record(Duration.between(consensusInstant, loadEnd));
             success = true;
-        } catch (SQLException ex) {
-            log.error("Failed to load account balance file {}", accountBalanceFile.getName(), ex);
-            throw new ParserSQLException("Error processing account balance file " + accountBalanceFile.getName(), ex);
         } catch (Exception ex) {
-            log.error("Failed to load account balance file {}", accountBalanceFile.getName(), ex);
+            log.error("Failed to load account balance file {}", name, ex);
             throw ex;
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
             Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
             timer.record(stopwatch.elapsed());
         }
-    }
-
-    private void insertAccountBalanceSet(PreparedStatement insertSetStatement, long consensusTimestamp) throws SQLException {
-        insertSetStatement.setLong(F_INSERT_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-        insertSetStatement.execute();
-    }
-
-    private void tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
-                                              List<AccountBalance> accountBalanceList, int threshold) throws SQLException {
-        if (accountBalanceList.size() < threshold) {
-            return;
-        }
-
-        for (var accountBalance : accountBalanceList) {
-            AccountBalance.Id id = accountBalance.getId();
-            insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
-            insertBalanceStatement.setLong(F_INSERT_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
-            insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
-            insertBalanceStatement.addBatch();
-        }
-
-        accountBalanceList.clear();
-
-        int[] result = insertBalanceStatement.executeBatch();
-        for (int code : result) {
-            if (code == Statement.EXECUTE_FAILED) {
-                throw new ParserSQLException("Some account balance insert statements in the batch failed to execute");
-            }
-        }
-    }
-
-    private void tryInsertBatchTokenBalance(PreparedStatement insertTokenBalanceStatement,
-                                            List<TokenBalance> tokenBalances, int threshold) throws SQLException {
-        if (tokenBalances.size() < threshold) {
-            return;
-        }
-
-        for (var tokenBalance : tokenBalances) {
-            TokenBalance.Id id = tokenBalance.getId();
-            insertTokenBalanceStatement
-                    .setLong(F_INSERT_TOKEN_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp
-                            ());
-            insertTokenBalanceStatement
-                    .setLong(F_INSERT_TOKEN_BALANCE.ACCOUNT_ID.ordinal(), id.getAccountId().getId());
-            insertTokenBalanceStatement
-                    .setLong(F_INSERT_TOKEN_BALANCE.BALANCE.ordinal(), tokenBalance.getBalance());
-            insertTokenBalanceStatement
-                    .setLong(F_INSERT_TOKEN_BALANCE.TOKEN_ID.ordinal(), id.getTokenId().getId());
-            insertTokenBalanceStatement.addBatch();
-        }
-
-        tokenBalances.clear();
-
-        int[] result = insertTokenBalanceStatement.executeBatch();
-        for (int code : result) {
-            if (code == Statement.EXECUTE_FAILED) {
-                throw new ParserSQLException("Some token balance insert statements in the batch failed to execute");
-            }
-        }
-    }
-
-    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, long consensusTimestamp) throws
-            SQLException {
-        updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), true);
-        updateSetStatement.setLong(F_UPDATE_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-        updateSetStatement.execute();
     }
 }

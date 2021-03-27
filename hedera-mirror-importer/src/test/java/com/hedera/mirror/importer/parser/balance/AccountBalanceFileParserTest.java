@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.balance;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Longs;
 import java.nio.file.Files;
@@ -31,9 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,14 +40,15 @@ import org.junit.jupiter.api.io.TempDir;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
-import com.hedera.mirror.importer.domain.AccountBalanceSet;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
+import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
-import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
 
 class AccountBalanceFileParserTest extends IntegrationTest {
 
@@ -57,16 +56,13 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     Path dataPath;
 
     @Resource
-    private AccountBalanceFileParser accountBalanceFileParser;
+    private StreamFileParser<AccountBalanceFile> accountBalanceFileParser;
 
     @Resource
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Resource
     private AccountBalanceRepository accountBalanceRepository;
-
-    @Resource
-    private AccountBalanceSetRepository accountBalanceSetRepository;
 
     @Resource
     private BalanceParserProperties parserProperties;
@@ -105,16 +101,14 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     @Test
-    void badFileSkipped() {
+    void duplicateFile() {
         AccountBalanceFile accountBalanceFile1 = accountBalanceFile(1);
         AccountBalanceFile accountBalanceFile2 = accountBalanceFile(1);
-        AccountBalanceFile accountBalanceFile3 = accountBalanceFile(2);
 
         accountBalanceFileParser.parse(accountBalanceFile1);
-        accountBalanceFileParser.parse(accountBalanceFile2); // Will be skipped due to duplicate timestamp
-        accountBalanceFileParser.parse(accountBalanceFile3);
+        assertThrows(ParserException.class, () -> accountBalanceFileParser.parse(accountBalanceFile2));
 
-        assertAccountBalances(accountBalanceFile1, accountBalanceFile3);
+        assertAccountBalances(accountBalanceFile1);
     }
 
     @Test
@@ -134,7 +128,6 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
         assertFilesystem();
         assertThat(accountBalanceFileRepository.findAll()).containsExactly(accountBalanceFile);
-        assertThat(accountBalanceSetRepository.count()).isZero();
         assertThat(accountBalanceRepository.count()).isZero();
     }
 
@@ -160,16 +153,9 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .usingElementComparatorOnFields("consensusTimestamp")
                 .containsExactlyInAnyOrder(balanceFiles);
 
-        IterableAssert<AccountBalanceSet> absIterableAssert = assertThat(accountBalanceSetRepository.findAll())
-                .hasSize(balanceFiles.length)
-                .allMatch(abs -> abs.isComplete())
-                .allMatch(abs -> abs.getProcessingEndTimestamp() != null)
-                .allMatch(abs -> abs.getProcessingStartTimestamp() != null);
-
         for (AccountBalanceFile balanceFile : balanceFiles) {
-            absIterableAssert.anyMatch(abs -> balanceFile.getConsensusTimestamp() == abs.getConsensusTimestamp() &&
-                    accountBalanceRepository.findByIdConsensusTimestamp(abs.getConsensusTimestamp()).size() ==
-                            balanceFile.getCount());
+            assertThat(accountBalanceRepository.findByIdConsensusTimestamp(balanceFile.getConsensusTimestamp()))
+                    .hasSize(balanceFile.getCount().intValue());
             balanceFileAssert.anyMatch(abf -> balanceFile.getConsensusTimestamp() == abf.getConsensusTimestamp());
         }
     }
