@@ -203,7 +203,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
             }
 
-             // Record token transfers can be populated for multiple transaction types
+            // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
 
             if (transactionSignatureTypes.contains(transactionTypeEnum)) {

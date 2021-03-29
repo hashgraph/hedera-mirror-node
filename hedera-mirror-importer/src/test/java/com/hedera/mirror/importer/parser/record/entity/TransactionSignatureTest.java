@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -246,7 +245,6 @@ class TransactionSignatureTest {
 
     private TransactionBody getTransactionBody(TransactionTypeEnum transactionType) {
         TransactionBody.Builder builder = TransactionBody.newBuilder();
-
         Descriptors.Descriptor descriptor = TransactionBody.getDescriptor();
         Descriptors.FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(transactionType.getProtoId());
         Message defaultInstance = builder.getFieldBuilder(fieldDescriptor).getDefaultInstanceForType();
