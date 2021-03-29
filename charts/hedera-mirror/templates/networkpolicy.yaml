@@ -9,7 +9,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/component: {{ printf "%s" .Release.Name }}
+      app.kubernetes.io/component: pgpool
   policyTypes:
     - Ingress
   ingress:
