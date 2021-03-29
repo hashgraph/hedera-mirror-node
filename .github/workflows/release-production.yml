@@ -30,7 +30,7 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build and push images
-        run: ./mvnw ${MAVEN_CLI_OPTS} dependency:copy-dependencies license:download-licenses deploy -DskipTests
+        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests
 
   chart:
     name: Publish charts

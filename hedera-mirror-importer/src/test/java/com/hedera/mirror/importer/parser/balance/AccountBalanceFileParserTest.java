@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
-import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -49,6 +48,7 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
+import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
 class AccountBalanceFileParserTest extends IntegrationTest {
 
@@ -63,6 +63,9 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     @Resource
     private AccountBalanceRepository accountBalanceRepository;
+
+    @Resource
+    private TokenBalanceRepository tokenBalanceRepository;
 
     @Resource
     private BalanceParserProperties parserProperties;
@@ -89,15 +92,6 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         accountBalanceFileParser.parse(accountBalanceFile);
         assertFilesystem();
         assertAccountBalances(accountBalanceFile);
-    }
-
-    @Test
-    void inconsistentTimestamp() {
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        accountBalanceFile.setConsensusTimestamp(2L);
-        accountBalanceFileParser.parse(accountBalanceFile);
-
-        assertThat(accountBalanceFileRepository.findAll()).containsExactly(accountBalanceFile);
     }
 
     @Test
@@ -148,21 +142,34 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .containsAll(filenames);
     }
 
-    void assertAccountBalances(AccountBalanceFile... balanceFiles) {
-        IterableAssert<AccountBalanceFile> balanceFileAssert = assertThat(accountBalanceFileRepository.findAll())
-                .usingElementComparatorOnFields("consensusTimestamp")
-                .containsExactlyInAnyOrder(balanceFiles);
+    void assertAccountBalances(AccountBalanceFile... accountBalanceFiles) {
+        assertThat(accountBalanceFileRepository.count()).isEqualTo(accountBalanceFiles.length);
 
-        for (AccountBalanceFile balanceFile : balanceFiles) {
-            assertThat(accountBalanceRepository.findByIdConsensusTimestamp(balanceFile.getConsensusTimestamp()))
-                    .hasSize(balanceFile.getCount().intValue());
-            balanceFileAssert.anyMatch(abf -> balanceFile.getConsensusTimestamp() == abf.getConsensusTimestamp());
+        for (AccountBalanceFile accountBalanceFile : accountBalanceFiles) {
+            for (AccountBalance accountBalance : accountBalanceFile.getItems()) {
+                assertThat(accountBalanceRepository.findById(accountBalance.getId())).get().isEqualTo(accountBalance);
+
+                for (TokenBalance tokenBalance : accountBalance.getTokenBalances()) {
+                    assertThat(tokenBalanceRepository.findById(tokenBalance.getId())).get().isEqualTo(tokenBalance);
+                }
+            }
+
+            assertThat(accountBalanceRepository.findByIdConsensusTimestamp(accountBalanceFile.getConsensusTimestamp()))
+                    .hasSize(accountBalanceFile.getCount().intValue())
+                    .hasSize(accountBalanceFile.getItems().size());
+
+            assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()))
+                    .get()
+                    .matches(a -> a.getLoadEnd() != null)
+                    .usingRecursiveComparison()
+                    .ignoringFields("items", "loadEnd")
+                    .isEqualTo(accountBalanceFile);
         }
     }
 
     private AccountBalanceFile accountBalanceFile(long timestamp) {
-        String filename = StreamFilename
-                .getFilename(StreamType.BALANCE, DATA, Instant.ofEpochSecond(0, timestamp));
+        Instant instant = Instant.ofEpochSecond(0, timestamp);
+        String filename = StreamFilename.getFilename(StreamType.BALANCE, DATA, instant);
         return AccountBalanceFile.builder()
                 .bytes(Longs.toByteArray(timestamp))
                 .consensusTimestamp(timestamp)
