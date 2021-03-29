@@ -33,6 +33,7 @@ import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.converter.UnknownIdConverter;
 
 @Data
 @Entity
@@ -46,7 +47,7 @@ public class Transaction implements Persistable<Long> {
 
     private Long chargedTxFee;
 
-    @Convert(converter = AccountIdConverter.class)
+    @Convert(converter = UnknownIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 

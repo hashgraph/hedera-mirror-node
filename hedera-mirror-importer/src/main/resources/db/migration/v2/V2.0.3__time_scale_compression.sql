@@ -76,9 +76,6 @@ alter table record_file
 
 -- schedule skipped as update (executed_timestamp) on compressed chunk is not allowed
 
-alter table transaction_signature
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
-
 -- t_entities skipped as update on compressed chunk is not allowed
 
 -- t_entity_types skipped as not a hyper table
@@ -102,6 +99,9 @@ alter table topic_message
 
 alter table transaction
     set (timescaledb.compress, timescaledb.compress_segmentby = 'payer_account_id, type');
+
+alter table transaction_signature
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
 
 -- add compression policy
 select add_compression_policy('account_balance', bigint '${compressionAge}');
