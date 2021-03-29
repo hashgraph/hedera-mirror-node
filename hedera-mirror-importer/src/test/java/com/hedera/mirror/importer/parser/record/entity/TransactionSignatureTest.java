@@ -146,7 +146,6 @@ class TransactionSignatureTest {
         doReturn(transactionHandler).when(transactionHandlerFactory).create(any(TransactionBody.class));
     }
 
-
     @Test
     void nonEd25519Signature() {
         transactionSignatureTypes.add(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE);
