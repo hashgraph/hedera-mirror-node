@@ -25,16 +25,6 @@ create table if not exists account_balance_file
 );
 comment on table account_balance_file is 'Account balances stream files';
 
--- account_balance_sets
-create table if not exists account_balance_sets
-(
-    consensus_timestamp        bigint                      not null,
-    is_complete                boolean                     not null default false,
-    processing_start_timestamp timestamp without time zone null     default (now() at time zone 'utc'),
-    processing_end_timestamp   timestamp without time zone null
-);
-comment on table account_balance_sets is 'Processing state of snapshots of the entire set of account balances at different consensus timestamps';
-
 -- address_book
 create table if not exists address_book
 (

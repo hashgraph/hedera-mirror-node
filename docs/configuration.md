@@ -35,7 +35,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.username`                                 | mirror_node             | The Importer username the processor uses to connect to the database                            |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |
-| `hedera.mirror.importer.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
+| `hedera.mirror.importer.downloader.balance.batchSize`                | 30                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.balance.enabled`                  | true                    | Whether to enable balance file downloads                                                       |
 | `hedera.mirror.importer.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.          |
 | `hedera.mirror.importer.downloader.balance.keepSignatures`           | false                   | Whether to keep balance signature files after successful verification. If false, files are deleted. |
@@ -65,6 +65,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
+| `hedera.mirror.importer.parser.balance.bufferSize`                   | 11441                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
 | `hedera.mirror.importer.parser.balance.frequency`                    | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
@@ -75,6 +76,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.balance.retry.maxBackoff`             | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.minBackoff`             | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.multiplier`             | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.event.bufferSize`                     | 11441                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
 | `hedera.mirror.importer.parser.event.frequency`                      | 100ms                   | How often to poll for new messages                                                             |
 | `hedera.mirror.importer.parser.event.keepFiles`                      | false                   | Whether to keep parsed files after successful parsing.                                         |
@@ -90,6 +92,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.include`                              | []                      | A list of filters that determine which transactions are stored                                 |
 | `hedera.mirror.importer.parser.include.entity`                       | []                      | A list of entity IDs to store in shard.realm.num (e.g. 0.0.3) format                           |
 | `hedera.mirror.importer.parser.include.transaction`                  | []                      | A list of transaction types to store. See `TransactionTypeEnum.java` for possible values       |
+| `hedera.mirror.importer.parser.record.bufferSize`                    | 11441                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
 | `hedera.mirror.importer.parser.record.entity.notify.enabled`                | false                   | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                    |
 | `hedera.mirror.importer.parser.record.entity.notify.maxJsonPayloadSize`     | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
@@ -106,7 +109,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.redis.queueCapacity`           | 8                       | The size of the queue used to buffer topic messages between parser and redis publisher threads |
 | `hedera.mirror.importer.parser.record.entity.repository.enabled`            | false                   | Whether to use Spring Data JPA repositories to insert into the database (experimental)         |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 20_000                  | When inserting transactions into db, executeBatches() is called every these many transactions  |
-| `hedera.mirror.importer.parser.record.entity.sql.bufferSize`                | 11441                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.record.entity.sql.enabled`                   | true                    | Whether to use PostgreSQL Copy mechanism to insert into the database                           |
 | `hedera.mirror.importer.parser.record.frequency`                            | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
 | `hedera.mirror.importer.parser.record.keepFiles`                            | false                   | Whether to keep parsed files after successful parsing.                                         |

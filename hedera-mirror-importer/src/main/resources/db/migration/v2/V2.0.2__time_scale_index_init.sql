@@ -8,12 +8,6 @@ alter table account_balance
 create index if not exists account_balance__account_timestamp
     on account_balance (account_id desc, consensus_timestamp desc);
 
--- account_balance_sets
-alter table account_balance_sets
-    add primary key (consensus_timestamp);
-create index if not exists balance_sets__completed
-    on account_balance_sets (is_complete, consensus_timestamp desc);
-
 -- account_balance_file
 alter table account_balance_file
     add primary key (consensus_timestamp);

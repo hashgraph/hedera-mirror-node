@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.sql;
+package com.hedera.mirror.importer.parser;
 
 /*-
  * ‌
@@ -55,9 +55,9 @@ public class PgCopy<T> {
     private final ObjectWriter writer;
     private final Timer buildCsvDurationMetric;
     private final Timer insertDurationMetric;
-    private final SqlProperties properties;
+    private final ParserProperties properties;
 
-    public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, SqlProperties properties) {
+    public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
         this.properties = properties;
         tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, entityClass.getSimpleName());
         var mapper = new CsvMapper();
@@ -91,7 +91,6 @@ public class PgCopy<T> {
             var reader = buildCsv(items);
             Stopwatch stopwatch = Stopwatch.createStarted();
             CopyManager copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
-
             long rowsCount = copyManager.copyIn(sql, reader, properties.getBufferSize());
             insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows to {} table in {}", rowsCount, tableName, stopwatch);

@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
@@ -61,7 +64,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -81,19 +83,18 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
-import com.hedera.mirror.importer.converter.InstantConverter;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
-import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 @Log4j2
@@ -120,6 +121,7 @@ public abstract class AbstractDownloaderTest {
     protected String file2;
     protected Instant file1Instant;
     protected Instant file2Instant;
+    protected List<Pair<Instant, String>> instantFilenamePairs;
     protected EntityId corruptedNodeAccountId;
     protected NodeSignatureVerifier nodeSignatureVerifier;
     protected SignatureFileReader signatureFileReader;
@@ -172,7 +174,7 @@ public abstract class AbstractDownloaderTest {
     protected abstract Duration getCloseInterval();
 
     boolean isSigFile(Path path) {
-        return path.toString().endsWith("_sig");
+        return path.toString().contains(StreamType.SIGNATURE_SUFFIX);
     }
 
     @BeforeAll
@@ -439,9 +441,10 @@ public abstract class AbstractDownloaderTest {
     void startDate(long seconds, String fileChoice) throws Exception {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
         expectLastStreamFile(null, 100L, startDate);
-        List<String> expectedFiles = List.of(file1, file2)
+        List<String> expectedFiles = instantFilenamePairs
                 .stream()
-                .filter(name -> Utility.getInstantFromFilename(name).isAfter(startDate))
+                .filter(pair -> pair.getLeft().isAfter(startDate))
+                .map(Pair::getRight)
                 .collect(Collectors.toList());
 
         fileCopier.copy();
@@ -460,9 +463,10 @@ public abstract class AbstractDownloaderTest {
     void endDate(long seconds, String fileChoice) {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
         downloaderProperties.setBatchSize(1);
-        List<String> expectedFiles = List.of(file1, file2)
+        List<String> expectedFiles = instantFilenamePairs
                 .stream()
-                .filter(name -> !Utility.getInstantFromFilename(name).isAfter(mirrorProperties.getEndDate()))
+                .filter(pair -> !pair.getLeft().isAfter(mirrorProperties.getEndDate()))
+                .map(Pair::getRight)
                 .collect(Collectors.toList());
         expectLastStreamFile(Instant.EPOCH);
 
@@ -512,29 +516,30 @@ public abstract class AbstractDownloaderTest {
         verifyStreamFiles(List.of(file1));
     }
 
-    @ParameterizedTest(name = "verifyHashChain {5}")
-    @CsvSource({
-            // @formatter:off
-            "'', '', 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, true,  passes if both hashes are empty",
-            "xx, '', 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, true,  passes if hash mismatch and expected hash is empty", // starting stream in middle
-            "'', xx, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, false, fails if hash mismatch and actual hash is empty", // bad db state
-            "xx, yy, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, false, fails if hash mismatch and hashes are non-empty",
-            "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10_00_00.000000Z.stream, true,  passes if hash mismatch but verifyHashAfter is after filename",
-            "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10_00_00.000000Z.stream, true,  passes if hash mismatch but verifyHashAfter is same as filename",
-            "xx, yy, 2000-01-01T09:59:59.999999Z, 2000-01-01T10_00_00.000000Z.stream, false, fails if hash mismatch and verifyHashAfter is before filename",
-            "xx, xx, 1970-01-01T00:00:00Z,        2000-01-01T10_00_00.000000Z.stream, true,  passes if hashes are equal"
-            // @formatter:on
-    })
-    void testVerifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
-                             @ConvertWith(InstantConverter.class) Instant verifyHashAfter, String fileName,
-                             Boolean expectedResult, String testName) {
-        downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
-        RecordFile streamFile = new RecordFile();
-        streamFile.setName(fileName);
-        streamFile.setPreviousHash(actualPrevFileHash);
-        assertThat(downloader.verifyHashChain(streamFile, expectedPrevFileHash))
-                .as(testName)
-                .isEqualTo(expectedResult);
+    @Test
+    void noDataFiles() throws IOException {
+        fileCopier.copy();
+        Files.walk(s3Path).filter(Files::isRegularFile)
+                .filter(Predicate.not(this::isSigFile))
+                .map(Path::toFile)
+                .forEach(FileUtils::deleteQuietly);
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        verifyForSuccess(Collections.emptyList(), true);
+    }
+
+    @Test
+    void noSigFiles() throws IOException {
+        fileCopier.copy();
+        Files.walk(s3Path).filter(Files::isRegularFile)
+                .filter(this::isSigFile)
+                .map(Path::toFile)
+                .forEach(FileUtils::deleteQuietly);
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        verifyForSuccess(Collections.emptyList(), true);
     }
 
     private void differentFilenames(Duration offset) throws Exception {
@@ -544,15 +549,13 @@ public abstract class AbstractDownloaderTest {
 
         // Construct a new filename with the offset added to the last valid file
         long nanoOffset = getCloseInterval().plus(offset).toNanos();
-        long timestamp = Utility.getTimestampFromFilename(file1) + nanoOffset;
-        String baseFilename = Instant.ofEpochSecond(0, timestamp) + streamType.getSuffix() + ".";
-        baseFilename = baseFilename.replace(':', '_');
+        Instant instant = file1Instant.plusNanos(nanoOffset);
 
         // Rename the good files to have a bad timestamp
-        String signature = baseFilename + streamType.getSignatureExtension();
-        String signed = baseFilename + streamType.getExtension();
+        String data = StreamFilename.getFilename(streamType, DATA, instant);
+        String signature = StreamFilename.getFilename(streamType, SIGNATURE, instant);
+        Files.move(basePath.resolve(file2), basePath.resolve(data));
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
-        Files.move(basePath.resolve(file2), basePath.resolve(signed));
 
         RecordFile recordFile = new RecordFile();
         recordFile.setName(file1);
@@ -567,7 +570,7 @@ public abstract class AbstractDownloaderTest {
         verifyStreamFiles(Collections.emptyList());
     }
 
-    private void verifyForSuccess() throws Exception {
+    protected void verifyForSuccess() throws Exception {
         verifyForSuccess(List.of(file1, file2));
     }
 
@@ -603,8 +606,12 @@ public abstract class AbstractDownloaderTest {
         this.file1 = files.get(0);
         this.file2 = files.get(1);
 
-        file1Instant = Utility.getInstantFromFilename(file1);
-        file2Instant = Utility.getInstantFromFilename(file2);
+        file1Instant = new StreamFilename(file1).getInstant();
+        file2Instant = new StreamFilename(file2).getInstant();
+        instantFilenamePairs = List.of(
+                Pair.of(file1Instant, file1),
+                Pair.of(file2Instant, file2)
+        );
     }
 
     /**
@@ -616,7 +623,7 @@ public abstract class AbstractDownloaderTest {
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        streamFile.setName(Utility.getStreamFilenameFromInstant(streamType, instant));
+        streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setHash(hash);
         streamFile.setIndex(index);
 

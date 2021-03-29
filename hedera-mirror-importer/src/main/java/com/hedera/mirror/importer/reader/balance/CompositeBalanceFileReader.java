@@ -36,6 +36,7 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
 
     private final BalanceFileReaderImplV1 balanceFileReaderImplV1;
     private final BalanceFileReaderImplV2 balanceFileReaderImplV2;
+    private final ProtoBalanceFileReader protoBalanceFileReader;
 
     @Override
     public boolean supports(StreamFileData streamFileData) {
@@ -49,6 +50,10 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
     }
 
     private BalanceFileReader getReader(StreamFileData streamFileData) {
+        if (protoBalanceFileReader.supports(streamFileData)) {
+            return protoBalanceFileReader;
+        }
+
         return balanceFileReaderImplV2.supports(streamFileData) ? balanceFileReaderImplV2 : balanceFileReaderImplV1;
     }
 }

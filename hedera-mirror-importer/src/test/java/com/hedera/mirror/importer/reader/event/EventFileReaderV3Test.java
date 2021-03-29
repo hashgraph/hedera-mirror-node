@@ -21,12 +21,16 @@ package com.hedera.mirror.importer.reader.event;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Ints;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.util.UUID;
+
+import com.hedera.mirror.importer.util.Utility;
+
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +40,7 @@ import com.hedera.mirror.importer.exception.InvalidEventFileException;
 
 class EventFileReaderV3Test {
 
+    private static final String EVENT_FILENAME = "2021-03-10T16_30_00Z.evts";
     private static final byte[] PREVIOUS_HASH = new byte[EventFileReaderV3.EVENT_PREV_HASH_LENGTH];
     private static final byte[] CONTENT = new byte[64];
 
@@ -96,7 +101,6 @@ class EventFileReaderV3Test {
     }
 
     private StreamFileData createEventFile(int fileVersion, byte prevHashMarker, byte[] prevHash, byte[] content) {
-        String fileName = UUID.randomUUID().toString();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         try (DataOutputStream dos = new DataOutputStream(byteArrayOutputStream)) {
@@ -109,7 +113,7 @@ class EventFileReaderV3Test {
                 dos.write(content);
             }
 
-            return new StreamFileData(fileName, byteArrayOutputStream.toByteArray());
+            return StreamFileData.from(EVENT_FILENAME, byteArrayOutputStream.toByteArray());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -119,6 +123,7 @@ class EventFileReaderV3Test {
                                   byte[] expectedPrevHash) {
         assertThat(eventFile).isNotNull();
         assertThat(eventFile.getBytes()).isNotEmpty().isEqualTo(inputFile.getBytes());
+        assertThat(eventFile.getConsensusStart()).isEqualTo(Utility.convertToNanosMax(inputFile.getInstant()));
         assertThat(eventFile.getLoadStart()).isNotNull().isPositive();
         assertThat(eventFile.getName()).isEqualTo(inputFile.getFilename());
         assertThat(eventFile.getVersion()).isEqualTo(expectedFileVersion);

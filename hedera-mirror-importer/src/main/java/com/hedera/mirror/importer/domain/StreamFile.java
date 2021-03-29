@@ -60,6 +60,13 @@ public interface StreamFile {
 
     EntityId getNodeAccountId();
 
+    // Get the chained hash of the previous stream file
+    default String getPreviousHash() {
+        return null;
+    }
+
+    void setConsensusStart(Long timestamp);
+
     default void setHash(String hash) {
     }
 
@@ -70,9 +77,7 @@ public interface StreamFile {
 
     void setNodeAccountId(@NonNull EntityId nodeAccountId);
 
-    // Get the chained hash of the previous stream file
-    default String getPreviousHash() {
-        return null;
+    default void setPreviousHash(String previousHash) {
     }
 
     StreamType getType();

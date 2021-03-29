@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
@@ -37,6 +38,7 @@ import javax.persistence.NamedEntityGraph;
 import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
@@ -53,6 +55,8 @@ public class AccountBalance implements Persistable<AccountBalance.Id>, StreamIte
 
     private long balance;
 
+    @EqualsAndHashCode.Exclude
+    @JsonIgnore
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
     @JoinColumns({
             @JoinColumn(name = "accountId"),
@@ -64,6 +68,7 @@ public class AccountBalance implements Persistable<AccountBalance.Id>, StreamIte
     @JsonUnwrapped
     private Id id;
 
+    @JsonIgnore
     @Override
     public boolean isNew() {
         return true; // Since we never update balances and use a natural ID, avoid Hibernate querying before insert

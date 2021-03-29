@@ -78,6 +78,11 @@ public class AccountBalanceFile implements StreamFile {
     }
 
     @Override
+    public void setConsensusStart(Long timestamp) {
+        consensusTimestamp = timestamp;
+    }
+
+    @Override
     public StreamType getType() {
         return StreamType.BALANCE;
     }

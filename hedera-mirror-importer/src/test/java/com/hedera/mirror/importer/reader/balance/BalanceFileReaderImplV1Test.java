@@ -22,30 +22,24 @@ package com.hedera.mirror.importer.reader.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.context.TestConstructor;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 
-@TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class BalanceFileReaderImplV1Test extends CsvBalanceFileReaderTest {
 
-    private static final String FILENAME = "classpath:data/accountBalances/v1/balance0.0.3/2019-08-30T18_15_00" +
-            ".016002001Z_Balances.csv";
+    static final String FILE_PATH = getTestFilename("v1", "2019-08-30T18_15_00.016002001Z_Balances.csv");
 
-    BalanceFileReaderImplV1Test(BalanceFileReaderImplV1 balanceFileReader, AccountBalanceLineParserV1 parser,
-                                @Value(FILENAME) File balanceFile) {
-        super(balanceFileReader, parser, balanceFile, 25391L);
+    BalanceFileReaderImplV1Test() {
+        super(BalanceFileReaderImplV1.class, AccountBalanceLineParserV1.class, FILE_PATH, 25391L);
     }
 
     @Test
