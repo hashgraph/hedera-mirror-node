@@ -81,7 +81,7 @@ readinessProbe:
   httpGet:
     path: /actuator/health/readiness
     port: http
-  initialDelaySeconds: 60
+  initialDelaySeconds: 240
   timeoutSeconds: 2
 
 redis:

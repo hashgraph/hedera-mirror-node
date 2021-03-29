@@ -182,7 +182,7 @@ timescaledb:
   enabled: false
   image:
     repository: timescaledev/timescaledb-ha
-    tag: pg12.5-ts2.0.0-p0
+    tag: pg12.6-ts2.1.0-p1
   patroni:
     bootstrap:
       dcs:
@@ -194,8 +194,10 @@ timescaledb:
       - local     all             postgres                              peer  # allow local connections
       - local     all             all                                   md5
       - hostnossl all,replication all                all                md5   # allow TCP/IP connections (no ssl)
-  persistentVolume:
-    size: 500Gi
+  persistentVolumes:
+    data:
+      size: 500Gi
+  podManagementPolicy: Parallel
   postInit:
     - secret:
         name: timescaledb-init-job
@@ -209,8 +211,8 @@ timescaledb:
       work_mem: 50MB
   resources:
     limits:
-      cpu: 2
-      memory: 4Gi
+      cpu: 4
+      memory: 16Gi
     requests:
-      cpu: 250m
-      memory: 500Mi
+      cpu: 1
+      memory: 1Gi
