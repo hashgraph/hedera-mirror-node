@@ -38,6 +38,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 @Log4j2
 @Value
 class PendingDownload {
+
     private final CompletableFuture<ResponseBytes<GetObjectResponse>> future;
     private final StreamFilename streamFilename;
     private final Stopwatch stopwatch;
@@ -50,18 +51,18 @@ class PendingDownload {
     private boolean downloadSuccessful = false;
 
     PendingDownload(CompletableFuture<ResponseBytes<GetObjectResponse>> future, StreamFilename streamFilename,
-            String s3key) {
+                    String s3key) {
         this.future = future;
         stopwatch = Stopwatch.createStarted();
         this.streamFilename = streamFilename;
         this.s3key = s3key;
     }
 
-    public byte[] getBytes() throws Exception {
-        return future.get().asByteArray();
+    byte[] getBytes() throws Exception {
+        return future.get().asByteArrayUnsafe();
     }
 
-    public String getFilename() {
+    String getFilename() {
         return streamFilename.getFilename();
     }
 

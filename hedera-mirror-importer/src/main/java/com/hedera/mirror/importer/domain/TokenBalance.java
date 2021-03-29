@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
@@ -41,12 +42,14 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 @Entity
 public class TokenBalance implements Persistable<TokenBalance.Id> {
+
     private long balance;
 
     @EmbeddedId
     @JsonUnwrapped
     private TokenBalance.Id id;
 
+    @JsonIgnore
     @Override
     public boolean isNew() {
         return true; // Since we never update balances and use a natural ID, avoid Hibernate querying before insert

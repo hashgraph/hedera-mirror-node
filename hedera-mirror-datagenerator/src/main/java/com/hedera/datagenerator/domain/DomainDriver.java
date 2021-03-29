@@ -35,6 +35,7 @@ import com.hedera.datagenerator.domain.generators.transaction.DomainTransactionG
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
+import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -127,7 +128,10 @@ public class DomainDriver implements ApplicationRunner {
     private void writeBalances(long consensusNs) {
         for (Map.Entry<EntityId, Long> entry : entityManager.getBalances().entrySet()) {
             var entity = entry.getKey();
-            domainWriter.onAccountBalance(new AccountBalance(consensusNs, entity, entry.getValue()));
+            AccountBalance accountBalance = new AccountBalance();
+            accountBalance.setBalance(entry.getValue());
+            accountBalance.setId(new AccountBalance.Id(consensusNs, entity));
+            domainWriter.onAccountBalance(accountBalance);
         }
         log.debug("Wrote balances data at {}", consensusNs);
     }

@@ -34,8 +34,5 @@ public class SqlProperties {
     @Min(1)
     private int batchSize = 20_000;
 
-    @Min(1)
-    private int bufferSize = 11441; // tested max byte size of buffer used by postgres CopyManger.copyIn()
-
     private boolean enabled = true;
 }

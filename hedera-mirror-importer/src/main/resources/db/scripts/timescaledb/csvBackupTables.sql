@@ -6,8 +6,6 @@
 
 \copy account_balance_file to account_balance_file.csv delimiter ',' csv;
 
-\copy account_balance_sets to account_balance_sets.csv delimiter ',' csv;
-
 \copy address_book to address_book.csv delimiter ',' csv;
 
 \copy address_book_entry to address_book_entry.csv delimiter ',' csv;
@@ -23,6 +21,8 @@
 \copy non_fee_transfer to non_fee_transfer.csv delimiter ',' csv;
 
 \copy record_file to record_file.csv delimiter ',' csv;
+
+\copy schedule to schedule.csv delimiter ',' csv;
 
 \copy t_entities to t_entities.csv delimiter ',' csv;
 
@@ -43,3 +43,5 @@
 \copy topic_message to topic_message.csv delimiter ',' csv;
 
 \copy transaction to transaction.csv delimiter ',' csv;
+
+\copy transaction_signature to transaction_signature.csv delimiter ',' csv;
