@@ -102,7 +102,6 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
             if (scenarioProperties.isEnabled()) {
                 total += scenarioProperties.getTps();
                 pairs.add(Pair.create(transactionGenerator, scenarioProperties.getTps()));
-                log.info("Activated scenario: {}", scenarioProperties);
             } else {
                 iter.remove();
             }
@@ -116,6 +115,9 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
             return;
         }
 
+        for (ConfigurableTransactionGenerator transactionGenerator : transactionGenerators) {
+            log.info("Activated scenario: {}", transactionGenerator.getProperties());
+        }
 
         batchSize = Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor()));
         distribution = new EnumeratedDistribution<>(pairs);
