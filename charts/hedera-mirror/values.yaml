@@ -6,7 +6,7 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts. Set to RELEASE-NAME-timescaledb for timescaledb
+    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts. Set to RELEASE-NAME for timescaledb
   namespaceOverride: ""
   redis:
     host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
@@ -183,12 +183,19 @@ timescaledb:
   image:
     repository: timescaledev/timescaledb-ha
     tag: pg12.6-ts2.1.0-p1
+  loadBalancer:
+    enabled: false
   patroni:
     bootstrap:
       dcs:
         postgresql:
           parameters:
+            max_wal_size: 8GB  # recommended to be 80% of the Volume Size
+            min_wal_size: 2GB  # 80% of the WAL Volume Size
+            shared_buffers: 1GB  # recommended to be 25% of available instance memory
             ssl: 'off'  # disable all ssl connections to not require Patroni certificate
+            work_mem: 50MB
+
     postgresql:
       pg_hba:
       - local     all             postgres                              peer  # allow local connections
@@ -197,18 +204,14 @@ timescaledb:
   persistentVolumes:
     data:
       size: 500Gi
+    wal:
+      size: 8Gi
+
   podManagementPolicy: Parallel
   postInit:
     - secret:
         name: timescaledb-init-job
-  postgresql:
-    databases:
-      - postgres
-    parameters:
-      max_wal_size: 8GB  # recommended to be 80% of the Volume Size
-      min_wal_size: 2GB  # 80% of the WAL Volume Size
-      shared_buffers: 1GB  # recommended to be 25% of available instance memory
-      work_mem: 50MB
+  replicaCount: 1
   resources:
     limits:
       cpu: 4
@@ -216,3 +219,5 @@ timescaledb:
     requests:
       cpu: 1
       memory: 1Gi
+  timescaledbTune:
+    enabled: false

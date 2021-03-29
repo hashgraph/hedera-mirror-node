@@ -1,6 +1,6 @@
 global:
   db:
-    host: RELEASE-NAME-timescaledb
+    host: RELEASE-NAME
 importer:
   config:
     hedera:
