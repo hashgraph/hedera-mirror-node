@@ -88,7 +88,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
     private final PgCopy<TokenTransfer> tokenTransferPgCopy;
-    private final PgCopy<TransactionSignature> scheduleSignaturePgCopy;
+    private final PgCopy<TransactionSignature> transactionSignaturePgCopy;
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
@@ -128,7 +128,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, sqlProperties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
         tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, sqlProperties);
-        scheduleSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, sqlProperties);
+        transactionSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, sqlProperties);
 
         transactions = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -194,7 +194,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
-            scheduleSignaturePgCopy.copy(transactionSignatures, connection);
+            transactionSignaturePgCopy.copy(transactionSignatures, connection);
             persistEntities();
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {

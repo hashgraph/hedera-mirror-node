@@ -33,7 +33,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.converter.GeneralIdConverter;
+import com.hedera.mirror.importer.converter.UnknownIdConverter;
 
 @Data
 @Entity
@@ -46,7 +46,7 @@ public class TransactionSignature {
     @ToString.Exclude
     private byte[] signature;
 
-    @Convert(converter = GeneralIdConverter.class)
+    @Convert(converter = UnknownIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 

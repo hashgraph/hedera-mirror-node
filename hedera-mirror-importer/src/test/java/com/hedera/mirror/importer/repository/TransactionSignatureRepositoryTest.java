@@ -45,7 +45,7 @@ class TransactionSignatureRepositoryTest extends AbstractRepositoryTest {
         transactionSignature.setId(new TransactionSignature.Id(
                 consensusTimestamp,
                 "signatory public key prefix".getBytes()));
-        transactionSignature.setEntityId(EntityId.of("0.0.789", EntityTypeEnum.GENERAL));
+        transactionSignature.setEntityId(EntityId.of("0.0.789", EntityTypeEnum.UNKNOWN));
         transactionSignature.setSignature("scheduled transaction signature".getBytes());
         return transactionSignature;
     }

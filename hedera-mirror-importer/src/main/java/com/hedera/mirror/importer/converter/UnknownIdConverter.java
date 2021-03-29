@@ -28,9 +28,9 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 @Named
 @javax.persistence.Converter
 @ConfigurationPropertiesBinding
-public class GeneralIdConverter extends AbstractEntityIdConverter {
+public class UnknownIdConverter extends AbstractEntityIdConverter {
 
-    public GeneralIdConverter() {
-        super(EntityTypeEnum.GENERAL);
+    public UnknownIdConverter() {
+        super(EntityTypeEnum.UNKNOWN);
     }
 }

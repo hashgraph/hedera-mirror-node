@@ -22,9 +22,9 @@ package com.hedera.mirror.importer.converter;
 
 import org.junit.jupiter.api.BeforeAll;
 
-class GeneralIdConverterTest extends AbstractEntityConverterTest {
+class UnknownIdConverterTest extends AbstractEntityConverterTest {
     @BeforeAll
     static void beforeAll() {
-        converter = new GeneralIdConverter();
+        converter = new UnknownIdConverter();
     }
 }
