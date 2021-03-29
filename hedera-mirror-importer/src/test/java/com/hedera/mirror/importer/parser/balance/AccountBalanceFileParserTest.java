@@ -176,7 +176,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .count(2L)
                 .fileHash("fileHash" + timestamp)
                 .items(List.of(accountBalance(timestamp, 1), accountBalance(timestamp, 2)))
-                .loadEnd(timestamp)
+                .loadEnd(null)
                 .loadStart(timestamp)
                 .name(filename)
                 .nodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT))

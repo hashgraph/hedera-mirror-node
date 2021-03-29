@@ -123,7 +123,7 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
         try {
             if (filter.filter(consensusTimestamp)) {
                 List<AccountBalance> accountBalances = accountBalanceFile.getItems();
-                List<TokenBalance> tokenBalances = accountBalanceFile.getItems()
+                List<TokenBalance> tokenBalances = accountBalances
                         .stream()
                         .flatMap(a -> a.getTokenBalances().stream())
                         .collect(Collectors.toList());
