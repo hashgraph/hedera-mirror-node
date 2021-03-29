@@ -85,13 +85,22 @@ class TransactionSignatureTest {
     private AddressBookService addressBookService;
 
     @Mock
-    private EntityRepository entityRepository;
-
-    @Mock
     private EntityListener entityListener;
 
     @Mock
+    private EntityRepository entityRepository;
+
+    @Mock
     private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
+
+    @Mock
+    private TokenAccountRepository tokenAccountRepository;
+
+    @Mock
+    private TokenRepository tokenRepository;
+
+    @Mock
+    private ScheduleRepository scheduleRepository;
 
     @Mock
     private TransactionHandler transactionHandler;
@@ -99,21 +108,13 @@ class TransactionSignatureTest {
     @Mock
     private TransactionHandlerFactory transactionHandlerFactory;
 
-    @Mock
-    private TokenRepository tokenRepository;
-
-    @Mock
-    private TokenAccountRepository tokenAccountRepository;
-
-    @Mock
-    private ScheduleRepository scheduleRepository;
-
-    private Collection<TransactionTypeEnum> transactionSignatureTypes;
-    private EntityRecordItemListener entityRecordItemListener;
-
     private SignatureMap.Builder defaultSignatureMap;
 
     private List<TransactionSignature> defaultTransactionSignatures;
+
+    private EntityRecordItemListener entityRecordItemListener;
+
+    private Collection<TransactionTypeEnum> transactionSignatureTypes;
 
     @BeforeEach
     void setup() {
