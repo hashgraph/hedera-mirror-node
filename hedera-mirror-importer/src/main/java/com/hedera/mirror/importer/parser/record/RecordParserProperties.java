@@ -20,6 +20,11 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.TransactionTypeEnum.SCHEDULECREATE;
+import static com.hedera.mirror.importer.domain.TransactionTypeEnum.SCHEDULESIGN;
+
+import com.google.common.collect.Sets;
+import java.util.Collection;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -28,6 +33,7 @@ import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
 @Component("recordParserProperties")
@@ -38,6 +44,8 @@ import com.hedera.mirror.importer.parser.AbstractParserProperties;
 public class RecordParserProperties extends AbstractParserProperties {
 
     private final MirrorProperties mirrorProperties;
+
+    private Collection<TransactionTypeEnum> transactionSignatureTypes = Sets.newHashSet(SCHEDULECREATE, SCHEDULESIGN);
 
     @Override
     public StreamType getStreamType() {
