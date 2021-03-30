@@ -181,6 +181,7 @@ rest:
 timescaledb:
   enabled: false
   image:
+    pullPolicy: IfNotPresent
     repository: timescaledev/timescaledb-ha
     tag: pg12.6-ts2.1.0-p1
   loadBalancer:
