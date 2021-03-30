@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.ScheduleSignature;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 
-public interface ScheduleSignatureRepository extends CrudRepository<ScheduleSignature, ScheduleSignature.Id> {
+public interface TransactionSignatureRepository extends CrudRepository<TransactionSignature, TransactionSignature.Id> {
 }

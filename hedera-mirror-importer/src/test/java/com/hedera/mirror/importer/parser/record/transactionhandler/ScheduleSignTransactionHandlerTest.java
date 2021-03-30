@@ -41,18 +41,22 @@ public class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandl
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setScheduleSign(ScheduleSignTransactionBody.newBuilder()
-                        .setScheduleID(ScheduleID.newBuilder().setScheduleNum(DEFAULT_ENTITY_NUM).build())
-                        .setSigMap(SignatureMap.newBuilder()
-                                .addSigPair(SignaturePair.newBuilder()
-                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-1"))
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-1")).build())
-                                .addSigPair(SignaturePair.newBuilder()
-                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-2"))
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-2")).build())
-                                .addSigPair(SignaturePair.newBuilder()
-                                        .setEd25519(ByteString.copyFromUtf8("Ed25519-3"))
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-3")).build())
-                                .build()));
+                        .setScheduleID(ScheduleID.newBuilder().setScheduleNum(DEFAULT_ENTITY_NUM).build()));
+
+    }
+
+    @Override
+    protected SignatureMap.Builder getDefaultSigMap() {
+        return SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setEd25519(ByteString.copyFromUtf8("Ed25519-1"))
+                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-1")).build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setEd25519(ByteString.copyFromUtf8("Ed25519-2"))
+                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-2")).build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setEd25519(ByteString.copyFromUtf8("Ed25519-3"))
+                        .setPubKeyPrefix(ByteString.copyFromUtf8("PubKeyPrefix-3")).build());
     }
 
     @Override

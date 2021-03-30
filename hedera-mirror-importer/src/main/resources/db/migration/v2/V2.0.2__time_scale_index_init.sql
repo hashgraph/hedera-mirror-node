@@ -71,13 +71,6 @@ create unique index if not exists schedule__schedule_id
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
--- schedule_signature
-create index if not exists schedule_signature__schedule_id
-    on schedule_signature (schedule_id desc, consensus_timestamp desc);
-
-create unique index if not exists schedule_signature__timestamp_public_key_prefix
-    on schedule_signature (consensus_timestamp desc, public_key_prefix);
-
 -- t_entities
 alter table t_entities
     add primary key (id);
@@ -143,3 +136,10 @@ create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
+
+-- transaction_signature
+create index if not exists transaction_signature__entity_id
+    on transaction_signature (entity_id desc, consensus_timestamp desc);
+
+create unique index if not exists transaction_signature__timestamp_public_key_prefix
+    on transaction_signature (consensus_timestamp desc, public_key_prefix);

@@ -22,6 +22,17 @@ acquired. This document explains how the mirror node can be updated to support s
 - Update `t_transaction_types` to add new schedule transaction types.
 - Update `t_transaction_results` with the new response codes.
   - `INVALID_SCHEDULE_ID = 201`
+  - `SCHEDULE_IS_IMMUTABLE = 202`
+  - `INVALID_SCHEDULE_PAYER_ID = 203`
+  - `INVALID_SCHEDULE_ACCOUNT_ID = 204`
+  - `NO_NEW_VALID_SIGNATURES = 205`
+  - `UNRESOLVABLE_REQUIRED_SIGNERS = 206`
+  - `SCHEDULED_TRANSACTION_NOT_IN_WHITELIST = 207`
+  - `SOME_SIGNATURES_WERE_INVALID = 208`
+  - `TRANSACTION_ID_FIELD_NOT_ALLOWED = 209`
+  - `IDENTICAL_SCHEDULE_ALREADY_CREATED = 210`
+  - `SCHEDULE_ALREADY_DELETED = 212`
+  - `SCHEDULE_ALREADY_EXECUTED = 213`
 - Add a `scheduled` boolean to `transaction` table with a default of false.
 - Add a new `schedule` table:
 
@@ -38,22 +49,22 @@ create table if not exists schedule
 ```
 
 - Add a unique constraint to `schedule` for `schedule_id`.
-- Add a new `schedule_signature` table that represents the signatories that have signed and are present in the `sigMap`
-  field of `ScheduleCreate` or `ScheduleSign`:
+- Add a new `transaction_signature` table that represents the signatories that have signed a transaction. Currently,
+  only those in the `sigMap` of `ScheduleCreate` or `ScheduleSign` are saved:
 
 ```sql
-create table if not exists schedule_signature
+create table if not exists transaction_signature
 (
   consensus_timestamp bigint not null,
   public_key_prefix   bytea  not null,
-  schedule_id         bigint not null,
+  entity_id           bigint null,
   signature           bytea  not null
 );
 ```
 
 > **_Note:_** There's no unique constraint/primary key since the client can potentially sign multiple times with the same key
 
-- Add an index to `schedule_signature` for `schedule_id`.
+- Add an index to `transaction_signature` for `entity_id`.
 
 ## Importer
 
@@ -82,30 +93,28 @@ Add a `ScheduleIdConverter`.
 #### Schedule Create
 
 - Insert a `Transaction` with `scheduled` set to false.
-- Upsert an `Entities` for the `scheduleID` and the `payerAccountID`.
-- If the `scheduleID` does not exist, insert a `Schedule`:
+- Upsert an `Entities` for the `scheduleID` and the `payerAccountID` if different than the `creatorAccountId`.
+- Insert a `Schedule`:
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `creatorAccountId` to the payer account from the transaction ID.
   - Set `payerAccountId` to the one in the transaction body else use the payer account from the transaction ID.
   - Set `scheduleId` to the `scheduleID` in the transaction receipt.
-  - Set `transactionBody` to the `transactionBody` field within the `ScheduleCreateTransactionBody`.
-- Insert a `ScheduleSignature` for every entry in the `sigMap`:
+  - Set `transactionBody` to the serialized byte array of the `scheduledTransactionBody` field within the
+    `ScheduleCreateTransactionBody`.
+- Insert a `TransactionSignature` for every entry in the `sigMap`:
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
-  - Set `scheduleId` to the `scheduleID` in the transaction receipt.
+  - Set `entityId` to the `scheduleID` in the transaction receipt.
   - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
-
-> **_Note:_** Currently a `ScheduleCreate` can potentially cause an update or a create, so don't create a schedule and
-> only update signatures for an update.
 
 #### Schedule Sign
 
 - Insert a `Transaction` with `scheduled` set to false.
 - Upsert an `Entities` for the `scheduleID`.
-- Insert a `ScheduleSignature` for every entry in the `sigMap`:
+- Insert a `TransactionSignature` for every entry in the `sigMap`:
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
-  - Set `scheduleId` to the `scheduleID` in the transaction receipt.
+  - Set `entityId` to the `scheduleID` in the transaction receipt.
   - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
 
 #### Scheduled Transaction

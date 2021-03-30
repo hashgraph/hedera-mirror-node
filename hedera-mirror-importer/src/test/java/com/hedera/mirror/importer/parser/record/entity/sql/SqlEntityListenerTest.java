@@ -49,7 +49,6 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -57,6 +56,7 @@ import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -66,12 +66,12 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
-import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class SqlEntityListenerTest extends IntegrationTest {
@@ -89,7 +89,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final ScheduleRepository scheduleRepository;
-    private final ScheduleSignatureRepository scheduleSignatureRepository;
+    private final TransactionSignatureRepository transactionSignatureRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
 
@@ -357,24 +357,24 @@ public class SqlEntityListenerTest extends IntegrationTest {
         byte[] pubKeyPrefix2 = "pubKeyPrefix2".getBytes();
         byte[] pubKeyPrefix3 = "pubKeyPrefix3".getBytes();
 
-        ScheduleSignature scheduleSignature1 = getScheduleSignature(1, entityId1.entityIdToString(), pubKeyPrefix1);
-        ScheduleSignature scheduleSignature2 = getScheduleSignature(2, entityId2.entityIdToString(), pubKeyPrefix2);
-        ScheduleSignature scheduleSignature3 = getScheduleSignature(3, entityId3.entityIdToString(), pubKeyPrefix3);
+        TransactionSignature transactionSignature1 = getTransactionSignature(1, entityId1.entityIdToString(), pubKeyPrefix1);
+        TransactionSignature transactionSignature2 = getTransactionSignature(2, entityId2.entityIdToString(), pubKeyPrefix2);
+        TransactionSignature transactionSignature3 = getTransactionSignature(3, entityId3.entityIdToString(), pubKeyPrefix3);
 
         // when
-        sqlEntityListener.onScheduleSignature(scheduleSignature1);
-        sqlEntityListener.onScheduleSignature(scheduleSignature2);
-        sqlEntityListener.onScheduleSignature(scheduleSignature3);
+        sqlEntityListener.onTransactionSignature(transactionSignature1);
+        sqlEntityListener.onTransactionSignature(transactionSignature2);
+        sqlEntityListener.onTransactionSignature(transactionSignature3);
         completeFileAndCommit();
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
-        assertEquals(3, scheduleSignatureRepository.count());
-        assertExistsAndEquals(scheduleSignatureRepository, scheduleSignature1, new ScheduleSignature.Id(1L,
+        assertEquals(3, transactionSignatureRepository.count());
+        assertExistsAndEquals(transactionSignatureRepository, transactionSignature1, new TransactionSignature.Id(1L,
                 pubKeyPrefix1));
-        assertExistsAndEquals(scheduleSignatureRepository, scheduleSignature2, new ScheduleSignature.Id(2L,
+        assertExistsAndEquals(transactionSignatureRepository, transactionSignature2, new TransactionSignature.Id(2L,
                 pubKeyPrefix2));
-        assertExistsAndEquals(scheduleSignatureRepository, scheduleSignature3, new ScheduleSignature.Id(3L,
+        assertExistsAndEquals(transactionSignatureRepository, transactionSignature3, new TransactionSignature.Id(3L,
                 pubKeyPrefix3));
     }
 
@@ -505,14 +505,15 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return schedule;
     }
 
-    private ScheduleSignature getScheduleSignature(long consensusTimestamp, String scheduleId, byte[] pubKeyPrefix) {
-        ScheduleSignature scheduleSignature = new ScheduleSignature();
-        scheduleSignature.setId(new ScheduleSignature.Id(
+    private TransactionSignature getTransactionSignature(long consensusTimestamp, String scheduleId,
+                                                         byte[] pubKeyPrefix) {
+        TransactionSignature transactionSignature = new TransactionSignature();
+        transactionSignature.setId(new TransactionSignature.Id(
                 consensusTimestamp,
                 pubKeyPrefix));
-        scheduleSignature.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
-        scheduleSignature.setSignature("scheduled transaction signature".getBytes());
-        return scheduleSignature;
+        transactionSignature.setEntityId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        transactionSignature.setSignature("scheduled transaction signature".getBytes());
+        return transactionSignature;
     }
 
     private RecordFile clone(RecordFile recordFile) {

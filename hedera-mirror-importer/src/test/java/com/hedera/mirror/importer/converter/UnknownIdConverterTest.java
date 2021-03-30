@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,20 +20,11 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeAll;
 
-@Getter
-@RequiredArgsConstructor
-public enum EntityTypeEnum {
-
-    UNKNOWN(0),
-    ACCOUNT(1),
-    CONTRACT(2),
-    FILE(3),
-    TOPIC(4),
-    TOKEN(5),
-    SCHEDULE(6);
-
-    private final int id;
+class UnknownIdConverterTest extends AbstractEntityConverterTest {
+    @BeforeAll
+    static void beforeAll() {
+        converter = new UnknownIdConverter();
+    }
 }
