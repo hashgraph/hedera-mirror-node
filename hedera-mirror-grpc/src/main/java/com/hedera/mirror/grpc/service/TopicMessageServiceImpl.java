@@ -73,7 +73,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext(filter);
 
-        Flux<TopicMessage> flux =  topicMessageRetriever.retrieve(filter, true)
+        Flux<TopicMessage> flux = topicMessageRetriever.retrieve(filter, true)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0); // Ignore duplicates
 
@@ -95,8 +95,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         return Mono.justOrEmpty(entityRepository
                 .findByCompositeKey(grpcProperties.getShard(), filter.getRealmNum(), filter.getTopicNum()))
                 .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
-                        Mono.just(Entity.builder().entityTypeId(EntityType.TOPIC).build()))
-                .filter(e -> e.getEntityTypeId() == EntityType.TOPIC)
+                        Mono.just(Entity.builder().type(EntityType.TOPIC).build()))
+                .filter(e -> e.getType() == EntityType.TOPIC)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }
 
