@@ -190,12 +190,12 @@ timescaledb:
       dcs:
         postgresql:
           parameters:
-            max_wal_size: 8GB  # recommended to be 80% of the Volume Size
-            min_wal_size: 2GB  # 80% of the WAL Volume Size
-            shared_buffers: 1GB  # recommended to be 25% of available instance memory
+            shared_buffers: 2GB  # recommended to be 25% of available instance memory
             ssl: 'off'  # disable all ssl connections to not require Patroni certificate
+            max_wal_size: 1GB
+            max_worker_processes: 30  # Must be > max_background_workers + max_worker_processes (default 8)
+            timescaledb.max_background_workers: 20
             work_mem: 50MB
-
     postgresql:
       pg_hba:
       - local     all             postgres                              peer  # allow local connections
@@ -205,7 +205,7 @@ timescaledb:
     data:
       size: 500Gi
     wal:
-      size: 8Gi
+      size: 2Gi
 
   podManagementPolicy: Parallel
   postInit:
@@ -219,5 +219,3 @@ timescaledb:
     requests:
       cpu: 1
       memory: 1Gi
-  timescaledbTune:
-    enabled: false
