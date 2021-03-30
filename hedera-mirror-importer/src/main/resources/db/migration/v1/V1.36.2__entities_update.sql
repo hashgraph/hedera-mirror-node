@@ -3,9 +3,6 @@
 -- Update auto_renew_account_id, deleted, memo and proxy_account_id columns
 -------------------
 
--- option 1 - update in place for multiple criteria, then rename
--- option 2 - create new table, copy, delete indexes from previous and add new ones
-
 create table if not exists entity
 (
     auto_renew_account_id bigint,
@@ -59,7 +56,7 @@ alter table entity
         check (public_key = lower(public_key));
 create index if not exists entity__public_key_natural_id
     on entity (public_key, type, shard, realm, num);
-create unique index if not exists entities_unq
+create unique index if not exists entity_unq
     on entity (shard, realm, num);
 
 

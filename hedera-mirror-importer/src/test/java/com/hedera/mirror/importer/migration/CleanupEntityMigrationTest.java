@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.Optional;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {"truncate table transaction restart " +
         "identity cascade"})
@@ -80,6 +82,11 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         setEntityTablesPreV_1_36();
     }
 
+    @AfterEach
+    void after() {
+        cleanup();
+    }
+
     @Test
     void verifyEntityTypeMigrationEmpty() throws Exception {
         // migration
@@ -91,12 +98,13 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
     @Test
     void verifyEntityMigrationCreationTransactions() throws Exception {
-        insertEntity(entity(1, EntityTypeEnum.ACCOUNT));
-        insertEntity(entity(2, EntityTypeEnum.CONTRACT));
-        insertEntity(entity(3, EntityTypeEnum.FILE));
-        insertEntity(entity(4, EntityTypeEnum.TOPIC));
-        insertEntity(entity(5, EntityTypeEnum.TOKEN));
-        insertEntity(entity(6, EntityTypeEnum.SCHEDULE));
+        long[] ids = new long[] {1, 2, 3, 4, 5, 6};
+        insertEntity(entity(ids[0], EntityTypeEnum.ACCOUNT));
+        insertEntity(entity(ids[1], EntityTypeEnum.CONTRACT));
+        insertEntity(entity(ids[2], EntityTypeEnum.FILE));
+        insertEntity(entity(ids[3], EntityTypeEnum.TOPIC));
+        insertEntity(entity(ids[4], EntityTypeEnum.TOKEN));
+        insertEntity(entity(ids[5], EntityTypeEnum.SCHEDULE));
 
         long[] consensusTimestamps = new long[] {10, 20, 30, 40, 50, 60};
         insertTransaction(consensusTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
@@ -112,12 +120,14 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         insertTransaction(consensusTimestamps[5], 6, EntityTypeEnum.SCHEDULE, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.SCHEDULECREATE);
 
+        assertEquals(ids.length, getTEntitiesCount());
+
         // migration
         migrate();
 
         assertEquals(consensusTimestamps.length, entityRepository.count());
-        for (int i = 0; i < 5; i++) {
-            Optional<Entity> entity = entityRepository.findById((long) i);
+        for (int i = 0; i < ids.length; i++) {
+            Optional<Entity> entity = entityRepository.findById(ids[i]);
             long consensusTimestamp = consensusTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
@@ -130,12 +140,13 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
     @Test
     void verifyEntityMigrationCreationTransactionsWithFailures() throws Exception {
-        insertEntity(entity(1, EntityTypeEnum.ACCOUNT));
-        insertEntity(entity(2, EntityTypeEnum.CONTRACT));
-        insertEntity(entity(3, EntityTypeEnum.FILE));
-        insertEntity(entity(4, EntityTypeEnum.TOPIC));
-        insertEntity(entity(5, EntityTypeEnum.TOKEN));
-        insertEntity(entity(6, EntityTypeEnum.SCHEDULE));
+        long[] ids = new long[] {1, 2, 3, 4, 5, 6};
+        insertEntity(entity(ids[0], EntityTypeEnum.ACCOUNT));
+        insertEntity(entity(ids[1], EntityTypeEnum.CONTRACT));
+        insertEntity(entity(ids[2], EntityTypeEnum.FILE));
+        insertEntity(entity(ids[3], EntityTypeEnum.TOPIC));
+        insertEntity(entity(ids[4], EntityTypeEnum.TOKEN));
+        insertEntity(entity(ids[5], EntityTypeEnum.SCHEDULE));
 
         long[] consensusTimestamps = new long[] {10, 20, 30, 40, 50, 60};
 
@@ -172,8 +183,8 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         migrate();
 
         assertEquals(consensusTimestamps.length, entityRepository.count());
-        for (int i = 0; i < consensusTimestamps.length; i++) {
-            Optional<Entity> entity = entityRepository.findById((long) i);
+        for (int i = 0; i < ids.length; i++) {
+            Optional<Entity> entity = entityRepository.findById(ids[i]);
             long consensusTimestamp = consensusTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
@@ -187,11 +198,12 @@ class CleanupEntityMigrationTest extends IntegrationTest {
     @Test
     void verifyEntityMigrationWithUpdates() throws Exception {
         // excludes schedules as they can't yet be updated
-        insertEntity(entity(1, EntityTypeEnum.ACCOUNT));
-        insertEntity(entity(2, EntityTypeEnum.CONTRACT));
-        insertEntity(entity(3, EntityTypeEnum.FILE));
-        insertEntity(entity(4, EntityTypeEnum.TOPIC));
-        insertEntity(entity(5, EntityTypeEnum.TOKEN));
+        long[] ids = new long[] {1, 2, 3, 4, 5};
+        insertEntity(entity(ids[0], EntityTypeEnum.ACCOUNT));
+        insertEntity(entity(ids[1], EntityTypeEnum.CONTRACT));
+        insertEntity(entity(ids[2], EntityTypeEnum.FILE));
+        insertEntity(entity(ids[3], EntityTypeEnum.TOPIC));
+        insertEntity(entity(ids[4], EntityTypeEnum.TOKEN));
 
         long[] consensusTimestamps = new long[] {10, 20, 30, 40, 50};
 
@@ -224,8 +236,8 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         migrate();
 
         assertEquals(consensusTimestamps.length, entityRepository.count());
-        for (int i = 0; i < consensusTimestamps.length; i++) {
-            Optional<Entity> entity = entityRepository.findById((long) i);
+        for (int i = 0; i < ids.length; i++) {
+            Optional<Entity> entity = entityRepository.findById(ids[i]);
             long consensusTimestamp = consensusTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
@@ -240,7 +252,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusNs(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 1, id, entityType));
+        transaction.setEntityId(EntityId.of(0, 0, id, entityType));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
         transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityTypeEnum.ACCOUNT));
@@ -261,13 +273,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
     }
 
     private Entity entity(long id, EntityTypeEnum entityType) {
-        Entity entity = new Entity();
-        entity.setId(id);
-        entity.setNum(1L);
-        entity.setRealm(0L);
-        entity.setShard(0L);
-        entity.setType(entityType.getId());
-        entity.setMemo("abc" + (char) 0);
+        Entity entity = EntityIdEndec.decode(id, entityType).toEntity();
         entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityTypeEnum.ACCOUNT));
         entity.setProxyAccountId(EntityId.of("4.5.6", EntityTypeEnum.ACCOUNT));
         return entity;
@@ -278,13 +284,13 @@ class CleanupEntityMigrationTest extends IntegrationTest {
     }
 
     /**
-     * Insert entity object using only columns supported before V_1_36.1
+     * Insert entity object using only columns supported before V_1_36.2
      *
      * @param entity entity domain
      */
     private void insertEntity(Entity entity) {
         jdbcOperations
-                .update("insert into t_entites (auto_renew_account_id, auto_renew_period, deleted, entity_num, " +
+                .update("insert into t_entities (auto_renew_account_id, auto_renew_period, deleted, entity_num, " +
                                 "entity_realm, entity_shard, ed25519_public_key_hex, exp_time_ns, fk_entity_type_id, " +
                                 "id, key, memo, proxy_account_id, submit_key) values" +
                                 " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -305,7 +311,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
     }
 
     /**
-     * Ensure entity tables match expected state before V_1_36.0
+     * Ensure entity tables match expected state before V_1_36.2
      */
     private void setEntityTablesPreV_1_36() {
         // remove entity table if present
@@ -331,5 +337,15 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                         "    id                     bigint  not null,\n" +
                         "    proxy_account_id       bigint" +
                         ");");
+    }
+
+    private int getTEntitiesCount() {
+        return jdbcOperations.queryForObject("select count(*) from t_entities", Integer.class);
+    }
+
+    private void cleanup() {
+        jdbcOperations.execute("truncate table entity restart identity cascade;");
+
+        jdbcOperations.execute("drop table if exists t_entities cascade;");
     }
 }
