@@ -57,7 +57,7 @@ jobs:
         run: echo "branch=${{ github.ref }}" >> $GITHUB_ENV
 
       - name: Set branch
-        if: ${{ github.head_ref != '' }}
+        if: !startsWith(github.ref, 'refs/tags/v')
         run: echo "branch=${{ github.head_ref }}" >> $GITHUB_ENV
 
       - name: Build Mirror Node All-in-One
