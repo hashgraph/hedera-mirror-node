@@ -49,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -83,7 +82,6 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -106,7 +104,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final Predicate<TransactionFilterFields> transactionFilter;
-    private final Collection<TransactionTypeEnum> transactionSignatureTypes;
     private static final String MISSING_TOKEN_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
             "{} with timestamp {}";
     private static final String MISSING_TOKEN_ACCOUNT_MESSAGE = "Missing token_account for token {} and account {}, " +
@@ -116,7 +113,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     AddressBookService addressBookService, EntityRepository entityRepository,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
-                                    RecordParserProperties recordParserProperties,
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository,
                                     ScheduleRepository scheduleRepository) {
@@ -130,7 +126,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         this.tokenAccountRepository = tokenAccountRepository;
         this.scheduleRepository = scheduleRepository;
         transactionFilter = commonParserProperties.getFilter();
-        transactionSignatureTypes = recordParserProperties.getTransactionSignatureTypes();
     }
 
     public static boolean isSuccessful(TransactionRecord transactionRecord) {
@@ -191,6 +186,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             onScheduledTransaction(recordItem);
         }
 
+        if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
+            insertTransactionSignatures(
+                    tx.getEntityId(),
+                    recordItem.getConsensusTimestamp(),
+                    recordItem.getSignatureMap().getSigPairList());
+        }
+
         if (isSuccessful) {
             if (!EntityId.isEmpty(entityId)) {
                 // Only insert entityId on successful transaction, as non null entityIds can be retrieved from
@@ -205,13 +207,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
-
-            if (transactionSignatureTypes.contains(transactionTypeEnum)) {
-                insertTransactionSignatures(
-                        tx.getEntityId(),
-                        recordItem.getConsensusTimestamp(),
-                        recordItem.getSignatureMap().getSigPairList());
-            }
 
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusNs, body, txRecord);

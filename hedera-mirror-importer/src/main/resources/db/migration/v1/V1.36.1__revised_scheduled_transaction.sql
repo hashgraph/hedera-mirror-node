@@ -22,3 +22,6 @@ insert into t_transaction_results (proto_id, result) values
 alter table if exists schedule_signature alter column schedule_id drop not null;
 alter table if exists schedule_signature rename column schedule_id to entity_id;
 alter table if exists schedule_signature rename to transaction_signature;
+alter index if exists schedule_signature__schedule_id rename to transaction_signature__entity_id;
+alter index if exists schedule_signature__timestamp_public_key_prefix
+    rename to transaction_signature__timestamp_public_key_prefix;

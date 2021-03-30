@@ -22,11 +22,14 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
@@ -42,11 +45,12 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -56,7 +60,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -66,7 +69,6 @@ import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -114,18 +116,15 @@ class TransactionSignatureTest {
 
     private EntityRecordItemListener entityRecordItemListener;
 
-    private Collection<TransactionTypeEnum> transactionSignatureTypes;
+    private Collection<TransactionTypeEnum> transactionSignatures;
 
     @BeforeEach
     void setup() {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
         EntityProperties entityProperties = new EntityProperties();
-        MirrorProperties mirrorProperties = new MirrorProperties();
-        RecordParserProperties recordParserProperties = new RecordParserProperties(mirrorProperties);
         entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
                 addressBookService, entityRepository, nonFeeTransferExtractionStrategy, entityListener,
-                recordParserProperties, transactionHandlerFactory, tokenRepository, tokenAccountRepository,
-                scheduleRepository);
+                transactionHandlerFactory, tokenRepository, tokenAccountRepository, scheduleRepository);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()
@@ -140,15 +139,16 @@ class TransactionSignatureTest {
                     return transactionSignature;
                 })
                 .collect(Collectors.toList());
-        transactionSignatureTypes = recordParserProperties.getTransactionSignatureTypes();
+        transactionSignatures = entityProperties.getPersist().getTransactionSignatures();
 
         doReturn(ENTITY_ID).when(transactionHandler).getEntity(any(RecordItem.class));
         doReturn(transactionHandler).when(transactionHandlerFactory).create(any(TransactionBody.class));
     }
 
-    @Test
-    void nonEd25519Signature() {
-        transactionSignatureTypes.add(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE);
+    @ParameterizedTest
+    @EnumSource(value = ResponseCodeEnum.class, names = {"SUCCESS", "FAIL_FEE"}, mode = INCLUDE)
+    void nonEd25519Signature(ResponseCodeEnum responseCode) {
+        transactionSignatures.add(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE);
 
         SignatureMap signatureMap = defaultSignatureMap
                 .addSigPair(SignaturePair.newBuilder()
@@ -156,49 +156,59 @@ class TransactionSignatureTest {
                         .setRSA3072(ByteString.copyFromUtf8("RSA3072Signature"))
                         .build())
                 .build();
-        RecordItem recordItem = getRecordItem(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE, signatureMap);
+        RecordItem recordItem = getRecordItem(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE, responseCode, signatureMap);
 
         assertThrows(ImporterException.class, () -> entityRecordItemListener.onItem(recordItem));
     }
 
     @ParameterizedTest
-    @EnumSource(value = TransactionTypeEnum.class, names = "UNKNOWN", mode = EnumSource.Mode.EXCLUDE)
-    void transactionSignatureEnabled(TransactionTypeEnum transactionType) {
-        transactionSignatureTypes.clear();
-        transactionSignatureTypes.add(transactionType);
+    @MethodSource("provideAllCombinations")
+    void transactionSignatureEnabled(TransactionTypeEnum transactionType, ResponseCodeEnum responseCode) {
+        transactionSignatures.clear();
+        transactionSignatures.add(transactionType);
 
-        RecordItem recordItem = getRecordItem(transactionType);
+        RecordItem recordItem = getRecordItem(transactionType, responseCode);
         entityRecordItemListener.onItem(recordItem);
 
         assertTransactionSignatures(defaultTransactionSignatures);
     }
 
     @ParameterizedTest
-    @EnumSource(value = TransactionTypeEnum.class, names = "UNKNOWN", mode = EnumSource.Mode.EXCLUDE)
-    void transactionSignatureDisabled(TransactionTypeEnum transactionType) {
-        transactionSignatureTypes.addAll(Arrays.asList(TransactionTypeEnum.values()));
-        transactionSignatureTypes.remove(transactionType);
+    @MethodSource("provideAllCombinations")
+    void transactionSignatureDisabled(TransactionTypeEnum transactionType, ResponseCodeEnum responseCode) {
+        transactionSignatures.addAll(Arrays.asList(TransactionTypeEnum.values()));
+        transactionSignatures.remove(transactionType);
 
-        RecordItem recordItem = getRecordItem(transactionType);
+        RecordItem recordItem = getRecordItem(transactionType, responseCode);
         entityRecordItemListener.onItem(recordItem);
 
         assertTransactionSignatures(Collections.emptyList());
     }
 
     @ParameterizedTest
-    @MethodSource("provideDefaultTransactionSignatureTypes")
-    void transactionSignatureDefault(TransactionTypeEnum transactionType) {
-        RecordItem recordItem = getRecordItem(transactionType);
+    @MethodSource("provideDefaultCombinations")
+    void transactionSignatureDefault(TransactionTypeEnum transactionType, ResponseCodeEnum responseCode) {
+        RecordItem recordItem = getRecordItem(transactionType, responseCode);
         entityRecordItemListener.onItem(recordItem);
 
         assertTransactionSignatures(defaultTransactionSignatures);
     }
 
-    private static Stream<Arguments> provideDefaultTransactionSignatureTypes() {
-        MirrorProperties mirrorProperties = new MirrorProperties();
-        return new RecordParserProperties(mirrorProperties).getTransactionSignatureTypes()
+    private static Stream<Arguments> provideAllCombinations() {
+        Set<TransactionTypeEnum> validTransactionTypes = EnumSet.complementOf(EnumSet.of(TransactionTypeEnum.UNKNOWN));
+        Set<ResponseCodeEnum> responseCodes = EnumSet.of(ResponseCodeEnum.SUCCESS, ResponseCodeEnum.FAIL_FEE);
+        return Sets.cartesianProduct(ImmutableList.of(validTransactionTypes, responseCodes))
                 .stream()
-                .map(Arguments::of);
+                .map(pair -> Arguments.of(pair.get(0), pair.get(1)));
+    }
+
+    private static Stream<Arguments> provideDefaultCombinations() {
+        Set<TransactionTypeEnum> defaultTransactionTypes = EnumSet.copyOf(new EntityProperties().getPersist()
+                .getTransactionSignatures());
+        Set<ResponseCodeEnum> responseCodes = EnumSet.of(ResponseCodeEnum.SUCCESS, ResponseCodeEnum.FAIL_FEE);
+        return Sets.cartesianProduct(ImmutableList.of(defaultTransactionTypes, responseCodes))
+                .stream()
+                .map(pair -> Arguments.of(pair.get(0), pair.get(1)));
     }
 
     private SignatureMap.Builder getDefaultSignatureMap() {
@@ -222,23 +232,25 @@ class TransactionSignatureTest {
         return sigMap;
     }
 
-    private RecordItem getRecordItem(TransactionTypeEnum transactionType) {
-        return getRecordItem(transactionType, defaultSignatureMap.build());
+    private RecordItem getRecordItem(TransactionTypeEnum transactionType, ResponseCodeEnum responseCode) {
+        return getRecordItem(transactionType, responseCode, defaultSignatureMap.build());
     }
 
-    private RecordItem getRecordItem(TransactionTypeEnum transactionType, SignatureMap signatureMap) {
+    private RecordItem getRecordItem(TransactionTypeEnum transactionType, ResponseCodeEnum responseCode,
+                                     SignatureMap signatureMap) {
         TransactionBody transactionBody = getTransactionBody(transactionType);
-        Transaction transaction = Transaction.newBuilder().setSignedTransactionBytes(
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(transactionBody.toByteString())
-                        .setSigMap(signatureMap)
-                        .build()
-                        .toByteString()
-        )
+        Transaction transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(transactionBody.toByteString())
+                                .setSigMap(signatureMap)
+                                .build()
+                                .toByteString()
+                )
                 .build();
         TransactionRecord transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0, CONSENSUS_TIMESTAMP)))
-                .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(responseCode).build())
                 .build();
         return new RecordItem(transaction, transactionRecord);
     }
