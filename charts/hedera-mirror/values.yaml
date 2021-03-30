@@ -181,7 +181,6 @@ rest:
 timescaledb:
   enabled: false
   image:
-    pullPolicy: IfNotPresent
     repository: timescaledev/timescaledb-ha
     tag: pg12.6-ts2.1.0-p1
   loadBalancer:
@@ -191,10 +190,10 @@ timescaledb:
       dcs:
         postgresql:
           parameters:
-            shared_buffers: 2GB  # recommended to be 25% of available instance memory
-            ssl: 'off'  # disable all ssl connections to not require Patroni certificate
             max_wal_size: 1GB
             max_worker_processes: 30  # Must be > max_background_workers + max_worker_processes (default 8)
+            shared_buffers: 2GB  # recommended to be 25% of available instance memory
+            ssl: 'off'  # disable all ssl connections to not require Patroni certificate
             timescaledb.max_background_workers: 20
             work_mem: 50MB
     postgresql:
@@ -212,6 +211,11 @@ timescaledb:
   postInit:
     - secret:
         name: timescaledb-init-job
+  prometheus:
+    image:
+      pullPolicy: IfNotPresent
+      repository: bitnami/postgres-exporter
+      tag: 0.9.0-debian-10-r23
   replicaCount: 1
   resources:
     limits:
