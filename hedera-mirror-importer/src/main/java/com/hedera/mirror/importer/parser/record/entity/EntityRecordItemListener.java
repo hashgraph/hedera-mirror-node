@@ -186,13 +186,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             onScheduledTransaction(recordItem);
         }
 
-        if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
-            insertTransactionSignatures(
-                    tx.getEntityId(),
-                    recordItem.getConsensusTimestamp(),
-                    recordItem.getSignatureMap().getSigPairList());
-        }
-
         if (isSuccessful) {
             if (!EntityId.isEmpty(entityId)) {
                 // Only insert entityId on successful transaction, as non null entityIds can be retrieved from
@@ -207,6 +200,13 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
+
+            if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
+                insertTransactionSignatures(
+                        tx.getEntityId(),
+                        recordItem.getConsensusTimestamp(),
+                        recordItem.getSignatureMap().getSigPairList());
+            }
 
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusNs, body, txRecord);
