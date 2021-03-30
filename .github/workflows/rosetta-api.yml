@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Build Mirror Node All-in-One
-        run: docker build --tag="${MODULE}" --build-arg GIT_BRANCH=${{ github.head_ref }} build/
+        run: docker build --tag="${MODULE}" --build-arg GIT_BRANCH=${{ github.ref }} build/
 
       - name: Run Mirror Node
         run: docker run -d -p 5700:5700 "${MODULE}"
