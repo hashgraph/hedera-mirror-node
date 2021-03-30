@@ -115,7 +115,7 @@ public interface EntityListener {
     1. `NullEntityListener`: No-op implementation
         - For micro-benchmarking parser performance
 
-Note that there are no function for `onEntity`. Updating entity in batch in not possible right now since
+Note that there are no function for `onEntity`. Updating `entity` table in batches is not possible right now since
 `transaction` table uses foreign keys. For entity, first, schema changes are needed to remove entity ids,
 then `onEntity` and `onEntityUpdate` functions will be added to insert/update entity in bulk. For the purpose of
 immediate refactor, we can leave entity in `EntityRecordItemListener` (until perf optimizations via schema change in

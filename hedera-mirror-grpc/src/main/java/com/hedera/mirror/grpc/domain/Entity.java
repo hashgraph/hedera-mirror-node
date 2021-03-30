@@ -28,6 +28,7 @@ import lombok.NoArgsConstructor;
 
 @Builder
 @Data
+@javax.persistence.Entity(name = "entity")
 @NoArgsConstructor
 @AllArgsConstructor
 public class Entity {

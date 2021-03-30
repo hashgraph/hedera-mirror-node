@@ -1,6 +1,7 @@
 -------------------
 -- Migrate from t_entities to entity
--- Update auto_renew_account_id, deleted, memo and proxy_account_id columns
+-- Update auto_renew_account_id, ed25519_public_key_hex, deleted, memo and proxy_account_id columns
+-- Add created_timestamp and modified_timestamp and pull values from transaction table
 -------------------
 
 create table if not exists entity

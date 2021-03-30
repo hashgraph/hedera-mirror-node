@@ -40,7 +40,7 @@ public class DomainWriterImpl implements DomainWriter {
     private final EntityRepository entityRepository;
 
     private final Collection<AccountBalance> accountBalances;
-    private final HashSet<Entity> entities;
+    private final Collection<Entity> entities;
 
     public DomainWriterImpl(AccountBalanceRepository accountBalanceRepository, EntityRepository entityRepository) {
         this.accountBalanceRepository = accountBalanceRepository;
