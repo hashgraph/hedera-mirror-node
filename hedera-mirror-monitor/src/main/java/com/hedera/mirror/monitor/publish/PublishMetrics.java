@@ -57,8 +57,8 @@ public class PublishMetrics {
     private final Map<Tags, Timer> submitTimers = new ConcurrentHashMap<>();
     private final Map<Tags, TimeGauge> durationGauges = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
-    private long lastCount = 0;
-    private long lastElapsed = 0;
+    private final AtomicLong lastCount = new AtomicLong();
+    private final AtomicLong lastElapsed = new AtomicLong();
 
     @FunctionalInterface
     interface CheckedFunction<T, R> {
@@ -144,16 +144,16 @@ public class PublishMetrics {
         long count = counter.get();
         long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
         double averageRate = getRate(count, elapsed);
-        long instantCount = count - lastCount;
-        long instantElapsed = elapsed - lastElapsed;
+        long instantCount = count - lastCount.get();
+        long instantElapsed = elapsed - lastElapsed.get();
         double instantRate = getRate(instantCount, instantElapsed);
         Map<String, Integer> errorCounts = new HashMap<>();
         errors.forEachEntry((k, v) -> errorCounts.put(k, v));
         log.info("Published {} transactions in {} at {}/s, {} transactions in last {} s at {}/s. Errors: {}",
                 count, stopwatch, averageRate, instantCount, toSeconds(instantElapsed), instantRate, errorCounts);
 
-        lastCount = count;
-        lastElapsed = elapsed;
+        lastCount.set(count);
+        lastElapsed.set(elapsed);
     }
 
     private double getRate(long count, long elapsedMicros) {

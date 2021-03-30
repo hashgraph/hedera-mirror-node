@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -49,10 +50,10 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     }
 
     private final PublishProperties properties;
-    volatile EnumeratedDistribution<TransactionGenerator> distribution;
-    AtomicReference<RateLimiter> rateLimiter = new AtomicReference<>();
-    List<ConfigurableTransactionGenerator> transactionGenerators;
-    volatile int batchSize;
+    final AtomicReference<EnumeratedDistribution<TransactionGenerator>> distribution = new AtomicReference<>();
+    final AtomicReference<RateLimiter> rateLimiter = new AtomicReference<>();
+    final List<ConfigurableTransactionGenerator> transactionGenerators;
+    final AtomicInteger batchSize = new AtomicInteger(1);
 
     public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
         this.properties = properties;
@@ -67,14 +68,14 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
 
     @Override
     public List<PublishRequest> next(int count) {
-        int permits = count > 0 ? count : batchSize;
+        int permits = count > 0 ? count : batchSize.get();
         rateLimiter.get().acquire(permits);
 
         List<PublishRequest> publishRequests = new ArrayList<>();
         int i = 0;
         while (i < permits) {
             try {
-                TransactionGenerator transactionGenerator = distribution.sample();
+                TransactionGenerator transactionGenerator = distribution.get().sample();
                 publishRequests.addAll(transactionGenerator.next());
                 i++;
             } catch (ScenarioException e) {
@@ -108,8 +109,8 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         }
 
         if (!properties.isEnabled() || pairs.isEmpty() || total == 0.0) {
-            batchSize = 1;
-            distribution = null;
+            batchSize.set(1);
+            distribution.set(null);
             rateLimiter.set(INACTIVE_RATE_LIMITER);
             log.info("Publishing is disabled");
             return;
@@ -119,8 +120,8 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
             log.info("Activated scenario: {}", transactionGenerator.getProperties());
         }
 
-        batchSize = Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor()));
-        distribution = new EnumeratedDistribution<>(pairs);
+        batchSize.set(Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor())));
+        distribution.set(new EnumeratedDistribution<>(pairs));
 
         RateLimiter current = rateLimiter.get();
         if (current != null) {

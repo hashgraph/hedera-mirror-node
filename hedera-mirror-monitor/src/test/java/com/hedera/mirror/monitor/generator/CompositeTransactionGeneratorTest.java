@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.from;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
@@ -80,7 +79,7 @@ class CompositeTransactionGeneratorTest {
         CompositeTransactionGenerator generator = supplier.get();
 
         List<PublishRequest> publishRequests = generator.next(count);
-        assertThat(publishRequests).hasSize(generator.batchSize);
+        assertThat(publishRequests).hasSize(generator.batchSize.get());
     }
 
     @Test
@@ -94,7 +93,7 @@ class CompositeTransactionGeneratorTest {
     @Test
     void batchRequestGreaterThanDefault() {
         CompositeTransactionGenerator generator = supplier.get();
-        int count = generator.batchSize + 1;
+        int count = generator.batchSize.get() + 1;
 
         List<PublishRequest> publishRequests = generator.next(count);
         assertThat(publishRequests).hasSize(count);
@@ -104,7 +103,7 @@ class CompositeTransactionGeneratorTest {
     void distribution() {
         properties.setWarmupPeriod(Duration.ZERO);
         CompositeTransactionGenerator generator = supplier.get();
-        assertThat(generator.distribution.getPmf())
+        assertThat(generator.distribution.get().getPmf())
                 .hasSize(properties.getScenarios().size())
                 .extracting(Pair::getValue)
                 .containsExactly(0.75, 0.25);
@@ -129,7 +128,7 @@ class CompositeTransactionGeneratorTest {
     void disabledScenario() {
         properties.getScenarios().get(0).setEnabled(false);
         CompositeTransactionGenerator generator = supplier.get();
-        assertThat(generator.distribution.getPmf())
+        assertThat(generator.distribution.get().getPmf())
                 .hasSize(1)
                 .extracting(Pair::getValue)
                 .containsExactly(1.0);
