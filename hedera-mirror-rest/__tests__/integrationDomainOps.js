@@ -183,7 +183,7 @@ const addAccount = async (account) => {
   await addEntity(
     {
       public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      entity_type: 1,
+      type: 1,
     },
     account
   );
