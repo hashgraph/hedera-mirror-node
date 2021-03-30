@@ -213,7 +213,7 @@
                     <artifactId>maven-assembly-plugin</artifactId>
                     <configuration>
                         <appendAssemblyId>false</appendAssemblyId>
-                        <finalName>${project.artifactId}-${release.version}</finalName>
+                        <finalName>${project.artifactId}-v${release.version}</finalName>
                         <formats>tgz</formats>
                         <descriptors>
                             <descriptor>assembly.xml</descriptor>
