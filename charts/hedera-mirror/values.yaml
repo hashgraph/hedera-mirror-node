@@ -181,6 +181,7 @@ rest:
 timescaledb:
   enabled: false
   image:
+    pullPolicy: IfNotPresent
     repository: timescaledev/timescaledb-ha
     tag: pg12.6-ts2.1.0-p1
   loadBalancer:
@@ -214,8 +215,8 @@ timescaledb:
   prometheus:
     image:
       pullPolicy: IfNotPresent
-      repository: bitnami/postgres-exporter
-      tag: 0.9.0-debian-10-r23
+      repository: quay.io/prometheuscommunity/postgres-exporter
+      tag: v0.9.0
   replicaCount: 1
   resources:
     limits:
