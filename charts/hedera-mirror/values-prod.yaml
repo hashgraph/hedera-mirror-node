@@ -54,4 +54,7 @@ rest:
     enabled: true
 
 timescaledb:
+  prometheus:
+    enabled: true
   replicaCount: 2
+
