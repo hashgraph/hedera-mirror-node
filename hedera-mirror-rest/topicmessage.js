@@ -53,7 +53,7 @@ const validateConsensusTimestampParam = (consensusTimestamp) => {
 };
 
 /**
- * Verify topicId and sequencenumber meet entity_num format
+ * Verify topicId and sequencenumber meet entity num format
  */
 const validateGetSequenceMessageParams = (topicId, seqNum) => {
   const badParams = [];
@@ -71,7 +71,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
 };
 
 /**
- * Verify topicId and sequencenumber meet entity_num and limit format
+ * Verify topicId and sequencenumber meet entity num and limit format
  */
 const validateGetTopicMessagesParams = (topicId) => {
   if (!EntityId.isValidEntityId(topicId)) {
