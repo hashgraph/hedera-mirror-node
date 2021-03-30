@@ -20,5 +20,5 @@ dependencies:
 - name: timescaledb-single
   repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
   version: 0.8.2
-digest: sha256:d5f30f8ee9efb62e121a505a58f25939627badef31d8072dd9898166df4e957c
-generated: "2021-03-25T15:19:33.153529-05:00"
+digest: sha256:5ae5e45924751919c7c52c0c7076c42867855279a49e77c84b1921dd0809dc60
+generated: "2021-03-29T21:34:03.990169-05:00"
