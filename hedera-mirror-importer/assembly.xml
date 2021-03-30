@@ -5,7 +5,7 @@
     <files>
         <file>
             <source>${project.build.directory}/${project.artifactId}-${release.version}-exec.jar</source>
-            <destName>${project.artifactId}-${release.version}.jar</destName>
+            <destName>${project.artifactId}-v${release.version}.jar</destName>
         </file>
     </files>
     <fileSets>
