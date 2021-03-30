@@ -39,7 +39,6 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -47,6 +46,7 @@ import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -55,12 +55,12 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
-import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class RepositoryEntityListenerTest extends IntegrationTest {
@@ -82,7 +82,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     private final TransactionRepository transactionRepository;
     private final RepositoryEntityListener repositoryEntityListener;
     private final ScheduleRepository scheduleRepository;
-    private final ScheduleSignatureRepository scheduleSignatureRepository;
+    private final TransactionSignatureRepository transactionSignatureRepository;
 
     @Test
     void isEnabled() {
@@ -157,14 +157,14 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
 
     @Test
     void onScheduleSignature() throws ImporterException {
-        ScheduleSignature scheduleSignature = new ScheduleSignature();
-        scheduleSignature.setId(new ScheduleSignature.Id(
+        TransactionSignature transactionSignature = new TransactionSignature();
+        transactionSignature.setId(new TransactionSignature.Id(
                 1L,
                 "signatory public key prefix".getBytes()));
-        scheduleSignature.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
-        scheduleSignature.setSignature("scheduled transaction signature".getBytes());
-        repositoryEntityListener.onScheduleSignature(scheduleSignature);
-        assertThat(scheduleSignatureRepository.findAll()).contains(scheduleSignature);
+        transactionSignature.setEntityId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
+        transactionSignature.setSignature("scheduled transaction signature".getBytes());
+        repositoryEntityListener.onTransactionSignature(transactionSignature);
+        assertThat(transactionSignatureRepository.findAll()).contains(transactionSignature);
     }
 
     @Test

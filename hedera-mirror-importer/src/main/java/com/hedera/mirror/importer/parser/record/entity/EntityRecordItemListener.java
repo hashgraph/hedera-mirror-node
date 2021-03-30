@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
@@ -66,7 +65,6 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -75,6 +73,7 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -99,12 +98,12 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
     private final EntityRepository entityRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
-    private final Predicate<TransactionFilterFields> transactionFilter;
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final ScheduleRepository scheduleRepository;
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final Predicate<TransactionFilterFields> transactionFilter;
     private static final String MISSING_TOKEN_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
             "{} with timestamp {}";
     private static final String MISSING_TOKEN_ACCOUNT_MESSAGE = "Missing token_account for token {} and account {}, " +
@@ -123,10 +122,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
-        transactionFilter = commonParserProperties.getFilter();
         this.tokenRepository = tokenRepository;
         this.tokenAccountRepository = tokenAccountRepository;
         this.scheduleRepository = scheduleRepository;
+        transactionFilter = commonParserProperties.getFilter();
     }
 
     public static boolean isSuccessful(TransactionRecord transactionRecord) {
@@ -202,6 +201,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
 
+            if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
+                insertTransactionSignatures(
+                        tx.getEntityId(),
+                        recordItem.getConsensusTimestamp(),
+                        recordItem.getSignatureMap().getSigPairList());
+            }
+
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusNs, body, txRecord);
 
@@ -240,8 +246,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenAccountWipe(recordItem);
             } else if (body.hasScheduleCreate()) {
                 insertScheduleCreate(recordItem);
-            } else if (body.hasScheduleSign()) {
-                insertScheduleSign(recordItem);
             }
         }
 
@@ -780,57 +784,24 @@ public class EntityRecordItemListener implements RecordItemListener {
                     .getScheduleCreate();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
-
-            // insert schedule only if it doesn't already exist in db
-            scheduleRepository
-                    .findByScheduleId(scheduleId)
-                    .ifPresentOrElse(s ->
-                                    log.warn("Schedule entity {} already exists, only signatures will be persisted",
-                                            s.getScheduleId())
-                            ,
-                            () -> {
-                                TransactionBody body = recordItem.getTransactionBody();
-                                var creatorAccount = EntityId.of(body.getTransactionID().getAccountID());
-                                var payerAccount = scheduleCreateTransactionBody.hasPayerAccountID() ?
-                                        EntityId.of(scheduleCreateTransactionBody.getPayerAccountID()) : creatorAccount;
-
-                                Schedule schedule = new Schedule();
-                                schedule.setConsensusTimestamp(consensusTimestamp);
-                                schedule.setCreatorAccountId(creatorAccount);
-                                schedule.setPayerAccountId(payerAccount);
-                                schedule.setScheduleId(scheduleId);
-                                schedule.setTransactionBody(scheduleCreateTransactionBody.getTransactionBody()
-                                        .toByteArray());
-                                entityListener.onSchedule(schedule);
-                            });
-
-            // insert signature for every item in sigMap
-            if (scheduleCreateTransactionBody.hasSigMap()) {
-                insertScheduleSignatures(
-                        scheduleId,
-                        consensusTimestamp,
-                        scheduleCreateTransactionBody.getSigMap().getSigPairList());
+            var creatorAccount = EntityId.of(recordItem.getTransactionBody().getTransactionID().getAccountID());
+            var payerAccount = creatorAccount;
+            if (scheduleCreateTransactionBody.hasPayerAccountID()) {
+                payerAccount = EntityId.of(scheduleCreateTransactionBody.getPayerAccountID());
+                entityListener.onEntityId(payerAccount);
             }
+
+            Schedule schedule = new Schedule();
+            schedule.setConsensusTimestamp(consensusTimestamp);
+            schedule.setCreatorAccountId(creatorAccount);
+            schedule.setPayerAccountId(payerAccount);
+            schedule.setScheduleId(scheduleId);
+            schedule.setTransactionBody(scheduleCreateTransactionBody.getScheduledTransactionBody().toByteArray());
+            entityListener.onSchedule(schedule);
         }
     }
 
-    private void insertScheduleSign(RecordItem recordItem) {
-        if (entityProperties.getPersist().isSchedules()) {
-            ScheduleSignTransactionBody scheduleSignTransactionBody = recordItem.getTransactionBody().getScheduleSign();
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            var scheduleId = EntityId.of(scheduleSignTransactionBody.getScheduleID());
-
-            // insert signature for every item in map
-            if (scheduleSignTransactionBody.hasSigMap()) {
-                insertScheduleSignatures(
-                        scheduleId,
-                        consensusTimestamp,
-                        scheduleSignTransactionBody.getSigMap().getSigPairList());
-            }
-        }
-    }
-
-    private void insertScheduleSignatures(EntityId scheduleId, long consensusTimestamp,
+    private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
                                           List<SignaturePair> signaturePairList) {
         HashSet<ByteString> publicKeyPrefixes = new HashSet<>();
         signaturePairList.forEach(signaturePair -> {
@@ -843,14 +814,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             // handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
             ByteString prefix = signaturePair.getPubKeyPrefix();
             if (publicKeyPrefixes.add(prefix)) {
-                ScheduleSignature scheduleSignature = new ScheduleSignature();
-                scheduleSignature.setId(new ScheduleSignature.Id(
+                TransactionSignature transactionSignature = new TransactionSignature();
+                transactionSignature.setId(new TransactionSignature.Id(
                         consensusTimestamp,
                         prefix.toByteArray()));
-                scheduleSignature.setScheduleId(scheduleId);
-                scheduleSignature.setSignature(signaturePair.getEd25519().toByteArray());
+                transactionSignature.setEntityId(entityId);
+                transactionSignature.setSignature(signaturePair.getEd25519().toByteArray());
 
-                entityListener.onScheduleSignature(scheduleSignature);
+                entityListener.onTransactionSignature(transactionSignature);
             }
         });
     }

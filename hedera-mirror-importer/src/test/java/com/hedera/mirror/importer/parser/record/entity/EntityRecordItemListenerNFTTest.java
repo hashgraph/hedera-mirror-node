@@ -235,7 +235,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         var body = transactionBody().setContractCall(inner);
         return Transaction.newBuilder()
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
-                        .setSigMap(getSigMap())
+                        .setSigMap(DEFAULT_SIG_MAP)
                         .build().toByteString())
                 .build();
     }
@@ -256,7 +256,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         var body = transactionBody().setContractCreateInstance(inner);
         return Transaction.newBuilder()
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
-                        .setSigMap(getSigMap())
+                        .setSigMap(DEFAULT_SIG_MAP)
                         .build().toByteString())
                 .build();
     }
@@ -280,7 +280,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         var body = transactionBody().setCryptoCreateAccount(inner);
         return Transaction.newBuilder()
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
-                        .setSigMap(getSigMap())
+                        .setSigMap(DEFAULT_SIG_MAP)
                         .build().toByteString())
                 .build();
     }
@@ -308,7 +308,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         var body = transactionBody().setCryptoTransfer(inner.build());
         return Transaction.newBuilder()
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
-                        .setSigMap(getSigMap())
+                        .setSigMap(DEFAULT_SIG_MAP)
                         .build().toByteString())
                 .build();
     }

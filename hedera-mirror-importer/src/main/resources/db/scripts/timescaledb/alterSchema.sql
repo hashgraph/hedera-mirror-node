@@ -10,4 +10,3 @@ alter table flyway_schema_history
 
 -- update sequence start values
 select setval('address_book_entry_id_seq', (select max(id) from address_book_entry));
-select setval('record_file_id_seq', (select max(id) from record_file));

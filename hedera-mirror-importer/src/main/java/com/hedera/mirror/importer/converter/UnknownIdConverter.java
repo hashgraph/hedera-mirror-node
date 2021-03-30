@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.domain;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,17 +20,17 @@ package com.hedera.datagenerator.domain;
  * ‍
  */
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import javax.inject.Named;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-@Data
-@RequiredArgsConstructor
-public class AccountBalance {
-    private final long consensusTimestamp;
+@Named
+@javax.persistence.Converter
+@ConfigurationPropertiesBinding
+public class UnknownIdConverter extends AbstractEntityIdConverter {
 
-    private final EntityId accountId;
-
-    private final long balance;
+    public UnknownIdConverter() {
+        super(EntityTypeEnum.UNKNOWN);
+    }
 }

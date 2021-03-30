@@ -1,8 +1,6 @@
 -- init the timescale db mirror node db
 -- Change the values below if you are not installing via Docker
 
-\set db_host 'localhost'
-\set db_port 5432
 \set db_name 'mirror_node'
 \set db_super_user 'postgres'
 \set db_owner 'mirror_node'
@@ -69,3 +67,4 @@ alter user :rest_user set search_path = :schema_name, public;
 -- add extensions, ensuring they're available to new schema
 create extension if not exists timescaledb cascade schema :schema_name;
 create extension if not exists pg_stat_statements cascade schema :schema_name;
+alter database :db_name set timescaledb.telemetry_level = off;

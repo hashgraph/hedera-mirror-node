@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.AccountBalanceSet;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 
-public interface AccountBalanceSetRepository extends CrudRepository<AccountBalanceSet, Long> {
+public interface TransactionSignatureRepository extends CrudRepository<TransactionSignature, TransactionSignature.Id> {
 }

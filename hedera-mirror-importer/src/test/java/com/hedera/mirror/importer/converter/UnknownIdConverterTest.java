@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,9 +20,11 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
+import org.junit.jupiter.api.BeforeAll;
 
-import com.hedera.mirror.importer.domain.ScheduleSignature;
-
-public interface ScheduleSignatureRepository extends CrudRepository<ScheduleSignature, ScheduleSignature.Id> {
+class UnknownIdConverterTest extends AbstractEntityConverterTest {
+    @BeforeAll
+    static void beforeAll() {
+        converter = new UnknownIdConverter();
+    }
 }

@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum EntityTypeEnum {
 
+    UNKNOWN(0),
     ACCOUNT(1),
     CONTRACT(2),
     FILE(3),

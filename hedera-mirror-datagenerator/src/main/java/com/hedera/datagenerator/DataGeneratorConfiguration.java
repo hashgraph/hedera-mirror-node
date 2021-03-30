@@ -21,16 +21,13 @@ package com.hedera.datagenerator;
  */
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
-import com.hedera.mirror.importer.parser.record.entity.sql.SqlProperties;
 
 @Configuration
-@ConfigurationPropertiesScan(basePackageClasses = {SqlProperties.class})
 @ComponentScan(basePackageClasses = {SqlEntityListener.class})
 @EnableJpaRepositories(basePackages = "com.hedera.mirror.importer.repository")
 @EntityScan(basePackages = "com.hedera.mirror.importer.domain")
