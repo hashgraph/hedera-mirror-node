@@ -106,18 +106,18 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         insertEntity(entity(ids[4], EntityTypeEnum.TOKEN));
         insertEntity(entity(ids[5], EntityTypeEnum.SCHEDULE));
 
-        long[] consensusTimestamps = new long[] {10, 20, 30, 40, 50, 60};
-        insertTransaction(consensusTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+        long[] createTimestamps = new long[] {10, 20, 30, 40, 50, 60};
+        insertTransaction(createTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CRYPTOCREATEACCOUNT);
-        insertTransaction(consensusTimestamps[1], 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[1], 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONTRACTCREATEINSTANCE);
-        insertTransaction(consensusTimestamps[2], 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[2], 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.FILECREATE);
-        insertTransaction(consensusTimestamps[3], 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[3], 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONSENSUSCREATETOPIC);
-        insertTransaction(consensusTimestamps[4], 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[4], 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.TOKENCREATION);
-        insertTransaction(consensusTimestamps[5], 6, EntityTypeEnum.SCHEDULE, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[5], 6, EntityTypeEnum.SCHEDULE, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.SCHEDULECREATE);
 
         assertEquals(ids.length, getTEntitiesCount());
@@ -125,10 +125,10 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         // migration
         migrate();
 
-        assertEquals(consensusTimestamps.length, entityRepository.count());
+        assertEquals(createTimestamps.length, entityRepository.count());
         for (int i = 0; i < ids.length; i++) {
             Optional<Entity> entity = entityRepository.findById(ids[i]);
-            long consensusTimestamp = consensusTimestamps[i];
+            long consensusTimestamp = createTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
                             .returns(consensusTimestamp, Entity::getCreatedTimestamp)
@@ -148,44 +148,44 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         insertEntity(entity(ids[4], EntityTypeEnum.TOKEN));
         insertEntity(entity(ids[5], EntityTypeEnum.SCHEDULE));
 
-        long[] consensusTimestamps = new long[] {10, 20, 30, 40, 50, 60};
+        long[] createTimestamps = new long[] {10, 20, 30, 40, 50, 60};
 
         // failed create transactions
-        insertTransaction(consensusTimestamps[0] - 1, 1, EntityTypeEnum.ACCOUNT,
+        insertTransaction(createTimestamps[0] - 1, 1, EntityTypeEnum.ACCOUNT,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
                 TransactionTypeEnum.CRYPTOCREATEACCOUNT);
-        insertTransaction(consensusTimestamps[1] - 1, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.INVALID_TRANSACTION,
+        insertTransaction(createTimestamps[1] - 1, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.INVALID_TRANSACTION,
                 TransactionTypeEnum.CONTRACTCREATEINSTANCE);
-        insertTransaction(consensusTimestamps[2] - 1, 3, EntityTypeEnum.FILE, ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND,
+        insertTransaction(createTimestamps[2] - 1, 3, EntityTypeEnum.FILE, ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND,
                 TransactionTypeEnum.FILECREATE);
-        insertTransaction(consensusTimestamps[3] - 1, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.INVALID_NODE_ACCOUNT,
+        insertTransaction(createTimestamps[3] - 1, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.INVALID_NODE_ACCOUNT,
                 TransactionTypeEnum.CONSENSUSCREATETOPIC);
-        insertTransaction(consensusTimestamps[4] - 1, 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.INVALID_SIGNATURE,
+        insertTransaction(createTimestamps[4] - 1, 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.INVALID_SIGNATURE,
                 TransactionTypeEnum.TOKENCREATION);
-        insertTransaction(consensusTimestamps[5] - 1, 6, EntityTypeEnum.SCHEDULE, ResponseCodeEnum.MEMO_TOO_LONG,
+        insertTransaction(createTimestamps[5] - 1, 6, EntityTypeEnum.SCHEDULE, ResponseCodeEnum.MEMO_TOO_LONG,
                 TransactionTypeEnum.SCHEDULECREATE);
 
         // successful create transactions
-        insertTransaction(consensusTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CRYPTOCREATEACCOUNT);
-        insertTransaction(consensusTimestamps[1], 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[1], 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONTRACTCREATEINSTANCE);
-        insertTransaction(consensusTimestamps[2], 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[2], 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.FILECREATE);
-        insertTransaction(consensusTimestamps[3], 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[3], 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONSENSUSCREATETOPIC);
-        insertTransaction(consensusTimestamps[4], 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[4], 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.TOKENCREATION);
-        insertTransaction(consensusTimestamps[5], 6, EntityTypeEnum.SCHEDULE, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[5], 6, EntityTypeEnum.SCHEDULE, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.SCHEDULECREATE);
 
         // migration
         migrate();
 
-        assertEquals(consensusTimestamps.length, entityRepository.count());
+        assertEquals(createTimestamps.length, entityRepository.count());
         for (int i = 0; i < ids.length; i++) {
             Optional<Entity> entity = entityRepository.findById(ids[i]);
-            long consensusTimestamp = consensusTimestamps[i];
+            long consensusTimestamp = createTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
                             .returns(consensusTimestamp, Entity::getCreatedTimestamp)
@@ -205,44 +205,45 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         insertEntity(entity(ids[3], EntityTypeEnum.TOPIC));
         insertEntity(entity(ids[4], EntityTypeEnum.TOKEN));
 
-        long[] consensusTimestamps = new long[] {10, 20, 30, 40, 50};
+        long[] createTimestamps = new long[] {10, 20, 30, 40, 50};
 
         // successful create transactions
-        insertTransaction(consensusTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CRYPTOCREATEACCOUNT);
-        insertTransaction(consensusTimestamps[1], 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[1], 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONTRACTCREATEINSTANCE);
-        insertTransaction(consensusTimestamps[2], 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[2], 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.FILECREATE);
-        insertTransaction(consensusTimestamps[3], 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[3], 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONSENSUSCREATETOPIC);
-        insertTransaction(consensusTimestamps[4], 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+        insertTransaction(createTimestamps[4], 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.TOKENCREATION);
 
         // successful update transactions
-        long timeBuffer = 100;
-        insertTransaction(consensusTimestamps[0] + timeBuffer, 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+        long[] modifiedTimestamps = new long[] {110, 120, 130, 140, 150};
+        insertTransaction(modifiedTimestamps[0], 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CRYPTOUPDATEACCOUNT);
-        insertTransaction(consensusTimestamps[1] + timeBuffer, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+        insertTransaction(modifiedTimestamps[1], 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONTRACTUPDATEINSTANCE);
-        insertTransaction(consensusTimestamps[2] + timeBuffer, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
+        insertTransaction(modifiedTimestamps[2], 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.FILEUPDATE);
-        insertTransaction(consensusTimestamps[3] + timeBuffer, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+        insertTransaction(modifiedTimestamps[3], 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.CONSENSUSUPDATETOPIC);
-        insertTransaction(consensusTimestamps[4] + timeBuffer, 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+        insertTransaction(modifiedTimestamps[4], 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
                 TransactionTypeEnum.TOKENUPDATE);
 
         // migration
         migrate();
 
-        assertEquals(consensusTimestamps.length, entityRepository.count());
+        assertEquals(createTimestamps.length, entityRepository.count());
         for (int i = 0; i < ids.length; i++) {
             Optional<Entity> entity = entityRepository.findById(ids[i]);
-            long consensusTimestamp = consensusTimestamps[i];
+            long createdTimestamp = createTimestamps[i];
+            long modifiedTimestamp = modifiedTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
-                            .returns(consensusTimestamp, Entity::getCreatedTimestamp)
-                            .returns(consensusTimestamp + timeBuffer, Entity::getModifiedTimestamp)
+                            .returns(createdTimestamp, Entity::getCreatedTimestamp)
+                            .returns(modifiedTimestamp, Entity::getModifiedTimestamp)
             );
         }
     }
