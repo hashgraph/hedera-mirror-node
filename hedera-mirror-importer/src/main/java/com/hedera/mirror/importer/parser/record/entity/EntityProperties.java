@@ -23,8 +23,8 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static com.hedera.mirror.importer.domain.TransactionTypeEnum.SCHEDULECREATE;
 import static com.hedera.mirror.importer.domain.TransactionTypeEnum.SCHEDULESIGN;
 
-import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Set;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -63,6 +63,6 @@ public class EntityProperties {
          */
         private boolean transactionBytes = false;
 
-        private Collection<TransactionTypeEnum> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
+        private Set<TransactionTypeEnum> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
     }
 }
