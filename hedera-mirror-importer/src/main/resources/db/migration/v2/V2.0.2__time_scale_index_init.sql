@@ -80,7 +80,7 @@ alter table entity
         check (public_key = lower(public_key));
 create index if not exists entity__public_key_natural_id
     on entity (public_key, type, shard, realm, num);
-create unique index if not exists entities_unq
+create unique index if not exists entity__shard_realm_num
     on entity (shard, realm, num, id);
 -- have to add id when creating unique indexes due to partitioning
 

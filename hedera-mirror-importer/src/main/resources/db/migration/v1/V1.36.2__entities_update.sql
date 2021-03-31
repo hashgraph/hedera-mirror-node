@@ -42,7 +42,6 @@ select case when auto_renew_account_id = 0 then null else auto_renew_account_id 
        case when proxy_account_id = 0 then null else proxy_account_id end,
        submit_key
 from t_entities
-where id > 0
 order by id asc;
 
 -- drop table and associated indexes
@@ -57,7 +56,7 @@ alter table entity
         check (public_key = lower(public_key));
 create index if not exists entity__public_key_natural_id
     on entity (public_key, type, shard, realm, num);
-create unique index if not exists entity_unq
+create unique index if not exists entity__shard_realm_num
     on entity (shard, realm, num);
 
 
