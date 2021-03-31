@@ -13,10 +13,6 @@ ENV publishThreadCount 1
 
 # ensure all maven dependecies are placed ahead of test run
 RUN ./mvnw install -DskipTests -Djib.skip -Ddocker.skip -Dskip.npm --no-transfer-progress \
-    --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-    -pl hedera-mirror-protobuf,hedera-mirror-grpc,hedera-mirror-test
-
-# copy licenses out of target folder as they'll be cleared on performance test runs
-RUN mv hedera-mirror-test/target/container hedera-mirror-test/container
+    --batch-mode -pl hedera-mirror-test --also-make
 
 ENTRYPOINT hedera-mirror-test/src/main/resources/run-tests.sh
