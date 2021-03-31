@@ -65,9 +65,9 @@ The beta mirror node works as follows:
 
 ### Rosetta API
 
-In addition to the REST API which exposes the persisted network entities (accounts, balances, schedules, transactions, topics and
-tokens), the Mirror Node also provides a [Rosetta API](https://www.rosetta-api.org/docs/welcome.html) compliant REST API
-server. This exposes a subset of data with a focus on blockchain data integration.
+In addition to the REST API which exposes the persisted network entities, the Mirror Node also provides a
+[Rosetta API](https://www.rosetta-api.org/docs/welcome.html) compliant REST API server.
+This exposes a subset of data with a focus on blockchain data integration.
 See [rosetta-server](docs/rosetta-server.md) for more details.
 
 ## Getting Started

@@ -116,7 +116,7 @@ publish:
 
 ### Expression Syntax
 
-The monitor can automatically create account, token, and topic entity on application startup using a special
+The monitor can automatically create account, token, and topic entities on application startup using a special
 expression syntax. This is useful to avoid boilerplate configuration and manual entity creation steps that vary per
 environment. The syntax can currently only be used in `hedera.mirror.monitor.publish.scenarios.properties`
 and `hedera.mirror.monitor.subscribe.grpc.topicId`.
@@ -126,7 +126,7 @@ descriptive label. Based upon the entity type, it will create the appropriate en
 The name label allows the same entity to be referenced in multiple places but only created once.
 
 The following example uses the expression syntax to create the sender and recipient accounts as well as a token. These
-same entity are created once and reused in both the token associate and the token transfer transaction.
+same entities are created once and reused in both the token associate and the token transfer transaction.
 
 ```yaml
 scenarios:

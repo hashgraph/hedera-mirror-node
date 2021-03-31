@@ -71,6 +71,28 @@ create table if not exists crypto_transfer
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
+-- entity
+create table if not exists entity
+(
+    auto_renew_account_id bigint,
+    auto_renew_period     bigint,
+    created_timestamp     bigint,
+    deleted               boolean default false not null,
+    expiration_timestamp  bigint,
+    id                    bigint                not null,
+    key                   bytea,
+    memo                  text    default ''    not null,
+    modified_timestamp    bigint,
+    num                   bigint                not null,
+    public_key            character varying,
+    proxy_account_id      bigint,
+    realm                 bigint                not null,
+    shard                 bigint                not null,
+    submit_key            bytea,
+    type                  integer               not null
+);
+comment on table entity is 'Network entity with state';
+
 -- event_file
 create table if not exists event_file
 (
@@ -159,28 +181,6 @@ create table if not exists transaction_signature
     signature           bytea  not null
 );
 comment on table transaction_signature is 'Transaction signatories';
-
--- entity
-create table if not exists entity
-(
-    auto_renew_account_id bigint,
-    auto_renew_period     bigint,
-    created_timestamp     bigint,
-    deleted               boolean default false not null,
-    expiration_timestamp  bigint,
-    id                    bigint                not null,
-    key                   bytea,
-    memo                  text    default ''    not null,
-    modified_timestamp    bigint,
-    num                   bigint                not null,
-    public_key            character varying,
-    proxy_account_id      bigint,
-    realm                 bigint                not null,
-    shard                 bigint                not null,
-    submit_key            bytea,
-    type                  integer               not null
-);
-comment on table entity is 'Network entity with state';
 
 -- t_entity_types
 create table if not exists t_entity_types

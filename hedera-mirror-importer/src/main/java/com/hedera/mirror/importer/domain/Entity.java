@@ -56,10 +56,10 @@ public class Entity {
 
     private Long num;
 
-    private String publicKey;
-
     @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
+
+    private String publicKey;
 
     private Long realm;
 
