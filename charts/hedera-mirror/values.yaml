@@ -193,15 +193,16 @@ timescaledb:
           parameters:
             max_wal_size: 1GB
             max_worker_processes: 30  # Must be > max_background_workers + max_worker_processes (default 8)
+            password_encryption: scram-sha-256
             shared_buffers: 2GB  # recommended to be 25% of available instance memory
             ssl: 'off'  # disable all ssl connections to not require Patroni certificate
             timescaledb.max_background_workers: 20
             work_mem: 50MB
     postgresql:
       pg_hba:
-      - local     all             postgres                              peer  # allow local connections
-      - local     all             all                                   md5
-      - hostnossl all,replication all                all                md5   # allow TCP/IP connections (no ssl)
+      - local     all             postgres                            peer           # allow local connections
+      - local     all             all                                 scram-sha-256
+      - hostnossl all,replication all               all               scram-sha-256  # allow TCP/IP connections (no ssl)
   persistentVolumes:
     data:
       size: 500Gi
