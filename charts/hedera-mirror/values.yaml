@@ -200,9 +200,9 @@ timescaledb:
             work_mem: 50MB
     postgresql:
       pg_hba:
-      - local     all             postgres                            peer          # allow local connections
+      - local     all             postgres                            peer           # allow local connections
       - local     all             all                                 scram-sha-256
-      - hostnossl all,replication all               all               scram-sha-256 # allow TCP/IP connections (no ssl)
+      - hostnossl all,replication all               all               scram-sha-256  # allow TCP/IP connections (no ssl)
   persistentVolumes:
     data:
       size: 500Gi
