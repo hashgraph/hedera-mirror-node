@@ -3,9 +3,9 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 3,
-        "entity_realm": 2,
-        "entity_type": 4
+        "num": 3,
+        "realm": 2,
+        "type": 4
       }
     ],
     "balances": [],

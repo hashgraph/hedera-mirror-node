@@ -3,24 +3,24 @@
   "setup": {
     "entities": [
       {
-        "entity_num": 1,
+        "num": 1,
         "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [1, 1, 1]
       },
       {
-        "entity_num": 1135,
+        "num": 1135,
         "public_key": "2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864",
         "key": [2, 2, 2]
       },
       {
-        "entity_realm": 7,
-        "entity_num": 25301,
+        "realm": 7,
+        "num": 25301,
         "public_key": "2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864",
         "key": [3, 3, 3]
       },
       {
-        "entity_realm": 23,
-        "entity_num": 45678,
+        "realm": 23,
+        "num": 45678,
         "public_key": "2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864",
         "key": [4, 4, 4]
       }

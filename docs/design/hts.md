@@ -144,7 +144,7 @@ To support the goals the following database schema changes should be made
 ```
 
 ### Entities
--   Insert token entity info into `entity` table from `TokenCreation.proto` transaction object. Insert `adminKey` as `key`, `expiry` as `exp_time_ns`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period`.
+-   Insert token entity info into `entity` table from `TokenCreation.proto` transaction object. Insert `adminKey` as `key`, `expiry` as `expiration_timestamp`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period`.
 
 ### Token
 -   Create `token` table with the following columns. Table will capture non shared `entity` items, most API calls may not require this information and therefore additional sql joins may be avoided.

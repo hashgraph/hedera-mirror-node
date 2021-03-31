@@ -93,7 +93,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const expectedquery = `select t.token_id, symbol, e.key
                            from token t
                                   join entity e on e.id = t.token_id
-                           where e.ed25519_public_key_hex = $1
+                           where e.public_key = $1
                            order by t.token_id asc
                            limit $2`;
     const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', maxLimit];
@@ -603,7 +603,7 @@ describe('token formatTokenInfoRow tests', () => {
     decimals: 10,
     initial_supply: 1000000,
     total_supply: 2000000,
-    exp_time_ns: 1594431063696143000,
+    expiration_timestamp: 1594431063696143000,
     auto_renew_account_id: '98',
     auto_renew_period: 7890000,
     modified_timestamp: 1603394416676293000,

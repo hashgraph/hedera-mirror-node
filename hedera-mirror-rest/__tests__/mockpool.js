@@ -335,11 +335,11 @@ class Pool {
       row.consensus_timestamp = this.toNs(this.timeNow);
       row.entity_id = this.getAccountId(accountNum, i);
 
-      row.exp_time_ns = this.toNs(this.timeNow + 1000);
+      row.expiration_timestamp = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;
       row.key = Buffer.from(`Key for row ${i}`);
       row.deleted = false;
-      row.entity_type = 'Account';
+      row.type = 'Account';
 
       rows.push(row);
     }

@@ -31,7 +31,7 @@ const sqlQueryColumns = {
   KEY: 'e.key',
   SYMBOL: 't.symbol',
   TOKEN_ID: 't.token_id',
-  PUBLIC_KEY: 'e.ed25519_public_key_hex',
+  PUBLIC_KEY: 'e.public_key',
 };
 
 // query to column maps
@@ -44,7 +44,7 @@ const filterColumnMap = {
 // token discovery sql queries
 const tokensSelectQuery = 'select t.token_id, symbol, e.key from token t';
 const accountIdJoinQuery = 'join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id';
-const entityIdJoinQuery = 'join e e on e.id = t.token_id';
+const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 
 // token info sql queries
 const tokenInfoSelectFields = [
@@ -55,7 +55,7 @@ const tokenInfoSelectFields = [
   'initial_supply',
   'total_supply',
   'treasury_account_id',
-  'created_timestamp',
+  't.created_timestamp',
   'freeze_default',
   'e.key',
   'kyc_key',
@@ -65,7 +65,7 @@ const tokenInfoSelectFields = [
   'e.expiration_timestamp',
   'e.auto_renew_account_id',
   'e.auto_renew_period',
-  'modified_timestamp',
+  't.modified_timestamp',
 ];
 const tokenInfoSelectQuery = ['select', tokenInfoSelectFields.join(',\n'), 'from token t'].join('\n');
 const tokenIdMatchQuery = 'where token_id = $1';
@@ -216,7 +216,7 @@ const tokenBalancesSqlQueryColumns = {
   ACCOUNT_BALANCE: 'tb.balance',
   ACCOUNT_ID: 'tb.account_id',
   CONSENSUS_TIMESTAMP: 'tb.consensus_timestamp',
-  ACCOUNT_PUBLICKEY: 'e.ed25519_public_key_hex',
+  ACCOUNT_PUBLICKEY: 'e.public_key',
   TOKEN_ID: 'tb.token_id',
 };
 

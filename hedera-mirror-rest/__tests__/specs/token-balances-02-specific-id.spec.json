@@ -3,13 +3,13 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 7
+        "num": 7
       },
       {
-        "entity_num": 8
+        "num": 8
       },
       {
-        "entity_num": 9
+        "num": 9
       }
     ],
     "tokens": [

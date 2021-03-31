@@ -3,13 +3,13 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 7
+        "num": 7
       },
       {
-        "entity_num": 8
+        "num": 8
       },
       {
-        "entity_num": 9
+        "num": 9
       }
     ],
     "balances": [
@@ -60,16 +60,16 @@
     ],
     "entities": [
       {
-        "entity_num": 10,
-        "entity_type": 3
+        "num": 10,
+        "type": 3
       },
       {
-        "entity_num": 11,
-        "entity_type": 4
+        "num": 11,
+        "type": 4
       },
       {
-        "entity_num": 12,
-        "entity_type": 5
+        "num": 12,
+        "type": 5
       }
     ]
   },
