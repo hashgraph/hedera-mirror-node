@@ -18,9 +18,37 @@ jobs:
       - name: Cache Maven dependencies
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
 
       - name: Vulnerability check
         run: ./mvnw ${MAVEN_CLI_OPTS} dependency-check:aggregate
+
+  sonar:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          path: ~/.m2
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Cache SonarCloud dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Maven Sonar
+        run: ./mvnw ${MAVEN_CLI_OPTS} compile sonar:sonar -Dsonar.login=$SONAR_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

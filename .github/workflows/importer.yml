@@ -30,29 +30,19 @@ jobs:
         with:
           java-version: 11
 
-      - name: Cache Maven dependencies
+      - name: Cache dependencies
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-m2-${{ secrets.CACHE_VERSION }}-${{ hashFiles('./pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('./pom.xml') }}
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
-
-      - name: Cache SonarCloud dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar-${{ secrets.CACHE_VERSION }}
-          restore-keys: ${{ runner.os }}-sonar
 
       - name: Set environment
         if: matrix.schema == 'v2'
         run: echo 'groups=!v1' >> $GITHUB_ENV
 
       - name: Maven verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify sonar:sonar -pl "${MODULE}" --also-make -Dsonar.login=$SONAR_TOKEN -Dspring.profiles.active=${{ matrix.schema }} -Dgroups='${{ env.groups }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make -Dspring.profiles.active=${{ matrix.schema }} -Dgroups='${{ env.groups }}'
         working-directory: .
 
       - name: Upload coverage report

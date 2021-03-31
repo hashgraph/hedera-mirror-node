@@ -24,7 +24,7 @@
         <defaultGoal>clean package</defaultGoal>
         <directory>${basedir}${file.separator}bin</directory>
         <finalName>${project.artifactId}</finalName>
-        <sourceDirectory>${project.basedir}${file.separator}cmd</sourceDirectory>
+        <sourceDirectory>${project.basedir}</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>io.fabric8</groupId>
@@ -34,6 +34,12 @@
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>mvn-golang-wrapper</artifactId>
                 <version>2.3.8</version>
+                <configuration>
+                    <goVersion>1.16</goVersion>
+                    <hideBanner>true</hideBanner>
+                    <storeFolder>${user.home}/.m2/repository/com/igormaznitsa/mvn-golang-wrapper</storeFolder>
+                    <useEnvVars>true</useEnvVars>
+                </configuration>
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -47,8 +53,6 @@
                                 <flag>-v</flag>
                             </buildFlags>
                             <skip>${skipTests}</skip>
-                            <sources>${project.basedir}${file.separator}</sources>
-                            <useEnvVars>true</useEnvVars>
                         </configuration>
                     </execution>
                     <execution>
@@ -59,7 +63,7 @@
                                 <flag>-i</flag>
                                 <flag>-race</flag>
                             </buildFlags>
-                            <useEnvVars>true</useEnvVars>
+                            <sources>${project.basedir}${file.separator}cmd</sources>
                         </configuration>
                     </execution>
                 </executions>
