@@ -71,6 +71,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1565779555.711927002",
+        "entity_id": null,
         "valid_start_timestamp": "1565779555.711927001",
         "charged_tx_fee": 7,
         "memo_base64": null,

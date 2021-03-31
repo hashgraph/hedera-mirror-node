@@ -77,6 +77,7 @@
       {
         "consensus_timestamp": "1234567890.000000002",
         "charged_tx_fee": 7,
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "SCHEDULECREATE",
@@ -101,6 +102,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000003",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
@@ -129,6 +131,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000040",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",

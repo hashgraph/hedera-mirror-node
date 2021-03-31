@@ -199,6 +199,7 @@ class Pool {
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';
       row.scheduled = false;
+      row.entity_id = EntityId.of(0, 0, accountNumValue).getEncodedId();
       rows.push(row);
     }
     if (['asc', 'ASC'].includes(order)) {

@@ -76,6 +76,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.000000002",
+        "entity_id": null,
         "charged_tx_fee": 7,
         "max_fee": "33",
         "memo_base64": null,
@@ -101,6 +102,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000040",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
