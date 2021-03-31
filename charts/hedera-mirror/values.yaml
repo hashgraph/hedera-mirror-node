@@ -211,7 +211,7 @@ timescaledb:
   podManagementPolicy: Parallel
   postInit:
     - secret:
-        name: timescaledb-init-job
+        name: timescaledb-init
   prometheus:
     image:
       pullPolicy: IfNotPresent
