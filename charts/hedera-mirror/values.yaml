@@ -6,7 +6,7 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts. Set to RELEASE-NAME-timescaledb for timescaledb
+    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts. Set to RELEASE-NAME for timescaledb
   namespaceOverride: ""
   redis:
     host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
@@ -179,29 +179,49 @@ rest:
   enabled: true
 
 timescaledb:
-  credentials:
-    accessNode:
-      superuser: mirror_node_pass
-    dataNode:
-      superuser: mirror_node_pass
   enabled: false
   image:
+    pullPolicy: IfNotPresent
     repository: timescaledev/timescaledb-ha
-    tag: pg12.5-ts2.0.0-p0
-  persistentVolume:
-    size: 500Gi
+    tag: pg12.6-ts2.1.0-p1
+  loadBalancer:
+    enabled: false
+  patroni:
+    bootstrap:
+      dcs:
+        postgresql:
+          parameters:
+            max_wal_size: 1GB
+            max_worker_processes: 30  # Must be > max_background_workers + max_worker_processes (default 8)
+            shared_buffers: 2GB  # recommended to be 25% of available instance memory
+            ssl: 'off'  # disable all ssl connections to not require Patroni certificate
+            timescaledb.max_background_workers: 20
+            work_mem: 50MB
+    postgresql:
+      pg_hba:
+      - local     all             postgres                              peer  # allow local connections
+      - local     all             all                                   md5
+      - hostnossl all,replication all                all                md5   # allow TCP/IP connections (no ssl)
+  persistentVolumes:
+    data:
+      size: 500Gi
+    wal:
+      size: 2Gi
+
+  podManagementPolicy: Parallel
+  postInit:
+    - secret:
+        name: timescaledb-init
+  prometheus:
+    image:
+      pullPolicy: IfNotPresent
+      repository: quay.io/prometheuscommunity/postgres-exporter
+      tag: v0.9.0
+  replicaCount: 1
   resources:
     limits:
-      cpu: 2
-      memory: 4Gi
+      cpu: 4
+      memory: 16Gi
     requests:
-      cpu: 250m
-      memory: 500Mi
-  postgresql:
-    databases:
-      - postgres
-    parameters:
-      max_wal_size: 8GB  # recommended to be 80% of the Volume Size
-      min_wal_size: 2GB  # 80% of the WAL Volume Size
-      shared_buffers: 1GB  # recommended to be 25% of available instance memory
-      work_mem: 50MB
+      cpu: 1
+      memory: 1Gi
