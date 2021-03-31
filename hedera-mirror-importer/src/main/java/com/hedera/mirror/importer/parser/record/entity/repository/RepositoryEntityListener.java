@@ -32,12 +32,12 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
@@ -48,12 +48,12 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
-import com.hedera.mirror.importer.repository.ScheduleSignatureRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 @ConditionOnEntityRecordParser
 @Log4j2
@@ -75,7 +75,7 @@ public class RepositoryEntityListener implements EntityListener {
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
     private final ScheduleRepository scheduleRepository;
-    private final ScheduleSignatureRepository scheduleSignatureRepository;
+    private final TransactionSignatureRepository transactionSignatureRepository;
 
     @Override
     public boolean isEnabled() {
@@ -118,8 +118,8 @@ public class RepositoryEntityListener implements EntityListener {
     }
 
     @Override
-    public void onScheduleSignature(ScheduleSignature scheduleSignature) throws ImporterException {
-        scheduleSignatureRepository.save(scheduleSignature);
+    public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
+        transactionSignatureRepository.save(transactionSignature);
     }
 
     @Override

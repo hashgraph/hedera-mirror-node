@@ -150,15 +150,15 @@ create table if not exists schedule
 );
 comment on table schedule is 'Schedule entity entries';
 
--- schedule_signature
-create table if not exists schedule_signature
+-- transaction_signature
+create table if not exists transaction_signature
 (
     consensus_timestamp bigint not null,
     public_key_prefix   bytea  not null,
-    schedule_id         bigint not null,
+    entity_id           bigint null,
     signature           bytea  not null
 );
-comment on table schedule is 'Schedule transaction signatories';
+comment on table transaction_signature is 'Transaction signatories';
 
 -- t_entities
 create table if not exists t_entities
@@ -366,10 +366,14 @@ values ('OK', 0),
        ('INVALID_SCHEDULE_ACCOUNT_ID', 204),
        ('NO_NEW_VALID_SIGNATURES', 205),
        ('UNRESOLVABLE_REQUIRED_SIGNERS', 206),
-       ('UNPARSEABLE_SCHEDULED_TRANSACTION', 207),
-       ('UNSCHEDULABLE_TRANSACTION', 208),
-       ('SOME_SIGNATURES_WERE_INVALID', 209),
-       ('TRANSACTION_ID_FIELD_NOT_ALLOWED', 210);
+       ('SCHEDULED_TRANSACTION_NOT_IN_WHITELIST', 207),
+       ('SOME_SIGNATURES_WERE_INVALID', 208),
+       ('TRANSACTION_ID_FIELD_NOT_ALLOWED', 209),
+       ('IDENTICAL_SCHEDULE_ALREADY_CREATED', 210),
+       ('INVALID_ZERO_BYTE_IN_STRING', 211),
+       ('SCHEDULE_ALREADY_DELETED', 212),
+       ('SCHEDULE_ALREADY_EXECUTED', 213),
+       ('MESSAGE_SIZE_TOO_LARGE', 214);
 
 -- t_transaction_types
 create table if not exists t_transaction_types

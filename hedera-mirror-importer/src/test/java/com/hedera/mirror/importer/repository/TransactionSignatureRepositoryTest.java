@@ -27,26 +27,26 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.ScheduleSignature;
+import com.hedera.mirror.importer.domain.TransactionSignature;
 
-class ScheduleSignatureRepositoryTest extends AbstractRepositoryTest {
+class TransactionSignatureRepositoryTest extends AbstractRepositoryTest {
     @Resource
-    private ScheduleSignatureRepository scheduleSignatureRepository;
+    private TransactionSignatureRepository transactionSignatureRepository;
 
     @Test
     void save() {
-        ScheduleSignature scheduleSignature = scheduleSignatureRepository.save(scheduleSignature(1));
-        assertThat(scheduleSignatureRepository.findById(scheduleSignature.getId()))
-                .get().isEqualTo(scheduleSignature);
+        TransactionSignature transactionSignature = transactionSignatureRepository.save(transactionSignature(1));
+        assertThat(transactionSignatureRepository.findById(transactionSignature.getId()))
+                .get().isEqualTo(transactionSignature);
     }
 
-    private ScheduleSignature scheduleSignature(long consensusTimestamp) {
-        ScheduleSignature scheduleSignature = new ScheduleSignature();
-        scheduleSignature.setId(new ScheduleSignature.Id(
+    private TransactionSignature transactionSignature(long consensusTimestamp) {
+        TransactionSignature transactionSignature = new TransactionSignature();
+        transactionSignature.setId(new TransactionSignature.Id(
                 consensusTimestamp,
                 "signatory public key prefix".getBytes()));
-        scheduleSignature.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
-        scheduleSignature.setSignature("scheduled transaction signature".getBytes());
-        return scheduleSignature;
+        transactionSignature.setEntityId(EntityId.of("0.0.789", EntityTypeEnum.UNKNOWN));
+        transactionSignature.setSignature("scheduled transaction signature".getBytes());
+        return transactionSignature;
     }
 }

@@ -52,3 +52,9 @@ rest:
     enabled: true
   serviceMonitor:
     enabled: true
+
+timescaledb:
+  prometheus:
+    enabled: true
+  replicaCount: 2
+

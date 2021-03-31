@@ -54,7 +54,6 @@ const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 const {cloudProviders, filterKeys} = require('../constants');
 const EntityId = require('../entityId');
-const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions.js');

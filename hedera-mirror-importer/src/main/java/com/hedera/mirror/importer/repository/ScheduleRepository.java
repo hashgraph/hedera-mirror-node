@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
 import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -35,6 +34,4 @@ public interface ScheduleRepository extends CrudRepository<Schedule, Long> {
     @Transactional
     @Query("update Schedule set executedTimestamp = :timestamp where scheduleId = :schedule")
     void updateExecutedTimestamp(@Param("schedule") EntityId scheduleId, @Param("timestamp") long executedTimestamp);
-
-    Optional<Schedule> findByScheduleId(EntityId scheduleId);
 }

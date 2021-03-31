@@ -117,7 +117,6 @@ class PubSubMessageTest {
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
                         .setAccountID(ACCOUNT_ID)
-                        .setNonce(BYTE_STRING)
                         .setScheduled(false)
                         .setTransactionValidStart(TIMESTAMP)
                         .build())
@@ -156,7 +155,6 @@ class PubSubMessageTest {
                 "        \"realmNum\": \"0\"," +
                 "        \"accountNum\": \"10\"" +
                 "      }," +
-                "      \"nonce\": \"YWJjZGVm\"," +
                 "      \"scheduled\": false" +
                 "    }," +
                 "    \"nodeAccountID\": {" +

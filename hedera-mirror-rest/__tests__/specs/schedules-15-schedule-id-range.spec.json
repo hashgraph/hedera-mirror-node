@@ -52,35 +52,35 @@
         "schedule_id": "0.0.4000"
       }
     ],
-    "schedulesignatures": [
+    "transactionsignatures": [
       {
         "consensus_timestamp": "1234567890000010001",
         "public_key_prefix": [1, 1, 1],
-        "schedule_id": "0.0.2000",
+        "entity_id": "0.0.2000",
         "signature": [2, 2, 2]
       },
       {
         "consensus_timestamp": "1234567890000010010",
         "public_key_prefix": [3, 3, 3],
-        "schedule_id": "0.0.2000",
+        "entity_id": "0.0.2000",
         "signature": [4, 4, 4]
       },
       {
         "consensus_timestamp": "1234567890000020001",
         "public_key_prefix": [5, 5, 5],
-        "schedule_id": "0.0.3000",
+        "entity_id": "0.0.3000",
         "signature": [6, 6, 6]
       },
       {
         "consensus_timestamp": "1234567890000020010",
         "public_key_prefix": [7, 7, 7],
-        "schedule_id": "0.0.3000",
+        "entity_id": "0.0.3000",
         "signature": [8, 8, 8]
       },
       {
         "consensus_timestamp": "1234567890000030001",
         "public_key_prefix": [9, 9, 9],
-        "schedule_id": "0.0.4000",
+        "entity_id": "0.0.4000",
         "signature": [9, 9, 9]
       }
     ]

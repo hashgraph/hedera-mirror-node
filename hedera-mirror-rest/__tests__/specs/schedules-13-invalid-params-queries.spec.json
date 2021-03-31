@@ -4,7 +4,7 @@
     "accounts": [],
     "entities": [],
     "schedules": [],
-    "schedulesignatures": []
+    "transactionsignatures": []
   },
   "url": "/api/v1/schedules?account.id=-1&schedule.id=x.y.z&order=d&limit=-1",
   "responseStatus": 400,
