@@ -90,7 +90,7 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-      POSTGRES_INITDB_ARGS: --auth-local=scram-sha-256
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
       POSTGRES_PASSWORD: mirror_node_pass
     volumes:
       - ./timescaledb:/var/lib/postgresql/data
