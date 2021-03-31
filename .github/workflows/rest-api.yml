@@ -38,6 +38,9 @@ jobs:
         run: MIRROR_NODE_SCHEMA=${{ matrix.schema}} ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
         working-directory: .
 
+      - name: Rename artifact
+        run: for file in *.tgz ; do mv $file ${file//$MODULE-/$MODULE-v} ; done
+
       - name: Upload coverage report
         run: node_modules/codecov/bin/codecov
 
