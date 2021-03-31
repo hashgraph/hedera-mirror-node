@@ -10,7 +10,7 @@ RUN git clone https://github.com/hashgraph/hedera-mirror-node.git
 RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
 
 # ------------------------------  Rosetta  ------------------------------- #
-FROM golang:1.14 as rosetta-builder
+FROM golang:1.16 as rosetta-builder
 WORKDIR /tmp
 COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
 WORKDIR /tmp/hedera-mirror-node/hedera-mirror-rosetta

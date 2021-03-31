@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: "0.31.0-alpha2"
+appVersion: "0.31.0-alpha3"
 dependencies:
   - alias: grpc
     condition: grpc.enabled
@@ -57,4 +57,4 @@ maintainers:
 name: hedera-mirror
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.18.0-alpha2
+version: 0.18.0-alpha3

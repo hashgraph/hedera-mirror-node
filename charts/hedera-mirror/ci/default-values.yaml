@@ -2,5 +2,7 @@
 global:
   db:
     host: pgdb-pgpool
+monitor:
+  enabled: false
 postgresql:
   fullnameOverride: pgdb

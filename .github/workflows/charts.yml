@@ -33,19 +33,16 @@ jobs:
       - name: Build images
         run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests
 
-      - name: Install k3s
-        id: k3s
-        uses: debianmaster/actions-k3s@master
-        with:
-          version: v1.17.4-k3s1
+      - name: Create k3d cluster
+        run: |
+          set -ex
+          version=$(docker images gcr.io/mirrornode/hedera-mirror-importer --format "{{.Tag}}" | head -n 1)
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          k3d cluster create mirror --agents 1 --timeout 5m
+          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:${version}" "gcr.io/mirrornode/hedera-mirror-importer:${version}" "gcr.io/mirrornode/hedera-mirror-rest:${version}"
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.0.1
-
-      - name: Copy kube config
-        run: |
-          mkdir -p "${HOME}/.kube"
-          cp ${{ steps.k3s.outputs.kubeconfig }} "${HOME}/.kube/config"
 
       - name: Install chart
         run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror
