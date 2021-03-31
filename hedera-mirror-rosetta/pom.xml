@@ -15,6 +15,8 @@
     </parent>
 
     <properties>
+        <go.dir>${user.home}/.m2/repository/com/igormaznitsa/mvn-golang-wrapper</go.dir>
+        <maven.install.skip>true</maven.install.skip>
         <sonar.exclusions>pom.xml</sonar.exclusions>
         <sonar.sources>${project.basedir}</sonar.sources>
         <sonar.go.coverage.reportPaths>${project.basedir}/coverage.txt</sonar.go.coverage.reportPaths>
@@ -22,7 +24,7 @@
 
     <build>
         <defaultGoal>clean package</defaultGoal>
-        <directory>${basedir}${file.separator}bin</directory>
+        <directory>${basedir}/bin</directory>
         <finalName>${project.artifactId}</finalName>
         <sourceDirectory>${project.basedir}</sourceDirectory>
         <plugins>
@@ -35,9 +37,10 @@
                 <artifactId>mvn-golang-wrapper</artifactId>
                 <version>2.3.8</version>
                 <configuration>
+                    <goPath>${go.dir}/path</goPath>
                     <goVersion>1.16</goVersion>
                     <hideBanner>true</hideBanner>
-                    <storeFolder>${user.home}/.m2/repository/com/igormaznitsa/mvn-golang-wrapper</storeFolder>
+                    <storeFolder>${go.dir}/store</storeFolder>
                     <useEnvVars>true</useEnvVars>
                 </configuration>
                 <extensions>true</extensions>
@@ -63,7 +66,13 @@
                                 <flag>-i</flag>
                                 <flag>-race</flag>
                             </buildFlags>
-                            <sources>${project.basedir}${file.separator}cmd</sources>
+                            <sources>${project.basedir}/cmd</sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-install</id>
+                        <configuration>
+                            <sources>${project.basedir}/cmd</sources>
                         </configuration>
                     </execution>
                 </executions>
