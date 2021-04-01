@@ -34,7 +34,8 @@
             "account": "0.0.98",
             "amount": 1
           }
-        ]
+        ],
+        "entity_id": "0.0.1000"
       },
       {
         "charged_tx_fee": 7,

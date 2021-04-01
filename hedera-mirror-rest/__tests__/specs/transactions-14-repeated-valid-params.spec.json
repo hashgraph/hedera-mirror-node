@@ -26,7 +26,8 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779444711927001",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.8"
       }
     ],
     "cryptotransfers": [

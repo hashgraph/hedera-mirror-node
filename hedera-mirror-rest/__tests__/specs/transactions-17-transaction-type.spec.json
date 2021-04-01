@@ -26,14 +26,16 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779555711927001",
         "name": "TOKENCREATION",
-        "type": "29"
+        "type": "29",
+        "entity_id": "0.0.90000"
       },
       {
         "payerAccountId": "0.0.9",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779555711927003",
         "name": "CRYPTODELETE",
-        "type": "12"
+        "type": "12",
+        "entity_id": "0.0.7"
       },
       {
         "charged_tx_fee": 0,
@@ -41,7 +43,8 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779444711927001",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.10"
       }
     ],
     "cryptotransfers": [

@@ -26,7 +26,8 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779209711927001",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.8"
       }
     ],
     "cryptotransfers": [
@@ -54,7 +55,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1565779209.711927001",
-        "entity_id": null,
+        "entity_id": "0.0.8",
         "valid_start_timestamp": "1565779209.711927000",
         "charged_tx_fee": 0,
         "memo_base64": null,
