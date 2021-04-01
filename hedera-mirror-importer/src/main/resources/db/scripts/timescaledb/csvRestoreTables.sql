@@ -26,12 +26,6 @@
 
 \copy t_entities from t_entities.csv csv;
 
-\copy t_entity_types from t_entity_types.csv csv;
-
-\copy t_transaction_results from t_transaction_results.csv csv;
-
-\copy t_transaction_types from t_transaction_types.csv csv;
-
 \copy token from token.csv csv;
 
 \copy token_account from token_account.csv csv;

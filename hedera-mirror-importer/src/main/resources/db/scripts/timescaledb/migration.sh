@@ -96,7 +96,7 @@ echo "3. Create v2 table schemas in TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT}...
 PGPASSWORD="${NEW_DB_PASSWORD}" psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" <"${MIGRATIONS_DIR}/V2.0.0__time_scale_init.sql"
 
 echo "4. Creating new hypertables on TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT}..."
-sed -e 's/${chunkTimeInterval}/'"${CHUNK_INTERVAL_TIME}"'/g' -e 's/${chunkIdInterval}/'"${CHUNK_INTERVAL_ID}"'/g' "${MIGRATIONS_DIR}/V2.0.1__hyper_tables.sql" >"${SCRIPTS_DIR}/createHyperTables.sql"
+sed -e 's/${chunkTimeInterval}/'"${CHUNK_INTERVAL_TIME}"'/g' -e 's/${chunkIdInterval}/'"${CHUNK_INTERVAL_ID}"'/g' "${MIGRATIONS_DIR}/V2.0.2__hyper_tables.sql" >"${SCRIPTS_DIR}/createHyperTables.sql"
 PGPASSWORD=${NEW_DB_PASSWORD} psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -f "${SCRIPTS_DIR}/createHyperTables.sql"
 
 echo "5. Backing up tables from from PostgreSQL ${OLD_DB_HOST}:${OLD_DB_PORT}"
