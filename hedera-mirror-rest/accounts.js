@@ -185,7 +185,7 @@ const getOneAccount = async (req, res) => {
   };
 
   // Because of the outer join on the 'account_balance ab' and 'entity e' below, we
-  // need to look  for the given account.id in both account_balance and e table and combine with an 'or'
+  // need to look for the given account.id in both account_balance and entity tables and combine with an 'or'
   const entitySql = getAccountQuery(` (ab.account_id = ? or e.id = ?)`);
   const entityParams = [accountId, accountId];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
