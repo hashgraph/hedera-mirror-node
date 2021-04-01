@@ -18,6 +18,16 @@ config:
         db:
           loadBalance: false
 
+extraVolumes: []
+# - name: addressbook-secret-volume
+#   secret:
+#     defaultMode: 420
+#     secretName: mirror-importer-addressbook
+
+extraVolumeMounts: []
+# - name: addressbook-secret-volume
+#   mountPath: /usr/etc/addressbook/perf.bin
+
 fullnameOverride: ""
 
 global:
@@ -50,20 +60,10 @@ networkPolicy:
 
 nodeSelector: {}
 
-persistence:
-  accessModes:
-    - ReadWriteOnce
-  annotations: {}
-  enabled: true
-  size: 10Gi
-  storageClass: ""
-
 podDisruptionBudget:
   enabled: false
   # maxUnavailable: 0
   # minAvailable: 1
-
-podManagementPolicy: OrderedReady
 
 podMonitor:
   enabled: false
