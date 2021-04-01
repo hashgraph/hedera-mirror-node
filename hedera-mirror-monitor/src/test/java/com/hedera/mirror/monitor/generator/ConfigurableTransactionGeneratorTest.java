@@ -29,11 +29,14 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -61,13 +64,33 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void next() {
-        assertRequest(generator.get().next());
+        assertRequests(generator.get().next());
+    }
+
+    @ParameterizedTest(name = "next with count {0}")
+    @ValueSource(ints = {0, -1})
+    void nextDefault(int count) {
+        assertRequests(generator.get().next(count));
+    }
+
+    @Test
+    void nextTwo() {
+        assertRequests(generator.get().next(2), 2);
+    }
+
+    @Test
+    void nextCountMoreThanLimit() {
+        properties.setLimit(4);
+        assertRequests(generator.get().next(5), 4);
+        assertThatThrownBy(() -> generator.get().next())
+                .isInstanceOf(ScenarioException.class)
+                .hasMessageContaining("Reached publish limit");
     }
 
     @Test
     void logResponse() {
         properties.setLogResponse(true);
-        assertRequest(generator.get().next());
+        assertRequests(generator.get().next());
     }
 
     @Test
@@ -81,8 +104,9 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void reachedLimit() {
         properties.setLimit(1);
-        assertRequest(generator.get().next());
-        assertThatThrownBy(() -> generator.get().next())
+        TransactionGenerator transactionGenerator = generator.get();
+        assertRequests(transactionGenerator.next());
+        assertThatThrownBy(() -> transactionGenerator.next())
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish limit");
     }
@@ -101,7 +125,7 @@ class ConfigurableTransactionGeneratorTest {
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isReceipt)
-                    .isEqualTo(false);
+                    .allMatch(v -> !v);
         }
     }
 
@@ -111,7 +135,7 @@ class ConfigurableTransactionGeneratorTest {
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isReceipt)
-                    .isEqualTo(true);
+                    .allMatch(v -> v);
         }
     }
 
@@ -121,7 +145,7 @@ class ConfigurableTransactionGeneratorTest {
         Multiset<Boolean> receipts = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
-            receipts.add(generator.get().next().isReceipt());
+            generator.get().next().forEach(publishRequest -> receipts.add(publishRequest.isReceipt()));
         }
 
         assertThat((double) receipts.count(true) / SAMPLE_SIZE)
@@ -136,7 +160,7 @@ class ConfigurableTransactionGeneratorTest {
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isRecord)
-                    .isEqualTo(false);
+                    .allMatch(v -> !v);
         }
     }
 
@@ -146,7 +170,7 @@ class ConfigurableTransactionGeneratorTest {
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isRecord)
-                    .isEqualTo(true);
+                    .allMatch(v -> v);
         }
     }
 
@@ -156,7 +180,7 @@ class ConfigurableTransactionGeneratorTest {
         Multiset<Boolean> records = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
-            records.add(generator.get().next().isRecord());
+            generator.get().next().forEach(publishRequest -> records.add(publishRequest.isRecord()));
         }
 
         assertThat((double) records.count(true) / SAMPLE_SIZE)
@@ -171,13 +195,19 @@ class ConfigurableTransactionGeneratorTest {
         assertThatThrownBy(() -> generator.get().next()).isInstanceOf(ConstraintViolationException.class);
     }
 
-    private void assertRequest(PublishRequest publishRequest) {
-        assertThat(publishRequest).isNotNull()
+    private void assertRequests(List<PublishRequest> publishRequests, int size) {
+        assertThat(publishRequests).hasSize(size).allSatisfy(publishRequest -> assertThat(publishRequest)
+                .isNotNull()
                 .hasNoNullFieldsOrProperties()
                 .hasFieldOrPropertyWithValue("logResponse", properties.isLogResponse())
                 .hasFieldOrPropertyWithValue("receipt", true)
                 .hasFieldOrPropertyWithValue("record", true)
                 .hasFieldOrPropertyWithValue("type", properties.getType())
-                .hasFieldOrPropertyWithValue("transactionBuilder.topicId", ConsensusTopicId.fromString(TOPIC_ID));
+                .hasFieldOrPropertyWithValue("transactionBuilder.topicId", ConsensusTopicId.fromString(TOPIC_ID))
+        );
+    }
+
+    private void assertRequests(List<PublishRequest> publishRequests) {
+        assertRequests(publishRequests, 1);
     }
 }

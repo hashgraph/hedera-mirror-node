@@ -68,10 +68,6 @@ public class ScenarioProperties {
     @NotNull
     private TransactionType type;
 
-    @DurationMin(seconds = 0)
-    @NotNull
-    private Duration warmupPeriod = Duration.ofSeconds(30L);
-
     public long getLimit() {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
