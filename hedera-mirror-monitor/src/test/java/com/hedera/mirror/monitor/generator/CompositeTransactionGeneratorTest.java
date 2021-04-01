@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.from;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
 import com.google.common.base.Stopwatch;
@@ -35,6 +36,7 @@ import java.util.function.Supplier;
 import org.apache.commons.math3.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -77,7 +79,7 @@ class CompositeTransactionGeneratorTest {
         CompositeTransactionGenerator generator = supplier.get();
 
         List<PublishRequest> publishRequests = generator.next(count);
-        assertThat(publishRequests).hasSize(generator.batchSize);
+        assertThat(publishRequests).hasSize(generator.batchSize.get());
     }
 
     @Test
@@ -91,7 +93,7 @@ class CompositeTransactionGeneratorTest {
     @Test
     void batchRequestGreaterThanDefault() {
         CompositeTransactionGenerator generator = supplier.get();
-        int count = generator.batchSize + 1;
+        int count = generator.batchSize.get() + 1;
 
         List<PublishRequest> publishRequests = generator.next(count);
         assertThat(publishRequests).hasSize(count);
@@ -101,7 +103,7 @@ class CompositeTransactionGeneratorTest {
     void distribution() {
         properties.setWarmupPeriod(Duration.ZERO);
         CompositeTransactionGenerator generator = supplier.get();
-        assertThat(generator.distribution.getPmf())
+        assertThat(generator.distribution.get().getPmf())
                 .hasSize(properties.getScenarios().size())
                 .extracting(Pair::getValue)
                 .containsExactly(0.75, 0.25);
@@ -126,7 +128,7 @@ class CompositeTransactionGeneratorTest {
     void disabledScenario() {
         properties.getScenarios().get(0).setEnabled(false);
         CompositeTransactionGenerator generator = supplier.get();
-        assertThat(generator.distribution.getPmf())
+        assertThat(generator.distribution.get().getPmf())
                 .hasSize(1)
                 .extracting(Pair::getValue)
                 .containsExactly(1.0);
@@ -199,6 +201,50 @@ class CompositeTransactionGeneratorTest {
         assertThat(warmupCounts).isSorted().allSatisfy(n -> assertThat(n * 1.0).isLessThan(totalTps));
         assertThat(stableCounts).isNotEmpty()
                 .allSatisfy(n -> assertThat(n * 1.0).isCloseTo(totalTps, withinPercentage(5)));
+    }
+
+    @Test
+    @Timeout(10)
+    void scenariosDurationAfterFirstFinish() {
+        ScenarioProperties scenarioProperties1 = properties.getScenarios().get(0);
+        scenarioProperties1.setDuration(Duration.ofSeconds(3));
+        ScenarioProperties scenarioProperties2 = properties.getScenarios().get(1);
+        scenarioProperties2.setDuration(Duration.ofSeconds(5));
+        properties.setWarmupPeriod(Duration.ZERO);
+        CompositeTransactionGenerator generator = supplier.get();
+
+        long begin = System.currentTimeMillis();
+        do {
+            generator.next(0);
+        } while (System.currentTimeMillis() - begin <= 3100);
+
+        assertThat(generator.transactionGenerators)
+                .hasSize(1)
+                .first()
+                .returns(scenarioProperties2, from(ConfigurableTransactionGenerator::getProperties));
+    }
+
+    @Test
+    @Timeout(10)
+    void scenariosDurationAfterBothFinish() {
+        ScenarioProperties scenarioProperties1 = properties.getScenarios().get(0);
+        scenarioProperties1.setDuration(Duration.ofSeconds(3));
+        ScenarioProperties scenarioProperties2 = properties.getScenarios().get(1);
+        scenarioProperties2.setDuration(Duration.ofSeconds(5));
+        properties.setWarmupPeriod(Duration.ZERO);
+        CompositeTransactionGenerator generator = supplier.get();
+
+        long begin = System.currentTimeMillis();
+        while (true) {
+            List<PublishRequest> publishRequests = generator.next(1);
+            if (publishRequests.isEmpty()) {
+                break;
+            }
+        }
+
+        long elapsed = System.currentTimeMillis() - begin;
+        assertThat(generator.transactionGenerators).isEmpty();
+        assertThat(elapsed).isBetween(5000L, 5100L);
     }
 
     private void assertInactive() {
