@@ -47,7 +47,7 @@ public interface EntityRepository extends PagingAndSortingRepository<Entity, Lon
     @Modifying
     @Query(value = "insert into entity (id, shard, realm, num, type) " +
             "values (?1, ?2, ?3, ?4, ?5) on conflict do nothing", nativeQuery = true)
-    void insertEntityId(long id, long shard, long realm, long num, long type);
+    void insertEntityId(long id, long shard, long realm, long num, int type);
 
     default void insertEntityId(EntityId entityId) {
         insertEntityId(entityId.getId(), entityId.getShardNum(), entityId.getRealmNum(),

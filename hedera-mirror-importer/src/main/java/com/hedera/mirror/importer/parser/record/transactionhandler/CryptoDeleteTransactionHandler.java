@@ -21,11 +21,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.Entity;
-
 import lombok.AllArgsConstructor;
 
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 

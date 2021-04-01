@@ -79,17 +79,15 @@ set created_timestamp  = entity__creation_map.consensus_ns,
 from entity__creation_map
 where id = entity__creation_map.entity_id;
 
--- update modified based on non entity and non creation transaction types
-with entity__non_creation_map as (
-    select entity_id, max(consensus_ns) as max_timestamp
+-- update modified timestamp based on entity modifying transaction types
+with entity_update_map as (
+    select entity_id, consensus_ns
     from transaction
     where result = 22
       and entity_id is not null
-      and type not in (-1, 20, 21, 23, 28, 8, 11, 17, 24, 29, 42)
-    group by entity_id, consensus_ns
     order by consensus_ns
 )
 update entity
-set modified_timestamp = entity__non_creation_map.max_timestamp
-from entity__non_creation_map
-where id = entity__non_creation_map.entity_id;
+set modified_timestamp = entity_update_map.consensus_ns
+from entity_update_map
+where id = entity_update_map.entity_id;
