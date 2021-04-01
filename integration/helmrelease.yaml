@@ -1,6 +1,5 @@
-# Disable so flux doesn't rollout
-#apiVersion: helm.fluxcd.io/v1
-#kind: HelmRelease
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
 metadata:
   name: mirror
   namespace: integration
@@ -8,7 +7,7 @@ spec:
   chart:
     git: https://github.com/hashgraph/hedera-mirror-node.git
     path: charts/hedera-mirror
-    ref: tags/v0.26.0-alpha1
+    ref: tags/v0.31.0-alpha3
   rollback:
     enable: true
     force: true
@@ -17,9 +16,6 @@ spec:
   timeout: 500
   wait: false
   values:
-    global:
-      db:
-        host: RELEASE-NAME-timescaledb
     grpc:
       prometheusRules:
         GrpcNoSubscribers:
@@ -29,20 +25,11 @@ spec:
         hedera:
           mirror:
             importer:
-              db:
-                owner: mirror_node
-                schema: mirrornode
-                username: mirror_importer
               downloader:
                 cloudProvider: S3
               initialAddressBook: "/usr/etc/addressbook/addressbook.bin"
               network: OTHER
               startDate: 1970-01-01T00:00:00Z
-        spring:
-          flyway:
-            baselineVersion: 1.999.999
-            locations: "classpath:db/migration/v2"
-            target: 2.999.999
       extraVolumeMounts:
         - name: addressbook
           mountPath: /usr/etc/addressbook
@@ -51,7 +38,7 @@ spec:
           secret:
             defaultMode: 420
             secretName: mirror-importer-addressbook
-      replicas: 0
+      replicas: 1
     monitor:
       config:
         hedera:
@@ -64,17 +51,15 @@ spec:
                   host: integration-mirror-rest
                   port: 80
               network: OTHER
-    postgresql:
-      enabled: false
     rest:
       prometheusRules:
         RestNoRequests:
           enabled: false
-    timescaledb:
-      enabled: true
   valuesFrom:
     - chartFileRef:
         path: values-prod.yaml
+    - chartFileRef:
+        path: values-timescaledb.yaml
     - secretKeyRef:
         name: mirror
 
