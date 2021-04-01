@@ -64,30 +64,17 @@ create unique index if not exists entity__shard_realm_num
 create index if not exists transaction_type
     on transaction (type);
 
--- set created and modified timestamp based on entity creation transaction types
-with entity__creation_map as (
-    select entity_id, consensus_ns
+-- set created and modified timestamp based on entity creating or modifying transaction types
+with entity__timestamp_map as (
+    select entity_id, min(consensus_ns) as created_timestamp, max(consensus_ns) as modified_timestamp
     from transaction
     where result = 22
       and entity_id is not null
-      and type in (8, 11, 17, 24, 29, 42)
-    order by consensus_ns
+    group by entity_id
+    order by entity_id, created_timestamp
 )
 update entity
-set created_timestamp  = entity__creation_map.consensus_ns,
-    modified_timestamp = entity__creation_map.consensus_ns
-from entity__creation_map
-where id = entity__creation_map.entity_id;
-
--- update modified timestamp based on entity modifying transaction types
-with entity_update_map as (
-    select entity_id, consensus_ns
-    from transaction
-    where result = 22
-      and entity_id is not null
-    order by consensus_ns
-)
-update entity
-set modified_timestamp = entity_update_map.consensus_ns
-from entity_update_map
-where id = entity_update_map.entity_id;
+set created_timestamp  = entity__timestamp_map.created_timestamp,
+    modified_timestamp = entity__timestamp_map.modified_timestamp
+from entity__timestamp_map
+where id = entity__timestamp_map.entity_id;
