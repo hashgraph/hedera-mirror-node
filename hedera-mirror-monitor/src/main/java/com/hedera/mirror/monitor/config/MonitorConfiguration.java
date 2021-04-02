@@ -20,6 +20,10 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Function;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
@@ -34,8 +38,6 @@ import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
 import com.hedera.mirror.monitor.subscribe.Subscriber;
-
-import java.util.List;
 
 @Log4j2
 @Configuration
@@ -64,16 +66,21 @@ class MonitorConfiguration {
     @Bean
     Disposable publishSubscribe() {
         return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
-                .flatMapIterable(publishRequests -> publishRequests)
+                .flatMapIterable(Function.identity())
                 .retry()
                 .name("generate")
                 .metrics()
                 .subscribeOn(Schedulers.single())
-                .parallel(publishProperties.getConnections())
-                .runOn(Schedulers.newParallel("publisher", publishProperties.getConnections()))
+                .parallel(publishProperties.getClients())
+                .runOn(Schedulers.newParallel("clients", publishProperties.getClients()))
                 .map(transactionPublisher::publish)
                 .sequential()
-                .onErrorContinue(PublishException.class, (t, r) -> {})
+                .onErrorContinue(PublishException.class, (t, r) -> log.error(t))
+                .parallel(publishProperties.getConnections())
+                .runOn(Schedulers.newParallel("publisher", publishProperties.getConnections()))
+                .map(CompletableFuture::join)
+                .sequential()
+                .onErrorContinue(CompletionException.class, (t, r) -> log.error(t))
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .doOnError(t -> log.error("Unexpected error during publish/subscribe flow:", t))
                 .doOnSubscribe(s -> log.info("Starting publisher flow"))

@@ -23,11 +23,13 @@ package com.hedera.mirror.monitor.publish;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
+import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,47 +66,66 @@ public class PublishMetrics {
         R apply(T t) throws Exception;
     }
 
-    public PublishResponse record(PublishRequest publishRequest,
-                                  CheckedFunction<PublishRequest, PublishResponse> function) {
+    public CompletableFuture<PublishResponse> record(PublishRequest publishRequest,
+                                  CheckedFunction<PublishRequest, CompletableFuture<PublishResponse>> function) {
         long startTime = System.currentTimeMillis();
-        String status = SUCCESS;
-        TransactionType type = publishRequest.getType();
-        PublishResponse response = null;
 
         try {
-            response = function.apply(publishRequest);
-            counter.incrementAndGet();
+            return function.apply(publishRequest)
+                    .thenApply(response -> {
+                        counter.incrementAndGet();
+                        recordMetric(publishRequest, response, SUCCESS, startTime);
+                        return response;
+                    })
+                    .exceptionally(throwable -> {
+                        log.error(throwable);
+                        Throwable cause = throwable.getCause();
+                        String status;
+                        TransactionType type = publishRequest.getType();
 
-            return response;
-        } catch (PrecheckStatusException pse) {
-            status = pse.status.toString();
-            log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
-            throw new PublishException(pse);
-        } catch (ReceiptStatusException rse) {
-            status = rse.receipt.status.toString();
-            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId, rse.getMessage());
-            throw new PublishException(rse);
-        } catch (Exception e) {
-            status = e.getClass().getSimpleName();
-            log.debug("{} submitting {} transaction: {}", status, type, e.getMessage());
-            throw new PublishException(e);
-        } finally {
-            long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
-            String scenarioName = publishRequest.getScenarioName();
-            Tags tags = new Tags(scenarioName, status, type);
-            Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
-            submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
-            durationGauges.computeIfAbsent(tags, this::newDurationMetric);
+                        if (cause instanceof PrecheckStatusException) {
+                            PrecheckStatusException pse = (PrecheckStatusException) cause;
+                            status = pse.status.toString();
+                            log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
+                        } else if (cause instanceof ReceiptStatusException) {
+                            ReceiptStatusException rse = (ReceiptStatusException) cause;
+                            status = rse.receipt.status.toString();
+                            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId,
+                                    rse.getMessage());
+                        } else if (cause instanceof StatusRuntimeException) {
+                            StatusRuntimeException sre = (StatusRuntimeException) cause;
+                            status = sre.getStatus().getCode().toString();
+                            log.debug("GRPC error: {}", sre.getMessage());
+                        } else {
+                            status = cause.getClass().getSimpleName();
+                            log.debug("{} submitting {} transaction: {}", status, type, cause.getMessage());
+                        }
 
-            if (response != null && response.getReceipt() != null) {
-                long elapsed = System.currentTimeMillis() - startTime;
-                Timer handleTimer = handleTimers.computeIfAbsent(tags, this::newHandleMetric);
-                handleTimer.record(elapsed, TimeUnit.MILLISECONDS);
-            }
+                        errors.add(status);
+                        recordMetric(publishRequest, null, status, startTime);
 
-            if (!SUCCESS.equals(status)) {
-                errors.add(status);
-            }
+                        throw new PublishException(cause);
+                    });
+        } catch (Exception ex) {
+            log.error(ex);
+            throw new PublishException(ex);
+        }
+    }
+
+    private void recordMetric(PublishRequest request, PublishResponse response, String status, long startTime) {
+        String scenarioName = request.getScenarioName();
+        TransactionType type = request.getType();
+
+        long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
+        Tags tags = new Tags(scenarioName, status, type);
+        Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
+        submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
+        durationGauges.computeIfAbsent(tags, this::newDurationMetric);
+
+        if (response != null && response.getReceipt() != null) {
+            long elapsed = System.currentTimeMillis() - startTime;
+            Timer handleTimer = handleTimers.computeIfAbsent(tags, this::newHandleMetric);
+            handleTimer.record(elapsed, TimeUnit.MILLISECONDS);
         }
     }
 

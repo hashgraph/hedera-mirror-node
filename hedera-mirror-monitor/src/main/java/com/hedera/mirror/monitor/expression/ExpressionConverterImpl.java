@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.expression;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -107,7 +108,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .type(type.getTransactionType())
                     .build();
 
-            PublishResponse publishResponse = transactionPublisher.publish(request);
+            PublishResponse publishResponse = transactionPublisher.publish(request).get();
             String createdId = type.getIdExtractor().apply(publishResponse.getReceipt());
             log.info("Created {} entity {}", type, createdId);
             return createdId;

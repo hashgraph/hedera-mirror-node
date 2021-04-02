@@ -21,26 +21,22 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import com.google.common.base.Suppliers;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.AccountInfoQuery;
 import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
@@ -69,38 +65,43 @@ public class TransactionPublisher {
         }
     }
 
-    public PublishResponse publish(PublishRequest request) {
+    public CompletableFuture<PublishResponse> publish(PublishRequest request) {
         return publishMetrics.record(request, this::doPublish);
     }
 
-    private PublishResponse doPublish(PublishRequest request) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    private CompletableFuture<PublishResponse> doPublish(PublishRequest request) {
         log.trace("Publishing: {}", request);
         int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
+
         Client client = clients.get().get(index);
 
-        TransactionId transactionId = request.getTransaction().execute(client).transactionId;
-        PublishResponse.PublishResponseBuilder responseBuilder = PublishResponse.builder()
-                .request(request)
-                .timestamp(Instant.now())
-                .transactionId(transactionId);
+        return request.getTransaction()
+                .executeAsync(client)
+                .thenCompose(transactionResponse -> {
+                    TransactionId transactionId = transactionResponse.transactionId;
+                    PublishResponse.PublishResponseBuilder builder = PublishResponse.builder()
+                            .request(request)
+                            .timestamp(Instant.now())
+                            .transactionId(transactionId);
 
-        if (request.isRecord()) {
-            var record = transactionId.getRecord(client);
-            responseBuilder.record(record).receipt(record.receipt);
-        } else if (request.isReceipt()) {
-            // TODO: Implement a faster retry for get receipt for more accurate metrics
-            var receipt = transactionId.getReceipt(client);
-            responseBuilder.receipt(receipt);
-        }
+                    if (request.isRecord()) {
+                        return transactionId.getRecordAsync(client)
+                                .thenApply(record -> builder.record(record).receipt(record.receipt));
+                    } else if (request.isReceipt()) {
+                        return transactionId.getReceiptAsync(client).thenApply(builder::receipt);
+                    }
 
-        PublishResponse response = responseBuilder.build();
+                    return CompletableFuture.completedFuture(builder);
+                })
+                .thenApply(builder -> {
+                    PublishResponse response = builder.build();
 
-        if (log.isTraceEnabled() || request.isLogResponse()) {
-            log.info("Received response: {}", response);
-        }
+                    if (log.isTraceEnabled() || request.isLogResponse()) {
+                        log.info("Received response : {}", response);
+                    }
 
-        return response;
+                    return response;
+                });
     }
 
     private List<Client> getClients() {
@@ -112,9 +113,11 @@ public class TransactionPublisher {
 
         List<Client> validatedClients = new ArrayList<>();
 
-        for (int i = 0; i < publishProperties.getConnections(); ++i) {
-            NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
-            Client client = toClient(nodeProperties);
+        log.info("Creating {} clients", publishProperties.getClients());
+
+        for (int i = 0; i < publishProperties.getClients(); ++i) {
+//            NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
+            Client client = toClient(validNodes, i);
             validatedClients.add(client);
         }
 
@@ -128,37 +131,43 @@ public class TransactionPublisher {
             return new ArrayList<>(nodes);
         }
 
-        List<NodeProperties> validNodes = new ArrayList<>();
-        AccountId accountId = AccountId.fromString("0.0.2");
+        List<NodeProperties> validNodes = new ArrayList<>(nodes);
+//        AccountId accountId = AccountId.fromString("0.0.2");
 
-        for (NodeProperties node : nodes) {
-            Client client = toClient(node);
-
-            try {
-                new AccountInfoQuery().setAccountId(accountId).execute(client, Duration.ofSeconds(10L));
-                validNodes.add(node);
-                log.info("Validated node: {}", node);
-            } catch (Exception e) {
-                log.warn("Unable to validate node {}: ", node, e);
-            } finally {
-                try {
-                    client.close();
-                } catch (Exception e) {
-                }
-            }
-        }
+//        for (NodeProperties node : nodes) {
+//            Client client = toClient(node);
+//
+//            try {
+//                new AccountInfoQuery().setAccountId(accountId).execute(client, Duration.ofSeconds(10L));
+//                validNodes.add(node);
+//                log.info("Validated node: {}", node);
+//            } catch (Exception e) {
+//                log.warn("Unable to validate node {}: ", node, e);
+//            } finally {
+//                try {
+//                    client.close();
+//                } catch (Exception e) {
+//                }
+//            }
+//        }
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
         return validNodes;
     }
 
-    private Client toClient(NodeProperties nodeProperties) {
-        AccountId nodeAccount = AccountId.fromString(nodeProperties.getAccountId());
+    private Client toClient(List<NodeProperties> validNodes, int index) {
+        List<NodeProperties> doubleNodes = new ArrayList<>(validNodes);
+        doubleNodes.addAll(validNodes);
+        int skip = index *  3 % validNodes.size();
+        var network = doubleNodes.stream()
+                .skip(skip)
+                .limit(3)
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, np -> AccountId.fromString(np.getAccountId())));
         AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
         PrivateKey operatorPrivateKey = PrivateKey
                 .fromString(monitorProperties.getOperator().getPrivateKey());
 
-        Client client = Client.forNetwork(Map.of(nodeProperties.getEndpoint(), nodeAccount));
+        Client client = Client.forNetwork(network);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
     }

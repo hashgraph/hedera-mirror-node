@@ -42,6 +42,9 @@ public class PublishProperties {
     private int batchDivisor = 100;
 
     @Min(1)
+    private int clients = 4;
+
+    @Min(1)
     private int connections = 5;
 
     private boolean enabled = true;
