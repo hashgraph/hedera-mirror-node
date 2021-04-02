@@ -21,9 +21,11 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import com.google.common.base.Suppliers;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,6 +53,7 @@ public class TransactionPublisher {
     private final PublishMetrics publishMetrics;
     private final Supplier<List<Client>> clients = Suppliers.memoize(this::getClients);
     private final AtomicInteger counter = new AtomicInteger(0);
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @PreDestroy
     public void close() {
@@ -74,6 +77,9 @@ public class TransactionPublisher {
         int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
 
         Client client = clients.get().get(index);
+        List<AccountId> nodeAccountIds = new ArrayList<>(client.getNetwork().values());
+        int nodeIndex = secureRandom.nextInt(client.getNetwork().size());
+        request.getTransaction().setNodeAccountIds(List.of(nodeAccountIds.get(nodeIndex)));
 
         return request.getTransaction()
                 .executeAsync(client)
@@ -115,11 +121,11 @@ public class TransactionPublisher {
 
         log.info("Creating {} clients", publishProperties.getClients());
 
-        for (int i = 0; i < publishProperties.getClients(); ++i) {
+//        for (int i = 0; i < publishProperties.getClients(); ++i) {
 //            NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
-            Client client = toClient(validNodes, i);
+            Client client = toClient(validNodes);
             validatedClients.add(client);
-        }
+//        }
 
         return validatedClients;
     }
@@ -155,14 +161,9 @@ public class TransactionPublisher {
         return validNodes;
     }
 
-    private Client toClient(List<NodeProperties> validNodes, int index) {
-        List<NodeProperties> doubleNodes = new ArrayList<>(validNodes);
-        doubleNodes.addAll(validNodes);
-        int skip = index *  3 % validNodes.size();
-        var network = doubleNodes.stream()
-                .skip(skip)
-                .limit(3)
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, np -> AccountId.fromString(np.getAccountId())));
+    private Client toClient(List<NodeProperties> validNodes) {
+        Map<String, AccountId> network = validNodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
         AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
         PrivateKey operatorPrivateKey = PrivateKey
                 .fromString(monitorProperties.getOperator().getPrivateKey());
