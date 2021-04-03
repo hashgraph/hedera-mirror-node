@@ -15,6 +15,15 @@
         "entity_num": 98
       }
     ],
+    "entities": [
+      {
+        "entity_num": 100,
+        "entity_type": 6,
+        "memo": "Created per council decision dated 02/01/21",
+        "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
+        "key": [1, 1, 1]
+      }
+    ],
     "balances": [],
     "transactions": [
       {
@@ -25,6 +34,7 @@
         "valid_start_timestamp": "1234567890000000001",
         "name": "SCHEDULECREATE",
         "type": 42,
+        "entity_id": "0.0.100",
         "transfers": [
           {
             "account": "0.0.9",
@@ -77,6 +87,7 @@
       {
         "consensus_timestamp": "1234567890.000000002",
         "charged_tx_fee": 7,
+        "entity_id": "0.0.100",
         "max_fee": "33",
         "memo_base64": null,
         "name": "SCHEDULECREATE",
@@ -101,6 +112,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000003",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
@@ -129,6 +141,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000040",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",

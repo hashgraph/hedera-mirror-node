@@ -27,7 +27,9 @@
             "account": "0.0.9",
             "amount": -20
           }
-        ]
+        ],
+        "name": "TOKENWIPE",
+        "entity_id": "0.0.90000"
       }
     ]
   },
@@ -37,6 +39,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.000000001",
+        "entity_id": "0.0.90000",
         "valid_start_timestamp": "1234567890.000000000",
         "charged_tx_fee": 7,
         "memo_base64": null,

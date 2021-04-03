@@ -66,7 +66,8 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000006",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.9"
       }
     ],
     "cryptotransfers": [
@@ -95,6 +96,7 @@
       {
         "charged_tx_fee": 0,
         "consensus_timestamp": "1234567890.000000006",
+        "entity_id": "0.0.9",
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOUPDATEACCOUNT",
@@ -110,6 +112,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000005",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
@@ -138,6 +141,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000001",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
