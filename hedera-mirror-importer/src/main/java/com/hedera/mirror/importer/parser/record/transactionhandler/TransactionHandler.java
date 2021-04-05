@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -60,7 +60,7 @@ public interface TransactionHandler {
      * transaction is successful, then this function will be called.
      * @param entity latest state of entity (fetched from the repo)
      */
-    default void updateEntity(Entities entity, RecordItem recordItem) {
+    default void updateEntity(Entity entity, RecordItem recordItem) {
     }
 
     /**

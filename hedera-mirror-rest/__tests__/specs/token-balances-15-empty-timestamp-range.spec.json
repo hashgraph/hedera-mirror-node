@@ -3,16 +3,16 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 4
+        "num": 4
       },
       {
-        "entity_num": 5
+        "num": 5
       },
       {
-        "entity_num": 6
+        "num": 6
       },
       {
-        "entity_num": 7
+        "num": 7
       }
     ],
     "tokens": [

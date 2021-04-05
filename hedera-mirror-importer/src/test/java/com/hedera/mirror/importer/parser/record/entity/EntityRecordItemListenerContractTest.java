@@ -48,7 +48,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.importer.domain.ContractResult;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -267,7 +267,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbContractEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbContractEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -282,7 +282,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
                 // Additional entity checks
                 , () -> assertNotNull(dbContractEntity.getKey())
-                , () -> assertNull(dbContractEntity.getExpiryTimeNs())
+                , () -> assertNull(dbContractEntity.getExpirationTimestamp())
                 , () -> assertNotNull(dbContractEntity.getAutoRenewPeriod())
                 , () -> assertNotNull(dbContractEntity.getProxyAccountId())
         );
@@ -466,7 +466,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     private void assertContractTransaction(TransactionBody transactionBody, TransactionRecord record, boolean deleted) {
-        Entities actualContract = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualContract = getTransactionEntity(record.getConsensusTimestamp());
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContract(record.getReceipt().getContractID(), actualContract),
@@ -493,34 +493,35 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
     private void assertContractEntity(ContractCreateTransactionBody expected, Timestamp consensusTimestamp) {
         var dbTransaction = getDbTransaction(consensusTimestamp);
-        Entities actualContract = getEntity(dbTransaction.getEntityId());
-        Entities actualProxyAccount = getEntity(actualContract.getProxyAccountId());
+        Entity actualContract = getEntity(dbTransaction.getEntityId());
+        Entity actualProxyAccount = getEntity(actualContract.getProxyAccountId());
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualContract.getAutoRenewPeriod()),
                 () -> assertArrayEquals(expected.getAdminKey().toByteArray(), actualContract.getKey()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccount),
                 () -> assertEquals(expected.getMemo(), actualContract.getMemo()),
                 () -> assertEquals(expected.getInitialBalance(), dbTransaction.getInitialBalance()),
-                () -> assertNull(actualContract.getExpiryTimeNs()));
+                () -> assertNull(actualContract.getExpirationTimestamp()));
     }
 
     private void assertContractEntity(ContractUpdateTransactionBody expected, Timestamp consensusTimestamp) {
-        Entities actualContract = getTransactionEntity(consensusTimestamp);
-        Entities actualProxyAccount = getEntity(actualContract.getProxyAccountId());
+        Entity actualContract = getTransactionEntity(consensusTimestamp);
+        Entity actualProxyAccount = getEntity(actualContract.getProxyAccountId());
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualContract.getAutoRenewPeriod()),
                 () -> assertArrayEquals(expected.getAdminKey().toByteArray(), actualContract.getKey()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccount),
                 () -> assertEquals(getMemoFromContractUpdateTransactionBody(expected), actualContract.getMemo()),
                 () -> assertEquals(
-                        Utility.timeStampInNanos(expected.getExpirationTime()), actualContract.getExpiryTimeNs()));
+                        Utility.timeStampInNanos(expected.getExpirationTime()), actualContract
+                                .getExpirationTimestamp()));
     }
 
     private void assertContractEntityHasNullFields(Timestamp consensusTimestamp) {
-        Entities actualContract = getTransactionEntity(consensusTimestamp);
+        Entity actualContract = getTransactionEntity(consensusTimestamp);
         assertAll(
                 () -> assertNull(actualContract.getKey()),
-                () -> assertNull(actualContract.getExpiryTimeNs()),
+                () -> assertNull(actualContract.getExpirationTimestamp()),
                 () -> assertNull(actualContract.getAutoRenewPeriod()),
                 () -> assertNull(actualContract.getProxyAccountId()));
     }

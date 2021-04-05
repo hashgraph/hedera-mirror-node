@@ -25,6 +25,10 @@ const constants = require('../constants.js');
 const config = require('../config.js');
 const EntityId = require('../entityId');
 
+const formatSqlQueryString = (query) => {
+  return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
+};
+
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
     verifyInvalidConsensusTimestamp(-1234567890.000000001);
@@ -152,9 +156,15 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
     filters
   );
 
-  expect(query).toStrictEqual(
-    'select * from topic_message where realm_num = $1 and topic_num = $2 and sequence_number > $3 and consensus_timestamp <= $4 order by consensus_timestamp desc limit $5;'
-  );
+  const expectedQuery = `select *
+                         from topic_message
+                         where realm_num = $1
+                           and topic_num = $2
+                           and sequence_number > $3
+                           and consensus_timestamp <= $4
+                         order by consensus_timestamp desc
+                         limit $5;`;
+  expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
   expect(params).toStrictEqual([0, 7, '2', '1234567890.000000006', '3']);
   expect(order).toStrictEqual(constants.orderFilterValues.DESC);
   expect(limit).toStrictEqual(3);

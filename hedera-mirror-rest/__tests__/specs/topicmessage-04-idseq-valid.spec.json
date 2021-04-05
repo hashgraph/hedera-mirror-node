@@ -3,8 +3,8 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 7,
-        "entity_type": 4
+        "num": 7,
+        "type": 4
       }
     ],
     "balances": [],

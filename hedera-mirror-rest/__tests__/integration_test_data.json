@@ -4,50 +4,50 @@
     "filename": "test",
     "accounts": [
       {
-        "entity_num": 1,
-        "entity_realm": 15
+        "num": 1,
+        "realm": 15
       },
       {
-        "entity_num": 2,
-        "entity_realm": 15
+        "num": 2,
+        "realm": 15
       },
       {
-        "entity_num": 3,
-        "entity_realm": 15
+        "num": 3,
+        "realm": 15
       },
       {
-        "entity_num": 4,
-        "entity_realm": 15
+        "num": 4,
+        "realm": 15
       },
       {
-        "entity_num": 5,
-        "entity_realm": 15
+        "num": 5,
+        "realm": 15
       },
       {
-        "entity_num": 6,
-        "entity_realm": 15
+        "num": 6,
+        "realm": 15
       },
       {
-        "entity_num": 7,
-        "entity_realm": 15
+        "num": 7,
+        "realm": 15
       },
       {
-        "entity_num": 8,
-        "entity_realm": 15
+        "num": 8,
+        "realm": 15
       },
       {
-        "entity_num": 9,
-        "entity_realm": 15,
+        "num": 9,
+        "realm": 15,
         "expiration_ns": "-9223372036854775808"
       },
       {
-        "entity_num": 10,
-        "entity_realm": 15,
+        "num": 10,
+        "realm": 15,
         "expiration_ns": "9223372036854775807"
       },
       {
-        "entity_num": 98,
-        "entity_realm": 15
+        "num": 98,
+        "realm": 15
       }
     ],
     "balances": [

@@ -42,7 +42,7 @@ public class EntityRepositoryTest extends GrpcIntegrationTest {
         assertThat(entityRepository.findByCompositeKey(0, 0, 999)).isNotPresent();
 
         Entity entity = domainBuilder.entity().block();
-        assertThat(entityRepository.findByCompositeKey(0, entity.getEntityRealm(), entity.getEntityNum()))
+        assertThat(entityRepository.findByCompositeKey(0, entity.getRealm(), entity.getNum()))
                 .get()
                 .isEqualTo(entity);
     }

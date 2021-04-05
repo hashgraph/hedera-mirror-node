@@ -3,7 +3,7 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 1024
+        "num": 1024
       }
     ]
   },

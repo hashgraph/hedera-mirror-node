@@ -3,20 +3,20 @@
   "setup": {
     "entities": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 10
+        "num": 10
       },
       {
-        "entity_num": 98
+        "num": 98
       },
       {
-        "entity_num": 90000,
-        "entity_type": 5
+        "num": 90000,
+        "type": 5
       }
     ],
     "balances": [],

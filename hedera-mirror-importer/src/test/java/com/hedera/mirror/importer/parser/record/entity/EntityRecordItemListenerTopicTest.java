@@ -50,7 +50,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.converter.KeyConverter;
 import com.hedera.mirror.importer.converter.TopicIdConverter;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
@@ -94,7 +94,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     void createTopicTestNulls() throws Exception {
         var consensusTimestamp = 2_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
-        var transaction = createCreateTopicTransaction(null, null, null, null, null);
+        var transaction = createCreateTopicTransaction(null, null, "", null, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 2, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
@@ -103,11 +103,11 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
-                .returns("".getBytes(), from(Entities::getKey))
-                .returns("".getBytes(), from(Entities::getSubmitKey))
-                .returns("", from(Entities::getMemo))
-                .returns(false, from(Entities::isDeleted))
-                .returns(EntityTypeEnum.TOPIC.getId(), from(Entities::getEntityTypeId));
+                .returns("".getBytes(), from(Entity::getKey))
+                .returns("".getBytes(), from(Entity::getSubmitKey))
+                .returns("", from(Entity::getMemo))
+                .returns(false, from(Entity::isDeleted))
+                .returns(EntityTypeEnum.TOPIC.getId(), from(Entity::getType));
     }
 
     // https://github.com/hashgraph/hedera-mirror-node/issues/501
@@ -116,7 +116,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         Long autoRenewAccountId = 100L;
         var consensusTimestamp = 2_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
-        var transaction = createCreateTopicTransaction(null, null, null, autoRenewAccountId, null);
+        var transaction = createCreateTopicTransaction(null, null, "", autoRenewAccountId, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 1, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
@@ -125,11 +125,11 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(4L, entityRepository.count()); // Node, payer, topic, autorenew
         assertThat(entity)
-                .returns("".getBytes(), from(Entities::getKey))
-                .returns("".getBytes(), from(Entities::getSubmitKey))
-                .returns("", from(Entities::getMemo))
-                .returns(false, from(Entities::isDeleted))
-                .returns(EntityTypeEnum.TOPIC.getId(), from(Entities::getEntityTypeId))
+                .returns("".getBytes(), from(Entity::getKey))
+                .returns("".getBytes(), from(Entity::getSubmitKey))
+                .returns("", from(Entity::getMemo))
+                .returns(false, from(Entity::isDeleted))
+                .returns(EntityTypeEnum.TOPIC.getId(), from(Entity::getType))
                 .returns(autoRenewAccountId, e -> e.getAutoRenewAccountId().getId());
     }
 
@@ -253,7 +253,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             "0.0.1501, 0, 0, '', '', '', 5000001, 0, 0, , , , , , ,",
             "0.0.1502, , , admin-key, submit-key, memo, 5000002, 10, 20, updated-admin-key, updated-submit-key, " +
                     "updated-memo, 1, 30, 11, 31",
-            "0.0.1503, , , , , , 5000003, 11, 21, admin-key, submit-key, memo, , , 1, 30"
+            "0.0.1503, , , , , '', 5000003, 11, 21, admin-key, submit-key, memo, , , 1, 30"
     })
     void updateTopicTestPartialUpdates(@ConvertWith(TopicIdConverter.class) TopicID topicId, Long expirationTimeSeconds,
                                        Integer expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
@@ -273,7 +273,8 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             topic.setAutoRenewPeriod(updatedAutoRenewPeriod);
         }
         if (updatedExpirationTimeSeconds != null && updatedExpirationTimeNanos != null) {
-            topic.setExpiryTimeNs(Utility.convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
+            topic.setExpirationTimestamp(Utility
+                    .convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
         }
         if (updatedAdminKey != null) {
             topic.setKey(updatedAdminKey.toByteArray());
@@ -313,7 +314,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         // Store topic to be deleted.
-        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         entityRepository.save(topic);
 
         // Setup expected data
@@ -336,7 +337,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         // Setup expected data
-        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         topic.setDeleted(true);
         // Topic not saved to the repository.
 
@@ -357,7 +358,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var responseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
         // Store topic to be deleted.
-        var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, "", null, null);
         entityRepository.save(topic);
 
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
@@ -383,7 +384,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                            Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) throws Exception {
         var responseCode = ResponseCodeEnum.SUCCESS;
 
-        var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
+        var topic = createTopicEntity(topicId, 10L, 20, null, null, "", null, null);
         entityRepository.save(topic);
 
         var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
@@ -416,7 +417,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var payerAccountIdNum = 6L;
         var validStartNs = 7L;
 
-        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         // Topic NOT saved in the repository.
 
         var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
@@ -500,7 +501,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var chunkTotal = 5;
         var validStartNs = 7L;
 
-        var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, "", null, null);
         entityRepository.save(topic);
 
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, PAYER.getAccountNum(),
@@ -531,7 +532,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var payerAccountIdNum = 6L;
         var validStartNs = 7L;
 
-        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         // Topic NOT saved in the repository.
 
         createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
@@ -607,9 +608,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .setMemo(TRANSACTION_MEMO);
     }
 
-    private Entities createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
-                                       Key adminKey, Key submitKey, String memo, Long autoRenewAccountNum,
-                                       Long autoRenewPeriod) {
+    private Entity createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
+                                     Key adminKey, Key submitKey, String memo, Long autoRenewAccountNum,
+                                     Long autoRenewPeriod) {
         var topic = EntityId.of(topicId).toEntity();
         if (autoRenewAccountNum != null) {
             var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
@@ -621,7 +622,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             topic.setAutoRenewPeriod(autoRenewPeriod);
         }
         if (expirationTimeSeconds != null && expirationTimeNanos != null) {
-            topic.setExpiryTimeNs(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
+            topic.setExpirationTimestamp(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
         }
         if (null != adminKey) {
             topic.setKey(adminKey.toByteArray());
@@ -630,7 +631,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             topic.setSubmitKey(submitKey.toByteArray());
         }
         topic.setMemo(memo);
-        topic.setEntityTypeId(EntityTypeEnum.TOPIC.getId());
+        topic.setType(EntityTypeEnum.TOPIC.getId());
         return topic;
     }
 
@@ -728,7 +729,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .build();
     }
 
-    private Entities getTopicEntity(TopicID topicId) {
+    private Entity getTopicEntity(TopicID topicId) {
         return getEntity(EntityId.of(topicId).getId());
     }
 }

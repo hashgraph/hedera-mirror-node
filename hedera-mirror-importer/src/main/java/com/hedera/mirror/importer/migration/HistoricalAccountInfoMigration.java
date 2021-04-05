@@ -42,7 +42,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -127,10 +127,10 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
 
     boolean process(AccountInfo accountInfo) {
         EntityId accountEntityId = EntityId.of(accountInfo.getAccountID());
-        Optional<Entities> currentEntity = entityRepository.findById(accountEntityId.getId());
+        Optional<Entity> currentEntity = entityRepository.findById(accountEntityId.getId());
         boolean exists = currentEntity.isPresent();
 
-        Entities entity = currentEntity.orElseGet(accountEntityId::toEntity);
+        Entity entity = currentEntity.orElseGet(accountEntityId::toEntity);
         boolean updated = !exists;
 
         // All regular accounts have a key so if it's missing we know it had to have been created before the reset.
@@ -151,8 +151,8 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
             updated = true;
         }
 
-        if (entity.getExpiryTimeNs() == null && accountInfo.hasExpirationTime()) {
-            entity.setExpiryTimeNs(Utility.timestampInNanosMax(accountInfo.getExpirationTime()));
+        if (entity.getExpirationTimestamp() == null && accountInfo.hasExpirationTime()) {
+            entity.setExpirationTimestamp(Utility.timestampInNanosMax(accountInfo.getExpirationTime()));
             updated = true;
         }
 
@@ -161,7 +161,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
             updated = true;
         }
 
-        if (entity.getMemo() == null && accountInfo.getMemo() != null) {
+        if (entity.getMemo().isEmpty() && accountInfo.getMemo() != null) {
             entity.setMemo(accountInfo.getMemo());
             updated = true;
         }

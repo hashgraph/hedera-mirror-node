@@ -3,27 +3,27 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 1024
+        "num": 1024
       }
     ],
     "entities": [
       {
-        "entity_num": 2000,
-        "entity_type": 6,
+        "num": 2000,
+        "type": 6,
         "memo": "Created per council decision dated 02/01/21",
         "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [1, 1, 1]
       },
       {
-        "entity_num": 3000,
-        "entity_type": 6,
+        "num": 3000,
+        "type": 6,
         "memo": "Created per mirror team decision dated 02/02/21",
         "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [2, 2, 2]
       },
       {
-        "entity_num": 4000,
-        "entity_type": 6,
+        "num": 4000,
+        "type": 6,
         "memo": "Created per product team decision dated 02/03/21",
         "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [3, 3, 3]

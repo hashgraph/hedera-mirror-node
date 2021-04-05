@@ -27,9 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -53,10 +50,11 @@ import javax.annotation.Resource;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -146,30 +144,30 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
-    protected final void assertAccount(AccountID accountId, Entities dbEntity) {
+    protected final void assertAccount(AccountID accountId, Entity dbEntity) {
         assertThat(accountId)
                 .isNotEqualTo(AccountID.getDefaultInstance())
                 .extracting(AccountID::getShardNum, AccountID::getRealmNum, AccountID::getAccountNum)
-                .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
-        assertThat(dbEntity.getEntityTypeId())
+                .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
+        assertThat(dbEntity.getType())
                 .isEqualTo(EntityTypeEnum.ACCOUNT.getId());
     }
 
-    protected final void assertFile(FileID fileId, Entities dbEntity) {
+    protected final void assertFile(FileID fileId, Entity dbEntity) {
         assertThat(fileId)
                 .isNotEqualTo(FileID.getDefaultInstance())
                 .extracting(FileID::getShardNum, FileID::getRealmNum, FileID::getFileNum)
-                .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
-        assertThat(dbEntity.getEntityTypeId())
+                .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
+        assertThat(dbEntity.getType())
                 .isEqualTo(EntityTypeEnum.FILE.getId());
     }
 
-    protected final void assertContract(ContractID contractId, Entities dbEntity) {
+    protected final void assertContract(ContractID contractId, Entity dbEntity) {
         assertThat(contractId)
                 .isNotEqualTo(ContractID.getDefaultInstance())
                 .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
-                .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
-        assertThat(dbEntity.getEntityTypeId())
+                .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
+        assertThat(dbEntity.getType())
                 .isEqualTo(EntityTypeEnum.CONTRACT.getId());
     }
 
@@ -238,8 +236,8 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     private void assertTransaction(TransactionBody transactionBody, Transaction dbTransaction) {
-        Entities dbNodeEntity = getEntity(dbTransaction.getNodeAccountId());
-        Entities dbPayerEntity = getEntity(dbTransaction.getPayerAccountId());
+        Entity dbNodeEntity = getEntity(dbTransaction.getNodeAccountId());
+        Entity dbPayerEntity = getEntity(dbTransaction.getPayerAccountId());
 
         assertAll(
                 () -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
@@ -314,20 +312,20 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         return transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
     }
 
-    protected Entities getTransactionEntity(Timestamp consensusTimestamp) {
+    protected Entity getTransactionEntity(Timestamp consensusTimestamp) {
         var transaction = transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
         return getEntity(transaction.getEntityId());
     }
 
-    protected Entities getEntity(long entityId) {
+    protected Entity getEntity(long entityId) {
         return entityRepository.findById(entityId).get();
     }
 
-    protected Entities getEntity(EntityId entityId) {
+    protected Entity getEntity(EntityId entityId) {
         return getEntity(entityId.getId());
     }
 
-    protected Entities getEntity(long shard, long realm, long num) {
+    protected Entity getEntity(long shard, long realm, long num) {
         return getEntity(EntityIdEndec.encode(shard, realm, num));
     }
 
@@ -341,8 +339,8 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
     }
 
-    protected Entities createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-                                    boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
+    protected Entity createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
+                                  boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
         if (autoRenewAccountId != null) {
             entityRepository.save(autoRenewAccountId.toEntity());
         }
@@ -350,11 +348,11 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
         byte[] submitKeyBytes = rawBytesFromKey(submitKey);
 
-        Entities entity = entityId.toEntity();
+        Entity entity = entityId.toEntity();
         entity.setAutoRenewAccountId(autoRenewAccountId);
         entity.setAutoRenewPeriod(autoRenewPeriod);
         entity.setDeleted(deleted);
-        entity.setExpiryTimeNs(expiryTimeNs);
+        entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
@@ -386,13 +384,13 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         assertThat(entityRepository.findAll())
                 .hasSize(entityIds.length)
                 .allMatch(entity -> entity.getId() > 0)
-                .allMatch(entity -> entity.getEntityTypeId() != null)
-                .extracting(Entities::toEntityId)
+                .allMatch(entity -> entity.getType() != null)
+                .extracting(Entity::toEntityId)
                 .containsExactlyInAnyOrder(entityIds);
     }
 
-    protected void assertEntity(Entities expected) {
-        Entities actual = getEntity(expected.getId());
+    protected void assertEntity(Entity expected) {
+        Entity actual = getEntity(expected.getId());
         assertThat(actual).isEqualTo(expected);
     }
 

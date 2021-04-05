@@ -45,10 +45,10 @@ public class EncodedIdToEntityConverterTest {
         Entity result = converter.convert(encodedInput);
         Entity expected = Entity.builder()
                 .id(encodedInput)
-                .entityShard(shardOutput)
-                .entityRealm(realmOutput)
-                .entityNum(numOutput)
-                .entityTypeId(EntityType.ACCOUNT)
+                .shard(shardOutput)
+                .realm(realmOutput)
+                .num(numOutput)
+                .type(EntityType.ACCOUNT)
                 .build();
         assertEquals(expected, result);
     }

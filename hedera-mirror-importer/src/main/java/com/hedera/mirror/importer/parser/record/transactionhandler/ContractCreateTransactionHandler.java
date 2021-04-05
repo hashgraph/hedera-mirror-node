@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -54,7 +54,7 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem) {
+    public void updateEntity(Entity entity, RecordItem recordItem) {
         ContractCreateTransactionBody txMessage = recordItem.getTransactionBody().getContractCreateInstance();
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());

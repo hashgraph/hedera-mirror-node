@@ -51,8 +51,8 @@ public class ConnectionHandler {
     }
 
     public void createTopic(long topicNum) {
-        String sql = "insert into t_entities"
-                + " (entity_num, entity_realm, entity_shard, fk_entity_type_id)"
+        String sql = "insert into entity"
+                + " (num, realm, shard, type)"
                 + " values (?, 0, 0, 4) on conflict do nothing";
         jdbcTemplate.update(sql, new Object[] {topicNum});
         log.info("Created new Topic {}", topicNum);

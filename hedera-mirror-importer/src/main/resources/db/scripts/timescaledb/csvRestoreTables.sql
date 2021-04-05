@@ -24,7 +24,7 @@
 
 \copy schedule from schedule.csv csv;
 
-\copy t_entities from t_entities.csv csv;
+\copy entity from entity.csv csv;
 
 \copy t_entity_types from t_entity_types.csv csv;
 

@@ -48,11 +48,11 @@ public class EncodedIdToEntityConverter implements Converter<Long, Entity> {
         long num = encodedId & NUM_MASK;
 
         Entity.EntityBuilder builder = Entity.builder()
-                .entityNum(num)
-                .entityRealm(realm)
-                .entityShard(shard)
+                .num(num)
+                .realm(realm)
+                .shard(shard)
                 .id(encodedId)
-                .entityTypeId(EntityType.ACCOUNT);
+                .type(EntityType.ACCOUNT);
 
         return builder.build();
     }

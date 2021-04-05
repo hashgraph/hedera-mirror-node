@@ -3,30 +3,30 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 1
+        "num": 1
       },
       {
-        "entity_num": 2
+        "num": 2
       }
     ],
     "entities": [
       {
-        "entity_num": 3,
-        "entity_type": 5
+        "num": 3,
+        "type": 5
       },
       {
-        "entity_num": 4,
-        "entity_type": 5
+        "num": 4,
+        "type": 5
       },
       {
-        "entity_realm": 7,
-        "entity_num": 25301,
-        "entity_type": 5
+        "realm": 7,
+        "num": 25301,
+        "type": 5
       },
       {
-        "entity_realm": 23,
-        "entity_num": 45678,
-        "entity_type": 5
+        "realm": 23,
+        "num": 45678,
+        "type": 5
       }
     ],
     "tokens": [

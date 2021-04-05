@@ -3,19 +3,19 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 17
+        "num": 17
       },
       {
-        "entity_num": 18
+        "num": 18
       },
       {
-        "entity_num": 19
+        "num": 19
       },
       {
-        "entity_num": 20
+        "num": 20
       },
       {
-        "entity_num": 21
+        "num": 21
       }
     ],
     "balances": [

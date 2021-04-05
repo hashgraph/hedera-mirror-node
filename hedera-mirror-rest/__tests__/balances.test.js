@@ -255,7 +255,7 @@ const singletests = {
     urlparam: 'account.publickey=6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b',
     checks: [
       {
-        field: 'ed25519_public_key_hex',
+        field: 'public_key',
         operator: '=',
         value: '6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b',
       },

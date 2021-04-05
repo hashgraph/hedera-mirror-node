@@ -25,7 +25,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
@@ -40,7 +40,7 @@ public class DomainWriterImpl implements DomainWriter {
     private final EntityRepository entityRepository;
 
     private final Collection<AccountBalance> accountBalances;
-    private final Collection<Entities> entities;
+    private final Collection<Entity> entities;
 
     public DomainWriterImpl(AccountBalanceRepository accountBalanceRepository, EntityRepository entityRepository) {
         this.accountBalanceRepository = accountBalanceRepository;
@@ -57,7 +57,7 @@ public class DomainWriterImpl implements DomainWriter {
     }
 
     @Override
-    public void onEntity(Entities entity) {
+    public void onEntity(Entity entity) {
         entities.add(entity);
     }
 
