@@ -24,7 +24,7 @@
 
 \copy schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body) from schedule.csv csv;
 
-\copy t_entities (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type) from t_entities.csv csv;
+\copy entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type) from entity.csv csv;
 
 \copy token (token_id, created_timestamp, decimals, freeze_default, freeze_key, freeze_key_ed25519_hex, initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, name, supply_key, supply_key_ed25519_hex, symbol, total_supply, treasury_account_id, wipe_key, wipe_key_ed25519_hex) from token.csv csv;
 
