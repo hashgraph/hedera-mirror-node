@@ -226,7 +226,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.operator.accountId`                  | ""         | Operator account ID used to pay for transactions
 `hedera.mirror.monitor.operator.privateKey`                 | ""         | Operator ED25519 private key used to sign transactions in hex encoded DER format
 `hedera.mirror.monitor.publish.batchDivisor`                | 100        | The divisor used to calculate batch size when generating transactions
-`hedera.mirror.monitor.publish.clients`                     | 1          | How many total SDK clients to publish transactions. Clients will be used in a round-robin fashion
+`hedera.mirror.monitor.publish.clients`                     | 4          | How many total SDK clients to publish transactions. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.publish.enabled`                     | true       | Whether to enable transaction publishing
 `hedera.mirror.monitor.publish.scenarios[].duration`        |            | How long this scenario should publish transactions. Leave empty for infinite
 `hedera.mirror.monitor.publish.scenarios[].enabled`         | true       | Whether this publish scenario is enabled
