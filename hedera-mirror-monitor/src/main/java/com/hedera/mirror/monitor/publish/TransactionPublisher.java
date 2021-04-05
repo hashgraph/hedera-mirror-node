@@ -146,16 +146,8 @@ public class TransactionPublisher {
 
         try (Client client = toClient(toNetwork(nodes))) {
             for (NodeProperties node : nodes) {
-                try {
-                    List<AccountId> nodeAccountIds = List.of(AccountId.fromString(node.getAccountId()));
-                    new AccountInfoQuery()
-                            .setAccountId(accountId)
-                            .setNodeAccountIds(nodeAccountIds)
-                            .execute(client, Duration.ofSeconds(10L));
+                if (validateNode(accountId, client, node)) {
                     validNodes.add(node);
-                    log.info("Validated node: {}", node);
-                } catch (Exception e) {
-                    log.warn("Unable to validate node {}: ", node, e);
                 }
             }
         } catch (Exception e) {
@@ -164,6 +156,22 @@ public class TransactionPublisher {
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
         return validNodes;
+    }
+
+    private boolean validateNode(AccountId accountId, Client client, NodeProperties node) {
+        boolean valid = false;
+        try {
+            new AccountInfoQuery()
+                    .setAccountId(accountId)
+                    .setNodeAccountIds(List.of(AccountId.fromString(node.getAccountId())))
+                    .execute(client, Duration.ofSeconds(10L));
+            log.info("Validated node: {}", node);
+            valid = true;
+        } catch (Exception e) {
+            log.warn("Unable to validate node {}: ", node, e);
+        }
+
+        return valid;
     }
 
     private Client toClient(Map<String, AccountId> network) {
