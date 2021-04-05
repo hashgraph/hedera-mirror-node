@@ -140,6 +140,7 @@ const validateFields = function (transactions) {
     'max_fee',
     'transaction_hash',
     'scheduled',
+    'entity_id',
   ].forEach((field) => {
     if (!(field in transaction)) {
       errors.push(`missing field "${field}"`);

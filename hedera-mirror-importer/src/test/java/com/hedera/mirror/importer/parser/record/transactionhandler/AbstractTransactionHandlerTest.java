@@ -20,15 +20,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
-import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -38,6 +35,12 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Value;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,14 +49,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInfo;
 
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractTransactionHandlerTest {
 
@@ -145,7 +145,7 @@ public abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec::getDescription,
                 (testSpec) -> {
                     // given spec
-                    Entities actual = testSpec.getInput();
+                    Entity actual = testSpec.getInput();
 
                     // when
                     transactionHandler.updateEntity(actual, testSpec.getRecordItem());
@@ -179,7 +179,7 @@ public abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("create entity without memo, expect empty memo")
                         .expected(getExpectedUpdatedEntity())
-                        .input(new Entities())
+                        .input(new Entity())
                         .recordItem(getRecordItem(body, innerBody))
                         .build()
         );
@@ -190,20 +190,20 @@ public abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("create entity with empty memo, expect empty memo")
                         .expected(getExpectedUpdatedEntity())
-                        .input(new Entities())
+                        .input(new Entity())
                         .recordItem(getRecordItem(body, updatedInnerBody))
                         .build()
         );
 
         // memo set to non-empty string, expect memo set
-        Entities expected = getExpectedUpdatedEntity();
+        Entity expected = getExpectedUpdatedEntity();
         expected.setMemo(DEFAULT_MEMO);
         updatedInnerBody = innerBody.toBuilder().setField(memoField, DEFAULT_MEMO).build();
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
                         .description("create entity with non-empty memo, expect memo set")
                         .expected(expected)
-                        .input(new Entities())
+                        .input(new Entity())
                         .recordItem(getRecordItem(body, updatedInnerBody))
                         .build()
         );
@@ -212,15 +212,15 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForUpdateTransaction(FieldDescriptor memoField,
-            FieldDescriptor memoWrapperField) {
+                                                                                    FieldDescriptor memoWrapperField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
 
         // memo not set, expect memo in entity unchanged
-        Entities expected = getExpectedUpdatedEntity();
+        Entity expected = getExpectedUpdatedEntity();
         expected.setMemo(DEFAULT_MEMO);
-        Entities input = new Entities();
+        Entity input = new Entity();
         input.setMemo(DEFAULT_MEMO);
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
@@ -236,7 +236,7 @@ public abstract class AbstractTransactionHandlerTest {
             // non-empty string, expect memo set to non-empty string
             expected = getExpectedUpdatedEntity();
             expected.setMemo(UPDATED_MEMO);
-            input = new Entities();
+            input = new Entity();
             input.setMemo(DEFAULT_MEMO);
             Message updatedInnerBody = innerBody.toBuilder().setField(memoField, UPDATED_MEMO).build();
             testSpecs.add(
@@ -257,7 +257,7 @@ public abstract class AbstractTransactionHandlerTest {
         }
 
         // empty StringValue, expect memo in entity cleared
-        input = new Entities();
+        input = new Entity();
         input.setMemo(DEFAULT_MEMO);
         Message updatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
         testSpecs.add(
@@ -272,7 +272,7 @@ public abstract class AbstractTransactionHandlerTest {
         // non-empty StringValue, expect memo in entity updated
         expected = getExpectedUpdatedEntity();
         expected.setMemo(UPDATED_MEMO);
-        input = new Entities();
+        input = new Entity();
         input.setMemo(DEFAULT_MEMO);
         updatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO)).build();
         testSpecs.add(
@@ -287,8 +287,8 @@ public abstract class AbstractTransactionHandlerTest {
         return testSpecs;
     }
 
-    private Entities getExpectedUpdatedEntity() {
-        Entities entity = new Entities();
+    private Entity getExpectedUpdatedEntity() {
+        Entity entity = new Entity();
         TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
         List<String> fieldNames = innerBody.getDescriptorForType().getFields().stream()
@@ -305,7 +305,7 @@ public abstract class AbstractTransactionHandlerTest {
                     break;
                 case "expiry":
                 case "expirationTime":
-                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
+                    entity.setExpirationTimestamp(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
                     break;
                 case "keys":
                     entity.setKey(DEFAULT_KEY_LIST.toByteArray());
@@ -394,8 +394,8 @@ public abstract class AbstractTransactionHandlerTest {
     @Value
     static class UpdateEntityTestSpec {
         String description;
-        Entities expected;
-        Entities input;
+        Entity expected;
+        Entity input;
         RecordItem recordItem;
     }
 }

@@ -46,10 +46,10 @@ const getRowValueAsInt = (row) => {
 };
 
 /**
- * Gets 'n' randomly sampled entity_num from t_entities table.
+ * Gets 'n' randomly sampled num from entity table.
  */
 const sampleEntityIds = (n) => {
-  return pool.query('select entity_num as value from t_entities order by RANDOM() limit $1', [n]).then((result) => {
+  return pool.query('select entity_num as value from entity order by RANDOM() limit $1', [n]).then((result) => {
     return result.rows.map(getRowValueAsInt);
   });
 };

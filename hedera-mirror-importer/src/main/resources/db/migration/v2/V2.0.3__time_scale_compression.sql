@@ -72,7 +72,7 @@ alter table record_file
 
 -- schedule skipped as update (executed_timestamp) on compressed chunk is not allowed
 
--- t_entities skipped as update on compressed chunk is not allowed
+-- entity skipped as update on compressed chunk is not allowed
 
 -- t_entity_types skipped as not a hyper table
 

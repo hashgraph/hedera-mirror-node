@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
@@ -47,7 +47,7 @@ public class ConsensusCreateTopicTransactionHandler implements TransactionHandle
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem) {
+    public void updateEntity(Entity entity, RecordItem recordItem) {
         var createTopic = recordItem.getTransactionBody().getConsensusCreateTopic();
         if (createTopic.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(createTopic.getAutoRenewPeriod().getSeconds());

@@ -3,20 +3,20 @@
   "setup": {
     "entities": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 10
+        "num": 10
       },
       {
-        "entity_num": 98
+        "num": 98
       },
       {
-        "entity_num": 90000,
-        "entity_type": 5
+        "num": 90000,
+        "type": 5
       }
     ],
     "balances": [],
@@ -26,14 +26,16 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779555711927001",
         "name": "TOKENCREATION",
-        "type": "29"
+        "type": "29",
+        "entity_id": "0.0.90000"
       },
       {
         "payerAccountId": "0.0.9",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779555711927003",
         "name": "CRYPTODELETE",
-        "type": "12"
+        "type": "12",
+        "entity_id": "0.0.7"
       },
       {
         "charged_tx_fee": 0,
@@ -41,7 +43,8 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779444711927001",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.10"
       }
     ],
     "cryptotransfers": [
@@ -71,6 +74,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1565779555.711927002",
+        "entity_id": null,
         "valid_start_timestamp": "1565779555.711927001",
         "charged_tx_fee": 7,
         "memo_base64": null,

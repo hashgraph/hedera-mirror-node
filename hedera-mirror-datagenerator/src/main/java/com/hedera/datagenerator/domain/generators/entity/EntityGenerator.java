@@ -25,6 +25,9 @@ import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOPIC;
 
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.domain.Entity;
+
 import com.hederahashgraph.api.proto.java.Key;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -32,7 +35,6 @@ import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.datagenerator.common.EntityManager;
 import com.hedera.datagenerator.domain.writer.DomainWriter;
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -61,7 +63,7 @@ public class EntityGenerator {
         int count = 0;
         int deleted = 0;
         for (Long entityId = entitySet.getStartEntityNum(); entityId < entitySet.getEntityNum(); entityId++) {
-            Entities entity = createEntity(entityId, type);
+            Entity entity = createEntity(entityId, type);
             if (entitySet.getDeleted().contains(entityId)) {
                 entity.setDeleted(true);
                 deleted++;
@@ -83,8 +85,8 @@ public class EntityGenerator {
         log.info("Generated all entities in {}", stopwatch);
     }
 
-    private Entities createEntity(Long id, EntityTypeEnum type) {
-        Entities entity = EntityId.of(0L, 0L, id, type).toEntity();
+    private Entity createEntity(Long id, EntityTypeEnum type) {
+        Entity entity = EntityId.of(0L, 0L, id, type).toEntity();
         entity.setKey(fixedKey);
         return entity;
     }

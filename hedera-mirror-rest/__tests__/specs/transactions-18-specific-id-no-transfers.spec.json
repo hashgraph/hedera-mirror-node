@@ -3,16 +3,16 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 10
+        "num": 10
       },
       {
-        "entity_num": 98
+        "num": 98
       }
     ],
     "balances": [],
@@ -23,7 +23,8 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890999999999",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.9"
       }
     ],
     "cryptotransfers": []
@@ -34,6 +35,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.999999999",
+        "entity_id": "0.0.9",
         "valid_start_timestamp": "1234567890.999999998",
         "charged_tx_fee": 0,
         "memo_base64": null,

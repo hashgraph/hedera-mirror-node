@@ -7,126 +7,113 @@ labels: {}
 
 loki:
   enabled: true
-  loki:
-    # TODO: Enhance Loki to support watching for PrometheusRules via the Kubernetes API so we can declare these within their chart
-    alerting_groups:
-      - name: hedera-mirror-grpc
-        rules:
-          - alert: GrpcLogErrors
-            annotations:
-              description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
-              summary: High rate of errors in logs
-            expr: >
-              sum(rate({app_kubernetes_io_component="grpc"}
-                | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
-                | level = "ERROR"
-                != "reactor.core.publisher"
-                != "drainError"
-                != "org.springframework"
-                != "connection validation failed"
-                != "Stream closed before write could take place"
-                != "Connection unexpectedly closed"
-                != "Unknown error subscribing to topic"
-                != "Error has been observed at the following"
-                != "ReactorNettyClient$PostgresConnectionClosedException: Connection closed"
-                != "i.g.n.s.i.g.n.NettyServerHandler Stream Error"
-                != "Http2Exception.streamError"
-                != "readAddress(..) failed: Connection reset by peer"
-                != "i.r.p.c.ReactorNettyClient Connection Error"
-                != "i.n.u.ResourceLeakDetector LEAK: ByteBuf.release()"
-                != "Not a valid topic"
-                != "Must be greater than or equal to 0"
-                != "Topic does not exist"
-              [1m])) by (namespace, pod) > 1
-            for: 3m
-            labels:
-              severity: critical
-      - name: hedera-mirror-importer
-        rules:
-          - alert: ImporterLogErrors
-            annotations:
-              description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 5m period"
-              summary: High rate of errors in logs
-            expr: >
-              sum(rate({app_kubernetes_io_component="importer"}
-                | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
-                | level = "ERROR"
-                != "UnusedChannelExceptionHandler"
-                | message =~ ".*(Exception|Hash mismatch for file|Unknown record file delimiter|Unknown file delimiter|Error parsing record file|Expecting previous file hash|Unable to extract hash and signature from file|Failed to verify record files|Account balance dataset timestamp mismatch!|ERRORS processing account balances file|does not exist in the database|Unable to connect to database|Address book file).*"
-              [1m])) by (namespace, pod) > 0.5
-            for: 5m
-            labels:
-              severity: critical
-          - alert: ImporterRequiresRestart
-            annotations:
-              description: "{{ $labels.namespace }}/{{ $labels.pod }} requires a restart after logging {{ $value }} messages per second in a 1m period with the unrecoverable error '{{ $labels.message }}'"
-              summary: Importer received an error that indicates a restart is required
-            expr: >
-              sum(rate({app_kubernetes_io_component="importer"}
-                | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
-                | message =~ ".*(Error starting watch service|Unable to fetch entity types|Unable to fetch transaction types|environment variable not set|Cannot load configuration from).*"
-              [1m])) by (namespace, pod, message) > 0.01
-            for: 1m
-            labels:
-              severity: critical
-      - name: hedera-mirror-rest
-        rules:
-          - alert: RestLogErrors
-            annotations:
-              description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
-              summary: "High rate of log errors"
-            expr: >
-              sum(rate({app_kubernetes_io_component="rest"}
-                | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<requestId>\S+) (?P<message>.+)`
-                | level = "ERROR" or level = "FATAL"
-              [1m])) by (namespace, pod) > 0.04
-            for: 1m
-            labels:
-              severity: critical
-    config:
-      ruler:
-        alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
-        enable_alertmanager_v2: true
-        enable_api: true
-        ring:
-          kvstore:
-            store: inmemory
-        rule_path: /tmp/scratch
-        storage:
-          type: local
-          local:
-            directory: /rules
-      table_manager:
-        retention_deletes_enabled: true
-        retention_period: 2184h
-    networkPolicy:
-      enabled: true
-    persistence:
-      enabled: true
-      size: 100Gi
-    rbac:
-      pspEnabled: false
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 50m
-        memory: 64Mi
-    serviceMonitor:
-      enabled: true
-  promtail:
-    rbac:
-      pspEnabled: false
-    resources:
-      limits:
-        cpu: 125m
-        memory: 100Mi
-      requests:
-        cpu: 50m
-        memory: 32Mi
-    serviceMonitor:
-      enabled: true
+  # TODO: Enhance Loki to support watching for PrometheusRules via the Kubernetes API so we can declare these within their chart
+  alerting_groups:
+    - name: hedera-mirror-grpc
+      rules:
+        - alert: GrpcLogErrors
+          annotations:
+            description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
+            summary: High rate of errors in logs
+          expr: >
+            sum(rate({app_kubernetes_io_component="grpc"}
+              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | level = "ERROR"
+              != "reactor.core.publisher"
+              != "drainError"
+              != "org.springframework"
+              != "connection validation failed"
+              != "Stream closed before write could take place"
+              != "Connection unexpectedly closed"
+              != "Unknown error subscribing to topic"
+              != "Error has been observed at the following"
+              != "ReactorNettyClient$PostgresConnectionClosedException: Connection closed"
+              != "i.g.n.s.i.g.n.NettyServerHandler Stream Error"
+              != "Http2Exception.streamError"
+              != "readAddress(..) failed: Connection reset by peer"
+              != "i.r.p.c.ReactorNettyClient Connection Error"
+              != "i.n.u.ResourceLeakDetector LEAK: ByteBuf.release()"
+              != "Not a valid topic"
+              != "Must be greater than or equal to 0"
+              != "Topic does not exist"
+            [1m])) by (namespace, pod) > 1
+          for: 3m
+          labels:
+            severity: critical
+    - name: hedera-mirror-importer
+      rules:
+        - alert: ImporterLogErrors
+          annotations:
+            description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 5m period"
+            summary: High rate of errors in logs
+          expr: >
+            sum(rate({app_kubernetes_io_component="importer"}
+              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | level = "ERROR"
+              != "UnusedChannelExceptionHandler"
+              | message =~ ".*(Exception|Hash mismatch for file|Unknown record file delimiter|Unknown file delimiter|Error parsing record file|Expecting previous file hash|Unable to extract hash and signature from file|Failed to verify record files|Account balance dataset timestamp mismatch!|ERRORS processing account balances file|does not exist in the database|Unable to connect to database|Address book file).*"
+            [1m])) by (namespace, pod) > 0.5
+          for: 5m
+          labels:
+            severity: critical
+        - alert: ImporterRequiresRestart
+          annotations:
+            description: "{{ $labels.namespace }}/{{ $labels.pod }} requires a restart after logging {{ $value }} messages per second in a 1m period with the unrecoverable error '{{ $labels.message }}'"
+            summary: Importer received an error that indicates a restart is required
+          expr: >
+            sum(rate({app_kubernetes_io_component="importer"}
+              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | message =~ ".*(Error starting watch service|Unable to fetch entity types|Unable to fetch transaction types|environment variable not set|Cannot load configuration from).*"
+            [1m])) by (namespace, pod, message) > 0.01
+          for: 1m
+          labels:
+            severity: critical
+    - name: hedera-mirror-rest
+      rules:
+        - alert: RestLogErrors
+          annotations:
+            description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
+            summary: "High rate of log errors"
+          expr: >
+            sum(rate({app_kubernetes_io_component="rest"}
+              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<requestId>\S+) (?P<message>.+)`
+              | level = "ERROR" or level = "FATAL"
+            [1m])) by (namespace, pod) > 0.04
+          for: 1m
+          labels:
+            severity: critical
+  config:
+    ruler:
+      alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
+      enable_alertmanager_v2: true
+      enable_api: true
+      ring:
+        kvstore:
+          store: inmemory
+      rule_path: /tmp/scratch
+      storage:
+        type: local
+        local:
+          directory: /rules
+    table_manager:
+      retention_deletes_enabled: true
+      retention_period: 2184h
+  networkPolicy:
+    enabled: true
+  persistence:
+    enabled: true
+    size: 100Gi
+  rbac:
+    pspEnabled: false
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  serviceMonitor:
+    enabled: true
 
 networkPolicy:
   enabled: false
@@ -317,6 +304,25 @@ prometheus:
         cpu: 50m
         memory: 50Mi
 
+promtail:
+  config:
+    lokiAddress: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
+    snippets:
+      pipelineStages:
+        - docker: {}
+  enabled: true
+  rbac:
+    pspEnabled: false
+  resources:
+    limits:
+      cpu: 125m
+      memory: 100Mi
+    requests:
+      cpu: 50m
+      memory: 32Mi
+  serviceMonitor:
+    enabled: true
+
 traefik:
   additionalArguments:
     - "--accesslog=true"
@@ -333,7 +339,7 @@ traefik:
               matchLabels:
                 app.kubernetes.io/name: traefik
   deployment:
-    replicas: 3
+    kind: DaemonSet
   enabled: true
   globalArguments: []
   podDisruptionBudget:

@@ -20,10 +20,10 @@ package com.hedera.datagenerator.domain.writer;
  */
 
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 
 public interface DomainWriter {
-    void onEntity(Entities entity);
+    void onEntity(Entity entity);
 
     void onAccountBalance(AccountBalance accountBalance);
 

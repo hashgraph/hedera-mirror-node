@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
-import javax.persistence.Column;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,19 +28,18 @@ import lombok.NoArgsConstructor;
 
 @Builder
 @Data
-@javax.persistence.Entity(name = "t_entities")
+@javax.persistence.Entity
 @NoArgsConstructor
 @AllArgsConstructor
 public class Entity {
     @Id
     private Long id;
 
-    private Long entityNum;
+    private Long num;
 
-    private Long entityRealm;
+    private Long realm;
 
-    private Long entityShard;
+    private Long shard;
 
-    @Column(name = "fk_entity_type_id")
-    private EntityType entityTypeId;
+    private EntityType type;
 }

@@ -56,7 +56,7 @@
     <properties>
         <dependency-check.version>6.1.5</dependency-check.version>
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
-        <docker-maven-plugin.version>0.34.1</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.35.0</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
@@ -74,7 +74,7 @@
         <jmeter.version>5.4.1</jmeter.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.8.22</msgpack.version>
-        <protobuf.version>3.15.6</protobuf.version>
+        <protobuf.version>3.15.7</protobuf.version>
         <release.version>0.31.0-alpha3</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.18.0-alpha3</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
@@ -143,7 +143,7 @@
                 <plugin>
                     <groupId>com.googlecode.maven-download-plugin</groupId>
                     <artifactId>download-maven-plugin</artifactId>
-                    <version>1.6.1</version>
+                    <version>1.6.2</version>
                     <executions>
                         <execution>
                             <id>download-antlr-source</id>

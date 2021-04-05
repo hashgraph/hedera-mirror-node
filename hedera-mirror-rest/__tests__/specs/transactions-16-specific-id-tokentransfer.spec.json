@@ -3,16 +3,16 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 10
+        "num": 10
       },
       {
-        "entity_num": 98
+        "num": 98
       }
     ],
     "balances": [],
@@ -49,6 +49,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1565779555.711927001",
+        "entity_id": null,
         "valid_start_timestamp": "1565779555.711927000",
         "charged_tx_fee": 7,
         "memo_base64": null,

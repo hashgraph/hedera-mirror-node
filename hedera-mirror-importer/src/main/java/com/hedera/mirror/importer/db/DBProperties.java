@@ -30,6 +30,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.db")
 public class DBProperties {
+
     @NotBlank
     private String host = "";
 
@@ -37,6 +38,12 @@ public class DBProperties {
 
     @NotBlank
     private String name = "";
+
+    @NotBlank
+    private String owner = "";
+
+    @NotBlank
+    private String ownerPassword = "";
 
     @NotBlank
     private String password = "";
@@ -49,6 +56,9 @@ public class DBProperties {
 
     @NotBlank
     private String restUsername = "";
+
+    @NotBlank
+    private String schema = "";
 
     @NotBlank
     private String username = "";

@@ -39,6 +39,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.support.management.micrometer.MicrometerMetricsCaptor;
 
+import com.hedera.mirror.importer.db.DBProperties;
+
 @Log4j2
 @Configuration
 @RequiredArgsConstructor
@@ -71,13 +73,15 @@ public class MetricsConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "management.metrics.table", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    MeterBinder tableMetrics() {
+    MeterBinder tableMetrics(DBProperties dbProperties) {
         // select count(*) is very slow on large tables, so we use the stats table to provide an estimate
-        final String query = "select n_live_tup from pg_stat_all_tables where relname = '%s'";
+        final String query = "select n_live_tup from pg_stat_all_tables where schemaname = '%s' and relname = '%s'";
+        String schema = dbProperties.getSchema();
         String name = dataSourceProperties.getName();
 
         return registry -> getTablesNames().stream()
-                .map(table -> new DatabaseTableMetrics(dataSource, String.format(query, table), name, table, null))
+                .map(table -> new DatabaseTableMetrics(dataSource, String.format(query, schema, table),
+                        name, table, null))
                 .forEach(mb -> mb.bindTo(registry));
     }
 

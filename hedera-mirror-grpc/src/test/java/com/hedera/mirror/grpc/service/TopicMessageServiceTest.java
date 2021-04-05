@@ -165,7 +165,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void invalidTopic() {
-        domainBuilder.entity(e -> e.entityTypeId(EntityType.ACCOUNT).entityNum(1L).id(1L)).block();
+        domainBuilder.entity(e -> e.type(EntityType.ACCOUNT).num(1L).id(1L)).block();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicNum(1)
                 .build();
@@ -413,8 +413,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessagesWithTopicNum() {
-        domainBuilder.entity(e -> e.entityNum(1L).id(1L)).block();
-        domainBuilder.entity(e -> e.entityNum(2L).id(2L)).block();
+        domainBuilder.entity(e -> e.num(1L).id(1L)).block();
+        domainBuilder.entity(e -> e.num(2L).id(2L)).block();
         domainBuilder.topicMessage(t -> t.topicNum(0).sequenceNumber(1)).block();
         domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(1)).block();
 
@@ -443,8 +443,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessagesWithRealmNum() {
-        domainBuilder.entity(e -> e.entityRealm(1L).id(1L)).block();
-        domainBuilder.entity(e -> e.entityRealm(2L).id(2L)).block();
+        domainBuilder.entity(e -> e.realm(1L).id(1L)).block();
+        domainBuilder.entity(e -> e.realm(2L).id(2L)).block();
         domainBuilder.topicMessage(t -> t.realmNum(0).sequenceNumber(1)).block();
         domainBuilder.topicMessage(t -> t.realmNum(1).sequenceNumber(1)).block();
 
@@ -486,7 +486,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         Mockito.when(entityRepository
                 .findByCompositeKey(0, retrieverFilter.getRealmNum(), retrieverFilter.getTopicNum()))
                 .thenReturn(Optional
-                        .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
+                        .of(Entity.builder().type(EntityType.TOPIC).build()));
 
         Mockito.when(topicMessageRetriever
                 .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(true)))
@@ -524,7 +524,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         Mockito.when(entityRepository.findByCompositeKey(0, filter.getRealmNum(), filter.getTopicNum()))
                 .thenReturn(Optional
-                        .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
+                        .of(Entity.builder().type(EntityType.TOPIC).build()));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.eq(filter), ArgumentMatchers.eq(true)))
                 .thenReturn(Flux.empty());
         Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
@@ -618,7 +618,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         Mockito.when(entityRepository
                 .findByCompositeKey(0, retrieverFilter.getRealmNum(), retrieverFilter.getTopicNum()))
                 .thenReturn(Optional
-                        .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
+                        .of(Entity.builder().type(EntityType.TOPIC).build()));
 
         TopicMessageFilter listenerFilter = TopicMessageFilter.builder()
                 .startTime(retrieved2.getConsensusTimestampInstant())
@@ -675,7 +675,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         Mockito.when(entityRepository
                 .findByCompositeKey(0, filter.getRealmNum(), filter.getTopicNum()))
                 .thenReturn(Optional
-                        .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
+                        .of(Entity.builder().type(EntityType.TOPIC).build()));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.eq(filter), ArgumentMatchers.eq(true)))
                 .thenReturn(Flux.just(retrieved1, retrieved2));
 
@@ -703,8 +703,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .consensusTimestamp(consensusTimestamp)
                 .realmNum(0)
                 .sequenceNumber(sequenceNumber)
-                .message(new byte[] { 0, 1, 2 })
-                .runningHash(new byte[] { 3, 4, 5 })
+                .message(new byte[] {0, 1, 2})
+                .runningHash(new byte[] {3, 4, 5})
                 .topicNum(0)
                 .runningHashVersion(2)
                 .build();

@@ -54,7 +54,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -180,7 +180,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         var dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
-        assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs());
+        assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpirationTimestamp());
     }
 
     @Test
@@ -199,14 +199,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities actualFile = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertRowCountOnTwoFileTransactions()
                 , () -> assertFileTransaction(transactionBody, record, false)
                 , () -> assertFileData(transactionBody.getFileAppend().getContents(), record.getConsensusTimestamp())
                 // Additional entity checks
-                , () -> assertNotNull(actualFile.getExpiryTimeNs())
+                , () -> assertNotNull(actualFile.getExpirationTimestamp())
                 , () -> assertNull(actualFile.getAutoRenewPeriod())
                 , () -> assertNull(actualFile.getProxyAccountId())
         );
@@ -220,14 +220,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertRowCountOnSuccess(FILE_ID)
                 , () -> assertFileTransaction(transactionBody, record, false)
                 , () -> assertFileData(transactionBody.getFileAppend().getContents(), record.getConsensusTimestamp())
                 // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpiryTimeNs())
+                , () -> assertNull(dbFileEntity.getExpirationTimestamp())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
         );
@@ -385,14 +385,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities actualFile = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertRowCountOnTwoFileTransactions()
                 , () -> assertFileTransaction(transactionBody, record, false)
                 , () -> assertFileData(transactionBody.getFileUpdate().getContents(), record.getConsensusTimestamp())
                 // Additional entity checks
-                , () -> assertNotNull(actualFile.getExpiryTimeNs())
+                , () -> assertNotNull(actualFile.getExpirationTimestamp())
                 , () -> assertNotNull(actualFile.getKey())
                 , () -> assertNull(actualFile.getAutoRenewPeriod())
                 , () -> assertNull(actualFile.getProxyAccountId())
@@ -407,7 +407,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities actualFile = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertRowCountOnSuccess(FILE_ID)
@@ -436,7 +436,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities actualFile = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 //TODO: Review row count of fileDataRepository with issue #294, probably should be 1
@@ -444,7 +444,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertFileTransaction(transactionBody, record, false)
                 // Additional entity checks
                 , () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
-                        actualFile.getExpiryTimeNs())
+                        actualFile.getExpirationTimestamp())
                 , () -> assertNotNull(actualFile.getKey())
                 , () -> assertNull(actualFile.getAutoRenewPeriod())
                 , () -> assertNull(actualFile.getProxyAccountId())
@@ -459,7 +459,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities actualFile = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 //TODO: Review row count in fileDataRepository with issue #294, probably should be 0
@@ -467,7 +467,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertFileTransaction(transactionBody, record, false)
                 // Additional entity checks
                 , () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
-                        actualFile.getExpiryTimeNs())
+                        actualFile.getExpirationTimestamp())
                 , () -> assertNull(actualFile.getKey())
                 , () -> assertNull(actualFile.getAutoRenewPeriod())
                 , () -> assertNull(actualFile.getProxyAccountId())
@@ -491,14 +491,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 //TODO: Review row count of fileDataRepository with issue #294, probably should be 1
                 () -> assertRowCountOnTwoFileTransactions()
                 , () -> assertFileTransaction(transactionBody, record, false)
                 // Additional entity checks
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
+                , () -> assertNotNull(dbFileEntity.getExpirationTimestamp())
                 , () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -514,14 +514,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 //TODO: Review row count in fileDataRepository with issue #294, probably should be 0
                 () -> assertRowCountOnSuccess(FILE_ID)
                 , () -> assertFileTransaction(transactionBody, record, false)
                 // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpiryTimeNs())
+                , () -> assertNull(dbFileEntity.getExpirationTimestamp())
                 , () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -619,7 +619,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -632,7 +632,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertFileTransaction(transactionBody, record, true)
                 // Additional entity checks
                 , () -> assertNotNull(dbFileEntity.getKey())
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
+                , () -> assertNotNull(dbFileEntity.getExpirationTimestamp())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
         );
@@ -726,7 +726,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     }
 
     private void assertFileTransaction(TransactionBody transactionBody, TransactionRecord record, boolean deleted) {
-        Entities actualFile = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFile(record.getReceipt().getFileID(), actualFile),
@@ -741,10 +741,10 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     }
 
     private void assertFileEntity(FileCreateTransactionBody expected, Timestamp consensusTimestamp) {
-        Entities actualFile = getTransactionEntity(consensusTimestamp);
+        Entity actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
                 () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
-                        .getExpiryTimeNs()),
+                        .getExpirationTimestamp()),
                 () -> assertEquals(expected.getMemo(), actualFile.getMemo()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
@@ -758,10 +758,10 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     }
 
     private void assertFileEntity(FileUpdateTransactionBody expected, Timestamp consensusTimestamp) {
-        Entities actualFile = getTransactionEntity(consensusTimestamp);
+        Entity actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
                 () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
-                        .getExpiryTimeNs()),
+                        .getExpirationTimestamp()),
                 () -> assertEquals(expected.getMemo().getValue(), actualFile.getMemo()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
@@ -787,10 +787,10 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     }
 
     private void assertFileEntityHasNullFields(Timestamp consensusTimestamp) {
-        Entities actualFile = getTransactionEntity(consensusTimestamp);
+        Entity actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
                 () -> assertNull(actualFile.getKey()),
-                () -> assertNull(actualFile.getExpiryTimeNs()),
+                () -> assertNull(actualFile.getExpirationTimestamp()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
                 () -> assertNull(actualFile.getProxyAccountId()));
     }

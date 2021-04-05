@@ -3,16 +3,16 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 10
+        "num": 10
       },
       {
-        "entity_num": 98
+        "num": 98
       }
     ],
     "balances": [],
@@ -34,7 +34,8 @@
             "account": "0.0.98",
             "amount": 1
           }
-        ]
+        ],
+        "entity_id": "0.0.1000"
       },
       {
         "charged_tx_fee": 7,
@@ -76,6 +77,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.000000002",
+        "entity_id": "0.0.1000",
         "charged_tx_fee": 7,
         "max_fee": "33",
         "memo_base64": null,
@@ -101,6 +103,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000040",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",

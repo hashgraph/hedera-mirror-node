@@ -34,6 +34,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import javax.validation.Validator;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
@@ -47,6 +48,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ExpressionConverter expressionConverter;
+    @Getter
     private final ScenarioProperties properties;
     private final Supplier<TransactionSupplier<?>> transactionSupplier;
     private final AtomicLong remaining;

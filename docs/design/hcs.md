@@ -11,7 +11,7 @@ attempts to design a scalable solution to provide such functionality.
 
 - Ingest HCS related transactions from the mainnet and persist to the database
 - Provide a streaming GRPC API to subscribe to HCS topics
-- Persist a subset of entities or transaction types due to the potential increase in the volume of data caused by HCS
+- Persist a subset of entity or transaction types due to the potential increase in the volume of data caused by HCS
 - Provide a listener interface so third parties can add custom code to be notified of validated transactions
 - Make the Mirror Node easier for users to run to enable wider adoption by the community
 
@@ -194,7 +194,7 @@ public class TransactionEvent {
 ## Database
 
 - Add new `t_entity_types` row with name `topic`
-- Add new columns to `t_entities`:
+- Add new columns to `entity`:
   - `submit_key bytea`
   - `auto_renew_account_id bigint`
 - Add new `t_transaction_types`:

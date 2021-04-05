@@ -3,19 +3,19 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 8
+        "num": 8
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 10
+        "num": 10
       },
       {
-        "entity_num": 98
+        "num": 98
       }
     ],
     "balances": [],
@@ -33,7 +33,9 @@
             "account": "0.0.9",
             "amount": -20
           }
-        ]
+        ],
+        "name": "TOKENWIPE",
+        "entity_id": "0.0.90000"
       }
     ]
   },
@@ -43,6 +45,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.000000001",
+        "entity_id": "0.0.90000",
         "valid_start_timestamp": "1234567890.000000000",
         "charged_tx_fee": 7,
         "memo_base64": null,

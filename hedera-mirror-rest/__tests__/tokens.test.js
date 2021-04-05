@@ -62,7 +62,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const filters = [];
 
     const expectedquery =
-      'select t.token_id, symbol, e.key from token t join t_entities e on e.id = t.token_id order by t.token_id asc limit $1';
+      'select t.token_id, symbol, e.key from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -90,11 +90,12 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key from token t
-        join t_entities e on e.id = t.token_id
-        where e.ed25519_public_key_hex = $1
-        order by t.token_id asc
-        limit $2`;
+    const expectedquery = `select t.token_id, symbol, e.key
+                           from token t
+                                  join entity e on e.id = t.token_id
+                           where e.public_key = $1
+                           order by t.token_id asc
+                           limit $2`;
     const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -123,12 +124,13 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key from token t
-        join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
-        join t_entities e on e.id = t.token_id
-        where ta.associated is true
-        order by t.token_id asc
-        limit $2`;
+    const expectedquery = `select t.token_id, symbol, e.key
+                           from token t
+                                  join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+                                  join entity e on e.id = t.token_id
+                           where ta.associated is true
+                           order by t.token_id asc
+                           limit $2`;
     const expectedparams = [5, maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -165,12 +167,13 @@ describe('token extractSqlFromTokenRequest tests', () => {
     ];
 
     const expectedquery = `select t.token_id, symbol, e.key
-        from token t
-        join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
-        join t_entities e on e.id = t.token_id
-        where e.ed25519_public_key_hex = $2 and t.token_id > $3
-        order by t.token_id desc
-        limit $4`;
+                           from token t
+                                  join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+                                  join entity e on e.id = t.token_id
+                           where e.public_key = $2
+                             and t.token_id > $3
+                           order by t.token_id desc
+                           limit $4`;
     const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', '3'];
     const expectedorder = orderFilterValues.DESC;
     const expectedlimit = 3;
@@ -244,18 +247,17 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       filters: [],
       expected: {
         query: `
-          select
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
+          select tb.consensus_timestamp,
+                 tb.account_id,
+                 tb.balance
           from token_balance tb
           where tb.token_id = $1
             and tb.consensus_timestamp = (
-              select tb.consensus_timestamp
-              from token_balance tb
-              order by tb.consensus_timestamp desc
-              limit 1
-            )
+            select tb.consensus_timestamp
+            from token_balance tb
+            order by tb.consensus_timestamp desc
+            limit 1
+          )
           order by tb.account_id desc
           limit $2`,
         params: [tokenId, maxLimit],
@@ -357,11 +359,11 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             from token_balance tb
             where tb.token_id = $1
               and tb.consensus_timestamp = (
-                select tb.consensus_timestamp
-                from token_balance tb
-                order by tb.consensus_timestamp desc
-                limit 1
-              )
+              select tb.consensus_timestamp
+              from token_balance tb
+              order by tb.consensus_timestamp desc
+              limit 1
+            )
             order by tb.account_id desc
             limit $2`,
           params: [tokenId, expectedLimit],
@@ -487,22 +489,21 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-          select
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
+          select tb.consensus_timestamp,
+                 tb.account_id,
+                 tb.balance
           from token_balance tb
-          join t_entities e
-            on e.fk_entity_type_id = 1
-            and e.id = tb.account_id
-            and e.ed25519_public_key_hex = $2
+                 join entity e
+                      on e.type = 1
+                        and e.id = tb.account_id
+                        and e.public_key = $2
           where tb.token_id = $1
             and tb.consensus_timestamp = (
-              select tb.consensus_timestamp
-              from token_balance tb
-              order by tb.consensus_timestamp desc
-              limit 1
-            )
+            select tb.consensus_timestamp
+            from token_balance tb
+            order by tb.consensus_timestamp desc
+            limit 1
+          )
           order by tb.account_id desc
           limit $3`,
         params: [tokenId, publicKey, maxLimit],
@@ -548,25 +549,24 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-          select
-            tb.consensus_timestamp,
-            tb.account_id,
-            tb.balance
+          select tb.consensus_timestamp,
+                 tb.account_id,
+                 tb.balance
           from token_balance tb
-          join t_entities e
-            on e.fk_entity_type_id = 1
-            and e.id = tb.account_id
-            and e.ed25519_public_key_hex = $4
+                 join entity e
+                      on e.type = 1
+                        and e.id = tb.account_id
+                        and e.public_key = $4
           where tb.token_id = $1
             and tb.account_id = $2
             and tb.balance = $3
             and tb.consensus_timestamp = (
-              select tb.consensus_timestamp
-              from token_balance tb
-              where tb.consensus_timestamp <= $5
-              order by tb.consensus_timestamp desc
-              limit 1
-            )
+            select tb.consensus_timestamp
+            from token_balance tb
+            where tb.consensus_timestamp <= $5
+            order by tb.consensus_timestamp desc
+            limit 1
+          )
           order by tb.account_id asc
           limit $6`,
         params: [tokenId, accountId, balance, publicKey, timestampNsLow, 1],
@@ -603,7 +603,7 @@ describe('token formatTokenInfoRow tests', () => {
     decimals: 10,
     initial_supply: 1000000,
     total_supply: 2000000,
-    exp_time_ns: 1594431063696143000,
+    expiration_timestamp: 1594431063696143000,
     auto_renew_account_id: '98',
     auto_renew_period: 7890000,
     modified_timestamp: 1603394416676293000,

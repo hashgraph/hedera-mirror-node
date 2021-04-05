@@ -31,7 +31,7 @@ const sqlQueryColumns = {
   KEY: 'e.key',
   SYMBOL: 't.symbol',
   TOKEN_ID: 't.token_id',
-  PUBLIC_KEY: 'e.ed25519_public_key_hex',
+  PUBLIC_KEY: 'e.public_key',
 };
 
 // query to column maps
@@ -44,7 +44,7 @@ const filterColumnMap = {
 // token discovery sql queries
 const tokensSelectQuery = 'select t.token_id, symbol, e.key from token t';
 const accountIdJoinQuery = 'join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id';
-const entityIdJoinQuery = 'join t_entities e on e.id = t.token_id';
+const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 
 // token info sql queries
 const tokenInfoSelectFields = [
@@ -55,17 +55,17 @@ const tokenInfoSelectFields = [
   'initial_supply',
   'total_supply',
   'treasury_account_id',
-  'created_timestamp',
+  't.created_timestamp',
   'freeze_default',
   'e.key',
   'kyc_key',
   'freeze_key',
   'wipe_key',
   'supply_key',
-  'e.exp_time_ns',
+  'e.expiration_timestamp',
   'e.auto_renew_account_id',
   'e.auto_renew_period',
-  'modified_timestamp',
+  't.modified_timestamp',
 ];
 const tokenInfoSelectQuery = ['select', tokenInfoSelectFields.join(',\n'), 'from token t'].join('\n');
 const tokenIdMatchQuery = 'where token_id = $1';
@@ -125,7 +125,7 @@ const formatTokenInfoRow = (row) => {
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
     decimals: row.decimals,
-    expiry_timestamp: row.exp_time_ns,
+    expiry_timestamp: row.expiration_timestamp,
     freeze_default: row.freeze_default,
     freeze_key: utils.encodeKey(row.freeze_key),
     initial_supply: row.initial_supply,
@@ -216,7 +216,7 @@ const tokenBalancesSqlQueryColumns = {
   ACCOUNT_BALANCE: 'tb.balance',
   ACCOUNT_ID: 'tb.account_id',
   CONSENSUS_TIMESTAMP: 'tb.consensus_timestamp',
-  ACCOUNT_PUBLICKEY: 'e.ed25519_public_key_hex',
+  ACCOUNT_PUBLICKEY: 'e.public_key',
   TOKEN_ID: 'tb.token_id',
 };
 
@@ -250,8 +250,8 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
-        joinEntityClause = `join t_entities e
-          on e.fk_entity_type_id = ${utils.ENTITY_TYPE_ACCOUNT}
+        joinEntityClause = `join entity e
+          on e.type = ${utils.ENTITY_TYPE_ACCOUNT}
           and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
           and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
         break;

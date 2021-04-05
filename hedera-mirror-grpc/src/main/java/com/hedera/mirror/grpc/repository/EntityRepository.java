@@ -31,7 +31,7 @@ import com.hedera.mirror.grpc.domain.Entity;
 public interface EntityRepository extends CrudRepository<Entity, Long> {
 
     @Cacheable(cacheNames = "entity", cacheManager = CacheConfiguration.ENTITY_CACHE, unless = "#result == null")
-    @Query(value = "select * from t_entities where entity_shard = ?1 and entity_realm = ?2 and entity_num = ?3 limit 1",
+    @Query(value = "select * from entity where shard = ?1 and realm = ?2 and num = ?3 limit 1",
             nativeQuery = true)
     Optional<Entity> findByCompositeKey(long shard, long realm, long num);
 }
