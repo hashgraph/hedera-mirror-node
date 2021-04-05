@@ -10,15 +10,15 @@ dependencies:
   version: 0.18.0-alpha3
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
-  version: 6.3.7
+  version: 6.8.1
 - name: redis
   repository: https://charts.bitnami.com/bitnami
-  version: 12.2.4
+  version: 12.10.0
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.18.0-alpha3
 - name: timescaledb-single
   repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
   version: 0.8.2
-digest: sha256:fc6dbeaf93af2b44d4414d7740ac344362da08f12ad2ae81e469e1eda9218991
-generated: "2021-03-31T12:52:09.095834-05:00"
+digest: sha256:e769b35283f03b2c9d687965d79f4dbcda61d651ff27935177c498b74bbd072f
+generated: "2021-04-01T11:04:57.576113-05:00"

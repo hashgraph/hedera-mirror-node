@@ -13,7 +13,10 @@ annotations: {}
 config:
   hedera:
     mirror:
-      monitor: {}
+      monitor:
+        mirrorNode:
+          rest:
+            port: 80
 
 fullnameOverride: ""
 

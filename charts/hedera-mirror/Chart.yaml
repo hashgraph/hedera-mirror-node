@@ -7,34 +7,34 @@ dependencies:
     repository: file://../hedera-mirror-grpc
     tags:
       - api
-    version: ">=0.12.0-0"
+    version: ">=0.18.0-0"
   - alias: importer
     condition: importer.enabled
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
-    version: ">=0.12.0-0"
+    version: ">=0.18.0-0"
   - alias: monitor
     condition: monitor.enabled
     name: hedera-mirror-monitor
     repository: file://../hedera-mirror-monitor
-    version: ">=0.12.0-0"
+    version: ">=0.18.0-0"
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: ~6.3.2
+    version: ~6.8.1
   - alias: redis
     condition: redis.enabled
     name: redis
     repository: https://charts.bitnami.com/bitnami
-    version: ~12.2.3
+    version: ~12.10.0
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
     tags:
       - api
-    version: ">=0.12.0-0"
+    version: ">=0.18.0-0"
   - alias: timescaledb
     condition: timescaledb.enabled
     name: timescaledb-single

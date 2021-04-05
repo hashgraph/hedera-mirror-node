@@ -36,14 +36,6 @@ importer:
             password: mirror_node_pass
             username: mirror_node
   enabled: true
-  extraVolumes: []
-  # - name: addressbook-secret-volume
-  #   secret:
-  #     defaultMode: 420
-  #     secretName: mirror-importer-addressbook
-  extraVolumeMounts: []
-  # - name: addressbook-secret-volume
-  #   mountPath: /usr/etc/addressbook/perf.bin
   redis:
     sentinel:
       masterSet: mirror
@@ -122,6 +114,8 @@ postgresql:
         cpu: 250m
         memory: 500Mi
     repmgrLogLevel: DEBUG
+  serviceAccount:
+    enabled: true
 
 redis:
   cluster:
@@ -182,8 +176,8 @@ timescaledb:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    repository: timescaledev/timescaledb-ha
-    tag: pg12.6-ts2.1.0-p1
+    repository: timescale/timescaledb-ha
+    tag: pg12.6-ts2.1.1-latest
   loadBalancer:
     enabled: false
   patroni:
@@ -208,7 +202,6 @@ timescaledb:
       size: 500Gi
     wal:
       size: 2Gi
-
   podManagementPolicy: Parallel
   postInit:
     - secret:
