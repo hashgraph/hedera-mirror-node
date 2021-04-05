@@ -36,6 +36,7 @@ import com.hedera.mirror.monitor.generator.TransactionGenerator;
 import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
 import com.hedera.mirror.monitor.subscribe.Subscriber;
 
@@ -65,18 +66,34 @@ class MonitorConfiguration {
      */
     @Bean
     Disposable publishSubscribe() {
-        return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
+        Flux<PublishRequest> publishRequests = Flux.<List<PublishRequest>>generate(
+                sink -> sink.next(transactionGenerator.next(0)))
                 .flatMapIterable(Function.identity())
                 .retry()
                 .name("generate")
                 .metrics()
-                .subscribeOn(Schedulers.single())
-                .map(transactionPublisher::publish)
-                .parallel(publishProperties.getConnections())
-                .runOn(Schedulers.newParallel("publisher", publishProperties.getConnections()))
+                .subscribeOn(Schedulers.single());
+
+        Flux<CompletableFuture<PublishResponse>> publishResponses;
+        if (publishProperties.getClients() == 1) {
+            publishResponses = publishRequests
+                    .publishOn(Schedulers.newSingle("publisher"))
+                    .map(transactionPublisher::publish);
+        } else {
+            publishResponses = publishRequests
+                    .parallel(publishProperties.getClients())
+                    .runOn(Schedulers.newParallel("publisher", publishProperties.getClients()))
+                    .map(transactionPublisher::publish)
+                    .sequential();
+        }
+
+        return publishResponses
+                .onErrorContinue(PublishException.class, (t, r) -> {})
+                .parallel(publishProperties.getThreads())
+                .runOn(Schedulers.newParallel("resolver", publishProperties.getThreads()))
                 .map(CompletableFuture::join)
                 .sequential()
-                .onErrorContinue(CompletionException.class, (t, r) -> log.error(t))
+                .onErrorContinue(CompletionException.class, (t, r) -> {})
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .doOnError(t -> log.error("Unexpected error during publish/subscribe flow:", t))
                 .doOnSubscribe(s -> log.info("Starting publisher flow"))

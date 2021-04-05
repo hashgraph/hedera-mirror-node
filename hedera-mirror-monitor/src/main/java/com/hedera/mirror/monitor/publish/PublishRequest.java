@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import java.time.Duration;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Value;
@@ -34,6 +35,7 @@ public class PublishRequest {
     private final String scenarioName;
     private final boolean receipt;
     private final boolean record;
+    private final Duration timeout;
     private final Instant timestamp;
     private final Transaction<?> transaction;
     private final TransactionType type;

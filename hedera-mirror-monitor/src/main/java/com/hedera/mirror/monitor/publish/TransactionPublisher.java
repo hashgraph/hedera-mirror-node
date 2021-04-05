@@ -22,12 +22,14 @@ package com.hedera.mirror.monitor.publish;
 
 import com.google.common.base.Suppliers;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountInfoQuery;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -52,12 +55,13 @@ public class TransactionPublisher {
     private final PublishProperties publishProperties;
     private final PublishMetrics publishMetrics;
     private final Supplier<List<Client>> clients = Suppliers.memoize(this::getClients);
+    private final Supplier<List<AccountId>> nodeAccountIds = Suppliers.memoize(this::getNodeAccountIds);
     private final AtomicInteger counter = new AtomicInteger(0);
     private final SecureRandom secureRandom = new SecureRandom();
 
     @PreDestroy
     public void close() {
-        log.info("Closing {} client connections", clients.get().size());
+        log.info("Closing {} clients", clients.get().size());
 
         for (Client client : clients.get()) {
             try {
@@ -74,12 +78,10 @@ public class TransactionPublisher {
 
     private CompletableFuture<PublishResponse> doPublish(PublishRequest request) {
         log.trace("Publishing: {}", request);
-        int index = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
-
-        Client client = clients.get().get(index);
-        List<AccountId> nodeAccountIds = new ArrayList<>(client.getNetwork().values());
-        int nodeIndex = secureRandom.nextInt(client.getNetwork().size());
-        request.getTransaction().setNodeAccountIds(List.of(nodeAccountIds.get(nodeIndex)));
+        int clientIndex = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
+        Client client = clients.get().get(clientIndex);
+        int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
+        request.getTransaction().setNodeAccountIds(List.of(nodeAccountIds.get().get(nodeIndex)));
 
         return request.getTransaction()
                 .executeAsync(client)
@@ -107,7 +109,8 @@ public class TransactionPublisher {
                     }
 
                     return response;
-                });
+                })
+                .orTimeout(request.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
     }
 
     private List<Client> getClients() {
@@ -118,58 +121,61 @@ public class TransactionPublisher {
         }
 
         List<Client> validatedClients = new ArrayList<>();
-
-        log.info("Creating {} clients", publishProperties.getClients());
-
-//        for (int i = 0; i < publishProperties.getClients(); ++i) {
-//            NodeProperties nodeProperties = validNodes.get(i % validNodes.size());
-            Client client = toClient(validNodes);
+        Map<String, AccountId> network = toNetwork(validNodes);
+        for (int i = 0; i < publishProperties.getClients(); ++i) {
+            Client client = toClient(network);
             validatedClients.add(client);
-//        }
+        }
 
         return validatedClients;
     }
 
+    private List<AccountId> getNodeAccountIds() {
+        return new ArrayList<>(clients.get().get(0).getNetwork().values());
+    }
+
     private List<NodeProperties> validateNodes() {
-        Set<NodeProperties> nodes = monitorProperties.getNodes();
+        List<NodeProperties> nodes = new ArrayList<>(new HashSet<>(monitorProperties.getNodes()));
 
         if (!monitorProperties.isValidateNodes()) {
-            return new ArrayList<>(nodes);
+            return nodes;
         }
 
-        List<NodeProperties> validNodes = new ArrayList<>(nodes);
-//        AccountId accountId = AccountId.fromString("0.0.2");
+        List<NodeProperties> validNodes = new ArrayList<>();
+        AccountId accountId = AccountId.fromString("0.0.2");
 
-//        for (NodeProperties node : nodes) {
-//            Client client = toClient(node);
-//
-//            try {
-//                new AccountInfoQuery().setAccountId(accountId).execute(client, Duration.ofSeconds(10L));
-//                validNodes.add(node);
-//                log.info("Validated node: {}", node);
-//            } catch (Exception e) {
-//                log.warn("Unable to validate node {}: ", node, e);
-//            } finally {
-//                try {
-//                    client.close();
-//                } catch (Exception e) {
-//                }
-//            }
-//        }
+        try (Client client = toClient(toNetwork(nodes))) {
+            for (NodeProperties node : nodes) {
+                try {
+                    List<AccountId> nodeAccountIds = List.of(AccountId.fromString(node.getAccountId()));
+                    new AccountInfoQuery()
+                            .setAccountId(accountId)
+                            .setNodeAccountIds(nodeAccountIds)
+                            .execute(client, Duration.ofSeconds(10L));
+                    validNodes.add(node);
+                    log.info("Validated node: {}", node);
+                } catch (Exception e) {
+                    log.warn("Unable to validate node {}: ", node, e);
+                }
+            }
+        } catch (Exception e) {
+            //
+        }
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
         return validNodes;
     }
 
-    private Client toClient(List<NodeProperties> validNodes) {
-        Map<String, AccountId> network = validNodes.stream()
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+    private Client toClient(Map<String, AccountId> network) {
         AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
-        PrivateKey operatorPrivateKey = PrivateKey
-                .fromString(monitorProperties.getOperator().getPrivateKey());
-
+        PrivateKey operatorPrivateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
         Client client = Client.forNetwork(network);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
+    }
+
+    private Map<String, AccountId> toNetwork(List<NodeProperties> nodes) {
+        return nodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
 }

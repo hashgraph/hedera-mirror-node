@@ -85,6 +85,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         for (long i = 0; i < actual; i++) {
             PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceipt()))
                     .record(shouldGenerate(properties.getRecord()))
+                    .timeout(properties.getTimeout())
                     .timestamp(Instant.now())
                     .transaction(transactionSupplier.get().get()
                             .setMaxRetry(properties.getMaxAttempts())) // set scenario transaction maxAttempts

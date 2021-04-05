@@ -48,6 +48,9 @@ public class ScenarioProperties {
 
     private boolean logResponse = false;
 
+    @Min(1)
+    private int maxAttempts = 1;
+
     @NotBlank
     private String name;
 
@@ -62,6 +65,9 @@ public class ScenarioProperties {
     @Max(1)
     private double record = 0.0;
 
+    @DurationMin(seconds = 1)
+    private Duration timeout = Duration.ofMinutes(1);
+
     @Min(0)
     private double tps = 1.0;
 
@@ -72,8 +78,6 @@ public class ScenarioProperties {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
 
-    @Min(1)
-    private int maxAttempts = 1;
 }
 
 

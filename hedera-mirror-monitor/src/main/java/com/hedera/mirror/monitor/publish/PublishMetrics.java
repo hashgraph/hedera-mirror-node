@@ -67,7 +67,7 @@ public class PublishMetrics {
     }
 
     public CompletableFuture<PublishResponse> record(PublishRequest publishRequest,
-                                  CheckedFunction<PublishRequest, CompletableFuture<PublishResponse>> function) {
+            CheckedFunction<PublishRequest, CompletableFuture<PublishResponse>> function) {
         long startTime = System.currentTimeMillis();
 
         try {
@@ -78,7 +78,6 @@ public class PublishMetrics {
                         return response;
                     })
                     .exceptionally(throwable -> {
-                        log.error(throwable);
                         Throwable cause = throwable.getCause();
                         String status;
                         TransactionType type = publishRequest.getType();
