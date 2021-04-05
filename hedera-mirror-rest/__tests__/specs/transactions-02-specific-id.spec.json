@@ -17,8 +17,8 @@
     ],
     "entities": [
       {
-        "entity_num": 100,
-        "entity_type": 6,
+        "num": 100,
+        "type": 6,
         "memo": "Created per council decision dated 02/01/21",
         "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [1, 1, 1]

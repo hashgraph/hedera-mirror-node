@@ -136,6 +136,8 @@ create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
+create index if not exists transaction_type
+    on transaction (type, consensus_ns desc);
 
 -- transaction_signature
 create index if not exists transaction_signature__entity_id
@@ -144,5 +146,3 @@ create index if not exists transaction_signature__entity_id
 create unique index if not exists transaction_signature__timestamp_public_key_prefix
     on transaction_signature (consensus_timestamp desc, public_key_prefix);
 
-create index if not exists transaction_type
-    on transaction (type, consensus_timestamp desc);
