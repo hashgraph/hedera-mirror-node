@@ -22,7 +22,7 @@ create table if not exists account_balance_file
     load_end            bigint       not null,
     name                varchar(250) not null,
     node_account_id     bigint       not null
-    );
+);
 comment on table account_balance_file is 'Account balances stream files';
 
 -- address_book
@@ -48,7 +48,7 @@ create table if not exists address_book_entry
     node_id             bigint        null,
     node_account_id     bigint        null,
     node_cert_hash      bytea         null
-    );
+);
 comment on table address_book_entry is 'Network address book node entries';
 
 -- contract_result
@@ -87,7 +87,7 @@ create table if not exists event_file
     node_account_id  bigint                 not null,
     previous_hash    character varying(96)  not null,
     version          integer                not null
-    );
+);
 
 -- file_data
 create table if not exists file_data
@@ -135,7 +135,7 @@ create table if not exists record_file
     node_account_id    bigint                 not null,
     prev_hash          character varying(96)  not null,
     version            int                    not null
-    );
+);
 comment on table record_file is 'Network record file stream entries';
 
 -- schedule
@@ -185,7 +185,7 @@ create table if not exists t_entity_types
 (
     id   integer not null,
     name character varying(8)
-    );
+);
 comment on table t_entity_types is 'Network entity types';
 
 insert into t_entity_types (id, name)
@@ -202,7 +202,7 @@ create table if not exists t_transaction_results
 (
     proto_id integer not null,
     result   character varying(100)
-    );
+);
 comment on table t_transaction_results is 'Transaction result types';
 
 insert into t_transaction_results (result, proto_id)
@@ -383,7 +383,7 @@ create table if not exists t_transaction_types
     proto_id    integer not null,
     name        character varying(30),
     entity_type integer null
-    );
+);
 comment on table t_transaction_types is 'Transaction types';
 
 insert into t_transaction_types (proto_id, name, entity_type)
@@ -447,7 +447,7 @@ create table if not exists token
     treasury_account_id    bigint                 not null,
     wipe_key               bytea,
     wipe_key_ed25519_hex   varchar                null
-    );
+);
 comment on table token is 'Token entities';
 
 --- token_account
