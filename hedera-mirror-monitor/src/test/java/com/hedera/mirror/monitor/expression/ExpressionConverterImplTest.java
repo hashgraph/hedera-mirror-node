@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -182,7 +183,7 @@ class ExpressionConverterImplTest {
         assertThat(request.getValue().getType()).isEqualTo(type);
     }
 
-    private PublishResponse response(TransactionType type, long id) throws InvalidProtocolBufferException {
+    private CompletableFuture<PublishResponse> response(TransactionType type, long id) throws InvalidProtocolBufferException {
         TransactionReceipt.Builder receipt = TransactionReceipt.newBuilder();
 
         switch (type) {
@@ -205,9 +206,11 @@ class ExpressionConverterImplTest {
                         .setReceipt(receipt)
                         .build().toByteArray());
 
-        return PublishResponse.builder()
-                .record(record)
-                .receipt(record.receipt)
-                .build();
+        return CompletableFuture.completedFuture(
+                PublishResponse.builder()
+                        .record(record)
+                        .receipt(record.receipt)
+                        .build()
+        );
     }
 }
