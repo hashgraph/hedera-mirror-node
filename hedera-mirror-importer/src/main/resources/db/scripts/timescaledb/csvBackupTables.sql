@@ -24,13 +24,7 @@
 
 \copy schedule to schedule.csv delimiter ',' csv;
 
-\copy t_entities to t_entities.csv delimiter ',' csv;
-
-\copy t_entity_types to t_entity_types.csv delimiter ',' csv;
-
-\copy t_transaction_results to t_transaction_results.csv delimiter ',' csv;
-
-\copy t_transaction_types to t_transaction_types.csv delimiter ',' csv;
+\copy entity to entity.csv delimiter ',' csv;
 
 \copy token to token.csv delimiter ',' csv;
 
