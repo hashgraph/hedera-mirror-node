@@ -36,6 +36,19 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
     where entity_id != 98;
 -- id corresponding to treasury address 0.0.98
 
+-- entity
+alter table entity
+    add primary key (id);
+-- Enforce lowercase hex representation by constraint rather than making indexes on lower(ed25519).
+alter table entity
+    add constraint c__entity__lower_ed25519
+        check (public_key = lower(public_key));
+create index if not exists entity__public_key_natural_id
+    on entity (public_key, type, shard, realm, num);
+create unique index if not exists entity__shard_realm_num
+    on entity (shard, realm, num, id);
+-- have to add id when creating unique indexes due to partitioning
+
 -- event_file
 alter table event_file
     add primary key (consensus_end);
@@ -70,19 +83,6 @@ create unique index if not exists schedule__schedule_id
 
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
-
--- t_entities
-alter table t_entities
-    add primary key (id);
--- Enforce lowercase hex representation by constraint rather than making indexes on lower(ed25519).
-alter table t_entities
-    add constraint c__t_entities__lower_ed25519
-        check (ed25519_public_key_hex = lower(ed25519_public_key_hex));
-create index if not exists entities__ed25519_public_key_hex_natural_id
-    on t_entities (ed25519_public_key_hex, fk_entity_type_id, entity_shard, entity_realm, entity_num);
-create unique index if not exists entities_unq
-    on t_entities (entity_shard, entity_realm, entity_num, id);
--- have to add id when creating unique indexes due to partitioning
 
 -- t_entity_types
 alter table t_entity_types
@@ -136,6 +136,8 @@ create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
+create index if not exists transaction_type
+    on transaction (type, consensus_ns desc);
 
 -- transaction_signature
 create index if not exists transaction_signature__entity_id
@@ -143,3 +145,4 @@ create index if not exists transaction_signature__entity_id
 
 create unique index if not exists transaction_signature__timestamp_public_key_prefix
     on transaction_signature (consensus_timestamp desc, public_key_prefix);
+

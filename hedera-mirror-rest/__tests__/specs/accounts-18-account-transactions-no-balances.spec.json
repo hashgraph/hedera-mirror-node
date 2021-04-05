@@ -3,19 +3,19 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 7
+        "num": 7
       },
       {
-        "entity_num": 8
+        "num": 8
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 98
+        "num": 98
       }
     ],
     "balances": [
@@ -71,7 +71,8 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000031",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.9"
       }
     ],
     "cryptotransfers": [
@@ -94,16 +95,16 @@
     ],
     "entities": [
       {
-        "entity_num": 10,
-        "entity_type": 3
+        "num": 10,
+        "type": 3
       },
       {
-        "entity_num": 11,
-        "entity_type": 4
+        "num": 11,
+        "type": 4
       },
       {
-        "entity_num": 12,
-        "entity_type": 5
+        "num": 12,
+        "type": 5
       }
     ]
   },
@@ -114,6 +115,7 @@
       {
         "charged_tx_fee": 0,
         "consensus_timestamp": "1234567890.000000031",
+        "entity_id": "0.0.9",
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOUPDATEACCOUNT",
@@ -129,6 +131,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000005",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
@@ -157,6 +160,7 @@
       {
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000001",
+        "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",

@@ -144,7 +144,7 @@ To support the goals the following database schema changes should be made
 ```
 
 ### Entities
--   Insert token entity info into `t_entities` table from `TokenCreation.proto` transaction object. Insert `adminKey` as `key`, `expiry` as `exp_time_ns`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period`.
+-   Insert token entity info into `entity` table from `TokenCreation.proto` transaction object. Insert `adminKey` as `key`, `expiry` as `expiration_timestamp`, `autoRenewAccount` as `auto_renew_account_id` and `autoRenewPeriod` as `auto_renew_period`.
 
 ### Token
 -   Create `token` table with the following columns. Table will capture non shared `entity` items, most API calls may not require this information and therefore additional sql joins may be avoided.
@@ -619,7 +619,7 @@ TBD
     -   A: Max length is currently 100 chars to match memo, https://github.com/hashgraph/hedera-services/blob/separate-tokenrels-fcm/hedera-node/src/main/resources/bootstrap.properties#L56
 -   [x] Will a `token_id` and `token` be assigned a default value for HBARs across the network e.g. i.e. '1' and 'HBAR' respectively
     -   A: Currently no since hbar is not treated as an entity like tokens will be.
--   [x] Should token only entity items exist in their own table or be added to `t_entities`?
+-   [x] Should token only entity items exist in their own table or be added to `entity`?
     -   A: Will split out into `token` table
 -   [x] Should `account_balance` `accountNum` and `accountRealmNum` be migrated into `entityId` or should token_balance also use `accountNum` and `accountRealmNum` instead of `entityId`?
     -   A: Should be migrated to use `account_id` only

@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -85,24 +85,24 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void existingEntitiesFromBeforeReset() throws Exception {
-        Entities entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
-        Entities entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.ACCOUNT, false);
-        Entities entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.ACCOUNT, false);
+        Entity entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.ACCOUNT, false);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.ACCOUNT, false);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll())
                 .hasSize(COUNT)
                 .allMatch(e -> e.getAutoRenewPeriod() > 0)
-                .allMatch(e -> e.getExpiryTimeNs() > 0)
+                .allMatch(e -> e.getExpirationTimestamp() > 0)
                 .allMatch(e -> e.getKey().length > 0)
-                .map(Entities::getEntityNum)
-                .containsExactly(entity1.getEntityNum(), entity2.getEntityNum(), entity3.getEntityNum());
+                .map(Entity::getNum)
+                .containsExactly(entity1.getNum(), entity2.getNum(), entity3.getNum());
     }
 
     @Test
     void existingEntitiesAfterReset() throws Exception {
-        Entities entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
-        Entities entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.CONTRACT, true);
-        Entities entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.CONTRACT, true);
+        Entity entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.CONTRACT, true);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.CONTRACT, true);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3); // No update
     }
@@ -110,7 +110,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void noChangesWhenRanAgain() throws Exception {
         historicalAccountInfoMigration.doMigrate();
-        Iterable<Entities> entities = entityRepository.findAll();
+        Iterable<Entity> entities = entityRepository.findAll();
         assertThat(entities).hasSize(COUNT);
 
         historicalAccountInfoMigration.doMigrate();
@@ -168,13 +168,14 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
-                .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
-                .returns(accountInfo.getDeleted(), from(Entities::isDeleted))
-                .returns(publicKey, from(Entities::getEd25519PublicKeyHex))
-                .returns(Utility.timeStampInNanos(accountInfo.getExpirationTime()), from(Entities::getExpiryTimeNs))
-                .returns(accountInfo.getKey().toByteArray(), from(Entities::getKey))
-                .returns(accountInfo.getMemo(), from(Entities::getMemo))
-                .returns(EntityId.of(accountInfo.getProxyAccountID()), from(Entities::getProxyAccountId));
+                .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
+                .returns(accountInfo.getDeleted(), from(Entity::isDeleted))
+                .returns(publicKey, from(Entity::getPublicKey))
+                .returns(Utility
+                        .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
+                .returns(accountInfo.getKey().toByteArray(), from(Entity::getKey))
+                .returns(accountInfo.getMemo(), from(Entity::getMemo))
+                .returns(EntityId.of(accountInfo.getProxyAccountID()), from(Entity::getProxyAccountId));
     }
 
     @Test
@@ -187,13 +188,14 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
-                .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
-                .returns(accountInfo.getDeleted(), from(Entities::isDeleted))
-                .returns(publicKey, from(Entities::getEd25519PublicKeyHex))
-                .returns(Utility.timeStampInNanos(accountInfo.getExpirationTime()), from(Entities::getExpiryTimeNs))
-                .returns(accountInfo.getKey().toByteArray(), from(Entities::getKey))
-                .returns(accountInfo.getMemo(), from(Entities::getMemo))
-                .returns(EntityId.of(accountInfo.getProxyAccountID()), from(Entities::getProxyAccountId));
+                .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
+                .returns(accountInfo.getDeleted(), from(Entity::isDeleted))
+                .returns(publicKey, from(Entity::getPublicKey))
+                .returns(Utility
+                        .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
+                .returns(accountInfo.getKey().toByteArray(), from(Entity::getKey))
+                .returns(accountInfo.getMemo(), from(Entity::getMemo))
+                .returns(EntityId.of(accountInfo.getProxyAccountID()), from(Entity::getProxyAccountId));
     }
 
     @Test
@@ -204,13 +206,13 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
-                .returns(null, from(Entities::getAutoRenewPeriod))
-                .returns(false, from(Entities::isDeleted))
-                .returns(null, from(Entities::getEd25519PublicKeyHex))
-                .returns(null, from(Entities::getExpiryTimeNs))
-                .returns(null, from(Entities::getKey))
-                .returns("", from(Entities::getMemo))
-                .returns(null, from(Entities::getProxyAccountId));
+                .returns(null, from(Entity::getAutoRenewPeriod))
+                .returns(false, from(Entity::isDeleted))
+                .returns(null, from(Entity::getPublicKey))
+                .returns(null, from(Entity::getExpirationTimestamp))
+                .returns(null, from(Entity::getKey))
+                .returns("", from(Entity::getMemo))
+                .returns(null, from(Entity::getProxyAccountId));
     }
 
     @Test
@@ -221,7 +223,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
-                .extracting(Entities::isDeleted)
+                .extracting(Entity::isDeleted)
                 .isEqualTo(true);
     }
 
@@ -233,14 +235,14 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(entityRepository.findAll())
                 .hasSize(1)
                 .first()
-                .extracting(Entities::getExpiryTimeNs)
+                .extracting(Entity::getExpirationTimestamp)
                 .isEqualTo(Long.MAX_VALUE);
     }
 
     @Test
     void skipExisting() {
         AccountInfo.Builder accountInfo = accountInfo();
-        Entities entity = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
+        Entity entity = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isFalse();
         assertThat(entityRepository.findAll()).hasSize(1).containsExactly(entity);
     }
@@ -260,24 +262,24 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build());
     }
 
-    private Entities createEntity(long num, EntityTypeEnum type, boolean afterReset) {
-        Entities entities = new Entities();
-        entities.setEntityNum(num);
-        entities.setEntityRealm(0L);
-        entities.setEntityShard(0L);
-        entities.setEntityTypeId(type.getId());
-        entities.setId(num);
+    private Entity createEntity(long num, EntityTypeEnum type, boolean afterReset) {
+        Entity entity = new Entity();
+        entity.setNum(num);
+        entity.setRealm(0L);
+        entity.setShard(0L);
+        entity.setType(type.getId());
+        entity.setId(num);
 
         if (afterReset) {
             Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build();
-            entities.setAutoRenewPeriod(5L);
-            entities.setExpiryTimeNs(1L);
-            entities.setKey(key.toByteArray());
-            entities.setMemo("Bar");
-            entities.setProxyAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
+            entity.setAutoRenewPeriod(5L);
+            entity.setExpirationTimestamp(1L);
+            entity.setKey(key.toByteArray());
+            entity.setMemo("Bar");
+            entity.setProxyAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
         }
 
-        entityRepository.save(entities);
-        return entities;
+        entityRepository.save(entity);
+        return entity;
     }
 }

@@ -128,13 +128,13 @@ public class EntityId implements Serializable, Comparable<EntityId> {
                 getRealmNum(), getEntityNum());
     }
 
-    public Entities toEntity() {
-        Entities entity = new Entities();
+    public Entity toEntity() {
+        Entity entity = new Entity();
         entity.setId(id);
-        entity.setEntityShard(shardNum);
-        entity.setEntityRealm(realmNum);
-        entity.setEntityNum(entityNum);
-        entity.setEntityTypeId(type);
+        entity.setShard(shardNum);
+        entity.setRealm(realmNum);
+        entity.setNum(entityNum);
+        entity.setType(type);
         return entity;
     }
 

@@ -3,15 +3,15 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 7,
+        "num": 7,
         "public_key": "6ceecd8bb224da4914d53f292e5624f6f4cf8c134c920e1cac8d06f879df5819"
       },
       {
-        "entity_num": 8,
+        "num": 8,
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       },
       {
-        "entity_num": 9,
+        "num": 9,
         "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be"
       }
     ],

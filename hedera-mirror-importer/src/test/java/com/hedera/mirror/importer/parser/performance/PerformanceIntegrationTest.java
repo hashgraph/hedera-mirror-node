@@ -106,7 +106,7 @@ public abstract class PerformanceIntegrationTest {
     }
 
     void checkSeededTablesArePresent() throws SQLException {
-        verifyTableSize(entityRepository, "t_entities");
+        verifyTableSize(entityRepository, "entity");
         verifyTableSize(accountBalanceRepository, "account_balance");
         verifyTableSize(topicMessageRepository, "topicmessages");
         verifyTableSize(transactionRepository, "transaction");

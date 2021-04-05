@@ -39,7 +39,7 @@ const processRow = (row) => {
   accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
   accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
   accRecord.balance.tokens = utils.parseTokenBalances(row.token_balances);
-  accRecord.expiry_timestamp = row.exp_time_ns === null ? null : utils.nsToSecNs(row.exp_time_ns);
+  accRecord.expiry_timestamp = row.expiration_timestamp === null ? null : utils.nsToSecNs(row.expiration_timestamp);
   accRecord.auto_renew_period = row.auto_renew_period === null ? null : Number(row.auto_renew_period);
   accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
   accRecord.deleted = row.deleted;
@@ -64,7 +64,7 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
     select ab.balance as account_balance,
        ab.consensus_timestamp as consensus_timestamp,
        coalesce(ab.account_id, e.id) as entity_id,
-       e.exp_time_ns,
+       e.expiration_timestamp,
        e.auto_renew_period,
        e.key,
        e.deleted,
@@ -83,7 +83,7 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
        ) as token_balances
     from account_balance ab
     inner join (select max(consensus_timestamp) as time_stamp_max from account_balance) as abm on ab.consensus_timestamp = abm.time_stamp_max
-    full outer join (select id, exp_time_ns, auto_renew_period, key, deleted, fk_entity_type_id, ed25519_public_key_hex from t_entities where fk_entity_type_id < 3) e on (
+    full outer join (select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key from entity where type < 3) e on (
         ab.account_id = e.id
     )
     ${whereClause}
@@ -103,13 +103,13 @@ const getAccounts = async (req, res) => {
   await utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
-  // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
-  // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
+  // Because of the outer join on the 'account_balance ab' and 'entity e' below, we
+  // need to look  for the given account.id in both account_balance and entity table and combine with an 'or'
   const [balancesAccountQuery, balancesAccountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
   const [entityAccountQuery, entityAccountParams] = utils.parseAccountIdQueryParam(req.query, 'e.id');
   const accountQuery = balancesAccountQuery === '' ? '' : `(${balancesAccountQuery} or ${entityAccountQuery})`;
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
+  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.public_key');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
 
   const entitySql = getAccountQuery(
@@ -184,8 +184,8 @@ const getOneAccount = async (req, res) => {
     transactions: [],
   };
 
-  // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
-  // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
+  // Because of the outer join on the 'account_balance ab' and 'entity e' below, we
+  // need to look for the given account.id in both account_balance and entity tables and combine with an 'or'
   const entitySql = getAccountQuery(` (ab.account_id = ? or e.id = ?)`);
   const entityParams = [accountId, accountId];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);

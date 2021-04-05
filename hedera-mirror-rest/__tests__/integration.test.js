@@ -148,8 +148,8 @@ const addCryptoTransferTransaction = async (
 
 const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
   await integrationDomainOps.addAccount({
-    entity_num: id,
-    entity_realm: realm,
+    num: id,
+    realm: realm,
   });
 
   await integrationDomainOps.setAccountBalance({

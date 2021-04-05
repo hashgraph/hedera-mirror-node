@@ -20,11 +20,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.Entity;
+
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
@@ -49,7 +50,7 @@ public class SystemUndeleteTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem) {
+    public void updateEntity(Entity entity, RecordItem recordItem) {
         entity.setDeleted(false);
     }
 }

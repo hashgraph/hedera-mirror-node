@@ -3,13 +3,13 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 1024
+        "num": 1024
       }
     ],
     "entities": [
       {
-        "entity_num": 2000,
-        "entity_type": 6,
+        "num": 2000,
+        "type": 6,
         "memo": "Created per council decision dated 02/01/21"
       }
     ],

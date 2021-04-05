@@ -3,19 +3,19 @@
   "setup": {
     "accounts": [
       {
-        "entity_num": 3
+        "num": 3
       },
       {
-        "entity_num": 8
+        "num": 8
       },
       {
-        "entity_num": 9
+        "num": 9
       },
       {
-        "entity_num": 10
+        "num": 10
       },
       {
-        "entity_num": 98
+        "num": 98
       }
     ],
     "balances": [],
@@ -26,7 +26,8 @@
         "nodeAccountId": null,
         "consensus_timestamp": "1234567800000000009",
         "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15"
+        "type": "15",
+        "entity_id": "0.0.10"
       }
     ],
     "cryptotransfers": [
@@ -90,6 +91,7 @@
       {
         "consensus_timestamp": "1234567890.000000005",
         "valid_start_timestamp": "1234567890.000000004",
+        "entity_id": null,
         "charged_tx_fee": 7,
         "memo_base64": null,
         "result": "SUCCESS",
@@ -118,6 +120,7 @@
       {
         "consensus_timestamp": "1234567890.000000004",
         "valid_start_timestamp": "1234567890.000000003",
+        "entity_id": null,
         "charged_tx_fee": 7,
         "memo_base64": null,
         "result": "SUCCESS",
@@ -158,6 +161,7 @@
       {
         "consensus_timestamp": "1234567890.000000003",
         "valid_start_timestamp": "1234567890.000000002",
+        "entity_id": null,
         "charged_tx_fee": 7,
         "memo_base64": null,
         "result": "SUCCESS",
@@ -186,6 +190,7 @@
       {
         "consensus_timestamp": "1234567890.000000002",
         "valid_start_timestamp": "1234567890.000000001",
+        "entity_id": null,
         "charged_tx_fee": 7,
         "memo_base64": null,
         "result": "SUCCESS",
@@ -214,6 +219,7 @@
       {
         "consensus_timestamp": "1234567890.000000001",
         "valid_start_timestamp": "1234567890.000000000",
+        "entity_id": null,
         "charged_tx_fee": 7,
         "memo_base64": null,
         "result": "SUCCESS",
@@ -242,6 +248,7 @@
       {
         "charged_tx_fee": 0,
         "consensus_timestamp": "1234567800.000000009",
+        "entity_id": "0.0.10",
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOUPDATEACCOUNT",

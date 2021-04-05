@@ -90,7 +90,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 ```
 
 1. Parse `Transaction` and `TransactionRecord` in the `recordItem`
-1. Calls `onTransaction`/`onTopicMessage`/`onCryptoTransferLists` etc
+2. Calls `onTransaction`/`onTopicMessage`/`onCryptoTransferLists` etc
 
 ### EntityListener
 
@@ -115,8 +115,8 @@ public interface EntityListener {
     1. `NullEntityListener`: No-op implementation
         - For micro-benchmarking parser performance
 
-Note that there are no function for `onEntity`. Updating entities in batch in not possible right now since
-`transaction` table uses foreign keys. For entities, first, schema changes are needed to remove entity ids,
+Note that there is no `onEntity` function. Updating the `entity` table in batches is not possible right now since
+`transaction` table uses foreign keys. For the `entity` table, first, schema changes are needed to remove entity ids,
 then `onEntity` and `onEntityUpdate` functions will be added to insert/update entities in bulk. For the purpose of
 immediate refactor, we can leave entities in `EntityRecordItemListener` (until perf optimizations via schema change in
 milestone 2).

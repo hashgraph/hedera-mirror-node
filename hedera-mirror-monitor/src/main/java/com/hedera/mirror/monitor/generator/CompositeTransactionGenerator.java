@@ -23,7 +23,9 @@ package com.hedera.mirror.monitor.generator;
 import com.google.common.util.concurrent.RateLimiter;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -47,28 +49,33 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         INACTIVE_RATE_LIMITER.acquire();
     }
 
-    private final ExpressionConverter expressionConverter;
     private final PublishProperties properties;
-    volatile EnumeratedDistribution<TransactionGenerator> distribution;
-    AtomicReference<RateLimiter> rateLimiter = new AtomicReference<>();
-    volatile int batchSize;
+    final AtomicReference<EnumeratedDistribution<TransactionGenerator>> distribution = new AtomicReference<>();
+    final AtomicReference<RateLimiter> rateLimiter = new AtomicReference<>();
+    final List<ConfigurableTransactionGenerator> transactionGenerators;
+    final AtomicInteger batchSize = new AtomicInteger(1);
 
     public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
-        this.expressionConverter = expressionConverter;
         this.properties = properties;
+        this.transactionGenerators = properties.getScenarios()
+                .stream()
+                .filter(ScenarioProperties::isEnabled)
+                .map(scenarioProperties -> new ConfigurableTransactionGenerator(expressionConverter,
+                        scenarioProperties))
+                .collect(Collectors.toList());
         rebuild();
     }
 
     @Override
     public List<PublishRequest> next(int count) {
-        int permits = count > 0 ? count : batchSize;
+        int permits = count > 0 ? count : batchSize.get();
         rateLimiter.get().acquire(permits);
 
         List<PublishRequest> publishRequests = new ArrayList<>();
         int i = 0;
         while (i < permits) {
             try {
-                TransactionGenerator transactionGenerator = distribution.sample();
+                TransactionGenerator transactionGenerator = distribution.get().sample();
                 publishRequests.addAll(transactionGenerator.next());
                 i++;
             } catch (ScenarioException e) {
@@ -88,30 +95,33 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     }
 
     private synchronized void rebuild() {
-        List<ScenarioProperties> enabledScenarios = properties.getScenarios()
-                .stream()
-                .filter(ScenarioProperties::isEnabled)
-                .collect(Collectors.toList());
-        if (!properties.isEnabled() || enabledScenarios.isEmpty()) {
-            batchSize = 1;
-            distribution = null;
+        double total = 0.0;
+        List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
+        for (Iterator<ConfigurableTransactionGenerator> iter = transactionGenerators.iterator(); iter.hasNext(); ) {
+            ConfigurableTransactionGenerator transactionGenerator = iter.next();
+            ScenarioProperties scenarioProperties = transactionGenerator.getProperties();
+            if (scenarioProperties.isEnabled()) {
+                total += scenarioProperties.getTps();
+                pairs.add(Pair.create(transactionGenerator, scenarioProperties.getTps()));
+            } else {
+                iter.remove();
+            }
+        }
+
+        if (!properties.isEnabled() || pairs.isEmpty() || total == 0.0) {
+            batchSize.set(1);
+            distribution.set(null);
             rateLimiter.set(INACTIVE_RATE_LIMITER);
             log.info("Publishing is disabled");
             return;
         }
 
-        List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
-        final double total = enabledScenarios
-                .stream()
-                .map(ScenarioProperties::getTps)
-                .reduce(0.0, Double::sum);
-        enabledScenarios.forEach(scenarioProperties -> {
-            double weight = total > 0 ? scenarioProperties.getTps() / total : 0.0;
-            pairs.add(Pair.create(new ConfigurableTransactionGenerator(expressionConverter, scenarioProperties), weight));
-            log.info("Activated scenario: {}", scenarioProperties);
-        });
+        for (ConfigurableTransactionGenerator transactionGenerator : transactionGenerators) {
+            log.info("Activated scenario: {}", transactionGenerator.getProperties());
+        }
 
-        batchSize = Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor()));
+        batchSize.set(Math.max(1, (int) Math.ceil(total / properties.getBatchDivisor())));
+        distribution.set(new EnumeratedDistribution<>(pairs));
 
         RateLimiter current = rateLimiter.get();
         if (current != null) {
@@ -119,8 +129,6 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         } else {
             rateLimiter.set(getRateLimiter(total, properties.getWarmupPeriod()));
         }
-
-        distribution = new EnumeratedDistribution<>(pairs);
     }
 
     private RateLimiter getRateLimiter(double tps, Duration warmupPeriod) {

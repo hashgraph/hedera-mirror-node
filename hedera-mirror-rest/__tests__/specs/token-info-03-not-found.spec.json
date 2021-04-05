@@ -3,8 +3,8 @@
   "setup": {
     "entities": [
       {
-        "entity_num": 1,
-        "entity_type": 5
+        "num": 1,
+        "type": 5
       }
     ],
     "tokens": [

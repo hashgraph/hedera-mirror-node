@@ -3,22 +3,22 @@
   "setup": {
     "entities": [
       {
-        "entity_num": 1,
-        "entity_type": 5
+        "num": 1,
+        "type": 5
       },
       {
-        "entity_num": 1135,
-        "entity_type": 5
+        "num": 1135,
+        "type": 5
       },
       {
-        "entity_realm": 7,
-        "entity_num": 25301,
-        "entity_type": 5
+        "realm": 7,
+        "num": 25301,
+        "type": 5
       },
       {
-        "entity_realm": 23,
-        "entity_num": 45678,
-        "entity_type": 5
+        "realm": 23,
+        "num": 45678,
+        "type": 5
       }
     ],
     "tokens": [

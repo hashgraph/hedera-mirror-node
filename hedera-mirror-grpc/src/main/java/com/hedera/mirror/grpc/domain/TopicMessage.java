@@ -128,9 +128,9 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
             if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
                 chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
                         .setAccountID(AccountID.newBuilder()
-                                .setShardNum(getPayerAccountEntity().getEntityShard())
-                                .setRealmNum(getPayerAccountEntity().getEntityRealm())
-                                .setAccountNum(getPayerAccountEntity().getEntityNum())
+                                .setShardNum(getPayerAccountEntity().getShard())
+                                .setRealmNum(getPayerAccountEntity().getRealm())
+                                .setAccountNum(getPayerAccountEntity().getNum())
                                 .build())
                         .setTransactionValidStart(Timestamp.newBuilder()
                                 .setSeconds(getValidStartInstant().getEpochSecond())

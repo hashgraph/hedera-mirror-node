@@ -62,11 +62,11 @@ public class DomainBuilder {
 
     public Mono<Entity> entity(Consumer<Entity.EntityBuilder> customizer) {
         Entity.EntityBuilder builder = Entity.builder()
-                .entityNum(0L)
-                .entityRealm(0L)
-                .entityShard(0L)
+                .num(0L)
+                .realm(0L)
+                .shard(0L)
                 .id(0L)
-                .entityTypeId(EntityType.TOPIC);
+                .type(EntityType.TOPIC);
 
         customizer.accept(builder);
         Entity entity = builder.build();

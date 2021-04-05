@@ -51,7 +51,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.LiveHash;
@@ -201,8 +201,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
-        Entities dbProxyAccountId = getEntity(dbAccountEntity.getProxyAccountId());
+        Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbProxyAccountId = getEntity(dbAccountEntity.getProxyAccountId());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -218,12 +218,12 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 , () -> assertEquals(cryptoUpdateTransactionBody.getAutoRenewPeriod().getSeconds(),
                         dbAccountEntity.getAutoRenewPeriod())
                 , () -> assertEquals(Utility.convertSimpleKeyToHex(
-                        cryptoUpdateTransactionBody.getKey().toByteArray()), dbAccountEntity.getEd25519PublicKeyHex())
+                        cryptoUpdateTransactionBody.getKey().toByteArray()), dbAccountEntity.getPublicKey())
                 , () -> assertAccount(cryptoUpdateTransactionBody.getProxyAccountID(), dbProxyAccountId)
                 , () -> assertArrayEquals(cryptoUpdateTransactionBody.getKey().toByteArray(), dbAccountEntity.getKey())
                 , () -> assertEquals(cryptoUpdateTransactionBody.getMemo().getValue(), dbAccountEntity.getMemo())
                 , () -> assertEquals(Utility.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
-                        dbAccountEntity.getExpiryTimeNs())
+                        dbAccountEntity.getExpirationTimestamp())
         );
     }
 
@@ -296,7 +296,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
-                () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs())
+                () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpirationTimestamp())
         );
     }
 
@@ -314,8 +314,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbAccountEntityBefore = getTransactionEntity(createRecord.getConsensusTimestamp());
-        Entities dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbAccountEntityBefore = getTransactionEntity(createRecord.getConsensusTimestamp());
+        Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -345,8 +345,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
-        Entities dbProxyAccountId = getEntity(dbAccountEntity.getProxyAccountId());
+        Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbProxyAccountId = getEntity(dbAccountEntity.getProxyAccountId());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -359,11 +359,11 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 , () -> assertCryptoTransaction(transactionBody, record, true)
 
                 // Additional entity checks
-                , () -> assertNotNull(dbAccountEntity.getEd25519PublicKeyHex())
+                , () -> assertNotNull(dbAccountEntity.getPublicKey())
                 , () -> assertNotNull(dbAccountEntity.getKey())
                 , () -> assertNotNull(dbAccountEntity.getAutoRenewPeriod())
                 , () -> assertNotNull(dbProxyAccountId)
-                , () -> assertNull(dbAccountEntity.getExpiryTimeNs())
+                , () -> assertNull(dbAccountEntity.getExpirationTimestamp())
         );
     }
 
@@ -379,8 +379,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
-        Entities dbProxyAccountId = getEntity(dbAccountEntity.getProxyAccountId());
+        Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbProxyAccountId = getEntity(dbAccountEntity.getProxyAccountId());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -393,11 +393,11 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 , () -> assertCryptoTransaction(transactionBody, record, false)
 
                 // Additional entity checks
-                , () -> assertNotNull(dbAccountEntity.getEd25519PublicKeyHex())
+                , () -> assertNotNull(dbAccountEntity.getPublicKey())
                 , () -> assertNotNull(dbAccountEntity.getKey())
                 , () -> assertNotNull(dbAccountEntity.getAutoRenewPeriod())
                 , () -> assertNotNull(dbProxyAccountId)
-                , () -> assertNull(dbAccountEntity.getExpiryTimeNs())
+                , () -> assertNull(dbAccountEntity.getExpirationTimestamp())
         );
     }
 
@@ -413,7 +413,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-        Entities dbAccountEntity = getEntity(dbTransaction.getEntityId());
+        Entity dbAccountEntity = getEntity(dbTransaction.getEntityId());
         LiveHash dbLiveHash = liveHashRepository.findById(dbTransaction.getConsensusNs()).get();
 
         assertAll(
@@ -447,7 +447,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -480,7 +480,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entities dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(3, transactionRepository.count())
@@ -590,7 +590,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     private void assertCryptoTransaction(TransactionBody transactionBody, TransactionRecord record, boolean deleted) {
-        Entities actualAccount = getTransactionEntity(record.getConsensusTimestamp());
+        Entity actualAccount = getTransactionEntity(record.getConsensusTimestamp());
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertAccount(record.getReceipt().getAccountID(), actualAccount),
@@ -598,17 +598,17 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     private void assertCryptoEntity(CryptoCreateTransactionBody expected, Timestamp consensusTimestamp) {
-        Entities actualAccount = getTransactionEntity(consensusTimestamp);
-        Entities actualProxyAccountId = getEntity(actualAccount.getProxyAccountId());
+        Entity actualAccount = getTransactionEntity(consensusTimestamp);
+        Entity actualProxyAccountId = getEntity(actualAccount.getProxyAccountId());
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualAccount.getAutoRenewPeriod()),
                 () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
-                        actualAccount.getEd25519PublicKeyHex()),
+                        actualAccount.getPublicKey()),
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
-                () -> assertNull(actualAccount.getExpiryTimeNs()),
+                () -> assertNull(actualAccount.getExpirationTimestamp()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccountId),
-                () -> assertNull(actualAccount.getExpiryTimeNs())
+                () -> assertNull(actualAccount.getExpirationTimestamp())
         );
     }
 

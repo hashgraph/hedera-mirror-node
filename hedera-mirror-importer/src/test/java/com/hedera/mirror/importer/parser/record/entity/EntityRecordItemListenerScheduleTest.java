@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.TransactionSignature;
@@ -96,7 +96,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, payer, SCHEDULE_ID);
 
         // verify entity count
-        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
                 null, false, null, SCHEDULE_CREATE_MEMO, null);
         int expectedEntityCount = 4; // node, payer, schedule and autorenew
         if (!expectedPayer.equals(PAYER)) {
@@ -123,7 +123,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID);
 
         // verify entity count
-        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
                 null, false, null, SCHEDULE_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
@@ -164,7 +164,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // verify entity count
-        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
                 null, false, null, SCHEDULE_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
@@ -226,7 +226,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduledTransaction(EXECUTE_TIMESTAMP, SCHEDULE_ID, responseCodeEnum);
 
         // verify entity count
-        Entities expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
                 null, false, null, SCHEDULE_CREATE_MEMO, null);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
@@ -367,14 +367,14 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     private void assertTransactionInRepository(long consensusTimestamp, boolean scheduled,
-            ResponseCodeEnum responseCode) {
+                                               ResponseCodeEnum responseCode) {
         assertThat(transactionRepository.findById(consensusTimestamp)).get()
                 .returns(scheduled, from(com.hedera.mirror.importer.domain.Transaction::isScheduled))
                 .returns(responseCode.getNumber(), from(com.hedera.mirror.importer.domain.Transaction::getResult));
     }
 
     private List<TransactionSignature> toTransactionSignatureList(long timestamp, ScheduleID scheduleId,
-                                                               SignatureMap signatureMap) {
+                                                                  SignatureMap signatureMap) {
         return signatureMap.getSigPairList()
                 .stream()
                 .map(pair -> {

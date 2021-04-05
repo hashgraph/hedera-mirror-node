@@ -82,7 +82,7 @@ const getBalances = async (req, res) => {
     [utils.opsMap.eq]: utils.opsMap.lte,
   });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
+  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.public_key');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
@@ -99,14 +99,14 @@ const getBalances = async (req, res) => {
         .filter((q) => q !== '')
         .join(' AND ')}`;
 
-  // Only need to join t_entites if we're selecting on publickey.
+  // Only need to join entity if we're selecting on publickey.
   const joinEntityClause =
     pubKeyQuery !== ''
       ? `
-      JOIN t_entities e
+      JOIN entity e
         ON e.id = ab.account_id
-          AND e.entity_shard = ${config.shard}
-          AND e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}`
+          AND e.shard = ${config.shard}
+          AND e.type < ${utils.ENTITY_TYPE_FILE}`
       : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
