@@ -17,6 +17,8 @@ importer:
         baselineVersion: 1.999.999
         locations: "classpath:db/migration/v2"
         target: latest
+monitor:
+  enabled: false
 postgresql:
   enabled: false
 timescaledb:
