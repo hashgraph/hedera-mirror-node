@@ -72,43 +72,47 @@ public class PublishMetrics {
 
         try {
             return function.apply(publishRequest)
-                    .thenApply(response -> {
-                        counter.incrementAndGet();
-                        recordMetric(publishRequest, response, SUCCESS, startTime);
-                        return response;
-                    })
-                    .exceptionally(throwable -> {
-                        Throwable cause = throwable.getCause();
-                        String status;
-                        TransactionType type = publishRequest.getType();
-
-                        if (cause instanceof PrecheckStatusException) {
-                            PrecheckStatusException pse = (PrecheckStatusException) cause;
-                            status = pse.status.toString();
-                            log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
-                        } else if (cause instanceof ReceiptStatusException) {
-                            ReceiptStatusException rse = (ReceiptStatusException) cause;
-                            status = rse.receipt.status.toString();
-                            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId,
-                                    rse.getMessage());
-                        } else if (cause instanceof StatusRuntimeException) {
-                            StatusRuntimeException sre = (StatusRuntimeException) cause;
-                            status = sre.getStatus().getCode().toString();
-                            log.debug("GRPC error: {}", sre.getMessage());
-                        } else {
-                            status = cause.getClass().getSimpleName();
-                            log.debug("{} submitting {} transaction: {}", status, type, cause.getMessage());
-                        }
-
-                        errors.add(status);
-                        recordMetric(publishRequest, null, status, startTime);
-
-                        throw new PublishException(cause);
-                    });
+                    .thenApply(response -> onSuccess(publishRequest, response, startTime))
+                    .exceptionally(throwable -> onFailure(publishRequest, startTime, throwable));
         } catch (Exception ex) {
             log.error(ex);
             throw new PublishException(ex);
         }
+    }
+
+    private PublishResponse onSuccess(PublishRequest request, PublishResponse response, long startTime) {
+        counter.incrementAndGet();
+        recordMetric(request, response, SUCCESS, startTime);
+        return response;
+    }
+
+    private PublishResponse onFailure(PublishRequest request, long startTime, Throwable throwable) {
+        Throwable cause = throwable.getCause();
+        String status;
+        TransactionType type = request.getType();
+
+        if (cause instanceof PrecheckStatusException) {
+            PrecheckStatusException pse = (PrecheckStatusException) cause;
+            status = pse.status.toString();
+            log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
+        } else if (cause instanceof ReceiptStatusException) {
+            ReceiptStatusException rse = (ReceiptStatusException) cause;
+            status = rse.receipt.status.toString();
+            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId,
+                    rse.getMessage());
+        } else if (cause instanceof StatusRuntimeException) {
+            StatusRuntimeException sre = (StatusRuntimeException) cause;
+            status = sre.getStatus().getCode().toString();
+            log.debug("GRPC error: {}", sre.getMessage());
+        } else {
+            status = cause.getClass().getSimpleName();
+            log.debug("{} submitting {} transaction: {}", status, type, cause.getMessage());
+        }
+
+        errors.add(status);
+        recordMetric(request, null, status, startTime);
+
+        throw new PublishException(cause);
     }
 
     private void recordMetric(PublishRequest request, PublishResponse response, String status, long startTime) {

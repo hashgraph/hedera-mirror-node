@@ -43,6 +43,7 @@ import com.hedera.hashgraph.sdk.AccountInfoQuery;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 
@@ -85,25 +86,9 @@ public class TransactionPublisher {
 
         return request.getTransaction()
                 .executeAsync(client)
-                .thenCompose(transactionResponse -> {
-                    TransactionId transactionId = transactionResponse.transactionId;
-                    PublishResponse.PublishResponseBuilder builder = PublishResponse.builder()
-                            .request(request)
-                            .timestamp(Instant.now())
-                            .transactionId(transactionId);
-
-                    if (request.isRecord()) {
-                        return transactionId.getRecordAsync(client)
-                                .thenApply(record -> builder.record(record).receipt(record.receipt));
-                    } else if (request.isReceipt()) {
-                        return transactionId.getReceiptAsync(client).thenApply(builder::receipt);
-                    }
-
-                    return CompletableFuture.completedFuture(builder);
-                })
-                .thenApply(builder -> {
-                    PublishResponse response = builder.build();
-
+                .thenCompose(transactionResponse -> processTransactionResponse(client, request, transactionResponse))
+                .thenApply(PublishResponse.PublishResponseBuilder::build)
+                .thenApply(response -> {
                     if (log.isTraceEnabled() || request.isLogResponse()) {
                         log.info("Received response : {}", response);
                     }
@@ -111,6 +96,25 @@ public class TransactionPublisher {
                     return response;
                 })
                 .orTimeout(request.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private CompletableFuture<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
+            PublishRequest request, TransactionResponse transactionResponse) {
+        TransactionId transactionId = transactionResponse.transactionId;
+        PublishResponse.PublishResponseBuilder builder = PublishResponse.builder()
+                .request(request)
+                .timestamp(Instant.now())
+                .transactionId(transactionId);
+
+        if (request.isRecord()) {
+            return transactionId.getRecordAsync(client)
+                    .thenApply(record -> builder.record(record).receipt(record.receipt));
+        } else if (request.isReceipt()) {
+            // TODO: Implement a faster retry for get receipt for more accurate metrics
+            return transactionId.getReceiptAsync(client).thenApply(builder::receipt);
+        }
+
+        return CompletableFuture.completedFuture(builder);
     }
 
     private List<Client> getClients() {
