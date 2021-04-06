@@ -35,6 +35,7 @@
         "name": "SCHEDULECREATE",
         "type": 42,
         "entity_id": "0.0.100",
+        "transaction_bytes": null,
         "transfers": [
           {
             "account": "0.0.9",
@@ -94,7 +95,7 @@
         "node": "0.0.3",
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_bytes": "Ynl0ZXM=",
+        "transaction_bytes": null,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
