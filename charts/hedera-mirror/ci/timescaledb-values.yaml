@@ -1,0 +1,23 @@
+global:
+  db:
+    host: RELEASE-NAME
+importer:
+  config:
+    hedera:
+      mirror:
+        importer:
+          db:
+            owner: mirror_node
+            ownerPassword: mirror_node_pass
+            password: mirror_importer_pass
+            schema: mirrornode
+            username: mirror_importer
+    spring:
+      flyway:
+        baselineVersion: 1.999.999
+        locations: "classpath:db/migration/v2"
+        target: latest
+postgresql:
+  enabled: false
+timescaledb:
+  enabled: true

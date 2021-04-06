@@ -61,7 +61,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
 
     @Override
     public Integer getChecksum() {
-        return 1; // Change this if this migration should be rerun
+        return 2; // Change this if this migration should be rerun
     }
 
     @Override
