@@ -75,10 +75,10 @@ const getEntity = async (id) => {
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
   const entityFromDb = await pool.query(
     `select *
-       from t_entities
-       where entity_shard = $1
-         and entity_realm = $2
-         and entity_num = $3`,
+       from entity
+       where shard = $1
+         and realm = $2
+         and num = $3`,
     paramValues
   );
 
@@ -104,14 +104,14 @@ const updateEntity = async (entity) => {
 
   if (config.dryRun === false) {
     await pool.query(
-      `update t_entities
-         set auto_renew_period      = $1,
-             deleted                = $2,
-             ed25519_public_key_hex = $3,
-             exp_time_ns            = $4,
-             key                    = $5,
-             memo                   = $6,
-             proxy_account_id       = $7
+      `update entity
+         set auto_renew_period    = $1,
+             deleted              = $2,
+             public_key           = $3,
+             expiration_timestamp = $4,
+             key                  = $5,
+             memo                 = $6,
+             proxy_account_id     = $7
          where id = $8`,
       paramValues
     );
