@@ -62,6 +62,7 @@
   "responseJson": {
     "transactions": [
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1565779666.711927001",
         "entity_id": null,
         "valid_start_timestamp": "1565779666.711927000",
@@ -69,7 +70,6 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
@@ -92,6 +92,7 @@
         ]
       },
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1565779209.711927001",
         "entity_id": null,
         "valid_start_timestamp": "1565779209.711927000",
@@ -99,7 +100,6 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",

@@ -72,6 +72,7 @@
   "responseJson": {
     "transactions": [
       {
+        "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
         "consensus_timestamp": "1565779209.711927001",
         "entity_id": null,
@@ -81,7 +82,6 @@
         "node": "0.0.3",
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1565779209-711927000",
         "transfers": [
@@ -102,6 +102,7 @@
         "valid_start_timestamp": "1565779209.711927000"
       },
       {
+        "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
         "consensus_timestamp": "1565779111.711927001",
         "entity_id": null,
@@ -111,7 +112,6 @@
         "node": "0.0.3",
         "result": "FAIL_FEE",
         "scheduled": false,
-        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1565779111-711927000",
         "transfers": [

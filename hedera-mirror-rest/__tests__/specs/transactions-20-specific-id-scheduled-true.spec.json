@@ -76,6 +76,7 @@
   "responseJson": {
     "transactions": [
       {
+        "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000003",
         "entity_id": null,
@@ -85,7 +86,6 @@
         "node": "0.0.3",
         "result": "SUCCESS",
         "scheduled": true,
-        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [

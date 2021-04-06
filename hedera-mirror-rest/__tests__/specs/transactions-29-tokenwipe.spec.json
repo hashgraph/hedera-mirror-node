@@ -44,6 +44,7 @@
   "responseJson": {
     "transactions": [
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1234567890.000000001",
         "entity_id": "0.0.90000",
         "valid_start_timestamp": "1234567890.000000000",
@@ -51,7 +52,6 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "name": "TOKENWIPE",
         "node": "0.0.3",

@@ -112,7 +112,7 @@ const createTransferLists = (rows) => {
         result: row.result,
         scheduled: row.scheduled,
         token_transfers: createTokenTransferList(row.token_transfer_list),
-        transaction_bytes: utils.encodeBase64(row.transaction_bytes),
+        bytes: utils.encodeBase64(row.transaction_bytes),
         transaction_hash: utils.encodeBase64(row.transaction_hash),
         transaction_id: utils.createTransactionId(
           EntityId.fromEncodedId(row.payer_account_id).toString(),
