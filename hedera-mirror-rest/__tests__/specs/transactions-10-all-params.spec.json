@@ -79,6 +79,7 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",

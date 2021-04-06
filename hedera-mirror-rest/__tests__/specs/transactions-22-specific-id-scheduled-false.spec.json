@@ -85,6 +85,7 @@
         "node": "0.0.3",
         "result": "SUCCESS",
         "scheduled": false,
+        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
@@ -110,6 +111,7 @@
         "node": "0.0.4",
         "result": "DUPLICATE_TRANSACTION",
         "scheduled": false,
+        "transaction_bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
