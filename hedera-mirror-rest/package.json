@@ -5,7 +5,7 @@
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=12.6.0"
+    "node": ">=14.16.0"
   },
   "scripts": {
     "dev": "nodemon app.js",

@@ -344,9 +344,6 @@
                                 </external>
                                 <build>
                                     <contextDir>${project.basedir}</contextDir>
-                                    <assembly>
-                                        <exportTargetDir>false</exportTargetDir>
-                                    </assembly>
                                 </build>
                                 <name>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</name>
                             </image>
