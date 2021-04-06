@@ -35,7 +35,7 @@ const getUpdateCriteriaCount = () => {
   return {
     auto_renew_period: 0,
     deleted: 0,
-    exp_time_ns: 0,
+    expiration_timestamp: 0,
     key: 0,
     memo: 0,
     proxy_account_id: 0,
@@ -89,18 +89,18 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
 
   // compare expiration times as BigInts
   const ns = utils.timestampToNs(networkEntity.expirationTime.seconds, networkEntity.expirationTime.nanos);
-  const dbExpTimeNs = dbEntity.exp_time_ns == null ? null : BigInt(dbEntity.exp_time_ns);
+  const dbExpTimeNs = dbEntity.expiration_timestamp == null ? null : BigInt(dbEntity.expiration_timestamp);
   if (dbExpTimeNs !== ns) {
-    updateEntity.exp_time_ns = ns.toString();
+    updateEntity.expiration_timestamp = ns.toString();
     updateNeeded = true;
-    updateCriteriaCount.exp_time_ns += 1;
+    updateCriteriaCount.expiration_timestamp += 1;
     logger.trace(`expirationTime mismatch on ${dbEntity.id}, db: ${dbExpTimeNs}, network: ${ns.toString()}`);
   }
 
   // compare keys as buffers
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
   if (Buffer.compare(dbEntity.key, protoBuffer) !== 0) {
-    updateEntity.ed25519_public_key_hex = ed25519Hex;
+    updateEntity.public_key = ed25519Hex;
     updateEntity.key = protoBuffer;
     updateNeeded = true;
     updateCriteriaCount.key += 1;
@@ -153,12 +153,10 @@ const getVerifiedEntity = async (csvEntity) => {
 
   let networkEntity;
   try {
-    if (dbEntity.fk_entity_type_id === 1) {
+    if (dbEntity.type === 1) {
       networkEntity = await networkEntityService.getAccountInfo(csvEntity.entity);
     } else {
-      logger.debug(
-        `Entity type '${dbEntity.fk_entity_type_id}' is not supported, only accounts (1) are supported, skipping`
-      );
+      logger.debug(`Entity type '${dbEntity.type}' is not supported, only accounts (1) are supported, skipping`);
       return null;
     }
   } catch (e) {
