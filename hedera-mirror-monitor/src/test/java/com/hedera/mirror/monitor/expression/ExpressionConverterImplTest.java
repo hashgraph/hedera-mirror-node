@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import reactor.core.publisher.Mono;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -183,7 +183,7 @@ class ExpressionConverterImplTest {
         assertThat(request.getValue().getType()).isEqualTo(type);
     }
 
-    private CompletableFuture<PublishResponse> response(TransactionType type, long id) throws InvalidProtocolBufferException {
+    private Mono<PublishResponse> response(TransactionType type, long id) throws InvalidProtocolBufferException {
         TransactionReceipt.Builder receipt = TransactionReceipt.newBuilder();
 
         switch (type) {
@@ -206,7 +206,7 @@ class ExpressionConverterImplTest {
                         .setReceipt(receipt)
                         .build().toByteArray());
 
-        return CompletableFuture.completedFuture(
+        return Mono.just(
                 PublishResponse.builder()
                         .record(record)
                         .receipt(record.receipt)

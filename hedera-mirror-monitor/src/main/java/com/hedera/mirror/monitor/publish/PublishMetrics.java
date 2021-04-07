@@ -29,7 +29,6 @@ import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,6 +38,7 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.util.Precision;
 import org.springframework.scheduling.annotation.Scheduled;
+import reactor.core.publisher.Mono;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -66,53 +66,51 @@ public class PublishMetrics {
         R apply(T t) throws Exception;
     }
 
-    public CompletableFuture<PublishResponse> record(PublishRequest publishRequest,
-            CheckedFunction<PublishRequest, CompletableFuture<PublishResponse>> function) {
+    public Mono<PublishResponse> record(PublishRequest publishRequest,
+            CheckedFunction<PublishRequest, Mono<PublishResponse>> function) {
         long startTime = System.currentTimeMillis();
 
         try {
             return function.apply(publishRequest)
-                    .thenApply(response -> onSuccess(publishRequest, response, startTime))
-                    .exceptionally(throwable -> onFailure(publishRequest, startTime, throwable));
+                    .doOnSuccess(response -> onSuccess(publishRequest, response, startTime))
+                    .doOnError(throwable -> onError(publishRequest, startTime, throwable));
         } catch (Exception ex) {
             log.error(ex);
             throw new PublishException(ex);
         }
     }
 
-    private PublishResponse onSuccess(PublishRequest request, PublishResponse response, long startTime) {
+    private void onSuccess(PublishRequest request, PublishResponse response, long startTime) {
         counter.incrementAndGet();
         recordMetric(request, response, SUCCESS, startTime);
-        return response;
     }
 
-    private PublishResponse onFailure(PublishRequest request, long startTime, Throwable throwable) {
-        Throwable cause = throwable.getCause();
+    private void onError(PublishRequest request, long startTime, Throwable throwable) {
         String status;
         TransactionType type = request.getType();
 
-        if (cause instanceof PrecheckStatusException) {
-            PrecheckStatusException pse = (PrecheckStatusException) cause;
+        if (throwable instanceof PrecheckStatusException) {
+            PrecheckStatusException pse = (PrecheckStatusException) throwable;
             status = pse.status.toString();
             log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
-        } else if (cause instanceof ReceiptStatusException) {
-            ReceiptStatusException rse = (ReceiptStatusException) cause;
+        } else if (throwable instanceof ReceiptStatusException) {
+            ReceiptStatusException rse = (ReceiptStatusException) throwable;
             status = rse.receipt.status.toString();
             log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId,
                     rse.getMessage());
-        } else if (cause instanceof StatusRuntimeException) {
-            StatusRuntimeException sre = (StatusRuntimeException) cause;
+        } else if (throwable instanceof StatusRuntimeException) {
+            StatusRuntimeException sre = (StatusRuntimeException) throwable;
             status = sre.getStatus().getCode().toString();
             log.debug("GRPC error: {}", sre.getMessage());
         } else {
-            status = cause.getClass().getSimpleName();
-            log.debug("{} submitting {} transaction: {}", status, type, cause.getMessage());
+            status = throwable.getClass().getSimpleName();
+            log.debug("{} submitting {} transaction: {}", status, type, throwable.getMessage());
         }
 
         errors.add(status);
         recordMetric(request, null, status, startTime);
 
-        throw new PublishException(cause);
+        throw new PublishException(throwable);
     }
 
     private void recordMetric(PublishRequest request, PublishResponse response, String status, long startTime) {

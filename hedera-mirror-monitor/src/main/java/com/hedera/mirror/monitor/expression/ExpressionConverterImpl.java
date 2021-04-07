@@ -109,7 +109,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .type(type.getTransactionType())
                     .build();
 
-            PublishResponse publishResponse = transactionPublisher.publish(request).join();
+            PublishResponse publishResponse = transactionPublisher.publish(request).toFuture().join();
             String createdId = type.getIdExtractor().apply(publishResponse.getReceipt());
             log.info("Created {} entity {}", type, createdId);
             return createdId;

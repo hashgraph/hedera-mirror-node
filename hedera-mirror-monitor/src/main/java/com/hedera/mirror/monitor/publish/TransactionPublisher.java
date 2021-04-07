@@ -25,11 +25,10 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,9 +36,10 @@ import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Mono;
 
+import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.AccountInfoQuery;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -73,22 +73,23 @@ public class TransactionPublisher {
         }
     }
 
-    public CompletableFuture<PublishResponse> publish(PublishRequest request) {
+    public Mono<PublishResponse> publish(PublishRequest request) {
         return publishMetrics.record(request, this::doPublish);
     }
 
-    private CompletableFuture<PublishResponse> doPublish(PublishRequest request) {
+    private Mono<PublishResponse> doPublish(PublishRequest request) {
         log.trace("Publishing: {}", request);
         int clientIndex = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(clientIndex);
         int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
-        request.getTransaction().setNodeAccountIds(List.of(nodeAccountIds.get().get(nodeIndex)));
+        List<AccountId> nodeAccountId = List.of(nodeAccountIds.get().get(nodeIndex));
+        Duration timeout = request.getTimeout();
 
-        CompletableFuture<PublishResponse> publishResponse = request.getTransaction()
-                .executeAsync(client)
-                .thenCompose(transactionResponse -> processTransactionResponse(client, request, transactionResponse))
-                .thenApply(PublishResponse.PublishResponseBuilder::build)
-                .thenApply(response -> {
+        Mono<PublishResponse> publishResponse = Mono
+                .fromFuture(request.getTransaction().setNodeAccountIds(nodeAccountId).executeAsync(client))
+                .flatMap(transactionResponse -> processTransactionResponse(client, request, transactionResponse))
+                .map(PublishResponse.PublishResponseBuilder::build)
+                .map(response -> {
                     if (log.isTraceEnabled() || request.isLogResponse()) {
                         log.info("Received response : {}", response);
                     }
@@ -96,11 +97,10 @@ public class TransactionPublisher {
                     return response;
                 });
 
-        return request.getTimeout() != null ? publishResponse
-                .orTimeout(request.getTimeout().toMillis(), TimeUnit.MILLISECONDS) : publishResponse;
+        return timeout != null ? publishResponse.timeout(timeout) : publishResponse;
     }
 
-    private CompletableFuture<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
+    private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
             PublishRequest request, TransactionResponse transactionResponse) {
         TransactionId transactionId = transactionResponse.transactionId;
         PublishResponse.PublishResponseBuilder builder = PublishResponse.builder()
@@ -109,18 +109,19 @@ public class TransactionPublisher {
                 .transactionId(transactionId);
 
         if (request.isRecord()) {
-            return transactionId.getRecordAsync(client)
-                    .thenApply(record -> builder.record(record).receipt(record.receipt));
+            return Mono.fromFuture(transactionId.getRecordAsync(client))
+                    .map(record -> builder.record(record).receipt(record.receipt));
         } else if (request.isReceipt()) {
             // TODO: Implement a faster retry for get receipt for more accurate metrics
-            return transactionId.getReceiptAsync(client).thenApply(builder::receipt);
+            return Mono.fromFuture(transactionId.getReceiptAsync(client))
+                    .map(builder::receipt);
         }
 
-        return CompletableFuture.completedFuture(builder);
+        return Mono.just(builder);
     }
 
     private List<Client> getClients() {
-        List<NodeProperties> validNodes = validateNodes();
+        Collection<NodeProperties> validNodes = validateNodes();
 
         if (validNodes.isEmpty()) {
             throw new IllegalArgumentException("No valid nodes found");
@@ -140,19 +141,17 @@ public class TransactionPublisher {
         return new ArrayList<>(clients.get().get(0).getNetwork().values());
     }
 
-    private List<NodeProperties> validateNodes() {
-        List<NodeProperties> nodes = new ArrayList<>(new HashSet<>(monitorProperties.getNodes()));
+    private Collection<NodeProperties> validateNodes() {
+        Set<NodeProperties> nodes = monitorProperties.getNodes();
 
         if (!monitorProperties.isValidateNodes()) {
             return nodes;
         }
 
         List<NodeProperties> validNodes = new ArrayList<>();
-        AccountId accountId = AccountId.fromString("0.0.2");
-
         try (Client client = toClient(toNetwork(nodes))) {
             for (NodeProperties node : nodes) {
-                if (validateNode(accountId, client, node)) {
+                if (validateNode(client, node)) {
                     validNodes.add(node);
                 }
             }
@@ -164,12 +163,13 @@ public class TransactionPublisher {
         return validNodes;
     }
 
-    private boolean validateNode(AccountId accountId, Client client, NodeProperties node) {
+    private boolean validateNode(Client client, NodeProperties node) {
         boolean valid = false;
         try {
-            new AccountInfoQuery()
-                    .setAccountId(accountId)
-                    .setNodeAccountIds(List.of(AccountId.fromString(node.getAccountId())))
+            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
+            new AccountBalanceQuery()
+                    .setAccountId(nodeAccountId)
+                    .setNodeAccountIds(List.of(nodeAccountId))
                     .execute(client, Duration.ofSeconds(10L));
             log.info("Validated node: {}", node);
             valid = true;
@@ -188,7 +188,7 @@ public class TransactionPublisher {
         return client;
     }
 
-    private Map<String, AccountId> toNetwork(List<NodeProperties> nodes) {
+    private Map<String, AccountId> toNetwork(Collection<NodeProperties> nodes) {
         return nodes.stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
