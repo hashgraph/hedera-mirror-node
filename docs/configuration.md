@@ -237,7 +237,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].properties`      | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
 `hedera.mirror.monitor.publish.scenarios[].receipt`         | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].record`          | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
-`hedera.mirror.monitor.publish.scenarios[].timeout`         | 60s        | How long to wait for the transaction result
+`hedera.mirror.monitor.publish.scenarios[].timeout`         | 10s        | How long to wait for the transaction result
 `hedera.mirror.monitor.publish.scenarios[].tps`             | 1.0        | The rate at which transactions will publish
 `hedera.mirror.monitor.publish.scenarios[].type`            |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
 `hedera.mirror.monitor.publish.statusFrequency`             | 10s        | How often to log publishing statistics

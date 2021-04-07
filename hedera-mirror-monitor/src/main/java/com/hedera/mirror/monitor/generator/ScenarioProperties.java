@@ -66,7 +66,7 @@ public class ScenarioProperties {
     private double record = 0.0;
 
     @DurationMin(seconds = 1)
-    private Duration timeout = Duration.ofMinutes(1);
+    private Duration timeout = Duration.ofSeconds(10);
 
     @Min(0)
     private double tps = 1.0;
