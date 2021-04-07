@@ -226,6 +226,7 @@ const addTransaction = async (transaction) => {
     type: 14,
     valid_duration_seconds: 11,
     entity_id: null,
+    transaction_bytes: 'bytes',
     ...transaction,
   };
 
@@ -239,8 +240,9 @@ const addTransaction = async (transaction) => {
   const entityId = EntityId.fromString(transaction.entity_id, 'entity_id', true);
   await sqlConnection.query(
     `INSERT INTO transaction (consensus_ns, valid_start_ns, payer_account_id, node_account_id, result, type,
-                                valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
+                                valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id,
+                                transaction_bytes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
     [
       transaction.consensus_timestamp.toString(),
       transaction.valid_start_timestamp.toString(),
@@ -254,6 +256,7 @@ const addTransaction = async (transaction) => {
       transaction.transaction_hash,
       transaction.scheduled,
       entityId.getEncodedId(),
+      transaction.transaction_bytes,
     ]
   );
   await insertTransfers('crypto_transfer', transaction.consensus_timestamp, transaction.transfers);

@@ -200,6 +200,7 @@ class Pool {
       row.transaction_hash = '';
       row.scheduled = false;
       row.entity_id = null;
+      row.transaction_bytes = '';
       rows.push(row);
     }
     if (['asc', 'ASC'].includes(order)) {
