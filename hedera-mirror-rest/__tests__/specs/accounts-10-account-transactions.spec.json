@@ -94,6 +94,7 @@
   "responseJson": {
     "transactions": [
       {
+        "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 0,
         "consensus_timestamp": "1234567890.000000006",
         "entity_id": "0.0.9",
@@ -110,6 +111,7 @@
         "valid_start_timestamp": "1234567890.000000005"
       },
       {
+        "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000005",
         "entity_id": null,
@@ -139,6 +141,7 @@
         "valid_start_timestamp": "1234567890.000000004"
       },
       {
+        "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000001",
         "entity_id": null,

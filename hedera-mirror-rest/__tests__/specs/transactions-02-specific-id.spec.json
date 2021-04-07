@@ -35,6 +35,7 @@
         "name": "SCHEDULECREATE",
         "type": 42,
         "entity_id": "0.0.100",
+        "transaction_bytes": null,
         "transfers": [
           {
             "account": "0.0.9",
@@ -94,6 +95,7 @@
         "node": "0.0.3",
         "result": "SUCCESS",
         "scheduled": false,
+        "bytes": null,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
@@ -119,6 +121,7 @@
         "node": "0.0.3",
         "result": "SUCCESS",
         "scheduled": true,
+        "bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
@@ -148,6 +151,7 @@
         "node": "0.0.4",
         "result": "DUPLICATE_TRANSACTION",
         "scheduled": false,
+        "bytes": "Ynl0ZXM=",
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [

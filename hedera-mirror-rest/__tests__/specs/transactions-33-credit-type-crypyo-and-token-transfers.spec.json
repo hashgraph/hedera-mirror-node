@@ -120,6 +120,7 @@
   "responseJson": {
     "transactions": [
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1234567890.000000005",
         "entity_id": null,
         "valid_start_timestamp": "1234567890.000000004",
@@ -166,6 +167,7 @@
         ]
       },
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1234567890.000000003",
         "entity_id": null,
         "valid_start_timestamp": "1234567890.000000002",
@@ -195,6 +197,7 @@
         ]
       },
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1234567890.000000001",
         "entity_id": null,
         "valid_start_timestamp": "1234567890.000000000",
