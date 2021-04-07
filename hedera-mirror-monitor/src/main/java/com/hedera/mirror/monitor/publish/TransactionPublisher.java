@@ -84,7 +84,7 @@ public class TransactionPublisher {
         int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
         request.getTransaction().setNodeAccountIds(List.of(nodeAccountIds.get().get(nodeIndex)));
 
-        return request.getTransaction()
+        CompletableFuture<PublishResponse> publishResponse = request.getTransaction()
                 .executeAsync(client)
                 .thenCompose(transactionResponse -> processTransactionResponse(client, request, transactionResponse))
                 .thenApply(PublishResponse.PublishResponseBuilder::build)
@@ -94,8 +94,10 @@ public class TransactionPublisher {
                     }
 
                     return response;
-                })
-                .orTimeout(request.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+                });
+
+        return request.getTimeout() != null ? publishResponse
+                .orTimeout(request.getTimeout().toMillis(), TimeUnit.MILLISECONDS) : publishResponse;
     }
 
     private CompletableFuture<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
