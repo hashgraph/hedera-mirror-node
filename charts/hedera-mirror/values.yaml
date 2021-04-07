@@ -203,6 +203,9 @@ timescaledb:
     wal:
       size: 2Gi
   podManagementPolicy: Parallel
+  podMonitor:
+    enabled: false
+    interval: 30s
   postInit:
     - secret:
         name: timescaledb-init
