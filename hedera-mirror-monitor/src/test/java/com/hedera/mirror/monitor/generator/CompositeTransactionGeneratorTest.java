@@ -244,7 +244,7 @@ class CompositeTransactionGeneratorTest {
 
         long elapsed = System.currentTimeMillis() - begin;
         assertThat(generator.transactionGenerators).isEmpty();
-        assertThat(elapsed).isBetween(5000L, 5100L);
+        assertThat(elapsed).isBetween(4950L, 5100L);
     }
 
     private void assertInactive() {
