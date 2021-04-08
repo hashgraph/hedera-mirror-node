@@ -71,12 +71,13 @@ public class PublishMetrics {
         long startTime = System.currentTimeMillis();
 
         try {
-            return function.apply(publishRequest)
+            return function
+                    .apply(publishRequest)
                     .doOnSuccess(response -> onSuccess(publishRequest, response, startTime))
-                    .doOnError(throwable -> onError(publishRequest, startTime, throwable));
+                    .onErrorMap(throwable -> onError(publishRequest, startTime, throwable));
         } catch (Exception ex) {
             log.error(ex);
-            throw new PublishException(ex);
+            return Mono.error(new PublishException(ex));
         }
     }
 
@@ -85,7 +86,7 @@ public class PublishMetrics {
         recordMetric(request, response, SUCCESS, startTime);
     }
 
-    private void onError(PublishRequest request, long startTime, Throwable throwable) {
+    private PublishException onError(PublishRequest request, long startTime, Throwable throwable) {
         String status;
         TransactionType type = request.getType();
 
@@ -110,7 +111,7 @@ public class PublishMetrics {
         errors.add(status);
         recordMetric(request, null, status, startTime);
 
-        throw new PublishException(throwable);
+        return new PublishException(throwable);
     }
 
     private void recordMetric(PublishRequest request, PublishResponse response, String status, long startTime) {
