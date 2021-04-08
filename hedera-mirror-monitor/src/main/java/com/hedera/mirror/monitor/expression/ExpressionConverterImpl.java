@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.expression;
  * ‍
  */
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
@@ -102,7 +103,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .logResponse(true)
                     .receipt(true)
                     .scenarioName(expression.toString())
-//                    .timeout(Duration.ofSeconds(10L))
+                    .timeout(Duration.ofSeconds(10L))
                     .timestamp(Instant.now())
                     .transaction(transactionSupplier.get())
                     .type(type.getTransactionType())
