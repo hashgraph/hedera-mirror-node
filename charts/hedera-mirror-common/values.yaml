@@ -16,7 +16,7 @@ loki:
             description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
             summary: High rate of errors in logs
           expr: >
-            sum(rate({app_kubernetes_io_component="grpc"}
+            sum(rate({component="grpc"}
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
               | level = "ERROR"
               != "reactor.core.publisher"
@@ -47,7 +47,7 @@ loki:
             description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 5m period"
             summary: High rate of errors in logs
           expr: >
-            sum(rate({app_kubernetes_io_component="importer"}
+            sum(rate({component="importer"}
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
               | level = "ERROR"
               != "UnusedChannelExceptionHandler"
@@ -61,7 +61,7 @@ loki:
             description: "{{ $labels.namespace }}/{{ $labels.pod }} requires a restart after logging {{ $value }} messages per second in a 1m period with the unrecoverable error '{{ $labels.message }}'"
             summary: Importer received an error that indicates a restart is required
           expr: >
-            sum(rate({app_kubernetes_io_component="importer"}
+            sum(rate({component="importer"}
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
               | message =~ ".*(Error starting watch service|Unable to fetch entity types|Unable to fetch transaction types|environment variable not set|Cannot load configuration from).*"
             [1m])) by (namespace, pod, message) > 0.01
@@ -75,7 +75,7 @@ loki:
             description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
             summary: "High rate of log errors"
           expr: >
-            sum(rate({app_kubernetes_io_component="rest"}
+            sum(rate({component="rest"}
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<requestId>\S+) (?P<message>.+)`
               | level = "ERROR" or level = "FATAL"
             [1m])) by (namespace, pod) > 0.04

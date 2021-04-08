@@ -35,7 +35,9 @@ jobs:
           restore-keys: ${{ runner.os }}-node-
 
       - name: Test
-        run: MIRROR_NODE_SCHEMA=${{ matrix.schema}} ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
+        env:
+          MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
+        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
         working-directory: .
 
       - name: Rename artifact

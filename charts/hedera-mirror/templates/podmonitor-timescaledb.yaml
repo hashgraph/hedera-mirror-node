@@ -1,0 +1,17 @@
+{{- if .Values.timescaledb.podMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ printf "%s-timescaledb" .Release.Name }}
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  podMetricsEndpoints:
+    - interval: {{ .Values.timescaledb.podMonitor.interval }}
+      path: /metrics
+      port: pg-exporter
+  selector:
+    matchLabels:
+      app: {{ printf "%s-timescaledb" .Release.Name }}
+      release: {{ .Release.Name }}
+{{- end -}}
