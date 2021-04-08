@@ -1,0 +1,32 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: common
+spec:
+  chart:
+    spec:
+      chart: ./charts/hedera-mirror-common
+      interval: 10s
+      sourceRef:
+        kind: GitRepository
+        name: hedera-mirror-node
+      version: 51e4fa14f9aaf3176a114308829b4a80f6226da9
+  interval: 1m
+  rollback:
+    force: true
+  test:
+    enable: true
+  timeout: 500
+  upgrade:
+    cleanupOnFail: true
+    force: true
+    retries: 5
+  values:
+    prometheus:
+      prometheusOperator:
+        namespaces:
+          additional: [ "kube-system", "common", "integration" ]
+  valuesFrom:
+    - kind: Secret
+      name: mirror

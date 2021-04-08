@@ -1,20 +1,28 @@
-apiVersion: helm.fluxcd.io/v1
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: mirror
   namespace: integration
 spec:
   chart:
-    git: https://github.com/hashgraph/hedera-mirror-node.git
-    path: charts/hedera-mirror
-    ref: 5e8be16d6a0136116803612116ea5498b4750889
+    spec:
+      chart: ./charts/hedera-mirror
+      interval: 10s
+      sourceRef:
+        kind: GitRepository
+        name: hedera-mirror-node
+      version: 5e8be16d6a0136116803612116ea5498b4750889
+    valuesFile: values-prod.yaml
+    #valuesFile: values-timescaledb.yaml
   rollback:
-    enable: true
     force: true
-    timeout: 500
-    wait: false
+  test:
+    enable: true
   timeout: 500
-  wait: false
+  upgrade:
+    cleanupOnFail: true
+    force: true
+    retries: 20
   values:
     grpc:
       prometheusRules:
@@ -56,10 +64,5 @@ spec:
         RestNoRequests:
           enabled: false
   valuesFrom:
-    - chartFileRef:
-        path: values-prod.yaml
-    - chartFileRef:
-        path: values-timescaledb.yaml
-    - secretKeyRef:
-        name: mirror
-
+    - kind: Secret
+      name: mirror

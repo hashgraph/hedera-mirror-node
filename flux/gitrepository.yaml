@@ -1,0 +1,16 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: hedera-mirror-node
+  namespace: flux-system
+spec:
+  ignore: |
+    /*
+    #!/clusters/preprod
+    !/sealed-secrets
+  interval: 1m0s
+  ref:
+    branch: deploy2
+  url: https://github.com/hashgraph/hedera-mirror-node.git
+
