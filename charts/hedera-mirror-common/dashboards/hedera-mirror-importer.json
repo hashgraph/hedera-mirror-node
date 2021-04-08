@@ -1842,7 +1842,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Logs",
+      "title": "Rate",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -1903,13 +1903,13 @@
       },
       "targets": [
         {
-          "expr": "{pod=~\"$pod\"}",
+          "expr": "{component=\"importer\",namespace=~\"$namespace\",pod=~\"$pod\"}",
           "refId": "A"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "",
+      "title": "Messages",
       "type": "logs"
     },
     {
