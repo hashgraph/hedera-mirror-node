@@ -74,7 +74,10 @@ public class TransactionPublisher {
     }
 
     public Mono<PublishResponse> publish(PublishRequest request) {
-        return publishMetrics.record(request, this::doPublish);
+        return doPublish(request)
+                .doOnSuccess(response -> publishMetrics.onSuccess(request, response))
+                .doOnError(throwable -> publishMetrics.onError(request, throwable))
+                .onErrorMap(PublishException::new);
     }
 
     private Mono<PublishResponse> doPublish(PublishRequest request) {
@@ -83,21 +86,17 @@ public class TransactionPublisher {
         Client client = clients.get().get(clientIndex);
         int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
         List<AccountId> nodeAccountId = List.of(nodeAccountIds.get().get(nodeIndex));
-        Duration timeout = request.getTimeout();
 
-        Mono<PublishResponse> publishResponse = Mono
-                .fromFuture(request.getTransaction().setNodeAccountIds(nodeAccountId).executeAsync(client))
+        return Mono
+                .fromFuture(() -> request.getTransaction().setNodeAccountIds(nodeAccountId).executeAsync(client))
                 .flatMap(transactionResponse -> processTransactionResponse(client, request, transactionResponse))
                 .map(PublishResponse.PublishResponseBuilder::build)
-                .map(response -> {
+                .doOnNext(response -> {
                     if (log.isTraceEnabled() || request.isLogResponse()) {
                         log.info("Received response : {}", response);
                     }
-
-                    return response;
-                });
-
-        return timeout != null ? publishResponse.timeout(timeout) : publishResponse;
+                })
+                .timeout(request.getTimeout());
     }
 
     private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,

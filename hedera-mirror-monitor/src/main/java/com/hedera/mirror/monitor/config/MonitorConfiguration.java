@@ -73,7 +73,6 @@ class MonitorConfiguration {
                 .runOn(Schedulers.newParallel("publisher", publishProperties.getClients()))
                 .map(transactionPublisher::publish)
                 .sequential()
-                .onErrorContinue(PublishException.class, (t, r) -> {})
                 .parallel(publishProperties.getThreads())
                 .runOn(Schedulers.newParallel("resolver", publishProperties.getThreads()))
                 .flatMap(Function.identity())

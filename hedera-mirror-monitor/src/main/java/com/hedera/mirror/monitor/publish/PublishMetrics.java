@@ -38,7 +38,6 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.util.Precision;
 import org.springframework.scheduling.annotation.Scheduled;
-import reactor.core.publisher.Mono;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -61,32 +60,12 @@ public class PublishMetrics {
     private final AtomicLong lastCount = new AtomicLong();
     private final AtomicLong lastElapsed = new AtomicLong();
 
-    @FunctionalInterface
-    interface CheckedFunction<T, R> {
-        R apply(T t) throws Exception;
-    }
-
-    public Mono<PublishResponse> record(PublishRequest publishRequest,
-            CheckedFunction<PublishRequest, Mono<PublishResponse>> function) {
-        long startTime = System.currentTimeMillis();
-
-        try {
-            return function
-                    .apply(publishRequest)
-                    .doOnSuccess(response -> onSuccess(publishRequest, response, startTime))
-                    .onErrorMap(throwable -> onError(publishRequest, startTime, throwable));
-        } catch (Exception ex) {
-            log.error(ex);
-            return Mono.error(new PublishException(ex));
-        }
-    }
-
-    private void onSuccess(PublishRequest request, PublishResponse response, long startTime) {
+    public void onSuccess(PublishRequest request, PublishResponse response) {
         counter.incrementAndGet();
-        recordMetric(request, response, SUCCESS, startTime);
+        recordMetric(request, response, SUCCESS);
     }
 
-    private PublishException onError(PublishRequest request, long startTime, Throwable throwable) {
+    public void onError(PublishRequest request, Throwable throwable) {
         String status;
         TransactionType type = request.getType();
 
@@ -109,12 +88,11 @@ public class PublishMetrics {
         }
 
         errors.add(status);
-        recordMetric(request, null, status, startTime);
-
-        return new PublishException(throwable);
+        recordMetric(request, null, status);
     }
 
-    private void recordMetric(PublishRequest request, PublishResponse response, String status, long startTime) {
+    private void recordMetric(PublishRequest request, PublishResponse response, String status) {
+        long startTime = request.getTimestamp().toEpochMilli();
         String scenarioName = request.getScenarioName();
         TransactionType type = request.getType();
 
