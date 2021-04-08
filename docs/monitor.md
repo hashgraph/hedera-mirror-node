@@ -57,11 +57,11 @@ achieve the desired rate. Additionally, a percentage of receipts or records can 
 verify transactions are reaching consensus.
 
 The monitor can be used to publish at very high TPS, with a single monitor being able to max out the current capability
-of the Hedera network. To publish at higher rates, the `hedera.mirror.monitor.publish.connections` property will need to
-be increased. For example, to achieve 10K TPS we set the number of connections to 1000. Please adjust accordingly per
-your needs. Each connection will open a persistent gRPC channel to one of the Hedera nodes. The transaction publisher
-will round-robin this list of connections to determine which node to send to, ensuring the load is distributed evenly
-across all nodes.
+of the Hedera network. To publish at higher rates, the `hedera.mirror.monitor.publish.clients` and
+`hedera.mirror.monitor.publish.threads` properties will need to be increased. For example, to achieve 10K TPS we set the
+number of clients to 4, and the number of threads to 40. Please adjust accordingly per your needs. The transaction
+publisher will round-robin the list of clients to send transactions to the Hedera Network, and every transaction is sent
+to a randomly chosen node, ensuring the load is distributed evenly across all nodes.
 
 The `type` property specifies which transaction type to publish. It also affects which `properties` need to be
 specified, with different transaction types requiring different properties to be set. See the
