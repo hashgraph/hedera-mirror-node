@@ -18,6 +18,8 @@ config:
         db:
           loadBalance: false
 
+envs: {}
+
 extraVolumes: []
 # - name: addressbook-secret-volume
 #   secret:

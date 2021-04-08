@@ -29,6 +29,10 @@ spec:
               value: "{{ .Release.Name }}-grpc"
             - name: HEDERA_MIRROR_MONITOR_MIRROR_NODE_HOST_REST
               value: "{{ .Release.Name }}-rest"
+            {{- range $name, $value := .Values.envs }}
+            - name: {{ $name }}
+              value: {{ $value }}
+            {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}

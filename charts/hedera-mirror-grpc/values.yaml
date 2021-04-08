@@ -16,6 +16,8 @@ config:
       grpc:
         db: {}
 
+envs: {}
+
 fullnameOverride: ""
 
 global:

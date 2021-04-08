@@ -39,6 +39,10 @@ spec:
               value: {{ include "hedera-mirror-grpc.redis-host" . }}
             - name: SPRING_REDIS_PASSWORD
               value: {{ .Values.global.redis.password }}
+            {{- range $name, $value := .Values.envs }}
+            - name: {{ $name }}
+              value: {{ $value }}
+            {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe:
