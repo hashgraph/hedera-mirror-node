@@ -12,7 +12,8 @@ spec:
         name: hedera-mirror-node
       version: 51e4fa14f9aaf3176a114308829b4a80f6226da9
   dependsOn:
-    - sealed-secrets
+    - name: sealed-secrets
+      namespace: flux-system
   interval: 30s
   rollback:
     force: true
