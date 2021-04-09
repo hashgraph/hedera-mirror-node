@@ -13,6 +13,8 @@ spec:
       valuesFile: values-prod.yaml
       #valuesFile: values-timescaledb.yaml
       version: 5e8be16d6a0136116803612116ea5498b4750889
+  dependsOn:
+    - common
   interval: 30s
   rollback:
     force: true

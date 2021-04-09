@@ -7,12 +7,13 @@ spec:
   chart:
     spec:
       chart: ./charts/hedera-mirror-common
-      interval: 10s
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
       version: 51e4fa14f9aaf3176a114308829b4a80f6226da9
-  interval: 1m
+  dependsOn:
+    - sealed-secrets
+  interval: 30s
   rollback:
     force: true
   test:
