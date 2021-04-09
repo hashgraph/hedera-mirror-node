@@ -72,6 +72,8 @@ rest:
     enabled: true
 
 timescaledb:
+  podMonitor:
+    enabled: true
   prometheus:
     enabled: true
   replicaCount: 2

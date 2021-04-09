@@ -42,7 +42,7 @@ public class PublishProperties {
     private int batchDivisor = 100;
 
     @Min(1)
-    private int connections = 5;
+    private int clients = 4;
 
     private boolean enabled = true;
 
@@ -52,6 +52,9 @@ public class PublishProperties {
     @DurationMin(seconds = 1L)
     @NotNull
     private Duration statusFrequency = Duration.ofSeconds(10L);
+
+    @Min(1)
+    private int threads = 5;
 
     @DurationMin(seconds = 0)
     @NotNull
