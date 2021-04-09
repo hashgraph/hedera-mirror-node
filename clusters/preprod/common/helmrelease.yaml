@@ -21,7 +21,8 @@ spec:
   upgrade:
     cleanupOnFail: true
     force: true
-    retries: 5
+    remediation:
+      retries: 5
   values:
     prometheus:
       prometheusOperator:
