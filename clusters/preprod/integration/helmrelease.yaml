@@ -11,8 +11,8 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
+      valuesFile: values-prod.yaml
       version: 5e8be16d6a0136116803612116ea5498b4750889
-    valuesFile: values-prod.yaml
     #valuesFile: values-timescaledb.yaml
   rollback:
     force: true
