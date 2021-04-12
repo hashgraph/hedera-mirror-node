@@ -4,5 +4,6 @@ namespace: common
 bases:
   - ../../base/common
 resources:
-  - helmrelease.yaml
   - sealed-secret.yaml
+patchesStrategicMerge:
+  - helmrelease.yaml
