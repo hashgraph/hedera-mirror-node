@@ -9,7 +9,7 @@ spec:
       chart: ./charts/hedera-mirror-common
       sourceRef:
         kind: GitRepository
-        name: hedera-mirror-node
+        name: flux-system
         namespace: flux-system
   dependsOn:
     - name: sealed-secrets

@@ -9,7 +9,7 @@ spec:
       chart: ./charts/hedera-mirror
       sourceRef:
         kind: GitRepository
-        name: hedera-mirror-node
+        name: flux-system
         namespace: flux-system
       valuesFile: values-prod.yaml
       #valuesFile: values-timescaledb.yaml
