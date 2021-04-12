@@ -26,7 +26,7 @@ extraVolumes: []
 
 extraVolumeMounts: []
 # - name: addressbook-secret-volume
-#   mountPath: /usr/etc/addressbook/perf.bin
+#   mountPath: /usr/etc/addressbook
 
 fullnameOverride: ""
 

@@ -327,7 +327,6 @@ traefik:
   additionalArguments:
     - "--accesslog=true"
     - "--entrypoints.websecure.http.tls=true"
-    - "--entrypoints.grpc.address=:5600"
     - "--metrics.prometheus=true"
   affinity:
     podAntiAffinity:
@@ -358,5 +357,6 @@ traefik:
       cpu: 500m
       memory: 300Mi
   service:
+    type: NodePort
     spec:
       externalTrafficPolicy: Local
