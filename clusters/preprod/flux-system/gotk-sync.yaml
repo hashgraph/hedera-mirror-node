@@ -18,7 +18,7 @@ metadata:
   name: flux-system
   namespace: flux-system
 spec:
-  interval: 10m0s
+  interval: 1m
   path: ./clusters/preprod
   prune: true
   sourceRef:
