@@ -10,5 +10,5 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: sealed-secrets
-      version: "1.15.x"
-  interval: 10m
+      version: 1.15.0-r3
+  interval: 5m

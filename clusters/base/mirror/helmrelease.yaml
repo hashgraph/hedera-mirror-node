@@ -2,7 +2,6 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: mirror
-  namespace: default
 spec:
   chart:
     spec:
@@ -22,7 +21,7 @@ spec:
     force: true
   test:
     enable: true
-  timeout: 500
+  timeout: 10m
   upgrade:
     cleanupOnFail: true
     force: true
