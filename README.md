@@ -17,6 +17,7 @@ kubeseal --controller-namespace=flux --controller-name=sealed-secrets -o yaml <s
 
 ## Flux v2
 ```
+export GITHUB_TOKEN=...
 brew install fluxcd/tap/flux kubeseal
 flux check --pre
 flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch=deploy2 --team=hedera-mirror-node --context=preprod --path=clusters/preprod
