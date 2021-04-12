@@ -19,12 +19,9 @@ kubeseal --controller-namespace=flux --controller-name=sealed-secrets -o yaml <s
 ```
 brew install fluxcd/tap/flux kubeseal
 flux check --pre
-flux install
-flux create source git hedera-mirror-node --branch=deploy --interval=1m --url=https://github.com/hashgraph/hedera-mirror-node.git --export > ./flux/gitrepository.yaml
+flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch=deploy2 --team=hedera-mirror-node --context=preprod --path=clusters/preprod
 
 ### Sealed Secrets
-flux create source helm sealed-secrets --interval=1h --url=https://bitnami-labs.github.io/sealed-secrets --export > ./sealed-secrets/helmrepository.yaml
-flux create helmrelease sealed-secrets --interval=1h --release-name=sealed-secrets --source=HelmRepository/sealed-secrets --chart=sealed-secrets --chart-version="1.15.x" --export > ./sealed-secrets/helmrelease.yaml
 kubeseal --controller-namespace=flux-system --controller-name=sealed-secrets -o yaml <secret.yaml >sealed-secret.yaml
 ```
 

@@ -1,7 +1,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: mirror
+  name: common
   namespace: common
 spec:
   chart:
@@ -10,11 +10,10 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
-      version: 51e4fa14f9aaf3176a114308829b4a80f6226da9
   dependsOn:
     - name: sealed-secrets
       namespace: flux-system
-  interval: 30s
+  interval: 1m
   rollback:
     force: true
   test:
@@ -32,4 +31,4 @@ spec:
           additional: [ "kube-system", "common", "integration" ]
   valuesFrom:
     - kind: Secret
-      name: mirror
+      name: common
