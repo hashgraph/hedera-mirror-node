@@ -25,11 +25,6 @@ spec:
     force: true
     remediation:
       retries: 5
-  values:
-    prometheus:
-      prometheusOperator:
-        namespaces:
-          additional: [ "kube-system", "common", "integration" ]
   valuesFrom:
     - kind: Secret
       name: common
