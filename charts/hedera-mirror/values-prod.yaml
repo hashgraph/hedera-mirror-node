@@ -8,10 +8,6 @@ grpc:
   priorityClassName: medium
   prometheusRules:
     enabled: true
-  resources:
-    limits:
-      cpu: 2
-      memory: 4Gi
   serviceMonitor:
     enabled: true
 
@@ -23,23 +19,15 @@ importer:
   priorityClassName: high
   prometheusRules:
     enabled: true
-  resources:
-    limits:
-      cpu: 2
-      memory: 8Gi
 
 monitor:
   envs:
-    JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+    JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=50
   podMonitor:
     enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true
-  resources:
-    limits:
-      cpu: 2
-      memory: 4Gi
 
 postgresql:
   metrics:
