@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.opentest4j.AssertionFailedError;
@@ -309,28 +310,23 @@ public class ScheduleFeature {
     }
 
     @Then("the network confirms schedule presence")
-    public void verifyNetworkScheduleResponse() throws TimeoutException, PrecheckStatusException {
-        scheduleInfo = new ScheduleInfoQuery()
-                .setScheduleId(scheduleId)
-                .setNodeAccountIds(Collections.singletonList(AccountId.fromString(acceptanceProps.getNodeId())))
-                .execute(scheduleClient.getClient());
-
-        log.trace("scheduleInfo: {}", scheduleInfo);
-        validateScheduleInfo(scheduleInfo);
+    public void verifyNetworkScheduleResponse() throws TimeoutException, PrecheckStatusException,
+            ReceiptStatusException {
+        verifyNetworkScheduleStatus(ScheduleStatus.NON_EXECUTED);
     }
 
     @Then("the network confirms the schedule is executed")
     public void verifyNetworkScheduleExecutedResponse() throws TimeoutException,
             PrecheckStatusException,
             ReceiptStatusException {
-        verifyNetworkScheduleCompletion(false);
+        verifyNetworkScheduleStatus(ScheduleStatus.EXECUTED);
     }
 
     @Then("the network confirms the schedule is deleted")
     public void verifyNetworkScheduleDeletedResponse() throws TimeoutException,
             PrecheckStatusException,
             ReceiptStatusException {
-        verifyNetworkScheduleCompletion(true);
+        verifyNetworkScheduleStatus(ScheduleStatus.DELETED);
     }
 
     @Then("the network confirms some signers have provided their signatures")
@@ -359,8 +355,7 @@ public class ScheduleFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyExecutedScheduleFromMirror() {
-        MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror();
-        assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+        MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror(ScheduleStatus.EXECUTED);
         verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
     }
 
@@ -369,8 +364,7 @@ public class ScheduleFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyNonExecutedScheduleFromMirror() {
-        MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror();
-        assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+        verifyScheduleFromMirror(ScheduleStatus.NON_EXECUTED);
     }
 
     @Then("the mirror node REST API should verify the deleted schedule entity")
@@ -378,8 +372,7 @@ public class ScheduleFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyDeletedScheduleFromMirror() {
-        MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror();
-        assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+        verifyScheduleFromMirror(ScheduleStatus.DELETED);
     }
 
     private void validateScheduleInfo(ScheduleInfo scheduleInfo) {
@@ -391,7 +384,7 @@ public class ScheduleFeature {
                 .isEqualTo(accountClient.getSdkClient().getExpandedOperatorAccountId().getAccountId());
     }
 
-    private void verifyNetworkScheduleCompletion(boolean deleted) throws TimeoutException,
+    private void verifyNetworkScheduleStatus(ScheduleStatus scheduleStatus) throws TimeoutException,
             PrecheckStatusException,
             ReceiptStatusException {
         scheduleInfo = new ScheduleInfoQuery()
@@ -402,12 +395,21 @@ public class ScheduleFeature {
         // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
         validateScheduleInfo(scheduleInfo);
 
-        if (deleted) {
-            assertThat(scheduleInfo.deletedAt).isNotNull();
-            assertThat(scheduleInfo.executedAt).isNull();
-        } else {
-            assertThat(scheduleInfo.deletedAt).isNull();
-            assertThat(scheduleInfo.executedAt).isNotNull();
+        switch (scheduleStatus) {
+            case NON_EXECUTED:
+                assertThat(scheduleInfo.executedAt).isNull();
+                assertThat(scheduleInfo.deletedAt).isNull();
+                break;
+            case EXECUTED:
+                assertThat(scheduleInfo.deletedAt).isNull();
+                assertThat(scheduleInfo.executedAt).isNotNull();
+                break;
+            case DELETED:
+                assertThat(scheduleInfo.deletedAt).isNotNull();
+                assertThat(scheduleInfo.executedAt).isNull();
+                break;
+            default:
+                break;
         }
 
         log.info("Schedule {} was confirmed to be executed by network state", scheduleId);
@@ -434,7 +436,7 @@ public class ScheduleFeature {
         assertThat(scheduleInfo.signatories.size()).isEqualTo(expectedSignatoriesCount);
     }
 
-    private MirrorScheduleResponse verifyScheduleFromMirror() {
+    private MirrorScheduleResponse verifyScheduleFromMirror(ScheduleStatus scheduleStatus) {
         MirrorScheduleResponse mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
 
         assertNotNull(mirrorSchedule);
@@ -447,6 +449,18 @@ public class ScheduleFeature {
             signatureSet.add(k.getPublicKeyPrefix());
         });
         assertThat(signatureSet.size()).isEqualTo(currentSignersCount);
+
+        switch (scheduleStatus) {
+            case DELETED:
+            case NON_EXECUTED:
+                assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+                break;
+            case EXECUTED:
+                assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+                break;
+            default:
+                break;
+        }
 
         return mirrorSchedule;
     }
@@ -500,5 +514,12 @@ public class ScheduleFeature {
         mirrorClient.close();
         tokenClient.close();
         topicClient.close();
+    }
+
+    @RequiredArgsConstructor
+    public enum ScheduleStatus {
+        NON_EXECUTED,
+        EXECUTED,
+        DELETED
     }
 }
