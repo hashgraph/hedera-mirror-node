@@ -10,4 +10,3 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
-        namespace: flux-system
