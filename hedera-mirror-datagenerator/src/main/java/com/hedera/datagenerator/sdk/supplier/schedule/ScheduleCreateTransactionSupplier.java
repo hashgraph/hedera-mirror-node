@@ -103,9 +103,7 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
         // set nodeAccountId and freeze inner transaction
         TransactionId transactionId = TransactionId.generate(getOperatorId());
-        innerTransaction.setNodeAccountIds(Collections.singletonList(getNodeId()));
         innerTransaction.setTransactionId(transactionId.setScheduled(true));
-        innerTransaction.freeze();
 
         String scheduleMemo = Utility.getMemo("Mirror node created test schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = innerTransaction
@@ -119,15 +117,20 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
             scheduleCreateTransaction.setAdminKey(getAdminPublicKey());
         }
 
-        if (payerAccount != null) {
-            scheduleCreateTransaction.setPayerAccountId(getPayerAccountId());
+        if (operatorId != null) {
+            scheduleCreateTransaction.setPayerAccountId(getOperatorId());
         }
 
         // add initial set of required signatures to ScheduleCreate transaction
         if (totalSignatoryCount > 0) {
-            getSigningKeys().forEach(k -> scheduleCreateTransaction.addScheduleSignature(
-                    k.getPublicKey(),
-                    k.signTransaction(innerTransaction)));
+            scheduleCreateTransaction.setNodeAccountIds(Collections.singletonList(getNodeId()));
+            getSigningKeys().forEach(pk -> {
+                byte[] signature = pk.signTransaction(scheduleCreateTransaction);
+                scheduleCreateTransaction.addSignature(
+                        pk.getPublicKey(),
+                        signature);
+            });
+            log.debug("Added {} signatures to ScheduleCreate", totalSignatoryCount);
         }
 
         return scheduleCreateTransaction;
