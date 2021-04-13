@@ -50,7 +50,7 @@ public class EventFileReaderV3 implements EventFileReader {
         long consensusStart = Utility.convertToNanosMax(streamFileData.getInstant());
         EventFile eventFile = new EventFile();
         eventFile.setBytes(streamFileData.getBytes());
-        eventFile.setConsensusEnd(consensusStart); // TODO: Extract last consensus timestamp from transactions
+        eventFile.setConsensusEnd(consensusStart);
         eventFile.setConsensusStart(consensusStart);
         eventFile.setCount(0L);
         eventFile.setDigestAlgorithm(DIGEST_ALGORITHM);

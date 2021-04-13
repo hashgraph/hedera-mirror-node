@@ -53,7 +53,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 @RequiredArgsConstructor
 public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
-    private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)");
+    private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d{1,10}\\.\\d{1,10}\\.\\d{1,10})");
     private static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute("size");
     private static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute("start-time");
 
