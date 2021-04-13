@@ -62,8 +62,8 @@ class PendingDownload {
         return future.get().asByteArrayUnsafe();
     }
 
-    String getFilename() {
-        return streamFilename.getFilename();
+    GetObjectResponse getObjectResponse() throws Exception {
+        return future.get().response();
     }
 
     /**

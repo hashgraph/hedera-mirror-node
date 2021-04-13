@@ -121,7 +121,7 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private String getAction(String uri) {
         if (uri.contains("marker")) {
             return "list";
-        } else if (uri.endsWith("_sig")) {
+        } else if (uri.contains(StreamType.SIGNATURE_SUFFIX)) {
             return "signature";
         } else {
             return "signed";
