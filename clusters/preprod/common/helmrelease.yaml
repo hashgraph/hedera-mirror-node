@@ -2,9 +2,12 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: common
-  namespace: flux-system
+  namespace: common
 spec:
   chart:
     spec:
-      version: 5e8be16d6a0136116803612116ea5498b4750889
-  targetNamespace: common
+      chart: ./charts/hedera-mirror-common
+      sourceRef:
+        kind: GitRepository
+        name: hedera-mirror-node
+        namespace: flux-system

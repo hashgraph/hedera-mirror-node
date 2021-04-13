@@ -6,10 +6,10 @@ metadata:
 spec:
   chart:
     spec:
-      chart: ./charts/hedera-mirror
+      chart: hedera-mirror
       sourceRef:
-        kind: GitRepository
-        name: flux-system
+        kind: HelmRepository
+        name: hedera-mirror-node
         namespace: flux-system
       valuesFile: values-prod.yaml
       #valuesFile: values-timescaledb.yaml
