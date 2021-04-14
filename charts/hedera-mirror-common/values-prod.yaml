@@ -1,0 +1,13 @@
+# These values are production values used in combination with the hedera-mirror chart and an external load balancer
+traefik:
+  ports:
+    # grpc port will be deprecated in favor of secure communication. Prod version will nto expose this port
+    grpc:
+      expose: false
+    web:
+      nodePort: 32080
+    websecure:
+      nodePort: 32443
+  service:
+    type: NodePort
+
