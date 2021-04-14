@@ -40,6 +40,10 @@ spring:
       chunkIdInterval: 10000
       chunkTimeInterval: 604800000000000
       compressionAge: 9223372036854775807 # use long max to avoid compression during test
+      insertOnlyAutovacuumFreezeMaxAge: 100000
+      cryptoTransferAutovacuumInsertThreshold: 18000000
+      tokenTransferAutovacuumInsertThreshold: 2000
+      transactionAutovacuumInsertThreshold: 6000000
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       topicRunningHashV2AddedTimestamp: 0
