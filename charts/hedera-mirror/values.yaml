@@ -222,3 +222,5 @@ timescaledb:
     requests:
       cpu: 1
       memory: 1Gi
+  sharedMemory:
+    useMount: true

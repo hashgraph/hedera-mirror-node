@@ -10,7 +10,7 @@ dependencies:
   version: 0.18.0-rc1
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
-  version: 6.8.2
+  version: 6.8.4
 - name: redis
   repository: https://charts.bitnami.com/bitnami
   version: 12.10.1
@@ -20,5 +20,5 @@ dependencies:
 - name: timescaledb-single
   repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
   version: 0.8.2
-digest: sha256:a11e7b528a970d45ee990e77b8348b92798cbc3f2bdf3d499d3fabe338d20932
-generated: "2021-04-06T09:28:14.383611-05:00"
+digest: sha256:0961730bd887af0ac2cb9b8b75cab35a6db74939639ce32d0bd44d53cfc6c700
+generated: "2021-04-14T15:10:50.836474-05:00"
