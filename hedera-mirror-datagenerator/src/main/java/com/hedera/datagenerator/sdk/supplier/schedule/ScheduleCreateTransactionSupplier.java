@@ -76,7 +76,7 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
     private String payerAccount;
 
     @Getter(lazy = true)
-    private final AccountId payerAccountId = AccountId.fromString(payerAccount);
+    private final AccountId payerAccountId = createPayerAccountId();
 
     @Getter(lazy = true)
     private final List<PrivateKey> signingKeys = createSigningKeys();
@@ -117,8 +117,8 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
             scheduleCreateTransaction.setAdminKey(getAdminPublicKey());
         }
 
-        if (operatorId != null) {
-            scheduleCreateTransaction.setPayerAccountId(getOperatorId());
+        if (payerAccount != null) {
+            scheduleCreateTransaction.setPayerAccountId(getPayerAccountId());
         }
 
         // add initial set of required signatures to ScheduleCreate transaction
@@ -163,5 +163,9 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
         }
 
         return keys;
+    }
+
+    private AccountId createPayerAccountId() {
+        return payerAccount == null ? null : AccountId.fromString(payerAccount);
     }
 }

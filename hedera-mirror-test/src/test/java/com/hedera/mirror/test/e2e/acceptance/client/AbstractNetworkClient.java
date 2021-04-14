@@ -61,7 +61,7 @@ public abstract class AbstractNetworkClient {
 
         TransactionResponse transactionResponse = (TransactionResponse) transaction.execute(client);
         TransactionId transactionId = transactionResponse.transactionId;
-        log.debug("Executed transaction {} w {} signatures.", transactionId, keyList == null ? 0 : keyList.size());
+        log.debug("Executed transaction {} with {} signatures.", transactionId, keyList == null ? 0 : keyList.size());
 
         return transactionId;
     }

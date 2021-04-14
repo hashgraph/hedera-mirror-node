@@ -48,7 +48,7 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
-                                                     String memo, KeyList innerSignatureKeyList) throws ReceiptStatusException,
+                                                     String memo, KeyList signatureKeyList) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 
         log.debug("Create new schedule");
@@ -63,11 +63,11 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setTransactionId(transactionId.setScheduled(false))
                 .setTransactionMemo(memo);
 
-        if (innerSignatureKeyList != null) {
+        if (signatureKeyList != null) {
             scheduleCreateTransaction.setNodeAccountIds(Collections.singletonList(sdkClient.getNodeId()));
 
             // add initial set of required signatures to ScheduleCreate transaction
-            innerSignatureKeyList.forEach(k -> {
+            signatureKeyList.forEach(k -> {
                 PrivateKey pk = (PrivateKey) k;
                 byte[] signature = pk.signTransaction(scheduleCreateTransaction);
                 scheduleCreateTransaction.addSignature(

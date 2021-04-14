@@ -97,7 +97,7 @@ public class ScheduleFeature {
     private MirrorNodeClient mirrorClient;
 
     private NetworkTransactionResponse networkTransactionResponse;
-    private TransactionId scheduleCreateTransactionId;
+    private TransactionId scheduledTransactionId;
 
     private ScheduleInfo scheduleInfo;
 
@@ -269,12 +269,13 @@ public class ScheduleFeature {
                 innerSignatureKeyList);
         assertNotNull(networkTransactionResponse.getTransactionId());
 
-        // cache schedule create transaction id for confirmation of scheduled transaction later
-        scheduleCreateTransactionId = networkTransactionResponse.getTransactionId();
-
         assertNotNull(networkTransactionResponse.getReceipt());
         scheduleId = networkTransactionResponse.getReceipt().scheduleId;
         assertNotNull(scheduleId);
+
+        // cache schedule create transaction id for confirmation of scheduled transaction later
+        scheduledTransactionId = networkTransactionResponse.getReceipt().scheduledTransactionId;
+        assertNotNull(scheduledTransactionId);
     }
 
     public void signSignature(ExpandedAccountId signatoryAccount) throws PrecheckStatusException,
@@ -285,6 +286,9 @@ public class ScheduleFeature {
                 scheduleId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+
+        scheduledTransactionId = networkTransactionResponse.getReceipt().scheduledTransactionId;
+        assertNotNull(scheduledTransactionId);
     }
 
     @Then("the scheduled transaction is signed by {string}")
@@ -403,6 +407,9 @@ public class ScheduleFeature {
             case EXECUTED:
                 assertThat(scheduleInfo.deletedAt).isNull();
                 assertThat(scheduleInfo.executedAt).isNotNull();
+                TransactionReceipt transactionReceipt = scheduledTransactionId.getReceipt(scheduleClient.getClient());
+                assertNotNull(transactionReceipt);
+                log.debug("Executed transaction {} was confirmed", scheduledTransactionId);
                 break;
             case DELETED:
                 assertThat(scheduleInfo.deletedAt).isNotNull();
@@ -412,14 +419,7 @@ public class ScheduleFeature {
                 break;
         }
 
-        log.info("Schedule {} was confirmed to be executed by network state", scheduleId);
-
-        TransactionId scheduledTransactionId = scheduleCreateTransactionId.setScheduled(true);
-        assertNotNull(scheduledTransactionId);
-        log.debug("Executed transaction {}.", scheduledTransactionId);
-
-        TransactionReceipt transactionReceipt = scheduledTransactionId.getReceipt(scheduleClient.getClient());
-        assertNotNull(transactionReceipt);
+        log.info("Schedule {} status was confirmed by network state", scheduleId);
     }
 
     private void verifyScheduleInfoFromNetwork(int expectedSignatoriesCount) throws TimeoutException,
@@ -431,8 +431,6 @@ public class ScheduleFeature {
 
         assertNotNull(scheduleInfo);
         assertThat(scheduleInfo.scheduleId).isEqualTo(scheduleId);
-        assertThat(scheduleInfo.signatories).isNotEmpty();
-
         assertThat(scheduleInfo.signatories.size()).isEqualTo(expectedSignatoriesCount);
     }
 
