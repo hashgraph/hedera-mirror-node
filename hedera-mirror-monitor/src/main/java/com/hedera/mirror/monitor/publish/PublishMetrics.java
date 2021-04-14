@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
+import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
@@ -59,52 +60,52 @@ public class PublishMetrics {
     private final AtomicLong lastCount = new AtomicLong();
     private final AtomicLong lastElapsed = new AtomicLong();
 
-    @FunctionalInterface
-    interface CheckedFunction<T, R> {
-        R apply(T t) throws Exception;
+    public void onSuccess(PublishRequest request, PublishResponse response) {
+        counter.incrementAndGet();
+        recordMetric(request, response, SUCCESS);
     }
 
-    public PublishResponse record(PublishRequest publishRequest,
-                                  CheckedFunction<PublishRequest, PublishResponse> function) {
-        long startTime = System.currentTimeMillis();
-        String status = SUCCESS;
-        TransactionType type = publishRequest.getType();
-        PublishResponse response = null;
+    public void onError(PublishRequest request, Throwable throwable) {
+        String status;
+        TransactionType type = request.getType();
 
-        try {
-            response = function.apply(publishRequest);
-            counter.incrementAndGet();
-
-            return response;
-        } catch (PrecheckStatusException pse) {
+        if (throwable instanceof PrecheckStatusException) {
+            PrecheckStatusException pse = (PrecheckStatusException) throwable;
             status = pse.status.toString();
             log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
-            throw new PublishException(pse);
-        } catch (ReceiptStatusException rse) {
+        } else if (throwable instanceof ReceiptStatusException) {
+            ReceiptStatusException rse = (ReceiptStatusException) throwable;
             status = rse.receipt.status.toString();
-            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId, rse.getMessage());
-            throw new PublishException(rse);
-        } catch (Exception e) {
-            status = e.getClass().getSimpleName();
-            log.debug("{} submitting {} transaction: {}", status, type, e.getMessage());
-            throw new PublishException(e);
-        } finally {
-            long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
-            String scenarioName = publishRequest.getScenarioName();
-            Tags tags = new Tags(scenarioName, status, type);
-            Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
-            submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
-            durationGauges.computeIfAbsent(tags, this::newDurationMetric);
+            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId,
+                    rse.getMessage());
+        } else if (throwable instanceof StatusRuntimeException) {
+            StatusRuntimeException sre = (StatusRuntimeException) throwable;
+            status = sre.getStatus().getCode().toString();
+            log.debug("GRPC error: {}", sre.getMessage());
+        } else {
+            status = throwable.getClass().getSimpleName();
+            log.debug("{} submitting {} transaction: {}", status, type, throwable.getMessage());
+        }
 
-            if (response != null && response.getReceipt() != null) {
-                long elapsed = System.currentTimeMillis() - startTime;
-                Timer handleTimer = handleTimers.computeIfAbsent(tags, this::newHandleMetric);
-                handleTimer.record(elapsed, TimeUnit.MILLISECONDS);
-            }
+        errors.add(status);
+        recordMetric(request, null, status);
+    }
 
-            if (!SUCCESS.equals(status)) {
-                errors.add(status);
-            }
+    private void recordMetric(PublishRequest request, PublishResponse response, String status) {
+        long startTime = request.getTimestamp().toEpochMilli();
+        String scenarioName = request.getScenarioName();
+        TransactionType type = request.getType();
+
+        long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
+        Tags tags = new Tags(scenarioName, status, type);
+        Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
+        submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
+        durationGauges.computeIfAbsent(tags, this::newDurationMetric);
+
+        if (response != null && response.getReceipt() != null) {
+            long elapsed = System.currentTimeMillis() - startTime;
+            Timer handleTimer = handleTimers.computeIfAbsent(tags, this::newHandleMetric);
+            handleTimer.record(elapsed, TimeUnit.MILLISECONDS);
         }
     }
 

@@ -64,6 +64,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         builder = PublishRequest.builder()
                 .logResponse(properties.isLogResponse())
                 .scenarioName(properties.getName())
+                .timeout(properties.getTimeout())
                 .type(properties.getType());
     }
 
