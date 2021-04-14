@@ -58,12 +58,12 @@ class PendingDownload {
         this.s3key = s3key;
     }
 
-    byte[] getBytes() throws Exception {
+    byte[] getBytes() throws ExecutionException, InterruptedException {
         return future.get().asByteArrayUnsafe();
     }
 
-    String getFilename() {
-        return streamFilename.getFilename();
+    GetObjectResponse getObjectResponse() throws ExecutionException, InterruptedException {
+        return future.get().response();
     }
 
     /**

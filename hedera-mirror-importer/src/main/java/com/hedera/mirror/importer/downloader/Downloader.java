@@ -97,7 +97,10 @@ public abstract class Downloader<T extends StreamFile> {
 
     // Metrics
     private final MeterRegistry meterRegistry;
+    private final Timer cloudStorageLatencyMetric;
+    private final Timer downloadLatencyMetric;
     private final Counter.Builder signatureVerificationMetric;
+    private final Timer streamCloseMetric;
     private final Timer.Builder streamVerificationMetric;
 
     protected Downloader(S3AsyncClient s3Client,
@@ -123,9 +126,27 @@ public abstract class Downloader<T extends StreamFile> {
         streamType = downloaderProperties.getStreamType();
 
         // Metrics
+        cloudStorageLatencyMetric = Timer.builder("hedera.mirror.importer.cloud.latency")
+                .description("The difference in time between the consensus time of the last transaction in the file " +
+                        "and the time at which the file was created in the cloud storage provider")
+                .tag("type", streamType.toString())
+                .register(meterRegistry);
+
+        downloadLatencyMetric = Timer.builder("hedera.mirror.download.latency")
+                .description("The difference in time between the consensus time of the last transaction in the file " +
+                        "and the time at which the file was downloaded and verified")
+                .tag("type", streamType.toString())
+                .register(meterRegistry);
+
         signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
                 .tag("type", streamType.toString());
+
+        streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
+                .description("The difference between the consensus time of the last and first transaction in the " +
+                        "stream file")
+                .tag("type", streamType.toString())
+                .register(meterRegistry);
 
         streamVerificationMetric = Timer.builder("hedera.mirror.download.stream.verification")
                 .description("The duration in seconds it took to verify consensus and hash chain of a stream file")
@@ -417,10 +438,7 @@ public abstract class Downloader<T extends StreamFile> {
                     }
 
                     signatures.forEach(this::moveSignatureFile);
-                    setStreamFileIndex(streamFile);
-                    streamFileNotifier.verified(streamFile);
-                    lastStreamFile.set(Optional.of(streamFile));
-                    onVerified(streamFile);
+                    onVerified(pendingDownload, streamFile);
                     valid = true;
                     break;
                 } catch (HashMismatchException e) {
@@ -456,7 +474,20 @@ public abstract class Downloader<T extends StreamFile> {
         return downloaderProperties.getPrefix() + nodeAccountId + "/";
     }
 
-    protected void onVerified(T streamFile) {
+    protected void onVerified(PendingDownload pendingDownload, T streamFile) throws Exception {
+        setStreamFileIndex(streamFile);
+        streamFileNotifier.verified(streamFile);
+        lastStreamFile.set(Optional.of(streamFile));
+
+        long streamClose = streamFile.getConsensusEnd() - streamFile.getConsensusStart();
+        if (streamClose > 0) {
+            streamCloseMetric.record(streamClose, TimeUnit.NANOSECONDS);
+        }
+
+        Instant cloudStorageTime = pendingDownload.getObjectResponse().lastModified();
+        Instant consensusEnd = Instant.ofEpochSecond(0, streamFile.getConsensusEnd());
+        cloudStorageLatencyMetric.record(Duration.between(consensusEnd, cloudStorageTime));
+        downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
     }
 
     /**
@@ -477,7 +508,7 @@ public abstract class Downloader<T extends StreamFile> {
      * matches the expected hash in the signature.
      *
      * @param streamFile the stream file object
-     * @param signature the signature object corresponding to the stream file
+     * @param signature  the signature object corresponding to the stream file
      */
     private void verify(StreamFile streamFile, FileStreamSignature signature) {
         String filename = streamFile.getName();
@@ -495,7 +526,7 @@ public abstract class Downloader<T extends StreamFile> {
      * Verifies if the two hashes match.
      *
      * @param filename filename the hash is from
-     * @param actual the actual hash
+     * @param actual   the actual hash
      * @param expected the expected hash
      */
     private void verifyHash(String filename, String actual, String expected) {

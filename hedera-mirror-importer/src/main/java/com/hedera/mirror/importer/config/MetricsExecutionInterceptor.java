@@ -53,7 +53,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 @RequiredArgsConstructor
 public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
-    private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)");
+    private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d{1,10}\\.\\d{1,10}\\.\\d{1,10})");
     private static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute("size");
     private static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute("start-time");
 
@@ -121,7 +121,7 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private String getAction(String uri) {
         if (uri.contains("marker")) {
             return "list";
-        } else if (uri.endsWith("_sig")) {
+        } else if (uri.contains(StreamType.SIGNATURE_SUFFIX)) {
             return "signature";
         } else {
             return "signed";

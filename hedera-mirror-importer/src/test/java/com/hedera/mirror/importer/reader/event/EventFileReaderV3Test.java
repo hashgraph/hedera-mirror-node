@@ -21,22 +21,18 @@ package com.hedera.mirror.importer.reader.event;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Ints;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.util.UUID;
-
-import com.hedera.mirror.importer.util.Utility;
-
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
+import com.hedera.mirror.importer.util.Utility;
 
 class EventFileReaderV3Test {
 
@@ -121,9 +117,11 @@ class EventFileReaderV3Test {
 
     private void verifyForSuccess(EventFile eventFile, StreamFileData inputFile, int expectedFileVersion,
                                   byte[] expectedPrevHash) {
+        long consensusStart = Utility.convertToNanosMax(inputFile.getInstant());
         assertThat(eventFile).isNotNull();
         assertThat(eventFile.getBytes()).isNotEmpty().isEqualTo(inputFile.getBytes());
-        assertThat(eventFile.getConsensusStart()).isEqualTo(Utility.convertToNanosMax(inputFile.getInstant()));
+        assertThat(eventFile.getConsensusStart()).isEqualTo(consensusStart);
+        assertThat(eventFile.getConsensusEnd()).isEqualTo(consensusStart);
         assertThat(eventFile.getLoadStart()).isNotNull().isPositive();
         assertThat(eventFile.getName()).isEqualTo(inputFile.getFilename());
         assertThat(eventFile.getVersion()).isEqualTo(expectedFileVersion);
