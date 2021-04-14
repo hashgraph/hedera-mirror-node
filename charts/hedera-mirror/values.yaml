@@ -177,7 +177,7 @@ timescaledb:
   image:
     pullPolicy: IfNotPresent
     repository: timescale/timescaledb-ha
-    tag: pg12.6-ts2.1.1-latest
+    tag: pg13-ts2.2-latest
   loadBalancer:
     enabled: false
   patroni:
