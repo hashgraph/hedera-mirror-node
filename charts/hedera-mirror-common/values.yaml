@@ -193,7 +193,8 @@ prometheus:
         url: http://{{ .Release.Name }}-loki:3100
         jsonData:
           maxLines: 500
-    adminPassword: ""
+    admin:
+      existingSecret: grafana-admin
     defaultDashboardsEnabled: true
     grafana.ini:
       server:

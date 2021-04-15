@@ -70,3 +70,16 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Lookup the password or generate a random one if it does not exist
+*/}}
+{{- define "hedera-mirror-common.grafana.password" -}}
+{{- $secret := (lookup "v1" "Secret" .Release.Namespace .Values.prometheus.grafana.admin.existingSecret) -}}
+{{- if $secret -}}
+{{- index $secret "data" "admin-password" -}}
+{{- else -}}
+{{- randAlphaNum 40 | b64enc -}}
+{{- end -}}
+{{- end -}}
+
