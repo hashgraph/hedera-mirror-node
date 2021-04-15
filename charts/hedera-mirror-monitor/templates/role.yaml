@@ -2,8 +2,7 @@
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  labels:
-    {{- include "hedera-mirror-monitor.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror-monitor.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-monitor.fullname" . }}
   namespace: {{ include "hedera-mirror-monitor.namespace" . }}
 rules:

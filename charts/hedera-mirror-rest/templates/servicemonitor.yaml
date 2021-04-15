@@ -2,8 +2,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  labels:
-    {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:
@@ -12,6 +11,5 @@ spec:
       path: /swagger/metrics
       port: http
   selector:
-    matchLabels:
-      {{- include "hedera-mirror-rest.selectorLabels" . | nindent 6 }}
+    matchLabels: {{- include "hedera-mirror-rest.selectorLabels" . | nindent 6 }}
 {{- end -}}

@@ -18,15 +18,21 @@ config:
         db:
           loadBalance: false
 
-extraVolumes: []
-# - name: addressbook-secret-volume
-#   secret:
-#     defaultMode: 420
-#     secretName: mirror-importer-addressbook
+# Extra environment variables to add. Evaluated as a template.
+extraEnv: []
+# - name: SPRING_CONFIG_IMPORT
+#   value: "file:/etc/secrets/application.yaml"
 
 extraVolumeMounts: []
-# - name: addressbook-secret-volume
-#   mountPath: /usr/etc/addressbook/perf.bin
+# - name: addressbook
+#   mountPath: /usr/etc/addressbook
+
+# Extra volumes to add. Evaluated as a template.
+extraVolumes:
+# - name: addressbook
+#   secret:
+#     defaultMode: 420
+#     secretName: '{{ include "hedera-mirror-importer.fullname" . }}-addressbook'
 
 fullnameOverride: ""
 

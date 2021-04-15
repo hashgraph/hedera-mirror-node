@@ -2,8 +2,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  labels:
-  {{- include "hedera-mirror-monitor.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror-monitor.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-monitor.fullname" . }}
   namespace: {{ include "hedera-mirror-monitor.namespace" . }}
 spec:
@@ -12,6 +11,5 @@ spec:
       path: /actuator/prometheus
       port: http
   selector:
-    matchLabels:
-  {{- include "hedera-mirror-monitor.selectorLabels" . | nindent 6 }}
+    matchLabels: {{- include "hedera-mirror-monitor.selectorLabels" . | nindent 6 }}
 {{- end -}}

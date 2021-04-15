@@ -2,8 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror.fullname" . }}-db
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:

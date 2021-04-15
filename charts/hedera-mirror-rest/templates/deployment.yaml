@@ -33,6 +33,9 @@ spec:
               value: "/usr/etc/hedera-mirror-rest/"
             - name: HEDERA_MIRROR_REST_DB_HOST
               value: {{ include "hedera-mirror-rest.db-host" . }}
+            {{- with .Values.extraEnv }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe:
@@ -50,6 +53,9 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /usr/etc/hedera-mirror-rest
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       nodeSelector:
@@ -66,4 +72,6 @@ spec:
           secret:
             defaultMode: 420
             secretName: {{ include "hedera-mirror-rest.fullname" . }}
-
+        {{- with .Values.extraVolumes }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}

@@ -2,8 +2,7 @@
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  labels:
-    {{- include "hedera-mirror-importer.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror-importer.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-importer.fullname" . }}
   namespace: {{ include "hedera-mirror-importer.namespace" . }}
 spec:
@@ -14,6 +13,5 @@ spec:
   minAvailable: {{ . | int }}
   {{- end }}
   selector:
-    matchLabels:
-      {{- include "hedera-mirror-importer.selectorLabels" . | nindent 6 }}
+    matchLabels: {{- include "hedera-mirror-importer.selectorLabels" . | nindent 6 }}
 {{- end -}}

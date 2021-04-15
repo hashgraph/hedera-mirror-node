@@ -19,6 +19,22 @@ config:
           config:
             authentication: false
 
+# Extra environment variables to add. Evaluated as a template.
+extraEnv: []
+# - name: CONFIG_PATH
+#   value: "/etc/secrets/application.yaml"
+
+extraVolumeMounts: []
+# - name: custom
+#   mountPath: /etc/secrets
+
+# Extra volumes to add. Evaluated as a template.
+extraVolumes: []
+# - name: custom
+#   secret:
+#     defaultMode: 420
+#     secretName: '{{ include "hedera-mirror-rest.fullname" . }}-custom'
+
 fullnameOverride: ""
 
 global:

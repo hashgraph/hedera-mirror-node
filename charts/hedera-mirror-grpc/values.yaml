@@ -16,6 +16,22 @@ config:
       grpc:
         db: {}
 
+# Extra environment variables to add. Evaluated as a template.
+extraEnv: []
+# - name: SPRING_CONFIG_IMPORT
+#   value: "file:/etc/secrets/application.yaml"
+
+extraVolumeMounts: []
+# - name: custom
+#   mountPath: /etc/secrets
+
+# Extra volumes to add. Evaluated as a template.
+extraVolumes: []
+# - name: custom
+#   secret:
+#     defaultMode: 420
+#     secretName: '{{ include "hedera-mirror-grpc.fullname" . }}-custom'
+
 fullnameOverride: ""
 
 global:
