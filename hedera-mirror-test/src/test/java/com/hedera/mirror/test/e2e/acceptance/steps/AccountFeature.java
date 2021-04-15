@@ -66,6 +66,14 @@ public class AccountFeature {
         assertNotNull(accountId);
     }
 
+    @When("I send {long} tℏ to newly created account")
+    public void sendTinyHbars(long amount) throws TimeoutException, PrecheckStatusException,
+            ReceiptStatusException {
+        startingBalance = accountClient.getBalance(accountId);
+        TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
+        assertNotNull(receipt);
+    }
+
     @When("I send {long} tℏ to account {int}")
     public void sendTinyHbars(long amount, int accountNum) throws TimeoutException, PrecheckStatusException,
             ReceiptStatusException {

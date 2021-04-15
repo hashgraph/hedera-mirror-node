@@ -42,6 +42,7 @@ import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
@@ -84,11 +85,8 @@ public class TransactionPublisher {
         log.trace("Publishing: {}", request);
         int clientIndex = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(clientIndex);
-        int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
-        List<AccountId> nodeAccountId = List.of(nodeAccountIds.get().get(nodeIndex));
 
-        return Mono
-                .fromFuture(() -> request.getTransaction().setNodeAccountIds(nodeAccountId).executeAsync(client))
+        return getTransactionResponse(request, client)
                 .flatMap(transactionResponse -> processTransactionResponse(client, request, transactionResponse))
                 .map(PublishResponse.PublishResponseBuilder::build)
                 .doOnNext(response -> {
@@ -99,8 +97,22 @@ public class TransactionPublisher {
                 .timeout(request.getTimeout());
     }
 
+    private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
+        Transaction transaction = request.getTransaction();
+
+        // set transaction node where applicable
+        if (transaction.getNodeAccountIds() == null) {
+            int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
+            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get().get(nodeIndex));
+            transaction.setNodeAccountIds(nodeAccountId);
+        }
+
+        return Mono.fromFuture(transaction.executeAsync(client));
+    }
+
     private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
-            PublishRequest request, TransactionResponse transactionResponse) {
+                                                                                    PublishRequest request,
+                                                                                    TransactionResponse transactionResponse) {
         TransactionId transactionId = transactionResponse.transactionId;
         PublishResponse.PublishResponseBuilder builder = PublishResponse.builder()
                 .request(request)

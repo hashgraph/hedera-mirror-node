@@ -16,4 +16,13 @@ Feature: Setup entities for various features
         Then the new balance should reflect cryptotransfer of <amount>
         Examples:
             | amount | account |
-            | 1000   | 1043    |
+            | 1000   |         |
+
+    @onboardaccount
+    Scenario Outline: Setup new accounts for hbar and token transfers
+        Given I create a new account with balance <amount> tℏ
+        When I send <topUp> tℏ to newly created account
+        Then the new balance should reflect cryptotransfer of <amount>
+        Examples:
+            | amount | topUp |
+            | 1000   | 1000  |
