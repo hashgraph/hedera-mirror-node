@@ -1,10 +1,5 @@
 # These values are production values used in combination with the hedera-mirror chart and an external load balancer
 traefik:
-  ports:
-    web:
-      nodePort: 32080
-    websecure:
-      nodePort: 32443
   service:
-    type: NodePort
+    type: ClusterIP
 
