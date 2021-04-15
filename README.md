@@ -1,17 +1,26 @@
-# Continuous Deployment
+# Continuous Deployment Setup
 
-## Setup
+## ArgoCD
 
-```console
-brew install fluxctl kubeseal
-helm repo add fluxcd https://charts.fluxcd.io
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
-kubectl create namespace flux
-kubectl apply -f https://raw.githubusercontent.com/fluxcd/helm-operator/v1.2.0/chart/helm-operator/crds/helmrelease.yaml
-kubectl apply -f flux/priorityclass.yaml
-helm upgrade -i --wait -n flux -f flux/flux.yaml flux fluxcd/flux
-helm upgrade -i --wait -n flux -f flux/flux-helm.yaml flux-helm fluxcd/helm-operator
-helm upgrade -i --wait -n flux sealed-secrets stable/sealed-secrets
-kubeseal --controller-namespace=flux --controller-name=sealed-secrets -o yaml <secret.yaml >sealed-secret.yaml
+```bash
+brew install argocd
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/master/manifests/install.yaml
+```
+
+## Sealed Secrets
+
+```bash
+brew install kubeseal
+helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
+helm upgrade -i --wait -n argocd sealed-secrets sealed-secrets/sealed-secrets
+kubeseal --controller-namespace=argocd --controller-name=sealed-secrets -o yaml <secret.yaml >sealed-secret.yaml
+```
+
+## Applications
+
+```bash
+kubectl apply -f clusters/<name>.yaml
 ```
 

@@ -122,3 +122,7 @@ local.properties
 # End of https://www.gitignore.io/api/eclipse
 .idea/
 *.iml
+
+# deploy branch specific
+charts/
+hedera-mirror-*/

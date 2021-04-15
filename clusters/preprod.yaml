@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: preprod
+  namespace: argocd
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  project: default
+  source:
+    directory:
+      recurse: true
+    path: clusters/preprod
+    repoURL: https://github.com/hashgraph/hedera-mirror-node.git
+    targetRevision: deploy-argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

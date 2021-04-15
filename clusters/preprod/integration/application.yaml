@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mirror
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: grpc=gcr.io/mirrornode/hedera-mirror-grpc,importer=gcr.io/mirrornode/hedera-mirror-importer,monitor=gcr.io/mirrornode/hedera-mirror-monitor,rest=gcr.io/mirrornode/hedera-mirror-rest
+    argocd-image-updater.argoproj.io/grpc.allow-tags: regexp:^master-.*
+    argocd-image-updater.argoproj.io/grpc.helm.image-name: grpc.image.repository
+    argocd-image-updater.argoproj.io/grpc.update-strategy: latest
+    argocd-image-updater.argoproj.io/importer.allow-tags: regexp:^master-.*
+    argocd-image-updater.argoproj.io/importer.helm.image-name: importer.image.repository
+    argocd-image-updater.argoproj.io/importer.update-strategy: latest
+    argocd-image-updater.argoproj.io/monitor.allow-tags: regexp:^master-.*
+    argocd-image-updater.argoproj.io/monitor.helm.image-name: monitor.image.repository
+    argocd-image-updater.argoproj.io/monitor.update-strategy: latest
+    argocd-image-updater.argoproj.io/rest.allow-tags: regexp:^master-.*
+    argocd-image-updater.argoproj.io/rest.helm.image-name: rest.image.repository
+    argocd-image-updater.argoproj.io/rest.update-strategy: latest
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: integration
+  project: default
+  source:
+    helm:
+      valueFiles:
+        - values-prod.yaml
+        - values-timescaledb.yaml
+      values: ""
+    path: charts/hedera-mirror
+    repoURL: https://github.com/hashgraph/hedera-mirror-node.git
+    targetRevision: master
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
