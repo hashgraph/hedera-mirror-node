@@ -51,6 +51,7 @@ import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoBalance;
@@ -75,6 +76,8 @@ public class TokenFeature {
     private AccountClient accountClient;
     @Autowired
     private MirrorNodeClient mirrorClient;
+    @Autowired
+    private TopicClient topicClient;
     private PrivateKey tokenKey;
     private TokenId tokenId;
     private ExpandedAccountId sender;
@@ -221,34 +224,45 @@ public class TokenFeature {
     @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorAPIResponses(int status) {
+    public void verifyMirrorAPIResponses(int status) throws PrecheckStatusException, ReceiptStatusException,
+            TimeoutException {
         verifyTransactions(status);
+
+        // publish background message to network to reduce possibility of stale info in low TPS environment
+        topicClient.publishMessageToDefaultTopic();
     }
 
     @Then("the mirror node REST API should return status {int} for token fund flow")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenFundFlow(int status) {
+    public void verifyMirrorTokenFundFlow(int status) throws PrecheckStatusException, ReceiptStatusException,
+            TimeoutException {
         verifyBalances();
         verifyTransactions(status);
         verifyToken();
         verifyTokenTransfers();
+
+        // publish background message to network to reduce possibility of stale info in low TPS environment
+        topicClient.publishMessageToDefaultTopic();
     }
 
     @Then("the mirror node REST API should confirm token update")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenUpdateFlow() {
+    public void verifyMirrorTokenUpdateFlow() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         verifyTokenUpdate();
+
+        // publish background message to network to reduce possibility of stale info in low TPS environment
+        topicClient.publishMessageToDefaultTopic();
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
+    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionIdString);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
@@ -260,6 +274,9 @@ public class TokenFeature {
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
         }
+
+        // publish background message to network to reduce possibility of stale info in low TPS environment
+        topicClient.publishMessageToDefaultTopic();
     }
 
     private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws PrecheckStatusException,

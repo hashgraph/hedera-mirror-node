@@ -56,11 +56,12 @@ public abstract class AbstractNetworkClient {
             for (Key k : keyList) {
                 transaction = transaction.sign((PrivateKey) k);
             }
+            log.debug("{} additional signatures added to transaction", keyList.size());
         }
 
         TransactionResponse transactionResponse = (TransactionResponse) transaction.execute(client);
         TransactionId transactionId = transactionResponse.transactionId;
-        log.debug("Executed transaction {}.", transactionId);
+        log.debug("Executed transaction {} with {} signatures.", transactionId, keyList == null ? 0 : keyList.size());
 
         return transactionId;
     }

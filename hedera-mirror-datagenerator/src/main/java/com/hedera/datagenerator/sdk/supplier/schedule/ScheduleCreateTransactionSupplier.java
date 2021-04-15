@@ -76,7 +76,7 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
     private String payerAccount;
 
     @Getter(lazy = true)
-    private final AccountId payerAccountId = AccountId.fromString(payerAccount);
+    private final AccountId payerAccountId = createPayerAccountId();
 
     @Getter(lazy = true)
     private final List<PrivateKey> signingKeys = createSigningKeys();
@@ -103,9 +103,7 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
         // set nodeAccountId and freeze inner transaction
         TransactionId transactionId = TransactionId.generate(getOperatorId());
-        innerTransaction.setNodeAccountIds(Collections.singletonList(getNodeId()));
         innerTransaction.setTransactionId(transactionId.setScheduled(true));
-        innerTransaction.freeze();
 
         String scheduleMemo = Utility.getMemo("Mirror node created test schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = innerTransaction
@@ -125,9 +123,14 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
         // add initial set of required signatures to ScheduleCreate transaction
         if (totalSignatoryCount > 0) {
-            getSigningKeys().forEach(k -> scheduleCreateTransaction.addScheduleSignature(
-                    k.getPublicKey(),
-                    k.signTransaction(innerTransaction)));
+            scheduleCreateTransaction.setNodeAccountIds(Collections.singletonList(getNodeId()));
+            getSigningKeys().forEach(pk -> {
+                byte[] signature = pk.signTransaction(scheduleCreateTransaction);
+                scheduleCreateTransaction.addSignature(
+                        pk.getPublicKey(),
+                        signature);
+            });
+            log.debug("Added {} signatures to ScheduleCreate", totalSignatoryCount);
         }
 
         return scheduleCreateTransaction;
@@ -160,5 +163,9 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
         }
 
         return keys;
+    }
+
+    private AccountId createPayerAccountId() {
+        return payerAccount == null ? null : AccountId.fromString(payerAccount);
     }
 }

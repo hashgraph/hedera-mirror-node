@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -49,10 +48,10 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
-@Value
 public class TopicClient extends AbstractNetworkClient {
     private static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
     private final Map<Long, Instant> recordPublishInstants;
+    private TopicId defaultTopicId = null;
 
     public TopicClient(SDKClient sdkClient) {
         super(sdkClient);
@@ -149,6 +148,22 @@ public class TopicClient extends AbstractNetworkClient {
         return new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message);
+    }
+
+    public TopicId getDefaultTopicId() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+        if (defaultTopicId == null) {
+            NetworkTransactionResponse networkTransactionResponse = createTopic(sdkClient
+                    .getExpandedOperatorAccountId(), null);
+            defaultTopicId = networkTransactionResponse.getReceipt().topicId;
+            log.debug("Created TopicId: '{}' for use in current test session", defaultTopicId);
+        }
+
+        return defaultTopicId;
+    }
+
+    public void publishMessageToDefaultTopic() throws ReceiptStatusException, PrecheckStatusException,
+            TimeoutException {
+        publishMessagesToTopic(getDefaultTopicId(), "Background message", null, 1, false);
     }
 
     public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
