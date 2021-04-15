@@ -13,7 +13,7 @@ spec:
   source:
     path: charts/hedera-mirror-common
     repoURL: https://github.com/hashgraph/hedera-mirror-node.git
-    targetRevision: master
+    targetRevision: chart-ci-fixes
   syncPolicy:
     automated:
       prune: true

@@ -32,7 +32,7 @@ spec:
       values: ""
     path: charts/hedera-mirror
     repoURL: https://github.com/hashgraph/hedera-mirror-node.git
-    targetRevision: master
+    targetRevision: chart-ci-fixes
   syncPolicy:
     automated:
       prune: true
