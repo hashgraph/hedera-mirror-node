@@ -12,6 +12,7 @@ spec:
   project: default
   source:
     helm:
+      releaseName: mirror
       values: ""
     path: charts/hedera-mirror-common
     repoURL: https://github.com/hashgraph/hedera-mirror-node.git

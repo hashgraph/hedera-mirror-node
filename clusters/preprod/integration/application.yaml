@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: mirror
+  name: integration
   namespace: argocd
   annotations:
     argocd-image-updater.argoproj.io/image-list: grpc=gcr.io/mirrornode/hedera-mirror-grpc,importer=gcr.io/mirrornode/hedera-mirror-importer,monitor=gcr.io/mirrornode/hedera-mirror-monitor,rest=gcr.io/mirrornode/hedera-mirror-rest
@@ -26,6 +26,7 @@ spec:
   project: default
   source:
     helm:
+      releaseName: mirror
       valueFiles:
         - values-prod.yaml
         - values-timescaledb.yaml
