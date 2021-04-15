@@ -21,6 +21,8 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  */
 
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -29,6 +31,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
+
 @Component
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
 @Data
@@ -36,10 +40,10 @@ import org.springframework.validation.annotation.Validated;
 public class AcceptanceTestProperties {
     private final RestPollingProperties restPollingProperties;
 
-    @NotBlank
-    private String nodeAddress;
-    @NotBlank
-    private String nodeId;
+    @NotNull
+    private Set<NodeProperties> nodes = new LinkedHashSet<>();
+    @NotNull
+    private HederaNetwork network = HederaNetwork.TESTNET;
     @NotBlank
     private String mirrorNodeAddress;
     @NotBlank
@@ -61,4 +65,18 @@ public class AcceptanceTestProperties {
 
     @NotNull
     private Long maxTinyBarTransactionFee = 1_000_000_000L;
+
+    public Set<NodeProperties> getNodes() {
+        if (network == HederaNetwork.OTHER && nodes.isEmpty()) {
+            throw new IllegalArgumentException("nodes must not be empty");
+        }
+        return nodes;
+    }
+
+    public enum HederaNetwork {
+        MAINNET,
+        PREVIEWNET,
+        TESTNET,
+        OTHER
+    }
 }

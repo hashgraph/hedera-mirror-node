@@ -30,7 +30,6 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +45,6 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -393,7 +391,7 @@ public class ScheduleFeature {
             ReceiptStatusException {
         scheduleInfo = new ScheduleInfoQuery()
                 .setScheduleId(scheduleId)
-                .setNodeAccountIds(Collections.singletonList(AccountId.fromString(acceptanceProps.getNodeId())))
+                .setNodeAccountIds(scheduleClient.getSdkClient().getSingletonNodeId())
                 .execute(scheduleClient.getClient());
 
         // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
@@ -426,7 +424,7 @@ public class ScheduleFeature {
             PrecheckStatusException {
         scheduleInfo = new ScheduleInfoQuery()
                 .setScheduleId(scheduleId)
-                .setNodeAccountIds(Collections.singletonList(AccountId.fromString(acceptanceProps.getNodeId())))
+                .setNodeAccountIds(scheduleClient.getSdkClient().getSingletonNodeId())
                 .execute(scheduleClient.getClient());
 
         assertNotNull(scheduleInfo);
