@@ -1,3 +1,48 @@
+- How do we want to represent nft
+  - NftType goes with Tokens because same idea
+  - NftType associate can stay with Token Associate becausse no new info
+  - NftTransfer separate because serial number
+  - Separate NFT entity/table because it can be independently deleted
+  - Separate NFT balance because it has to have a serial number
+  -
+  - How do we want to handle token burns?
+
+Separate NFT REST API
+
+In /tokens, should we just mix NftType with TokenType?
+
+- Create Token
+  - Have to determine if NFT or not
+  - Now creates a Token and a list of NFTs
+    - Should an NFT balance be created for treasury?
+
+
+- Update Token
+  - No change, unclear if NFT can be updated
+
+Mint Token
+
+- Create new NFT
+  - Should an NFT balance be created for treasury?
+
+Burn Token
+
+- Have to delete NFT if present
+- Unclear on how balance will be affected, if the serial number just disappears from the next balance file we may need
+  to delete that entry as part of the burn
+
+- Delete Token
+  - NFTs are also deleted, this CANNOT be inherited because an NFT can be independently deleted
+
+- Burn Token
+  - Have to remove from balance, as file will not show
+
+- Rename token_transfer to fungible_token_transfer
+- Create non_fungible_token_transfer table
+-
+- Get tokens
+  -
+
 # Nonfungible Tokens (NFT)
 
 ## Purpose
@@ -19,26 +64,11 @@ the mirror node can be updated to add support for NFTs.
 
 ### Database
 
-- Update `t_entity_types` to add `NFTTYPE` and `NFT` entities.
-- Update `t_transaction_types` to add new NFT transaction types
+- Update `t_entity_types` to add`NFT`
 - Update `t_transaction_results` with new response codes
   - TBA
-- Add a new `nft_type` table
 
-```sql
-create table if not exists nft_type
-(
-  treasury_account_id   bigint              not null,
-  nft_type_id           bigint              not null,
-  mint_burn_key         bytea
-  created_timestamp     bigint  primary key not null,
-  modified_timestamp    bigint,
-  expiration?
-  memo?
-);
-```
-
-- Add a unique constraint to `nft_type` for `nft_type_id` and `created_timestamp`, desc
+- Add to `token` table fields `maxSupply` (long) and `fungible` (boolean)
 - Add a new `nft` table
 
 ```sql
@@ -46,8 +76,10 @@ create table if not exists nft
 (
   serial_number         bigint              not null,
   nft_type_id           bigint              not null,
+  hash                  bytea               not null,
   created_timestamp     bigint  primary key not null,
-  modified_timestamp    bigint
+  modified_timestamp    bigint              not null,
+  memo
 );
 
 ```
@@ -55,84 +87,76 @@ create table if not exists nft
 - Add a unique constraint to `nft` for `serial_number` and `created_timestamp`, desc
 
 - Add a new `nft_transfer` table
-  - //QUESTION: This could be split into 2 transfers like crypto and token, but because you can only transfer 1 token
-    and there are no fees, you can always guarantee the sender/receiver relationship. Halves the number of rows.
 
 ```sql
 create table if not exists nft_transfer
 (
-  serial_number         bigint              not null,
-  consensus_timestamp   bigint  primary key not null,
-  receiver_account_id   bigint              not null,
-  sender_account_id     bigint              not null,
+  serial_number         bigint  not null,
+  consensus_timestamp   bigint  not null,
+  receiver_account_id   bigint  not null,
+  sender_account_id     bigint  not null,
 );
 ```
 
-- Add a unique constraint to `nft_transfer` for `serial_number`, `consensus_timestamp`, and `receiver_account_id`, desc
-- Add a unique constraint to `nft_transfer` for `serial_number`, `consensus_timestamp`, and `sender_account_id`, desc
+- Add a unique constraint to `nft_transfer` for `serial_number` and `consensus_timestamp`, desc
 
-- Add a new `nft_holder` table
+- Add a new `nft_owner` table
 
 ```sql
-create table if not exists nft
+create table if not exists nft_owner
 (
-  nft_id              bigint             not null,
-  account_id          bigint             not null,
-  consensus_timestamp bigint primary key not null,
+  nft_id              bigint    not null,
+  account_id          bigint    not null,
+  consensus_timestamp bigint    not null,
 );
 ```
 
-- //INDEXES
+- Add a unique constraint to `nft_transfer` for `serial_number` and `consensus_timestamp`, desc
 
 ### Importer
 
 #### Converter
 
-Add an `NftTypeIdConverter` and an `NftIdConverter`.
+Add an `NftIdConverter`.
 
 ### Domain
 
-- Add an `NftType` domain object with the same fields as the schema.
+- Add new fields to `Token` domain object from schema changes
 - Add an `Nft` domain object with the same fields as the schema.
 - Add an `NftTransfer` domain object with the same fields as the schema.
 - Add an `NftHolder` domain object with the same fields as the schema.
-- Add an `NFT` and an `NFTTYPE` enum value to `EntityTypeEnum`.
+- Add an `NFT` enum value to `EntityTypeEnum`.
+- Add `nftHolder` list to `AccountBalances` domain object
 
 ### Balance Parsing
 
 Need information on file format. Effectively envision:
 
-- For each NFT listed for account, upsert `NftHolder`.
+- Update `ProtoBalanceFileReader` to handle new NFT transfer list
+  - Either deprecate use of the csv file or also add support for new CSV `BalanceFileReader` based on new format
+  - Add `NftHolder` to the `AccountBalance` object as they are read.
+- Update `AccountBalanceFileParser` to persist the `NftHolder`
 
 ### Entity Listener
 
-- Add `onNftType(Schedule schedule)`
-- Add `onNft(ScheduleSignature scheduleSignature)`
-- Add `onNftAccount` ?Name?
+- Add `onNft`
 - Add `onNftTransfer`
-
-### Transaction Handler
-
-- Add `NftTypeCreateTransactionHandler` that updates the entity to set the admin key and expiry . //Autorenew?
-- Add `NftCreateTransactionHandler` that updates the entity to set memo. //Autorenew? Expiry subject to inheritance
-  question.
 
 ### Entity Record Item Listener
 
-- `TransactionBody.hasNftTypeCreation()` and parse `NftTypeCreateTransactionBody` from the record, create a
-  new `NftType`
+- If transaction is successful, persist any NFT Transfers.
+- `insertTokenCreate()` must be updated to create and persist the `NFT` objects and entities.
+- `insertTokenMint()` must be updated to create and persist the `NFT` objects and entities.
+- `insertTokenBurn` must be updated to mark the NFT entities as deleted.
+- `insertTokenDelete` must be added to mark the NFT entities as deleted.
+- `insertTokenWipe` must be updated to mark the NFT entities as deleted.
 - `TransactionBody.hasNftCreation()` and parse `NftCreateTransactionBody` from the record, create a new `Nft`
-- If is successful and `entityProperties.getPersist().isNfts()`, insert `NftTransfer` for each in
-  record `getNftTransfers` list.
-- Still need info for if delete, associate, update exist.
 
 ## REST API
 
 ### Get Transaction
 
 - Update `/api/v1/transactions` response to add nft transfers
-- Add a filter by serial number to track the history of a particular NFT
-- //Should we format this as nftType lists or individual nft types.
 
 ```json
     {
@@ -405,9 +429,28 @@ GET `/api/v1/nfts/{serialNumber}`
 
 ## Monitor
 
+- Add support for NftType Create (new `TransactionSupplier` and `TransactionType`), which should be similar to Account
+  Create, Token Create, etc.
+- Add support for NFT Create (new `TransactionSupplier` and `TransactionType`), which will be similar to NftType Create,
+  but it will require an NftType to be created beforehand via an expression pattern.
+- Add support for transfering NFTs in `CryptoTransferTransactionSupplier`. This will require custom logic, as a user can
+  only transfer an NFT once unless it is transfered back to them.
+  - Initial thought is to have the supplier swap the sender and receiver each time to transfer the NFT back and forth.
+    This would likely limit performance as the swap has to be synchronized (or we just let the transactions fail when
+    double-transfers occur).
+    - It may benefit to have a list of NFTs so that the swap happens less frequently, but this would require logic to
+      pick the NFT from the list and when to swap (would probably still need to all be synchronized)
+  - Alternatively we could create a new NFT for each transaction. This seems like an even worse performance hit however.
+- Add new expression patterns for NftType and NFT. NftType should create a new NftType, NFT should create a new NftType
+  and then a new NFT with that NftType.
+
+// Still need clarification on update, delete, association.
+
 ## Acceptance Tests
 
-Questions:
+Add an acceptance test that tests the schedule transaction flow end to end:
+
+# Questions:
 
 1. NFTs are no longer created as part of NftType creation, they are only created after in a separate transaction,
    correct?
@@ -427,3 +470,8 @@ Questions:
 7. Does an NftType and NFT update exist? A delete?
 
 8. Autorenew period on any of this? Memo on NftType?
+
+Associate token type
+
+1. Balance file, what happens on a burn?
+2.
