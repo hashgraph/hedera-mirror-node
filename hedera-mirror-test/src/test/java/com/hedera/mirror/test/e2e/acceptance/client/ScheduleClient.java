@@ -21,11 +21,11 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
@@ -48,16 +48,12 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
-                                                     String memo, List<PrivateKey> innerSignatureKeyList) throws ReceiptStatusException,
+                                                     String memo, KeyList signatureKeyList) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 
         log.debug("Create new schedule");
         TransactionId transactionId = TransactionId.generate(sdkClient.getOperatorId()).setScheduled(true);
-
-        // set nodeAccountId and freeze inner transaction
-        transaction.setNodeAccountIds(Collections.singletonList(sdkClient.getNodeId()));
         transaction.setTransactionId(transactionId);
-        transaction.freeze();
 
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
@@ -67,11 +63,17 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setTransactionId(transactionId.setScheduled(false))
                 .setTransactionMemo(memo);
 
-        if (innerSignatureKeyList != null) {
+        if (signatureKeyList != null) {
+            scheduleCreateTransaction.setNodeAccountIds(Collections.singletonList(sdkClient.getNodeId()));
+
             // add initial set of required signatures to ScheduleCreate transaction
-            innerSignatureKeyList.forEach(k -> scheduleCreateTransaction.addScheduleSignature(
-                    k.getPublicKey(),
-                    k.signTransaction(transaction)));
+            signatureKeyList.forEach(k -> {
+                PrivateKey pk = (PrivateKey) k;
+                byte[] signature = pk.signTransaction(scheduleCreateTransaction);
+                scheduleCreateTransaction.addSignature(
+                        pk.getPublicKey(),
+                        signature);
+            });
         }
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -83,20 +85,16 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId,
-                                                   Transaction scheduledTransaction,
                                                    ScheduleId scheduleId) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 
-        log.debug("Sign schedule {}", scheduleId);
-        byte[] signature = expandedAccountId.getPrivateKey().signTransaction(scheduledTransaction);
-
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setScheduleId(scheduleId)
-                .addScheduleSignature(expandedAccountId.getPublicKey(), signature);
+                .setScheduleId(scheduleId);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleSignTransaction, null);
+        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
+                scheduleSignTransaction,
+                KeyList.of(expandedAccountId.getPrivateKey()));
         log.debug("Signed schedule {}", scheduleId);
 
         return networkTransactionResponse;
