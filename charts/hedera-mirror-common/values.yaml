@@ -346,10 +346,6 @@ traefik:
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
-  ports:
-    grpc:
-      port: 5600
-      expose: true
   priorityClassName: critical
   resources:
     requests:
