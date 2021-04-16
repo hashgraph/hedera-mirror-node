@@ -445,6 +445,7 @@ GET `/api/v1/nfts/{serialNumber}`
     "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
   },
+  "hash": "123123123123A",
   "kyc_key": {
     "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
