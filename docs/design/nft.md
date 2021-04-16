@@ -79,7 +79,6 @@ create table if not exists nft
   hash                  bytea               not null,
   created_timestamp     bigint  primary key not null,
   modified_timestamp    bigint              not null,
-  memo
 );
 
 ```
