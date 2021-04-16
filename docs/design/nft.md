@@ -521,21 +521,37 @@ GET `/api/v1/nfts/{serialNumber}/transactions`
 
 ## Monitor
 
-- Update
-- Add support for NFT Create (new `TransactionSupplier` and `TransactionType`), which will be similar to NftType Create,
-  but it will require an NftType to be created beforehand via an expression pattern.
-- Add support for transfering NFTs in `CryptoTransferTransactionSupplier`. This will require custom logic, as a user can
-  only transfer an NFT once unless it is transfered back to them.
-  - Initial thought is to have the supplier swap the sender and receiver each time to transfer the NFT back and forth.
-    This would likely limit performance as the swap has to be synchronized (or we just let the transactions fail when
-    double-transfers occur).
-    - It may benefit to have a list of NFTs so that the swap happens less frequently, but this would require logic to
-      pick the NFT from the list and when to swap (would probably still need to all be synchronized)
-  - Alternatively we could create a new NFT for each transaction. This seems like an even worse performance hit however.
-- Add new expression patterns for NftType and NFT. NftType should create a new NftType, NFT should create a new NftType
-  and then a new NFT with that NftType.
-
-// Still need clarification on update, delete, association.
+- Make changes to the `ExpressionConverter`
+  - Burning and minting NFT tokens will require both the Token id and the serial numbers to execute. This could also be
+    true for transfering the NFTs. This requires the `convertedProperties` to know which serial numbers belong to which
+    Tokens when creating them. Two different approaches could be take for this.
+    - Create two new expressions, `nft` that would create a new token with the fungible flag set to true , and a
+      compound `nft.serial` expression (e.g. `nft.1.serial.1`) that would mint a new NFT serial number for the
+      equivalent `nft` in the map.
+      - This could be problematic if the `nft.serial` expression is processed before the `nft` expression. It may
+        require some restructuring of how `ExpressionConverter` works.
+    - Create an `nft` expression to create the token type and a preset set of serial numbers in one transaction. Change
+      the map to hold Objects so that the serial numbers and the token id can be tied together, and the transaction
+      suppliers would have logic to use the objects tied to that field (in this case, `TokenBurnTransactionSupplier`
+      would have to unpack the Object's token id and serial numbers).
+      - This option would be less customizable, since users cannot specify how many serial numbers to mint.
+- Update `TokenCreateTransactionSupplier`, `TokenBurnTransactionSupplier`, and `TokenMintTransactionSupplier` to support
+  NFT creation and deletion
+  - All will need to support an optional list of serial numbers.
+  - `TokenCreateTransactionSupplier`and `TokenMintTransactionSupplier` may need more depending on the final SDK design.
+- Add support for transfering NFTs in `CryptoTransferTransactionSupplier`.
+  - Add a new `fungible` boolean attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to
+    use the `amount` attribute or the `serial numbers` list.
+  - Because a serial number can only be transfered once out of a given account (unless it is transfered back), custom
+    logic will be needed for performant NFT transfers.
+    - Initial thought is to have the supplier swap the sender and receiver each time to transfer the NFT back and forth.
+      This could be done only on the NFT transfer or on the entire transfer. This would likely limit performance as the
+      swap has to be synchronized (or we just let the transactions fail when double-transfers occur).
+      - This would also require different signatures on the transaction, which would require reworking how we handle the
+        transaction signing.
+    - Alernatively, the `ExpressionConverter` could just generate a large amount of serial numbers, and
+      the `CryptoTransferTransactionSupplier` could just transfer one at a time via a counter until it runs out. This
+      would be a much simpler approach, but it has obvious limitations.
 
 ## Acceptance Tests
 
