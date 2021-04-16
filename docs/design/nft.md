@@ -433,8 +433,6 @@ Optional Filters
 
 GET `/api/v1/nfts/{serialNumber}`
 
-// Maybe we show holder?
-
 ```json
 {
   "auto_renew_account": "0.0.6",
