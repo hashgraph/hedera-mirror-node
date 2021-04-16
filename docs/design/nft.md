@@ -1,48 +1,3 @@
-- How do we want to represent nft
-  - NftType goes with Tokens because same idea
-  - NftType associate can stay with Token Associate becausse no new info
-  - NftTransfer separate because serial number
-  - Separate NFT entity/table because it can be independently deleted
-  - Separate NFT balance because it has to have a serial number
-  -
-  - How do we want to handle token burns?
-
-Separate NFT REST API
-
-In /tokens, should we just mix NftType with TokenType?
-
-- Create Token
-  - Have to determine if NFT or not
-  - Now creates a Token and a list of NFTs
-    - Should an NFT balance be created for treasury?
-
-
-- Update Token
-  - No change, unclear if NFT can be updated
-
-Mint Token
-
-- Create new NFT
-  - Should an NFT balance be created for treasury?
-
-Burn Token
-
-- Have to delete NFT if present
-- Unclear on how balance will be affected, if the serial number just disappears from the next balance file we may need
-  to delete that entry as part of the burn
-
-- Delete Token
-  - NFTs are also deleted, this CANNOT be inherited because an NFT can be independently deleted
-
-- Burn Token
-  - Have to remove from balance, as file will not show
-
-- Rename token_transfer to fungible_token_transfer
-- Create non_fungible_token_transfer table
--
-- Get tokens
-  -
-
 # Nonfungible Tokens (NFT)
 
 ## Purpose
@@ -118,7 +73,7 @@ create table if not exists nft_balance
 
 Add an `NftIdConverter`.
 
-### Domain
+#### Domain
 
 - Add new fields to `Token` domain object from schema changes
 - Add an `Nft` domain object with the same fields as the schema.
@@ -127,7 +82,7 @@ Add an `NftIdConverter`.
 - Add an `NFT` enum value to `EntityTypeEnum`.
 - Add `NftBalance` list to `AccountBalances` domain object
 
-### Balance Parsing
+#### Balance Parsing
 
 Need information on file format. Effectively envision:
 
@@ -136,12 +91,12 @@ Need information on file format. Effectively envision:
   - Add `NftBalance` to the `AccountBalance` object as they are read.
 - Update `AccountBalanceFileParser` to persist the `NftBalance`
 
-### Entity Listener
+#### Entity Listener
 
 - Add `onNft`
 - Add `onNftTransfer`
 
-### Entity Record Item Listener
+#### Entity Record Item Listener
 
 - If transaction is successful, persist any NFT Transfers.
 - `insertTokenCreate()` must be updated to create and persist the `NFT` objects and entities.
@@ -151,9 +106,9 @@ Need information on file format. Effectively envision:
 - `insertTokenWipe` must be updated to mark the NFT entities as deleted.
 - `TransactionBody.hasNftCreation()` and parse `NftCreateTransactionBody` from the record, create a new `Nft`
 
-## REST API
+### REST API
 
-### Get Transaction
+#### Get Transaction
 
 - Update `/api/v1/transactions` response to add nft transfers
 
@@ -215,7 +170,7 @@ Need information on file format. Effectively envision:
 }
 ```
 
-### Get Accounts
+#### Get Accounts
 
 - Update `/api/v1/accounts` response to add nfts
 
@@ -265,7 +220,7 @@ Need information on file format. Effectively envision:
 }
 ```
 
-### Get Balances
+#### Get Balances
 
 - Update `/api/v1/balances` response to add token balances
 
@@ -324,7 +279,7 @@ Need information on file format. Effectively envision:
 }
 ```
 
-### List Tokens
+#### List Tokens
 
 GET `/api/v1/tokens`
 
@@ -359,7 +314,7 @@ GET `/api/v1/tokens`
 
 Add boolean filter `fungible` to only show NFTs or FTs
 
-### Get Token by id
+#### Get Token by id
 
 GET `/api/v1/tokens/{id}`
 
@@ -434,7 +389,7 @@ GET `/api/v1/tokens/{id}/balances`
 }
 ```
 
-### List NFTs
+#### List NFTs
 
 GET `/api/v1/nfts`
 
@@ -458,7 +413,7 @@ Optional Filters
 - `/api/v1/nfts?order=desc` - All NFTs in descending order of `serial_number`
 - `/api/v1/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
 
-### Get NFT by id
+#### Get NFT by id
 
 GET `/api/v1/nfts/{serialNumber}`
 
@@ -494,7 +449,7 @@ GET `/api/v1/nfts/{serialNumber}`
 }
 ```
 
-### Get NFT transaction history
+#### Get NFT transaction history
 
 GET `/api/v1/nfts/{serialNumber}/transactions`
 
@@ -519,7 +474,7 @@ GET `/api/v1/nfts/{serialNumber}/transactions`
 }
 ```
 
-## Monitor
+### Monitor
 
 - Make changes to the `ExpressionConverter`
   - Burning and minting NFT tokens will require both the Token id and the serial numbers to execute. This could also be
@@ -553,32 +508,17 @@ GET `/api/v1/nfts/{serialNumber}/transactions`
       the `CryptoTransferTransactionSupplier` could just transfer one at a time via a counter until it runs out. This
       would be a much simpler approach, but it has obvious limitations.
 
-## Acceptance Tests
+### Acceptance Tests
 
-Add an acceptance test that tests the schedule transaction flow end to end:
+Add acceptance tests that verify all transactions are handled appropriately. This includes tests for
 
-# Questions:
+- createToken
+- mintToken
+- burnToken
+- deleteToken
+- wipeTokenAccount
+- cryptoTransfer with serial numbers
 
-1. NFTs are no longer created as part of NftType creation, they are only created after in a separate transaction,
-   correct?
+# Outstanding Questions and Concerns:
 
-2. Are NftType ids and serial numbers both entity ids?
-
-3. Is the NFT expiration still inherited from the NftType?
-
-4. Is it required to associate an NFT to an account through an association transaction?
-
-5. How will transferring an NFT out of an account be shown in the ensuing balance file?
-
-6. Are bullet 2 and 3 in the `Transactions` section two different transaction types? I'm not sure
-   if/how `create a new NFT for a given NftType` and `Create a new NFT in the treasury account of a given NftType`
-   differ.
-
-7. Does an NftType and NFT update exist? A delete?
-
-8. Autorenew period on any of this? Memo on NftType?
-
-Associate token type
-
-1. Balance file, what happens on a burn?
-2.
+1. General protobuf questions.
