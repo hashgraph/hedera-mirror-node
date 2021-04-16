@@ -99,10 +99,10 @@ create table if not exists nft_transfer
 
 - Add a unique constraint to `nft_transfer` for `serial_number` and `consensus_timestamp`, desc
 
-- Add a new `nft_owner` table
+- Add a new `nft_balance` table
 
 ```sql
-create table if not exists nft_owner
+create table if not exists nft_balance
 (
   nft_id              bigint    not null,
   account_id          bigint    not null,
@@ -123,9 +123,9 @@ Add an `NftIdConverter`.
 - Add new fields to `Token` domain object from schema changes
 - Add an `Nft` domain object with the same fields as the schema.
 - Add an `NftTransfer` domain object with the same fields as the schema.
-- Add an `NftHolder` domain object with the same fields as the schema.
+- Add an `NftBalance` domain object with the same fields as the schema.
 - Add an `NFT` enum value to `EntityTypeEnum`.
-- Add `nftHolder` list to `AccountBalances` domain object
+- Add `NftBalance` list to `AccountBalances` domain object
 
 ### Balance Parsing
 
@@ -133,8 +133,8 @@ Need information on file format. Effectively envision:
 
 - Update `ProtoBalanceFileReader` to handle new NFT transfer list
   - Either deprecate use of the csv file or also add support for new CSV `BalanceFileReader` based on new format
-  - Add `NftHolder` to the `AccountBalance` object as they are read.
-- Update `AccountBalanceFileParser` to persist the `NftHolder`
+  - Add `NftBalance` to the `AccountBalance` object as they are read.
+- Update `AccountBalanceFileParser` to persist the `NftBalance`
 
 ### Entity Listener
 
