@@ -37,13 +37,13 @@ spring:
     placeholders:
       api-password: mirror_api_pass
       api-user: mirror_api
+      autovacuumFreezeMaxAgeInsertOnly: 100000
+      autovacuumVacuumInsertThresholdCryptoTransfer: 18000000
+      autovacuumVacuumInsertThresholdTokenTransfer: 2000
+      autovacuumVacuumInsertThresholdTransaction: 6000000
       chunkIdInterval: 10000
       chunkTimeInterval: 604800000000000
       compressionAge: 9223372036854775807 # use long max to avoid compression during test
-      insertOnlyAutovacuumFreezeMaxAge: 100000
-      cryptoTransferAutovacuumInsertThreshold: 18000000
-      tokenTransferAutovacuumInsertThreshold: 2000
-      transactionAutovacuumInsertThreshold: 6000000
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       topicRunningHashV2AddedTimestamp: 0
