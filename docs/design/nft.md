@@ -325,73 +325,84 @@ Need information on file format. Effectively envision:
 }
 ```
 
-### List NFTTypes
+### List Tokens
 
-GET `/api/v1/nftTypes`
-
-Should there be the memo field in the NFT?
+GET `/api/v1/tokens`
 
 ```json
 {
-  "nftTypes": [
+  "tokens": [
     {
-      "id": "0.0.123",
-      "adminKey": {
+      "token_id": "0.0.1000",
+      "symbol": "F",
+      "fungible": true
+      "admin_key": {
         "_type": "ED25519",
-        "key": "KEY"
-      },
-      "nfts": [
-        {
-          "serialNumber": "0.0.124",
-          "memo": "NFT"
-        }
-      ]
+        "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
+      }
     },
     {
-      "id": "0.0.125",
-      "adminKey": {
+      "token_id": "0.0.10001",
+      "symbol": "N",
+      "fungible": false,
+      "serial_numbers": [
+        "0.0.1002",
+        "0.0.1003"
+      ],
+      "admin_key": {
         "_type": "ED25519",
-        "key": "KEY"
-      },
-      "nfts": [
-        {
-          "serialNumber": "0.0.126",
-          "memo": "NFT"
-        },
-        {
-          "serialNumber": "0.0.127",
-          "memo": "NFT"
-        }
-      ]
+        "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
+      }
     }
   ]
 }
 ```
 
-### Get NFT by id
+Add boolean filter `fungible` to only show NFTs or FTs
 
-GET `/api/v1/nftTypes/{id}`
+### Get Token by id
 
-Should there be the memo field in the NFT?
+GET `/api/v1/tokens/{id}`
 
 ```json
-{
-  "id": "0.0.123",
-  "mintBurnKey": {
-    "_type": "ED25519",
-    "key": "KEY"
-  },
-  "adminKey": {
-    "_type": "ED25519",
-    "key": "KEY"
-  },
-  "expiration": 1000000000,
-  "nfts": [
     {
-      "tokenId": "0.0.124",
-      "memo": "NFT"
-    }
-  ]
+  "admin_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "auto_renew_account": "0.0.6",
+  "auto_renew_period": null,
+  "decimals": "1000",
+  "expiry_timestamp": null,
+  "freeze_default": false,
+  "freeze_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "fungible": false,
+  "initial_supply": "2",
+  "kyc_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "max_supply": "10",
+  "name": "FOO COIN TOKEN",
+  "serial_numbers": [
+    "0.0.1002",
+    "0.0.1003"
+  ],
+  "supply_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "symbol": "FOOCOIN",
+  "token_id": "0.15.3",
+  "total_supply": "2",
+  "treasury_account": "0.15.10",
+  "wipe_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  }
 }
 ```
 
@@ -403,14 +414,21 @@ GET `/api/v1/nfts`
 {
   "nfts": [
     {
-      "nftTypeId": "0.0.123",
-      "serialNumber": "0.0.124",
+      "token_id": "0.0.123",
+      "serial_number": "0.0.124",
       "memo": "NFT",
-      "creationDate": ""
+      "created_timestamp": "1610682445.003266000"
     }
   ]
 }
 ```
+
+Optional Filters
+
+- `/api/v1/nfts?serialNumber.id=gt:0.0.1001` - All serial numbers in range
+- `/api/v1/nfts?token.id=0.0.1000` - All NFTs belonging to the given token type.
+- `/api/v1/nfts?order=desc` - All NFTs in descending order of `serial_number`
+- `/api/v1/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
 
 ### Get NFT by id
 
@@ -420,17 +438,63 @@ GET `/api/v1/nfts/{serialNumber}`
 
 ```json
 {
-  "nftTypeId": "0.0.123",
+  "auto_renew_account": "0.0.6",
+  "auto_renew_period": null,
+  "expiry_timestamp": null,
+  "freeze_default": false,
+  "freeze_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "kyc_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "memo": "MY FIRST NFT",
+  "supply_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "tokenId": "0.0.123",
   "serialNumber": "0.0.124",
   "memo": "NFT",
-  "creationDate": ""
+  "created_timestamp": "1610682445.003266000",
+  "wipe_key": {
+    "_type": "ProtobufEncoded",
+    "key": "9c2233222c2233222c2233227d"
+  },
+  "modified_timestamp": "1618510697.682451000"
+}
+```
+
+### Get NFT transaction history
+
+GET `/api/v1/nfts/{serialNumber}/transactions`
+
+```json
+{
+  "history": [
+    {
+      "consensus_timestamp": "1618591023.997420020",
+      "transaction_type": "TOKENBURN"
+    },
+    {
+      "consensus_timestamp": "1618591023.997420010",
+      "receiver_account": "0.0.11",
+      "sender_account": "0.0.10",
+      "transaction_type": "CRYPTOTRANSFER"
+    },
+    {
+      "consensus_timestamp": "1618591023.997420000",
+      "transaction_type": "TOKENCREATION"
+    }
+  ]
 }
 ```
 
 ## Monitor
 
-- Add support for NftType Create (new `TransactionSupplier` and `TransactionType`), which should be similar to Account
-  Create, Token Create, etc.
+- Update
 - Add support for NFT Create (new `TransactionSupplier` and `TransactionType`), which will be similar to NftType Create,
   but it will require an NftType to be created beforehand via an expression pattern.
 - Add support for transfering NFTs in `CryptoTransferTransactionSupplier`. This will require custom logic, as a user can
