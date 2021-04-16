@@ -405,6 +405,35 @@ GET `/api/v1/tokens/{id}`
 }
 ```
 
+### Token Supply distribution
+
+GET `/api/v1/tokens/{id}/balances`
+
+```json
+    {
+  "timestamp": "0.000002345",
+  "balances": [
+    {
+      "account": "0.15.10",
+      "serial_numbers": [
+        "0.0.1002",
+        "0.0.1003"
+      ]
+    },
+    {
+      "account": "0.15.9",
+      "serial_numbers": [
+        "0.0.1004",
+        "0.0.1005"
+      ]
+    }
+  ],
+  "links": {
+    "next": null
+  }
+}
+```
+
 ### List NFTs
 
 GET `/api/v1/nfts`
