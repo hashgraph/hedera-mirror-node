@@ -8,17 +8,6 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
-Database host
-*/}}
-{{- define "hedera-mirror-importer.db-host" -}}
-{{- $host := .Values.config.hedera.mirror.importer.db.host | default "" -}}
-{{- if .Values.global.db -}}
-{{- $host = .Values.global.db.host }}
-{{- end -}}
-{{- replace "RELEASE-NAME" .Release.Name $host -}}
-{{- end -}}
-
-{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -66,19 +55,6 @@ Namespace
 */}}
 {{- define "hedera-mirror-importer.namespace" -}}
 {{- default .Release.Namespace .Values.global.namespaceOverride -}}
-{{- end -}}
-
-{{/*
-Redis host
-*/}}
-{{- define "hedera-mirror-importer.redis-host" -}}
-{{- $host := "RELEASE-NAME-redis" }}
-{{- if .Values.global.redis.host -}}
-{{- $host = .Values.global.redis.host -}}
-{{- else if .Values.config.spring -}}
-{{- $host = .Values.config.spring.redis.host -}}
-{{- end -}}
-{{- replace "RELEASE-NAME" .Release.Name $host -}}
 {{- end -}}
 
 {{/*

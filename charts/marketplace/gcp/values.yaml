@@ -54,6 +54,7 @@ importer:
           group:
             readiness:
               exclude: redis
+  extraEnv: []
   rbac:
     enabled: false
   replicas: 1
@@ -64,6 +65,7 @@ monitor:
   enabled: false
 
 postgresql:
+  enabled: true
   pgpool:
     replicaCount: 0
   postgresql:
@@ -92,3 +94,6 @@ rest:
     create: false
   service:
     type: LoadBalancer
+
+timescaledb:
+  enabled: false

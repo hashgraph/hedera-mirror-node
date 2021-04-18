@@ -10,11 +10,12 @@ affinity:
 
 annotations: {}
 
-config:
-  hedera:
-    mirror:
-      grpc:
-        db: {}
+config: {}
+
+# Add config maps or secrets as environment variables. Evaluated as a template.
+envFrom: []
+# - secretRef:
+#     name: '{{ .Release.Name }}-env'
 
 # Extra environment variables to add. Evaluated as a template.
 extraEnv: []

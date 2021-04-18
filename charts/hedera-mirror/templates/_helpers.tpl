@@ -76,14 +76,3 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
-
-{{/*
-Create the name of the db host to use
-*/}}
-{{- define "hedera-mirror.dbHost" -}}
-{{- if .Values.timescaledb.enabled -}}
-{{- printf "%s-timescaledb" .Release.Name -}}
-{{- else -}}
-{{- printf "%s-postgres-pgpool" .Release.Name -}}
-{{- end -}}
-{{- end -}}

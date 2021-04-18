@@ -14,10 +14,14 @@ config:
   hedera:
     mirror:
       rest:
-        db: {}
         metrics:
           config:
             authentication: false
+
+# Add config maps or secrets as environment variables. Evaluated as a template.
+envFrom: []
+# - secretRef:
+#     name: '{{ .Release.Name }}-env'
 
 # Extra environment variables to add. Evaluated as a template.
 extraEnv: []

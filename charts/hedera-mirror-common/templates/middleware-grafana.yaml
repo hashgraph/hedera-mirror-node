@@ -6,7 +6,7 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}
   namespace: {{ $namespace }}
 spec:
@@ -22,18 +22,18 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-ip-whitelist
   namespace: {{ $namespace }}
 spec:
   ipWhiteList:
-    sourceRange: {{- toYaml $ingress.middleware.ipWhitelist | nindent 6 }}
+    sourceRange: {{ toYaml $ingress.middleware.ipWhitelist | nindent 6 }}
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-connection-limit
   namespace: {{ $namespace }}
 spec:
@@ -47,7 +47,7 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-circuit-breaker
   namespace: {{ $namespace }}
 spec:
@@ -58,17 +58,17 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-rate-limit
   namespace: {{ $namespace }}
 spec:
-  rateLimit: {{- toYaml $ingress.middleware.rateLimit | nindent 4 }}
+  rateLimit: {{ toYaml $ingress.middleware.rateLimit | nindent 4 }}
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-strip-prefix
   namespace: {{ $namespace }}
 spec:

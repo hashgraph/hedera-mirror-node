@@ -34,26 +34,23 @@ $ helm upgrade --install "${RELEASE}" charts/hedera-mirror
 At most one Importer pod can be run at time due to the potential to cause data inconsistencies. All other modules
 support scaling up to more than one replica.
 
-### TimescaleDB
+### PostgreSQL
 
 In an effort to increase performance and reduce storage costs, the mirror node is switching to
-[TimescaleDB](https://docs.timescale.com/latest/main) in the v2 schema. To deploy the mirror node chart using
-TimescaleDB instead of PostgreSQL use the `values-timescaledb.yaml`:
+[TimescaleDB](https://docs.timescale.com/latest/main) by default. To deploy the mirror node chart using
+PostgreSQL instead of TimescaleDB use the below config for your `custom-values.yaml`:
 
-```shell
-$ helm upgrade --install "${RELEASE}" charts/hedera-mirror -f charts/hedera-mirror/values-timescaledb.yaml
+```yaml
+importer:
+  extraEnv: []
+postgresql:
+  enabled: true
+timescaledb:
+  enabled: false
 ```
 
-To temporarily expose TimescaleDB to migrate data from PostgreSQL, run the following command:
-
 ```shell
-$ kubectl expose service "${RELEASE}-mirror-timescaledb" --type=LoadBalancer --name timescaledb-external
-```
-
-After the migration make sure to delete the temporary service:
-
-```shell
-$ kubectl delete service "${RELEASE}-mirror-timescaledb"
+$ helm upgrade --install "${RELEASE}" charts/hedera-mirror -f custom-values.yaml
 ```
 
 ### Address Book

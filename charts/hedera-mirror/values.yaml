@@ -5,40 +5,60 @@ applicationResource:
   solutionId: ""
 
 global:
-  db:
-    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts. Set to RELEASE-NAME for timescaledb
   namespaceOverride: ""
-  redis:
-    host: RELEASE-NAME-redis  # RELEASE-NAME will be replaced with actual release by children charts
-    password: redis_password
-  rest:
-    username: mirror_api
-    password: mirror_api_pass
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
+db:
+  host: "{{ .Release.Name }}"
+  name: mirror_node
+  schema: mirrornode
+  owner:
+    password: ""  # Randomly generated if left blank
+    username: mirror_node
+
 grpc:
-  config:
-    hedera:
-      mirror:
-        grpc:
-          db:
-            password: mirror_grpc_pass
-            username: mirror_grpc
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_grpc
   enabled: true
+  envFrom:
+    - secretRef:
+        name: mirror-redis
+  extraEnv:
+    - name: HEDERA_MIRROR_GRPC_DB_HOST
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_HOST
+    - name: HEDERA_MIRROR_GRPC_DB_NAME
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_NAME
+    - name: HEDERA_MIRROR_GRPC_DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_GRPC_DB_PASSWORD
+    - name: HEDERA_MIRROR_GRPC_DB_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_GRPC_DB_USERNAME
 
 importer:
-  config:
-    hedera:
-      mirror:
-        importer:
-          db:
-            name: mirror_node
-            password: mirror_node_pass
-            username: mirror_node
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_importer
   enabled: true
-  redis:
-    sentinel:
-      masterSet: mirror
+  envFrom:
+    - secretRef:
+        name: mirror-passwords
+    - secretRef:
+        name: mirror-redis
+  extraEnv:
+    - name: SPRING_PROFILES_ACTIVE
+      value: v2
 
 labels: {}
 
@@ -49,7 +69,7 @@ networkPolicy:
   enabled: false
 
 postgresql:
-  enabled: true
+  enabled: false
   metrics:
     enabled: false
     resources:
@@ -75,7 +95,17 @@ postgresql:
               labelSelector:
                 matchLabels:
                   app.kubernetes.io/component: pgpool
-    customUsersSecret: '{{ printf "%s-pgpool-init" .Release.Name }}'
+    extraEnvVars:
+      - name: PGPOOL_POSTGRES_CUSTOM_PASSWORDS
+        valueFrom:
+          secretKeyRef:
+            name: mirror-passwords
+            key: PGPOOL_POSTGRES_CUSTOM_PASSWORDS
+      - name: PGPOOL_POSTGRES_CUSTOM_USERS
+        valueFrom:
+          secretKeyRef:
+            name: mirror-passwords
+            key: PGPOOL_POSTGRES_CUSTOM_USERS
     podLabels:
       role: db
     pdb:
@@ -102,10 +132,12 @@ postgresql:
               labelSelector:
                 matchLabels:
                   app.kubernetes.io/component: postgresql
-    initdbScriptsSecret: '{{ printf "%s-postgresql-init" .Release.Name }}'
-    password: password
+    existingSecret: mirror-passwords
+    extraEnvVarsSecret: mirror-passwords
+    initdbScriptsSecret: db-init
+    password: ""  # Randomly generated if left blank
     replicaCount: 1
-    repmgrPassword: password
+    repmgrPassword: ""  # Randomly generated if left blank
     resources:
       limits:
         cpu: 1500m
@@ -121,6 +153,10 @@ redis:
   cluster:
     slaveCount: 1
   enabled: true
+  existingSecret: mirror-redis
+  existingSecretPasswordKey: SPRING_REDIS_PASSWORD
+  host: "{{ .Release.Name }}-redis"
+  password: ""  # Randomly generated if left blank
   metrics:
     resources:
       limits:
@@ -167,13 +203,36 @@ redis:
         memory: 500Mi
     statefulset:
       updateStrategy: RollingUpdate
-  usePasswordFile: true
 
 rest:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_rest
   enabled: true
+  extraEnv:
+    - name: HEDERA_MIRROR_REST_DB_HOST
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_HOST
+    - name: HEDERA_MIRROR_REST_DB_NAME
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_NAME
+    - name: HEDERA_MIRROR_REST_DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD
+    - name: HEDERA_MIRROR_REST_DB_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
 timescaledb:
-  enabled: false
+  enabled: true
   image:
     pullPolicy: IfNotPresent
     repository: timescale/timescaledb-ha
@@ -208,7 +267,7 @@ timescaledb:
     interval: 30s
   postInit:
     - secret:
-        name: timescaledb-init
+        name: db-init
   prometheus:
     image:
       pullPolicy: IfNotPresent
@@ -222,3 +281,5 @@ timescaledb:
     requests:
       cpu: 1
       memory: 1Gi
+  secretNames:
+    credentials: mirror-passwords

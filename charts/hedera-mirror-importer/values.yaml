@@ -14,9 +14,13 @@ config:
   hedera:
     mirror:
       importer:
-        dataPath: /var/lib/hedera-mirror-importer
         db:
           loadBalance: false
+
+# Add config maps or secrets as environment variables. Evaluated as a template.
+envFrom: []
+# - secretRef:
+#     name: '{{ .Release.Name }}-env'
 
 # Extra environment variables to add. Evaluated as a template.
 extraEnv: []
@@ -89,11 +93,6 @@ readinessProbe:
     port: http
   initialDelaySeconds: 60
   timeoutSeconds: 2
-
-redis:
-  sentinel:
-    enabled: true
-    port: 26379
 
 replicas: 1
 

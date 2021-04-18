@@ -2,7 +2,7 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-grpc.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-grpc.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-grpc.fullname" . }}
   namespace: {{ include "hedera-mirror-grpc.namespace" . }}
 spec:
@@ -17,18 +17,18 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-grpc.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-grpc.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-grpc.fullname" . }}-ip-whitelist
   namespace: {{ include "hedera-mirror-grpc.namespace" . }}
 spec:
   ipWhiteList:
-    sourceRange: {{- toYaml .Values.ingress.middleware.ipWhitelist | nindent 6 }}
+    sourceRange: {{ toYaml .Values.ingress.middleware.ipWhitelist | nindent 6 }}
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  labels: {{- include "hedera-mirror-grpc.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-grpc.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-grpc.fullname" . }}-connection-limit
   namespace: {{ include "hedera-mirror-grpc.namespace" . }}
 spec:
@@ -57,6 +57,5 @@ metadata:
   name: {{ include "hedera-mirror-grpc.fullname" . }}-rate-limit
   namespace: {{ include "hedera-mirror-grpc.namespace" . }}
 spec:
-  rateLimit:
-    {{- toYaml .Values.ingress.middleware.rateLimit | nindent 4 }}
+  rateLimit: {{ toYaml .Values.ingress.middleware.rateLimit | nindent 4 }}
 {{- end -}}

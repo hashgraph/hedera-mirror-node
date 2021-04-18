@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels: {{- include "hedera-mirror-importer.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-importer.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-importer.fullname" . }}
   namespace: {{ include "hedera-mirror-importer.namespace" . }}
 roleRef:
