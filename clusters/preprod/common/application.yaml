@@ -19,6 +19,9 @@ spec:
             alertmanagerSpec:
               secrets:
                 - mirror-alertmanager
+          prometheusOperator:
+            admissionWebhooks:
+              enabled: false
     path: charts/hedera-mirror-common
     repoURL: https://github.com/hashgraph/hedera-mirror-node.git
     targetRevision: chart-ci-fixes
