@@ -50,7 +50,7 @@ spec:
             - name: custom
               secret:
                 defaultMode: 420
-                secretName: mirror-importer
+                secretName: mirror-importer-custom
         monitor:
           config:
             hedera:
