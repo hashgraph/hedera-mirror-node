@@ -34,7 +34,7 @@
     "long": "^4.0.0",
     "mathjs": "^9.3.2",
     "node-fetch": "^2.6.1",
-    "pg": "~8.5.1",
+    "pg": "~8.6.0",
     "qs": "^6.10.1",
     "swagger-stats": "^0.95.18",
     "swagger-ui-express": "^4.1.6"
