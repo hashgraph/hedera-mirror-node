@@ -21,9 +21,6 @@ grpc:
     password: ""  # Randomly generated if left blank
     username: mirror_grpc
   enabled: true
-  envFrom:
-    - secretRef:
-        name: mirror-redis
   extraEnv:
     - name: HEDERA_MIRROR_GRPC_DB_HOST
       valueFrom:
@@ -45,6 +42,16 @@ grpc:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_GRPC_DB_USERNAME
+    - name: SPRING_REDIS_HOST
+      valueFrom:
+        secretKeyRef:
+          name: mirror-redis
+          key: SPRING_REDIS_HOST
+    - name: SPRING_REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: mirror-redis
+          key: SPRING_REDIS_PASSWORD
 
 importer:
   db:
