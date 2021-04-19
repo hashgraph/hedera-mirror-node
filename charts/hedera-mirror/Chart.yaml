@@ -22,7 +22,7 @@ dependencies:
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: ~6.8.1
+    version: ~6.8.4
   - alias: redis
     condition: redis.enabled
     name: redis
