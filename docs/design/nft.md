@@ -33,8 +33,8 @@ create table if not exists nft
   hash                  bytea               not null,
   modified_timestamp    bigint              not null,
   memo                  text    default ''  not null,
-  nft_type_id           bigint              not null,
   serial_number         bigint              not null,
+  token_id              bigint              not null,
 );
 
 ```
@@ -50,6 +50,7 @@ create table if not exists nft_transfer
   receiver_account_id   bigint  not null,
   sender_account_id     bigint  not null,
   serial_number         bigint  not null,
+  token_id              bigint  not null,
 );
 ```
 
@@ -62,7 +63,8 @@ create table if not exists nft_balance
 (
   account_id          bigint    not null,
   consensus_timestamp bigint    not null,
-  nft_id              bigint    not null,
+  serial_number       bigint    not null,
+  token_id            bigint    not null,
 );
 ```
 
