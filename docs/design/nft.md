@@ -2,7 +2,7 @@
 
 ## Purpose
 
-NFTs allow users to create tokens that are indivisible, ensuring that each token is unique. This document explains how
+NFTs allow users to create tokens that each have unique data and can be individually tracked. This document explains how
 the mirror node can be updated to add support for NFTs.
 
 ## Goals
@@ -29,11 +29,11 @@ the mirror node can be updated to add support for NFTs.
 ```sql
 create table if not exists nft
 (
-  serial_number         bigint              not null,
-  nft_type_id           bigint              not null,
-  hash                  bytea               not null,
   created_timestamp     bigint  primary key not null,
+  hash                  bytea               not null,
   modified_timestamp    bigint              not null,
+  nft_type_id           bigint              not null,
+  serial_number         bigint              not null,
 );
 
 ```
@@ -45,10 +45,10 @@ create table if not exists nft
 ```sql
 create table if not exists nft_transfer
 (
-  serial_number         bigint  not null,
   consensus_timestamp   bigint  not null,
   receiver_account_id   bigint  not null,
   sender_account_id     bigint  not null,
+  serial_number         bigint  not null,
 );
 ```
 
@@ -59,9 +59,9 @@ create table if not exists nft_transfer
 ```sql
 create table if not exists nft_balance
 (
-  nft_id              bigint    not null,
   account_id          bigint    not null,
   consensus_timestamp bigint    not null,
+  nft_id              bigint    not null,
 );
 ```
 
@@ -104,7 +104,6 @@ Need information on file format. Effectively envision:
 - `insertTokenBurn` must be updated to mark the NFT entities as deleted.
 - `insertTokenDelete` must be added to mark the NFT entities as deleted.
 - `insertTokenWipe` must be updated to mark the NFT entities as deleted.
-- `TransactionBody.hasNftCreation()` and parse `NftCreateTransactionBody` from the record, create a new `Nft`
 
 ### REST API
 
@@ -117,30 +116,19 @@ Need information on file format. Effectively envision:
   "transactions": [
     {
       "consensus_timestamp": "1234567890.000000001",
-      "valid_start_timestamp": "1234567890.000000000",
       "charged_tx_fee": 7,
+      "max_fee": "33",
       "memo_base64": null,
-      "result": "SUCCESS",
-      "transaction_hash": "aGFzaA==",
       "name": "TOKENTRANSFER",
       "node": "0.0.3",
-      "transaction_id": "0.0.10-1234567890-000000000",
-      "valid_duration_seconds": "11",
-      "max_fee": "33",
-      "transfers": [
+      "nftTransfers": [
         {
-          "account": "0.0.9",
-          "amount": 10
-        },
-        {
-          "account": "0.0.10",
-          "amount": -11
-        },
-        {
-          "account": "0.0.98",
-          "amount": 1
+          "senderAccount": "0.0.122",
+          "receiverAccount": "0.0.121",
+          "serialNumber": "0.0.124"
         }
       ],
+      "result": "SUCCESS",
       "token_transfers": [
         {
           "account": "0.0.200",
@@ -158,13 +146,24 @@ Need information on file format. Effectively envision:
           "token_id": "0.0.90000"
         }
       ],
-      "nftTransfers": [
+      "transaction_hash": "aGFzaA==",
+      "transaction_id": "0.0.10-1234567890-000000000",
+      "transfers": [
         {
-          "senderAccount": "0.0.122",
-          "receiverAccount": "0.0.121",
-          "serialNumber": "0.0.124"
+          "account": "0.0.9",
+          "amount": 10
+        },
+        {
+          "account": "0.0.10",
+          "amount": -11
+        },
+        {
+          "account": "0.0.98",
+          "amount": 1
         }
-      ]
+      ],
+      "valid_duration_seconds": "11",
+      "valid_start_timestamp": "1234567890.000000000"
     }
   ]
 }
@@ -172,46 +171,38 @@ Need information on file format. Effectively envision:
 
 #### Get Accounts
 
-- Update `/api/v1/accounts` response to add nfts
+- Update `/api/v1/accounts` response to add NFTs to the tokens list, with serial numbers instead of balance.
 
 ```json
 {
   "accounts": [
     {
       "balance": {
-        "timestamp": "0.000002345",
+        "account": "0.0.8",
+        "auto_renew_period": null,
         "balance": 80,
+        "deleted": false
+        "expiry_timestamp": null,
+        "key": null,
+        "timestamp": "0.000002345",
         "tokens": [
           {
-            "token_id": "0.15.3",
-            "balance": 80
+            "balance": 80,
+            "token_id": "0.15.3"
           },
           {
-            "token_id": "0.2.5",
-            "balance": 50
-          }
-        ],
-        "nftTypes": [
+            "balance": 50,
+            "token_id": "0.2.5"
+          },
           {
-            "id": "0.0.123",
-            "nfts": [
-              {
-                "serialNumber": "0.0.124",
-                "memo": "NFT1"
-              },
-              {
-                "serialNumber": "0.0.124",
-                "memo": "NFT2"
-              }
+            "token_id": "0.2.9",
+            "serial_numbers": [
+              "0.2.10",
+              "0.2.11"
             ]
           }
         ]
-      },
-      "account": "0.0.8",
-      "expiry_timestamp": null,
-      "auto_renew_period": null,
-      "key": null,
-      "deleted": false
+      }
     }
   ],
   "links": {
@@ -222,7 +213,7 @@ Need information on file format. Effectively envision:
 
 #### Get Balances
 
-- Update `/api/v1/balances` response to add token balances
+- Update `/api/v1/balances` response to add NFTs to the tokens list, with serial numbers instead of balance.
 
 ```json
     {
@@ -240,20 +231,12 @@ Need information on file format. Effectively envision:
         {
           "token_id": "0.15.3",
           "balance": 80
-        }
-      ],
-      "nftTypes": [
+        },
         {
-          "id": "0.0.123",
-          "nfts": [
-            {
-              "serialNumber": "0.0.124",
-              "memo": "NFT1"
-            },
-            {
-              "serialNumber": "0.0.124",
-              "memo": "NFT2"
-            }
+          "token_id": "0.2.9",
+          "serial_numbers": [
+            "0.2.10",
+            "0.2.11"
           ]
         }
       ]
@@ -270,6 +253,12 @@ Need information on file format. Effectively envision:
           "token_id": "0.2.4",
           "balance": 50
         }
+        {
+          "token_id": "0.15.6",
+          "serial_numbers": [
+            "0.15.7"
+          ]
+        }
       ]
     }
   ],
@@ -281,7 +270,7 @@ Need information on file format. Effectively envision:
 
 #### List Tokens
 
-GET `/api/v1/tokens`
+- Update `/api/v1/tokens` response to show NFTs by adding the `fungible` field and the `serial_numbers` list.
 
 ```json
 {
@@ -289,7 +278,7 @@ GET `/api/v1/tokens`
     {
       "token_id": "0.0.1000",
       "symbol": "F",
-      "fungible": true
+      "fungible": true,
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -312,11 +301,9 @@ GET `/api/v1/tokens`
 }
 ```
 
-Add boolean filter `fungible` to only show NFTs or FTs
-
 #### Get Token by id
 
-GET `/api/v1/tokens/{id}`
+- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `fungible` field and the `serial_numbers` list.
 
 ```json
     {
@@ -362,7 +349,7 @@ GET `/api/v1/tokens/{id}`
 
 ### Token Supply distribution
 
-GET `/api/v1/tokens/{id}/balances`
+- Update `/api/v1/tokens/{id}/balances` response to show `serial_numbers` when the token is an NftType token.
 
 ```json
     {
@@ -391,7 +378,7 @@ GET `/api/v1/tokens/{id}/balances`
 
 #### List NFTs
 
-GET `/api/v1/nfts`
+- GET `/api/v1/nfts` will list basic information of all NFTs, including the NftType they belong to.
 
 ```json
 {
@@ -402,7 +389,10 @@ GET `/api/v1/nfts`
       "memo": "NFT",
       "created_timestamp": "1610682445.003266000"
     }
-  ]
+  ],
+  "links": {
+    "next": null
+  }
 }
 ```
 
@@ -415,7 +405,7 @@ Optional Filters
 
 #### Get NFT by id
 
-GET `/api/v1/nfts/{serialNumber}`
+- GET `/api/v1/nfts/{serialNumber}` will show more detailed information about an individual NFT.
 
 ```json
 {
@@ -451,26 +441,33 @@ GET `/api/v1/nfts/{serialNumber}`
 
 #### Get NFT transaction history
 
-GET `/api/v1/nfts/{serialNumber}/transactions`
+- GET `/api/v1/nfts/{serialNumber}/transactions` will return minimal transaction information for each tranasction
+  involving a given NFT.
 
 ```json
 {
-  "history": [
+  "transactions": [
     {
       "consensus_timestamp": "1618591023.997420020",
+      "transaction_id": "0.0.19789-1618805680-742097947",
       "transaction_type": "TOKENBURN"
     },
     {
-      "consensus_timestamp": "1618591023.997420010",
+      "consensus_timestamp": "1618591023.997420021",
       "receiver_account": "0.0.11",
       "sender_account": "0.0.10",
+      "transaction_id": "0.0.19789-1618805680-742097948",
       "transaction_type": "CRYPTOTRANSFER"
     },
     {
-      "consensus_timestamp": "1618591023.997420000",
+      "consensus_timestamp": "1618591023.997420022",
+      "transaction_id": "0.0.19789-1618805680-742097949",
       "transaction_type": "TOKENCREATION"
     }
-  ]
+  ],
+  "links": {
+    "next": null
+  }
 }
 ```
 
@@ -512,12 +509,12 @@ GET `/api/v1/nfts/{serialNumber}/transactions`
 
 Add acceptance tests that verify all transactions are handled appropriately. This includes tests for
 
-- createToken
-- mintToken
-- burnToken
-- deleteToken
-- wipeTokenAccount
-- cryptoTransfer with serial numbers
+- createToken with an NFT
+- mintToken with an NFT
+- burnToken with an NFT
+- deleteToken with an NFT
+- wipeTokenAccount with an NFT
+- cryptoTransfer with an NFT
 
 # Outstanding Questions and Concerns:
 
