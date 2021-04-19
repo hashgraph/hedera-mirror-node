@@ -82,7 +82,7 @@ services:
   timescaledb:
     deploy:
       replicas: 0
-    image: timescale/timescaledb-ha:pg12.6-ts2.1.1-latest
+    image: timescale/timescaledb-ha:pg13-ts2.2-latest
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM
