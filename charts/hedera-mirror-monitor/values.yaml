@@ -18,8 +18,6 @@ config:
           rest:
             port: 80
 
-envs: {}
-
 fullnameOverride: ""
 
 global:

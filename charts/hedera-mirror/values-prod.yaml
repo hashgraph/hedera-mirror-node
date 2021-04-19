@@ -1,7 +1,5 @@
 # These values are production values used in combination with the hedera-mirror-common chart
 grpc:
-  envs:
-    JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70
   ingress:
     middleware:
       enabled: true
@@ -12,8 +10,6 @@ grpc:
     enabled: true
 
 importer:
-  envs:
-    JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70
   podMonitor:
     enabled: true
   priorityClassName: high
@@ -21,8 +17,6 @@ importer:
     enabled: true
 
 monitor:
-  envs:
-    JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=50
   podMonitor:
     enabled: true
   priorityClassName: medium
