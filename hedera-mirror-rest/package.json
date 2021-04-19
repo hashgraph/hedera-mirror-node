@@ -20,7 +20,7 @@
   "dependencies": {
     "@awaitjs/express": "^0.7.2",
     "@godaddy/terminus": "^4.7.1",
-    "@hashgraph/proto": "^1.0.23",
+    "@hashgraph/proto": "^1.0.24",
     "asn1js": "^2.1.1",
     "aws-sdk": "^2.879.0",
     "body-parser": "^1.19.0",
@@ -28,7 +28,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-http-context": "^1.2.4",
-    "js-yaml": "^4.0.0",
+    "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
     "long": "^4.0.0",
