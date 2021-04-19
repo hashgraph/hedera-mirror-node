@@ -1,0 +1,12 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: hedera-mirror-node
+spec:
+  ignore: |
+    /*
+    !/charts
+  interval: 1m0s
+  ref:
+    branch: branch-ci-fixes
+  url: https://github.com/hashgraph/hedera-mirror-node.git

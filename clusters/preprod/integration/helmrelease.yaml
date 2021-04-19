@@ -2,7 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: mirror
-  namespace: flux-system
+  namespace: integration
 spec:
   chart:
     spec:
@@ -10,5 +10,46 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
-        namespace: flux-system
-  targetNamespace: integration
+      valuesFile: values-prod.yaml
+  dependsOn:
+    - name: common
+      namespace: common
+  interval: 30s
+  rollback:
+    force: true
+  test:
+    enable: true
+  timeout: 10m
+  upgrade:
+    cleanupOnFail: true
+    force: true
+    remediation:
+      retries: 20
+  values:
+    importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              downloader:
+                cloudProvider: S3
+              initialAddressBook: "/etc/secrets/addressbook.bin"
+              network: OTHER
+              startDate: 1970-01-01T00:00:00Z
+      extraEnv:
+        - name: SPRING_CONFIG_IMPORT
+          value: "file:/etc/secrets/application.yaml"
+      extraVolumeMounts:
+        - name: custom
+          mountPath: /etc/secrets
+      extraVolumes:
+        - name: custom
+          secret:
+            defaultMode: 420
+            secretName: mirror-importer-custom
+    monitor:
+      config:
+        hedera:
+          mirror:
+            monitor:
+              network: OTHER

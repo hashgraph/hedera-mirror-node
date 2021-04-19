@@ -33,8 +33,10 @@ target/
 .project
 
 # Application specific
+/charts/
 hedera-mirror-importer/data/
 hedera-mirror-*/application.yml
+/hedera-mirror-*/
 /data/
 /db/
 *.log

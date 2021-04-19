@@ -1,7 +1,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: common
+  name: mirror
   namespace: common
 spec:
   chart:
@@ -10,4 +10,21 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
-        namespace: flux-system
+  interval: 1m
+  rollback:
+    force: true
+  test:
+    enable: true
+  timeout: 10m
+  upgrade:
+    cleanupOnFail: true
+    force: true
+    remediation:
+      retries: 5
+  values:
+    prometheus:
+      alertmanager:
+        alertmanagerSpec:
+          secrets:
+            - mirror-alertmanager
+
