@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
-      valuesFile: values-prod.yaml
+      valuesFile: charts/hedera-mirror/values-prod.yaml
   dependsOn:
     - name: common
       namespace: common
@@ -53,3 +53,4 @@ spec:
           mirror:
             monitor:
               network: OTHER
+
