@@ -11,10 +11,6 @@ spec:
         kind: GitRepository
         name: hedera-mirror-node
   interval: 1m
-  rollback:
-    force: true
-  test:
-    enable: true
   timeout: 10m
   upgrade:
     cleanupOnFail: true
