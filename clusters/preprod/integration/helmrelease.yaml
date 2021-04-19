@@ -12,7 +12,7 @@ spec:
         name: hedera-mirror-node
       valuesFile: charts/hedera-mirror/values-prod.yaml
   dependsOn:
-    - name: common
+    - name: mirror
       namespace: common
   interval: 30s
   rollback:
