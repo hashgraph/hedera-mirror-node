@@ -13,7 +13,12 @@ spec:
   source:
     helm:
       releaseName: mirror
-      values: ""
+      values: |-
+        prometheus:
+          alertmanager:
+            alertmanagerSpec:
+              secrets:
+                - mirror-alertmanager
     path: charts/hedera-mirror-common
     repoURL: https://github.com/hashgraph/hedera-mirror-node.git
     targetRevision: chart-ci-fixes

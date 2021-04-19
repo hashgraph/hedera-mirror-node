@@ -29,8 +29,34 @@ spec:
       releaseName: mirror
       valueFiles:
         - values-prod.yaml
-        - values-timescaledb.yaml
-      values: ""
+      values: |
+        importer:
+          config:
+            hedera:
+              mirror:
+                importer:
+                  downloader:
+                    cloudProvider: S3
+                  initialAddressBook: "/etc/secrets/addressbook.bin"
+                  network: OTHER
+                  startDate: 1970-01-01T00:00:00Z
+          extraEnv:
+            - name: SPRING_CONFIG_IMPORT
+              value: "file:/etc/secrets/application.yaml"
+          extraVolumeMounts:
+            - name: custom
+              mountPath: /etc/secrets
+          extraVolumes:
+            - name: custom
+              secret:
+                defaultMode: 420
+                secretName: mirror-importer
+        monitor:
+          config:
+            hedera:
+              mirror:
+                monitor:
+                  network: OTHER
     path: charts/hedera-mirror
     repoURL: https://github.com/hashgraph/hedera-mirror-node.git
     targetRevision: chart-ci-fixes
