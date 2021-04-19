@@ -63,9 +63,6 @@ importer:
         name: mirror-passwords
     - secretRef:
         name: mirror-redis
-  extraEnv:
-    - name: SPRING_PROFILES_ACTIVE
-      value: v2
 
 labels: {}
 

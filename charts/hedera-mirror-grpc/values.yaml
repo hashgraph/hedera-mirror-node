@@ -22,6 +22,7 @@ extraEnv: []
 # - name: SPRING_CONFIG_IMPORT
 #   value: "file:/etc/secrets/application.yaml"
 
+# Extra volumes mounts to add.
 extraVolumeMounts: []
 # - name: custom
 #   mountPath: /etc/secrets

@@ -28,6 +28,7 @@ extraEnv: []
 # - name: CONFIG_PATH
 #   value: "/etc/secrets/application.yaml"
 
+# Extra volumes mounts to add.
 extraVolumeMounts: []
 # - name: custom
 #   mountPath: /etc/secrets

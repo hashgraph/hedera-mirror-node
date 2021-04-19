@@ -38,19 +38,10 @@ support scaling up to more than one replica.
 
 In an effort to increase performance and reduce storage costs, the mirror node is switching to
 [TimescaleDB](https://docs.timescale.com/latest/main) by default. To deploy the mirror node chart using
-PostgreSQL instead of TimescaleDB use the below config for your `custom-values.yaml`:
-
-```yaml
-importer:
-  extraEnv: []
-postgresql:
-  enabled: true
-timescaledb:
-  enabled: false
-```
+PostgreSQL instead of TimescaleDB:
 
 ```shell
-$ helm upgrade --install "${RELEASE}" charts/hedera-mirror -f custom-values.yaml
+$ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enabled=true --set timescaledb.enabled=false
 ```
 
 ### Address Book
