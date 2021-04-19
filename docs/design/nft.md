@@ -19,7 +19,6 @@ the mirror node can be updated to add support for NFTs.
 
 ### Database
 
-- Update `t_entity_types` to add`NFT`
 - Update `t_transaction_results` with new response codes
   - TBA
 
@@ -30,8 +29,10 @@ the mirror node can be updated to add support for NFTs.
 create table if not exists nft
 (
   created_timestamp     bigint  primary key not null,
+  deleted               boolean             not null,
   hash                  bytea               not null,
   modified_timestamp    bigint              not null,
+  memo                  text    default ''  not null,
   nft_type_id           bigint              not null,
   serial_number         bigint              not null,
 );
@@ -121,11 +122,11 @@ Need information on file format. Effectively envision:
       "memo_base64": null,
       "name": "TOKENTRANSFER",
       "node": "0.0.3",
-      "nftTransfers": [
+      "nft_transfers": [
         {
-          "senderAccount": "0.0.122",
-          "receiverAccount": "0.0.121",
-          "serialNumber": "0.0.124"
+          "sender_account": "0.0.122",
+          "receiver_account": "0.0.121",
+          "serial_number": "0.0.124"
         }
       ],
       "result": "SUCCESS",
@@ -432,7 +433,10 @@ Optional Filters
   "memo": "NFT",
   "created_timestamp": "1610682445.003266000",
   "wipe_key": {
-    "_type": "ProtobufEncoded",
+    https: //hedera.zoom.us/j/8826097631?pwd=VUxmeW13Y0luREJuWmwxRFpHZzQvUT09
+    "_type"
+    :
+    "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
   },
   "modified_timestamp": "1618510697.682451000"
