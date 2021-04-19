@@ -128,7 +128,8 @@ Need information on file format. Effectively envision:
         {
           "sender_account": "0.0.122",
           "receiver_account": "0.0.121",
-          "serial_number": "0.0.124"
+          "serial_number": "0.0.124",
+          "token_id": "0.0.123"
         }
       ],
       "result": "SUCCESS",
