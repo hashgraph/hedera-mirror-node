@@ -181,7 +181,7 @@ Need information on file format. Effectively envision:
         "account": "0.0.8",
         "auto_renew_period": null,
         "balance": 80,
-        "deleted": false
+        "deleted": false,
         "expiry_timestamp": null,
         "key": null,
         "timestamp": "0.000002345",
