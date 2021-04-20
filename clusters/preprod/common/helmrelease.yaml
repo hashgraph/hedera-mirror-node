@@ -14,9 +14,8 @@ spec:
   timeout: 10m
   upgrade:
     cleanupOnFail: true
-    force: true
     remediation:
-      retries: 5
+      retries: 10
   values:
     prometheus:
       alertmanager:
