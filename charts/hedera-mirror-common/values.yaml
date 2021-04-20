@@ -195,6 +195,7 @@ prometheus:
           maxLines: 500
     admin:
       existingSecret: grafana-admin
+    adminPassword: ""  # Randomly generated if left blank
     defaultDashboardsEnabled: true
     grafana.ini:
       server:
