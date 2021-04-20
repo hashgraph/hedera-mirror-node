@@ -33,7 +33,6 @@ spec:
                 cloudProvider: S3
               initialAddressBook: "/etc/secrets/addressbook.bin"
               network: OTHER
-              startDate: 1970-01-01T00:00:00Z
       extraEnv:
         - name: SPRING_CONFIG_IMPORT
           value: "file:/etc/secrets/application.yaml"
