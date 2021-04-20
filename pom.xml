@@ -226,6 +226,12 @@
                     <artifactId>jib-maven-plugin</artifactId>
                     <version>${jib.version}</version>
                     <configuration>
+                        <container>
+                            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+                            <jvmFlags>
+                                <jvmFlag>-XX:MaxRAMPercentage=70</jvmFlag>
+                            </jvmFlags>
+                        </container>
                         <extraDirectories>
                             <paths>
                                 <path>${docker.resources}</path>
@@ -234,9 +240,6 @@
                         <to>
                             <image>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</image>
                         </to>
-                        <container>
-                            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
-                        </container>
                     </configuration>
                     <executions>
                         <execution>
