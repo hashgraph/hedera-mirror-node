@@ -51,6 +51,17 @@ spec:
           mirror:
             monitor:
               network: OTHER
+      extraEnv:
+        - name: SPRING_CONFIG_IMPORT
+          value: "file:/etc/secrets/application.yaml"
+      extraVolumeMounts:
+        - name: custom
+          mountPath: /etc/secrets
+      extraVolumes:
+        - name: custom
+          secret:
+            defaultMode: 420
+            secretName: mirror-monitor-custom
   valuesFrom:
     - kind: ConfigMap
       name: mirror-values-prod
