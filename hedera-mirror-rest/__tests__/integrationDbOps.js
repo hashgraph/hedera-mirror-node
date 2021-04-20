@@ -53,7 +53,7 @@ const v1SchemaConfigs = {
 const v2SchemaConfigs = {
   docker: {
     imageName: 'timescale/timescaledb-ha',
-    tagName: 'pg12.6-ts2.1.1-latest',
+    tagName: 'pg13-ts2.2-latest',
   },
   flyway: {
     baselineVersion: '1.999.999',
@@ -125,6 +125,10 @@ const flywayMigrate = () => {
     "password": "${dbAdminPassword}",
     "placeholders.api-password": "${dbConfig.password}",
     "placeholders.api-user": "${dbConfig.username}",
+    "placeholders.autovacuumFreezeMaxAgeInsertOnly": 100000,
+    "placeholders.autovacuumVacuumInsertThresholdCryptoTransfer": 18000000,
+    "placeholders.autovacuumVacuumInsertThresholdTokenTransfer": 2000,
+    "placeholders.autovacuumVacuumInsertThresholdTransaction": 6000000,
     "placeholders.chunkIdInterval": 10000,
     "placeholders.chunkTimeInterval": 604800000000000,
     "placeholders.compressionAge": 9007199254740991,
