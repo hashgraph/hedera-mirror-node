@@ -21,33 +21,33 @@ grpc:
     password: ""  # Randomly generated if left blank
     username: mirror_grpc
   enabled: true
-  extraEnv:
-    - name: HEDERA_MIRROR_GRPC_DB_HOST
+  env:
+    HEDERA_MIRROR_GRPC_DB_HOST:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_HOST
-    - name: HEDERA_MIRROR_GRPC_DB_NAME
+    HEDERA_MIRROR_GRPC_DB_NAME:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_NAME
-    - name: HEDERA_MIRROR_GRPC_DB_PASSWORD
+    HEDERA_MIRROR_GRPC_DB_PASSWORD:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_GRPC_DB_PASSWORD
-    - name: HEDERA_MIRROR_GRPC_DB_USERNAME
+    HEDERA_MIRROR_GRPC_DB_USERNAME:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_GRPC_DB_USERNAME
-    - name: SPRING_REDIS_HOST
+    SPRING_REDIS_HOST:
       valueFrom:
         secretKeyRef:
           name: mirror-redis
           key: SPRING_REDIS_HOST
-    - name: SPRING_REDIS_PASSWORD
+    SPRING_REDIS_PASSWORD:
       valueFrom:
         secretKeyRef:
           name: mirror-redis
@@ -213,23 +213,23 @@ rest:
     password: ""  # Randomly generated if left blank
     username: mirror_rest
   enabled: true
-  extraEnv:
-    - name: HEDERA_MIRROR_REST_DB_HOST
+  env:
+    HEDERA_MIRROR_REST_DB_HOST:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_HOST
-    - name: HEDERA_MIRROR_REST_DB_NAME
+    HEDERA_MIRROR_REST_DB_NAME:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_NAME
-    - name: HEDERA_MIRROR_REST_DB_PASSWORD
+    HEDERA_MIRROR_REST_DB_PASSWORD:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD
-    - name: HEDERA_MIRROR_REST_DB_USERNAME
+    HEDERA_MIRROR_REST_DB_USERNAME:
       valueFrom:
         secretKeyRef:
           name: mirror-passwords

@@ -37,8 +37,8 @@ support scaling up to more than one replica.
 ### PostgreSQL
 
 In an effort to increase performance and reduce storage costs, the mirror node is switching to
-[TimescaleDB](https://docs.timescale.com/latest/main) by default. To deploy the mirror node chart using
-PostgreSQL instead of TimescaleDB:
+[TimescaleDB](https://docs.timescale.com/latest/main) by default. To deploy the mirror node chart using PostgreSQL
+instead of TimescaleDB:
 
 ```shell
 $ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enabled=true --set timescaledb.enabled=false
@@ -55,8 +55,8 @@ updated with an initial address book file prior to deploying the chart.
 $ kubectl create secret generic mirror-importer-addressbook --from-file=addressbook.bin=/Downloads/perf.bin
 ```
 
-2. Then create a local values file (i.e. `custom.yaml`) to set the `network`, `initialAddressBook`, `extraVolumes`,
-   and `extraVolumeMounts` properties:
+2. Then create a local values file (i.e. `custom.yaml`) to set the `network`, `initialAddressBook`, `volumes`,
+   and `volumeMounts` properties:
 
 ```yaml
 importer:
@@ -66,11 +66,11 @@ importer:
         importer:
           initialAddressBook: "/usr/etc/addressbook/addressbook.bin"
           network: "OTHER"
-  extraVolumeMounts:
-    - name: addressbook
+  volumeMounts:
+    addressbook:
       mountPath: /usr/etc/addressbook
-  extraVolumes:
-    - name: addressbook
+  volumes:
+    addressbook:
       secret:
         defaultMode: 420
         secretName: mirror-importer-addressbook

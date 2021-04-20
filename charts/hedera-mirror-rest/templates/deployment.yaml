@@ -23,10 +23,13 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           env:
-            - name: CONFIG_PATH
-              value: "/usr/etc/hedera-mirror-rest/"
-            {{- with .Values.extraEnv }}
-            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+            {{- if kindIs "string" $value }}
+              value: {{ tpl $value $ | quote }}
+            {{- else }}
+            {{- tpl (toYaml $value) $ | nindent 14 }}
+            {{- end }}
             {{- end }}
           envFrom: {{ tpl (toYaml .Values.envFrom) . | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -40,10 +43,9 @@ spec:
           resources: {{ toYaml .Values.resources | nindent 12 }}
           securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:
-            - name: config
-              mountPath: /usr/etc/hedera-mirror-rest
-            {{- with .Values.extraVolumeMounts }}
-            {{- toYaml . | nindent 12 }}
+            {{- range $name, $config := .Values.volumeMounts }}
+            - name: {{ $name }}
+            {{- tpl (toYaml $config) $ | nindent 14 }}
             {{- end }}
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
@@ -53,10 +55,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       tolerations: {{ toYaml .Values.tolerations | nindent 8 }}
       volumes:
-        - name: config
-          secret:
-            defaultMode: 420
-            secretName: {{ include "hedera-mirror-rest.fullname" . }}
-        {{- with .Values.extraVolumes }}
-        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- range $name, $config := .Values.volumes }}
+        - name: {{ $name }}
+        {{- tpl (toYaml $config) $ | nindent 10 }}
         {{- end }}

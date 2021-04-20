@@ -17,27 +17,20 @@ config:
         db:
           loadBalance: false
 
+# Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
+env:
+  SPRING_CLOUD_KUBERNETES_ENABLED: "true"
+  SPRING_CONFIG_ADDITIONAL_LOCATION: "file:/usr/etc/hedera/"
+  # FOO:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: '{{ .Release.Name }}-custom'
+  #       key: BAR
+
 # Add config maps or secrets as environment variables. Evaluated as a template.
 envFrom: []
 # - secretRef:
 #     name: '{{ .Release.Name }}-env'
-
-# Extra environment variables to add. Evaluated as a template.
-extraEnv: []
-# - name: SPRING_CONFIG_IMPORT
-#   value: "file:/etc/secrets/application.yaml"
-
-# Extra volumes mounts to add.
-extraVolumeMounts: []
-# - name: addressbook
-#   mountPath: /usr/etc/addressbook
-
-# Extra volumes to add. Evaluated as a template.
-extraVolumes:
-# - name: addressbook
-#   secret:
-#     defaultMode: 420
-#     secretName: '{{ include "hedera-mirror-importer.fullname" . }}-addressbook'
 
 fullnameOverride: ""
 
@@ -299,3 +292,15 @@ tolerations: []
 # Will have more than one replica in production, so need a rolling update to ensure at least one pod is ready
 updateStrategy:
   type: RollingUpdate
+
+# Volumes to add to the container. The key is the volume name and the value is the volume mount definition. The same keys should also appear in volumes below.
+volumeMounts:
+  config:
+    mountPath: /usr/etc/hedera
+
+# Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
+volumes:
+  config:
+    secret:
+      defaultMode: 420
+      secretName: '{{ include "hedera-mirror-importer.fullname" . }}'
