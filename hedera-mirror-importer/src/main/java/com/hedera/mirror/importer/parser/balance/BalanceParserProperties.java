@@ -40,7 +40,6 @@ public class BalanceParserProperties extends AbstractParserProperties {
 
     public BalanceParserProperties(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
-        setQueueCapacity(40);
         retry.setMaxAttempts(3);
     }
 
