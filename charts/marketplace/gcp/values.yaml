@@ -54,7 +54,6 @@ importer:
           group:
             readiness:
               exclude: redis
-  extraEnv: []
   rbac:
     enabled: false
   replicas: 1
@@ -69,7 +68,7 @@ postgresql:
   pgpool:
     replicaCount: 0
   postgresql:
-    upgradeRepmgrExtension: true #upgrade repmgr version to 5.2 or else container spinup fails
+    upgradeRepmgrExtension: true  # Upgrade repmgr version to 5.2 or else container spinup fails
   postgresqlImage:
     tag: 12.5.0-debian-10-r88
 

@@ -155,11 +155,6 @@ properties:
     type: string
     description: The start date (inclusive) of the data to import. Items before this date will be ignored. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
     title: Importer data start date
-  importer.persistence.size:
-    default: 10Gi
-    description: The storage size for the importer persistent volume
-    title: Importer storage size
-    type: string
   importer.serviceAccount.name:
     type: string
     title: Importer service account
