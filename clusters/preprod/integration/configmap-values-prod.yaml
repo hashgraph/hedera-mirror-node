@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirror-values-prod
+  namespace: integration
+data:
+  values.yaml: |+
+    # These values are production values used in combination with the hedera-mirror-common chart
+    # This file is a duplicate of https://github.com/hashgraph/hedera-mirror-node/blob/master/charts/hedera-mirror/values-prod.yaml and should be manually kept in sync until Flux adds support for merging value files.
+    grpc:
+      ingress:
+        middleware:
+          enabled: true
+      priorityClassName: medium
+      prometheusRules:
+        enabled: true
+      serviceMonitor:
+        enabled: true
+
+    importer:
+      podMonitor:
+        enabled: true
+      priorityClassName: high
+      prometheusRules:
+        enabled: true
+
+    monitor:
+      podMonitor:
+        enabled: true
+      priorityClassName: medium
+      prometheusRules:
+        enabled: true
+
+    postgresql:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      pgpool:
+        priorityClassName: critical
+        replicaCount: 2
+      postgresql:
+        priorityClassName: critical
+        replicaCount: 2
+
+    redis:
+      cluster:
+        slaveCount: 3
+      metrics:
+        enabled: true
+      slave:
+        priorityClassName: critical
+
+    rest:
+      ingress:
+        middleware:
+          enabled: true
+      priorityClassName: medium
+      prometheusRules:
+        enabled: true
+      serviceMonitor:
+        enabled: true
+
+    timescaledb:
+      podMonitor:
+        enabled: true
+      prometheus:
+        enabled: true
+      replicaCount: 2
+

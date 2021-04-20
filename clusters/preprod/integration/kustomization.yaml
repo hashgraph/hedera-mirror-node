@@ -6,4 +6,5 @@ resources:
   - gitrepository.yaml
   - sealed-secret-importer.yaml
   - sealed-secret-monitor.yaml
+  - configmap-values-prod.yaml
   - helmrelease.yaml
