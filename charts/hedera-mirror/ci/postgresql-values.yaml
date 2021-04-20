@@ -1,10 +1,10 @@
 # CT generates release names that are too long for postgresql-ha, so we override it here
 db:
-  host: pgdb-pgpool
+  host: p
 monitor:
   enabled: false
 postgresql:
   enabled: true
-  fullnameOverride: pgdb
+  fullnameOverride: p-postgres
 timescaledb:
   enabled: false
