@@ -29,15 +29,12 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyManager;
+import org.postgresql.copy.PGCopyOutputStream;
 
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -53,7 +50,6 @@ public class PgCopy<T> {
     private final String tableName;
     private final String sql;
     private final ObjectWriter writer;
-    private final Timer buildCsvDurationMetric;
     private final Timer insertDurationMetric;
     private final ParserProperties properties;
 
@@ -72,10 +68,6 @@ public class PgCopy<T> {
                 .collect(Collectors.joining(", "));
         sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv);
 
-        buildCsvDurationMetric = Timer.builder("hedera.mirror.importer.parse.csv")
-                .description("Time to build csv string")
-                .tag("table", tableName)
-                .register(meterRegistry);
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
                 .tag("table", tableName)
@@ -88,23 +80,18 @@ public class PgCopy<T> {
         }
 
         try {
-            var reader = buildCsv(items);
             Stopwatch stopwatch = Stopwatch.createStarted();
-            CopyManager copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
-            long rowsCount = copyManager.copyIn(sql, reader, properties.getBufferSize());
+            PGConnection pgConnection = connection.unwrap(PGConnection.class);
+
+            try (var pgCopyOutputStream = new PGCopyOutputStream(pgConnection, sql, properties.getBufferSize())) {
+                writer.writeValue(pgCopyOutputStream, items);
+            }
+
             insertDurationMetric.record(stopwatch.elapsed());
-            log.info("Copied {} rows to {} table in {}", rowsCount, tableName, stopwatch);
+            log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }
-    }
-
-    private Reader buildCsv(Collection<T> items) throws IOException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        String csv = writer.writeValueAsString(items);
-        buildCsvDurationMetric.record(stopwatch.elapsed());
-        log.trace("CSV for {} of size {} generated in {}", tableName, csv.length(), stopwatch);
-        return new StringReader(csv);
     }
 }
 
