@@ -229,7 +229,7 @@ volumeMounts:
   config:
     mountPath: /usr/etc/hedera
   tmp:
-    mountPath: /tmp # Vertx needs a writable cache directory
+    mountPath: /tmp  # Vertx needs a writable cache directory
 
 # Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
 volumes:
