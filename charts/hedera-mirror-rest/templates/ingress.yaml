@@ -10,8 +10,7 @@ metadata:
     {{ $key }}: {{ tpl $value $ | quote }}
     {{- end }}
   {{- end }}
-  labels:
-    {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ $fullName }}
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:

@@ -2,8 +2,8 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: {{ printf "%s-timescaledb" .Release.Name }}
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.fullname" . }}-timescaledb
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
   podMetricsEndpoints:

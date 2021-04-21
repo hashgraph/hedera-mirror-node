@@ -1,10 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    {{- toYaml .Values.annotations | nindent 4 }}
-  labels:
-    {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
+  annotations: {{ toYaml .Values.annotations | nindent 4 }}
+  labels: {{ include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:
@@ -13,57 +11,51 @@ spec:
   {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
-    matchLabels:
-      {{- include "hedera-mirror-rest.selectorLabels" . | nindent 6 }}
-  strategy:
-    {{- toYaml .Values.updateStrategy | nindent 4 }}
+    matchLabels: {{ include "hedera-mirror-rest.selectorLabels" . | nindent 6 }}
+  strategy: {{ toYaml .Values.updateStrategy | nindent 4 }}
   template:
     metadata:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
-      labels:
-        {{- include "hedera-mirror-rest.selectorLabels" . | nindent 8 }}
+      labels: {{ include "hedera-mirror-rest.selectorLabels" . | nindent 8 }}
     spec:
-      affinity:
-        {{- toYaml .Values.affinity | nindent 8 }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           env:
-            - name: CONFIG_PATH
-              value: "/usr/etc/hedera-mirror-rest/"
-            - name: HEDERA_MIRROR_REST_DB_HOST
-              value: {{ include "hedera-mirror-rest.db-host" . }}
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+            {{- if kindIs "string" $value }}
+              value: {{ tpl $value $ | quote }}
+            {{- else }}
+            {{- tpl (toYaml $value) $ | nindent 14 }}
+            {{- end }}
+            {{- end }}
+          envFrom: {{ tpl (toYaml .Values.envFrom) . | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
           ports:
             - containerPort: 5551
               name: http
               protocol: TCP
-          readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+          readinessProbe: {{ toYaml .Values.readinessProbe | nindent 12 }}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:
-            - name: config
-              mountPath: /usr/etc/hedera-mirror-rest
-      imagePullSecrets:
-        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
-      nodeSelector:
-        {{- toYaml .Values.nodeSelector | nindent 8 }}
+            {{- range $name, $config := .Values.volumeMounts }}
+            - name: {{ $name }}
+            {{- tpl (toYaml $config) $ | nindent 14 }}
+            {{- end }}
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       priorityClassName: {{ .Values.priorityClassName }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      securityContext: {{ toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "hedera-mirror-rest.serviceAccountName" . }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
-      tolerations:
-        {{- toYaml .Values.tolerations | nindent 8 }}
+      tolerations: {{ toYaml .Values.tolerations | nindent 8 }}
       volumes:
-        - name: config
-          secret:
-            defaultMode: 420
-            secretName: {{ include "hedera-mirror-rest.fullname" . }}
-
+        {{- range $name, $config := .Values.volumes }}
+        - name: {{ $name }}
+        {{- tpl (toYaml $config) $ | nindent 10 }}
+        {{- end }}

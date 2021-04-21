@@ -193,7 +193,9 @@ prometheus:
         url: http://{{ .Release.Name }}-loki:3100
         jsonData:
           maxLines: 500
-    adminPassword: ""
+    admin:
+      existingSecret: grafana-admin
+    adminPassword: ""  # Randomly generated if left blank
     defaultDashboardsEnabled: true
     grafana.ini:
       server:

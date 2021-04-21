@@ -38,6 +38,7 @@ target/
 hedera-mirror-importer/data/
 application*.yaml
 application*.yml
+Chart.lock
 /data/
 /db/
 /timescaledb/
@@ -114,9 +115,6 @@ local.properties
 
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
-
-# Annotation Processing
-.apt_generated
 
 .sts4-cache/
 

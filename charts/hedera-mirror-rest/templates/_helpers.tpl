@@ -8,17 +8,6 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
-Database host
-*/}}
-{{- define "hedera-mirror-rest.db-host" -}}
-{{- $host := .Values.config.hedera.mirror.rest.db.host | default "" -}}
-{{- if .Values.global.db -}}
-{{- $host = .Values.global.db.host }}
-{{- end -}}
-{{- replace "RELEASE-NAME" .Release.Name $host -}}
-{{- end -}}
-
-{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.

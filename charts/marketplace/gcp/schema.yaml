@@ -3,7 +3,7 @@ form:
     description: |
       Hedera Mirror Node retrieves transaction data from Google Cloud Stroage. The Mirror Node operator is
       responsible for the operational costs of reading and retrieving data from the Google Cloud bucket. See our
-      <a href="https://docs.hedera.com/guides/mainnet/nodes/mirror-nodes#1-obtain-google-cloud-platform-requester-pay-information">documentation</a>
+      <a href="https://docs.hedera.com/guides/mirrornet/run-your-own-beta-mirror-node#1-obtain-google-cloud-platform-requester-pay-information">documentation</a>
       for information on how to obtain a GCP account and use it to populate the importer access key, secret key and
       billing project ID.
 
@@ -18,7 +18,7 @@ x-google-marketplace:
   publishedVersionMetadata:
     releaseNote: >-
       v0.27 brings many new features to the mirror node marketplace application since v0.13.
-      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/master/charts/marketplace/gcp#v0.27">v0.27 Upgrade</a> for additional upgrade steps.
+      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/master/charts/marketplace/gcp#v027">v0.27 Upgrade</a> for additional upgrade steps.
 
       The largest feature introduced since v0.13 is that of the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
       Token entity types are now ingested to the DB and can be queried through new REST APIs.
@@ -82,16 +82,7 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
-  global.rest.password:
-    type: string
-    description: The password used by the REST API to connect to the database
-    title: REST API database password
-    x-google-marketplace:
-      type: GENERATED_PASSWORD
-      generatedPassword:
-        length: 24
-        base64: False
-  grpc.config.hedera.mirror.grpc.db.password:
+  grpc.db.password:
     type: string
     description: The password used by the gRPC API to connect to the database
     title: gRPC API database password
@@ -124,7 +115,7 @@ properties:
               - apiGroups: [ '' ]
                 resources: [ 'pods' ]
                 verbs: [ 'get' ]
-  importer.config.hedera.mirror.importer.db.password:
+  importer.db.password:
     type: string
     description: The password used by the importer to connect to the database
     title: Importer database password
@@ -164,11 +155,6 @@ properties:
     type: string
     description: The start date (inclusive) of the data to import. Items before this date will be ignored. Format - YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ
     title: Importer data start date
-  importer.persistence.size:
-    default: 10Gi
-    description: The storage size for the importer persistent volume
-    title: Importer storage size
-    type: string
   importer.serviceAccount.name:
     type: string
     title: Importer service account
@@ -204,6 +190,15 @@ properties:
     type: string
     description: The password used by the PostgreSQL Replication Manager to connect to the database
     title: PostgreSQL Repmgr password
+    x-google-marketplace:
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
+  rest.db.password:
+    type: string
+    description: The password used by the REST API to connect to the database
+    title: REST API database password
     x-google-marketplace:
       type: GENERATED_PASSWORD
       generatedPassword:
