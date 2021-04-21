@@ -7,6 +7,4 @@ spec:
     /*
     !/charts
   interval: 1m0s
-  ref:
-    branch: chart-ci-fixes
   url: https://github.com/hashgraph/hedera-mirror-node.git

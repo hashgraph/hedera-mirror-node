@@ -13,9 +13,13 @@ spec:
   dependsOn:
     - name: mirror
       namespace: common
+  install:
+    createNamespace: true
   interval: 30s
+  releaseName: mirror
   rollback:
     force: true
+  targetNamespace: integration
   test:
     enable: true
   timeout: 10m
@@ -33,14 +37,13 @@ spec:
                 cloudProvider: S3
               initialAddressBook: "/etc/secrets/addressbook.bin"
               network: OTHER
-      extraEnv:
-        - name: SPRING_CONFIG_IMPORT
-          value: "file:/etc/secrets/application.yaml"
-      extraVolumeMounts:
-        - name: custom
+      env:
+        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
+      volumeMounts:
+        custom:
           mountPath: /etc/secrets
-      extraVolumes:
-        - name: custom
+      volumes:
+        custom:
           secret:
             defaultMode: 420
             secretName: mirror-importer-custom
@@ -50,14 +53,13 @@ spec:
           mirror:
             monitor:
               network: OTHER
-      extraEnv:
-        - name: SPRING_CONFIG_IMPORT
-          value: "file:/etc/secrets/application.yaml"
-      extraVolumeMounts:
-        - name: custom
+      env:
+        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
+      volumeMounts:
+        custom:
           mountPath: /etc/secrets
-      extraVolumes:
-        - name: custom
+      volumes:
+        custom:
           secret:
             defaultMode: 420
             secretName: mirror-monitor-custom
