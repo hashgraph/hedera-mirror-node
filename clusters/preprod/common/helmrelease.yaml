@@ -10,12 +10,8 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
-  install:
-    createNamespace: true
   interval: 1m
   timeout: 10m
-  releaseName: mirror
-  targetNamespace: common
   upgrade:
     cleanupOnFail: true
     remediation:

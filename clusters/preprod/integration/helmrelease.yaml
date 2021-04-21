@@ -13,13 +13,9 @@ spec:
   dependsOn:
     - name: mirror
       namespace: common
-  install:
-    createNamespace: true
   interval: 30s
-  releaseName: mirror
   rollback:
     force: true
-  targetNamespace: integration
   test:
     enable: true
   timeout: 10m
