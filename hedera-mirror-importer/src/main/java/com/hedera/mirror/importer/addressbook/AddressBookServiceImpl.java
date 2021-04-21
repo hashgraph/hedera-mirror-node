@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.addressbook;
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME;
 import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -32,7 +33,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -279,22 +279,21 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) {
-//        ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
+        ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
         Set<Long> nodeIdSet = new HashSet<>();
-        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
 
         for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
-            addressBookEntries.addAll(parseNodeAddressEntries(nodeAddressProto, consensusTimestamp));
+            builder.addAll(parseNodeAddressEntries(nodeAddressProto, consensusTimestamp));
             nodeIdSet.add(nodeAddressProto.getNodeId());
         }
 
-//        List<AddressBookEntry> addressBookEntryList = builder.build();
+        List<AddressBookEntry> addressBookEntryList = builder.build();
         if (nodeIdSet.size() == 1) {
             // clear the node ID when all of them are the same
-            addressBookEntries.forEach(addressBookEntry -> addressBookEntry.setNodeId(null));
+            addressBookEntryList.forEach(addressBookEntry -> addressBookEntry.setNodeId(null));
         }
 
-        return addressBookEntries;
+        return addressBookEntryList;
     }
 
     private Collection<AddressBookEntry> parseNodeAddressEntries(NodeAddress nodeAddressProto,

@@ -162,13 +162,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
         // copy other addressbook to file system
         FileCopier fileCopier = FileCopier.create(testPath, dataPath)
                 .from("")
-                .filterFiles("perf.f102.bin")
+                .filterFiles("test-v1")
                 .to("");
         fileCopier.copy();
 
         MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
         otherNetworkMirrorProperties.setDataPath(dataPath);
-        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("perf.f102.bin"));
+        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
                 fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
