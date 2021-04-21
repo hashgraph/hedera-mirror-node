@@ -23,14 +23,16 @@ package com.hedera.mirror.importer.addressbook;
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME;
 import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
 
-import com.google.common.collect.ImmutableList;
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +68,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
     public static final String ADDRESS_BOOK_102_CACHE_NAME = "current_102_address_book";
+    static final int NODE_ADDRESS_SERVICE_ENDPOINT_PROTOBUF_TAG = 8;
 
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
@@ -276,32 +279,73 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) {
-        ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
+//        ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
         Set<Long> nodeIdSet = new HashSet<>();
+        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
 
         for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
-            int port = nodeAddressProto.getPortno();
-            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
-                    .consensusTimestamp(consensusTimestamp)
-                    .memo(nodeAddressProto.getMemo().toStringUtf8())
-                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                    .port(port == 0 ? null : port)
-                    .publicKey(nodeAddressProto.getRSAPubKey())
-                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                    .nodeId(nodeAddressProto.getNodeId())
-                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
-                    .build();
-            builder.add(addressBookEntry);
+            addressBookEntries.addAll(parseNodeAddressEntries(nodeAddressProto, consensusTimestamp));
             nodeIdSet.add(nodeAddressProto.getNodeId());
         }
 
-        List<AddressBookEntry> addressBookEntryList = builder.build();
+//        List<AddressBookEntry> addressBookEntryList = builder.build();
         if (nodeIdSet.size() == 1) {
             // clear the node ID when all of them are the same
-            addressBookEntryList.forEach(addressBookEntry -> addressBookEntry.setNodeId(null));
+            addressBookEntries.forEach(addressBookEntry -> addressBookEntry.setNodeId(null));
         }
 
-        return addressBookEntryList;
+        return addressBookEntries;
+    }
+
+    private Collection<AddressBookEntry> parseNodeAddressEntries(NodeAddress nodeAddressProto,
+                                                                 long consensusTimestamp) {
+        return nodeAddressProto.getServiceEndpointCount() == 0 ?
+                parseNodeAddressPreV013(nodeAddressProto, consensusTimestamp) :
+                parseNodeAddressFromV013(nodeAddressProto, consensusTimestamp);
+    }
+
+    private Collection<AddressBookEntry> parseNodeAddressPreV013(NodeAddress nodeAddressProto,
+                                                                 long consensusTimestamp) {
+        int port = nodeAddressProto.getPortno();
+        return List.of(AddressBookEntry.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .memo(nodeAddressProto.getMemo().toStringUtf8())
+                .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                .port(port == 0 ? null : port)
+                .publicKey(nodeAddressProto.getRSAPubKey())
+                .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                .nodeId(nodeAddressProto.getNodeId())
+                .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
+                .build());
+    }
+
+    private Collection<AddressBookEntry> parseNodeAddressFromV013(NodeAddress nodeAddressProto,
+                                                                  long consensusTimestamp) {
+        Set<AddressBookEntry> nodeEntries = new HashSet<>();
+        AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .description(nodeAddressProto.getDescription())
+                .publicKey(nodeAddressProto.getRSAPubKey())
+                .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                .nodeId(nodeAddressProto.getNodeId())
+                .stake(nodeAddressProto.getStake())
+                .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()));
+
+        // create an addressBookEntry for each ServiceEndpoint
+        for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
+            ByteString ipAddressByteString = serviceEndpoint.getIpAddressV4();
+            if (ipAddressByteString == null || ipAddressByteString.isEmpty()) {
+                throw new IllegalStateException(String
+                        .format("Invalid IpAddressV4: %s", ipAddressByteString));
+            }
+
+            nodeEntries.add(addressBookEntryBuilder
+                    .ip(ipAddressByteString.toStringUtf8())
+                    .port(serviceEndpoint.getPort())
+                    .build());
+        }
+
+        return nodeEntries;
     }
 
     /**
