@@ -68,6 +68,9 @@ labels: {}
 
 monitor:
   enabled: true
+  env:
+    HEDERA_MIRROR_MONITOR_MIRROR_NODE_GRPC_HOST: "{{ .Release.Name }}-grpc"
+    HEDERA_MIRROR_MONITOR_MIRROR_NODE_REST_HOST: "{{ .Release.Name }}-rest"
 
 networkPolicy:
   enabled: false
