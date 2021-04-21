@@ -1,8 +1,2 @@
-# CT generates release names that are too long for postgresql-ha, so we override it here
-global:
-  db:
-    host: pgdb-pgpool
 monitor:
   enabled: false
-postgresql:
-  fullnameOverride: pgdb
