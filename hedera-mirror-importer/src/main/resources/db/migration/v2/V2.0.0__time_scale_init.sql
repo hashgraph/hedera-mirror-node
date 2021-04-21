@@ -41,13 +41,15 @@ create table if not exists address_book_entry
 (
     id                  serial,
     consensus_timestamp bigint        not null,
+    description         varchar(100)  null,
     ip                  varchar(128)  null,
     port                integer       null,
     memo                varchar(128)  null,
     public_key          varchar(1024) null,
     node_id             bigint        null,
     node_account_id     bigint        null,
-    node_cert_hash      bytea         null
+    node_cert_hash      bytea         null,
+    stake               bigint        null
 );
 comment on table address_book_entry is 'Network address book node entries';
 

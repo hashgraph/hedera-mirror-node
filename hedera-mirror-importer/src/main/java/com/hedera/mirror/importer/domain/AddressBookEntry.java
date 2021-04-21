@@ -52,6 +52,8 @@ public class AddressBookEntry {
 
     private Long consensusTimestamp;
 
+    private String description;
+
     private String memo;
 
     private String ip;
@@ -59,6 +61,8 @@ public class AddressBookEntry {
     private Integer port;
 
     private String publicKey;
+
+    private Long stake;
 
     private Long nodeId;
 
