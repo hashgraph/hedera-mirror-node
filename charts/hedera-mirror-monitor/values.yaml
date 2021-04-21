@@ -20,8 +20,6 @@ config:
 
 # Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
 env:
-  HEDERA_MIRROR_MONITOR_MIRROR_NODE_HOST_GRPC: "{{ .Release.Name }}-grpc"
-  HEDERA_MIRROR_MONITOR_MIRROR_NODE_HOST_REST: "{{ .Release.Name }}-rest"
   SPRING_CLOUD_KUBERNETES_ENABLED: "true"
   SPRING_CONFIG_ADDITIONAL_LOCATION: "file:/usr/etc/hedera/"
   # FOO:
