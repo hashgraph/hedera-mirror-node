@@ -299,12 +299,12 @@ public class AddressBookServiceImpl implements AddressBookService {
     private Collection<AddressBookEntry> parseNodeAddressEntries(NodeAddress nodeAddressProto,
                                                                  long consensusTimestamp) {
         return nodeAddressProto.getServiceEndpointCount() == 0 ?
-                parseNodeAddressPreV013(nodeAddressProto, consensusTimestamp) :
-                parseNodeAddressFromV013(nodeAddressProto, consensusTimestamp);
+                parseNodeAddressWithoutServiceEndpoints(nodeAddressProto, consensusTimestamp) :
+                parseNodeAddressWithServiceEndpoints(nodeAddressProto, consensusTimestamp);
     }
 
-    private Collection<AddressBookEntry> parseNodeAddressPreV013(NodeAddress nodeAddressProto,
-                                                                 long consensusTimestamp) {
+    private Collection<AddressBookEntry> parseNodeAddressWithoutServiceEndpoints(NodeAddress nodeAddressProto,
+                                                                                 long consensusTimestamp) {
         int port = nodeAddressProto.getPortno();
         return List.of(AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
@@ -318,8 +318,8 @@ public class AddressBookServiceImpl implements AddressBookService {
                 .build());
     }
 
-    private Collection<AddressBookEntry> parseNodeAddressFromV013(NodeAddress nodeAddressProto,
-                                                                  long consensusTimestamp) {
+    private Collection<AddressBookEntry> parseNodeAddressWithServiceEndpoints(NodeAddress nodeAddressProto,
+                                                                              long consensusTimestamp) {
         Set<AddressBookEntry> nodeEntries = new HashSet<>();
         AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
