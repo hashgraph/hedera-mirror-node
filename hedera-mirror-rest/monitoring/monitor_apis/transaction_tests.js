@@ -72,7 +72,7 @@ const checkTransactionTransfers = (transactions, option) => {
  * @param {String} server API host endpoint
  */
 const getTransactionsWithAccountCheck = async (server) => {
-  let url = getUrl(server, transactionsPath, {limit: resourceLimit});
+  let url = getUrl(server, transactionsPath, {limit: resourceLimit, type: 'credit'});
   const transactions = await getAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
