@@ -3,9 +3,9 @@ kind: GitRepository
 metadata:
   name: hedera-mirror-node
 spec:
-  ignore: |
-    /*
-    !/charts
+#  ignore: |
+#    /*
+#    !/charts
   interval: 1m0s
   ref:
     branch: master
