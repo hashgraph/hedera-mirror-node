@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +41,7 @@ import java.util.Set;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -51,6 +53,7 @@ import org.springframework.util.CollectionUtils;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -283,7 +286,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         Set<Long> nodeIdSet = new HashSet<>();
 
         for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
-            builder.addAll(parseNodeAddressEntries(nodeAddressProto, consensusTimestamp));
+            builder.add(parseNodeAddressEntries(nodeAddressProto, consensusTimestamp));
             nodeIdSet.add(nodeAddressProto.getNodeId());
         }
 
@@ -296,31 +299,35 @@ public class AddressBookServiceImpl implements AddressBookService {
         return addressBookEntryList;
     }
 
-    private Collection<AddressBookEntry> parseNodeAddressEntries(NodeAddress nodeAddressProto,
-                                                                 long consensusTimestamp) {
+    private AddressBookEntry parseNodeAddressEntries(NodeAddress nodeAddressProto,
+                                                     long consensusTimestamp) {
         return nodeAddressProto.getServiceEndpointCount() == 0 ?
                 parseNodeAddressWithoutServiceEndpoints(nodeAddressProto, consensusTimestamp) :
                 parseNodeAddressWithServiceEndpoints(nodeAddressProto, consensusTimestamp);
     }
 
-    private Collection<AddressBookEntry> parseNodeAddressWithoutServiceEndpoints(NodeAddress nodeAddressProto,
-                                                                                 long consensusTimestamp) {
-        int port = nodeAddressProto.getPortno();
-        return List.of(AddressBookEntry.builder()
+    private AddressBookEntry parseNodeAddressWithoutServiceEndpoints(NodeAddress nodeAddressProto,
+                                                                     long consensusTimestamp) {
+        String memo = nodeAddressProto.getMemo().toStringUtf8();
+        EntityId memoNodeEntityId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId
+                .of(memo, EntityTypeEnum.ACCOUNT);
+
+        EntityId nodeEntityId = EntityId.of(nodeAddressProto.getNodeAccountId());
+
+        return AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
-                .memo(nodeAddressProto.getMemo().toStringUtf8())
-                .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                .port(port == 0 ? null : port)
-                .publicKey(nodeAddressProto.getRSAPubKey())
+                .memo(memo)
+                .nodeAccountId(nodeEntityId == EntityId.EMPTY ? memoNodeEntityId : nodeEntityId)
                 .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                 .nodeId(nodeAddressProto.getNodeId())
-                .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
-                .build());
+                .publicKey(nodeAddressProto.getRSAPubKey())
+                .build();
     }
 
-    private Collection<AddressBookEntry> parseNodeAddressWithServiceEndpoints(NodeAddress nodeAddressProto,
-                                                                              long consensusTimestamp) {
-        Set<AddressBookEntry> nodeEntries = new HashSet<>();
+    private AddressBookEntry parseNodeAddressWithServiceEndpoints(NodeAddress nodeAddressProto,
+                                                                  long consensusTimestamp) {
+        EntityId nodeAccountId = EntityId.of(nodeAddressProto.getNodeAccountId());
+        List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
         AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .description(nodeAddressProto.getDescription())
@@ -328,9 +335,9 @@ public class AddressBookServiceImpl implements AddressBookService {
                 .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                 .nodeId(nodeAddressProto.getNodeId())
                 .stake(nodeAddressProto.getStake())
-                .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()));
+                .nodeAccountId(nodeAccountId);
 
-        // create an addressBookEntry for each ServiceEndpoint
+        // create an AddressBookServiceEndpoint for each ServiceEndpoint
         for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
             ByteString ipAddressByteString = serviceEndpoint.getIpAddressV4();
             if (ipAddressByteString == null || ipAddressByteString.isEmpty()) {
@@ -338,13 +345,16 @@ public class AddressBookServiceImpl implements AddressBookService {
                         .format("Invalid IpAddressV4: %s", ipAddressByteString));
             }
 
-            nodeEntries.add(addressBookEntryBuilder
-                    .ip(ipAddressByteString.toStringUtf8())
-                    .port(serviceEndpoint.getPort())
-                    .build());
+            serviceEndpoints.add(new AddressBookServiceEndpoint(
+                    consensusTimestamp,
+                    ipAddressByteString.toStringUtf8(),
+                    serviceEndpoint.getPort(),
+                    nodeAccountId));
         }
 
-        return nodeEntries;
+        addressBookEntryBuilder.serviceEndpoints(serviceEndpoints);
+
+        return addressBookEntryBuilder.build();
     }
 
     /**

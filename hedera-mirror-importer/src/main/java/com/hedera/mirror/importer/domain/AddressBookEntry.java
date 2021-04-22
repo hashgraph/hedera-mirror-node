@@ -20,19 +20,27 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.List;
+import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinColumns;
+import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.apache.commons.codec.binary.Hex;
@@ -45,6 +53,8 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"publicKey", "nodeCertHash"})
+//@NamedEntityGraph(name = "AddressBookEntry.serviceEndpoints", attributeNodes = @NamedAttributeNode
+// ("serviceEndpoints"))
 public class AddressBookEntry {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -55,10 +65,6 @@ public class AddressBookEntry {
     private String description;
 
     private String memo;
-
-    private String ip;
-
-    private Integer port;
 
     private String publicKey;
 
@@ -71,6 +77,15 @@ public class AddressBookEntry {
 
     private byte[] nodeCertHash;
 
+    @EqualsAndHashCode.Exclude
+    @JsonIgnore
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
+    @JoinColumns({
+            @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp"),
+            @JoinColumn(name = "nodeAccountId", referencedColumnName = "nodeAccountId")
+    })
+    private List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
+
     public PublicKey getPublicKeyAsObject() {
         try {
             byte[] bytes = Hex.decodeHex(publicKey);
@@ -82,16 +97,8 @@ public class AddressBookEntry {
         }
     }
 
-    public EntityId getNodeAccountId() {
-        if (EntityId.isEmpty(nodeAccountId)) {
-            return memo == null ? null : EntityId.of(memo, EntityTypeEnum.ACCOUNT);
-        }
-
-        return nodeAccountId;
-    }
-
     @Transient
     public String getNodeAccountIdString() {
-        return EntityId.isEmpty(nodeAccountId) ? memo : nodeAccountId.entityIdToString();
+        return nodeAccountId.entityIdToString();
     }
 }

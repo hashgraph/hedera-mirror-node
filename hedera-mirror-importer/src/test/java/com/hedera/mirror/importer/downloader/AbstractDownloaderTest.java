@@ -603,8 +603,8 @@ public abstract class AbstractDownloaderTest {
     }
 
     protected void setTestFilesAndInstants(List<String> files) {
-        this.file1 = files.get(0);
-        this.file2 = files.get(1);
+        file1 = files.get(0);
+        file2 = files.get(1);
 
         file1Instant = new StreamFilename(file1).getInstant();
         file2Instant = new StreamFilename(file2).getInstant();
@@ -666,8 +666,8 @@ public abstract class AbstractDownloaderTest {
             AddressBookEntry addressBookEntry = AddressBookEntry.builder()
                     .consensusTimestamp(consensusTimestamp)
                     .memo(nodeAddressProto.getMemo().toStringUtf8())
-                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                    .port(nodeAddressProto.getPortno())
+//                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+//                    .port(nodeAddressProto.getPortno())
                     .publicKey(nodeAddressProto.getRSAPubKey())
                     .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                     .nodeId(nodeAddressProto.getNodeId())

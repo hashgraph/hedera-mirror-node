@@ -42,8 +42,6 @@ create table if not exists address_book_entry
     id                  serial,
     consensus_timestamp bigint        not null,
     description         varchar(100)  null,
-    ip                  varchar(128)  null,
-    port                integer       null,
     memo                varchar(128)  null,
     public_key          varchar(1024) null,
     node_id             bigint        null,
@@ -52,6 +50,16 @@ create table if not exists address_book_entry
     stake               bigint        null
 );
 comment on table address_book_entry is 'Network address book node entries';
+
+-- address_book_service_endpoint
+create table if not exists address_book_service_endpoint
+(
+    consensus_timestamp bigint       not null,
+    ip_address_v4       varchar(128) not null,
+    port                integer      not null,
+    node_account_id     bigint       null
+);
+comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
 -- contract_result
 create table if not exists contract_result

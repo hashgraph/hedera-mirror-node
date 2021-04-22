@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -43,7 +45,7 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void save() {
-        addressBookRepository.save(addressBook(null, 1L));
+//        addressBookRepository.save(addressBook(null, 1L));
         AddressBookEntry addressBookEntry = addressBookEntryRepository.save(addressBookEntry(null, 1L, 3));
         assertThat(addressBookEntryRepository.findById(addressBookEntry.getId()))
                 .get()
@@ -53,10 +55,24 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
     @Test
     void verifySequence() {
         long consensusTimestamp = 1L;
-        addressBookRepository.save(addressBook(null, consensusTimestamp));
+//        addressBookRepository.save(addressBook(null, consensusTimestamp));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 3));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 4));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 5));
+        assertThat(addressBookEntryRepository.findAll())
+                .isNotNull()
+                .extracting(AddressBookEntry::getId)
+                .containsSequence(1L, 2L, 3L);
+    }
+
+    @Test
+    void verifyAddressBookToEntryMapping() {
+        long consensusTimestamp = 1L;
+        addressBookRepository.save(addressBook(null, consensusTimestamp, List.of(3, 4, 5)));
+//        addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 3));
+        assertThat(addressBookRepository.findAll())
+                .isNotNull()
+                .hasSize(1);
         assertThat(addressBookEntryRepository.findAll())
                 .isNotNull()
                 .extracting(AddressBookEntry::getId)
@@ -67,7 +83,6 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
-                .ip("127.0.0.1")
                 .publicKey("rsa+public/key")
                 .memo(nodeAccountIdString)
                 .nodeAccountId(EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT))
@@ -82,7 +97,7 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
     }
 
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer,
-                                    long consensusTimestamp) {
+                                    long consensusTimestamp, List<Integer> accountNums) {
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
                 .startConsensusTimestamp(consensusTimestamp)
@@ -92,6 +107,12 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
         if (addressBookCustomizer != null) {
             addressBookCustomizer.accept(builder);
         }
+
+        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
+        accountNums.forEach((accountNum -> {
+            addressBookEntries.add(addressBookEntry(null, consensusTimestamp, accountNum));
+        }));
+        builder.entries(addressBookEntries);
 
         return builder.build();
     }
