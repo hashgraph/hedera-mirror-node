@@ -6,13 +6,18 @@ metadata:
 spec:
   chart:
     spec:
-      chart: ./charts/hedera-mirror
+      chart: charts/hedera-mirror
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
+      valuesFiles:
+        - charts/hedera-mirror/values.yaml
+        - charts/hedera-mirror/values-prod.yaml
   dependsOn:
     - name: mirror
       namespace: common
+  install:
+    crds: CreateReplace
   interval: 30s
   rollback:
     force: true
@@ -59,7 +64,4 @@ spec:
           secret:
             defaultMode: 420
             secretName: mirror-monitor-custom
-  valuesFrom:
-    - kind: ConfigMap
-      name: mirror-values-prod
 

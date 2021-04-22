@@ -10,6 +10,8 @@ spec:
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
+  install:
+    crds: CreateReplace
   interval: 1m
   timeout: 10m
   upgrade:
