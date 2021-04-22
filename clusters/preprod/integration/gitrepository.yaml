@@ -4,7 +4,7 @@ metadata:
   name: hedera-mirror-node
 spec:
   ignore: |
-    /hedera-mirror-**
+    /hedera-mirror-*
   interval: 1m0s
   ref:
     branch: master
