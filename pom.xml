@@ -444,47 +444,67 @@
                         <version>${replacer.version}</version>
                         <configuration>
                             <basedir>${project.basedir}</basedir>
-                            <includes>
-                                <include>charts/**/Chart.yaml</include>
-                                <include>docker-compose.yml</include>
-                                <include>hedera-mirror-rest/**/openapi.yml</include>
-                                <include>hedera-mirror-rest/package*.json</include>
-                                <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
-                                <include>hedera-mirror-rosetta/config/application*.yml</include>
-                                <include>hedera-mirror-test/src/test/resources/k8s/*.yml</include>
-                            </includes>
-                            <replacements>
-                                <replacement>
-                                    <token>
-                                        <![CDATA[(?<="hedera-mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
-                                    <value>${release.version}</value>
-                                </replacement>
-                                <replacement>
-                                    <token><![CDATA[(?<=appVersion: ")[0-9a-zA-Z.-]+]]></token>
-                                    <value>${release.version}</value>
-                                </replacement>
-                                <replacement>
-                                    <token><![CDATA[(?<=\sversion: )[0-9a-zA-Z.-]+]]></token>
-                                    <value>${release.chartVersion}</value>
-                                </replacement>
-                                <replacement>
-                                    <token><![CDATA[(?<=(\s{3})version: )[0-9a-zA-Z.-]+]]></token>
-                                    <value>${release.version}</value>
-                                </replacement>
-                                <replacement>
-                                    <token>
-                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
-                                    <value>${release.version}</value>
-                                </replacement>
-                            </replacements>
                         </configuration>
                         <executions>
                             <execution>
+                                <id>chart</id>
                                 <goals>
                                     <goal>replace</goal>
                                 </goals>
                                 <inherited>false</inherited>
                                 <phase>prepare-package</phase>
+                                <configuration>
+                                    <includes>
+                                        <include>charts/**/Chart.yaml</include>
+                                    </includes>
+                                    <regexFlags>
+                                        <regexFlag>MULTILINE</regexFlag>
+                                    </regexFlags>
+                                    <replacements>
+                                        <replacement>
+                                            <token><![CDATA[(?<=^appVersion: ")[0-9a-zA-Z.-]+]]></token>
+                                            <value>${release.version}</value>
+                                        </replacement>
+                                        <replacement>
+                                            <token><![CDATA[(?<=^version: )[0-9a-zA-Z.-]+]]></token>
+                                            <value>${release.chartVersion}</value>
+                                        </replacement>
+                                    </replacements>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>others</id>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <includes>
+                                        <include>docker-compose.yml</include>
+                                        <include>hedera-mirror-rest/**/openapi.yml</include>
+                                        <include>hedera-mirror-rest/package*.json</include>
+                                        <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
+                                        <include>hedera-mirror-rosetta/config/application*.yml</include>
+                                        <include>hedera-mirror-test/src/test/resources/k8s/*.yml</include>
+                                    </includes>
+                                    <replacements>
+                                        <replacement>
+                                            <token>
+                                                <![CDATA[(?<="hedera-mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
+                                            <value>${release.version}</value>
+                                        </replacement>
+                                        <replacement>
+                                            <token><![CDATA[(?<=(\s{3})version: )[0-9a-zA-Z.-]+]]></token>
+                                            <value>${release.version}</value>
+                                        </replacement>
+                                        <replacement>
+                                            <token>
+                                                <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
+                                            <value>${release.version}</value>
+                                        </replacement>
+                                    </replacements>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
