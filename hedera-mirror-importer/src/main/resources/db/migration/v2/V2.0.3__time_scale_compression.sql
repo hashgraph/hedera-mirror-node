@@ -47,7 +47,10 @@ alter table account_balance_file
 -- address_book skipped as update (end_consensus_timestamp) on compressed chunk is not allowed
 
 alter table address_book_entry
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, memo');
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_account_id');
+
+alter table address_book_service_endpoint
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_account_id, ip_address_v4');
 
 alter table contract_result
     set (timescaledb.compress);
