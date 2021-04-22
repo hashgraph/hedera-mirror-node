@@ -91,7 +91,13 @@ const getTransactionsWithAccountCheck = async (server) => {
     return {url, ...result};
   }
 
-  const highestAccount = _.max(_.map(transactions[0].transfers, (xfer) => xfer.account));
+  const highestAccount = _.max(
+    _.map(
+      _.filter(transactions[0].transfers, (xfer) => xfer.amount > 0),
+      (xfer) => xfer.account
+    )
+  );
+
   if (highestAccount === undefined) {
     return {
       url,
