@@ -1,0 +1,66 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: previewnet
+spec:
+  chart:
+    spec:
+      chart: charts/hedera-mirror
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      valuesFiles:
+        - charts/hedera-mirror/values.yaml
+        - charts/hedera-mirror/values-prod.yaml
+  dependsOn:
+    - name: mirror
+      namespace: common
+  install:
+    crds: CreateReplace
+  interval: 90s
+  rollback:
+    force: true
+  test:
+    enable: true
+  timeout: 10m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 20
+  values:
+    importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              downloader:
+                cloudProvider: S3
+              network: PREVIEWNET
+      env:
+        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
+      volumeMounts:
+        custom:
+          mountPath: /etc/secrets
+      volumes:
+        custom:
+          secret:
+            defaultMode: 420
+            secretName: mirror-importer-custom
+    monitor:
+      config:
+        hedera:
+          mirror:
+            monitor:
+              network: PREVIEWNET
+      env:
+        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
+      volumeMounts:
+        custom:
+          mountPath: /etc/secrets
+      volumes:
+        custom:
+          secret:
+            defaultMode: 420
+            secretName: mirror-monitor-custom
+

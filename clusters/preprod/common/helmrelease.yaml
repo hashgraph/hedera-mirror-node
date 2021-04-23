@@ -26,5 +26,5 @@ spec:
             - mirror-alertmanager
       prometheusOperator:
         namespaces:
-          additional: ["kube-system", "common", "integration"]
+          additional: ["kube-system", "common", "integration", "previewnet"]
 
