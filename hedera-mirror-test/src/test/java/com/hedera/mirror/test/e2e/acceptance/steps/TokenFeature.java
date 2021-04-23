@@ -54,11 +54,8 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoBalance;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAccountBalance;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorBalancesResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -238,7 +235,6 @@ public class TokenFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenFundFlow(int status) throws PrecheckStatusException, ReceiptStatusException,
             TimeoutException {
-        verifyBalances();
         verifyTransactions(status);
         verifyToken();
         verifyTokenTransfers();
@@ -347,34 +343,6 @@ public class TokenFeature {
         associateWithToken();
 
         fundPayerAccountWithTokens(INITIAL_SUPPLY / 2);
-    }
-
-    private void verifyBalances() {
-        String sender = tokenClient.getSdkClient().getOperatorId().toString();
-
-        // verify balances response contains sender, recipient and new token id
-        MirrorBalancesResponse mirrorBalancesResponse = mirrorClient.getAccountBalances(sender);
-
-        // verify response is not null
-        assertNotNull(mirrorBalancesResponse);
-
-        // verify valid set of balances
-        List<MirrorCryptoBalance> accountBalances = mirrorBalancesResponse.getBalances();
-        assertNotNull(accountBalances);
-        assertThat(accountBalances).isNotEmpty();
-
-        // verify valid balance object
-        MirrorCryptoBalance mirrorCryptoBalance = accountBalances.get(0);
-        assertNotNull(mirrorCryptoBalance);
-
-        // verify sender is present
-        assertThat(mirrorCryptoBalance.getAccount()).isEqualTo(sender);
-        assertThat(mirrorCryptoBalance.getBalance()).isGreaterThan(0);
-
-        // verify valid set of token balances
-        List<MirrorTokenAccountBalance> tokenBalances = mirrorCryptoBalance.getTokens();
-        assertNotNull(tokenBalances);
-        assertThat(tokenBalances).isNotEmpty();
     }
 
     private MirrorTransaction verifyTransactions(int status) {
