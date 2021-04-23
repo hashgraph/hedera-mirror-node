@@ -3,5 +3,8 @@ kind: GitRepository
 metadata:
   name: hedera-mirror-node
 spec:
+  ignore: |
+    /*
+    !/charts
   interval: 1m0s
   url: https://github.com/hashgraph/hedera-mirror-node.git
