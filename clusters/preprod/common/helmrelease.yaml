@@ -24,4 +24,7 @@ spec:
         alertmanagerSpec:
           secrets:
             - mirror-alertmanager
+      prometheusOperator:
+        namespaces:
+          additional: ["kube-system", "common", "integration"]
 
