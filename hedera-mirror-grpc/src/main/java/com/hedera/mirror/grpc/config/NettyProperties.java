@@ -49,8 +49,8 @@ public class NettyProperties {
     @Min(8) // 1 kb
     private int maxInboundMessageSize = 1024;
 
-    @Min(8) // 1 kb
-    private int maxInboundMetadataSize = 1024;
+    @Min(8) // 2 kb
+    private int maxInboundMetadataSize = 2048;
 
     @DurationMin(minutes = 0L)
     @DurationMax(minutes = 5L)

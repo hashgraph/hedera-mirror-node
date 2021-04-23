@@ -1,5 +1,16 @@
 # These values are production values used in combination with the hedera-mirror chart and an external load balancer
 traefik:
   service:
+    annotations:
+      # default load balancer is GCP container-native load balancer through standalone NEG. Modify for other cloud providers
+      cloud.google.com/neg: '{
+             "exposed_ports":{
+                "80":{"name": "common-mirror-traefik-neg"},
+                "443":{"name": "common-mirror-traefik-tls-neg"}
+             }
+           }'
+    spec:
+      # externalTrafficPolicy cannot be set when service type is cluster
+      externalTrafficPolicy:
     type: ClusterIP
 
