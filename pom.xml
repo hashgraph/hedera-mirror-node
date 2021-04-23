@@ -66,11 +66,11 @@
         <grpc.version>1.37.0</grpc.version>
         <guava.version>30.1.1-jre</guava.version>
         <hedera-protobuf.version>0.13.0-alpha.2</hedera-protobuf.version>
-        <hedera-sdk.version>1.3.3</hedera-sdk.version>
+        <hedera-sdk.version>2.0.5-beta.9</hedera-sdk.version>
         <jacoco.version>0.8.6</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
-        <jib.version>2.8.0</jib.version>
+        <jib.version>3.0.0</jib.version>
         <jmeter.version>5.4.1</jmeter.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.8.22</msgpack.version>
