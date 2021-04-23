@@ -6,13 +6,13 @@ metadata:
 spec:
   chart:
     spec:
-      chart: charts/hedera-mirror
+      chart: hedera-mirror
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
       valuesFiles:
-        - charts/hedera-mirror/values.yaml
-        - charts/hedera-mirror/values-prod.yaml
+        - values.yaml
+        - values-prod.yaml
   dependsOn:
     - name: mirror
       namespace: common
