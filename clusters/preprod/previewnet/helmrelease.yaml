@@ -22,6 +22,7 @@ spec:
   interval: 90s
   rollback:
     force: true
+  suspend: true
   test:
     enable: true
   timeout: 10m
