@@ -19,7 +19,6 @@ Feature: Schedule Base Coverage Feature
             | accountName | httpStatusCode |
             | "CAROL"     | 200            |
 
-    @acceptance @Acceptance
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoAccountCreate and ScheduleDelete
         Given I successfully schedule a crypto account create
         When the network confirms schedule presence
