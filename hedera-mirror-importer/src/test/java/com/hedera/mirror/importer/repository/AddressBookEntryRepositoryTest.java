@@ -45,7 +45,6 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void save() {
-//        addressBookRepository.save(addressBook(null, 1L));
         AddressBookEntry addressBookEntry = addressBookEntryRepository.save(addressBookEntry(null, 1L, 3));
         assertThat(addressBookEntryRepository.findById(addressBookEntry.getId()))
                 .get()
@@ -55,7 +54,6 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
     @Test
     void verifySequence() {
         long consensusTimestamp = 1L;
-//        addressBookRepository.save(addressBook(null, consensusTimestamp));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 3));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 4));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 5));
@@ -69,7 +67,6 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
     void verifyAddressBookToEntryMapping() {
         long consensusTimestamp = 1L;
         addressBookRepository.save(addressBook(null, consensusTimestamp, List.of(3, 4, 5)));
-//        addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 3));
         assertThat(addressBookRepository.findAll())
                 .isNotNull()
                 .hasSize(1);

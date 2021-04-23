@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serializable;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
@@ -53,9 +54,8 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"publicKey", "nodeCertHash"})
-//@NamedEntityGraph(name = "AddressBookEntry.serviceEndpoints", attributeNodes = @NamedAttributeNode
-// ("serviceEndpoints"))
-public class AddressBookEntry {
+public class AddressBookEntry implements Serializable {
+    private static final long serialVersionUID = -2037596800253225229L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

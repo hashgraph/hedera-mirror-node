@@ -54,7 +54,7 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
     void findLatestAddressBook() {
         addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId102), 1, 2));
         addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId101), 3, 4));
-        AddressBook addressBook = addressBookRepository
+        addressBookRepository
                 .save(addressBook(ab -> ab.fileId(addressBookEntityId102), 5, 6));
         assertThat(addressBookRepository
                 .findLatestAddressBook(7L, addressBookEntityId102.getId()))

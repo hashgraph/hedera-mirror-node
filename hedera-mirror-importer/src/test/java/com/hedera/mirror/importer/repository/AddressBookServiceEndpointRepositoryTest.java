@@ -50,7 +50,6 @@ public class AddressBookServiceEndpointRepositoryTest extends AbstractRepository
     @Test
     void save() {
         long consensusTimestamp = 1L;
-//        addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 3, List.of(443)));
         AddressBookServiceEndpoint addressBookServiceEndpoint = addressBookServiceEndpointRepository.save(
                 addressBookServiceEndpoint(consensusTimestamp, "127.0.0.1", 443, 3));
         assertThat(addressBookServiceEndpointRepository.findById(addressBookServiceEndpoint.getId()))
@@ -61,10 +60,6 @@ public class AddressBookServiceEndpointRepositoryTest extends AbstractRepository
     @Test
     void verifySequence() {
         long consensusTimestamp = 1L;
-//        addressBookRepository.save(addressBook(null, consensusTimestamp));
-//        addressBookEntryRepository.save(addressBookEntry(List.of(80, 443), consensusTimestamp, 3));
-//        addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 4));
-//        addressBookEntryRepository.save(addressBookEntry(List.of(8000, 8443), consensusTimestamp, 5));
         addressBookServiceEndpointRepository.save(addressBookServiceEndpoint(consensusTimestamp, "127.0.0.1", 80, 3));
         addressBookServiceEndpointRepository.save(addressBookServiceEndpoint(consensusTimestamp, "127.0.0.2", 443, 3));
         addressBookServiceEndpointRepository.save(addressBookServiceEndpoint(consensusTimestamp, "127.0.0.3", 8000, 4));
@@ -80,7 +75,7 @@ public class AddressBookServiceEndpointRepositoryTest extends AbstractRepository
     void verifyEntryToServiceEndpointMapping() {
         long consensusTimestamp = 1L;
         addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 3, List.of(80, 443)));
-        addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 4, List.of(8000, 0443)));
+        addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 4, List.of(8000, 8443)));
         assertThat(addressBookEntryRepository.findAll())
                 .isNotNull()
                 .hasSize(2);
@@ -93,21 +88,20 @@ public class AddressBookServiceEndpointRepositoryTest extends AbstractRepository
 
     @Test
     void verifyAddressBookToServiceEndpointMapping() {
-        long consensusTimestamp = 1L;
-        addressBookRepository.save(addressBook(consensusTimestamp, List.of(3, 4), List.of(80, 443)));
-//        addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 3, List.of(80, 443)));
-//        addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 4, List.of(8000, 0443)));
+        addressBookRepository.save(addressBook(1, List.of(3, 4), List.of(80, 443)));
+        addressBookRepository.save(addressBook(2, List.of(5, 6), List.of(8080, 8443)));
+        addressBookRepository.save(addressBook(3, List.of(7, 8), List.of(50211, 50212)));
         assertThat(addressBookRepository.findAll())
                 .isNotNull()
-                .hasSize(1);
+                .hasSize(3);
         assertThat(addressBookEntryRepository.findAll())
                 .isNotNull()
-                .hasSize(2);
+                .hasSize(6);
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotNull()
-                .hasSize(4)
+                .hasSize(12)
                 .extracting(AddressBookServiceEndpoint::getPort)
-                .containsSequence(80, 443, 8000, 8443);
+                .containsSequence(80, 443, 80, 443, 8080, 8443, 8080, 8443, 50211, 50212, 50211, 50212);
     }
 
     private AddressBookServiceEndpoint addressBookServiceEndpoint(long consensusTimestamp, String ip, int port,
