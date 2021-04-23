@@ -5,8 +5,8 @@ traefik:
       # default load balancer is GCP container-native load balancer through standalone NEG. Modify for other cloud providers
       cloud.google.com/neg: '{
              "exposed_ports":{
-                "80":{"name": "common-mirror-traefik-neg"},
-                "443":{"name": "common-mirror-traefik-tls-neg"}
+                "80":{"name": "<insert_unique_identifier>-traefik-neg"},
+                "443":{"name": "<insert_unique_identifier>-traefik-tls-neg"}
              }
            }'
     spec:
