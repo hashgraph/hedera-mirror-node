@@ -36,12 +36,13 @@ envFrom: []
 fullnameOverride: ""
 
 global:
+  image: {}
   namespaceOverride: ""
 
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-monitor
-  tag: ""  # Default to the chart's app version
+  tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
 

@@ -35,6 +35,7 @@ envFrom: []
 fullnameOverride: ""
 
 global:
+  image: {}
   namespaceOverride: ""
 
 hpa:
@@ -46,7 +47,7 @@ hpa:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-rest
-  tag: ""  # Default to the chart's app version
+  tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
 
