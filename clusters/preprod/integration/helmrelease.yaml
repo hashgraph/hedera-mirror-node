@@ -29,6 +29,9 @@ spec:
     remediation:
       retries: 20
   values:
+    global:
+      image:
+        tag: master-5f06887546e8cb19a688cdc66618476a6e650867
     importer:
       config:
         hedera:
