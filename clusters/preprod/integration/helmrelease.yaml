@@ -19,10 +19,9 @@ spec:
   install:
     crds: CreateReplace
   interval: 30s
-  rollback:
-    force: true
   test:
     enable: true
+    timeout: 2m
   timeout: 10m
   upgrade:
     cleanupOnFail: true
