@@ -38,6 +38,7 @@ data:
       has_data "balances"
     }
 
+    {{ if .Values.test.checkRecent -}}
     @test "Has recent transactions" {
       has_data "transactions"
       local timestamp=$(curl -s "${URI}/transactions?limit=1" | jq -re '.transactions[0].consensus_timestamp')
@@ -47,4 +48,5 @@ data:
         sleep 1
       done
     }
+    {{- end }}
 {{- end -}}
