@@ -87,12 +87,14 @@ $ helm upgrade --install mirror charts/hedera-mirror -f charts/hedera-mirror/cus
 
 ### Production Environments
 In non production environments, the mirror node chart uses the [Traefik subchart](https://github.com/traefik/traefik-helm-chart) to manage access to cluster services through an [Ingress](https://doc.traefik.io/traefik/providers/kubernetes-ingress/) and to route traffic through [Load Balancing](https://doc.traefik.io/traefik/routing/overview/).
-The implemented configuration uses a [default self signed certificate](https://doc.traefik.io/traefik/https/tls/#default-certificate) to secure traffic over the TLS protocol.
+The implemented configuration uses a [default self-signed certificate](https://doc.traefik.io/traefik/https/tls/#default-certificate) to secure traffic over the TLS protocol.
 
-In production it is advised to use a CA signed certificate and an external load balancer to ensure more secure and intricate load balancing needs.
+In production it is advised to use a CA signed certificate and an external load balancer to allow for more secure and intricate load balancing needs.
+The following diagram illustrates a high level overview of the resources utilized in the recommended traffic flow.
+![Kubernetes deployed Hedera Mirror Node Resource Traffic Flow](images/mirror_traffic_resource_architecture.png)
 
 #### GCP
-When deploying in GCP the following steps may be taken to use container-native load balancer through a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg).
+When deploying in GCP, the following steps may be taken to use container-native load balancer through a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg).
 
 
 1. Create a Kubernetes cluster utilizing a custom subnet.
