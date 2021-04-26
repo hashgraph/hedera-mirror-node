@@ -316,6 +316,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         return AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .memo(memo)
+                // ensure valid nodeAccountId is set
                 .nodeAccountId(nodeEntityId == EntityId.EMPTY ? memoNodeEntityId : nodeEntityId)
                 .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                 .nodeId(nodeAddressProto.getNodeId())

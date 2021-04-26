@@ -31,6 +31,7 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -79,7 +80,7 @@ public class AddressBookEntry implements Serializable {
 
     @EqualsAndHashCode.Exclude
     @JsonIgnore
-    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumns({
             @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp"),
             @JoinColumn(name = "nodeAccountId", referencedColumnName = "nodeAccountId")
@@ -97,8 +98,16 @@ public class AddressBookEntry implements Serializable {
         }
     }
 
+    public EntityId getNodeAccountId() {
+        if (EntityId.isEmpty(nodeAccountId)) {
+            return memo == null ? null : EntityId.of(memo, EntityTypeEnum.ACCOUNT);
+        }
+
+        return nodeAccountId;
+    }
+
     @Transient
     public String getNodeAccountIdString() {
-        return nodeAccountId.entityIdToString();
+        return EntityId.isEmpty(nodeAccountId) ? memo : nodeAccountId.entityIdToString();
     }
 }
