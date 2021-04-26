@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
@@ -45,6 +46,7 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void save() {
+        addressBookRepository.save(addressBook(null, 1L, Collections.emptyList()));
         AddressBookEntry addressBookEntry = addressBookEntryRepository.save(addressBookEntry(null, 1L, 3));
         assertThat(addressBookEntryRepository.findById(addressBookEntry.getId()))
                 .get()
@@ -54,6 +56,7 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
     @Test
     void verifySequence() {
         long consensusTimestamp = 1L;
+        addressBookRepository.save(addressBook(null, 1L, Collections.emptyList()));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 3));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 4));
         addressBookEntryRepository.save(addressBookEntry(null, consensusTimestamp, 5));

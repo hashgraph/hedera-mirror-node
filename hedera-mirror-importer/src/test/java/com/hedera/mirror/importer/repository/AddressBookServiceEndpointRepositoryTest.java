@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,7 @@ public class AddressBookServiceEndpointRepositoryTest extends AbstractRepository
     @Test
     void verifyEntryToServiceEndpointMapping() {
         long consensusTimestamp = 1L;
+        addressBookRepository.save(addressBook(1, Collections.emptyList(), Collections.emptyList()));
         addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 3, List.of(80, 443)));
         addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 4, List.of(8000, 8443)));
         assertThat(addressBookEntryRepository.findAll())

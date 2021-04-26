@@ -63,8 +63,8 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 
 class AddressBookServiceImplTest extends IntegrationTest {
 
-    private static final NodeAddressBook UPDATED = addressBook(10);
-    private static final NodeAddressBook FINAL = addressBook(15);
+    private static final NodeAddressBook UPDATED = addressBook(10, 0);
+    private static final NodeAddressBook FINAL = addressBook(15, 0);
     private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
 
     @TempDir
@@ -94,21 +94,31 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     private static byte[] initialAddressBookBytes;
 
-    private static NodeAddressBook addressBook(int size) {
+    private static NodeAddressBook addressBook(int size, int endPointSize) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
             long nodeId = 3 + i;
-            builder.addNodeAddress(NodeAddress.newBuilder()
+            NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
                     .setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
                     .setPortno((int) nodeId)
                     .setNodeId(nodeId)
                     .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
                     .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId))
                     .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
-                    .setRSAPubKey("rsa+public/key")
-                    .build());
+                    .setRSAPubKey("rsa+public/key");
 
             // add service endpoints
+            if (endPointSize > 0) {
+                List<ServiceEndpoint> serviceEndpoints = new ArrayList<>();
+                for (int j = 1; j <= size; ++j) {
+                    serviceEndpoints.add(ServiceEndpoint.newBuilder()
+                            .setIpAddressV4(ByteString.copyFromUtf8("127.0.0." + j))
+                            .setPort(443 + j)
+                            .build());
+                }
+            }
+
+            builder.addNodeAddress(nodeAddressBuilder.build());
         }
         return builder.build();
     }
@@ -150,7 +160,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     void startupWithOtherNetworkIncorrectInitialAddressBookPath() {
         MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
         otherNetworkMirrorProperties.setDataPath(dataPath);
-        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("performance.f102.bin"));
+        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
                 fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
@@ -165,13 +175,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
         // copy other addressbook to file system
         FileCopier fileCopier = FileCopier.create(testPath, dataPath)
                 .from("")
-                .filterFiles("performance.f102.bin")
+                .filterFiles("test-v1")
                 .to("");
         fileCopier.copy();
 
         MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
         otherNetworkMirrorProperties.setDataPath(dataPath);
-        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("performance.f102.bin"));
+        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
                 fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
@@ -600,7 +610,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         // migration
         int addressBook5NodeCount = 20;
-        byte[] addressBookBytes5 = addressBook(addressBook5NodeCount).toByteArray();
+        byte[] addressBookBytes5 = addressBook(addressBook5NodeCount, 0).toByteArray();
         addressBookService.update(createFileData(addressBookBytes5, 6L, true));
 
         assertEquals(4, fileDataRepository.count());
@@ -775,6 +785,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
+                assertThat(abe.getNodeId()).isNotNull();
                 assertThat(abe.getNodeId()).isEqualTo(nodeAddress.getNodeId());
 
                 assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
@@ -783,6 +794,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     private void assertAddressBookEndPoints(List<AddressBookServiceEndpoint> actual, List<ServiceEndpoint> expected) {
+        if (expected.isEmpty()) {
+            return;
+        }
+
         ListAssert<AddressBookServiceEndpoint> listAssert = assertThat(actual)
                 .hasSize(expected.size());
 

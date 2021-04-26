@@ -27,8 +27,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
@@ -85,6 +87,7 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -663,7 +666,8 @@ public abstract class AbstractDownloaderTest {
         addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
         for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
                 .getNodeAddressList()) {
-            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
+            EntityId nodeAccountId = EntityId.of(nodeAddressProto.getNodeAccountId());
+            AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
                     .consensusTimestamp(consensusTimestamp)
                     .memo(nodeAddressProto.getMemo().toStringUtf8())
 //                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
@@ -671,9 +675,22 @@ public abstract class AbstractDownloaderTest {
                     .publicKey(nodeAddressProto.getRSAPubKey())
                     .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                     .nodeId(nodeAddressProto.getNodeId())
-                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
-                    .build();
-            addressBookEntries.add(addressBookEntry);
+                    .nodeAccountId(nodeAccountId);
+
+            // create an AddressBookServiceEndpoint for each ServiceEndpoint
+            List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
+            for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
+                ByteString ipAddressByteString = serviceEndpoint.getIpAddressV4();
+
+                serviceEndpoints.add(new AddressBookServiceEndpoint(
+                        consensusTimestamp,
+                        ipAddressByteString.toStringUtf8(),
+                        serviceEndpoint.getPort(),
+                        nodeAccountId));
+            }
+
+            addressBookEntryBuilder.serviceEndpoints(serviceEndpoints);
+            addressBookEntries.add(addressBookEntryBuilder.build());
         }
 
         addressBookBuilder.entries(addressBookEntries);
