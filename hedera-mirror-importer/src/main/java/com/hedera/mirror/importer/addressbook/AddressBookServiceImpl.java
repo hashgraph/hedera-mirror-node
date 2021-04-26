@@ -71,7 +71,6 @@ public class AddressBookServiceImpl implements AddressBookService {
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
     public static final String ADDRESS_BOOK_102_CACHE_NAME = "current_102_address_book";
-    static final int NODE_ADDRESS_SERVICE_ENDPOINT_PROTOBUF_TAG = 8;
 
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
