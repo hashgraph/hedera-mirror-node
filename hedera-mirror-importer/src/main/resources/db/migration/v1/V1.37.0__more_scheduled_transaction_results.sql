@@ -1,5 +1,5 @@
 -------------------
--- Support proto updates in 0.13.0-rc.1
+-- Support proto updates in 0.13.0-rc.1 with respect to transaction result types
 -------------------
 
 -- New transaction result codes
@@ -12,8 +12,3 @@ values (215, 'OPERATION_REPEATED_IN_BUCKET_GROUPS'),
        (220, 'SUCCESS_BUT_MISSING_EXPECTED_OPERATION'),
        (221, 'UNPARSEABLE_THROTTLE_DEFINITIONS'),
        (222, 'INVALID_THROTTLE_DEFINITIONS');
-
--- Update address book entry
-alter table if exists address_book_entry
-    add column if not exists description varchar(100) null,
-    add column if not exists stake       bigint       null;

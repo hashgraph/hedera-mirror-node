@@ -29,7 +29,6 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -57,11 +56,6 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     private Id id;
 
     private int port;
-
-    @Transient
-    public String getNodeAccountIdString() {
-        return id.nodeAccountId.entityIdToString();
-    }
 
     @JsonIgnore
     @Override
