@@ -44,4 +44,4 @@ jobs:
         uses: stefanprodan/helm-gh-pages@master
         with:
           target_dir: charts
-          token: ${{ secrets.REPO_RW_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
