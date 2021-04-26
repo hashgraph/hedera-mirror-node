@@ -127,10 +127,6 @@ When deploying in GCP, the following steps may be taken to use container-native 
                    "443":{"name": "<tls_neg_name>"}
                 }
               }'
-       spec:
-         # externalTrafficPolicy cannot be set when service type is cluster
-         externalTrafficPolicy:
-       type: ClusterIP
    ```
 
     > **_Note:_** Ensure the NEG names are cluster unique to support shared NEGs across separate globally distributed clusters

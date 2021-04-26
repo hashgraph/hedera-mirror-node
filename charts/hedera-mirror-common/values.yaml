@@ -355,5 +355,5 @@ traefik:
       cpu: 500m
       memory: 300Mi
   service:
-    spec:
-      externalTrafficPolicy: Local
+    spec: {}
+    type: ClusterIP
