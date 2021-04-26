@@ -94,8 +94,8 @@ const updateEntity = async (entity) => {
   const paramValues = [
     entity.auto_renew_period,
     entity.deleted,
-    entity.ed25519_public_key_hex,
-    entity.exp_time_ns,
+    entity.public_key,
+    entity.expiration_timestamp,
     entity.key,
     entity.memo,
     entity.proxy_account_id,
@@ -115,9 +115,9 @@ const updateEntity = async (entity) => {
          where id = $8`,
       paramValues
     );
-  }
 
-  logger.trace(`Updated entity ${entity.id}`);
+    logger.trace(`Updated entity ${entity.id}`);
+  }
 };
 
 module.exports = {
