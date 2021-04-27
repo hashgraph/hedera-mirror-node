@@ -35,14 +35,13 @@ envFrom: []
 fullnameOverride: ""
 
 global:
+  image: {}
   namespaceOverride: ""
-  redis:
-    password: redis_password
 
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: ""  # Default to the chart's app version
+  tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
 

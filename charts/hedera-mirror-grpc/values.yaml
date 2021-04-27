@@ -30,9 +30,8 @@ envFrom: []
 fullnameOverride: ""
 
 global:
+  image: {}
   namespaceOverride: ""
-  redis:
-    password: redis_password
 
 hpa:
   enabled: false
@@ -43,7 +42,7 @@ hpa:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-grpc
-  tag: ""  # Default to the chart's app version
+  tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
 

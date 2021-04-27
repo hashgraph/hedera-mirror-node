@@ -3,8 +3,8 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   annotations:
-    helm.sh/hook: test-success
-    helm.sh/hook-delete-policy: hook-succeeded
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: hook-failed,hook-succeeded
   labels:
     {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}-test
@@ -38,13 +38,18 @@ data:
       has_data "balances"
     }
 
-    @test "Has recent transactions" {
+    @test "Has transactions" {
       has_data "transactions"
+    }
+
+    {{ if .Values.test.checkRecent -}}
+    @test "Has recent transactions" {
       local timestamp=$(curl -s "${URI}/transactions?limit=1" | jq -re '.transactions[0].consensus_timestamp')
 
       until [[ $(curl -s "${URI}/transactions?limit=1" | jq -re '.transactions[0].consensus_timestamp') > "${timestamp}" ]]; do
-        echo "Waiting for new data" >&3
+        echo "Waiting for new transactions" >&3
         sleep 1
       done
     }
+    {{- end }}
 {{- end -}}
