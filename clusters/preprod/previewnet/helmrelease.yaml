@@ -23,7 +23,7 @@ spec:
   suspend: true
   test:
     enable: true
-    timeout: 2m
+    timeout: 5m
   timeout: 10m
   upgrade:
     cleanupOnFail: true
@@ -32,14 +32,8 @@ spec:
       retries: 20
   values:
     importer:
-      config:
-        hedera:
-          mirror:
-            importer:
-              downloader:
-                cloudProvider: S3
-              network: PREVIEWNET
       env:
+        HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
         SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
       volumeMounts:
         custom:
@@ -50,12 +44,8 @@ spec:
             defaultMode: 420
             secretName: mirror-importer-custom
     monitor:
-      config:
-        hedera:
-          mirror:
-            monitor:
-              network: PREVIEWNET
       env:
+        HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
         SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
       volumeMounts:
         custom:
