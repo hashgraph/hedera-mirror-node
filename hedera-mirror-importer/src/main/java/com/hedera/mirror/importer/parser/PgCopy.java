@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.PGCopyOutputStream;
 
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
@@ -82,9 +83,14 @@ public class PgCopy<T> {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
+            CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
-            try (var pgCopyOutputStream = new PGCopyOutputStream(pgConnection, sql, properties.getBufferSize())) {
+            try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
                 writer.writeValue(pgCopyOutputStream, items);
+            } finally {
+                if (copyIn.isActive()) {
+                    copyIn.cancelCopy();
+                }
             }
 
             insertDurationMetric.record(stopwatch.elapsed());
