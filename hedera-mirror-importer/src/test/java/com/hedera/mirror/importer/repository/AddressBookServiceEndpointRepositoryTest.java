@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
+class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
 
     private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
 

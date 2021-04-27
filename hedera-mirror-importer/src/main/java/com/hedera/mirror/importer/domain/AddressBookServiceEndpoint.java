@@ -43,7 +43,9 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddressBookServiceEndpoint implements Persistable<AddressBookServiceEndpoint.Id> {
+public class AddressBookServiceEndpoint implements Persistable<AddressBookServiceEndpoint.Id>, Serializable {
+
+    private static final long serialVersionUID = 6964963511683419945L;
 
     public AddressBookServiceEndpoint(long consensusTimestamp, String ip, int port, EntityId nodeAccountId) {
         id = new AddressBookServiceEndpoint.Id(consensusTimestamp, ip, nodeAccountId);

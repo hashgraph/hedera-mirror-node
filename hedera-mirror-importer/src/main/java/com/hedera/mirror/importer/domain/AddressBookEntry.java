@@ -36,7 +36,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinColumns;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
@@ -79,19 +78,17 @@ public class AddressBookEntry implements Serializable {
     private byte[] nodeCertHash;
 
     @EqualsAndHashCode.Exclude
+    @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp")
+    @JoinColumn(name = "nodeAccountId", referencedColumnName = "nodeAccountId")
     @JsonIgnore
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JoinColumns({
-            @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp"),
-            @JoinColumn(name = "nodeAccountId", referencedColumnName = "nodeAccountId")
-    })
     private List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
 
     public PublicKey getPublicKeyAsObject() {
         try {
             byte[] bytes = Hex.decodeHex(publicKey);
             EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(bytes);
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            var keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePublic(publicKeySpec);
         } catch (Exception e) {
             throw new RuntimeException(e);
