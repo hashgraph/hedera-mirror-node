@@ -21,8 +21,8 @@ spec:
   interval: 30s
   test:
     enable: true
-    timeout: 5m
-  timeout: 10m
+    timeout: 20m  # It can take up to 15m for the next balance file to show up that the helm tests verify
+  timeout: 20m
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
