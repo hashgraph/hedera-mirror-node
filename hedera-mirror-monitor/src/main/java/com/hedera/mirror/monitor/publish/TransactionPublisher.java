@@ -98,7 +98,7 @@ public class TransactionPublisher {
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
-        Transaction transaction = request.getTransaction();
+        Transaction<?> transaction = request.getTransaction();
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
@@ -121,7 +121,7 @@ public class TransactionPublisher {
 
         if (request.isRecord()) {
             return Mono.fromFuture(transactionId.getRecordAsync(client))
-                    .map(record -> builder.record(record).receipt(record.receipt));
+                    .map(r -> builder.record(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
             // TODO: Implement a faster retry for get receipt for more accurate metrics
             return Mono.fromFuture(transactionId.getReceiptAsync(client))

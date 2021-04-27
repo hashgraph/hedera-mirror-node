@@ -300,8 +300,7 @@ public abstract class Downloader<T extends StreamFile> {
                 .collect(Collectors.toList());
     }
 
-    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId)
-            throws Exception {
+    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId) throws InterruptedException, ExecutionException {
         String s3Key = pendingDownload.getS3key();
         Stopwatch stopwatch = pendingDownload.getStopwatch();
 
@@ -474,7 +473,8 @@ public abstract class Downloader<T extends StreamFile> {
         return downloaderProperties.getPrefix() + nodeAccountId + "/";
     }
 
-    protected void onVerified(PendingDownload pendingDownload, T streamFile) throws Exception {
+    protected void onVerified(PendingDownload pendingDownload, T streamFile) throws ExecutionException,
+            InterruptedException {
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);
         lastStreamFile.set(Optional.of(streamFile));
