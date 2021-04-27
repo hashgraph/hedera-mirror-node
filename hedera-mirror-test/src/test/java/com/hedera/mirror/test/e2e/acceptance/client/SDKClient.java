@@ -25,7 +25,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -88,7 +87,7 @@ public class SDKClient {
                 client = Client.forTestnet();
                 break;
             default:
-                log.debug("Creating SDK client for OTHER");
+                log.debug("Creating SDK client for OTHER w nodes: {}", acceptanceTestProperties.getNodes());
                 client = toClient(getNetworkMap(acceptanceTestProperties.getNodes()));
         }
 
@@ -99,7 +98,7 @@ public class SDKClient {
         }
 
         // only use validated nodes for tests
-        this.client = getValidatedClient(networkMapToValidate);
+        this.client = getValidatedClient(networkMapToValidate, client);
 
         // set nodeId to first valid node
         singletonNodeId = Collections.singletonList(this.client.getNetwork().values().iterator().next());
@@ -125,64 +124,40 @@ public class SDKClient {
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
 
-    private Set<NodeProperties> validateNodes(AcceptanceTestProperties acceptanceTestProperties) {
-        Set<NodeProperties> nodes = acceptanceTestProperties.getNodes();
-        Set<NodeProperties> validNodes = new HashSet<>();
-        try {
-            for (NodeProperties node : nodes) {
-                if (validateNode(node)) {
-                    validNodes.add(node);
-                    log.trace("Added node {} at endpoint {} to list of valid nodes", node.getAccountId(), node
-                            .getEndpoint());
-                }
-            }
-        } catch (Exception e) {
-            //
-        }
-
-        if (validNodes.size() == 0) {
-            throw new IllegalStateException("All provided nodes are unreachable!");
-        }
-
-        log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
-        return validNodes;
-    }
-
-    private Client getValidatedClient(Map<String, AccountId> currentNetworkMap) throws InterruptedException {
+    private Client getValidatedClient(Map<String, AccountId> currentNetworkMap, Client client) throws InterruptedException {
         Map<String, AccountId> validNodes = new HashMap<>();
         for (var nodeEntry : currentNetworkMap.entrySet()) {
             try {
-                NodeProperties node = new NodeProperties(nodeEntry.getValue().toString(), nodeEntry.getKey());
-                if (validateNode(node)) {
+                if (validateNode(nodeEntry.getValue().toString(), client)) {
                     validNodes.putIfAbsent(nodeEntry.getKey(), nodeEntry.getValue());
-                    log.trace("Added node {} at endpoint {} to list of valid nodes", node.getAccountId(), node
-                            .getHost());
+                    log.info("Added node {} at endpoint {} to list of valid nodes", nodeEntry.getValue(),
+                            nodeEntry.getKey());
                 }
             } catch (Exception e) {
                 //
             }
         }
 
+        log.info("{} of {} nodes are reachable", validNodes.size(), currentNetworkMap.size());
         if (validNodes.size() == 0) {
             throw new IllegalStateException("All provided nodes are unreachable!");
         }
 
-        log.info("{} of {} nodes are functional", validNodes.size(), currentNetworkMap.size());
         return toClient(validNodes);
     }
 
-    private boolean validateNode(NodeProperties node) {
+    private boolean validateNode(String accountId, Client client) {
         boolean valid = false;
         try {
-            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
+            AccountId nodeAccountId = AccountId.fromString(accountId);
             new AccountBalanceQuery()
                     .setAccountId(nodeAccountId)
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .execute(client, Duration.ofSeconds(10L));
-            log.info("Validated node: {}", node);
+            log.debug("Validated node: {}", accountId);
             valid = true;
         } catch (Exception e) {
-            log.warn("Unable to validate node {}: ", node, e);
+            log.warn("Unable to validate node {}: ", accountId, e);
         }
 
         return valid;
@@ -210,8 +185,8 @@ public class SDKClient {
                     AccountId.fromString(String.format(
                             "%d.%d.%d",
                             nodeAddressProto.getNodeAccountId().getShardNum(),
-                            nodeAddressProto.getNodeAccountId().getShardNum(),
-                            nodeAddressProto.getNodeAccountId().getShardNum())));
+                            nodeAddressProto.getNodeAccountId().getRealmNum(),
+                            nodeAddressProto.getNodeAccountId().getAccountNum())));
         }
 
         return networkMap;
