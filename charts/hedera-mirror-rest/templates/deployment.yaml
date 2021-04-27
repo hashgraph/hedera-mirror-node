@@ -32,7 +32,7 @@ spec:
             {{- end }}
             {{- end }}
           envFrom: {{ tpl (toYaml .Values.envFrom) . | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
           ports:
@@ -45,7 +45,7 @@ spec:
           volumeMounts:
             {{- range $name, $config := .Values.volumeMounts }}
             - name: {{ $name }}
-            {{- tpl (toYaml $config) $ | nindent 14 }}
+            {{- toYaml $config | nindent 14 }}
             {{- end }}
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
