@@ -85,6 +85,59 @@ importer filesystem. The `custom.yaml` should be referenced as a values file dur
 $ helm upgrade --install mirror charts/hedera-mirror -f charts/hedera-mirror/custom.yaml
 ```
 
+### Production Environments
+In non production environments, the mirror node chart uses the [Traefik subchart](https://github.com/traefik/traefik-helm-chart) to manage access to cluster services through an [Ingress](https://doc.traefik.io/traefik/providers/kubernetes-ingress/) and to route traffic through [Load Balancing](https://doc.traefik.io/traefik/routing/overview/).
+The implemented configuration uses a [default self-signed certificate](https://doc.traefik.io/traefik/https/tls/#default-certificate) to secure traffic over the TLS protocol.
+
+In production it is advised to use a CA signed certificate and an external load balancer to allow for more secure and intricate load balancing needs.
+The following diagram illustrates a high level overview of the resources utilized in the recommended traffic flow.
+![Kubernetes deployed Hedera Mirror Node Resource Traffic Flow](images/mirror_traffic_resource_architecture.png)
+
+#### GCP
+When deploying in GCP, the following steps may be taken to use container-native load balancer through a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg).
+
+
+1. Create a Kubernetes cluster utilizing a custom subnet.
+
+   This can be done by setting a unique name for the subnet in the UI or through the console with the following command
+   ```shell script
+   gcloud container clusters create mirrornode-lb \
+       --enable-ip-alias \
+       --create-subnetwork="" \
+       --network=default \
+       --zone=us-central1-a \
+       --cluster-version=1.18.16-gke.502 \
+       --machine-type=n1-standard-4
+   ```
+
+2. Configure the Traefik Subchart to use the external load balancer.
+
+   The following default production setup configures the Standalone NEG.
+   It exposes 2 ports (80 and 443) for http and TLS based traffic.
+
+   Apply this config to your local values file (i.e. `custom.yaml`) for use in helm deployment.
+   ```yaml
+   traefik:
+     service:
+       annotations:
+         # default load balancer is GCP container-native load balancer through standalone NEG. Modify for other cloud providers
+         cloud.google.com/neg: '{
+                "exposed_ports":{
+                   "80":{"name": "<non_tls_neg_name>"},
+                   "443":{"name": "<tls_neg_name>"}
+                }
+              }'
+   ```
+
+    > **_Note:_** Ensure the NEG names are cluster unique to support shared NEGs across separate globally distributed clusters
+
+   The annotation will ensure that a NEG is created for each name specified, with the endpoints pointing to the Traefik pod IPs in your cluster on the configured port.
+   These ports should match the ports exposed by Traefik in the common chart `.Values.traefik.ports`.
+
+3. Create a [Google Managed Certificate](https://cloud.google.com/load-balancing/docs/ssl-certificates/google-managed-certs) for use by the Load Balancer
+
+4. Create an [External HTTPS load balancer](https://cloud.google.com/load-balancing/docs/https/ext-https-lb-simple) and create a Backend Service(s) that utilizes the automatically created NEGs pointing to the traffic pods.
+
 ## Testing
 
 To verify the chart installation is successful, you can run the helm tests. These tests are not automatically executed
