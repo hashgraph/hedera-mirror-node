@@ -59,6 +59,7 @@ public class SDKClient {
     private final long messageTimeoutSeconds;
     private final List<AccountId> singletonNodeId;
     private final Hbar maxTransactionFee;
+    private static final FileId ADDRESS_BOOK_IPS = new FileId(0L, 0L, 101L);
 
     public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException,
             InvalidProtocolBufferException, PrecheckStatusException, TimeoutException {
@@ -88,13 +89,16 @@ public class SDKClient {
                 break;
             default:
                 log.debug("Creating SDK client for OTHER w nodes: {}", acceptanceTestProperties.getNodes());
-                client = toClient(getNetworkMap(acceptanceTestProperties.getNodes()));
+                client = Client.forNetwork(getNetworkMap(acceptanceTestProperties.getNodes()));
         }
+
+        client.setOperator(operatorId, operatorKey);
+        client.setMirrorNetwork(List.of(mirrorNodeAddress));
 
         Map<String, AccountId> networkMapToValidate = client.getNetwork();
         // if prod environment, get current address book and use those nodes
         if (network != AcceptanceTestProperties.HederaNetwork.OTHER) {
-            networkMapToValidate = getAddressBookNetworkMap();
+            networkMapToValidate = getAddressBookNetworkMap(client);
         }
 
         // only use validated nodes for tests
@@ -130,7 +134,7 @@ public class SDKClient {
             try {
                 if (validateNode(nodeEntry.getValue().toString(), client)) {
                     validNodes.putIfAbsent(nodeEntry.getKey(), nodeEntry.getValue());
-                    log.info("Added node {} at endpoint {} to list of valid nodes", nodeEntry.getValue(),
+                    log.trace("Added node {} at endpoint {} to list of valid nodes", nodeEntry.getValue(),
                             nodeEntry.getKey());
                 }
             } catch (Exception e) {
@@ -143,7 +147,12 @@ public class SDKClient {
             throw new IllegalStateException("All provided nodes are unreachable!");
         }
 
-        return toClient(validNodes);
+        log.info("Creating validated client using nodes: {} nodes", validNodes);
+        Client validatedClient = Client.forNetwork(validNodes);
+        validatedClient.setOperator(operatorId, operatorKey);
+        validatedClient.setMirrorNetwork(List.of(mirrorNodeAddress));
+
+        return validatedClient;
     }
 
     private boolean validateNode(String accountId, Client client) {
@@ -154,7 +163,7 @@ public class SDKClient {
                     .setAccountId(nodeAccountId)
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .execute(client, Duration.ofSeconds(10L));
-            log.debug("Validated node: {}", accountId);
+            log.trace("Validated node: {}", accountId);
             valid = true;
         } catch (Exception e) {
             log.warn("Unable to validate node {}: ", accountId, e);
@@ -163,31 +172,35 @@ public class SDKClient {
         return valid;
     }
 
-    private NodeAddressBook getAddressBookFromNetwork() throws TimeoutException, PrecheckStatusException,
+    private NodeAddressBook getAddressBookFromNetwork(Client client) throws TimeoutException, PrecheckStatusException,
             InvalidProtocolBufferException {
         ByteString contents = new FileContentsQuery()
-                .setFileId(FileId.ADDRESS_BOOK)
+                .setFileId(ADDRESS_BOOK_IPS)
                 .setMaxQueryPayment(new Hbar(1))
                 .execute(client);
+
+        log.debug("Retrieved address book with content size: {} b", contents.size());
 
         return NodeAddressBook.parseFrom(contents.toByteArray());
     }
 
-    private Map<String, AccountId> getAddressBookNetworkMap() throws InvalidProtocolBufferException,
+    private Map<String, AccountId> getAddressBookNetworkMap(Client client) throws InvalidProtocolBufferException,
             PrecheckStatusException,
             TimeoutException {
-        NodeAddressBook addressBook = getAddressBookFromNetwork();
+        NodeAddressBook addressBook = getAddressBookFromNetwork(client);
 
         Map<String, AccountId> networkMap = new HashMap<>();
         for (NodeAddress nodeAddressProto : addressBook.getNodeAddressList()) {
             networkMap.putIfAbsent(
-                    nodeAddressProto.getIpAddress().toStringUtf8(),
+                    nodeAddressProto.getIpAddress().toStringUtf8() + ":50211",
                     AccountId.fromString(String.format(
                             "%d.%d.%d",
                             nodeAddressProto.getNodeAccountId().getShardNum(),
                             nodeAddressProto.getNodeAccountId().getRealmNum(),
                             nodeAddressProto.getNodeAccountId().getAccountNum())));
         }
+
+        log.debug("Obtained addressBook networkMap: {}", networkMap);
 
         return networkMap;
     }

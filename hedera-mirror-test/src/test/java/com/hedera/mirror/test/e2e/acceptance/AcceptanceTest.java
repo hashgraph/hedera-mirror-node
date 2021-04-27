@@ -32,7 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
         glue = "com.hedera.mirror.test.e2e.acceptance",
         plugin = {"pretty", "de.monochromata.cucumber.report.PrettyReports:target/cucumber",
                 "timeline:target/cucumber/thread-report"},
-        tags = "@Sanity"
+        tags = "@basicsubscribe"
 )
 @SpringBootTest
 @CucumberContextConfiguration
