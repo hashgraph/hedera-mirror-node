@@ -329,7 +329,6 @@ traefik:
   additionalArguments:
     - "--accesslog=true"
     - "--entrypoints.websecure.http.tls=true"
-    - "--entrypoints.grpc.address=:5600"
     - "--metrics.prometheus=true"
   affinity:
     podAntiAffinity:
@@ -347,10 +346,6 @@ traefik:
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
-  ports:
-    grpc:
-      port: 5600
-      expose: true
   priorityClassName: critical
   resources:
     requests:
@@ -360,5 +355,5 @@ traefik:
       cpu: 500m
       memory: 300Mi
   service:
-    spec:
-      externalTrafficPolicy: Local
+    spec: {}
+    type: ClusterIP
