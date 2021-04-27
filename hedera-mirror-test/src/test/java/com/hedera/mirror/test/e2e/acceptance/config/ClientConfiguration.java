@@ -23,11 +23,13 @@ package com.hedera.mirror.test.e2e.acceptance.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
@@ -46,6 +48,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
@@ -62,37 +65,43 @@ class ClientConfiguration {
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    SDKClient sdkClient() throws InterruptedException {
+    SDKClient sdkClient() throws InterruptedException, InvalidProtocolBufferException, PrecheckStatusException,
+            TimeoutException {
         return new SDKClient(acceptanceTestProperties);
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    MirrorNodeClient mirrorNodeClient() throws InterruptedException {
+    MirrorNodeClient mirrorNodeClient() throws InterruptedException, InvalidProtocolBufferException,
+            PrecheckStatusException, TimeoutException {
         return new MirrorNodeClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    TopicClient topicClient() throws InterruptedException {
+    TopicClient topicClient() throws InterruptedException, InvalidProtocolBufferException, PrecheckStatusException,
+            TimeoutException {
         return new TopicClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    AccountClient accountClient() throws InterruptedException {
+    AccountClient accountClient() throws InterruptedException, InvalidProtocolBufferException,
+            PrecheckStatusException, TimeoutException {
         return new AccountClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    TokenClient tokenClient() throws InterruptedException {
+    TokenClient tokenClient() throws InterruptedException, InvalidProtocolBufferException, PrecheckStatusException,
+            TimeoutException {
         return new TokenClient(sdkClient());
     }
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    ScheduleClient scheduleClient() throws InterruptedException {
+    ScheduleClient scheduleClient() throws InterruptedException, InvalidProtocolBufferException,
+            PrecheckStatusException, TimeoutException {
         return new ScheduleClient(sdkClient());
     }
 

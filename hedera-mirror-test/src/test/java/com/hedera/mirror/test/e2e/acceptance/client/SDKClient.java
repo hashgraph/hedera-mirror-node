@@ -20,6 +20,8 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,9 +37,14 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.FileContentsQuery;
+import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.proto.NodeAddress;
+import com.hedera.hashgraph.sdk.proto.NodeAddressBook;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
@@ -54,7 +61,8 @@ public class SDKClient {
     private final List<AccountId> singletonNodeId;
     private final Hbar maxTransactionFee;
 
-    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException {
+    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException,
+            InvalidProtocolBufferException, PrecheckStatusException, TimeoutException {
 
         // Grab configuration variables from the .env file
         operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
@@ -67,33 +75,31 @@ public class SDKClient {
         Client client;
         var network = acceptanceTestProperties.getNetwork();
         switch (network) {
-            case TESTNET:
-                log.debug("Creating SDK client for TestNet");
-                client = Client.forTestnet();
+            case PREVIEWNET:
+                log.debug("Creating SDK client for PreviewNet");
+                client = Client.forPreviewnet();
                 break;
             case MAINNET:
                 log.debug("Creating SDK client for MainNet");
                 client = Client.forMainnet();
                 break;
+            case TESTNET:
+                log.debug("Creating SDK client for TestNet");
+                client = Client.forTestnet();
+                break;
             default:
-//                Set<NodeProperties> validNodes = validateNodes(acceptanceTestProperties);
-//                log.debug("Creating SDK client using {} valid nodes", validNodes.size());
-//                client = toClient(getNetworkMap(validNodes));
                 log.debug("Creating SDK client for OTHER");
                 client = toClient(getNetworkMap(acceptanceTestProperties.getNodes()));
         }
 
-//        Set<NodeProperties> validNodes = validateNodes(client.getNetwork());
-//        log.debug("Creating SDK client using {} valid nodes", validNodes.size());
-//        client = toClient(getNetworkMap(validNodes));
-
-//        client.setOperator(operatorId, operatorKey);
-//        client.setMirrorNetwork(List.of(acceptanceTestProperties.getMirrorNodeAddress()));
-
+        Map<String, AccountId> networkMapToValidate = client.getNetwork();
         // if prod environment, get current address book and use those nodes
+        if (network != AcceptanceTestProperties.HederaNetwork.OTHER) {
+            networkMapToValidate = getAddressBookNetworkMap();
+        }
 
         // only use validated nodes for tests
-        this.client = getValidatedClient(client.getNetwork());
+        this.client = getValidatedClient(networkMapToValidate);
 
         // set nodeId to first valid node
         singletonNodeId = Collections.singletonList(this.client.getNetwork().values().iterator().next());
@@ -144,7 +150,6 @@ public class SDKClient {
 
     private Client getValidatedClient(Map<String, AccountId> currentNetworkMap) throws InterruptedException {
         Map<String, AccountId> validNodes = new HashMap<>();
-//        AccountId firstValidNodeId = null;
         for (var nodeEntry : currentNetworkMap.entrySet()) {
             try {
                 NodeProperties node = new NodeProperties(nodeEntry.getValue().toString(), nodeEntry.getKey());
@@ -152,21 +157,11 @@ public class SDKClient {
                     validNodes.putIfAbsent(nodeEntry.getKey(), nodeEntry.getValue());
                     log.trace("Added node {} at endpoint {} to list of valid nodes", node.getAccountId(), node
                             .getHost());
-
-                    // set nodeId to first valid node
-//                    if (singletonNodeId == null) {
-//                        firstValidNodeId = nodeEntry.getValue();
-//                        singletonNodeId = Collections.singletonList(nodeEntry.getValue());
-//                    }
                 }
             } catch (Exception e) {
                 //
             }
         }
-
-//        if (firstValidNodeId != null) {
-//            singletonNodeId = Collections.singletonList(firstValidNodeId);
-//        }
 
         if (validNodes.size() == 0) {
             throw new IllegalStateException("All provided nodes are unreachable!");
@@ -193,7 +188,32 @@ public class SDKClient {
         return valid;
     }
 
-    private Client getNodesFromCurrentAddressBook() {
-        return null;
+    private NodeAddressBook getAddressBookFromNetwork() throws TimeoutException, PrecheckStatusException,
+            InvalidProtocolBufferException {
+        ByteString contents = new FileContentsQuery()
+                .setFileId(FileId.ADDRESS_BOOK)
+                .setMaxQueryPayment(new Hbar(1))
+                .execute(client);
+
+        return NodeAddressBook.parseFrom(contents.toByteArray());
+    }
+
+    private Map<String, AccountId> getAddressBookNetworkMap() throws InvalidProtocolBufferException,
+            PrecheckStatusException,
+            TimeoutException {
+        NodeAddressBook addressBook = getAddressBookFromNetwork();
+
+        Map<String, AccountId> networkMap = new HashMap<>();
+        for (NodeAddress nodeAddressProto : addressBook.getNodeAddressList()) {
+            networkMap.putIfAbsent(
+                    nodeAddressProto.getIpAddress().toStringUtf8(),
+                    AccountId.fromString(String.format(
+                            "%d.%d.%d",
+                            nodeAddressProto.getNodeAccountId().getShardNum(),
+                            nodeAddressProto.getNodeAccountId().getShardNum(),
+                            nodeAddressProto.getNodeAccountId().getShardNum())));
+        }
+
+        return networkMap;
     }
 }
