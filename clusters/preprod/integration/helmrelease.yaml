@@ -61,4 +61,7 @@ spec:
           secret:
             defaultMode: 420
             secretName: mirror-monitor-custom
+    rest:
+      test:
+        checkRecent: false
 
