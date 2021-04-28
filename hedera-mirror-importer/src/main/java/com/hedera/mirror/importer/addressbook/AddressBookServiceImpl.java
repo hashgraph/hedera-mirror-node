@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -279,7 +281,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @return
      */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
-                                                                              long consensusTimestamp) {
+                                                                              long consensusTimestamp) throws UnknownHostException {
         ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
         Set<Long> nodeIdSet = new HashSet<>();
 
@@ -298,7 +300,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     private AddressBookEntry parseNodeAddressEntries(NodeAddress nodeAddressProto,
-                                                     long consensusTimestamp) {
+                                                     long consensusTimestamp) throws UnknownHostException {
         return nodeAddressProto.getServiceEndpointCount() == 0 ?
                 parseNodeAddressWithoutServiceEndpoints(nodeAddressProto, consensusTimestamp) :
                 parseNodeAddressWithServiceEndpoints(nodeAddressProto, consensusTimestamp);
@@ -324,7 +326,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     private AddressBookEntry parseNodeAddressWithServiceEndpoints(NodeAddress nodeAddressProto,
-                                                                  long consensusTimestamp) {
+                                                                  long consensusTimestamp) throws UnknownHostException {
         var nodeAccountId = EntityId.of(nodeAddressProto.getNodeAccountId());
         List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
         AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
@@ -339,14 +341,14 @@ public class AddressBookServiceImpl implements AddressBookService {
         // create an AddressBookServiceEndpoint for each ServiceEndpoint
         for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
             var ipAddressByteString = serviceEndpoint.getIpAddressV4();
-            if (ipAddressByteString == null || ipAddressByteString.isEmpty()) {
+            if (ipAddressByteString == null || ipAddressByteString.size() != 4) {
                 throw new IllegalStateException(String
                         .format("Invalid IpAddressV4: %s", ipAddressByteString));
             }
 
             serviceEndpoints.add(new AddressBookServiceEndpoint(
                     consensusTimestamp,
-                    ipAddressByteString.toStringUtf8(),
+                    InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress(),
                     serviceEndpoint.getPort(),
                     nodeAccountId));
         }

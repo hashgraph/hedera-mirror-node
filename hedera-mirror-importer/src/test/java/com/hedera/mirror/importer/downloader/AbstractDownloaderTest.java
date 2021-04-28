@@ -27,7 +27,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -36,7 +35,9 @@ import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -655,7 +656,7 @@ public abstract class AbstractDownloaderTest {
     }
 
     protected static AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId)
-            throws InvalidProtocolBufferException {
+            throws InvalidProtocolBufferException, UnknownHostException {
         AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
                 .fileData(contents)
                 .startConsensusTimestamp(consensusTimestamp + 1)
@@ -670,8 +671,6 @@ public abstract class AbstractDownloaderTest {
             AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
                     .consensusTimestamp(consensusTimestamp)
                     .memo(nodeAddressProto.getMemo().toStringUtf8())
-//                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-//                    .port(nodeAddressProto.getPortno())
                     .publicKey(nodeAddressProto.getRSAPubKey())
                     .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                     .nodeId(nodeAddressProto.getNodeId())
@@ -680,11 +679,9 @@ public abstract class AbstractDownloaderTest {
             // create an AddressBookServiceEndpoint for each ServiceEndpoint
             List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
             for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
-                ByteString ipAddressByteString = serviceEndpoint.getIpAddressV4();
-
                 serviceEndpoints.add(new AddressBookServiceEndpoint(
                         consensusTimestamp,
-                        ipAddressByteString.toStringUtf8(),
+                        InetAddress.getByAddress(serviceEndpoint.getIpAddressV4().toByteArray()).getHostAddress(),
                         serviceEndpoint.getPort(),
                         nodeAccountId));
             }
