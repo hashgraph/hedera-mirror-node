@@ -15,4 +15,4 @@ hedera:
       port: 5700
       realm: 0
       shard: 0
-      version: 0.32.0-rc2
+      version: 0.32.0
