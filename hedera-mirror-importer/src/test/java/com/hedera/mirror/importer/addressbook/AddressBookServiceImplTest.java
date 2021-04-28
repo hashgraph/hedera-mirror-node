@@ -29,11 +29,14 @@ import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Resource;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
@@ -112,7 +115,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 List<ServiceEndpoint> serviceEndpoints = new ArrayList<>();
                 for (int j = 1; j <= size; ++j) {
                     serviceEndpoints.add(ServiceEndpoint.newBuilder()
-                            .setIpAddressV4(ByteString.copyFromUtf8("127.0.0." + j))
+                            .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
                             .setPort(443 + j)
                             .build());
                 }
@@ -525,17 +528,15 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .hasSize(nodeAddressBook.getNodeAddressCount());
         for (NodeAddress nodeAddress : nodeAddressBook.getNodeAddressList()) {
             listAssert.anySatisfy(abe -> {
-//                assertThat(abe.getIp()).isEqualTo(nodeAddress.getIpAddress().toStringUtf8());
                 assertThat(abe.getMemo()).isEqualTo(nodeAddress.getMemo().toStringUtf8());
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
                 assertThat(abe.getNodeId()).isNull(); // both entries have null node id
+
+                assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
             });
         }
-        // one entry has null port and the other's is 50211
-//        listAssert.anySatisfy(abe -> assertThat(abe.getPort()).isNull());
-//        listAssert.anySatisfy(abe -> assertThat(abe.getPort()).isEqualTo(50211));
     }
 
     @Test
@@ -620,7 +621,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void verify102AddressBookWithServiceEndpoints() {
+    void verify102AddressBookWithServiceEndpoints() throws UnknownHostException {
 
         List<NodeAddress> nodeAddressList = new ArrayList<>();
         int nodeAccountStart = 3;
@@ -671,7 +672,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void verify101AddressBookWithServiceEndpoints() {
+    void verify101AddressBookWithServiceEndpoints() throws UnknownHostException {
 
         List<NodeAddress> nodeAddressList = new ArrayList<>();
         int nodeAccountStart = 3;
@@ -723,15 +724,15 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 addressBookEntryRepository.count());
     }
 
-    private ServiceEndpoint getServiceEndpoint(String ip, int port) {
+    private ServiceEndpoint getServiceEndpoint(String ip, int port) throws UnknownHostException {
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFromUtf8(ip))
+                .setIpAddressV4(ByteString.copyFrom(InetAddress.getByName(ip).getAddress()))
                 .setPort(port)
                 .build();
     }
 
     private NodeAddress getNodeAddressWithServiceEndpoints(int accountNum, int port,
-                                                           int numServiceEndpoints) {
+                                                           int numServiceEndpoints) throws UnknownHostException {
         NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
                 .setDescription("NodeAddressWithServiceEndpoint")
                 .setNodeAccountId(AccountID.newBuilder().setAccountNum(accountNum).build())
@@ -803,8 +804,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         for (ServiceEndpoint serviceEndpoint : expected) {
             listAssert.anySatisfy(abe -> {
+                AtomicReference<String> ip = null;
+                assertDoesNotThrow(() -> {
+                    ip.set(InetAddress.getByAddress(serviceEndpoint.getIpAddressV4().toByteArray()).getHostAddress());
+                });
+
                 assertThat(abe.getPort()).isEqualTo(serviceEndpoint.getPort());
-                assertThat(abe.getId().getIpAddressV4()).isEqualTo(serviceEndpoint.getIpAddressV4().toStringUtf8());
+                assertThat(abe.getId().getIpAddressV4()).isEqualTo(ip.get());
             });
         }
     }

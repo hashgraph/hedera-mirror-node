@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -73,7 +75,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void verifyEntryToServiceEndpointMapping() {
+    void verifyEntryToServiceEndpointMapping() throws UnknownHostException {
         long consensusTimestamp = 1L;
         addressBookRepository.save(addressBook(1, Collections.emptyList(), Collections.emptyList()));
         addressBookEntryRepository.save(addressBookEntry(consensusTimestamp, 3, List.of(80, 443)));
@@ -89,7 +91,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void verifyAddressBookToServiceEndpointMapping() {
+    void verifyAddressBookToServiceEndpointMapping() throws UnknownHostException {
         addressBookRepository.save(addressBook(1, List.of(3, 4), List.of(80, 443)));
         addressBookRepository.save(addressBook(2, List.of(5, 6), List.of(8080, 8443)));
         addressBookRepository.save(addressBook(3, List.of(7, 8), List.of(50211, 50212)));
@@ -116,7 +118,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
                 EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT));
     }
 
-    private AddressBookEntry addressBookEntry(long consensusTimestamp, long nodeAccountId, List<Integer> portNums) {
+    private AddressBookEntry addressBookEntry(long consensusTimestamp, long nodeAccountId, List<Integer> portNums) throws UnknownHostException {
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
         EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
@@ -132,7 +134,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
             for (int i = 0; i < portNums.size(); i++) {
                 serviceEndpoints.add(addressBookServiceEndpoint(
                         consensusTimestamp,
-                        "127.0.0." + i,
+                        InetAddress.getByName("127.0.0." + i).getHostAddress(),
                         portNums.get(i),
                         nodeAccountId));
             }
@@ -143,7 +145,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
         return builder.build();
     }
 
-    private AddressBook addressBook(long consensusTimestamp, List<Integer> accountNums, List<Integer> portNums) {
+    private AddressBook addressBook(long consensusTimestamp, List<Integer> accountNums, List<Integer> portNums) throws UnknownHostException {
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
                 .startConsensusTimestamp(consensusTimestamp)
@@ -151,9 +153,9 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
                 .fileId(addressBookEntityId102);
 
         List<AddressBookEntry> addressBookEntries = new ArrayList<>();
-        accountNums.forEach((accountNum -> {
+        for (Integer accountNum : accountNums) {
             addressBookEntries.add(addressBookEntry(consensusTimestamp, accountNum, portNums));
-        }));
+        }
         builder.entries(addressBookEntries);
 
         return builder.build();
