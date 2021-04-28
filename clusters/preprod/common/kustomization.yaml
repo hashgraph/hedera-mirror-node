@@ -5,4 +5,5 @@ resources:
   - namespace.yaml
   - gitrepository.yaml
   - sealed-secret-alertmanager.yaml
+  - sealed-secret-mirror.yaml
   - helmrelease.yaml

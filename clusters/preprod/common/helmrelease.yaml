@@ -18,6 +18,9 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 10
+  valuesFrom:
+    - kind: Secret
+      name: mirror
   values:
     prometheus:
       alertmanager:
@@ -27,4 +30,8 @@ spec:
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "integration", "previewnet"]
+    traefik:
+      service:
+        annotations:
+          cloud.google.com/neg: '{ "exposed_ports":{ "80":{"name": "common-mirror-traefik-neg"}, "443":{"name": "common-mirror-traefik-tls-neg"} } }'
 

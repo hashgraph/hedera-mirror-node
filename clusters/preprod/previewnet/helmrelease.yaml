@@ -29,6 +29,9 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 20
+  valuesFrom:
+    - kind: Secret
+      name: mirror
   values:
     importer:
       env:
