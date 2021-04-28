@@ -532,7 +532,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getNodeId()).isNull(); // both entries have null node id
+                assertThat(abe.getNodeId()).isZero(); // both entries have null node id
 
                 assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
             });
@@ -804,7 +804,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         for (ServiceEndpoint serviceEndpoint : expected) {
             listAssert.anySatisfy(abe -> {
-                AtomicReference<String> ip = null;
+                AtomicReference<String> ip = new AtomicReference<>("");
                 assertDoesNotThrow(() -> {
                     ip.set(InetAddress.getByAddress(serviceEndpoint.getIpAddressV4().toByteArray()).getHostAddress());
                 });
