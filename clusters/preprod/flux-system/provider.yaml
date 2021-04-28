@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   type: slack
-  channel: #mirror-node-alerts
+  channel: mirror-node-alerts
   secretRef:
     name: slack
 
