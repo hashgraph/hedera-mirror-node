@@ -20,7 +20,6 @@ spec:
   install:
     crds: CreateReplace
   interval: 90s
-  suspend: true
   test:
     enable: true
     timeout: 5m
