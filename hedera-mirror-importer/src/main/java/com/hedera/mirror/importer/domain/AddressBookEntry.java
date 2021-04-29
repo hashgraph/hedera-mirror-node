@@ -79,7 +79,7 @@ public class AddressBookEntry implements Serializable {
 
     @EqualsAndHashCode.Exclude
     @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp")
-    @JoinColumn(name = "nodeAccountId", referencedColumnName = "nodeAccountId")
+    @JoinColumn(name = "nodeId", referencedColumnName = "nodeId")
     @JsonIgnore
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();

@@ -48,8 +48,7 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     private static final long serialVersionUID = 6964963511683419945L;
 
     public AddressBookServiceEndpoint(long consensusTimestamp, String ip, int port, EntityId nodeAccountId) {
-        id = new AddressBookServiceEndpoint.Id(consensusTimestamp, ip, nodeAccountId);
-        this.port = port;
+        id = new AddressBookServiceEndpoint.Id(consensusTimestamp, ip, nodeAccountId, port);
     }
 
     @JsonIgnore
@@ -57,7 +56,9 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     @JsonUnwrapped
     private Id id;
 
-    private int port;
+    public int getPort() {
+        return getId().port;
+    }
 
     @JsonIgnore
     @Override
@@ -80,6 +81,8 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
 
         @Convert(converter = AccountIdConverter.class)
         @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId nodeAccountId;
+        private EntityId nodeId;
+
+        private int port;
     }
 }
