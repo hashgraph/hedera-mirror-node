@@ -2,7 +2,7 @@
 -- Support proto updates in 0.13.0-rc.1 with respect to address book end points
 -------------------
 
--- Update address book entry with  description and stake columns
+-- Update address book entry with description and stake columns
 alter table if exists address_book_entry
     add column if not exists description varchar(100) null,
     add column if not exists stake       bigint       null;
@@ -12,34 +12,55 @@ alter table if exists address_book_entry
 create table if not exists address_book_service_endpoint
 (
     consensus_timestamp bigint      not null,
-    ip_address_v4       varchar(20) not null,
+    ip_address_v4       varchar(15) not null,
     port                integer     not null,
-    node_account_id     bigint      null
+    node_id             bigint      null
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
 -- add indexes
+create index if not exists address_book_entry__node_id
+    on address_book_entry (node_id);
 alter table address_book_service_endpoint
-    add primary key (consensus_timestamp, node_account_id, ip_address_v4);
-create index if not exists address_book_service_endpoint__timestamp
-    on address_book_service_endpoint (consensus_timestamp);
-create index if not exists address_book_service_endpoint__timestamp_account_id
-    on address_book_service_endpoint (consensus_timestamp, node_account_id);
-
+    add primary key (consensus_timestamp, node_id, ip_address_v4, port);
 
 -- migrate endpoints from address_book_entry to address_book_service_endpoint
-insert into address_book_service_endpoint (consensus_timestamp, ip_address_v4, port, node_account_id)
+insert into address_book_service_endpoint (consensus_timestamp, ip_address_v4, port, node_id)
 select consensus_timestamp,
        ip,
        port,
-       node_account_id
+       node_id
 from address_book_entry
-where node_account_id is not null
+where node_id is not null
   and ip is not null
   and ip != ''
 order by consensus_timestamp asc;
 
--- Update address book entry dropping ip and port columns
+-- Update address_book_entry dropping ip and port columns
 alter table if exists address_book_entry
     drop column if exists ip,
     drop column if exists port;
+
+-- ensure node_account_id is no longer empty. Early address books have node_account_id offset from node_id by 3
+-- initial addressBook at time 1 has node_id = 0, this can be skipped as it has been verified to have no duplicates
+update address_book_entry
+set node_account_id = node_id + 3
+where node_account_id is null
+  and consensus_timestamp > 1;
+
+-- initial addressBook at time 1 has all rows node_id = 0, and has been verified to have no duplicates
+-- correct 0 and null cases of node_account_id and node_id by splitting memo and extracting num
+update address_book_entry
+set node_account_id = split_part(memo, '.', 3)::int,
+    node_id         = split_part(memo, '.', 3)::int - 3
+where consensus_timestamp = 1
+  and node_id = 0;
+
+-- collapse duplicate node_id rows in address_book_entry
+-- join table on self and remove duplicates with a lower id leaving a single instance of a memo-consensus_timestamp combo
+delete
+from address_book_entry a
+    using address_book_entry b
+where a.id < b.id
+  and a.memo = b.memo
+  and a.consensus_timestamp = b.consensus_timestamp;
