@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
+import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -55,8 +56,11 @@ import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepositor
 @TestPropertySource(properties = "spring.flyway.target=1.37.0")
 class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
 
+    private final String baseAccountId = "0.0.";
     private final String baseIp = "127.0.0.";
     private final int basePort = 443;
+    private final int nodeAccountOffset = 3;
+    private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
 
     @Resource
     private AddressBookEntryRepository addressBookEntryRepository;
@@ -76,84 +80,256 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void extractServiceEndpointsForFile101() throws IOException {
+    void verifyMigrateWhenBothDeprecatedIpAndAddressBookServiceEndpointsAreSet() throws IOException {
         long consensusTimestamp = 1;
         int nodeIdCount = 3;
         int endPointPerNode = 3;
-        int numEndPoints = nodeIdCount * endPointPerNode;
+        int numEndPoints = nodeIdCount * (endPointPerNode + 1);
 
         insertAddressBook(101, consensusTimestamp, nodeIdCount);
-        List<AddressBookEntry> addressBookEntryList = getAndSaveAddressBookEntries(true, consensusTimestamp, 3,
+        getAndSaveAddressBookEntries(true, consensusTimestamp, nodeIdCount,
                 endPointPerNode);
 
         assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
 
         runMigration();
 
+        assertThat(addressBookEntryRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(nodeIdCount)
+                .extracting(AddressBookEntry::getNodeId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L);
+
         assertThat(addressBookServiceEndpointRepository
                 .findAll())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
                 .extracting(AddressBookServiceEndpoint::getPort)
-                .containsSequence(444, 445, 446, 447, 448, 449, 450, 451, 452);
+                .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454);
     }
 
     @Test
-    void extractServiceEndpointsForFile102() throws IOException {
+    void verifyMigrateWhenOnlyAddressBookServiceEndpointsAreSet() throws IOException {
         long consensusTimestamp = 1;
         int nodeIdCount = 3;
         int endPointPerNode = 3;
+        int numEndPoints = nodeIdCount * endPointPerNode;
 
         insertAddressBook(102, consensusTimestamp, nodeIdCount);
-        getAndSaveAddressBookEntries(false, consensusTimestamp, 3,
+        getAndSaveAddressBookEntries(false, consensusTimestamp, nodeIdCount,
+                endPointPerNode);
+
+        assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
+
+        runMigration();
+
+        assertThat(addressBookEntryRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(nodeIdCount)
+                .extracting(AddressBookEntry::getNodeId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L);
+
+        assertThat(addressBookServiceEndpointRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(numEndPoints)
+                .extracting(AddressBookServiceEndpoint::getPort)
+                .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451);
+    }
+
+    @Test
+    void verifyMigrateWhenOnlyDeprecatedIpIsSet() throws IOException {
+        long consensusTimestamp = 1;
+        int nodeIdCount = 3;
+        int endPointPerNode = 0;
+        int numEndPoints = nodeIdCount;
+
+        insertAddressBook(102, consensusTimestamp, nodeIdCount);
+        getAndSaveAddressBookEntries(true, consensusTimestamp, nodeIdCount,
+                endPointPerNode);
+
+        assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
+
+        runMigration();
+
+        assertThat(addressBookEntryRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(nodeIdCount)
+                .extracting(AddressBookEntry::getNodeId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L);
+
+        assertThat(addressBookServiceEndpointRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(numEndPoints)
+                .extracting(AddressBookServiceEndpoint::getPort)
+                .containsExactlyInAnyOrder(443, 444, 445);
+    }
+
+    @Test
+    void verifyMigrateWhenNeitherDeprecatedIpNorAddressBookServiceEndpointsAreSet() throws IOException {
+        long consensusTimestamp = 1;
+        int nodeIdCount = 3;
+        int endPointPerNode = 0;
+
+        insertAddressBook(102, consensusTimestamp, nodeIdCount);
+        getAndSaveAddressBookEntries(false, consensusTimestamp, nodeIdCount,
                 endPointPerNode);
 
         assertThat(addressBookEntryRepository.count()).isEqualTo(nodeIdCount);
 
         runMigration();
 
+        assertThat(addressBookEntryRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(nodeIdCount)
+                .extracting(AddressBookEntry::getNodeId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L);
+
         assertThat(addressBookServiceEndpointRepository
                 .findAll())
                 .isEmpty();
     }
 
-    private List<AddressBookEntry> getAndSaveAddressBookEntries(boolean file101, long consensusTimestamp, int nodeCount,
-                                                                int endPointCount) {
+    @Test
+    void verifyAddressBookEntryDuplicatesRemoved() throws IOException {
+        long consensusTimestamp = 1;
+        int nodeIdCount = 3;
+
+        AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(0L)
+                .publicKey("rsa+public/key");
+
+        List<Long> nodeIds = List.of(0L, 1L, 2L);
+        List<Integer> ports = List.of(80, 443, 5600);
+        int numEndPoints = nodeIds.size() * ports.size();
+
+        // populate address_book and address_book_entry
+        insertAddressBook(102, consensusTimestamp, nodeIdCount);
+        nodeIds.forEach(nodeId -> {
+            ports.forEach(port -> {
+                insertAddressBookEntry(
+                        builder.memo(baseAccountId + (nodeId + nodeAccountOffset)).build(),
+                        baseIp + nodeId,
+                        port);
+            });
+        });
+
+        assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
+
+        runMigration();
+
+        assertThat(addressBookEntryRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(nodeIds.size())
+                .extracting(AddressBookEntry::getNodeId)
+                .containsExactlyInAnyOrderElementsOf(nodeIds);
+
+        IterableAssert<AddressBookServiceEndpoint> listAssert = assertThat(addressBookServiceEndpointRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(numEndPoints);
+
+        List<Integer> allPorts = new ArrayList<>();
+        allPorts.addAll(ports);
+        allPorts.addAll(ports);
+        allPorts.addAll(ports);
+        listAssert.extracting(AddressBookServiceEndpoint::getPort)
+                .containsExactlyInAnyOrderElementsOf(allPorts);
+    }
+
+    @Test
+    void verifyInitialAddressBookNullEntriesUpdated() throws IOException {
+        long consensusTimestamp = 1;
+        AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(0L)
+                .publicKey("rsa+public/key");
+
+        List<Long> nodeIds = List.of(0L, 1L, 2L, 3L);
+        insertAddressBook(102, consensusTimestamp, nodeIds.size());
+        insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(0) + nodeAccountOffset)).build(), "", 0);
+        insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(1) + nodeAccountOffset)).build(), "", 0);
+        insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(2) + nodeAccountOffset)).build(), "", 0);
+        insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(3) + nodeAccountOffset)).build(), "", 0);
+
+        runMigration();
+
+        IterableAssert<AddressBookEntry> listAssert =
+                assertThat(addressBookEntryRepository
+                        .findAll())
+                        .isNotEmpty()
+                        .hasSize(nodeIds.size());
+
+        listAssert.extracting(AddressBookEntry::getNodeId)
+                .containsExactlyInAnyOrderElementsOf(nodeIds);
+        listAssert.extracting(AddressBookEntry::getNodeAccountId)
+                .containsExactlyInAnyOrder(
+                        EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset), EntityTypeEnum.ACCOUNT),
+                        EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset), EntityTypeEnum.ACCOUNT),
+                        EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset), EntityTypeEnum.ACCOUNT),
+                        EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset), EntityTypeEnum.ACCOUNT));
+
+        assertThat(addressBookServiceEndpointRepository
+                .findAll())
+                .isEmpty();
+    }
+
+    private List<AddressBookEntry> getAndSaveAddressBookEntries(boolean deprecatedIp, long consensusTimestamp,
+                                                                int nodeCount, int endPointCount) {
         List<AddressBookEntry> addressBookEntries = new ArrayList<>();
-        for (int id = 1; id <= endPointCount * nodeCount; id += nodeCount) {
-            addressBookEntries
-                    .addAll(getAndSaveAddressBookEntry(file101, id, consensusTimestamp, 3 + id, endPointCount));
+        int numEndpointsPerNode = deprecatedIp ? endPointCount + 1 : endPointCount;
+        for (int id = 0; id < nodeCount; id++) {
+            addressBookEntries.addAll(getAndSaveAddressBookEntry(
+                    deprecatedIp,
+                    numEndpointsPerNode * id,
+                    consensusTimestamp,
+                    id,
+                    endPointCount));
         }
 
         return addressBookEntries;
     }
 
-    private List<AddressBookEntry> getAndSaveAddressBookEntry(boolean file101, long id, long consensusTimestamp,
+    private List<AddressBookEntry> getAndSaveAddressBookEntry(boolean deprecatedIp, long id, long consensusTimestamp,
                                                               long nodeId, int endPointCount) {
-        String accountId = "0.0." + nodeId;
+        long accountIdNum = nodeAccountOffset + nodeId;
+        String accountId = baseAccountId + accountIdNum;
         List<AddressBookEntry> addressBookEntries = new ArrayList<>();
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .memo(accountId)
                 .nodeCertHash("nodeCertHash".getBytes())
+                .nodeAccountId(EntityId.of(accountId, EntityTypeEnum.ACCOUNT))
                 .nodeId(nodeId)
                 .publicKey("rsa+public/key");
 
-        if (file101) {
-            builder = builder.nodeAccountId(EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
-        } else {
-            // if file 102 create a single node entry
-            AddressBookEntry addressBookEntry = builder.id(id).build();
-            insertAddressBookEntry(addressBookEntry, "", 0);
-            return addressBookEntries;
-        }
-
         AtomicLong idCount = new AtomicLong(id);
-        for (int i = 0; i < endPointCount; i++) {
-            AddressBookEntry addressBookEntry = builder.id(idCount.get()).build();
-            addressBookEntries.add(addressBookEntry);
+        AddressBookEntry addressBookEntry = builder.build();
+        if (deprecatedIp) {
             insertAddressBookEntry(addressBookEntry, baseIp + idCount.get(), basePort + (int) idCount.get());
             idCount.getAndIncrement();
+            addressBookEntries.add(addressBookEntry);
+        }
+
+        for (int i = 1; i <= endPointCount; i++) {
+            insertAddressBookEntry(addressBookEntry, baseIp + idCount.get(), basePort + (int) idCount.get());
+            idCount.getAndIncrement();
+            addressBookEntries.add(addressBookEntry);
+        }
+
+        // handle no endpoints case
+        if (!deprecatedIp && endPointCount == 0) {
+            insertAddressBookEntry(addressBookEntry, "", 0);
+            addressBookEntries.add(addressBookEntry);
         }
 
         return addressBookEntries;
@@ -195,10 +371,9 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         Long nodeAccountId = addressBookEntry.getNodeAccountId() == null ? null : addressBookEntry.getNodeAccountId()
                 .getId();
         jdbcOperations
-                .update("insert into address_book_entry (id, consensus_timestamp, ip, memo, node_account_id, " +
+                .update("insert into address_book_entry (consensus_timestamp, ip, memo, node_account_id, " +
                                 "node_cert_hash, node_id, port, public_key) values" +
-                                " (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        addressBookEntry.getId(),
+                                " (?, ?, ?, ?, ?, ?, ?, ?)",
                         addressBookEntry.getConsensusTimestamp(),
                         ip,
                         addressBookEntry.getMemo(),

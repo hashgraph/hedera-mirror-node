@@ -18,9 +18,7 @@ create table if not exists address_book_service_endpoint
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
--- add indexes
-create index if not exists address_book_entry__node_id
-    on address_book_entry (node_id);
+-- add address_book_service_endpoint index
 alter table address_book_service_endpoint
     add primary key (consensus_timestamp, node_id, ip_address_v4, port);
 
@@ -56,6 +54,11 @@ set node_account_id = split_part(memo, '.', 3)::int,
 where consensus_timestamp = 1
   and node_id = 0;
 
+-- update node_account_id and node_id to have mandatory population
+alter table if exists address_book_entry
+    alter column node_account_id set not null,
+    alter column node_id set not null;
+
 -- collapse duplicate node_id rows in address_book_entry
 -- join table on self and remove duplicates with a lower id leaving a single instance of a memo-consensus_timestamp combo
 delete
@@ -64,3 +67,9 @@ from address_book_entry a
 where a.id < b.id
   and a.memo = b.memo
   and a.consensus_timestamp = b.consensus_timestamp;
+
+-- add address_book_entry index
+create index if not exists address_book_entry__node_id
+    on address_book_entry (consensus_timestamp, node_id);
+
+-- update address_book node_count
