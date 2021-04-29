@@ -669,11 +669,10 @@ public abstract class AbstractDownloaderTest {
                 .getNodeAddressList()) {
             EntityId nodeAccountId = EntityId.of(nodeAddressProto.getNodeAccountId());
             AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
-                    .consensusTimestamp(consensusTimestamp)
+                    .id(new AddressBookEntry.Id(consensusTimestamp, nodeAddressProto.getNodeId()))
                     .memo(nodeAddressProto.getMemo().toStringUtf8())
                     .publicKey(nodeAddressProto.getRSAPubKey())
                     .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                    .nodeId(nodeAddressProto.getNodeId())
                     .nodeAccountId(nodeAccountId);
 
             // create an AddressBookServiceEndpoint for each ServiceEndpoint

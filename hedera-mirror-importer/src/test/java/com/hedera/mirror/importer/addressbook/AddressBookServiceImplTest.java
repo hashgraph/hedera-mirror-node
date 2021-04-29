@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Resource;
 import org.assertj.core.api.ListAssert;
@@ -499,10 +500,17 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @Test
     void verifyAddressBookEntriesWithNodeIdAndPortNotSet() {
+        Map<String, Integer> memoToNodeIdMap = Map.of(
+                "0.0.3", 0,
+                "0.0.4", 1
+        );
+
+        String[] accountIds = memoToNodeIdMap.keySet().stream().sorted().toArray(String[]::new);
+
         // nodeId 0, port 0
         NodeAddress nodeAddress1 = NodeAddress.newBuilder()
                 .setIpAddress(ByteString.copyFromUtf8("127.0.0.1"))
-                .setMemo(ByteString.copyFromUtf8("0.0.3"))
+                .setMemo(ByteString.copyFromUtf8(accountIds[0]))
                 .setNodeAccountId(AccountID.newBuilder().setAccountNum(3))
                 .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
                 .setRSAPubKey("rsa+public/key")
@@ -510,7 +518,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         // nodeId 0, port 50211
         NodeAddress nodeAddress2 = NodeAddress.newBuilder(nodeAddress1)
                 .setIpAddress(ByteString.copyFromUtf8("127.0.0.2"))
-                .setMemo(ByteString.copyFromUtf8("0.0.4"))
+                .setMemo(ByteString.copyFromUtf8(accountIds[1]))
                 .setNodeAccountId(AccountID.newBuilder().setAccountNum(4))
                 .setPortno(50211)
                 .build();
@@ -527,12 +535,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
         ListAssert<AddressBookEntry> listAssert = assertThat(addressBook.getEntries())
                 .hasSize(nodeAddressBook.getNodeAddressCount());
         for (NodeAddress nodeAddress : nodeAddressBook.getNodeAddressList()) {
+            int expectedNodeId = memoToNodeIdMap.get(nodeAddress.getMemo().toStringUtf8());
             listAssert.anySatisfy(abe -> {
                 assertThat(abe.getMemo()).isEqualTo(nodeAddress.getMemo().toStringUtf8());
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getNodeId()).isZero(); // both entries have null node id
+                assertThat(abe.getId().getNodeId()).isEqualTo(expectedNodeId); // both entries have null node id
 
                 assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
             });
@@ -786,8 +795,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getNodeId()).isNotNull();
-                assertThat(abe.getNodeId()).isEqualTo(nodeAddress.getNodeId());
+                assertThat(abe.getId().getNodeId()).isEqualTo(nodeAddress.getNodeId());
 
                 assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
             });

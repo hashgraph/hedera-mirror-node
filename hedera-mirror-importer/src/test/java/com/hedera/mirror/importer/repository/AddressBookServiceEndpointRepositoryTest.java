@@ -122,11 +122,10 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
         EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .consensusTimestamp(consensusTimestamp)
+                .id(new AddressBookEntry.Id(consensusTimestamp, nodeAccountId - 3))
                 .publicKey("rsa+public/key")
                 .memo(nodeAccountIdString)
                 .nodeAccountId(nodeAccountEntityId)
-                .nodeId(nodeAccountId)
                 .nodeCertHash("nodeCertHash".getBytes());
 
         if (!CollectionUtils.isEmpty(portNums)) {

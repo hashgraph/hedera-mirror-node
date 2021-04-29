@@ -13,8 +13,8 @@ create table if not exists address_book_service_endpoint
 (
     consensus_timestamp bigint      not null,
     ip_address_v4       varchar(15) not null,
-    port                integer     not null,
-    node_id             bigint      null
+    node_id             bigint      null,
+    port                integer     not null
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
@@ -68,8 +68,17 @@ where a.id < b.id
   and a.memo = b.memo
   and a.consensus_timestamp = b.consensus_timestamp;
 
--- add address_book_entry index
-create index if not exists address_book_entry__node_id
-    on address_book_entry (consensus_timestamp, node_id);
+-- remove id and update primary key to be consensus_timestamp, node_id
+alter table if exists address_book_entry
+    drop column if exists id;
+alter table if exists address_book_entry
+    add primary key (consensus_timestamp, node_id);
 
 -- update address_book node_count
+with entry_map as (
+    select consensus_timestamp, count(consensus_timestamp) from address_book_entry group by consensus_timestamp
+)
+update address_book
+set node_count = count
+from entry_map
+where start_consensus_timestamp = entry_map.consensus_timestamp;

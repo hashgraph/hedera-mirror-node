@@ -72,8 +72,9 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
             long id = i;
             long nodeId = 3 + i;
             addressBookEntryList
-                    .add(addressBookEntry(a -> a.consensusTimestamp(startConsensusTimestamp).memo("0.0." + nodeId)
-                            .nodeId(nodeId).nodeAccountId(EntityId.of("0.0." + nodeId, EntityTypeEnum.ACCOUNT))));
+                    .add(addressBookEntry(a -> a.id(new AddressBookEntry.Id(startConsensusTimestamp, nodeId))
+                            .memo("0.0." + nodeId)
+                            .nodeAccountId(EntityId.of("0.0." + nodeId, EntityTypeEnum.ACCOUNT))));
         }
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
@@ -92,11 +93,10 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
 
     private AddressBookEntry addressBookEntry(Consumer<AddressBookEntry.AddressBookEntryBuilder> nodeAddressCustomizer) {
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .consensusTimestamp(Instant.now().getEpochSecond())
+                .id(new AddressBookEntry.Id(Instant.now().getEpochSecond(), 5L))
                 .publicKey("rsa+public/key")
                 .memo("0.0.3")
                 .nodeAccountId(EntityId.of("0.0.5", EntityTypeEnum.ACCOUNT))
-                .nodeId(5L)
                 .nodeCertHash("nodeCertHash".getBytes());
 
         if (nodeAddressCustomizer != null) {

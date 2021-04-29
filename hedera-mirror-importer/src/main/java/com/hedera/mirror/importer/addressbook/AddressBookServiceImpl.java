@@ -74,6 +74,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
     public static final String ADDRESS_BOOK_102_CACHE_NAME = "current_102_address_book";
+    public static final int INITIAL_NODE_ID_ACCOUNT_ID_OFFSET = 3;
 
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
@@ -303,7 +304,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         if (nodeAddressBookEntryMap.size() == 1) {
             // clear the node ID when all of them are the same
-            nodeAddressBookEntryMap.forEach((k, v) -> k.setNodeId(null));
+            nodeAddressBookEntryMap.forEach((k, v) -> k.getId().setNodeId(null));
         }
 
         // return a list of unique nodeId's AddressBookEntries
@@ -325,13 +326,18 @@ public class AddressBookServiceImpl implements AddressBookService {
         var nodeEntityId = nodeAddressProto.getNodeAccountId() == AccountID.getDefaultInstance() ?
                 memoNodeEntityId : EntityId.of(nodeAddressProto.getNodeAccountId());
 
+        var nodeId = nodeAddressProto.getNodeId();
+        // ensure valid nodeId. In early versions of initial addressBook all nodeIds are set to 0
+        if (nodeId == 0 && nodeEntityId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
+            nodeId = nodeEntityId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
+        }
+
         return AddressBookEntry.builder()
-                .consensusTimestamp(consensusTimestamp)
+                .id(new AddressBookEntry.Id(consensusTimestamp, nodeId))
                 .description(nodeAddressProto.getDescription())
                 .memo(memo)
                 .publicKey(nodeAddressProto.getRSAPubKey())
                 .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                .nodeId(nodeAddressProto.getNodeId())
                 .stake(nodeAddressProto.getStake())
                 .nodeAccountId(nodeEntityId)
                 .build();

@@ -63,7 +63,8 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
         assertThat(addressBookEntryRepository.findAll())
                 .isNotNull()
                 .extracting(AddressBookEntry::getId)
-                .containsSequence(1L, 2L, 3L);
+                .extracting(AddressBookEntry.Id::getNodeId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L);
     }
 
     @Test
@@ -76,17 +77,17 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
         assertThat(addressBookEntryRepository.findAll())
                 .isNotNull()
                 .extracting(AddressBookEntry::getId)
-                .containsSequence(1L, 2L, 3L);
+                .extracting(AddressBookEntry.Id::getNodeId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L);
     }
 
     private AddressBookEntry addressBookEntry(Consumer<AddressBookEntry.AddressBookEntryBuilder> nodeAddressCustomizer, long consensusTimestamp, long nodeAccountId) {
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .consensusTimestamp(consensusTimestamp)
+                .id(new AddressBookEntry.Id(consensusTimestamp, nodeAccountId - 3))
                 .publicKey("rsa+public/key")
                 .memo(nodeAccountIdString)
                 .nodeAccountId(EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT))
-                .nodeId(nodeAccountId)
                 .nodeCertHash("nodeCertHash".getBytes());
 
         if (nodeAddressCustomizer != null) {

@@ -24,5 +24,5 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 
-public interface AddressBookEntryRepository extends CrudRepository<AddressBookEntry, Long> {
+public interface AddressBookEntryRepository extends CrudRepository<AddressBookEntry, AddressBookEntry.Id> {
 }
