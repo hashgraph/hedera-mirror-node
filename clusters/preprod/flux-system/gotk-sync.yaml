@@ -10,7 +10,7 @@ spec:
     branch: deploy-flux2
   secretRef:
     name: flux-system
-  url: ssh://git@github.com/hashgraph/hedera-mirror-node
+  url: https://github.com/hashgraph/hedera-mirror-node.git
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
 kind: Kustomization
