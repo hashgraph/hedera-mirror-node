@@ -55,9 +55,9 @@ comment on table address_book_entry is 'Network address book node entries';
 create table if not exists address_book_service_endpoint
 (
     consensus_timestamp bigint      not null,
-    ip_address_v4       varchar(20) not null,
+    ip_address_v4       varchar(15) not null,
     port                integer     not null,
-    node_account_id     bigint      null
+    node_id             bigint      null
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
