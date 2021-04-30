@@ -8,7 +8,7 @@ hedera:
         # grpc endpoint
         mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         network: testnet
-        # list of nodes to be set with network is other
+        # list of nodes to bootstrap with when network is other
         nodes:
           - accountId:
             host:
