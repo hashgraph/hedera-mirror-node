@@ -23,7 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.time.Duration;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
@@ -58,8 +59,8 @@ public class SDKClient {
     private final AccountId operatorId;
     private final String mirrorNodeAddress;
     private final long messageTimeoutSeconds;
-    private final List<AccountId> singletonNodeId;
     private final Hbar maxTransactionFee;
+    private final Map<String, AccountId> validateNetworkMap;
     private static final FileId ADDRESS_BOOK_IPS = new FileId(0L, 0L, 101L);
 
     public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException,
@@ -85,9 +86,20 @@ public class SDKClient {
 
         // only use validated nodes for tests
         this.client = getValidatedClient(networkMapToValidate, client);
+        validateNetworkMap = this.client.getNetwork();
+    }
 
-        // set nodeId to first valid node
-        singletonNodeId = Collections.singletonList(this.client.getNetwork().values().iterator().next());
+    public ExpandedAccountId getExpandedOperatorAccountId() {
+        return new ExpandedAccountId(operatorId, operatorKey, payerPublicKey);
+    }
+
+    public List<AccountId> getRandomSingleNodeAccountIdList() {
+        int randIndex = RandomUtils.nextInt(0, validateNetworkMap.size() - 1);
+        return List.of(new ArrayList<>(validateNetworkMap.values()).get(randIndex));
+    }
+
+    public void close() throws TimeoutException {
+        client.close();
     }
 
     private Client getBootstrapClient(AcceptanceTestProperties.HederaNetwork network,
@@ -116,14 +128,6 @@ public class SDKClient {
         }
 
         return client;
-    }
-
-    public ExpandedAccountId getExpandedOperatorAccountId() {
-        return new ExpandedAccountId(operatorId, operatorKey, payerPublicKey);
-    }
-
-    public void close() throws TimeoutException {
-        client.close();
     }
 
     private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {

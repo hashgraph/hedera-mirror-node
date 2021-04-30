@@ -63,7 +63,7 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setTransactionMemo(memo);
 
         if (signatureKeyList != null) {
-            scheduleCreateTransaction.setNodeAccountIds(sdkClient.getSingletonNodeId());
+            scheduleCreateTransaction.setNodeAccountIds(sdkClient.getRandomSingleNodeAccountIdList());
 
             // add initial set of required signatures to ScheduleCreate transaction
             signatureKeyList.forEach(k -> {
