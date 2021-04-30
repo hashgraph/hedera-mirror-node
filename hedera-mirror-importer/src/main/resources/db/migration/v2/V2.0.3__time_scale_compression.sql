@@ -51,7 +51,7 @@ alter table address_book_entry
     set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_id');
 
 alter table address_book_service_endpoint
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_id, ip_address_v4');
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_id, ip_address_v4, port');
 
 alter table contract_result
     set (timescaledb.compress);

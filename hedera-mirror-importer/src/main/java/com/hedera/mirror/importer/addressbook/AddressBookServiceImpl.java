@@ -286,11 +286,12 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) throws UnknownHostException {
-        // map of AddressBookEntry to set of AddressBookServiceEndpoints
+        // map of AddressBookEntry to set of AddressBookServiceEndpoints. Early separation allows for single setting
+        // of endpoints after collecting all endpoints from multiple locations and handling duplicates of nodeIds.
         SetMultimap<AddressBookEntry, AddressBookServiceEndpoint> nodeAddressBookEntryMap = Multimaps
                 .synchronizedSetMultimap(HashMultimap.create());
 
-        // for each NodeAddress add a nullable collection of AddressBookServiceEndpoint to the multi map
+        // for each NodeAddress add a nullable collection of AddressBookServiceEndpoints to the multi map
         for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
             AddressBookEntry addressBookEntry = getAddressBookEntry(nodeAddressProto, consensusTimestamp);
             List<AddressBookServiceEndpoint> addressBookServiceEndpoints =
@@ -305,9 +306,12 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         // return a list of unique nodeId's AddressBookEntries
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
-        nodeAddressBookEntryMap.asMap().forEach((k, v) -> {
-            k.setServiceEndpoints(v.stream().filter(Objects::nonNull).collect(Collectors.toList()));
-            addressBookEntryList.add(k);
+        nodeAddressBookEntryMap.asMap().forEach((addressBookEntry, serviceEndpoints) -> {
+            addressBookEntry.setServiceEndpoints(serviceEndpoints
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+            addressBookEntryList.add(addressBookEntry);
         });
 
         return addressBookEntryList;
@@ -323,8 +327,9 @@ public class AddressBookServiceImpl implements AddressBookService {
                 memoNodeEntityId : EntityId.of(nodeAddressProto.getNodeAccountId());
 
         var nodeId = nodeAddressProto.getNodeId();
-        // ensure valid nodeId. In early versions of initial addressBook all nodeIds are set to 0
-        if (nodeId == 0 && nodeEntityId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
+        // ensure valid nodeId. In early versions of initial addressBook (entityNum < 20) all nodeIds are set to 0
+        if (nodeId == 0 && nodeEntityId.getEntityNum() < 20 &&
+                nodeEntityId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
             nodeId = nodeEntityId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
         }
 
@@ -345,8 +350,12 @@ public class AddressBookServiceImpl implements AddressBookService {
         List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
 
         // create an AddressBookServiceEndpoint for deprecated port and IP if populated
-        if (StringUtils.isNotBlank(nodeAddressProto.getIpAddress().toStringUtf8())) {
-            serviceEndpoints.add(getAddressBookServiceEndpoint(nodeAddressProto, consensusTimestamp, nodeAccountId));
+        AddressBookServiceEndpoint deprecatedServiceEndpoint = getAddressBookServiceEndpoint(
+                nodeAddressProto,
+                consensusTimestamp,
+                nodeAccountId);
+        if (deprecatedServiceEndpoint != null) {
+            serviceEndpoints.add(deprecatedServiceEndpoint);
         }
 
         // create an AddressBookServiceEndpoint for every ServiceEndpoint found, ignore IP duplicates
@@ -360,12 +369,14 @@ public class AddressBookServiceImpl implements AddressBookService {
     private AddressBookServiceEndpoint getAddressBookServiceEndpoint(NodeAddress nodeAddressProto,
                                                                      long consensusTimestamp, EntityId nodeAccountId) {
         String ip = nodeAddressProto.getIpAddress().toStringUtf8();
-        int port = nodeAddressProto.getPortno();
+        if (StringUtils.isBlank(ip)) {
+            return null;
+        }
 
         return new AddressBookServiceEndpoint(
                 consensusTimestamp,
-                ip,
-                port,
+                nodeAddressProto.getIpAddress().toStringUtf8(),
+                nodeAddressProto.getPortno(),
                 nodeAccountId);
     }
 
