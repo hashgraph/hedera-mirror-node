@@ -302,11 +302,6 @@ public class AddressBookServiceImpl implements AddressBookService {
             }
         }
 
-        if (nodeAddressBookEntryMap.size() == 1) {
-            // clear the node ID when all of them are the same
-            nodeAddressBookEntryMap.forEach((k, v) -> k.getId().setNodeId(null));
-        }
-
         // return a list of unique nodeId's AddressBookEntries
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
         nodeAddressBookEntryMap.asMap().forEach((k, v) -> {
