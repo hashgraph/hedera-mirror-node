@@ -116,13 +116,6 @@ public class SDKClient {
         client.close();
     }
 
-    private Client toClient(Map<String, AccountId> network) throws InterruptedException {
-        Client client = Client.forNetwork(network);
-        client.setOperator(operatorId, operatorKey);
-        client.setMirrorNetwork(List.of(mirrorNodeAddress));
-        return client;
-    }
-
     private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {
         return nodes.stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));

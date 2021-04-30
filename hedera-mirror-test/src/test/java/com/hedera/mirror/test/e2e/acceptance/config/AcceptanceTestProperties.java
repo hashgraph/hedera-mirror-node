@@ -38,33 +38,39 @@ import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 @Data
 @Validated
 public class AcceptanceTestProperties {
-    private final RestPollingProperties restPollingProperties;
 
-    @NotNull
-    private Set<NodeProperties> nodes = new LinkedHashSet<>();
-    @NotNull
-    private HederaNetwork network = HederaNetwork.TESTNET;
-    @NotBlank
-    private String mirrorNodeAddress;
-    @NotBlank
-    private String operatorId;
-    @NotBlank
-    private String operatorKey;
-    @NotNull
-    private Duration messageTimeout = Duration.ofSeconds(20);
+    private boolean emitBackgroundMessages = false;
+
     @NotNull
     private Long existingTopicNum;
 
-    private boolean emitBackgroundMessages = false;
+    @NotNull
+    private Long maxTinyBarTransactionFee = 1_000_000_000L;
+
+    @NotNull
+    private Duration messageTimeout = Duration.ofSeconds(20);
+
+    @NotBlank
+    private String mirrorNodeAddress;
+
+    @NotNull
+    private HederaNetwork network = HederaNetwork.TESTNET;
+
+    private Set<NodeProperties> nodes = new LinkedHashSet<>();
+
+    @NotBlank
+    private String operatorId;
+
+    @NotBlank
+    private String operatorKey;
+
+    private final RestPollingProperties restPollingProperties;
 
     @Max(5)
     private int subscribeRetries = 5;
 
     @NotNull
     private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
-
-    @NotNull
-    private Long maxTinyBarTransactionFee = 1_000_000_000L;
 
     public Set<NodeProperties> getNodes() {
         if (network == HederaNetwork.OTHER && nodes.isEmpty()) {
