@@ -229,7 +229,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
             ports.forEach(port -> {
                 insertAddressBookEntry(
                         builder.memo(baseAccountId + (nodeId + nodeAccountOffset)).build(),
-                        baseIp + nodeId,
+                        baseIp + nodeId, // duplicate ip per nodeId
                         port);
             });
         });

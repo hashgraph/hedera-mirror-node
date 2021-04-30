@@ -44,8 +44,8 @@ create table if not exists address_book_entry
     description         varchar(100)  null,
     memo                varchar(128)  null,
     public_key          varchar(1024) null,
-    node_id             bigint        null,
-    node_account_id     bigint        null,
+    node_id             bigint        not null,
+    node_account_id     bigint        not null,
     node_cert_hash      bytea         null,
     stake               bigint        null
 );
@@ -56,8 +56,8 @@ create table if not exists address_book_service_endpoint
 (
     consensus_timestamp bigint      not null,
     ip_address_v4       varchar(15) not null,
-    port                integer     not null,
-    node_id             bigint      null
+    node_id             bigint      not null,
+    port                integer     not null
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 

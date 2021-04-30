@@ -24,9 +24,7 @@ import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.ADDR
 import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -288,8 +286,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                                                                               long consensusTimestamp) throws UnknownHostException {
         // map of AddressBookEntry to set of AddressBookServiceEndpoints. Early separation allows for single setting
         // of endpoints after collecting all endpoints from multiple locations and handling duplicates of nodeIds.
-        SetMultimap<AddressBookEntry, AddressBookServiceEndpoint> nodeAddressBookEntryMap = Multimaps
-                .synchronizedSetMultimap(HashMultimap.create());
+        SetMultimap<AddressBookEntry, AddressBookServiceEndpoint> nodeAddressBookEntryMap = HashMultimap.create();
 
         // for each NodeAddress add a nullable collection of AddressBookServiceEndpoints to the multi map
         for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
@@ -319,18 +316,18 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private AddressBookEntry getAddressBookEntry(NodeAddress nodeAddressProto, long consensusTimestamp) {
         var memo = nodeAddressProto.getMemo().toStringUtf8();
-        EntityId memoNodeEntityId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId
+        EntityId memoNodeAccountId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId
                 .of(memo, EntityTypeEnum.ACCOUNT);
 
         // ensure node_account_id has a valid value set from NodeAddress memo or NodeAccountId field
-        var nodeEntityId = nodeAddressProto.getNodeAccountId() == AccountID.getDefaultInstance() ?
-                memoNodeEntityId : EntityId.of(nodeAddressProto.getNodeAccountId());
+        var nodeAccountId = nodeAddressProto.hasNodeAccountId() ? EntityId
+                .of(nodeAddressProto.getNodeAccountId()) : memoNodeAccountId;
 
         var nodeId = nodeAddressProto.getNodeId();
         // ensure valid nodeId. In early versions of initial addressBook (entityNum < 20) all nodeIds are set to 0
-        if (nodeId == 0 && nodeEntityId.getEntityNum() < 20 &&
-                nodeEntityId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
-            nodeId = nodeEntityId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
+        if (nodeId == 0 && nodeAccountId.getEntityNum() < 20 &&
+                nodeAccountId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
+            nodeId = nodeAccountId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
         }
 
         return AddressBookEntry.builder()
@@ -340,7 +337,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                 .publicKey(nodeAddressProto.getRSAPubKey())
                 .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                 .stake(nodeAddressProto.getStake())
-                .nodeAccountId(nodeEntityId)
+                .nodeAccountId(nodeAccountId)
                 .build();
     }
 
@@ -358,7 +355,7 @@ public class AddressBookServiceImpl implements AddressBookService {
             serviceEndpoints.add(deprecatedServiceEndpoint);
         }
 
-        // create an AddressBookServiceEndpoint for every ServiceEndpoint found, ignore IP duplicates
+        // create an AddressBookServiceEndpoint for every ServiceEndpoint found
         for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
             serviceEndpoints.add(getAddressBookServiceEndpoint(serviceEndpoint, consensusTimestamp, nodeAccountId));
         }

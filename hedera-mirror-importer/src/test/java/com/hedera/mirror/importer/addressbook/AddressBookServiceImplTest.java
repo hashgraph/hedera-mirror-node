@@ -788,6 +788,55 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 addressBookServiceEndpointRepository.count());
     }
 
+    @Test
+    void verifyDuplicateEndpointsPerNodeAddressAreCollapsed() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 3; // 127.0.<nodeId>.0, 127.0.<nodeId>.1, 127.0.<nodeId>.2
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            // deprecated ip
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("127.0.%d.0", i),
+                    List.of()));
+
+            // subset of only service endpoints
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    null,
+                    List.of(
+                            String.format("127.0.%d.0", i))));
+
+            // another deprecated ip and more service endpoints
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("127.0.%d.0", i),
+                    List.of(
+                            String.format("127.0.%d.1", i),
+                            String.format("127.0.%d.2", i))));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, true);
+
+        assertArrayEquals(addressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
     private ServiceEndpoint getServiceEndpoint(String ip, int port) throws UnknownHostException {
         return ServiceEndpoint.newBuilder()
                 .setIpAddressV4(ByteString.copyFrom(InetAddress.getByName(ip).getAddress()))
