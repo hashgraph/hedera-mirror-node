@@ -113,7 +113,8 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .findAll())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getPort)
+                .extracting(AddressBookServiceEndpoint::getId)
+                .extracting(AddressBookServiceEndpoint.Id::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454);
     }
 
@@ -144,7 +145,8 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .findAll())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getPort)
+                .extracting(AddressBookServiceEndpoint::getId)
+                .extracting(AddressBookServiceEndpoint.Id::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451);
     }
 
@@ -175,7 +177,8 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .findAll())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getPort)
+                .extracting(AddressBookServiceEndpoint::getId)
+                .extracting(AddressBookServiceEndpoint.Id::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445);
     }
 
@@ -252,7 +255,9 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         allPorts.addAll(ports);
         allPorts.addAll(ports);
         allPorts.addAll(ports);
-        listAssert.extracting(AddressBookServiceEndpoint::getPort)
+        listAssert
+                .extracting(AddressBookServiceEndpoint::getId)
+                .extracting(AddressBookServiceEndpoint.Id::getPort)
                 .containsExactlyInAnyOrderElementsOf(allPorts);
 
         // verify address_book counts are updated

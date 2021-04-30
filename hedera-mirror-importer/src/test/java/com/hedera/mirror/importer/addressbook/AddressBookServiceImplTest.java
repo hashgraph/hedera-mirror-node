@@ -900,7 +900,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                     ip.set(InetAddress.getByAddress(serviceEndpoint.getIpAddressV4().toByteArray()).getHostAddress());
                 });
 
-                assertThat(abe.getPort()).isEqualTo(serviceEndpoint.getPort());
+                assertThat(abe.getId().getPort()).isEqualTo(serviceEndpoint.getPort());
                 assertThat(abe.getId().getIpAddressV4()).isEqualTo(ip.get());
             });
         }

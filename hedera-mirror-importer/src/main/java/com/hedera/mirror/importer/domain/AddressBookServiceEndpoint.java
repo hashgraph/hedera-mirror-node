@@ -56,10 +56,6 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     @JsonUnwrapped
     private Id id;
 
-    public int getPort() {
-        return getId().port;
-    }
-
     @JsonIgnore
     @Override
     public boolean isNew() {

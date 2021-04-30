@@ -40,6 +40,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -295,17 +296,17 @@ public class AddressBookServiceImpl implements AddressBookService {
             List<AddressBookServiceEndpoint> addressBookServiceEndpoints =
                     getAddressBookServiceEndpoints(nodeAddressProto, consensusTimestamp);
 
-            if (addressBookServiceEndpoints.size() > 0) {
-                nodeAddressBookEntryMap.get(addressBookEntry).addAll(addressBookServiceEndpoints);
-            } else {
+            if (addressBookServiceEndpoints.isEmpty()) {
                 nodeAddressBookEntryMap.get(addressBookEntry).add(null);
+            } else {
+                nodeAddressBookEntryMap.get(addressBookEntry).addAll(addressBookServiceEndpoints);
             }
         }
 
         // return a list of unique nodeId's AddressBookEntries
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
         nodeAddressBookEntryMap.asMap().forEach((k, v) -> {
-            k.setServiceEndpoints(v.stream().filter(x -> x != null).collect(Collectors.toList()));
+            k.setServiceEndpoints(v.stream().filter(Objects::nonNull).collect(Collectors.toList()));
             addressBookEntryList.add(k);
         });
 
