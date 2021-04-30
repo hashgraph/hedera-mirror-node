@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.util.CollectionUtils;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -72,32 +73,13 @@ public class SDKClient {
         messageTimeoutSeconds = acceptanceTestProperties.getMessageTimeout().toSeconds();
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
 
-        Client client;
-        var network = acceptanceTestProperties.getNetwork();
-        switch (network) {
-            case PREVIEWNET:
-                log.debug("Creating SDK client for PreviewNet");
-                client = Client.forPreviewnet();
-                break;
-            case MAINNET:
-                log.debug("Creating SDK client for MainNet");
-                client = Client.forMainnet();
-                break;
-            case TESTNET:
-                log.debug("Creating SDK client for TestNet");
-                client = Client.forTestnet();
-                break;
-            default:
-                log.debug("Creating SDK client for OTHER w nodes: {}", acceptanceTestProperties.getNodes());
-                client = Client.forNetwork(getNetworkMap(acceptanceTestProperties.getNodes()));
-        }
-
+        Client client = getBootstrapClient(acceptanceTestProperties.getNetwork(), acceptanceTestProperties.getNodes());
         client.setOperator(operatorId, operatorKey);
         client.setMirrorNetwork(List.of(mirrorNodeAddress));
 
         Map<String, AccountId> networkMapToValidate = client.getNetwork();
         // if prod environment, get current address book and use those nodes
-        if (network != AcceptanceTestProperties.HederaNetwork.OTHER) {
+        if (acceptanceTestProperties.isPullAddressBookNodes()) {
             networkMapToValidate = getAddressBookNetworkMap(client);
         }
 
@@ -106,6 +88,34 @@ public class SDKClient {
 
         // set nodeId to first valid node
         singletonNodeId = Collections.singletonList(this.client.getNetwork().values().iterator().next());
+    }
+
+    private Client getBootstrapClient(AcceptanceTestProperties.HederaNetwork network,
+                                      Set<NodeProperties> customNetworkMap) {
+        if (!CollectionUtils.isEmpty(customNetworkMap)) {
+            log.debug("Creating SDK client for {} network with nodes: {}", network, customNetworkMap);
+            return Client.forNetwork(getNetworkMap(customNetworkMap));
+        }
+
+        Client client;
+        switch (network) {
+            case MAINNET:
+                log.debug("Creating SDK client for MainNet");
+                client = Client.forMainnet();
+                break;
+            case PREVIEWNET:
+                log.debug("Creating SDK client for PreviewNet");
+                client = Client.forPreviewnet();
+                break;
+            case TESTNET:
+                log.debug("Creating SDK client for TestNet");
+                client = Client.forTestnet();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported network specified!");
+        }
+
+        return client;
     }
 
     public ExpandedAccountId getExpandedOperatorAccountId() {
@@ -185,12 +195,11 @@ public class SDKClient {
         Map<String, AccountId> networkMap = new HashMap<>();
         for (NodeAddress nodeAddressProto : addressBook.getNodeAddressList()) {
             networkMap.putIfAbsent(
-                    nodeAddressProto.getIpAddress().toStringUtf8() + ":50211",
-                    AccountId.fromString(String.format(
-                            "%d.%d.%d",
-                            nodeAddressProto.getNodeAccountId().getShardNum(),
+                    String.format("%s:%d", nodeAddressProto.getIpAddress().toStringUtf8(), nodeAddressProto
+                            .getPortno()),
+                    new AccountId(nodeAddressProto.getNodeAccountId().getShardNum(),
                             nodeAddressProto.getNodeAccountId().getRealmNum(),
-                            nodeAddressProto.getNodeAccountId().getAccountNum())));
+                            nodeAddressProto.getNodeAccountId().getAccountNum()));
         }
 
         log.debug("Obtained addressBook networkMap: {}", networkMap);

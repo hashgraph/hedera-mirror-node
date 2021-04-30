@@ -64,6 +64,8 @@ public class AcceptanceTestProperties {
     @NotBlank
     private String operatorKey;
 
+    private boolean pullAddressBookNodes = true;
+
     private final RestPollingProperties restPollingProperties;
 
     @Max(5)

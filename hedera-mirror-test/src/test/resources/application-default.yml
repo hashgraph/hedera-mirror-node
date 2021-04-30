@@ -8,10 +8,6 @@ hedera:
         # grpc endpoint
         mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         network: testnet
-        # list of nodes to bootstrap with when network is other
-        nodes:
-          - accountId:
-            host:
         # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
         operatorId:
         operatorKey:
