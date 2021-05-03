@@ -20,9 +20,11 @@ alter table address_book
 
 -- address_book_entry
 alter table address_book_entry
-    add primary key (consensus_timestamp, memo);
-create index if not exists address_book_entry__timestamp
-    on address_book_entry (consensus_timestamp);
+    add primary key (consensus_timestamp, node_id);
+
+-- address_book_service_endpoint
+alter table address_book_service_endpoint
+    add primary key (consensus_timestamp, node_id, ip_address_v4, port);
 
 -- contract_result
 create index if not exists contract_result__consensus

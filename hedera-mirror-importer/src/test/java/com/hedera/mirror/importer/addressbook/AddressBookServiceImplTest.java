@@ -27,16 +27,25 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Resource;
+import org.assertj.core.api.IterableAssert;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.platform.commons.util.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -50,19 +59,24 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
+import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
 class AddressBookServiceImplTest extends IntegrationTest {
 
-    private static final NodeAddressBook UPDATED = addressBook(10);
-    private static final NodeAddressBook FINAL = addressBook(15);
+    private static final NodeAddressBook UPDATED = addressBook(10, 0);
+    private static final NodeAddressBook FINAL = addressBook(15, 0);
     private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
+    private static final String baseAccountId = "0.0.";
+    private static final String baseIp = "127.0.0.";
+    private static final int basePort = 50211;
 
     @TempDir
     Path dataPath;
@@ -80,6 +94,9 @@ class AddressBookServiceImplTest extends IntegrationTest {
     private AddressBookEntryRepository addressBookEntryRepository;
 
     @Resource
+    private AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
+
+    @Resource
     private FileDataRepository fileDataRepository;
 
     @Resource
@@ -91,19 +108,31 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     private static byte[] initialAddressBookBytes;
 
-    private static NodeAddressBook addressBook(int size) {
+    private static NodeAddressBook addressBook(int size, int endPointSize) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
             long nodeId = 3 + i;
-            builder.addNodeAddress(NodeAddress.newBuilder()
+            NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
                     .setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
                     .setPortno((int) nodeId)
                     .setNodeId(nodeId)
                     .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
                     .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId))
                     .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
-                    .setRSAPubKey("rsa+public/key")
-                    .build());
+                    .setRSAPubKey("rsa+public/key");
+
+            // add service endpoints
+            if (endPointSize > 0) {
+                List<ServiceEndpoint> serviceEndpoints = new ArrayList<>();
+                for (int j = 1; j <= size; ++j) {
+                    serviceEndpoints.add(ServiceEndpoint.newBuilder()
+                            .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
+                            .setPort(443 + j)
+                            .build());
+                }
+            }
+
+            builder.addNodeAddress(nodeAddressBuilder.build());
         }
         return builder.build();
     }
@@ -481,10 +510,17 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @Test
     void verifyAddressBookEntriesWithNodeIdAndPortNotSet() {
+        Map<String, Integer> memoToNodeIdMap = Map.of(
+                "0.0.3", 0,
+                "0.0.4", 1
+        );
+
+        String[] accountIds = memoToNodeIdMap.keySet().stream().sorted().toArray(String[]::new);
+
         // nodeId 0, port 0
         NodeAddress nodeAddress1 = NodeAddress.newBuilder()
                 .setIpAddress(ByteString.copyFromUtf8("127.0.0.1"))
-                .setMemo(ByteString.copyFromUtf8("0.0.3"))
+                .setMemo(ByteString.copyFromUtf8(accountIds[0]))
                 .setNodeAccountId(AccountID.newBuilder().setAccountNum(3))
                 .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
                 .setRSAPubKey("rsa+public/key")
@@ -492,7 +528,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         // nodeId 0, port 50211
         NodeAddress nodeAddress2 = NodeAddress.newBuilder(nodeAddress1)
                 .setIpAddress(ByteString.copyFromUtf8("127.0.0.2"))
-                .setMemo(ByteString.copyFromUtf8("0.0.4"))
+                .setMemo(ByteString.copyFromUtf8(accountIds[1]))
                 .setNodeAccountId(AccountID.newBuilder().setAccountNum(4))
                 .setPortno(50211)
                 .build();
@@ -509,18 +545,17 @@ class AddressBookServiceImplTest extends IntegrationTest {
         ListAssert<AddressBookEntry> listAssert = assertThat(addressBook.getEntries())
                 .hasSize(nodeAddressBook.getNodeAddressCount());
         for (NodeAddress nodeAddress : nodeAddressBook.getNodeAddressList()) {
+            int expectedNodeId = memoToNodeIdMap.get(nodeAddress.getMemo().toStringUtf8());
             listAssert.anySatisfy(abe -> {
-                assertThat(abe.getIp()).isEqualTo(nodeAddress.getIpAddress().toStringUtf8());
                 assertThat(abe.getMemo()).isEqualTo(nodeAddress.getMemo().toStringUtf8());
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getNodeId()).isNull(); // both entries have null node id
+                assertThat(abe.getId().getNodeId()).isEqualTo(expectedNodeId); // both entries have null node id
+
+                assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
             });
         }
-        // one entry has null port and the other's is 50211
-        listAssert.anySatisfy(abe -> assertThat(abe.getPort()).isNull());
-        listAssert.anySatisfy(abe -> assertThat(abe.getPort()).isEqualTo(50211));
     }
 
     @Test
@@ -595,13 +630,279 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         // migration
         int addressBook5NodeCount = 20;
-        byte[] addressBookBytes5 = addressBook(addressBook5NodeCount).toByteArray();
+        byte[] addressBookBytes5 = addressBook(addressBook5NodeCount, 0).toByteArray();
         addressBookService.update(createFileData(addressBookBytes5, 6L, true));
 
         assertEquals(4, fileDataRepository.count());
         assertEquals(6, addressBookRepository.count()); // initial plus 5 files
         assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2) +
                 (FINAL.getNodeAddressCount() * 2) + addressBook5NodeCount, addressBookEntryRepository.count());
+    }
+
+    @Test
+    void verifyAddressBookWithServiceEndpointsOnly() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 4;
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    null,
+                    List.of(
+                            String.format("127.0.%d.1", i),
+                            String.format("127.0.%d.2", i),
+                            String.format("127.0.%d.3", i),
+                            String.format("127.0.%d.4", i))));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, false);
+
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
+    @Test
+    void verifyAddressBookWithDeprecatedIpOnly() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 1;
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("127.0.%d.0", i),
+                    List.of()));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, false);
+
+        assertArrayEquals(initialAddressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
+    @Test
+    void verifyAddressBookWithDeprecatedIpAndServiceEndpoints() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 5; // deprecated ip + service endpoints
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("127.0.%d.0", i),
+                    List.of(
+                            String.format("127.0.%d.1", i),
+                            String.format("127.0.%d.2", i),
+                            String.format("127.0.%d.3", i),
+                            String.format("127.0.%d.4", i))));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, true);
+
+        assertArrayEquals(addressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
+    @Test
+    void verifyDuplicateNodeAddressPerNodeIdAreCollapsed() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 6; // deprecated ip, service endpoints, deprecated ip + service endpoints
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            // deprecated ip
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("127.0.%d.0", i),
+                    List.of()));
+
+            // subset of only service endpoints
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    null,
+                    List.of(
+                            String.format("127.0.%d.1", i),
+                            String.format("127.0.%d.2", i))));
+
+            // another deprecated ip and more service endpoints
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("128.0.%d.0", i),
+                    List.of(
+                            String.format("127.0.%d.3", i),
+                            String.format("127.0.%d.4", i))));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, true);
+
+        assertArrayEquals(addressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
+    @Test
+    void verifyEmptyDeprecatedMemo() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 1; // service endpoint
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            // empty deprecated ip
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    "",
+                    null,
+                    List.of(String.format("127.0.%d.0", i))));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, true);
+
+        assertArrayEquals(addressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
+    @Test
+    void verifyDuplicateEndpointsPerNodeAddressAreCollapsed() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 3; // 127.0.<nodeId>.0, 127.0.<nodeId>.1, 127.0.<nodeId>.2
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            // deprecated ip
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("127.0.%d.0", i),
+                    List.of()));
+
+            // subset of only service endpoints
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    null,
+                    List.of(
+                            String.format("127.0.%d.0", i))));
+
+            // another deprecated ip and more service endpoints
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    baseAccountId + i,
+                    String.format("127.0.%d.0", i),
+                    List.of(
+                            String.format("127.0.%d.1", i),
+                            String.format("127.0.%d.2", i))));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, true);
+
+        assertArrayEquals(addressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
+    private ServiceEndpoint getServiceEndpoint(String ip, int port) throws UnknownHostException {
+        return ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFrom(InetAddress.getByName(ip).getAddress()))
+                .setPort(port)
+                .build();
+    }
+
+    private NodeAddress getNodeAddress(int accountNum, String deprecatedMemo, String deprecatedIp,
+                                       List<String> serviceEndpoints) throws UnknownHostException {
+        NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
+                .setDescription("NodeAddressWithServiceEndpoint")
+                .setNodeAccountId(AccountID.newBuilder().setAccountNum(accountNum).build())
+                .setNodeCertHash(ByteString.copyFromUtf8(accountNum + "NodeCertHash"))
+                .setNodeId(accountNum - AddressBookServiceImpl.INITIAL_NODE_ID_ACCOUNT_ID_OFFSET)
+                .setRSAPubKey(accountNum + "RSAPubKey")
+                .setStake(500);
+
+        if (StringUtils.isNotBlank(deprecatedIp)) {
+            nodeAddressBuilder
+                    .setIpAddress(ByteString.copyFromUtf8(deprecatedIp))
+                    .setPortno(basePort);
+        }
+
+        if (StringUtils.isNotBlank(deprecatedMemo)) {
+            nodeAddressBuilder.setMemo(ByteString.copyFromUtf8(deprecatedMemo));
+        }
+
+        for (String endpoint : serviceEndpoints) {
+            nodeAddressBuilder.addServiceEndpoint(getServiceEndpoint(endpoint, basePort));
+        }
+
+        return nodeAddressBuilder.build();
     }
 
     private void assertAddressBookData(byte[] expected, long consensusTimestamp) {
@@ -615,13 +916,34 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         for (NodeAddress nodeAddress : expected.getNodeAddressList()) {
             listAssert.anySatisfy(abe -> {
-                assertThat(abe.getIp()).isEqualTo(nodeAddress.getIpAddress().toStringUtf8());
                 assertThat(abe.getMemo()).isEqualTo(nodeAddress.getMemo().toStringUtf8());
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getNodeId()).isEqualTo(nodeAddress.getNodeId());
-                assertThat(abe.getPort()).isEqualTo(nodeAddress.getPortno());
+                assertThat(abe.getId().getNodeId()).isEqualTo(nodeAddress.getNodeId());
+
+                assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
+            });
+        }
+    }
+
+    private void assertAddressBookEndPoints(Set<AddressBookServiceEndpoint> actual, List<ServiceEndpoint> expected) {
+        if (expected.isEmpty()) {
+            return;
+        }
+
+        IterableAssert<AddressBookServiceEndpoint> listAssert = assertThat(actual)
+                .hasSize(expected.size());
+
+        for (ServiceEndpoint serviceEndpoint : expected) {
+            listAssert.anySatisfy(abe -> {
+                AtomicReference<String> ip = new AtomicReference<>("");
+                assertDoesNotThrow(() -> {
+                    ip.set(InetAddress.getByAddress(serviceEndpoint.getIpAddressV4().toByteArray()).getHostAddress());
+                });
+
+                assertThat(abe.getId().getPort()).isEqualTo(serviceEndpoint.getPort());
+                assertThat(abe.getId().getIpAddressV4()).isEqualTo(ip.get());
             });
         }
     }

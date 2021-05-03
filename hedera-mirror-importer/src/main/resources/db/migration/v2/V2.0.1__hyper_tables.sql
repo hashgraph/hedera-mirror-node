@@ -21,6 +21,11 @@ select create_hypertable('address_book', 'start_consensus_timestamp', chunk_time
 select create_hypertable('address_book_entry', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
+-- address_book_service_endpoint
+select create_hypertable('address_book_service_endpoint', 'consensus_timestamp',
+                         chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
 -- contract_result
 select create_hypertable('contract_result', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
