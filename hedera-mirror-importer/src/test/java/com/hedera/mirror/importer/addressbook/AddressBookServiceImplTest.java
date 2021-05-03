@@ -796,10 +796,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
         List<NodeAddress> nodeAddressList = new ArrayList<>();
         int nodeAccountStart = 3;
         int addressBookEntries = 5;
-        int numEndpointsPerNode = 1; // deprecated ip, service endpoints
+        int numEndpointsPerNode = 1; // service endpoint
 
         for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
-            // deprecated ip
+            // empty deprecated ip
             nodeAddressList.add(getNodeAddress(
                     i,
                     "",
