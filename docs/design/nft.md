@@ -124,30 +124,32 @@ Need information on file format. Effectively envision:
       "memo_base64": null,
       "name": "TOKENTRANSFER",
       "node": "0.0.3",
-      "nft_transfers": [
-        {
-          "sender_account_id": "0.0.122",
-          "receiver_account_id": "0.0.121",
-          "serial_number": 124,
-          "token_id": "0.0.123"
-        }
-      ],
       "result": "SUCCESS",
       "token_transfers": [
         {
           "account": "0.0.200",
           "amount": 200,
+          "fungible": true,
           "token_id": "0.0.90000"
         },
         {
           "account": "0.0.300",
           "amount": -1200,
+          "fungible": true,
           "token_id": "0.0.90000"
         },
         {
           "account": "0.0.400",
           "amount": 1000,
+          "fungible": true,
           "token_id": "0.0.90000"
+        },
+        {
+          "fungible": true,
+          "receiver_account_id": "0.0.121",
+          "sender_account_id": "0.0.122",
+          "serial_number": 124,
+          "token_id": "0.0.123"
         }
       ],
       "transaction_hash": "aGFzaA==",
@@ -192,17 +194,20 @@ Need information on file format. Effectively envision:
         "tokens": [
           {
             "balance": 80,
+            "fungible": true,
             "token_id": "0.15.3"
           },
           {
             "balance": 50,
+            "fungible": true,
             "token_id": "0.2.5"
           },
           {
             "token_id": "0.2.9",
+            "fungible": false,
             "serial_numbers": [
-              "0.2.10",
-              "0.2.11"
+              210,
+              211
             ]
           }
         ]
@@ -233,15 +238,17 @@ Need information on file format. Effectively envision:
       "balance": 100,
       "tokens": [
         {
-          "token_id": "0.15.3",
-          "balance": 80
+          "balance": 80,
+          "fungible": true,
+          "token_id": "0.15.3"
         },
         {
-          "token_id": "0.2.9",
+          "fungible": false,
           "serial_numbers": [
-            "0.2.10",
-            "0.2.11"
-          ]
+            210,
+            211
+          ],
+          "token_id": "0.2.9"
         }
       ]
     },
@@ -250,18 +257,21 @@ Need information on file format. Effectively envision:
       "balance": 100,
       "tokens": [
         {
-          "token_id": "0.15.3",
-          "balance": 80
+          "balance": 80,
+          "fungible": true,
+          "token_id": "0.15.3"
         },
         {
-          "token_id": "0.2.4",
-          "balance": 50
-        }
+          "balance": 50,
+          "fungible": true,
+          "token_id": "0.2.4"
+        },
         {
-          "token_id": "0.15.6",
+          "fungible": false,
           "serial_numbers": [
-            "0.15.7"
-          ]
+            157
+          ],
+          "token_id": "0.15.6"
         }
       ]
     }
@@ -293,8 +303,8 @@ Need information on file format. Effectively envision:
       "symbol": "N",
       "fungible": false,
       "serial_numbers": [
-        "0.0.1002",
-        "0.0.1003"
+        1002,
+        1003
       ],
       "admin_key": {
         "_type": "ED25519",
@@ -304,6 +314,12 @@ Need information on file format. Effectively envision:
   ]
 }
 ```
+
+Add optional filters
+
+- `/api/v1/tokens?type=fungible` - All fungible tokens (other values are `nft` and `both` (default))
+- `/api/v1/tokens?serial.number=1001` - All tokens that contain a serial number `1001` (implied that `type` will
+  be `nft`)
 
 #### Get Token by id
 
@@ -332,9 +348,15 @@ Need information on file format. Effectively envision:
   },
   "max_supply": "10",
   "name": "FOO COIN TOKEN",
-  "serial_numbers": [
-    "0.0.1002",
-    "0.0.1003"
+  "nfts": [
+    {
+      "serial_number": 1002,
+      "memo": "This is a test NFT"
+    },
+    {
+      "serial_number": 1003,
+      "memo": "This is another test NFT"
+    }
   ],
   "supply_key": {
     "_type": "ProtobufEncoded",
@@ -362,15 +384,15 @@ Need information on file format. Effectively envision:
     {
       "account": "0.15.10",
       "serial_numbers": [
-        "0.0.1002",
-        "0.0.1003"
+        1002,
+        1003
       ]
     },
     {
       "account": "0.15.9",
       "serial_numbers": [
-        "0.0.1004",
-        "0.0.1005"
+        1004,
+        1005
       ]
     }
   ],
@@ -382,16 +404,15 @@ Need information on file format. Effectively envision:
 
 #### List NFTs
 
-- GET `/api/v1/nfts` will list basic information of all NFTs, including the NftType they belong to.
+- GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
 
 ```json
 {
   "nfts": [
     {
-      "token_id": "0.0.123",
-      "serial_number": "0.0.124",
-      "memo": "NFT",
-      "created_timestamp": "1610682445.003266000"
+      "created_timestamp": "1610682445.003266000",
+      "memo": "This is a test NFT",
+      "serial_number": 124
     }
   ],
   "links": {
@@ -402,71 +423,47 @@ Need information on file format. Effectively envision:
 
 Optional Filters
 
-- `/api/v1/nfts?serialNumber.id=gt:0.0.1001` - All serial numbers in range
-- `/api/v1/nfts?token.id=0.0.1000` - All NFTs belonging to the given token type.
+- `/api/v1/nfts?serial.number=gt:0.0.1001` - All serial numbers in range
 - `/api/v1/nfts?order=desc` - All NFTs in descending order of `serial_number`
 - `/api/v1/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
 
 #### Get NFT by id
 
-- GET `/api/v1/nfts/{serialNumber}` will show more detailed information about an individual NFT.
+- GET `/api/v1/tokens/{id}/nfts/{serialNumber}` will show information about an individual NFT.
 
 ```json
 {
-  "auto_renew_account": "0.0.6",
-  "auto_renew_period": null,
-  "expiry_timestamp": null,
-  "freeze_default": false,
-  "freeze_key": {
-    "_type": "ProtobufEncoded",
-    "key": "9c2233222c2233222c2233227d"
-  },
-  "hash": "123123123123A",
-  "kyc_key": {
-    "_type": "ProtobufEncoded",
-    "key": "9c2233222c2233222c2233227d"
-  },
-  "memo": "MY FIRST NFT",
-  "supply_key": {
-    "_type": "ProtobufEncoded",
-    "key": "9c2233222c2233222c2233227d"
-  },
-  "tokenId": "0.0.123",
-  "serialNumber": "0.0.124",
-  "memo": "NFT",
   "created_timestamp": "1610682445.003266000",
-  "wipe_key": {
-    "_type": "ProtobufEncoded",
-    "key": "9c2233222c2233222c2233227d"
-  },
-  "modified_timestamp": "1618510697.682451000"
+  "memo": "This is a test NFT",
+  "serial_number": 124
 }
 ```
 
 #### Get NFT transaction history
 
-- GET `/api/v1/nfts/{serialNumber}/transactions` will return minimal transaction information for each tranasction
-  involving a given NFT.
+- GET `/api/v1/tokens/{id}/nfts/{serialNumber}/transactions` will return minimal transaction information for each
+  transaction involving a given NFT.
 
 ```json
 {
   "transactions": [
     {
-      "consensus_timestamp": "1618591023.997420020",
-      "transaction_id": "0.0.19789-1618805680-742097947",
+      "consensus_timestamp": "1618591023.997420022",
+      "transaction_id": "0.0.19789-1618805680-742097949",
       "transaction_type": "TOKENBURN"
     },
     {
       "consensus_timestamp": "1618591023.997420021",
-      "receiver_account": "0.0.11",
-      "sender_account": "0.0.10",
+      "receiver_account_id": "0.0.11",
+      "sender_account_id": "0.0.10",
       "transaction_id": "0.0.19789-1618805680-742097948",
       "transaction_type": "CRYPTOTRANSFER"
     },
     {
-      "consensus_timestamp": "1618591023.997420022",
-      "transaction_id": "0.0.19789-1618805680-742097949",
-      "transaction_type": "TOKENCREATION"
+      "consensus_timestamp": "1618591023.997420020",
+      "transaction_id": "0.0.19789-1618805680-742097947",
+      "transaction_type": "TOKENMINT",
+      "treasury_account_id": "0.0.5"
     }
   ],
   "links": {
@@ -478,50 +475,76 @@ Optional Filters
 ### Monitor
 
 - Make changes to the `ExpressionConverter`
-  - Burning and minting NFT tokens will require both the Token id and the serial numbers to execute. This could also be
-    true for transfering the NFTs. This requires the `convertedProperties` to know which serial numbers belong to which
-    Tokens when creating them. Two different approaches could be take for this.
-    - Create two new expressions, `nft` that would create a new token with the fungible flag set to true , and a
-      compound `nft.serial` expression (e.g. `nft.1.serial.1`) that would mint a new NFT serial number for the
-      equivalent `nft` in the map.
-      - This could be problematic if the `nft.serial` expression is processed before the `nft` expression. It may
-        require some restructuring of how `ExpressionConverter` works.
-    - Create an `nft` expression to create the token type and a preset set of serial numbers in one transaction. Change
-      the map to hold Objects so that the serial numbers and the token id can be tied together, and the transaction
-      suppliers would have logic to use the objects tied to that field (in this case, `TokenBurnTransactionSupplier`
-      would have to unpack the Object's token id and serial numbers).
-      - This option would be less customizable, since users cannot specify how many serial numbers to mint.
-- Update `TokenCreateTransactionSupplier`, `TokenBurnTransactionSupplier`, and `TokenMintTransactionSupplier` to support
-  NFT creation and deletion
-  - All will need to support an optional list of serial numbers.
-  - `TokenCreateTransactionSupplier`and `TokenMintTransactionSupplier` may need more depending on the final SDK design.
+  - Add a new `nft` expression
+    - Creating an NFT requires the `tokenType` field to be set to `NON-FUNGIBLE`. `TokenCreate` for an NFT also cannot
+      create serial numbers as part of the initial supply, so a `TokenMint` should follow to have serial numbers created
+      for the transaction suppliers.
+    - Serial numbers are auto-incremented per token, so minting a hardcoded or configured (one universal value) number
+      of serial numbers per NFT should give the transaction suppliers a guaranteed set of serial numbers to use without
+      having to save the actual serial numbers anywhere. The drawback to this is the NFT scenarios will be less
+      customizable.
+      - Only one NFT can be minted per transaction, so to reduce startup time this number should be low, possibly just
+        one.
+    - Alternatively, a second, compound expression could be added, such as `nft.1.serialNo.1`, that would indicate the
+      need to mint a serial number for `nft.1` (after the creation of `nft.1`). This would require more work to refactor
+      the `ExpressionConverter`, but it would allow for more customization.
+  - Update the `token` expression logic to set the new fields (`tokenType` and `maxSupply`).
+
+- Update the `TransactionSuppliers`
+  - `TokenCreateTransactionSupplier` will need a boolean `fungible` attribute and a long `maxSupply` attribute.
+    - Some fields will now have stricter requirements now, such as for NFTs `decimals` has to be 0, as
+      does `initialSupply`. We could simply abide by the user config values, regardless of if they are valid, but most
+      likely we should have logic to enforce those requirements based on the `fungible` flag.
+  - `TokenMintTransactionSupplier` will need a boolean `fungible` attribute, as well as a String `memo` attribute. The
+    supplier should only set `amount` for fungible tokens, and only `memo` for NFTs
+    - Alternatively, the `fungible` flag can be removed, and the supplier just sets whichever of `memo` or `amount` is
+      set, but this relies on users configuring things correctly.
+  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need a boolean `fungible` attribute, and it
+    will need to set the `serialNumbers` list for NFTs (hardcoded based on the `initialSupply` value used in
+    the `ExpressionConverter`)
+    - The list could be configurable using the compound expression mentioned earlier if desired.
+
 - Add support for transfering NFTs in `CryptoTransferTransactionSupplier`.
   - Add a new `fungible` boolean attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to
     use the `amount` attribute or the `serial numbers` list.
-  - Because a serial number can only be transfered once out of a given account (unless it is transfered back), custom
+  - Because a serial number can only be transferred once out of a given account (unless it is transferred back), custom
     logic will be needed for performant NFT transfers.
-    - Initial thought is to have the supplier swap the sender and receiver each time to transfer the NFT back and forth.
-      This could be done only on the NFT transfer or on the entire transfer. This would likely limit performance as the
-      swap has to be synchronized (or we just let the transactions fail when double-transfers occur).
+    - One approach would be to have the supplier swap the sender and receiver each time to transfer the NFT back and
+      forth. This could be done only on the NFT transfer or on the entire transfer. This would likely limit performance
+      as the swap has to be synchronized (or we just let the transactions fail when double-transfers occur).
       - This would also require different signatures on the transaction, which would require reworking how we handle the
         transaction signing.
     - Alernatively, the `ExpressionConverter` could just generate a large amount of serial numbers, and
       the `CryptoTransferTransactionSupplier` could just transfer one at a time via a counter until it runs out. This
-      would be a much simpler approach, but it has obvious limitations.
+      would be a much simpler approach, but it would cap the number of transactions possible in a scenario, and it would
+      require a longer startup time to generate all the serial nunmbers.
 
 ### Acceptance Tests
 
 Add acceptance tests that verify all transactions are handled appropriately. This includes tests for
 
-- createToken with an NFT
-- mintToken with an NFT
-- burnToken with an NFT
-- deleteToken with an NFT
-- wipeTokenAccount with an NFT
-- cryptoTransfer with an NFT
+1. Basic NFT transfer flow
+
+- Create a token with type `NON-FUNGIBLE`
+- Mint a serial number
+- Associate the token to an account
+- Transfer the serial number to the account.
+- Verify response codes and data from `/tokens`, `/tokens/{id}/nfts`,
+  `/tokens/{id}/nfts/{serialNumber}/transactions`, `/balances`, and `/transactions`,
+
+2. NFT Burn/Wipe/Delete flow
+
+- Create a token with type `NON-FUNGIBLE`
+- Mint three serial numbers, associate the token with
+- Associate the token to an account
+- Transfer one serial number to the account.
+- Wipe the serial number from the account.
+- Burn a serial number from the treasury account.
+- Delete the token
+- Verify response codes and data from `/tokens`, `/balances`, `/tokens/{id}/nfts`,
+  `/tokens/{id}/nfts/{serialNumber}/transactions`, and `/transactions`
 
 # Outstanding Questions and Concerns:
 
 1. How will NFT balances be represented in the balance file?
 2. Will NFT balances be added to the csv version of the balance file, or just the proto version?
-
