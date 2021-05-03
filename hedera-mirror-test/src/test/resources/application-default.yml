@@ -7,8 +7,7 @@ hedera:
         messageTimeout: 20s
         # grpc endpoint
         mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
-        nodeAddress: testnet
-        nodeId: 0.0.3
+        network: testnet
         # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
         operatorId:
         operatorKey:

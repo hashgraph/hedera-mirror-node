@@ -21,6 +21,8 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  */
 
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -29,29 +31,42 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
+
 @Component
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
 @Data
 @Validated
 public class AcceptanceTestProperties {
-    private final RestPollingProperties restPollingProperties;
 
-    @NotBlank
-    private String nodeAddress;
-    @NotBlank
-    private String nodeId;
-    @NotBlank
-    private String mirrorNodeAddress;
-    @NotBlank
-    private String operatorId;
-    @NotBlank
-    private String operatorKey;
-    @NotNull
-    private Duration messageTimeout = Duration.ofSeconds(20);
+    private boolean emitBackgroundMessages = false;
+
     @NotNull
     private Long existingTopicNum;
 
-    private boolean emitBackgroundMessages = false;
+    @NotNull
+    private Long maxTinyBarTransactionFee = 1_000_000_000L;
+
+    @NotNull
+    private Duration messageTimeout = Duration.ofSeconds(20);
+
+    @NotBlank
+    private String mirrorNodeAddress;
+
+    @NotNull
+    private HederaNetwork network = HederaNetwork.TESTNET;
+
+    private Set<NodeProperties> nodes = new LinkedHashSet<>();
+
+    @NotBlank
+    private String operatorId;
+
+    @NotBlank
+    private String operatorKey;
+
+    private final RestPollingProperties restPollingProperties;
+
+    private boolean retrieveAddressBook = true;
 
     @Max(5)
     private int subscribeRetries = 5;
@@ -59,6 +74,17 @@ public class AcceptanceTestProperties {
     @NotNull
     private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
 
-    @NotNull
-    private Long maxTinyBarTransactionFee = 1_000_000_000L;
+    public Set<NodeProperties> getNodes() {
+        if (network == HederaNetwork.OTHER && nodes.isEmpty()) {
+            throw new IllegalArgumentException("nodes must not be empty");
+        }
+        return nodes;
+    }
+
+    public enum HederaNetwork {
+        MAINNET,
+        PREVIEWNET,
+        TESTNET,
+        OTHER
+    }
 }
