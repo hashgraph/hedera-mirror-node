@@ -22,7 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 
-public interface AddressBookEntryRepository extends CrudRepository<AddressBookEntry, AddressBookEntry.Id> {
+public interface AddressBookServiceEndpointRepository extends CrudRepository<AddressBookServiceEndpoint,
+        AddressBookServiceEndpoint.Id> {
 }
