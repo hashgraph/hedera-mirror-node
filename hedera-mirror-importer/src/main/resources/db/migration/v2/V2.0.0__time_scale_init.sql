@@ -39,7 +39,6 @@ comment on table address_book is 'Network address book files entries';
 -- address_book_entry
 create table if not exists address_book_entry
 (
-    id                  serial,
     consensus_timestamp bigint        not null,
     description         varchar(100)  null,
     memo                varchar(128)  null,
