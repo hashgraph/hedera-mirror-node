@@ -436,10 +436,7 @@ Optional Filters
   "memo": "NFT",
   "created_timestamp": "1610682445.003266000",
   "wipe_key": {
-    https: //hedera.zoom.us/j/8826097631?pwd=VUxmeW13Y0luREJuWmwxRFpHZzQvUT09
-    "_type"
-    :
-    "ProtobufEncoded",
+    "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
   },
   "modified_timestamp": "1618510697.682451000"
