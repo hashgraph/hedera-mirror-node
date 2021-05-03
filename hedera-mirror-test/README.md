@@ -30,16 +30,22 @@ Tests can be compiled and run by running the following command from the root fol
 
 ### Test Configuration
 
--   Test run Config Properties: Configuration properties are set in the application-default.yml file located under /src/test/resources utilizing the spring boot application context for DI logic. Properties include
+-   Test Run Config Properties: Configuration properties are set in the `application-default.yml` file located under `/src/test/resources` utilizing the spring boot application context for DI logic. Properties include
 
+    -   emitBackgroundMessages - Flag to set if background messages should be emitted. For OPS use in non production environments
+    -   existingTopicNum - a preexisting default topic number that can be used when no topicId is specified in a test. Used initially by @SubscribeOnly test
+    -   maxTinyBarTransactionFee - The maximum transaction fee you're willing to pay on a transaction
     -   messageTimeout - number of seconds to wait on messages representing transactions (default is 20)
-    -   nodeId - main node id to submit transactions to in 'x.y.z' format (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book)
-    -   nodeAddress - node domain or IP address (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book or set to 'testnet' or 'mainnet' for automatic sdk handling)
     -   mirrorNodeAddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
+    -   network - The desired Hedera network environment to point to. Options currently include MAINNET, PREVIEWNET, TESTNET (default) and OTHER. Set to OTHER to point to a custom environment.
+    -   nodes - A map of custom nodes to be used by SDK. This is made up of accountId (e.g. 0.0.1000) and host (e.g. 127.0.0.1) key-value pairs
     -   operatorId - account id on network 'x.y.z' format
     -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
-    -   emitBackgroundMessages - Flag to set if background messages should be emitted. For OPS use in non production environments
-    -   existingTopicNum - a pre existing default topic number that can be used when no topicId is specified in a test. Used initially by @SubscribeOnly test
+    -   restPollingProperties
+        -   baseUrl - The host url to the mirrorNode e.g. https://testnet.mirrornode.hedera.com/api/v1
+        -   delay - The time to wait in between failed REST API calls
+        -   maxAttempts - The maximum number of attempts when calling a REST API endpoint and receiving a 404
+    -   retrieveAddressBook - Whether to download the address book from the network and use those nodes over the default nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
     -   subscribeRetries - number of times client should retryable on supported failures
     -   subscribeRetryOffPeriod - number of milliseconds client should wait before retrying on a retryable failure
 
@@ -50,6 +56,32 @@ Options can also be set through the command line as follows
 
     `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
 
+#### Custom nodes
+In some scenarios you may want to point to nodes not yet captured by the SDK, a subset of published nodes, or custom nodes for a test environment.
+To achieve this you can specify a list of accountId and host key-value pairs in the `hedera.mirror.test.acceptance.nodes` value of the config.
+These values will always take precedence over the default network map used by the SDK for an environment.
+Refer to [Mainnet Nodes](https://docs.hedera.com/guides/mainnet/mainnet-nodes) and [Testnet Nodes](https://docs.hedera.com/guides/testnet/testnet-nodes) for the published list of nodes.
+
+The following example shows how you might specify a set of hosts to point to. Modify the accountId and host values as needed
+
+```yaml
+hedera:
+  mirror:
+    test:
+      acceptance:
+        network: OTHER
+        nodes:
+          - accountId: 0.0.3
+            host: 127.0.0.1
+          - accountId: 0.0.4
+            host: 127.0.0.2
+          - accountId: 0.0.5
+            host: 127.0.0.3
+          - accountId: 0.0.6
+            host: 127.0.0.4
+```
+
+#### Feature Tags
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   Acceptance test cases
 
