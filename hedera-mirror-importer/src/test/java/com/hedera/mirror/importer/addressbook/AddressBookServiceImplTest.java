@@ -791,6 +791,38 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    void verifyEmptyDeprecatedMemo() throws UnknownHostException {
+
+        List<NodeAddress> nodeAddressList = new ArrayList<>();
+        int nodeAccountStart = 3;
+        int addressBookEntries = 5;
+        int numEndpointsPerNode = 1; // deprecated ip, service endpoints
+
+        for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
+            // deprecated ip
+            nodeAddressList.add(getNodeAddress(
+                    i,
+                    "",
+                    null,
+                    List.of(String.format("127.0.%d.0", i))));
+        }
+
+        NodeAddressBook.Builder nodeAddressBookBuilder = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddressList);
+
+        byte[] addressBookBytes = nodeAddressBookBuilder.build().toByteArray();
+        update(addressBookBytes, 2L, true);
+
+        assertArrayEquals(addressBookBytes, addressBookService.getCurrent().getFileData());
+
+        assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries,
+                addressBookEntryRepository.count());
+        assertEquals(addressBookEntries * numEndpointsPerNode,
+                addressBookServiceEndpointRepository.count());
+    }
+
+    @Test
     void verifyDuplicateEndpointsPerNodeAddressAreCollapsed() throws UnknownHostException {
 
         List<NodeAddress> nodeAddressList = new ArrayList<>();
@@ -863,8 +895,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         }
 
         if (StringUtils.isNotBlank(deprecatedMemo)) {
-            String accountId = baseAccountId + accountNum;
-            nodeAddressBuilder.setMemo(ByteString.copyFromUtf8(accountId));
+            nodeAddressBuilder.setMemo(ByteString.copyFromUtf8(deprecatedMemo));
         }
 
         for (String endpoint : serviceEndpoints) {
@@ -873,46 +904,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
         return nodeAddressBuilder.build();
     }
-
-//    private NodeAddress getNodeAddressWithServiceEndpoints(int accountNum, int port,
-//                                                           int numServiceEndpoints) throws UnknownHostException {
-//        NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
-//                .setDescription("NodeAddressWithServiceEndpoint")
-//                .setNodeAccountId(AccountID.newBuilder().setAccountNum(accountNum).build())
-//                .setNodeCertHash(ByteString.copyFromUtf8(accountNum + "NodeCertHash"))
-//                .setNodeId(accountNum)
-//                .setRSAPubKey(accountNum + "RSAPubKey")
-//                .setStake(500);
-//
-//        for (int i = 0; i < numServiceEndpoints; i++) {
-//            nodeAddressBuilder.addServiceEndpoint(getServiceEndpoint("127.0.0." + i, port));
-//        }
-//
-//        return nodeAddressBuilder.build();
-//    }
-//
-//    private NodeAddress getNodeAddressWithoutServiceEndpoints(int accountNum, String ip, int port,
-//                                                              String memo) {
-//        NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
-//                .setNodeAccountId(AccountID.newBuilder().setAccountNum(accountNum).build())
-//                .setNodeCertHash(ByteString.copyFromUtf8(accountNum + "NodeCertHash"))
-//                .setNodeId(accountNum)
-//                .setRSAPubKey(accountNum + "RSAPubKey");
-//
-//        if (ip != null) {
-//            nodeAddressBuilder = nodeAddressBuilder.setIpAddress(ByteString.copyFromUtf8(ip));
-//        }
-//
-//        if (memo != null) {
-//            nodeAddressBuilder = nodeAddressBuilder.setMemo(ByteString.copyFromUtf8(memo));
-//        }
-//
-//        if (port > 0) {
-//            nodeAddressBuilder = nodeAddressBuilder.setPortno(port);
-//        }
-//
-//        return nodeAddressBuilder.build();
-//    }
 
     private void assertAddressBookData(byte[] expected, long consensusTimestamp) {
         AddressBook actualAddressBook = addressBookRepository.findById(consensusTimestamp).get();

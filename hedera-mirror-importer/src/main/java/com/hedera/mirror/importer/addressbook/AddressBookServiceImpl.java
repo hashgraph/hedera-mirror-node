@@ -329,7 +329,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         return AddressBookEntry.builder()
                 .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.getLeft()))
                 .description(nodeAddressProto.getDescription())
-                .memo(nodeIds.getRight().entityIdToString())
+                .memo(nodeAddressProto.getMemo().toStringUtf8())
                 .publicKey(nodeAddressProto.getRSAPubKey())
                 .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                 .serviceEndpoints(Set.of())
@@ -370,7 +370,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         return new AddressBookServiceEndpoint(
                 consensusTimestamp,
-                nodeAddressProto.getIpAddress().toStringUtf8(),
+                ip,
                 nodeAddressProto.getPortno(),
                 nodeAccountId);
     }
