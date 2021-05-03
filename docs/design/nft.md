@@ -1,4 +1,4 @@
-# Nonfungible Tokens (NFT)
+# Non-Fungible Tokens (NFTs)
 
 ## Purpose
 
