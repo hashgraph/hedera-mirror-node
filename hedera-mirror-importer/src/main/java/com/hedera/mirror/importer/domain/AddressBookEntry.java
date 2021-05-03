@@ -27,8 +27,8 @@ import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
@@ -79,7 +79,7 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id>, Seria
     @JoinColumn(name = "nodeId", referencedColumnName = "nodeId")
     @JsonIgnore
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
+    private Set<AddressBookServiceEndpoint> serviceEndpoints = new HashSet<>();
 
     private Long stake;
 
@@ -94,17 +94,9 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id>, Seria
         }
     }
 
-    public EntityId getNodeAccountId() {
-        if (EntityId.isEmpty(nodeAccountId)) {
-            return memo == null ? null : EntityId.of(memo, EntityTypeEnum.ACCOUNT);
-        }
-
-        return nodeAccountId;
-    }
-
     @Transient
     public String getNodeAccountIdString() {
-        return EntityId.isEmpty(nodeAccountId) ? memo : nodeAccountId.entityIdToString();
+        return nodeAccountId.entityIdToString();
     }
 
     @JsonIgnore

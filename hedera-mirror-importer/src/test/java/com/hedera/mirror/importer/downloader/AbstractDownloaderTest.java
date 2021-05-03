@@ -45,6 +45,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -83,6 +84,7 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
@@ -91,10 +93,12 @@ import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
@@ -652,7 +656,11 @@ public abstract class AbstractDownloaderTest {
         byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
         EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
         long now = Instant.now().getEpochSecond();
-        return addressBookFromBytes(addressBookBytes, now, entityId);
+        return AddressBookServiceImpl.buildAddressBook(new FileData(
+                now,
+                addressBookBytes,
+                entityId,
+                TransactionTypeEnum.FILECREATE.getProtoId()));
     }
 
     protected static AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId)
@@ -676,7 +684,7 @@ public abstract class AbstractDownloaderTest {
                     .nodeAccountId(nodeAccountId);
 
             // create an AddressBookServiceEndpoint for each ServiceEndpoint
-            List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
+            Set<AddressBookServiceEndpoint> serviceEndpoints = new HashSet<>();
             for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
                 serviceEndpoints.add(new AddressBookServiceEndpoint(
                         consensusTimestamp,

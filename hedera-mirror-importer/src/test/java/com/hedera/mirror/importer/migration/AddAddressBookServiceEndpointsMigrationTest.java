@@ -389,8 +389,8 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
      * @param port             service endpoint  port
      */
     private void insertAddressBookEntry(AddressBookEntry addressBookEntry, String ip, int port) {
-        Long nodeAccountId = addressBookEntry.getNodeAccountId() == null ? null : addressBookEntry.getNodeAccountId()
-                .getId();
+        Long nodeAccountId = EntityId.isEmpty(addressBookEntry.getNodeAccountId()) ? null :
+                addressBookEntry.getNodeAccountId().getId();
         jdbcOperations
                 .update("insert into address_book_entry (id, consensus_timestamp, ip, memo, node_account_id, " +
                                 "node_cert_hash, node_id, port, public_key) values" +
@@ -419,25 +419,21 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         jdbcOperations
                 .execute("drop table if exists address_book_service_endpoint cascade;");
 
-        // drop describe and stake columns
+        // drop describe and stake columns. Also drop primary key
         jdbcOperations
                 .execute("alter table if exists address_book_entry\n" +
                         "    drop column if exists description,\n" +
-                        "    drop column if exists stake;");
+                        "    drop column if exists stake,\n" +
+                        "drop constraint if exists address_book_entry_pkey;");
 
-        // restore ip and port columns
+        // restore id, ip and port columns. Also restore primary key
         jdbcOperations
                 .execute("alter table if exists address_book_entry\n" +
                         "    add column if not exists id integer,\n" +
                         "    add column if not exists ip varchar(128) null,\n" +
-                        "    add column if not exists port integer null;");
-
-        // revert pkey change
-        jdbcOperations
-                .execute("alter table address_book_entry\n" +
-                        "    drop constraint if exists address_book_entry_pkey;");
-        jdbcOperations
-                .execute("alter table if exists address_book_entry\n" +
-                        "    add primary key (id);");
+                        "    add column if not exists port integer null,\n" +
+                        "alter column node_account_id drop not null,\n" +
+                        "alter column node_id drop not null,\n" +
+                        "add primary key (id);");
     }
 }

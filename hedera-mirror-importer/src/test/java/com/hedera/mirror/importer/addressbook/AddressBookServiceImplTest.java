@@ -37,8 +37,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Resource;
+import org.assertj.core.api.IterableAssert;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -934,12 +936,12 @@ class AddressBookServiceImplTest extends IntegrationTest {
         }
     }
 
-    private void assertAddressBookEndPoints(List<AddressBookServiceEndpoint> actual, List<ServiceEndpoint> expected) {
+    private void assertAddressBookEndPoints(Set<AddressBookServiceEndpoint> actual, List<ServiceEndpoint> expected) {
         if (expected.isEmpty()) {
             return;
         }
 
-        ListAssert<AddressBookServiceEndpoint> listAssert = assertThat(actual)
+        IterableAssert<AddressBookServiceEndpoint> listAssert = assertThat(actual)
                 .hasSize(expected.size());
 
         for (ServiceEndpoint serviceEndpoint : expected) {

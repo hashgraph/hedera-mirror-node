@@ -23,8 +23,6 @@ package com.hedera.mirror.importer.addressbook;
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME;
 import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -35,15 +33,18 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -137,6 +138,41 @@ public class AddressBookServiceImpl implements AddressBookService {
     @Override
     public boolean isAddressBook(EntityId entityId) {
         return ADDRESS_BOOK_101_ENTITY_ID.equals(entityId) || ADDRESS_BOOK_102_ENTITY_ID.equals(entityId);
+    }
+
+    /**
+     * Creates a AddressBook object given address book byte array contents. Attempts to convert contents into a valid
+     * NodeAddressBook proto. If successful the NodeAddressBook details including AddressBookEntry entries are extracted
+     * and added to AddressBook object.
+     *
+     * @param fileData fileData object representing address book data
+     * @return
+     */
+    public static AddressBook buildAddressBook(FileData fileData) {
+        long startConsensusTimestamp = fileData.getConsensusTimestamp() + 1;
+        var addressBookBuilder = AddressBook.builder()
+                .fileData(fileData.getFileData())
+                .startConsensusTimestamp(startConsensusTimestamp)
+                .fileId(fileData.getEntityId());
+
+        try {
+            var nodeAddressBook = NodeAddressBook.parseFrom(fileData.getFileData());
+
+            if (nodeAddressBook != null) {
+                if (nodeAddressBook.getNodeAddressCount() > 0) {
+                    addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
+                    Collection<AddressBookEntry> addressBookEntryCollection =
+                            retrieveNodeAddressesFromAddressBook(nodeAddressBook, startConsensusTimestamp);
+
+                    addressBookBuilder.entries(addressBookEntryCollection.stream().collect(Collectors.toList()));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Unable to parse address book: {}", e.getMessage());
+            return null;
+        }
+
+        return addressBookBuilder.build();
     }
 
     /**
@@ -239,41 +275,6 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     /**
-     * Creates a AddressBook object given address book byte array contents. Attempts to convert contents into a valid
-     * NodeAddressBook proto. If successful the NodeAddressBook details including AddressBookEntry entries are extracted
-     * and added to AddressBook object.
-     *
-     * @param fileData fileData object representing address book data
-     * @return
-     */
-    private AddressBook buildAddressBook(FileData fileData) {
-        long startConsensusTimestamp = fileData.getConsensusTimestamp() + 1;
-        var addressBookBuilder = AddressBook.builder()
-                .fileData(fileData.getFileData())
-                .startConsensusTimestamp(startConsensusTimestamp)
-                .fileId(fileData.getEntityId());
-
-        try {
-            var nodeAddressBook = NodeAddressBook.parseFrom(fileData.getFileData());
-
-            if (nodeAddressBook != null) {
-                if (nodeAddressBook.getNodeAddressCount() > 0) {
-                    addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
-                    Collection<AddressBookEntry> addressBookEntryCollection =
-                            retrieveNodeAddressesFromAddressBook(nodeAddressBook, startConsensusTimestamp);
-
-                    addressBookBuilder.entries((List<AddressBookEntry>) addressBookEntryCollection);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Unable to parse address book: {}", e.getMessage());
-            return null;
-        }
-
-        return addressBookBuilder.build();
-    }
-
-    /**
      * Extracts a collection of AddressBookEntry domain objects from NodeAddressBook proto. Sets provided
      * consensusTimestamp as the consensusTimestamp of each address book entry to ensure mapping to a single
      * AddressBook
@@ -282,44 +283,36 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @param consensusTimestamp transaction consensusTimestamp
      * @return
      */
-    private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
-                                                                              long consensusTimestamp) throws UnknownHostException {
-        // map of AddressBookEntry to set of AddressBookServiceEndpoints. Early separation allows for single setting
-        // of endpoints after collecting all endpoints from multiple locations and handling duplicates of nodeIds.
-        SetMultimap<AddressBookEntry, AddressBookServiceEndpoint> nodeAddressBookEntryMap = HashMultimap.create();
+    private static Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
+                                                                                     long consensusTimestamp) throws UnknownHostException {
+        Map<Long, AddressBookEntry> addressBookEntries = new LinkedHashMap<>(); // node id to entry
 
-        // for each NodeAddress add a nullable collection of AddressBookServiceEndpoints to the multi map
         for (NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
-            AddressBookEntry addressBookEntry = getAddressBookEntry(nodeAddressProto, consensusTimestamp);
-            List<AddressBookServiceEndpoint> addressBookServiceEndpoints =
-                    getAddressBookServiceEndpoints(nodeAddressProto, consensusTimestamp);
+            Pair<Long, EntityId> nodeIds = getNodeIds(nodeAddressProto);
+            AddressBookEntry addressBookEntry = addressBookEntries.computeIfAbsent(
+                    nodeIds.getLeft(),
+                    k -> getAddressBookEntry(nodeAddressProto, consensusTimestamp, nodeIds));
 
-            if (addressBookServiceEndpoints.isEmpty()) {
-                nodeAddressBookEntryMap.get(addressBookEntry).add(null);
-            } else {
-                nodeAddressBookEntryMap.get(addressBookEntry).addAll(addressBookServiceEndpoints);
-            }
+            Set<AddressBookServiceEndpoint> serviceEndpoints = getAddressBookServiceEndpoints(nodeAddressProto,
+                    consensusTimestamp);
+            Set<AddressBookServiceEndpoint> updatedList = new HashSet(addressBookEntry.getServiceEndpoints());
+            updatedList.addAll(serviceEndpoints);
+            addressBookEntry.setServiceEndpoints(updatedList);
         }
 
-        // return a list of unique nodeId's AddressBookEntries
-        List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
-        nodeAddressBookEntryMap.asMap().forEach((addressBookEntry, serviceEndpoints) -> {
-            addressBookEntry.setServiceEndpoints(serviceEndpoints
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList()));
-            addressBookEntryList.add(addressBookEntry);
-        });
-
-        return addressBookEntryList;
+        return addressBookEntries.values();
     }
 
-    private AddressBookEntry getAddressBookEntry(NodeAddress nodeAddressProto, long consensusTimestamp) {
+    /**
+     * Get Node id and account id
+     *
+     * @param nodeAddressProto
+     * @return Pair of nodeId and nodeAccountId
+     */
+    private static Pair<Long, EntityId> getNodeIds(NodeAddress nodeAddressProto) {
         var memo = nodeAddressProto.getMemo().toStringUtf8();
         EntityId memoNodeAccountId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId
                 .of(memo, EntityTypeEnum.ACCOUNT);
-
-        // ensure node_account_id has a valid value set from NodeAddress memo or NodeAccountId field
         var nodeAccountId = nodeAddressProto.hasNodeAccountId() ? EntityId
                 .of(nodeAddressProto.getNodeAccountId()) : memoNodeAccountId;
 
@@ -330,21 +323,27 @@ public class AddressBookServiceImpl implements AddressBookService {
             nodeId = nodeAccountId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
         }
 
+        return Pair.of(nodeId, nodeAccountId);
+    }
+
+    private static AddressBookEntry getAddressBookEntry(NodeAddress nodeAddressProto, long consensusTimestamp,
+                                                        Pair<Long, EntityId> nodeIds) {
         return AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeId))
+                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.getLeft()))
                 .description(nodeAddressProto.getDescription())
-                .memo(memo)
+                .memo(nodeIds.getRight().entityIdToString())
                 .publicKey(nodeAddressProto.getRSAPubKey())
                 .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                .serviceEndpoints(Set.of())
                 .stake(nodeAddressProto.getStake())
-                .nodeAccountId(nodeAccountId)
+                .nodeAccountId(nodeIds.getRight())
                 .build();
     }
 
-    private List<AddressBookServiceEndpoint> getAddressBookServiceEndpoints(NodeAddress nodeAddressProto,
-                                                                            long consensusTimestamp) throws UnknownHostException {
+    private static Set<AddressBookServiceEndpoint> getAddressBookServiceEndpoints(NodeAddress nodeAddressProto,
+                                                                                  long consensusTimestamp) throws UnknownHostException {
         var nodeAccountId = EntityId.of(nodeAddressProto.getNodeAccountId());
-        List<AddressBookServiceEndpoint> serviceEndpoints = new ArrayList<>();
+        Set<AddressBookServiceEndpoint> serviceEndpoints = new HashSet<>();
 
         // create an AddressBookServiceEndpoint for deprecated port and IP if populated
         AddressBookServiceEndpoint deprecatedServiceEndpoint = getAddressBookServiceEndpoint(
@@ -363,8 +362,9 @@ public class AddressBookServiceImpl implements AddressBookService {
         return serviceEndpoints;
     }
 
-    private AddressBookServiceEndpoint getAddressBookServiceEndpoint(NodeAddress nodeAddressProto,
-                                                                     long consensusTimestamp, EntityId nodeAccountId) {
+    private static AddressBookServiceEndpoint getAddressBookServiceEndpoint(NodeAddress nodeAddressProto,
+                                                                            long consensusTimestamp,
+                                                                            EntityId nodeAccountId) {
         String ip = nodeAddressProto.getIpAddress().toStringUtf8();
         if (StringUtils.isBlank(ip)) {
             return null;
@@ -377,9 +377,9 @@ public class AddressBookServiceImpl implements AddressBookService {
                 nodeAccountId);
     }
 
-    private AddressBookServiceEndpoint getAddressBookServiceEndpoint(ServiceEndpoint serviceEndpoint,
-                                                                     long consensusTimestamp,
-                                                                     EntityId nodeAccountId) throws UnknownHostException {
+    private static AddressBookServiceEndpoint getAddressBookServiceEndpoint(ServiceEndpoint serviceEndpoint,
+                                                                            long consensusTimestamp,
+                                                                            EntityId nodeAccountId) throws UnknownHostException {
         var ipAddressByteString = serviceEndpoint.getIpAddressV4();
         if (ipAddressByteString == null || ipAddressByteString.size() != 4) {
             throw new IllegalStateException(String
