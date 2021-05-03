@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -63,7 +64,7 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setTransactionMemo(memo);
 
         if (signatureKeyList != null) {
-            scheduleCreateTransaction.setNodeAccountIds(sdkClient.getRandomSingleNodeAccountIdList());
+            scheduleCreateTransaction.setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()));
 
             // add initial set of required signatures to ScheduleCreate transaction
             signatureKeyList.forEach(k -> {

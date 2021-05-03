@@ -391,7 +391,7 @@ public class ScheduleFeature {
             ReceiptStatusException {
         scheduleInfo = new ScheduleInfoQuery()
                 .setScheduleId(scheduleId)
-                .setNodeAccountIds(scheduleClient.getSdkClient().getRandomSingleNodeAccountIdList())
+                .setNodeAccountIds(List.of(scheduleClient.getSdkClient().getRandomNodeAccountId()))
                 .execute(scheduleClient.getClient());
 
         // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
@@ -424,7 +424,7 @@ public class ScheduleFeature {
             PrecheckStatusException {
         scheduleInfo = new ScheduleInfoQuery()
                 .setScheduleId(scheduleId)
-                .setNodeAccountIds(scheduleClient.getSdkClient().getRandomSingleNodeAccountIdList())
+                .setNodeAccountIds(List.of(scheduleClient.getSdkClient().getRandomNodeAccountId()))
                 .execute(scheduleClient.getClient());
 
         assertNotNull(scheduleInfo);

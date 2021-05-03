@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,9 +80,12 @@ public class SDKClient {
         client.setMirrorNetwork(List.of(mirrorNodeAddress));
 
         Map<String, AccountId> networkMapToValidate = client.getNetwork();
-        // if prod environment, get current address book and use those nodes
-        if (acceptanceTestProperties.isPullAddressBookNodes()) {
-            networkMapToValidate = getAddressBookNetworkMap(client);
+        if (acceptanceTestProperties.isRetrieveAddressBook()) {
+            try {
+                networkMapToValidate = getAddressBookNetworkMap(client);
+            } catch (Exception e) {
+                //
+            }
         }
 
         // only use validated nodes for tests
@@ -93,9 +97,9 @@ public class SDKClient {
         return new ExpandedAccountId(operatorId, operatorKey, payerPublicKey);
     }
 
-    public List<AccountId> getRandomSingleNodeAccountIdList() {
+    public AccountId getRandomNodeAccountId() {
         int randIndex = RandomUtils.nextInt(0, validateNetworkMap.size() - 1);
-        return List.of(new ArrayList<>(validateNetworkMap.values()).get(randIndex));
+        return new ArrayList<>(validateNetworkMap.values()).get(randIndex);
     }
 
     public void close() throws TimeoutException {
@@ -103,10 +107,10 @@ public class SDKClient {
     }
 
     private Client getBootstrapClient(AcceptanceTestProperties.HederaNetwork network,
-                                      Set<NodeProperties> customNetworkMap) {
-        if (!CollectionUtils.isEmpty(customNetworkMap)) {
-            log.debug("Creating SDK client for {} network with nodes: {}", network, customNetworkMap);
-            return Client.forNetwork(getNetworkMap(customNetworkMap));
+                                      Set<NodeProperties> customNodes) {
+        if (!CollectionUtils.isEmpty(customNodes)) {
+            log.debug("Creating SDK client for {} network with nodes: {}", network, customNodes);
+            return Client.forNetwork(getNetworkMap(customNodes));
         }
 
         Client client;
@@ -136,7 +140,7 @@ public class SDKClient {
     }
 
     private Client getValidatedClient(Map<String, AccountId> currentNetworkMap, Client client) throws InterruptedException {
-        Map<String, AccountId> validNodes = new HashMap<>();
+        Map<String, AccountId> validNodes = new LinkedHashMap<>();
         for (var nodeEntry : currentNetworkMap.entrySet()) {
             try {
                 if (validateNode(nodeEntry.getValue().toString(), client)) {
