@@ -20,9 +20,10 @@ the mirror node can be updated to add support for NFTs.
 ### Database
 
 - Update `t_transaction_results` with new response codes
-  - TBA
 
-- Add to `token` table fields `maxSupply` (long) and `fungible` (boolean)
+- Add to `token` table fields `fungible` (boolean) and `maxSupply` (long)
+  - Default values will be `true` and `null` (null `maxSupply` will represent an infinite amount of tokens are possible)
+
 - Add a new `nft` table
 
 ```sql
@@ -30,7 +31,6 @@ create table if not exists nft
 (
   created_timestamp     bigint  primary key not null,
   deleted               boolean             not null,
-  hash                  bytea               not null,
   modified_timestamp    bigint              not null,
   memo                  text    default ''  not null,
   serial_number         bigint              not null,
@@ -68,13 +68,9 @@ create table if not exists nft_balance
 );
 ```
 
-- Add a unique constraint to `nft_transfer` for `serial_number` and `consensus_timestamp`, desc
+- Add a unique constraint to `nft_balance` for `serial_number` and `consensus_timestamp`, desc
 
 ### Importer
-
-#### Converter
-
-Add an `NftIdConverter`.
 
 #### Domain
 
@@ -82,15 +78,15 @@ Add an `NftIdConverter`.
 - Add an `Nft` domain object with the same fields as the schema.
 - Add an `NftTransfer` domain object with the same fields as the schema.
 - Add an `NftBalance` domain object with the same fields as the schema.
-- Add an `NFT` enum value to `EntityTypeEnum`.
 - Add `NftBalance` list to `AccountBalances` domain object
 
 #### Balance Parsing
 
 Need information on file format. Effectively envision:
 
-- Update `ProtoBalanceFileReader` to handle new NFT transfer list
-  - Either deprecate use of the csv file or also add support for new CSV `BalanceFileReader` based on new format
+- Update `ProtoBalanceFileReader` to handle new NFT balance list
+  - If the NFT balance list is added to the CSV version (see [questions](#outstanding-questions-and-concerns)), add
+    support for new CSV `BalanceFileReader` based on new format
   - Add `NftBalance` to the `AccountBalance` object as they are read.
 - Update `AccountBalanceFileParser` to persist the `NftBalance`
 
@@ -102,11 +98,14 @@ Need information on file format. Effectively envision:
 #### Entity Record Item Listener
 
 - If transaction is successful, persist any NFT Transfers.
-- `insertTokenCreate()` must be updated to create and persist the `NFT` objects and entities.
-- `insertTokenMint()` must be updated to create and persist the `NFT` objects and entities.
-- `insertTokenBurn` must be updated to mark the NFT entities as deleted.
-- `insertTokenDelete` must be added to mark the NFT entities as deleted.
-- `insertTokenWipe` must be updated to mark the NFT entities as deleted.
+- `insertTokenCreate()` must be updated to set `fungible` and `maxSupply`
+- `insertTokenMint()` must be updated to handle the new field `amountOrMemo` and create and persist the `NFTs` if the
+  memo is set.
+- `insertTokenBurn` must be updated to handle the new field `amountOrSerialNumbers` and mark the `NFTs` as deleted if
+  the `serialNumbers` list is set.
+- `insertTokenDelete` must be added to mark the `NFTs` as deleted if the `fungible` field is false for the token.
+- `insertTokenWipe` must be must be updated to handle the new field `amountOrSerialNumbers` and mark the `NFTs` as
+  deleted if the `serialNumbers` list is set.
 
 ### REST API
 
@@ -126,9 +125,9 @@ Need information on file format. Effectively envision:
       "node": "0.0.3",
       "nft_transfers": [
         {
-          "sender_account": "0.0.122",
-          "receiver_account": "0.0.121",
-          "serial_number": "0.0.124",
+          "sender_account_id": "0.0.122",
+          "receiver_account_id": "0.0.121",
+          "serial_number": 124,
           "token_id": "0.0.123"
         }
       ],
@@ -525,4 +524,6 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 
 # Outstanding Questions and Concerns:
 
-1. General protobuf questions.
+1. How will NFT balances be represented in the balance file?
+2. Will NFT balances be added to the csv version of the balance file, or just the proto version?
+
