@@ -34,12 +34,12 @@ create table if not exists nft
   modified_timestamp    bigint              not null,
   memo                  text    default ''  not null,
   serial_number         bigint              not null,
-  token_id              bigint              not null,
+  token_id              bigint              not null
 );
 
 ```
 
-- Add a unique constraint to `nft` for `serial_number` and `created_timestamp`, desc
+- Add a unique constraint to `nft` for `token_id`, `serial_number`, and `created_timestamp`, desc
 
 - Add a new `nft_transfer` table
 
@@ -50,11 +50,11 @@ create table if not exists nft_transfer
   receiver_account_id   bigint  not null,
   sender_account_id     bigint  not null,
   serial_number         bigint  not null,
-  token_id              bigint  not null,
+  token_id              bigint  not null
 );
 ```
 
-- Add a unique constraint to `nft_transfer` for `serial_number` and `consensus_timestamp`, desc
+- Add a unique constraint to `nft_transfer` for `token_id`, `serial_number` and `consensus_timestamp`, desc
 
 - Add a new `nft_balance` table
 
@@ -64,11 +64,12 @@ create table if not exists nft_balance
   account_id          bigint    not null,
   consensus_timestamp bigint    not null,
   serial_number       bigint    not null,
-  token_id            bigint    not null,
+  token_id            bigint    not null
 );
 ```
 
-- Add a unique constraint to `nft_balance` for `serial_number` and `consensus_timestamp`, desc
+- Add a unique constraint to `nft_balance` for `token_id`, `serial_number`, `account_id`, and `consensus_timestamp`,
+  desc
 
 ### Importer
 
