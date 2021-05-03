@@ -326,16 +326,23 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private static AddressBookEntry getAddressBookEntry(NodeAddress nodeAddressProto, long consensusTimestamp,
                                                         Pair<Long, EntityId> nodeIds) {
-        return AddressBookEntry.builder()
+        AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
                 .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.getLeft()))
                 .description(nodeAddressProto.getDescription())
-                .memo(nodeAddressProto.getMemo().toStringUtf8())
                 .publicKey(nodeAddressProto.getRSAPubKey())
-                .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
                 .serviceEndpoints(Set.of())
                 .stake(nodeAddressProto.getStake())
-                .nodeAccountId(nodeIds.getRight())
-                .build();
+                .nodeAccountId(nodeIds.getRight());
+
+        if (nodeAddressProto.getNodeCertHash() != null) {
+            builder.nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray());
+        }
+
+        if (nodeAddressProto.getMemo() != null) {
+            builder.memo(nodeAddressProto.getMemo().toStringUtf8());
+        }
+
+        return builder.build();
     }
 
     private static Set<AddressBookServiceEndpoint> getAddressBookServiceEndpoints(NodeAddress nodeAddressProto,
