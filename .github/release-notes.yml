@@ -1,0 +1,16 @@
+changelog:
+  contributors:
+    title: "Contributors"
+  issues:
+    exclude:
+      labels: ["wontfix", "question", "duplicate", "invalid"]
+  repository: hashgraph/hedera-mirror-node
+  sections:
+  - title: "Enhancements"
+    labels: ["enhancement"]
+  - title: "Bug Fixes"
+    labels: ["bug"]
+  - title: "Documentation"
+    labels: ["documentation", "docs"]
+  - title: "Dependency Upgrades"
+    labels: ["dependency-upgrade", "dependencies"]
