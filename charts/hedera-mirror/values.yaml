@@ -285,8 +285,8 @@ timescaledb:
       cpu: 4
       memory: 16Gi
     requests:
-      cpu: 2
-      memory: 8Gi
+      cpu: 1
+      memory: 1Gi
   secretNames:
     credentials: mirror-passwords
   sharedMemory:
