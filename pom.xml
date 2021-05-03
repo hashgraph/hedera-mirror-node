@@ -452,6 +452,27 @@
                         </configuration>
                         <executions>
                             <execution>
+                                <id>pom</id>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <file>pom.xml</file>
+                                    <replacements>
+                                        <replacement>
+                                            <token><![CDATA[(?<=<release.version>)[0-9a-zA-Z.-]+(?=</release.version>)]]></token>
+                                            <value>${release.version}</value>
+                                        </replacement>
+                                        <replacement>
+                                            <token><![CDATA[(?<=<release.chartVersion>)[0-9a-zA-Z.-]+(?=</release.chartVersion>)]]></token>
+                                            <value>${release.chartVersion}</value>
+                                        </replacement>
+                                    </replacements>
+                                </configuration>
+                            </execution>
+                            <execution>
                                 <id>chart</id>
                                 <goals>
                                     <goal>replace</goal>
