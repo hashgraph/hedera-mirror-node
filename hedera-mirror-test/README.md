@@ -37,7 +37,7 @@ Tests can be compiled and run by running the following command from the root fol
     -   maxTinyBarTransactionFee - The maximum transaction fee you're willing to pay on a transaction
     -   messageTimeout - number of seconds to wait on messages representing transactions (default is 20)
     -   mirrorNodeAddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
-    -   network - The desired Hedera network environment to point to. Options currently include MAINNET, PREVIEWNET, TESTNET(default) and OTHER. Set to OTHER to point to a custom environment.
+    -   network - The desired Hedera network environment to point to. Options currently include MAINNET, PREVIEWNET, TESTNET (default) and OTHER. Set to OTHER to point to a custom environment.
     -   nodes - A map of custom nodes to be used by SDK. This is made up of accountId (e.g. 0.0.1000) and host (e.g. 127.0.0.1) key-value pairs
     -   operatorId - account id on network 'x.y.z' format
     -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
@@ -45,7 +45,7 @@ Tests can be compiled and run by running the following command from the root fol
         -   baseUrl - The host url to the mirrorNode e.g. https://testnet.mirrornode.hedera.com/api/v1
         -   delay - The time to wait in between failed REST API calls
         -   maxAttempts - The maximum number of attempts when calling a REST API endpoint and receiving a 404
-    -   retrieveAddressBook - Whether to download the address book from the network and use those nodes over the default nodes. Populating `hedera.mirror.test.acceptancenodes` will take priority over this.
+    -   retrieveAddressBook - Whether to download the address book from the network and use those nodes over the default nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
     -   subscribeRetries - number of times client should retryable on supported failures
     -   subscribeRetryOffPeriod - number of milliseconds client should wait before retrying on a retryable failure
 

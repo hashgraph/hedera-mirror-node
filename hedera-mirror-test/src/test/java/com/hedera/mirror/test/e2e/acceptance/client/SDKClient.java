@@ -84,7 +84,7 @@ public class SDKClient {
             try {
                 networkMapToValidate = getAddressBookNetworkMap(client);
             } catch (Exception e) {
-                //
+                log.warn("Error retrieving address book", e);
             }
         }
 
