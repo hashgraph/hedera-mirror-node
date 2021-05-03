@@ -84,10 +84,10 @@ spring:
       api-password: ${hedera.mirror.importer.db.restPassword}
       api-user: ${hedera.mirror.importer.db.restUsername}
       autovacuumFreezeMaxAgeInsertOnly: 100000
-      autovacuumVacuumInsertThresholdCryptoTransfer: 18000000
+      autovacuumVacuumInsertThresholdCryptoTransfer: 300000
       autovacuumVacuumInsertThresholdTokenTransfer: 2000
-      autovacuumVacuumInsertThresholdTransaction: 6000000
-      chunkIdInterval: 10000
+      autovacuumVacuumInsertThresholdTransaction: 100000
+      chunkIdInterval: 100000
       chunkTimeInterval: 604800000000000
       compressionAge: 604800000000000
       db-name: ${hedera.mirror.importer.db.name}

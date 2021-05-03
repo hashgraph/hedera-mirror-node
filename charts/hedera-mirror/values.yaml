@@ -251,11 +251,10 @@ timescaledb:
       dcs:
         postgresql:
           parameters:
-            max_wal_size: 1GB
-            max_worker_processes: 30  # Must be > max_background_workers + max_worker_processes (default 8)
+            max_worker_processes: 26  # Must be > max_background_workers + max_parallel_workers (default 4)
             password_encryption: scram-sha-256
-            shared_buffers: 2GB  # recommended to be 25% of available instance memory
             ssl: 'off'  # disable all ssl connections to not require Patroni certificate
+            temp_file_limit: 20GB
             timescaledb.max_background_workers: 20
             work_mem: 50MB
     postgresql:
@@ -267,7 +266,7 @@ timescaledb:
     data:
       size: 500Gi
     wal:
-      size: 2Gi
+      size: 10Gi
   podManagementPolicy: Parallel
   podMonitor:
     enabled: false
@@ -286,9 +285,14 @@ timescaledb:
       cpu: 4
       memory: 16Gi
     requests:
-      cpu: 1
-      memory: 1Gi
+      cpu: 2
+      memory: 8Gi
   secretNames:
     credentials: mirror-passwords
   sharedMemory:
     useMount: true
+  timescaledbTune:
+    args:
+      # use the same values in resources limits
+      cpus: 4
+      memory: 16GB
