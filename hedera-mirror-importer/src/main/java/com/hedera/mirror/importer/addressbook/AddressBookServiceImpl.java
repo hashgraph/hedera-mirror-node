@@ -293,10 +293,8 @@ public class AddressBookServiceImpl implements AddressBookService {
                     nodeIds.getLeft(),
                     k -> getAddressBookEntry(nodeAddressProto, consensusTimestamp, nodeIds));
 
-            Set<AddressBookServiceEndpoint> serviceEndpoints = getAddressBookServiceEndpoints(nodeAddressProto,
-                    consensusTimestamp);
-            Set<AddressBookServiceEndpoint> updatedList = new HashSet(addressBookEntry.getServiceEndpoints());
-            updatedList.addAll(serviceEndpoints);
+            Set<AddressBookServiceEndpoint> updatedList = new HashSet<>(addressBookEntry.getServiceEndpoints());
+            updatedList.addAll(getAddressBookServiceEndpoints(nodeAddressProto, consensusTimestamp));
             addressBookEntry.setServiceEndpoints(updatedList);
         }
 
