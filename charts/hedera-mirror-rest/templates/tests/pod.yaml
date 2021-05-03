@@ -3,8 +3,8 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    helm.sh/hook: test-success
-    helm.sh/hook-delete-policy: hook-succeeded
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: hook-failed,hook-succeeded
   labels:
     {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}-test
