@@ -84,6 +84,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Import GPG Key
         id: gpg_importer
