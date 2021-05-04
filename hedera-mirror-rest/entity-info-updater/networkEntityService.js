@@ -23,10 +23,10 @@
 // external libraries
 const {AccountBalanceQuery, AccountId, AccountInfo, AccountInfoQuery, Client, PrivateKey} = require('@hashgraph/sdk');
 const log4js = require('log4js');
-const utils = require('./utils');
 
 // local
 const config = require('./config');
+const utils = require('./utils');
 
 const logger = log4js.getLogger();
 
@@ -87,10 +87,6 @@ const restoreNetworkEntityCache = () => {
   networkEntityCache = utils.getNetworkEntityCache();
 };
 
-const storeNetworkEntityCache = () => {
-  utils.storeNetworkEntityCache(networkEntityCache);
-};
-
 // configure sdk client on file load based off of config values
 if (!clientConfigured) {
   logger.info(`Configure SDK client for ${config.sdkClient.network}`);
@@ -122,17 +118,17 @@ if (!clientConfigured) {
     );
   }
 
-  operatorId = AccountId.fromString(config.sdkClient.operatorId);
-  const operatorKey = PrivateKey.fromString(config.sdkClient.operatorKey);
-  client.setOperator(operatorId, operatorKey);
-  clientConfigured = true;
-  logger.info(`SDK client successfully configured for Operator ID ${operatorId}`);
-
   restoreNetworkEntityCache();
   if (config.sdkClient.useCache === true && networkEntityCache !== {}) {
     logger.info(
       "SDK network calls will pull from local cache as 'hedera.mirror.entityUpdate.sdkClient.useCache' is set to true and valid cache exists"
     );
+  } else {
+    operatorId = AccountId.fromString(config.sdkClient.operatorId);
+    const operatorKey = PrivateKey.fromString(config.sdkClient.operatorKey);
+    client.setOperator(operatorId, operatorKey);
+    clientConfigured = true;
+    logger.info(`SDK client successfully configured for Operator ID ${operatorId}`);
   }
 }
 
@@ -140,5 +136,4 @@ module.exports = {
   getAccountBalance,
   getAccountInfo,
   restoreNetworkEntityCache,
-  storeNetworkEntityCache,
 };

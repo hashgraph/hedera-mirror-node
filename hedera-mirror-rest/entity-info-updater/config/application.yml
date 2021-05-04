@@ -8,6 +8,7 @@ hedera:
         name: mirror_node
         password: mirror_node_pass
         port: 5432
+        useCache: false
         username: mirror_node
       filePath:
       dryRun: true

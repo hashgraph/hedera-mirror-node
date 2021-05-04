@@ -26,6 +26,7 @@ const Pool = require('pg-pool');
 
 // local
 const config = require('./config');
+const utils = require('./utils');
 
 const logger = log4js.getLogger();
 
@@ -37,29 +38,45 @@ const pool = new Pool({
   port: config.db.port,
 });
 let client;
+let dbEntityCache = {};
 
 const getClientConnection = async () => {
-  client = await pool.connect();
+  if (config.db.useCache === false) {
+    client = await pool.connect();
+  }
+
   logger.trace(`Obtained connection`);
 };
 
 const beginTransaction = async () => {
-  await client.query('begin');
+  if (config.db.useCache === false) {
+    await client.query('begin');
+  }
+
   logger.trace(`Begun transaction`);
 };
 
 const commitTransaction = async () => {
-  await client.query('commit');
+  if (config.db.useCache === false) {
+    await client.query('commit');
+  }
+
   logger.trace(`Committed transaction`);
 };
 
 const rollbackTransaction = async () => {
-  await client.query('rollback');
+  if (config.db.useCache === false) {
+    await client.query('rollback');
+  }
+
   logger.trace(`Rolled back transaction`);
 };
 
 const releaseClientConnection = async () => {
-  await client.release();
+  if (config.db.useCache === false) {
+    await client.release();
+  }
+
   logger.trace(`Released connection`);
 };
 
@@ -98,17 +115,27 @@ const getEntity = async (id) => {
   const entityIdObj = getEntityObjFromString(id);
 
   logger.trace(`getEntity for ${id} from db`);
-  const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
-  const entityFromDb = await client.query(
-    `select *
-       from entity
-       where shard = $1
-         and realm = $2
-         and num = $3`,
-    paramValues
-  );
 
-  return entityFromDb.rows[0];
+  let entity = null;
+  if (config.db.useCache && dbEntityCache[id] !== undefined) {
+    logger.trace(`Retrieved ${id} from cache: ${JSON.stringify(dbEntityCache[id])}`);
+    entity = dbEntityCache[id];
+    entity.key = Buffer.from(entity.key); // ensure key is a buffer
+  } else {
+    const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
+    const entityFromDb = await client.query(
+      `select *
+         from entity
+         where shard = $1
+           and realm = $2
+           and num = $3`,
+      paramValues
+    );
+
+    entity = entityFromDb.rows[0];
+  }
+
+  return entity;
 };
 
 /**
@@ -150,6 +177,17 @@ const updateEntity = async (entity) => {
     logger.trace(`Updated entity ${entity.id}`);
   }
 };
+
+const restoreDbEntityCache = () => {
+  dbEntityCache = utils.getDbEntityCache();
+};
+
+restoreDbEntityCache();
+if (config.db.useCache === true && dbEntityCache !== {}) {
+  logger.info(
+    "SDK network calls will pull from local cache as 'hedera.mirror.entityUpdate.db.useCache' is set to true and valid cache exists"
+  );
+}
 
 module.exports = {
   beginTransaction,

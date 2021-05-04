@@ -218,7 +218,7 @@ const printBalanceSpent = (startBalance, endBalance) => {
  * @returns {Promise<unknown[]|[]>}
  */
 const getUpdateList = async (csvEntities) => {
-  logger.info(`Validating entities against db and network entries ...`);
+  logger.info(`Validating ${csvEntities.length} entities against db and network entries ...`);
   const mergeStart = process.hrtime();
   let updateList = [];
   if (!csvEntities || csvEntities.length === 0) {
@@ -257,11 +257,12 @@ const getUpdateList = async (csvEntities) => {
 const updateStaleDBEntities = async (entitiesToUpdate) => {
   if (!entitiesToUpdate || entitiesToUpdate.length === 0) {
     logger.info(`No entities to update, skipping update`);
-    return;
+    return 0;
   }
 
   logger.info(`Updating ${entitiesToUpdate.length} stale db entries with updated information ...`);
   const updateStart = process.hrtime();
+  let updateCount = entitiesToUpdate.length;
   try {
     await dbEntityService.getClientConnection();
     await dbEntityService.beginTransaction();
@@ -273,9 +274,11 @@ const updateStaleDBEntities = async (entitiesToUpdate) => {
   } catch (e) {
     await dbEntityService.rollbackTransaction();
     logger.debug(`Error updating entities in db. Rolled back updates, error: ${e}. ${e.stack}`);
+    updateCount = -1;
     throw e;
   } finally {
     await dbEntityService.releaseClientConnection();
+    return updateCount;
   }
 };
 

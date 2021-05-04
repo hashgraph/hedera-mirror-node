@@ -42,6 +42,11 @@ const longMaxValue = 9223372036854775807n;
 const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
 const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
 
+// sample location details
+const entityCachePath = process.env.ENTITY_CACHE_PATH || `${__dirname}/sample`;
+const dbCacheFileName = process.env.DB_ENTITY_CACHE_FILE || `dbEntityCache.json`;
+const networkCacheFileName = process.env.NETWORK_ENTITY_CACHE_FILE || `networkEntityCache.json`;
+
 const constructEntity = (index, headerRow, entityRow) => {
   const entityObj = {};
   const splitEntityRow = Array.from(entityRow.split(',')).filter((x) => x != null);
@@ -195,20 +200,21 @@ const getEntityId = (entityIdStr) => {
 };
 
 const getNetworkEntityCache = () => {
-  const pathString = path.join('./sample', 'networkEntityCache.json');
+  const pathString = path.join(entityCachePath, networkCacheFileName);
   return fs.existsSync(pathString) ? JSON.parse(fs.readFileSync(pathString, 'utf-8')) : {};
 };
 
-const storeNetworkEntityCache = (networkEntityCache) => {
-  fs.writeFileSync(path.join('./sample', 'networkEntityCache.json'), JSON.stringify(networkEntityCache));
+const getDbEntityCache = () => {
+  const pathString = path.join(entityCachePath, dbCacheFileName);
+  return fs.existsSync(pathString) ? JSON.parse(fs.readFileSync(pathString, 'utf-8')) : {};
 };
 
 module.exports = {
   getBufferAndEd25519HexFromKey,
   getElapsedTimeString,
+  getDbEntityCache,
   getEntityId,
   getNetworkEntityCache,
   readEntityCSVFileSync,
-  storeNetworkEntityCache,
   timestampToNs,
 };
