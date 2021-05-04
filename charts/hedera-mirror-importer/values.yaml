@@ -106,10 +106,12 @@ inhibitRules:
       matches:
         - sourceMatch:
           - name: alertname
-            value: ImporterAllPodsReady
+            value: ImporterNoPodsReady
           targetMatch:
-          - name: test
-            value: next1
+          - name: service
+            value: importer
+          - name: noPods
+            value: stop
 
 prometheusRules:
   enabled: false
@@ -122,7 +124,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterBalanceStreamFallenBehind:
     annotations:
@@ -133,7 +136,8 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterCloudStorageErrors:
     annotations:
@@ -144,7 +148,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterCloudStorageLatency:
     annotations:
@@ -155,7 +160,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterFileVerificationErrors:
     annotations:
@@ -166,7 +172,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterHighCPU:
     annotations:
@@ -177,7 +184,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterHighDBConnections:
     annotations:
@@ -188,7 +196,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterHighFileDescriptors:
     annotations:
@@ -199,7 +208,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterHighMemory:
     annotations:
@@ -210,7 +220,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterLog4j2Errors:
     annotations:
@@ -221,7 +232,8 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterNoConsensus:
     annotations:
@@ -232,7 +244,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterNoTransactions:
     annotations:
@@ -243,7 +256,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterParseErrors:
     annotations:
@@ -254,7 +268,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterPublishLatency:
     annotations:
@@ -265,7 +280,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterRecordParseLatency:
     annotations:
@@ -276,7 +292,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterRecordStreamFallenBehind:
     annotations:
@@ -287,7 +304,8 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
-      test: next1
+      service: importer
+      noPods: stop
 
   ImporterStreamCloseInterval:
     annotations:
@@ -298,17 +316,21 @@ prometheusRules:
     for: 1m
     labels:
       severity: warning
-      test: next1
+      service: importer
+      noPods: stop
+
 
   ImporterNoPodsReady:
     annotations:
-      description: "No importer instances are currently ready."
+      description: "No importer instances are currently running.  "
       summary: No importer instances running
     enabled: true
     expr: kube_pod_container_status_ready{container="importer"} < 1
-    for: 30s
+    for: 5s
     labels:
       severity: critical
+      service: importer
+      noPods: continue
 
 securityContext:
   capabilities:

@@ -139,6 +139,9 @@ prometheus-adapter:
 prometheus:
   alertmanager:
     alertmanagerSpec:
+      alertmanagerConfigSelector:
+        matchLabels:
+          alertmanagerConfig: hedera
       priorityClassName: low
       resources:
         limits:
@@ -148,6 +151,7 @@ prometheus:
           cpu: 30m
           memory: 30Mi
     config:
+      inhibit_rules: []
       receivers:
         - name: 'null'
       route:
