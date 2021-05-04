@@ -13,6 +13,9 @@ on:
         description: 'Description'
         required: false
 
+env:
+  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
+
 jobs:
   release:
     name: Release
@@ -114,7 +117,7 @@ jobs:
           fi
 
       - name: Maven Release
-        run: ./mvnw clean package -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -N -P=release
+        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -N -P=release
         env:
           VERSION: ${{ steps.version_parser.outputs.version }}
           CHART_VERSION: ${{ steps.chart_version_parser.outputs.version }}
@@ -157,6 +160,7 @@ jobs:
       - name: Commit and Tag
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
+          commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           commit_message: Bump versions for ${{ env.RELEASE_TAG }}
           commit_options: '--no-verify --signoff'
           commit_user_name: ${{ steps.gpg_importer.outputs.name }}
@@ -222,7 +226,7 @@ jobs:
           git reset --hard $RELEASE_BRANCH
 
       - name: Maven Release for Next Minor Snapshot
-        run: ./mvnw clean package -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -N -P=release
+        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -N -P=release
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
