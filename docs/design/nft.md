@@ -100,8 +100,8 @@ Need information on file format. Effectively envision:
 
 - If transaction is successful, persist any NFT Transfers.
 - `insertTokenCreate()` must be updated to set `fungible` and `maxSupply`
-- `insertTokenMint()` must be updated to handle the new field `amountOrMemo` and create and persist the `NFTs` if the
-  memo is set.
+- `insertTokenMint()` must be updated to handle the new field `amountOrMemo` create and persist the `NFTs` if the memo
+  is set.
 - `insertTokenBurn` must be updated to handle the new field `amountOrSerialNumbers` and mark the `NFTs` as deleted if
   the `serialNumbers` list is set.
 - `insertTokenDelete` must be added to mark the `NFTs` as deleted if the `fungible` field is false for the token.
@@ -383,16 +383,28 @@ Add optional filters
   "balances": [
     {
       "account": "0.15.10",
-      "serial_numbers": [
-        1002,
-        1003
+      "nfts": [
+        {
+          "serial_number": 1002,
+          "memo": "This is a test NFT"
+        },
+        {
+          "serial_number": 1003,
+          "memo": "This is another test NFT"
+        }
       ]
     },
     {
       "account": "0.15.9",
-      "serial_numbers": [
-        1004,
-        1005
+      "nfts": [
+        {
+          "serial_number": 1004,
+          "memo": "This is a third test NFT"
+        },
+        {
+          "serial_number": 1005,
+          "memo": "This is a fourth test NFT"
+        }
       ]
     }
   ],
