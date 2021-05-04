@@ -99,12 +99,13 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
 
   // compare keys as buffers
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
-  if (Buffer.compare(dbEntity.key, protoBuffer) !== 0) {
+  const dbKey = dbEntity.key === null ? Buffer.from('') : dbEntity.key;
+  if (Buffer.compare(dbKey, protoBuffer) !== 0) {
     updateEntity.public_key = ed25519Hex;
     updateEntity.key = protoBuffer;
     updateNeeded = true;
     updateCriteriaCount.key += 1;
-    logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
+    logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbKey}, network: ${protoBuffer}`);
   }
 
   // compare memos as strings
@@ -185,9 +186,12 @@ const batchGetVerifiedEntities = async (csvEntities) => {
   let updateList = [];
   for (let i = 0; i < batchedEntities.length; i++) {
     try {
+      await dbEntityService.getClientConnection();
       updateList = updateList.concat((await Promise.all(batchedEntities[i].map(getVerifiedEntity))).filter((x) => !!x));
     } catch (e) {
-      logger.debug(`Error batch retrieving accounts from network, error: ${e}`);
+      logger.debug(`Error batch retrieving accounts from network, error: ${e}. ${e.stack}`);
+    } finally {
+      await dbEntityService.releaseClientConnection();
     }
   }
 
@@ -258,10 +262,21 @@ const updateStaleDBEntities = async (entitiesToUpdate) => {
 
   logger.info(`Updating ${entitiesToUpdate.length} stale db entries with updated information ...`);
   const updateStart = process.hrtime();
-  const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
-  const elapsedTime = process.hrtime(updateStart);
+  try {
+    await dbEntityService.getClientConnection();
+    await dbEntityService.beginTransaction();
+    const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
+    const elapsedTime = process.hrtime(updateStart);
+    await dbEntityService.commitTransaction();
 
-  logger.info(`Updated ${updatedList.length} entities in ${utils.getElapsedTimeString(elapsedTime)}`);
+    logger.info(`Updated ${updatedList.length} entities in ${utils.getElapsedTimeString(elapsedTime)}`);
+  } catch (e) {
+    await dbEntityService.rollbackTransaction();
+    logger.debug(`Error updating entities in db. Rolled back updates, error: ${e}. ${e.stack}`);
+    throw e;
+  } finally {
+    await dbEntityService.releaseClientConnection();
+  }
 };
 
 module.exports = {

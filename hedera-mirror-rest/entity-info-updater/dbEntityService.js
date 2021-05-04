@@ -36,6 +36,32 @@ const pool = new Pool({
   password: config.db.password,
   port: config.db.port,
 });
+let client;
+
+const getClientConnection = async () => {
+  client = await pool.connect();
+  logger.trace(`Obtained connection`);
+};
+
+const beginTransaction = async () => {
+  await client.query('begin');
+  logger.trace(`Begun transaction`);
+};
+
+const commitTransaction = async () => {
+  await client.query('commit');
+  logger.trace(`Committed transaction`);
+};
+
+const rollbackTransaction = async () => {
+  await client.query('rollback');
+  logger.trace(`Rolled back transaction`);
+};
+
+const releaseClientConnection = async () => {
+  await client.release();
+  logger.trace(`Released connection`);
+};
 
 /**
  * Extract entity object with shard, relam and num from entity id string
@@ -73,7 +99,7 @@ const getEntity = async (id) => {
 
   logger.trace(`getEntity for ${id} from db`);
   const paramValues = [entityIdObj.shard, entityIdObj.realm, entityIdObj.num];
-  const entityFromDb = await pool.query(
+  const entityFromDb = await client.query(
     `select *
        from entity
        where shard = $1
@@ -103,24 +129,34 @@ const updateEntity = async (entity) => {
   ];
 
   if (config.dryRun === false) {
-    await pool.query(
-      `update entity
-         set auto_renew_period    = $1,
-             deleted              = $2,
-             public_key           = $3,
-             expiration_timestamp = $4,
-             key                  = $5,
-             memo                 = $6,
-             proxy_account_id     = $7
-         where id = $8`,
-      paramValues
-    );
+    try {
+      await client.query(
+        `update entity
+           set auto_renew_period    = $1,
+               deleted              = $2,
+               public_key           = $3,
+               expiration_timestamp = $4,
+               key                  = $5,
+               memo                 = $6,
+               proxy_account_id     = $7
+           where id = $8`,
+        paramValues
+      );
+    } catch (e) {
+      logger.trace(`Error updating entity ${entity.id}, entity: ${JSON.stringify(entity)}: ${e}`);
+      throw e;
+    }
 
     logger.trace(`Updated entity ${entity.id}`);
   }
 };
 
 module.exports = {
+  beginTransaction,
+  commitTransaction,
+  getClientConnection,
   getEntity,
+  releaseClientConnection,
+  rollbackTransaction,
   updateEntity,
 };

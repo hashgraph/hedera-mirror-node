@@ -27,6 +27,7 @@ const {KeyList, PublicKey} = require('@hashgraph/sdk');
 const _ = require('lodash');
 const fs = require('fs');
 const log4js = require('log4js');
+const path = require('path');
 
 // local
 const config = require('./config');
@@ -90,7 +91,14 @@ const readEntityCSVFileSync = () => {
  * @return {BigInt} ns Nanoseconds since epoch
  */
 const timestampToNs = (sec, ns) => {
-  const finalNs = BigInt(sec.toString()) * BigInt(1e9) + BigInt(ns.toString());
+  let finalNs = 0;
+
+  try {
+    finalNs = BigInt(sec.toString()) * BigInt(1e9) + BigInt(ns.toString());
+  } catch (e) {
+    logger.warn(`Error parsing sec: ${JSON.stringify(sec)}, ns: ${JSON.stringify(ns)} to timestamp`);
+    throw e;
+  }
 
   // handle the equivalent long overflow case that the java importer accommodates
   if (finalNs < longMinValue) {
@@ -148,7 +156,8 @@ const getProtoAndEd25519HexFromKeyList = (key) => {
 
   // only keyLists of length one have an applicable ed25519Hex
   let ed25519Hex = null;
-  if (key._keys.length === 1) {
+  // some complex keys are nested, ensure top level key is the applicable ed25519Hex
+  if (key._keys.length === 1 && key._keys[0]._keyData !== undefined) {
     ed25519Hex = key._keys[0].toString();
   }
 
@@ -185,10 +194,21 @@ const getEntityId = (entityIdStr) => {
   return (BigInt(parts[2]) + BigInt(parts[1]) * realmOffset + BigInt(parts[0]) * shardOffset).toString();
 };
 
+const getNetworkEntityCache = () => {
+  const pathString = path.join('./sample', 'networkEntityCache.json');
+  return fs.existsSync(pathString) ? JSON.parse(fs.readFileSync(pathString, 'utf-8')) : {};
+};
+
+const storeNetworkEntityCache = (networkEntityCache) => {
+  fs.writeFileSync(path.join('./sample', 'networkEntityCache.json'), JSON.stringify(networkEntityCache));
+};
+
 module.exports = {
   getBufferAndEd25519HexFromKey,
   getElapsedTimeString,
   getEntityId,
+  getNetworkEntityCache,
   readEntityCSVFileSync,
+  storeNetworkEntityCache,
   timestampToNs,
 };
