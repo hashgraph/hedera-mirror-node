@@ -21,8 +21,6 @@
 package main
 
 import (
-	"github.com/hashgraph/hedera-sdk-go/v2"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,6 +30,8 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
