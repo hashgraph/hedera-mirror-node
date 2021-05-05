@@ -71,6 +71,38 @@ ingress:
     enabled: false
     secretName: ""
 
+inhibitRules:
+  enabled: true
+  StopRestAlertsWhenPodsDown:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: RestNoPodsReady
+        targetMatch:
+          - name: service
+            value: rest
+
+  StopRestAlertsWhenResourcesHigh:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: RestHighCPU
+        targetMatch:
+          - name: service
+            value: rest
+
+  StopSlowResponseAlertsOnHighErrors:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: RestErrors
+        targetMatch:
+          - name: alertname
+            value: rest
+
 labels: {}
 
 livenessProbe:
@@ -86,20 +118,6 @@ podSecurityContext:
   fsGroup: 1000
 
 priorityClassName: ""
-
-inhibitRules:
-  enabled: true
-  StopImporterAlertsWhenPodsAreUp:
-      enabled: true
-      matches:
-        - sourceMatch:
-          - name: alertname
-            value: RestNoPodsReady
-          targetMatch:
-          - name: service
-            value: rest
-          - name: noPods
-            value: stop
 
 prometheusRules:
   enabled: false
@@ -153,10 +171,10 @@ prometheusRules:
 
   RestNoPodsReady:
     annotations:
-      description: "No importer instances are currently running.  "
-      summary: No importer instances running
+      description: "No rest instances are currently running.  "
+      summary: No rest instances running
     enabled: true
-    expr: kube_pod_container_status_ready{container="importer"} < 1
+    expr: kube_pod_container_status_ready{container="rest"} < 1
     for: 5s
     labels:
       severity: critical
