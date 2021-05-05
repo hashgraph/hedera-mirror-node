@@ -20,6 +20,10 @@
 
 package types
 
+import (
+	"github.com/hashgraph/hedera-sdk-go/v2"
+)
+
 type Config struct {
 	Hedera Hedera `yaml:"hedera"`
 }
@@ -32,16 +36,38 @@ type Mirror struct {
 	Rosetta Rosetta `yaml:"rosetta"`
 }
 
+type NodeMap map[string]hedera.AccountID
+
+func (n *NodeMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	nodes := make(map[string]string, 0)
+	if err := unmarshal(&nodes); err != nil {
+		return err
+	}
+
+	*n = make(NodeMap, len(nodes))
+	for address, nodeAccountIdStr := range nodes {
+		nodeAccountId, err := hedera.AccountIDFromString(nodeAccountIdStr)
+		if err != nil {
+			return err
+		}
+
+		(*n)[address] = nodeAccountId
+	}
+
+	return nil
+}
+
 type Rosetta struct {
-	ApiVersion  string `yaml:"apiVersion" env:"HEDERA_MIRROR_ROSETTA_API_VERSION"`
-	Db          Db     `yaml:"db"`
-	Network     string `yaml:"network" env:"HEDERA_MIRROR_ROSETTA_NETWORK"`
-	NodeVersion string `yaml:"nodeVersion" env:"HEDERA_MIRROR_ROSETTA_NODE_VERSION"`
-	Online      bool   `yaml:"online" env:"HEDERA_MIRROR_ROSETTA_ONLINE"`
-	Port        string `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_PORT"`
-	Realm       string `yaml:"realm" env:"HEDERA_MIRROR_ROSETTA_REALM"`
-	Shard       string `yaml:"shard" env:"HEDERA_MIRROR_ROSETTA_SHARD"`
-	Version     string `yaml:"version" env:"HEDERA_MIRROR_ROSETTA_VERSION"`
+	ApiVersion  string  `yaml:"apiVersion" env:"HEDERA_MIRROR_ROSETTA_API_VERSION"`
+	Db          Db      `yaml:"db"`
+	Network     string  `yaml:"network" env:"HEDERA_MIRROR_ROSETTA_NETWORK"`
+	Nodes       NodeMap `yaml:"network" env:"HEDERA_MIRROR_ROSETTA_NODES"`
+	NodeVersion string  `yaml:"nodeVersion" env:"HEDERA_MIRROR_ROSETTA_NODE_VERSION"`
+	Online      bool    `yaml:"online" env:"HEDERA_MIRROR_ROSETTA_ONLINE"`
+	Port        string  `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_PORT"`
+	Realm       string  `yaml:"realm" env:"HEDERA_MIRROR_ROSETTA_REALM"`
+	Shard       string  `yaml:"shard" env:"HEDERA_MIRROR_ROSETTA_SHARD"`
+	Version     string  `yaml:"version" env:"HEDERA_MIRROR_ROSETTA_VERSION"`
 }
 
 type Db struct {

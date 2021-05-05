@@ -128,7 +128,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectRecordFileByIndex, index + startingIndex).Find(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectRecordFileByIndex, index+startingIndex).Find(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 

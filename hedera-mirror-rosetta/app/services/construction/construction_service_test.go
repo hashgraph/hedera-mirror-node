@@ -26,6 +26,8 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,9 +36,16 @@ const (
 	DefaultCryptoAccountId2 = "0.0.123518"
 	DefaultSendAmount       = "-1000"
 	DefaultReceiveAmount    = "1000"
+	DefaultNetwork          = "testnet"
 )
 
 var (
+	defaultNodes = types2.NodeMap{
+		"10.0.0.1:50211": hedera.AccountID{Account: 3},
+		"10.0.0.2:50211": hedera.AccountID{Account: 4},
+		"10.0.0.3:50211": hedera.AccountID{Account: 5},
+		"10.0.0.4:50211": hedera.AccountID{Account: 6},
+	}
 	validTxHexStr       = "0x1a00223d0a140a0c0891d0fef905109688f3a701120418d8c307120218061880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
 	validSignedTxHexStr = "0x1a660a640a20d25025bad248dbd4c6ca704eefba7ab4f3e3f48089fa5f20e4e1d10303f97ade1a40967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507223c0a130a0b08c7af94fa0510f7d9fc76120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
 	invalidTxHexStr     = "InvalidTxHexString"
@@ -161,8 +170,95 @@ func dummyPayloadsRequest(operations []*types.Operation) *types.ConstructionPayl
 	}
 }
 
+func getHederaNetworkByName(network string) map[string]hedera.AccountID {
+	client, err := hedera.ClientForName(network)
+	if err != nil {
+		panic(err)
+	}
+
+	return client.GetNetwork()
+}
+
+func getNodeAccountIds(network map[string]hedera.AccountID) []hedera.AccountID {
+	nodeAccountIds := make([]hedera.AccountID, 0, len(network))
+
+	for _, nodeAccountId := range network {
+		nodeAccountIds = append(nodeAccountIds, nodeAccountId)
+	}
+
+	return nodeAccountIds
+}
+
 func TestNewConstructionAPIService(t *testing.T) {
-	assert.IsType(t, &ConstructionAPIService{}, NewConstructionAPIService())
+	var tests = []struct {
+		name                  string
+		network               string
+		nodes                 types2.NodeMap
+		expectedHederaNetwork map[string]hedera.AccountID
+		wantErr               bool
+	}{
+		{
+			name:                  "Testnet",
+			network:               "testnet",
+			nodes:                 types2.NodeMap{},
+			expectedHederaNetwork: getHederaNetworkByName("testnet"),
+			wantErr:               false,
+		},
+		{
+			name:                  "Previewnet",
+			network:               "previewnet",
+			nodes:                 types2.NodeMap{},
+			expectedHederaNetwork: getHederaNetworkByName("previewnet"),
+			wantErr:               false,
+		},
+		{
+			name:                  "Mainnet",
+			network:               "mainnet",
+			nodes:                 types2.NodeMap{},
+			expectedHederaNetwork: getHederaNetworkByName("mainnet"),
+			wantErr:               false,
+		},
+		{
+			name:                  "Demo",
+			network:               "testnet",
+			nodes:                 types2.NodeMap{},
+			expectedHederaNetwork: getHederaNetworkByName("testnet"),
+			wantErr:               false,
+		},
+		{
+			name:                  "OtherWithNodes",
+			network:               "other",
+			nodes:                 defaultNodes,
+			expectedHederaNetwork: defaultNodes,
+			wantErr:               false,
+		},
+		{
+			name:                  "OtherWithEmptyNodes",
+			network:               "other",
+			nodes:                 types2.NodeMap{},
+			expectedHederaNetwork: nil,
+			wantErr:               true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := NewConstructionAPIService(tt.network, tt.nodes)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.IsType(t, &ConstructionAPIService{}, actual)
+
+				service := actual.(*ConstructionAPIService)
+				expectedNodeAccountIds := getNodeAccountIds(tt.expectedHederaNetwork)
+				assert.EqualValues(t, tt.expectedHederaNetwork, service.hederaClient.GetNetwork())
+				assert.ElementsMatch(t, expectedNodeAccountIds, service.nodeAccountIds)
+				assert.NotNil(t, service.rand)
+			}
+		})
+	}
 }
 
 func TestConstructionCombine(t *testing.T) {
@@ -172,7 +268,8 @@ func TestConstructionCombine(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, dummyConstructionCombineRequest())
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionCombine(nil, dummyConstructionCombineRequest())
 
 	// then:
 	assert.Equal(t, expectedConstructionCombineResponse, res)
@@ -187,7 +284,8 @@ func TestConstructionCombineThrowsWithMultipleSignatures(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleConstructionCombineRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionCombine(nil, exampleConstructionCombineRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -200,7 +298,8 @@ func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
 	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = invalidTxHexStr
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -213,7 +312,8 @@ func TestConstructionCombineThrowsWhenUnmarshallFails(t *testing.T) {
 	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = corruptedTxHexStr
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -226,7 +326,8 @@ func TestConstructionCombineThrowsWithInvalidPublicKey(t *testing.T) {
 	exampleInvalidPublicKeyConstructionCombineRequest.Signatures[0].PublicKey = &types.PublicKey{}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleInvalidPublicKeyConstructionCombineRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionCombine(nil, exampleInvalidPublicKeyConstructionCombineRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -239,7 +340,8 @@ func TestConstructionCombineThrowsWhenSignatureIsNotVerified(t *testing.T) {
 	exampleInvalidSigningPayloadConstructionCombineRequest.Signatures[0].SigningPayload = &types.SigningPayload{}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionCombine(nil, exampleInvalidSigningPayloadConstructionCombineRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionCombine(nil, exampleInvalidSigningPayloadConstructionCombineRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -248,7 +350,8 @@ func TestConstructionCombineThrowsWhenSignatureIsNotVerified(t *testing.T) {
 
 func TestConstructionDerive(t *testing.T) {
 	// when:
-	res, e := NewConstructionAPIService().ConstructionDerive(nil, nil)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionDerive(nil, nil)
 
 	// then:
 	assert.Nil(t, res)
@@ -264,7 +367,8 @@ func TestConstructionHash(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionHash(nil, exampleConstructionHashRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionHash(nil, exampleConstructionHashRequest)
 
 	// then:
 	assert.Equal(t, expectedConstructHashResponse, res)
@@ -276,7 +380,8 @@ func TestConstructionHashThrowsWhenDecodeStringFails(t *testing.T) {
 	exampleConstructionHashRequest := dummyConstructionHashRequest(invalidTxHexStr)
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionHash(nil, exampleConstructionHashRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionHash(nil, exampleConstructionHashRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -290,7 +395,8 @@ func TestConstructionMetadata(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionMetadata(nil, nil)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionMetadata(nil, nil)
 
 	// then:
 	assert.Equal(t, expectedResponse, res)
@@ -308,7 +414,8 @@ func TestConstructionParse(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionParse(nil, exampleConstructionParseRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionParse(nil, exampleConstructionParseRequest)
 
 	// then:
 	assert.Equal(t, expectedConstructionParseResponse, res)
@@ -331,7 +438,8 @@ func TestConstructionParseSigned(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionParse(nil, exampleConstructionParseRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionParse(nil, exampleConstructionParseRequest)
 
 	// then:
 	assert.Equal(t, expectedConstructionParseResponse, res)
@@ -340,7 +448,8 @@ func TestConstructionParseSigned(t *testing.T) {
 
 func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 	// when:
-	res, e := NewConstructionAPIService().ConstructionParse(nil, dummyConstructionParseRequest(invalidTxHexStr, false))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionParse(nil, dummyConstructionParseRequest(invalidTxHexStr, false))
 
 	// then:
 	assert.Nil(t, res)
@@ -349,7 +458,8 @@ func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 
 func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 	// when:
-	res, e := NewConstructionAPIService().ConstructionParse(nil, dummyConstructionParseRequest(corruptedTxHexStr, false))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionParse(nil, dummyConstructionParseRequest(corruptedTxHexStr, false))
 
 	// then:
 	assert.Nil(t, res)
@@ -376,7 +486,8 @@ func TestConstructionPayloads(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
 	// here we do not assert the whole response object to equal the expected one, because invocation of this method appends a unique timestamp to the result, thus making the signed TX and Bytes unique and non-assertable.
@@ -391,7 +502,8 @@ func TestConstructionPayloadsThrowsWithInvalidOperationsSum(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
 	assert.Nil(t, res)
@@ -403,7 +515,8 @@ func TestConstructionPayloadsThrowsWithEmptyOperations(t *testing.T) {
 	operations := []*types.Operation{}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
 	assert.Nil(t, res)
@@ -417,7 +530,8 @@ func TestConstructionPayloadsThrowsWithInvalidOperationAmounts(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
 	assert.Nil(t, res)
@@ -432,7 +546,8 @@ func TestConstructionPayloadsThrowsWhenInvalidAccount(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
 	assert.Nil(t, res)
@@ -447,7 +562,8 @@ func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionSubmit(nil, exampleConstructionSubmitRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionSubmit(nil, exampleConstructionSubmitRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -464,7 +580,8 @@ func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionSubmit(nil, exampleConstructionSubmitRequest)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionSubmit(nil, exampleConstructionSubmitRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -478,7 +595,8 @@ func TestConstructionPreprocess(t *testing.T) {
 	}
 
 	// when:
-	res, e := NewConstructionAPIService().ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(true))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(true))
 
 	// then:
 	assert.Equal(t, expectedResult, res)
@@ -487,7 +605,8 @@ func TestConstructionPreprocess(t *testing.T) {
 
 func TestConstructionPreprocessThrowsWithInvalidOperationsSum(t *testing.T) {
 	// when:
-	res, e := NewConstructionAPIService().ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(false))
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	res, e := service.ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(false))
 
 	// then:
 	assert.Nil(t, res)

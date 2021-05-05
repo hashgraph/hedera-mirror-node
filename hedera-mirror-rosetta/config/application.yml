@@ -12,6 +12,7 @@ hedera:
       online: true
       network: DEMO
       nodeVersion: 0
+      nodes: {}
       port: 5700
       realm: 0
       shard: 0

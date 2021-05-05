@@ -21,13 +21,18 @@
 package main
 
 import (
-	"github.com/caarlos0/env/v6"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
-	"gopkg.in/yaml.v2"
+	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
+
+	"github.com/caarlos0/env/v6"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -36,19 +41,21 @@ const (
 )
 
 func LoadConfig() *types.Config {
-	var configuration types.Config
-	GetConfig(&configuration, defaultConfigFile)
-	GetConfig(&configuration, mainConfigFile)
-	GetConfig(&configuration, os.Getenv("HEDERA_MIRROR_ROSETTA_API_CONFIG"))
+	var config types.Config
+	getConfig(&config, defaultConfigFile)
+	getConfig(&config, mainConfigFile)
+	getConfig(&config, os.Getenv("HEDERA_MIRROR_ROSETTA_API_CONFIG"))
 
-	if err := env.Parse(&configuration); err != nil {
+	if err := env.ParseWithFuncs(&config, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(types.NodeMap{}): parseNodesFromEnv,
+	}); err != nil {
 		panic(err)
 	}
 
-	return &configuration
+	return &config
 }
 
-func GetConfig(config *types.Config, path string) {
+func getConfig(config *types.Config, path string) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return
 	}
@@ -67,4 +74,27 @@ func GetConfig(config *types.Config, path string) {
 	}
 
 	log.Printf("Loaded external config file: %s\n", path)
+}
+
+func parseNodesFromEnv(v string) (interface{}, error) {
+	nodeMap := make(types.NodeMap, 0)
+
+	if len(v) == 0 {
+		return nodeMap, nil
+	}
+
+	for _, kv := range strings.Split(v, ",") {
+		parts := strings.Split(kv, "=")
+		if len(parts) != 2 {
+			return nil, errors.New("invalid value " + kv)
+		}
+
+		accountId, err := hedera.AccountIDFromString(parts[1])
+		if err != nil {
+			return nil, err
+		}
+		nodeMap[parts[0]] = accountId
+	}
+
+	return nodeMap, nil
 }
