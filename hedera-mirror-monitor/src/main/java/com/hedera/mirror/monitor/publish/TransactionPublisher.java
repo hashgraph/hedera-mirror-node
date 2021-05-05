@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -167,7 +168,7 @@ public class TransactionPublisher {
                 }
             }
         } catch (Exception e) {
-            //
+            log.warn("Error validating nodes: {}", e.getMessage());
         }
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
@@ -184,6 +185,8 @@ public class TransactionPublisher {
                     .execute(client, Duration.ofSeconds(10L));
             log.info("Validated node: {}", node);
             valid = true;
+        } catch (TimeoutException e) {
+            log.warn("Unable to validate node {}: Timed out", node);
         } catch (Exception e) {
             log.warn("Unable to validate node {}: ", node, e);
         }

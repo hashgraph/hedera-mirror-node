@@ -31,10 +31,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.monitor.generator.TransactionGenerator;
-import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
+import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
+import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 import com.hedera.mirror.monitor.subscribe.Subscriber;
 
 @Log4j2
@@ -62,7 +63,7 @@ class MonitorConfiguration {
      * @return the subscribed flux
      */
     @Bean
-    Disposable publishSubscribe() {
+    Disposable publish() {
         return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
                 .flatMapIterable(Function.identity())
                 .retry()
@@ -77,10 +78,21 @@ class MonitorConfiguration {
                 .runOn(Schedulers.newParallel("resolver", publishProperties.getThreads()))
                 .flatMap(Function.identity())
                 .sequential()
-                .onErrorContinue(PublishException.class, (t, r) -> {})
+                .onErrorContinue((t, r) -> log.error("Unexpected error during publish flow: ", t))
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
-                .doOnError(t -> log.error("Unexpected error during publish/subscribe flow:", t))
                 .doOnSubscribe(s -> log.info("Starting publisher flow"))
                 .subscribe(subscriber::onPublish);
+    }
+
+    @Bean
+    Disposable subscribe(MirrorSubscriber mirrorSubscriber, SubscribeMetrics subscribeMetrics) {
+        return mirrorSubscriber.subscribe()
+                .publishOn(Schedulers.parallel())
+                .name("subscribe")
+                .metrics()
+                .onErrorContinue((t, r) -> log.error("Unexpected error during subscribe: ", t))
+                .doFinally(s -> log.warn("Stopped after {} signal", s))
+                .doOnSubscribe(s -> log.info("Starting subscribe flow"))
+                .subscribe(subscribeMetrics::record);
     }
 }

@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,25 +20,22 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Multiset;
 
-@Log4j2
-@UtilityClass
-public class Utility {
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
 
-    public static Instant getTimestamp(byte[] message) {
-        if (message == null || message.length < Long.BYTES) {
-            return null;
-        }
+public interface Subscription {
 
-        Long timestamp = Longs.fromByteArray(message);
-        return timestamp != null ? Instant.ofEpochMilli(timestamp) : null;
-    }
+    long getCount();
 
-    public static String getMemo(String message) {
-        return System.currentTimeMillis() + "_" + message + " at " + Instant.now();
-    }
+    Multiset<String> getErrors();
+
+    int getId();
+
+    <T extends AbstractSubscriberProperties> T getProperties();
+
+    Stopwatch getStopwatch();
+
+    TransactionType getType();
 }

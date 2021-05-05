@@ -87,19 +87,24 @@ publish:
         message: Hello world!
         retry: true
         topicId: 0.0.1000
-      record: 1.0
+      recordPercent: 1.0
       tps: 0.1
       type: CONSENSUS_SUBMIT_MESSAGE
 ```
 
 #### Scheduled Transactions
-Scheduled transactions require unique configuration as they encompass two transactions during the entity creation.
-One (outer) transaction for the `Schedule` entity create and one (inner/scheduled) transaction to eventually be executed.
-The inner transaction must be signed by all required signatories as part of the `ScheduleCreate` or `ScheduleSign` scenario transactions.
-Due to this the monitor by default will initially support only `ScheduleCreate` scenarios in which the inner transaction is a `CryptoCreate` with `receiverSignatureRequired` set to true.
 
-By default all required signatures will be provided. However, this can be modified by setting `hedera.mirror.monitor.publish.scenarios.properties.signatoryCount` to be a number greater than 0 but smaller than `hedera.mirror.monitor.publish.scenarios.properties.totalSignatoryCount`
-To execute a scheduled scenario set the `hedera.mirror.monitor.publish.scenarios` properties similar to the following example
+Scheduled transactions require unique configuration as they encompass two transactions during the entity creation. One (
+outer) transaction for the `Schedule` entity create and one (inner/scheduled) transaction to eventually be executed. The
+inner transaction must be signed by all required signatories as part of the `ScheduleCreate` or `ScheduleSign` scenario
+transactions. Due to this the monitor by default will initially support only `ScheduleCreate` scenarios in which the
+inner transaction is a `CryptoCreate` with `receiverSignatureRequired` set to true.
+
+By default all required signatures will be provided. However, this can be modified by
+setting `hedera.mirror.monitor.publish.scenarios.properties.signatoryCount` to be a number greater than 0 but smaller
+than `hedera.mirror.monitor.publish.scenarios.properties.totalSignatoryCount`
+To execute a scheduled scenario set the `hedera.mirror.monitor.publish.scenarios` properties similar to the following
+example
 
 ```yaml
 publish:
@@ -121,9 +126,9 @@ expression syntax. This is useful to avoid boilerplate configuration and manual 
 environment. The syntax can currently only be used in `hedera.mirror.monitor.publish.scenarios.properties`
 and `hedera.mirror.monitor.subscribe.grpc.topicId`.
 
-The syntax takes the form of `${type.name}` where `type` is one of `account`, `schedule`, `token`, or `topic`, and `name` is a
-descriptive label. Based upon the entity type, it will create the appropriate entity on the network with default values.
-The name label allows the same entity to be referenced in multiple places but only created once.
+The syntax takes the form of `${type.name}` where `type` is one of `account`, `schedule`, `token`, or `topic`,
+and `name` is a descriptive label. Based upon the entity type, it will create the appropriate entity on the network with
+default values. The name label allows the same entity to be referenced in multiple places but only created once.
 
 The following example uses the expression syntax to create the sender and recipient accounts as well as a token. These
 same entities are created once and reused in both the token associate and the token transfer transaction.

@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe;
+package com.hedera.mirror.monitor.subscribe.rest;
 
 /*-
  * ‌
@@ -27,6 +27,8 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
+
+import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
 
 @Data
 @Validated

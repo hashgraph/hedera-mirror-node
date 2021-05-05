@@ -86,8 +86,8 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
         List<PublishRequest> publishRequests = new ArrayList<>();
         for (long i = 0; i < actual; i++) {
-            PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceipt()))
-                    .record(shouldGenerate(properties.getRecord()))
+            PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceiptPercent()))
+                    .record(shouldGenerate(properties.getRecordPercent()))
                     .timestamp(Instant.now())
                     .transaction(transactionSupplier.get().get().setMaxAttempts(properties.getMaxAttempts()))
                     .build();

@@ -59,11 +59,11 @@ public class ScenarioProperties {
 
     @Min(0)
     @Max(1)
-    private double receipt = 0.0;
+    private double receiptPercent = 0.0;
 
     @Min(0)
     @Max(1)
-    private double record = 0.0;
+    private double recordPercent = 0.0;
 
     @NotNull
     @DurationMin(seconds = 1)
@@ -78,7 +78,6 @@ public class ScenarioProperties {
     public long getLimit() {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
-
 }
 
 

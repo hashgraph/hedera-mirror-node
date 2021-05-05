@@ -235,14 +235,16 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].name`            | ""         | The publish scenario name. Used to tag logs and metrics
 `hedera.mirror.monitor.publish.scenarios[].maxAttempts`     | 1          | The maximum number of times a scenario transaction will be attempted
 `hedera.mirror.monitor.publish.scenarios[].properties`      | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
-`hedera.mirror.monitor.publish.scenarios[].receipt`         | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
-`hedera.mirror.monitor.publish.scenarios[].record`          | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
+`hedera.mirror.monitor.publish.scenarios[].receiptPercent`  | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
+`hedera.mirror.monitor.publish.scenarios[].recordPercent`   | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].timeout`         | 10s        | How long to wait for the transaction result
 `hedera.mirror.monitor.publish.scenarios[].tps`             | 1.0        | The rate at which transactions will publish
 `hedera.mirror.monitor.publish.scenarios[].type`            |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
 `hedera.mirror.monitor.publish.statusFrequency`             | 10s        | How often to log publishing statistics
 `hedera.mirror.monitor.publish.threads`                     | 5          | How many threads to use to resolve the asynchronous responses
 `hedera.mirror.monitor.publish.warmupPeriod`                | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
+`hedera.mirror.monitor.subscribe.clients`                   | 1          | How many SDK clients should be created to subscribe to mirror node APIs. Clients will be used in a round-robin fashion
+`hedera.mirror.monitor.subscribe.enabled`                   | true       | Whether to enable subscribing to mirror node APIs to verify published transactions
 `hedera.mirror.monitor.subscribe.grpc[].duration`           |            | How long to stay subscribed to the gRPC API
 `hedera.mirror.monitor.subscribe.grpc[].enabled`            | true       | Whether this subscribe scenario is enabled
 `hedera.mirror.monitor.subscribe.grpc[].limit`              | 0          | How many transactions to receive before halting. 0 for unlimited
@@ -251,7 +253,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.subscribe.grpc[].retry.maxBackoff`   | 8s         | The maximum amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.grpc[].retry.minBackoff`   | 250ms      | The initial amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.grpc[].startTime`          |            | The start time passed to the gRPC API. Defaults to current time if not set
-`hedera.mirror.monitor.subscribe.grpc[].statusFrequency`    | 10s        | How often to log subscription statistics
+`hedera.mirror.monitor.subscribe.grpc[].subscribers`        | 1          | How many concurrent subscribers should be instantiated for this scenario
 `hedera.mirror.monitor.subscribe.grpc[].topicId`            |            | Which topic to subscribe to
 `hedera.mirror.monitor.subscribe.rest[].duration`           |            | How long to stay subscribed to the gRPC API
 `hedera.mirror.monitor.subscribe.rest[].enabled`            | true       | Whether this subscribe scenario is enabled
@@ -263,7 +265,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.subscribe.rest[].samplePercent`      | 1.0        | The percentage of transactions to verify against the REST API. Accepts values between 0-1
 `hedera.mirror.monitor.subscribe.rest[].statusFrequency`    | 10s        | How often to log subscription statistics
 `hedera.mirror.monitor.subscribe.rest[].timeout`            | 2s         | Maximum amount of time to wait for a REST API call to retrieve data
-`hedera.mirror.monitor.subscribe.enabled`                   | true       | Whether to enable subscribing to mirror node APIs to verify published transactions
+`hedera.mirror.monitor.subscribe.statusFrequency`           | 10s        | How often to log subscription statistics
 `hedera.mirror.monitor.validateNodes`                       | true       | Whether to validate and remove invalid or down nodes permanently before publishing
 
 ## REST API

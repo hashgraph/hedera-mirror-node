@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor.subscribe.grpc;
 
 /*-
  * ‌
@@ -20,25 +20,11 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Flux;
 
-@Log4j2
-@UtilityClass
-public class Utility {
+import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 
-    public static Instant getTimestamp(byte[] message) {
-        if (message == null || message.length < Long.BYTES) {
-            return null;
-        }
+public interface GrpcClient {
 
-        Long timestamp = Longs.fromByteArray(message);
-        return timestamp != null ? Instant.ofEpochMilli(timestamp) : null;
-    }
-
-    public static String getMemo(String message) {
-        return System.currentTimeMillis() + "_" + message + " at " + Instant.now();
-    }
+    Flux<SubscribeResponse> subscribe(GrpcSubscription subscription);
 }

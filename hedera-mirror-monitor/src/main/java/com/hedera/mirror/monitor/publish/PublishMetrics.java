@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,6 +41,7 @@ import org.apache.commons.math3.util.Precision;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 
@@ -49,7 +51,9 @@ import com.hedera.hashgraph.sdk.ReceiptStatusException;
 public class PublishMetrics {
 
     private static final String SUCCESS = "SUCCESS";
+    private static final String UNKNOWN = "unknown";
 
+    private final PublishProperties publishProperties;
     private final AtomicLong counter = new AtomicLong(0L);
     private final Multiset<String> errors = ConcurrentHashMultiset.create();
     private final Stopwatch stopwatch = Stopwatch.createStarted();
@@ -92,12 +96,17 @@ public class PublishMetrics {
     }
 
     private void recordMetric(PublishRequest request, PublishResponse response, String status) {
+        String node = Optional.of(request.getTransaction().getNodeAccountIds())
+                .filter(l -> !l.isEmpty())
+                .map(l -> l.get(0))
+                .map(AccountId::toString)
+                .orElse(UNKNOWN);
         long startTime = request.getTimestamp().toEpochMilli();
         String scenarioName = request.getScenarioName();
         TransactionType type = request.getType();
 
         long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
-        Tags tags = new Tags(scenarioName, status, type);
+        Tags tags = new Tags(node, scenarioName, status, type);
         Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
         submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
         durationGauges.computeIfAbsent(tags, this::newDurationMetric);
@@ -113,6 +122,7 @@ public class PublishMetrics {
         TimeUnit unit = TimeUnit.NANOSECONDS;
         return TimeGauge.builder("hedera.mirror.monitor.publish.duration", stopwatch, unit, s -> s.elapsed(unit))
                 .description("The amount of time this scenario has been publishing transactions")
+                .tag(Tags.TAG_NODE, tags.getNode())
                 .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
                 .tag(Tags.TAG_TYPE, tags.getType().toString())
                 .register(meterRegistry);
@@ -121,6 +131,7 @@ public class PublishMetrics {
     private Timer newHandleMetric(Tags tags) {
         return Timer.builder("hedera.mirror.monitor.publish.handle")
                 .description("The time it takes from submit to being handled by the main nodes")
+                .tag(Tags.TAG_NODE, tags.getNode())
                 .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
                 .tag(Tags.TAG_STATUS, tags.getStatus())
                 .tag(Tags.TAG_TYPE, tags.getType().toString())
@@ -130,6 +141,7 @@ public class PublishMetrics {
     private Timer newSubmitMetric(Tags tags) {
         return Timer.builder("hedera.mirror.monitor.publish.submit")
                 .description("The time it takes to submit a transaction")
+                .tag(Tags.TAG_NODE, tags.getNode())
                 .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
                 .tag(Tags.TAG_STATUS, tags.getStatus())
                 .tag(Tags.TAG_TYPE, tags.getType().toString())
@@ -138,6 +150,10 @@ public class PublishMetrics {
 
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.publish.statusFrequency:10000}")
     public void status() {
+        if (!publishProperties.isEnabled()) {
+            return;
+        }
+
         long count = counter.get();
         long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
         double averageRate = getRate(count, elapsed);
@@ -163,10 +179,12 @@ public class PublishMetrics {
 
     @Value
     private class Tags {
+        private static final String TAG_NODE = "node";
         private static final String TAG_SCENARIO = "scenario";
         private static final String TAG_STATUS = "status";
         private static final String TAG_TYPE = "type";
 
+        private final String node;
         private final String scenarioName;
         private final String status;
         private final TransactionType type;
