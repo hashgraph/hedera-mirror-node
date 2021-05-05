@@ -49,7 +49,6 @@ const getAccountInfo = async (accountId) => {
       logger.trace(`Retrieved ${accountId.toString()} from cache`);
     } else {
       accountInfo = await new AccountInfoQuery().setAccountId(accountId).execute(client);
-      // networkEntityCache[accountId.toString()] = accountInfo.toBytes();
     }
   } catch (e) {
     if (e.toString().indexOf('INVALID_ACCOUNT_ID') < 0 && e.toString().indexOf('ACCOUNT_DELETED') < 0) {
@@ -135,5 +134,4 @@ if (!clientConfigured) {
 module.exports = {
   getAccountBalance,
   getAccountInfo,
-  restoreNetworkEntityCache,
 };
