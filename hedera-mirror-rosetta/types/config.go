@@ -38,6 +38,7 @@ type Mirror struct {
 
 type NodeMap map[string]hedera.AccountID
 
+// UnmarshalYAML implements customized unmarshal for network nodes map
 func (n *NodeMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	nodes := make(map[string]string, 0)
 	if err := unmarshal(&nodes); err != nil {

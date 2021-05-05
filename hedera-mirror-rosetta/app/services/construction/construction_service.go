@@ -23,12 +23,12 @@ package construction
 import (
 	"context"
 	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/hex"
 	"log"
-	"math/rand"
+	"math/big"
 	"sort"
 	"strconv"
-	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -45,9 +45,9 @@ import (
 
 // ConstructionAPIService implements the server.ConstructionAPIServicer interface.
 type ConstructionAPIService struct {
-	hederaClient   *hedera.Client
-	nodeAccountIds []hedera.AccountID
-	rand           *rand.Rand
+	hederaClient      *hedera.Client
+	nodeAccountIds    []hedera.AccountID
+	nodeAccountIdsLen *big.Int
 }
 
 // ConstructionCombine implements the /construction/combine endpoint.
@@ -167,7 +167,7 @@ func (c *ConstructionAPIService) ConstructionParse(ctx context.Context, request 
 		for _, nodeSignaturePair := range allNodeSignaturePairs {
 			for pubKey := range nodeSignaturePair {
 				accountIdentifiers = append(accountIdentifiers, &rTypes.AccountIdentifier{
-					Address: pubKey.String(),
+					Address: hex.EncodeToString(pubKey.Bytes()),
 				})
 			}
 
@@ -295,7 +295,13 @@ func (c *ConstructionAPIService) handleCryptoTransferPreProcess(operations []*rT
 }
 
 func (c *ConstructionAPIService) getRandomNodeAccountId() hedera.AccountID {
-	return c.nodeAccountIds[c.rand.Intn(len(c.nodeAccountIds))]
+	index, err := rand.Int(rand.Reader, c.nodeAccountIdsLen)
+	if err != nil {
+		log.Printf("failed to get a random number, use 0 instead: %s", err)
+		return c.nodeAccountIds[0]
+	}
+
+	return c.nodeAccountIds[index.Int64()]
 }
 
 // NewConstructionAPIService creates a new instance of a ConstructionAPIService.
@@ -322,9 +328,9 @@ func NewConstructionAPIService(network string, nodes types.NodeMap) (server.Cons
 	}
 
 	return &ConstructionAPIService{
-		hederaClient:   hederaClient,
-		nodeAccountIds: nodeAccountIds,
-		rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
+		hederaClient:      hederaClient,
+		nodeAccountIds:    nodeAccountIds,
+		nodeAccountIdsLen: big.NewInt(int64(len(nodeAccountIds))),
 	}, nil
 }
 
