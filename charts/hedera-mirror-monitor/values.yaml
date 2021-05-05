@@ -67,6 +67,61 @@ podSecurityContext:
 
 priorityClassName: ""
 
+inhibitRules:
+  enabled: true
+  StopMonitorAlertsWhenPodsDown:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: MonitorNoPodsReady
+        targetMatch:
+          - name: service
+            value: monitor
+
+  StopMonitorAlertsWhenResourcesHigh:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            regex: true
+            value: (MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
+        targetMatch:
+          - name: service
+            value: monitor
+
+  StopPublishStoppedAlertOnHighErrors:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: MonitorPublishErrors
+        targetMatch:
+          - name: alertname
+            value: MonitorPublishStopped
+        equal:
+          - scenario
+
+  StopLogAlertOnHighPublishErrors:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: MonitorPublishErrors
+        targetMatch:
+          - name: alertname
+            value: MonitorLog4j2Errors
+
+  StopP2HAlertOnHighPublishLatency:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: MonitorPublishLatency
+        targetMatch:
+          - name: alertname
+            value: MonitorPublishToHandleLatency
+
 prometheusRules:
   enabled: false
   MonitorHighCPU:
@@ -78,6 +133,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
 
   MonitorHighMemory:
     annotations:
@@ -88,6 +145,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
 
   MonitorLog4j2Errors:
     annotations:
@@ -98,6 +157,8 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
 
   MonitorPublishErrors:
     annotations:
@@ -108,6 +169,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
 
   MonitorPublishLatency:
     annotations:
@@ -118,6 +181,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
 
   MonitorPublishStopped:
     annotations:
@@ -128,6 +193,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
 
   MonitorPublishToHandleLatency:
     annotations:
@@ -138,6 +205,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: warning
+      service: monitor
+      noPods: stop
 
   MonitorSubscribeLatency:
     annotations:
@@ -148,6 +217,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
 
   MonitorSubscribeStopped:
     annotations:
@@ -158,6 +229,21 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      service: monitor
+      noPods: stop
+
+  MonitorNoPodsReady:
+    annotations:
+      description: "No rest instances are currently running."
+      summary: No rest instances running
+    enabled: true
+    expr: kube_pod_container_status_ready{container="monitor"} < 1
+    for: 5s
+    labels:
+      severity: critical
+      service: monitor
+      noPods: continue
+
 
 rbac:
   enabled: true
