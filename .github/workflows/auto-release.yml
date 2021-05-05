@@ -240,3 +240,4 @@ jobs:
           delete-branch: true
           signoff: true
           title: ${{ needs.release.outputs.pr_title }}
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
